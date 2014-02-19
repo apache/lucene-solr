@@ -19,7 +19,7 @@ package org.apache.solr.store.blockcache;
 
 import java.util.concurrent.atomic.AtomicLongArray;
 
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.LongBitSet;
 
 public class BlockLocks {
   
@@ -27,7 +27,7 @@ public class BlockLocks {
   private int wlen;
   
   public BlockLocks(long numBits) {
-    int length = OpenBitSet.bits2words(numBits);
+    int length = LongBitSet.bits2words(numBits);
     bits = new AtomicLongArray(length);
     wlen = length;
   }

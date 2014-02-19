@@ -39,7 +39,7 @@ import org.apache.lucene.search.grouping.term.TermSecondPassGroupingCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueStr;
 
@@ -619,16 +619,16 @@ public class TestGrouping extends LuceneTestCase {
   }
 
   public void testRandom() throws Exception {
-    int numberOfRuns = _TestUtil.nextInt(random(), 3, 6);
+    int numberOfRuns = TestUtil.nextInt(random(), 3, 6);
     for (int iter=0; iter<numberOfRuns; iter++) {
       if (VERBOSE) {
         System.out.println("TEST: iter=" + iter);
       }
 
-      final int numDocs = _TestUtil.nextInt(random(), 100, 1000) * RANDOM_MULTIPLIER;
+      final int numDocs = TestUtil.nextInt(random(), 100, 1000) * RANDOM_MULTIPLIER;
       //final int numDocs = _TestUtil.nextInt(random, 5, 20);
 
-      final int numGroups = _TestUtil.nextInt(random(), 1, numDocs);
+      final int numGroups = TestUtil.nextInt(random(), 1, numDocs);
 
       if (VERBOSE) {
         System.out.println("TEST: numDocs=" + numDocs + " numGroups=" + numGroups);
@@ -641,13 +641,13 @@ public class TestGrouping extends LuceneTestCase {
           // B/c of DV based impl we can't see the difference between an empty string and a null value.
           // For that reason we don't generate empty string
           // groups.
-          randomValue = _TestUtil.randomRealisticUnicodeString(random());
+          randomValue = TestUtil.randomRealisticUnicodeString(random());
           //randomValue = _TestUtil.randomSimpleString(random());
         } while ("".equals(randomValue));
 
         groups.add(new BytesRef(randomValue));
       }
-      final String[] contentStrings = new String[_TestUtil.nextInt(random(), 2, 20)];
+      final String[] contentStrings = new String[TestUtil.nextInt(random(), 2, 20)];
       if (VERBOSE) {
         System.out.println("TEST: create fake content");
       }
@@ -743,7 +743,7 @@ public class TestGrouping extends LuceneTestCase {
       w.close();
 
       // NOTE: intentional but temporary field cache insanity!
-      final FieldCache.Ints docIDToID = FieldCache.DEFAULT.getInts(new SlowCompositeReaderWrapper(r), "id", false);
+      final FieldCache.Ints docIDToID = FieldCache.DEFAULT.getInts(SlowCompositeReaderWrapper.wrap(r), "id", false);
       DirectoryReader rBlocks = null;
       Directory dirBlocks = null;
 
@@ -779,7 +779,7 @@ public class TestGrouping extends LuceneTestCase {
         dirBlocks = newDirectory();
         rBlocks = getDocBlockReader(dirBlocks, groupDocs);
         final Filter lastDocInBlock = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("groupend", "x"))));
-        final FieldCache.Ints docIDToIDBlocks = FieldCache.DEFAULT.getInts(new SlowCompositeReaderWrapper(rBlocks), "id", false);
+        final FieldCache.Ints docIDToIDBlocks = FieldCache.DEFAULT.getInts(SlowCompositeReaderWrapper.wrap(rBlocks), "id", false);
 
         final IndexSearcher sBlocks = newSearcher(rBlocks);
         final ShardState shardsBlocks = new ShardState(sBlocks);
@@ -838,14 +838,14 @@ public class TestGrouping extends LuceneTestCase {
             }
           }
 
-          final int topNGroups = _TestUtil.nextInt(random(), 1, 30);
+          final int topNGroups = TestUtil.nextInt(random(), 1, 30);
           //final int topNGroups = 10;
-          final int docsPerGroup = _TestUtil.nextInt(random(), 1, 50);
+          final int docsPerGroup = TestUtil.nextInt(random(), 1, 50);
 
-          final int groupOffset = _TestUtil.nextInt(random(), 0, (topNGroups-1)/2);
+          final int groupOffset = TestUtil.nextInt(random(), 0, (topNGroups - 1) / 2);
           //final int groupOffset = 0;
 
-          final int docOffset = _TestUtil.nextInt(random(), 0, docsPerGroup-1);
+          final int docOffset = TestUtil.nextInt(random(), 0, docsPerGroup - 1);
           //final int docOffset = 0;
 
           final boolean doCache = random().nextBoolean();

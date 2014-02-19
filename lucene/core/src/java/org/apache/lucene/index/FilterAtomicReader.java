@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.Iterator;
 
 import org.apache.lucene.search.CachingWrapperFilter;
@@ -98,11 +97,6 @@ public class FilterAtomicReader extends AtomicReader {
     public TermsEnum iterator(TermsEnum reuse) throws IOException {
       return in.iterator(reuse);
     }
-    
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return in.getComparator();
-    }
 
     @Override
     public long size() throws IOException {
@@ -122,6 +116,11 @@ public class FilterAtomicReader extends AtomicReader {
     @Override
     public int getDocCount() throws IOException {
       return in.getDocCount();
+    }
+
+    @Override
+    public boolean hasFreqs() {
+      return in.hasFreqs();
     }
 
     @Override
@@ -157,8 +156,8 @@ public class FilterAtomicReader extends AtomicReader {
     }
 
     @Override
-    public SeekStatus seekCeil(BytesRef text, boolean useCache) throws IOException {
-      return in.seekCeil(text, useCache);
+    public SeekStatus seekCeil(BytesRef text) throws IOException {
+      return in.seekCeil(text);
     }
 
     @Override
@@ -199,11 +198,6 @@ public class FilterAtomicReader extends AtomicReader {
     @Override
     public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
       return in.docsAndPositions(liveDocs, reuse, flags);
-    }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return in.getComparator();
     }
   }
 
@@ -412,6 +406,12 @@ public class FilterAtomicReader extends AtomicReader {
   public NumericDocValues getNormValues(String field) throws IOException {
     ensureOpen();
     return in.getNormValues(field);
+  }
+
+  @Override
+  public Bits getDocsWithField(String field) throws IOException {
+    ensureOpen();
+    return in.getDocsWithField(field);
   }
 
 }

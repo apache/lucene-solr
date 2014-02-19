@@ -43,6 +43,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -219,16 +220,24 @@ public class QueryParsing {
     return new MapSolrParams(localParams);
   }
 
+  /** 
+   * Returns the Sort object represented by the string, or null if default sort 
+   * by score descending should be used.
+   * @see #parseSortSpec
+   * @deprecated use {@link #parseSortSpec} 
+   */
+  @Deprecated
+  public static Sort parseSort(String sortSpec, SolrQueryRequest req) {
+    return parseSortSpec(sortSpec, req).getSort();
+  }
 
   /**
-   * Returns null if the sortSpec is the standard sort desc.
-   * <p/>
    * <p>
    * The form of the sort specification string currently parsed is:
    * </p>
    * <pre>
    * SortSpec ::= SingleSort [, SingleSort]*
-   * SingleSort ::= &lt;fieldname&gt; SortDirection
+   * SingleSort ::= &lt;fieldname|function&gt; SortDirection
    * SortDirection ::= top | desc | bottom | asc
    * </pre>
    * Examples:
@@ -239,10 +248,15 @@ public class QueryParsing {
    *   height desc,weight desc  #sort by height descending, and use weight descending to break any ties
    *   height desc,weight asc   #sort by height descending, using weight ascending as a tiebreaker
    * </pre>
+   * @return a SortSpec object populated with the appropriate Sort (which may be null if 
+   *         default score sort is used) and SchemaFields (where applicable) using 
+   *         hardcoded default count &amp; offset values.
    */
-  public static Sort parseSort(String sortSpec, SolrQueryRequest req) {
-    if (sortSpec == null || sortSpec.length() == 0) return null;
-    List<SortField> lst = new ArrayList<SortField>(4);
+  public static SortSpec parseSortSpec(String sortSpec, SolrQueryRequest req) {
+    if (sortSpec == null || sortSpec.length() == 0) return newEmptySortSpec();
+
+    List<SortField> sorts = new ArrayList<SortField>(4);
+    List<SchemaField> fields = new ArrayList<SchemaField>(4);
 
     try {
 
@@ -299,10 +313,11 @@ public class QueryParsing {
             if (null != top) {
               // we have a Query and a valid direction
               if (q instanceof FunctionQuery) {
-                lst.add(((FunctionQuery)q).getValueSource().getSortField(top));
+                sorts.add(((FunctionQuery)q).getValueSource().getSortField(top));
               } else {
-                lst.add((new QueryValueSource(q, 0.0f)).getSortField(top));
+                sorts.add((new QueryValueSource(q, 0.0f)).getSortField(top));
               }
+              fields.add(null);
               continue;
             }
           } catch (Exception e) {
@@ -327,12 +342,14 @@ public class QueryParsing {
         
         if (SCORE.equals(field)) {
           if (top) {
-            lst.add(SortField.FIELD_SCORE);
+            sorts.add(SortField.FIELD_SCORE);
           } else {
-            lst.add(new SortField(null, SortField.Type.SCORE, true));
+            sorts.add(new SortField(null, SortField.Type.SCORE, true));
           }
+          fields.add(null);
         } else if (DOCID.equals(field)) {
-          lst.add(new SortField(null, SortField.Type.DOC, top));
+          sorts.add(new SortField(null, SortField.Type.DOC, top));
+          fields.add(null);
         } else {
           // try to find the field
           SchemaField sf = req.getSchema().getFieldOrNull(field);
@@ -348,7 +365,8 @@ public class QueryParsing {
               (SolrException.ErrorCode.BAD_REQUEST,
                "sort param field can't be found: " + field);
           }
-          lst.add(sf.getSortField(top));
+          sorts.add(sf.getSortField(top));
+          fields.add(sf);
         }
       }
 
@@ -358,13 +376,17 @@ public class QueryParsing {
 
 
     // normalize a sort on score desc to null
-    if (lst.size()==1 && lst.get(0) == SortField.FIELD_SCORE) {
-      return null;
+    if (sorts.size()==1 && sorts.get(0) == SortField.FIELD_SCORE) {
+      return newEmptySortSpec();
     }
 
-    return new Sort(lst.toArray(new SortField[lst.size()]));
+    Sort s = new Sort(sorts.toArray(new SortField[sorts.size()]));
+    return new SortSpec(s, fields);
   }
 
+  private static SortSpec newEmptySortSpec() {
+    return new SortSpec(null, Collections.<SchemaField>emptyList());
+  }
 
 
   ///////////////////////////

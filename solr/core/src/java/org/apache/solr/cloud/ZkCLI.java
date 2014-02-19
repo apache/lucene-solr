@@ -3,6 +3,8 @@ package org.apache.solr.cloud;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
@@ -10,18 +12,18 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.core.ConfigSolr;
-import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.CoreContainer;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
-import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
@@ -46,6 +48,9 @@ public class ZkCLI {
   
   private static final String MAKEPATH = "makepath";
   private static final String PUT = "put";
+  private static final String PUT_FILE = "putfile";
+  private static final String GET = "get";
+  private static final String GET_FILE = "getfile";
   private static final String DOWNCONFIG = "downconfig";
   private static final String ZK_CLI_NAME = "ZkCLI";
   private static final String HELP = "help";
@@ -89,7 +94,8 @@ public class ZkCLI {
         .hasArg(true)
         .withDescription(
             "cmd to run: " + BOOTSTRAP + ", " + UPCONFIG + ", " + DOWNCONFIG
-                + ", " + LINKCONFIG + ", " + MAKEPATH + ", "+ PUT + ", "+ LIST + ", " + CLEAR).create(CMD));
+                + ", " + LINKCONFIG + ", " + MAKEPATH + ", " + PUT + ", " + PUT_FILE + ","
+                + GET + "," + GET_FILE + ", " + LIST + ", " + CLEAR).create(CMD));
 
     Option zkHostOption = new Option("z", ZKHOST, true,
         "ZooKeeper host address");
@@ -131,8 +137,11 @@ public class ZkCLI {
         System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + UPCONFIG + " -" + CONFDIR + " /opt/solr/collection1/conf" + " -" + CONFNAME + " myconf");
         System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + DOWNCONFIG + " -" + CONFDIR + " /opt/solr/collection1/conf" + " -" + CONFNAME + " myconf");
         System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + LINKCONFIG + " -" + COLLECTION + " collection1" + " -" + CONFNAME + " myconf");
-        System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + MAKEPATH + " /apache/solr/data.txt 'config data'");
+        System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + MAKEPATH + " /apache/solr");
         System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + PUT + " /solr.conf 'conf data'");
+        System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + PUT_FILE + " /solr.xml /User/myuser/solr/solr.xml");
+        System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + GET + " /solr.xml");
+        System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + GET_FILE + " /solr.xml solr.xml.file");
         System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + CLEAR + " /solr");
         System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + LIST);
         return;
@@ -173,17 +182,18 @@ public class ZkCLI {
                 + " is required for " + BOOTSTRAP);
             System.exit(1);
           }
-          SolrResourceLoader loader = new SolrResourceLoader(solrHome);
-          solrHome = loader.getInstanceDir();
 
-          ConfigSolr cfg = ConfigSolr.fromSolrHome(solrHome);
+          CoreContainer cc = new CoreContainer(solrHome);
 
           if(!ZkController.checkChrootPath(zkServerAddress, true)) {
             System.out.println("A chroot was specified in zkHost but the znode doesn't exist. ");
             System.exit(1);
           }
 
-          ZkController.bootstrapConf(zkClient, cfg, solrHome);
+          ZkController.bootstrapConf(zkClient, cc, solrHome);
+
+          // No need to shutdown the CoreContainer, as it wasn't started
+          // up in the first place...
           
         } else if (line.getOptionValue(CMD).equals(UPCONFIG)) {
           if (!line.hasOption(CONFDIR) || !line.hasOption(CONFNAME)) {
@@ -212,7 +222,7 @@ public class ZkCLI {
           ZkController.downloadConfigDir(zkClient, confName, new File(confDir));
         } else if (line.getOptionValue(CMD).equals(LINKCONFIG)) {
           if (!line.hasOption(COLLECTION) || !line.hasOption(CONFNAME)) {
-            System.out.println("-" + CONFDIR + " and -" + CONFNAME
+            System.out.println("-" + COLLECTION + " and -" + CONFNAME
                 + " are required for " + LINKCONFIG);
             System.exit(1);
           }
@@ -245,6 +255,36 @@ public class ZkCLI {
           }
           zkClient.create(arglist.get(0).toString(), arglist.get(1).toString().getBytes("UTF-8"),
                           acl, CreateMode.PERSISTENT, true);
+        } else if (line.getOptionValue(CMD).equals(PUT_FILE)) {
+          List arglist = line.getArgList();
+          if (arglist.size() != 2) {
+            System.out.println("-" + PUT_FILE + " requires two args - the path to create in ZK and the path to the local file");
+            System.exit(1);
+          }
+          InputStream is = new FileInputStream(arglist.get(1).toString());
+          try {
+            zkClient.create(arglist.get(0).toString(), IOUtils.toByteArray(is),
+                ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT, true);
+          } finally {
+            IOUtils.closeQuietly(is);
+          }
+
+        } else if (line.getOptionValue(CMD).equals(GET)) {
+          List arglist = line.getArgList();
+          if (arglist.size() != 1) {
+            System.out.println("-" + GET + " requires one arg - the path to get");
+            System.exit(1);
+          }
+          byte [] data = zkClient.getData(arglist.get(0).toString(), null, null, true);
+          System.out.println(new String(data, "UTF-8"));
+        } else if (line.getOptionValue(CMD).equals(GET_FILE)) {
+          List arglist = line.getArgList();
+          if (arglist.size() != 2) {
+            System.out.println("-" + GET_FILE + "requires two args - the path to get and the file to save it to");
+            System.exit(1);
+          }
+          byte [] data = zkClient.getData(arglist.get(0).toString(), null, null, true);
+          FileUtils.writeByteArrayToFile(new File(arglist.get(1).toString()), data);
         }
       } finally {
         if (solrPort != null) {

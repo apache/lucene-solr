@@ -131,7 +131,7 @@ public class PatternParser extends DefaultHandler {
     }
   }
 
-  protected String readToken(StringBuffer chars) {
+  protected String readToken(StringBuilder chars) {
     String word;
     boolean space = false;
     int i;
@@ -344,7 +344,7 @@ public class PatternParser extends DefaultHandler {
   @SuppressWarnings("unchecked")
   @Override
   public void characters(char ch[], int start, int length) {
-    StringBuffer chars = new StringBuffer(length);
+    StringBuilder chars = new StringBuilder(length);
     chars.append(ch, start, length);
     String word = readToken(chars);
     while (word != null) {

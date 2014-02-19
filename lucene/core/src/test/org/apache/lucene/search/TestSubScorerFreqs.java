@@ -92,7 +92,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     
     public void setSubScorers(Scorer scorer, String relationship) {
       for (ChildScorer child : scorer.getChildren()) {
-        if (relationships.contains(child.relationship)) {
+        if (scorer instanceof AssertingScorer || relationships.contains(child.relationship)) {
           setSubScorers(child.child, child.relationship);
         }
       }
@@ -180,16 +180,17 @@ public class TestSubScorerFreqs extends LuceneTestCase {
         assertEquals(includeOptional ? 5 : 4, doc0.size());
         assertEquals(1.0F, doc0.get(aQuery), FLOAT_TOLERANCE);
         assertEquals(4.0F, doc0.get(dQuery), FLOAT_TOLERANCE);
-        if (includeOptional)
+        if (includeOptional) {
           assertEquals(3.0F, doc0.get(cQuery), FLOAT_TOLERANCE);
+        }
 
         Map<Query, Float> doc1 = c.docCounts.get(++i);
         assertEquals(includeOptional ? 5 : 4, doc1.size());
         assertEquals(1.0F, doc1.get(aQuery), FLOAT_TOLERANCE);
         assertEquals(1.0F, doc1.get(dQuery), FLOAT_TOLERANCE);
-        if (includeOptional)
+        if (includeOptional) {
           assertEquals(1.0F, doc1.get(cQuery), FLOAT_TOLERANCE);
-
+        }
       }
     }
   }

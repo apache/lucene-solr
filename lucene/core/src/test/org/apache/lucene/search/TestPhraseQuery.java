@@ -31,8 +31,6 @@ import org.apache.lucene.util.*;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-import com.carrotsearch.randomizedtesting.annotations.Seed;
-
 /**
  * Tests {@link PhraseQuery}.
  *
@@ -53,8 +51,8 @@ public class TestPhraseQuery extends LuceneTestCase {
     directory = newDirectory();
     Analyzer analyzer = new Analyzer() {
       @Override
-      public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        return new TokenStreamComponents(new MockTokenizer(reader, MockTokenizer.WHITESPACE, false));
+      public TokenStreamComponents createComponents(String fieldName) {
+        return new TokenStreamComponents(new MockTokenizer(MockTokenizer.WHITESPACE, false));
       }
 
       @Override
@@ -217,7 +215,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     Directory directory = newDirectory();
     Analyzer stopAnalyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET);
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory, 
-        newIndexWriterConfig( Version.LUCENE_40, stopAnalyzer));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, stopAnalyzer));
     Document doc = new Document();
     doc.add(newTextField("field", "the stop words are here", Field.Store.YES));
     writer.addDocument(doc);
@@ -602,7 +600,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     int NUM_DOCS = atLeast(10);
     for (int i = 0; i < NUM_DOCS; i++) {
       // must be > 4096 so it spans multiple chunks
-      int termCount = _TestUtil.nextInt(random(), 4097, 8200);
+      int termCount = TestUtil.nextInt(random(), 4097, 8200);
 
       List<String> doc = new ArrayList<String>();
 
@@ -612,25 +610,25 @@ public class TestPhraseQuery extends LuceneTestCase {
           // make new non-empty-string term
           String term;
           while(true) {
-            term = _TestUtil.randomUnicodeString(r);
+            term = TestUtil.randomUnicodeString(r);
             if (term.length() > 0) {
               break;
             }
           }
-          TokenStream ts = analyzer.tokenStream("ignore", new StringReader(term));
-          CharTermAttribute termAttr = ts.addAttribute(CharTermAttribute.class);
-          ts.reset();
-          while(ts.incrementToken()) {
-            String text = termAttr.toString();
-            doc.add(text);
-            sb.append(text).append(' ');
+          try (TokenStream ts = analyzer.tokenStream("ignore", term)) {
+            CharTermAttribute termAttr = ts.addAttribute(CharTermAttribute.class);
+            ts.reset();
+            while(ts.incrementToken()) {
+              String text = termAttr.toString();
+              doc.add(text);
+              sb.append(text).append(' ');
+            }
+            ts.end();
           }
-          ts.end();
-          ts.close();
         } else {
           // pick existing sub-phrase
           List<String> lastDoc = docs.get(r.nextInt(docs.size()));
-          int len = _TestUtil.nextInt(r, 1, 10);
+          int len = TestUtil.nextInt(r, 1, 10);
           int start = r.nextInt(lastDoc.size()-len);
           for(int k=start;k<start+len;k++) {
             String t = lastDoc.get(k);
@@ -654,7 +652,7 @@ public class TestPhraseQuery extends LuceneTestCase {
       int docID = r.nextInt(docs.size());
       List<String> doc = docs.get(docID);
       
-      final int numTerm = _TestUtil.nextInt(r, 2, 20);
+      final int numTerm = TestUtil.nextInt(r, 2, 20);
       final int start = r.nextInt(doc.size()-numTerm);
       PhraseQuery pq = new PhraseQuery();
       StringBuilder sb = new StringBuilder();
@@ -677,5 +675,17 @@ public class TestPhraseQuery extends LuceneTestCase {
 
     reader.close();
     dir.close();
+  }
+  
+  public void testNegativeSlop() throws Exception {
+    PhraseQuery query = new PhraseQuery();
+    query.add(new Term("field", "two"));
+    query.add(new Term("field", "one"));
+    try {
+      query.setSlop(-2);
+      fail("didn't get expected exception");
+    } catch (IllegalArgumentException expected) {
+      // expected exception
+    }
   }
 }

@@ -31,7 +31,8 @@ import org.apache.lucene.benchmark.byTask.feeds.TrecDocParser.ParsePathType;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TrecContentSourceTest extends LuceneTestCase {
 
@@ -343,8 +344,8 @@ public class TrecContentSourceTest extends LuceneTestCase {
    * supported formats - bzip, gzip, txt. 
    */
   public void testTrecFeedDirAllTypes() throws Exception {
-    File dataDir =  _TestUtil.getTempDir("trecFeedAllTypes");
-    _TestUtil.unzip(getDataFile("trecdocs.zip"), dataDir);
+    File dataDir =  TestUtil.getTempDir("trecFeedAllTypes");
+    TestUtil.unzip(getDataFile("trecdocs.zip"), dataDir);
     TrecContentSource tcs = new TrecContentSource();
     Properties props = new Properties();
     props.setProperty("print.props", "false");

@@ -80,6 +80,8 @@ def checkClassDetails(fullPath):
   Checks for invalid HTML in the full javadocs under each field/method.
   """
 
+  isAttributeSource = fullPath.endswith('AttributeSource.html')
+
   # TODO: only works with java7 generated javadocs now!
   with open(fullPath, encoding='UTF-8') as f:
     desc = None
@@ -87,6 +89,12 @@ def checkClassDetails(fullPath):
     item = None
     errors = []
     for line in f.readlines():
+
+      if isAttributeSource:
+        # Work around Javadocs bug that fails to escape the <T> type parameter in {@link #getAttribute} and {@link #addAttribute}
+        line = line.replace('<code>getAttribute(java.lang.Class<T>)</code>', '<code>getAttribute(java.lang.Class)</code>')
+        line = line.replace('<code>addAttribute(java.lang.Class<T>)</code>', '<code>addAttribute(java.lang.Class)</code>')
+      
       m = reH3.search(line)
       if m is not None:
         if desc is not None:

@@ -281,7 +281,10 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     Iterator<ThreadState> allActiveThreads = flushControl.allActiveThreadStates();
     long bytesUsed = 0;
     while (allActiveThreads.hasNext()) {
-      bytesUsed += allActiveThreads.next().dwpt.bytesUsed();
+      ThreadState next = allActiveThreads.next();
+      if (next.dwpt != null) {
+        bytesUsed += next.dwpt.bytesUsed();
+      }
     }
     assertEquals(bytesUsed, flushControl.activeBytes());
   }
@@ -343,7 +346,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       if (state.flushPending) {
         toFlush = state;
       } else if (flushOnDeleteTerms()
-          && state.dwpt.pendingDeletes.numTermDeletes.get() >= indexWriterConfig
+          && state.dwpt.pendingUpdates.numTermDeletes.get() >= indexWriterConfig
               .getMaxBufferedDeleteTerms()) {
         toFlush = state;
       } else {

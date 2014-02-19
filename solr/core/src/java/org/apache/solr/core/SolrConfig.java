@@ -17,6 +17,8 @@
 
 package org.apache.solr.core;
 
+import static org.apache.solr.core.SolrConfig.PluginOpts.*;
+
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.schema.IndexSchemaFactory;
@@ -27,11 +29,11 @@ import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.transform.TransformerFactory;
-
 import org.apache.solr.search.CacheConfig;
 import org.apache.solr.search.FastLRUCache;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.ValueSourceParser;
+import org.apache.solr.servlet.SolrRequestParsers;
 import org.apache.solr.update.SolrIndexConfig;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
@@ -39,10 +41,8 @@ import org.apache.solr.spelling.QueryConverter;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.util.Version;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
@@ -70,7 +70,27 @@ public class SolrConfig extends Config {
   
   public static final String DEFAULT_CONF_FILE = "solrconfig.xml";
 
+  static enum PluginOpts { 
+    MULTI_OK, 
+    REQUIRE_NAME,
+    REQUIRE_CLASS,
+    // EnumSet.of and/or EnumSet.copyOf(Collection) are anoying
+    // because of type determination
+    NOOP
+    }
 
+  private int multipartUploadLimitKB;
+
+  private int formUploadLimitKB;
+
+  private boolean enableRemoteStreams;
+
+  private boolean handleSelect;
+
+  private boolean addHttpRequestToContext;
+
+  private final SolrRequestParsers solrRequestParsers;
+  
   /** Creates a default instance from the solrconfig.xml. */
   public SolrConfig()
   throws ParserConfigurationException, IOException, SAXException {
@@ -124,8 +144,8 @@ public class SolrConfig extends Config {
 
     // Old indexDefaults and mainIndex sections are deprecated and fails fast for luceneMatchVersion=>LUCENE_40.
     // For older solrconfig.xml's we allow the old sections, but never mixed with the new <indexConfig>
-    boolean hasDeprecatedIndexConfig = get("indexDefaults/text()", null) != null || get("mainIndex/text()", null) != null;
-    boolean hasNewIndexConfig = get("indexConfig/text()", null) != null; 
+    boolean hasDeprecatedIndexConfig = (getNode("indexDefaults", false) != null) || (getNode("mainIndex", false) != null);
+    boolean hasNewIndexConfig = getNode("indexConfig", false) != null; 
     if(hasDeprecatedIndexConfig){
       if(luceneMatchVersion.onOrAfter(Version.LUCENE_40)) {
         throw new SolrException(ErrorCode.FORBIDDEN, "<indexDefaults> and <mainIndex> configuration sections are discontinued. Use <indexConfig> instead.");
@@ -143,7 +163,7 @@ public class SolrConfig extends Config {
       defaultIndexConfig = mainIndexConfig = null;
       indexConfigPrefix = "indexConfig";
     }
-    reopenReaders = getBool(indexConfigPrefix+"/reopenReaders", true);
+    nrtMode = getBool(indexConfigPrefix+"/nrtMode", true);
     // Parse indexConfig section, using mainIndex as backup in case old config is used
     indexConfig = new SolrIndexConfig(this, "indexConfig", mainIndexConfig);
    
@@ -207,30 +227,66 @@ public class SolrConfig extends Config {
     }
      maxWarmingSearchers = getInt("query/maxWarmingSearchers",Integer.MAX_VALUE);
 
-     loadPluginInfo(SolrRequestHandler.class,"requestHandler",true, true);
-     loadPluginInfo(QParserPlugin.class,"queryParser",true, true);
-     loadPluginInfo(QueryResponseWriter.class,"queryResponseWriter",true, true);
-     loadPluginInfo(ValueSourceParser.class,"valueSourceParser",true, true);
-     loadPluginInfo(TransformerFactory.class,"transformer",true, true);
-     loadPluginInfo(SearchComponent.class,"searchComponent",true, true);
-     loadPluginInfo(QueryConverter.class,"queryConverter",true, true);
+     loadPluginInfo(SolrRequestHandler.class,"requestHandler",
+                    REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK);
+     loadPluginInfo(QParserPlugin.class,"queryParser",
+                    REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK);
+     loadPluginInfo(QueryResponseWriter.class,"queryResponseWriter",
+                    REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK);
+     loadPluginInfo(ValueSourceParser.class,"valueSourceParser",
+                    REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK);
+     loadPluginInfo(TransformerFactory.class,"transformer",
+                    REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK);
+     loadPluginInfo(SearchComponent.class,"searchComponent",
+                    REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK);
+
+     // TODO: WTF is up with queryConverter???
+     // it aparently *only* works as a singleton? - SOLR-4304
+     // and even then -- only if there is a single SpellCheckComponent
+     // because of queryConverter.setAnalyzer
+     loadPluginInfo(QueryConverter.class,"queryConverter",
+                    REQUIRE_NAME, REQUIRE_CLASS);
 
      // this is hackish, since it picks up all SolrEventListeners,
      // regardless of when/how/why they are used (or even if they are 
      // declared outside of the appropriate context) but there's no nice 
      // way around that in the PluginInfo framework
-     loadPluginInfo(SolrEventListener.class, "//listener",false, true);
+     loadPluginInfo(SolrEventListener.class, "//listener", 
+                    REQUIRE_CLASS, MULTI_OK);
 
-     loadPluginInfo(DirectoryFactory.class,"directoryFactory",false, true);
-     loadPluginInfo(IndexDeletionPolicy.class,indexConfigPrefix+"/deletionPolicy",false, true);
-     loadPluginInfo(CodecFactory.class,"codecFactory",false, false);
-     loadPluginInfo(IndexReaderFactory.class,"indexReaderFactory",false, true);
-     loadPluginInfo(UpdateRequestProcessorChain.class,"updateRequestProcessorChain",false, false);
-     loadPluginInfo(UpdateLog.class,"updateHandler/updateLog",false, false);
-     loadPluginInfo(IndexSchemaFactory.class,"schemaFactory",false, true);
+     loadPluginInfo(DirectoryFactory.class,"directoryFactory", 
+                    REQUIRE_CLASS);
+     loadPluginInfo(IndexDeletionPolicy.class,indexConfigPrefix+"/deletionPolicy", 
+                    REQUIRE_CLASS);
+     loadPluginInfo(CodecFactory.class,"codecFactory", 
+                    REQUIRE_CLASS);
+     loadPluginInfo(IndexReaderFactory.class,"indexReaderFactory", 
+                    REQUIRE_CLASS);
+     loadPluginInfo(UpdateRequestProcessorChain.class,"updateRequestProcessorChain", 
+                    MULTI_OK);
+     loadPluginInfo(UpdateLog.class,"updateHandler/updateLog");
+     loadPluginInfo(IndexSchemaFactory.class,"schemaFactory", 
+                    REQUIRE_CLASS);
 
      updateHandlerInfo = loadUpdatehandlerInfo();
+     
+     multipartUploadLimitKB = getInt( 
+         "requestDispatcher/requestParsers/@multipartUploadLimitInKB", 2048 );
+     
+     formUploadLimitKB = getInt( 
+         "requestDispatcher/requestParsers/@formdataUploadLimitInKB", 2048 );
+     
+     enableRemoteStreams = getBool( 
+         "requestDispatcher/requestParsers/@enableRemoteStreaming", false ); 
+ 
+     // Let this filter take care of /select?xxx format
+     handleSelect = getBool( 
+         "requestDispatcher/@handleSelect", true ); 
+     
+     addHttpRequestToContext = getBool( 
+         "requestDispatcher/requestParsers/@addHttpRequestToContext", false ); 
 
+    solrRequestParsers = new SolrRequestParsers(this);
     Config.log.info("Loaded SolrConfig: " + name);
   }
 
@@ -245,8 +301,19 @@ public class SolrConfig extends Config {
             getBool("updateHandler/commitWithin/softCommit",true));
   }
 
-  private void loadPluginInfo(Class clazz, String tag, boolean requireName, boolean requireClass) {
+  private void loadPluginInfo(Class clazz, String tag, PluginOpts... opts) {
+    EnumSet<PluginOpts> options = EnumSet.<PluginOpts>of(NOOP, opts);
+    boolean requireName = options.contains(REQUIRE_NAME);
+    boolean requireClass = options.contains(REQUIRE_CLASS);
+
     List<PluginInfo> result = readPluginInfos(tag, requireName, requireClass);
+
+    if (1 < result.size() && ! options.contains(MULTI_OK)) {
+        throw new SolrException
+          (SolrException.ErrorCode.SERVER_ERROR,
+           "Found " + result.size() + " configuration sections when at most "
+           + "1 is allowed matching expression: " + tag);
+    }
     if(!result.isEmpty()) pluginStore.put(clazz.getName(),result);
   }
 
@@ -258,6 +325,10 @@ public class SolrConfig extends Config {
       if(pluginInfo.isEnabled()) result.add(pluginInfo);
     }
     return result;
+  }
+  
+  public SolrRequestParsers getRequestParsers() {
+    return solrRequestParsers;
   }
 
   /* The set of materialized parameters: */
@@ -277,7 +348,7 @@ public class SolrConfig extends Config {
   public final int queryResultWindowSize;
   public final int queryResultMaxDocsCached;
   public final boolean enableLazyFieldLoading;
-  public final boolean reopenReaders;
+  public final boolean nrtMode;
   // DocSet
   public final float hashSetInverseLoadFactor;
   public final int hashDocSetMaxSize;
@@ -446,7 +517,15 @@ public class SolrConfig extends Config {
   }
   public PluginInfo getPluginInfo(String  type){
     List<PluginInfo> result = pluginStore.get(type);
-    return result == null || result.isEmpty() ? null: result.get(0);
+    if (result == null || result.isEmpty()) {
+      return null;
+    }
+    if (1 == result.size()) {
+      return result.get(0);
+    }
+
+    throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                            "Multiple plugins configured for type: " + type);
   }
   
   private void initLibs() {
@@ -483,5 +562,25 @@ public class SolrConfig extends Config {
     } finally {
       loader.reloadLuceneSPI();
     }
+  }
+  
+  public int getMultipartUploadLimitKB() {
+    return multipartUploadLimitKB;
+  }
+
+  public int getFormUploadLimitKB() {
+    return formUploadLimitKB;
+  }
+
+  public boolean isHandleSelect() {
+    return handleSelect;
+  }
+
+  public boolean isAddHttpRequestToContext() {
+    return addHttpRequestToContext;
+  }
+
+  public boolean isEnableRemoteStreams() {
+    return enableRemoteStreams;
   }
 }

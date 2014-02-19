@@ -22,8 +22,7 @@ import java.text.CharacterIterator;
 import java.util.Locale;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestCharArrayIterator extends LuceneTestCase {
   
@@ -36,7 +35,7 @@ public class TestCharArrayIterator extends LuceneTestCase {
     BreakIterator bi = BreakIterator.getWordInstance(Locale.getDefault());
     CharArrayIterator ci = CharArrayIterator.newWordInstance();
     for (int i = 0; i < 10000; i++) {
-      char text[] = _TestUtil.randomUnicodeString(random()).toCharArray();
+      char text[] = TestUtil.randomUnicodeString(random()).toCharArray();
       ci.setText(text, 0, text.length);
       consume(bi, ci);
     }
@@ -66,7 +65,7 @@ public class TestCharArrayIterator extends LuceneTestCase {
     BreakIterator bi = BreakIterator.getSentenceInstance(Locale.getDefault());
     CharArrayIterator ci = CharArrayIterator.newSentenceInstance();
     for (int i = 0; i < 10000; i++) {
-      char text[] = _TestUtil.randomUnicodeString(random()).toCharArray();
+      char text[] = TestUtil.randomUnicodeString(random()).toCharArray();
       ci.setText(text, 0, text.length);
       consume(bi, ci);
     }

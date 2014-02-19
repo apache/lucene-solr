@@ -20,11 +20,9 @@ package org.apache.solr.common.cloud;
 import org.noggit.JSONUtil;
 import org.noggit.JSONWriter;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 /**
@@ -60,7 +58,7 @@ public class ZkNodeProps implements JSONWriter.Writable {
     if ((keyVals.length & 0x01) != 0) {
       throw new IllegalArgumentException("arguments should be key,value");
     }
-    Map<String,Object> propMap = new HashMap<String,Object>(keyVals.length>>1);
+    Map<String,Object> propMap = new LinkedHashMap<String,Object>(keyVals.length>>1);
     for (int i = 0; i < keyVals.length; i+=2) {
       propMap.put(keyVals[i].toString(), keyVals[i+1]);
     }
@@ -108,10 +106,26 @@ public class ZkNodeProps implements JSONWriter.Writable {
     return o == null ? null : o.toString();
   }
 
+  /**
+   * Get a string property value.
+   */
+  public Integer getInt(String key, Integer def) {
+    Object o = propMap.get(key);
+    return o == null ? def : Integer.valueOf(o.toString());
+  }
+
+  /**
+   * Get a string property value.
+   */
+  public String getStr(String key,String def) {
+    Object o = propMap.get(key);
+    return o == null ? def : o.toString();
+  }
+
   public Object get(String key) {
     return propMap.get(key);
   }
-  
+
   @Override
   public String toString() {
     return JSONUtil.toJSON(this);
@@ -132,4 +146,9 @@ public class ZkNodeProps implements JSONWriter.Writable {
     return propMap.containsKey(key);
   }
 
+  public boolean getBool(String key, boolean b) {
+    Object o = propMap.get(key);
+    if(o==null) return b;
+    return Boolean.parseBoolean(o.toString());
+  }
 }

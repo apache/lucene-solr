@@ -19,14 +19,13 @@ package org.apache.lucene.replicator;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.facet.index.FacetFields;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.FacetField;
+import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexWriter;
@@ -42,10 +41,10 @@ import org.junit.Test;
 public class IndexAndTaxonomyRevisionTest extends ReplicatorTestCase {
   
   private Document newDocument(TaxonomyWriter taxoWriter) throws IOException {
+    FacetsConfig config = new FacetsConfig();
     Document doc = new Document();
-    FacetFields ff = new FacetFields(taxoWriter);
-    ff.addFields(doc, Collections.singleton(new CategoryPath("A")));
-    return doc;
+    doc.add(new FacetField("A", "1"));
+    return config.build(taxoWriter, doc);
   }
   
   @Test

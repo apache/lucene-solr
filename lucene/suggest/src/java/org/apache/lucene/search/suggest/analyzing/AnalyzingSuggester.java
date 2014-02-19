@@ -19,9 +19,6 @@ package org.apache.lucene.search.suggest.analyzing;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -32,16 +29,13 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenStreamToAutomaton;
-import org.apache.lucene.search.spell.TermFreqIterator;
-import org.apache.lucene.search.spell.TermFreqPayloadIterator;
+import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.Sort;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
-import org.apache.lucene.store.InputStreamDataInput;
-import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
@@ -76,8 +70,9 @@ import org.apache.lucene.util.fst.Util;
  * then the partial text "ghost chr..." could see the
  * suggestion "The Ghost of Christmas Past". Note that
  * position increments MUST NOT be preserved for this example
- * to work, so you should call
- * {@link #setPreservePositionIncrements(boolean) setPreservePositionIncrements(false)}.
+ * to work, so you should call the constructor with 
+ * <code>preservePositionIncrements</code> parameter set to 
+ * false
  *
  * <p>
  * If SynonymFilter is used to map wifi and wireless network to
@@ -147,20 +142,20 @@ public class AnalyzingSuggester extends Lookup {
   private final boolean preserveSep;
 
   /** Include this flag in the options parameter to {@link
-   *  #AnalyzingSuggester(Analyzer,Analyzer,int,int,int)} to always
+   *  #AnalyzingSuggester(Analyzer,Analyzer,int,int,int,boolean)} to always
    *  return the exact match first, regardless of score.  This
    *  has no performance impact but could result in
    *  low-quality suggestions. */
   public static final int EXACT_FIRST = 1;
 
   /** Include this flag in the options parameter to {@link
-   *  #AnalyzingSuggester(Analyzer,Analyzer,int,int,int)} to preserve
+   *  #AnalyzingSuggester(Analyzer,Analyzer,int,int,int,boolean)} to preserve
    *  token separators when matching. */
   public static final int PRESERVE_SEP = 2;
 
   /** Represents the separation between tokens, if
    *  PRESERVE_SEP was specified */
-  private static final int SEP_LABEL = 0xff;
+  private static final int SEP_LABEL = '\u001F';
 
   /** Marks end of the analyzed input and start of dedup
    *  byte. */
@@ -188,22 +183,25 @@ public class AnalyzingSuggester extends Lookup {
   /** Whether position holes should appear in the automaton. */
   private boolean preservePositionIncrements;
 
+  /** Number of entries the lookup was built with */
+  private long count = 0;
+
   /**
-   * Calls {@link #AnalyzingSuggester(Analyzer,Analyzer,int,int,int)
+   * Calls {@link #AnalyzingSuggester(Analyzer,Analyzer,int,int,int,boolean)
    * AnalyzingSuggester(analyzer, analyzer, EXACT_FIRST |
-   * PRESERVE_SEP, 256, -1)}
+   * PRESERVE_SEP, 256, -1, true)}
    */
   public AnalyzingSuggester(Analyzer analyzer) {
-    this(analyzer, analyzer, EXACT_FIRST | PRESERVE_SEP, 256, -1);
+    this(analyzer, analyzer, EXACT_FIRST | PRESERVE_SEP, 256, -1, true);
   }
 
   /**
-   * Calls {@link #AnalyzingSuggester(Analyzer,Analyzer,int,int,int)
+   * Calls {@link #AnalyzingSuggester(Analyzer,Analyzer,int,int,int,boolean)
    * AnalyzingSuggester(indexAnalyzer, queryAnalyzer, EXACT_FIRST |
-   * PRESERVE_SEP, 256, -1)}
+   * PRESERVE_SEP, 256, -1, true)}
    */
   public AnalyzingSuggester(Analyzer indexAnalyzer, Analyzer queryAnalyzer) {
-    this(indexAnalyzer, queryAnalyzer, EXACT_FIRST | PRESERVE_SEP, 256, -1);
+    this(indexAnalyzer, queryAnalyzer, EXACT_FIRST | PRESERVE_SEP, 256, -1, true);
   }
 
   /**
@@ -221,8 +219,11 @@ public class AnalyzingSuggester extends Lookup {
    * @param maxGraphExpansions Maximum number of graph paths
    *   to expand from the analyzed form.  Set this to -1 for
    *   no limit.
+   * @param preservePositionIncrements Whether position holes
+   *   should appear in the automata
    */
-  public AnalyzingSuggester(Analyzer indexAnalyzer, Analyzer queryAnalyzer, int options, int maxSurfaceFormsPerAnalyzedForm, int maxGraphExpansions) {
+  public AnalyzingSuggester(Analyzer indexAnalyzer, Analyzer queryAnalyzer, int options, int maxSurfaceFormsPerAnalyzedForm, int maxGraphExpansions,
+      boolean preservePositionIncrements) {
     this.indexAnalyzer = indexAnalyzer;
     this.queryAnalyzer = queryAnalyzer;
     if ((options & ~(EXACT_FIRST | PRESERVE_SEP)) != 0) {
@@ -244,16 +245,11 @@ public class AnalyzingSuggester extends Lookup {
       throw new IllegalArgumentException("maxGraphExpansions must -1 (no limit) or > 0 (got: " + maxGraphExpansions + ")");
     }
     this.maxGraphExpansions = maxGraphExpansions;
-    preservePositionIncrements = true;
-  }
-
-  /** Whether to take position holes (position increment > 1) into account when
-   *  building the automaton, <code>true</code> by default. */
-  public void setPreservePositionIncrements(boolean preservePositionIncrements) {
     this.preservePositionIncrements = preservePositionIncrements;
   }
 
   /** Returns byte size of the underlying FST. */
+  @Override
   public long sizeInBytes() {
     return fst == null ? 0 : fst.sizeInBytes();
   }
@@ -307,44 +303,14 @@ public class AnalyzingSuggester extends Lookup {
     }
   }
 
-  /** Just escapes the 0xff byte (which we still for SEP). */
-  private static final class  EscapingTokenStreamToAutomaton extends TokenStreamToAutomaton {
-
-    final BytesRef spare = new BytesRef();
-
-    @Override
-    protected BytesRef changeToken(BytesRef in) {
-      int upto = 0;
-      for(int i=0;i<in.length;i++) {
-        byte b = in.bytes[in.offset+i];
-        if (b == (byte) 0xff) {
-          if (spare.bytes.length == upto) {
-            spare.grow(upto+2);
-          }
-          spare.bytes[upto++] = (byte) 0xff;
-          spare.bytes[upto++] = b;
-        } else {
-          if (spare.bytes.length == upto) {
-            spare.grow(upto+1);
-          }
-          spare.bytes[upto++] = b;
-        }
-      }
-      spare.offset = 0;
-      spare.length = upto;
-      return spare;
-    }
+  /** Used by subclass to change the lookup automaton, if
+   *  necessary. */
+  protected Automaton convertAutomaton(Automaton a) {
+    return a;
   }
-
+  
   TokenStreamToAutomaton getTokenStreamToAutomaton() {
-    final TokenStreamToAutomaton tsta;
-    if (preserveSep) {
-      tsta = new EscapingTokenStreamToAutomaton();
-    } else {
-      // When we're not preserving sep, we don't steal 0xff
-      // byte, so we don't need to do any escaping:
-      tsta = new TokenStreamToAutomaton();
-    }
+    final TokenStreamToAutomaton tsta = new TokenStreamToAutomaton();
     tsta.setPreservePositionIncrements(preservePositionIncrements);
     return tsta;
   }
@@ -380,11 +346,14 @@ public class AnalyzingSuggester extends Lookup {
       if (cmp != 0) {
         return cmp;
       }
+      readerA.skipBytes(scratchA.length);
+      readerB.skipBytes(scratchB.length);
 
       // Next by cost:
       long aCost = readerA.readInt();
       long bCost = readerB.readInt();
-
+      assert decodeWeight(aCost) >= 0;
+      assert decodeWeight(bCost) >= 0;
       if (aCost < bCost) {
         return -1;
       } else if (aCost > bCost) {
@@ -393,42 +362,29 @@ public class AnalyzingSuggester extends Lookup {
 
       // Finally by surface form:
       if (hasPayloads) {
-        readerA.setPosition(readerA.getPosition() + scratchA.length);
         scratchA.length = readerA.readShort();
-        scratchA.offset = readerA.getPosition();
-        readerB.setPosition(readerB.getPosition() + scratchB.length);
         scratchB.length = readerB.readShort();
+        scratchA.offset = readerA.getPosition();
         scratchB.offset = readerB.getPosition();
       } else {
         scratchA.offset = readerA.getPosition();
-        scratchA.length = a.length - scratchA.offset;
         scratchB.offset = readerB.getPosition();
+        scratchA.length = a.length - scratchA.offset;
         scratchB.length = b.length - scratchB.offset;
       }
-
-      cmp = scratchA.compareTo(scratchB);
-      if (cmp != 0) {
-        return cmp;
-      }
-
-      return 0;
+   
+      return scratchA.compareTo(scratchB);
     }
-  };
+  }
 
   @Override
-  public void build(TermFreqIterator iterator) throws IOException {
+  public void build(InputIterator iterator) throws IOException {
     String prefix = getClass().getSimpleName();
     File directory = Sort.defaultTempDir();
     File tempInput = File.createTempFile(prefix, ".input", directory);
     File tempSorted = File.createTempFile(prefix, ".sorted", directory);
 
-    TermFreqPayloadIterator payloads;
-    if (iterator instanceof TermFreqPayloadIterator) {
-      payloads = (TermFreqPayloadIterator) iterator;
-    } else {
-      payloads = null;
-    }
-    hasPayloads = payloads != null;
+    hasPayloads = iterator.hasPayloads();
 
     Sort.ByteSequencesWriter writer = new Sort.ByteSequencesWriter(tempInput);
     Sort.ByteSequencesReader reader = null;
@@ -437,6 +393,7 @@ public class AnalyzingSuggester extends Lookup {
     TokenStreamToAutomaton ts2a = getTokenStreamToAutomaton();
 
     boolean success = false;
+    count = 0;
     byte buffer[] = new byte[8];
     try {
       ByteArrayDataOutput output = new ByteArrayDataOutput(buffer);
@@ -467,7 +424,7 @@ public class AnalyzingSuggester extends Lookup {
             if (surfaceForm.length > (Short.MAX_VALUE-2)) {
               throw new IllegalArgumentException("cannot handle surface form > " + (Short.MAX_VALUE-2) + " in length (got " + surfaceForm.length + ")");
             }
-            payload = payloads.payload();
+            payload = iterator.payload();
             // payload + surfaceLength (short)
             requiredLength += payload.length + 2;
           } else {
@@ -501,11 +458,12 @@ public class AnalyzingSuggester extends Lookup {
 
           writer.write(buffer, 0, output.getPosition());
         }
+        count++;
       }
       writer.close();
 
       // Sort all input/output pairs (required by FST.Builder):
-      new Sort(new AnalyzingComparator(payloads != null)).sort(tempInput, tempSorted);
+      new Sort(new AnalyzingComparator(hasPayloads)).sort(tempInput, tempSorted);
 
       // Free disk space:
       tempInput.delete();
@@ -614,32 +572,24 @@ public class AnalyzingSuggester extends Lookup {
   }
 
   @Override
-  public boolean store(OutputStream output) throws IOException {
-    DataOutput dataOut = new OutputStreamDataOutput(output);
-    try {
-      if (fst == null) {
-        return false;
-      }
-
-      fst.save(dataOut);
-      dataOut.writeVInt(maxAnalyzedPathsForOneInput);
-      dataOut.writeByte((byte) (hasPayloads ? 1 : 0));
-    } finally {
-      IOUtils.close(output);
+  public boolean store(DataOutput output) throws IOException {
+    output.writeVLong(count);
+    if (fst == null) {
+      return false;
     }
+
+    fst.save(output);
+    output.writeVInt(maxAnalyzedPathsForOneInput);
+    output.writeByte((byte) (hasPayloads ? 1 : 0));
     return true;
   }
 
   @Override
-  public boolean load(InputStream input) throws IOException {
-    DataInput dataIn = new InputStreamDataInput(input);
-    try {
-      this.fst = new FST<Pair<Long,BytesRef>>(dataIn, new PairOutputs<Long,BytesRef>(PositiveIntOutputs.getSingleton(), ByteSequenceOutputs.getSingleton()));
-      maxAnalyzedPathsForOneInput = dataIn.readVInt();
-      hasPayloads = dataIn.readByte() == 1;
-    } finally {
-      IOUtils.close(input);
-    }
+  public boolean load(DataInput input) throws IOException {
+    count = input.readVLong();
+    this.fst = new FST<Pair<Long,BytesRef>>(input, new PairOutputs<Long,BytesRef>(PositiveIntOutputs.getSingleton(), ByteSequenceOutputs.getSingleton()));
+    maxAnalyzedPathsForOneInput = input.readVInt();
+    hasPayloads = input.readByte() == 1;
     return true;
   }
 
@@ -655,9 +605,8 @@ public class AnalyzingSuggester extends Lookup {
       }
       assert sepIndex != -1;
       spare.grow(sepIndex);
-      int payloadLen = output2.length - sepIndex - 1;
-      output2.length = sepIndex;
-      UnicodeUtil.UTF8toUTF16(output2, spare);
+      final int payloadLen = output2.length - sepIndex - 1;
+      UnicodeUtil.UTF8toUTF16(output2.bytes, output2.offset, sepIndex, spare);
       BytesRef payload = new BytesRef(payloadLen);
       System.arraycopy(output2.bytes, sepIndex+1, payload.bytes, 0, payloadLen);
       payload.length = payloadLen;
@@ -700,6 +649,14 @@ public class AnalyzingSuggester extends Lookup {
     }
 
     //System.out.println("lookup key=" + key + " num=" + num);
+    for (int i = 0; i < key.length(); i++) {
+      if (key.charAt(i) == 0x1E) {
+        throw new IllegalArgumentException("lookup key cannot contain HOLE character U+001E; this character is reserved");
+      }
+      if (key.charAt(i) == 0x1F) {
+        throw new IllegalArgumentException("lookup key cannot contain unit separator character U+001F; this character is reserved");
+      }
+    }
     final BytesRef utf8Key = new BytesRef(key);
     try {
 
@@ -721,7 +678,7 @@ public class AnalyzingSuggester extends Lookup {
 
       final List<LookupResult> results = new ArrayList<LookupResult>();
 
-      List<FSTUtil.Path<Pair<Long,BytesRef>>> prefixPaths = FSTUtil.intersectPrefixPaths(lookupAutomaton, fst);
+      List<FSTUtil.Path<Pair<Long,BytesRef>>> prefixPaths = FSTUtil.intersectPrefixPaths(convertAutomaton(lookupAutomaton), fst);
 
       if (exactFirst) {
 
@@ -845,6 +802,11 @@ public class AnalyzingSuggester extends Lookup {
       throw new RuntimeException(bogus);
     }
   }
+  
+  @Override
+  public long getCount() {
+    return count;
+  }
 
   /** Returns all prefix paths to initialize the search. */
   protected List<FSTUtil.Path<Pair<Long,BytesRef>>> getFullPrefixPaths(List<FSTUtil.Path<Pair<Long,BytesRef>>> prefixPaths,
@@ -855,16 +817,18 @@ public class AnalyzingSuggester extends Lookup {
   }
   
   final Set<IntsRef> toFiniteStrings(final BytesRef surfaceForm, final TokenStreamToAutomaton ts2a) throws IOException {
- // Analyze surface form:
-    TokenStream ts = indexAnalyzer.tokenStream("", new StringReader(surfaceForm.utf8ToString()));
+    // Analyze surface form:
+    Automaton automaton = null;
+    try (TokenStream ts = indexAnalyzer.tokenStream("", surfaceForm.utf8ToString())) {
 
-    // Create corresponding automaton: labels are bytes
-    // from each analyzed token, with byte 0 used as
-    // separator between tokens:
-    Automaton automaton = ts2a.toAutomaton(ts);
-    ts.close();
+      // Create corresponding automaton: labels are bytes
+      // from each analyzed token, with byte 0 used as
+      // separator between tokens:
+      automaton = ts2a.toAutomaton(ts);
+    }
 
     replaceSep(automaton);
+    automaton = convertAutomaton(automaton);
 
     assert SpecialOperations.isFinite(automaton);
 
@@ -881,9 +845,10 @@ public class AnalyzingSuggester extends Lookup {
   final Automaton toLookupAutomaton(final CharSequence key) throws IOException {
     // TODO: is there a Reader from a CharSequence?
     // Turn tokenstream into automaton:
-    TokenStream ts = queryAnalyzer.tokenStream("", new StringReader(key.toString()));
-    Automaton automaton = (getTokenStreamToAutomaton()).toAutomaton(ts);
-    ts.close();
+    Automaton automaton = null;
+    try (TokenStream ts = queryAnalyzer.tokenStream("", key.toString())) {
+      automaton = (getTokenStreamToAutomaton()).toAutomaton(ts);
+    }
 
     // TODO: we could use the end offset to "guess"
     // whether the final token was a partial token; this

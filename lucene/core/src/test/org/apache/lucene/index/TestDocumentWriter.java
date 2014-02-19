@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -35,7 +34,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestDocumentWriter extends LuceneTestCase {
   private Directory dir;
@@ -62,10 +62,10 @@ public class TestDocumentWriter extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     writer.addDocument(testDoc);
     writer.commit();
-    SegmentInfoPerCommit info = writer.newestSegment();
+    SegmentCommitInfo info = writer.newestSegment();
     writer.close();
     //After adding the document, we should be able to read it back in
-    SegmentReader reader = new SegmentReader(info, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random()));
+    SegmentReader reader = new SegmentReader(info, newIOContext(random()));
     assertTrue(reader != null);
     StoredDocument doc = reader.document(0);
     assertTrue(doc != null);
@@ -106,8 +106,8 @@ public class TestDocumentWriter extends LuceneTestCase {
   public void testPositionIncrementGap() throws IOException {
     Analyzer analyzer = new Analyzer() {
       @Override
-      public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        return new TokenStreamComponents(new MockTokenizer(reader, MockTokenizer.WHITESPACE, false));
+      public TokenStreamComponents createComponents(String fieldName) {
+        return new TokenStreamComponents(new MockTokenizer(MockTokenizer.WHITESPACE, false));
       }
 
       @Override
@@ -124,9 +124,9 @@ public class TestDocumentWriter extends LuceneTestCase {
 
     writer.addDocument(doc);
     writer.commit();
-    SegmentInfoPerCommit info = writer.newestSegment();
+    SegmentCommitInfo info = writer.newestSegment();
     writer.close();
-    SegmentReader reader = new SegmentReader(info, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random()));
+    SegmentReader reader = new SegmentReader(info, newIOContext(random()));
 
     DocsAndPositionsEnum termPositions = MultiFields.getTermPositionsEnum(reader, MultiFields.getLiveDocs(reader),
                                                                           "repeated", new BytesRef("repeated"));
@@ -141,8 +141,8 @@ public class TestDocumentWriter extends LuceneTestCase {
   public void testTokenReuse() throws IOException {
     Analyzer analyzer = new Analyzer() {
       @Override
-      public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      public TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         return new TokenStreamComponents(tokenizer, new TokenFilter(tokenizer) {
           boolean first = true;
           AttributeSource.State state;
@@ -196,9 +196,9 @@ public class TestDocumentWriter extends LuceneTestCase {
 
     writer.addDocument(doc);
     writer.commit();
-    SegmentInfoPerCommit info = writer.newestSegment();
+    SegmentCommitInfo info = writer.newestSegment();
     writer.close();
-    SegmentReader reader = new SegmentReader(info, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random()));
+    SegmentReader reader = new SegmentReader(info, newIOContext(random()));
 
     DocsAndPositionsEnum termPositions = MultiFields.getTermPositionsEnum(reader, reader.getLiveDocs(), "f1", new BytesRef("a"));
     assertTrue(termPositions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -239,9 +239,9 @@ public class TestDocumentWriter extends LuceneTestCase {
     
     writer.addDocument(doc);
     writer.commit();
-    SegmentInfoPerCommit info = writer.newestSegment();
+    SegmentCommitInfo info = writer.newestSegment();
     writer.close();
-    SegmentReader reader = new SegmentReader(info, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random()));
+    SegmentReader reader = new SegmentReader(info, newIOContext(random()));
 
     DocsAndPositionsEnum termPositions = reader.termPositionsEnum(new Term("preanalyzed", "term1"));
     assertTrue(termPositions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -283,7 +283,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.addDocument(doc);
     writer.close();
 
-    _TestUtil.checkIndex(dir);
+    TestUtil.checkIndex(dir);
 
     IndexReader reader = DirectoryReader.open(dir);
     // f1
@@ -324,7 +324,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.forceMerge(1); // be sure to have a single segment
     writer.close();
 
-    _TestUtil.checkIndex(dir);
+    TestUtil.checkIndex(dir);
 
     SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(dir));
     FieldInfos fi = reader.getFieldInfos();

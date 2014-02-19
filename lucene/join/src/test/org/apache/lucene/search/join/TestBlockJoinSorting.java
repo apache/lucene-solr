@@ -214,7 +214,7 @@ public class TestBlockJoinSorting extends LuceneTestCase {
     Filter childFilter = new QueryWrapperFilter(new PrefixQuery(new Term("field2")));
     ToParentBlockJoinQuery query = new ToParentBlockJoinQuery(
         new FilteredQuery(new MatchAllDocsQuery(), childFilter),
-        new CachingWrapperFilter(parentFilter),
+        new FixedBitSetCachingWrapperFilter(parentFilter),
         ScoreMode.None
     );
 
@@ -279,7 +279,7 @@ public class TestBlockJoinSorting extends LuceneTestCase {
     childFilter = new QueryWrapperFilter(new TermQuery((new Term("filter_1", "T"))));
     query = new ToParentBlockJoinQuery(
         new FilteredQuery(new MatchAllDocsQuery(), childFilter),
-        new CachingWrapperFilter(parentFilter),
+        new FixedBitSetCachingWrapperFilter(parentFilter),
         ScoreMode.None
     );
     sortField = new ToParentBlockJoinSortField(
@@ -305,7 +305,7 @@ public class TestBlockJoinSorting extends LuceneTestCase {
   }
 
   private Filter wrap(Filter filter) {
-    return random().nextBoolean() ? new CachingWrapperFilter(filter) : filter;
+    return random().nextBoolean() ? new FixedBitSetCachingWrapperFilter(filter) : filter;
   }
 
 }

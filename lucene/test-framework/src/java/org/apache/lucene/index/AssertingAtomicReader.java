@@ -185,9 +185,9 @@ public class AssertingAtomicReader extends FilterAtomicReader {
     }
 
     @Override
-    public SeekStatus seekCeil(BytesRef term, boolean useCache) throws IOException {
+    public SeekStatus seekCeil(BytesRef term) throws IOException {
       assert term.isValid();
-      SeekStatus result = super.seekCeil(term, useCache);
+      SeekStatus result = super.seekCeil(term);
       if (result == SeekStatus.END) {
         state = State.UNPOSITIONED;
       } else {
@@ -197,9 +197,9 @@ public class AssertingAtomicReader extends FilterAtomicReader {
     }
 
     @Override
-    public boolean seekExact(BytesRef text, boolean useCache) throws IOException {
+    public boolean seekExact(BytesRef text) throws IOException {
       assert text.isValid();
-      if (super.seekExact(text, useCache)) {
+      if (super.seekExact(text)) {
         state = State.POSITIONED;
         return true;
       } else {
@@ -438,14 +438,14 @@ public class AssertingAtomicReader extends FilterAtomicReader {
       this.in = in;
       this.maxDoc = maxDoc;
       this.valueCount = in.getValueCount();
-      assert valueCount >= 1 && valueCount <= maxDoc;
+      assert valueCount >= 0 && valueCount <= maxDoc;
     }
 
     @Override
     public int getOrd(int docID) {
       assert docID >= 0 && docID < maxDoc;
       int ord = in.getOrd(docID);
-      assert ord >= 0 && ord < valueCount;
+      assert ord >= -1 && ord < valueCount;
       return ord;
     }
 
@@ -606,6 +606,54 @@ public class AssertingAtomicReader extends FilterAtomicReader {
       assert fi == null || fi.hasNorms() == false;
       return null;
     }
+  }
+  
+  /** Wraps a Bits but with additional asserts */
+  public static class AssertingBits implements Bits {
+    final Bits in;
+    
+    public AssertingBits(Bits in) {
+      this.in = in;
+    }
+    
+    @Override
+    public boolean get(int index) {
+      assert index >= 0 && index < length();
+      return in.get(index);
+    }
+
+    @Override
+    public int length() {
+      return in.length();
+    }
+  }
+
+  @Override
+  public Bits getLiveDocs() {
+    Bits liveDocs = super.getLiveDocs();
+    if (liveDocs != null) {
+      assert maxDoc() == liveDocs.length();
+      liveDocs = new AssertingBits(liveDocs);
+    } else {
+      assert maxDoc() == numDocs();
+      assert !hasDeletions();
+    }
+    return liveDocs;
+  }
+
+  @Override
+  public Bits getDocsWithField(String field) throws IOException {
+    Bits docsWithField = super.getDocsWithField(field);
+    FieldInfo fi = getFieldInfos().fieldInfo(field);
+    if (docsWithField != null) {
+      assert fi != null;
+      assert fi.hasDocValues();
+      assert maxDoc() == docsWithField.length();
+      docsWithField = new AssertingBits(docsWithField);
+    } else {
+      assert fi == null || fi.hasDocValues() == false;
+    }
+    return docsWithField;
   }
 
   // this is the same hack as FCInvisible

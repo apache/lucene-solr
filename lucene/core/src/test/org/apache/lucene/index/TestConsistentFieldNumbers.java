@@ -29,7 +29,6 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.FailOnNonBulkMergesInfoStream;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 import org.junit.Test;
 
 public class TestConsistentFieldNumbers extends LuceneTestCase {
@@ -67,8 +66,8 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
       sis.read(dir);
       assertEquals(2, sis.size());
 
-      FieldInfos fis1 = _TestUtil.getFieldInfos(sis.info(0).info);
-      FieldInfos fis2 = _TestUtil.getFieldInfos(sis.info(1).info);
+      FieldInfos fis1 = SegmentReader.readFieldInfos(sis.info(0));
+      FieldInfos fis2 = SegmentReader.readFieldInfos(sis.info(1));
 
       assertEquals("f1", fis1.fieldInfo(0).name);
       assertEquals("f2", fis1.fieldInfo(1).name);
@@ -85,7 +84,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
       sis.read(dir);
       assertEquals(1, sis.size());
 
-      FieldInfos fis3 = _TestUtil.getFieldInfos(sis.info(0).info);
+      FieldInfos fis3 = SegmentReader.readFieldInfos(sis.info(0));
 
       assertEquals("f1", fis3.fieldInfo(0).name);
       assertEquals("f2", fis3.fieldInfo(1).name);
@@ -130,8 +129,8 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
     sis.read(dir1);
     assertEquals(2, sis.size());
 
-    FieldInfos fis1 = _TestUtil.getFieldInfos(sis.info(0).info);
-    FieldInfos fis2 = _TestUtil.getFieldInfos(sis.info(1).info);
+    FieldInfos fis1 = SegmentReader.readFieldInfos(sis.info(0));
+    FieldInfos fis2 = SegmentReader.readFieldInfos(sis.info(1));
 
     assertEquals("f1", fis1.fieldInfo(0).name);
     assertEquals("f2", fis1.fieldInfo(1).name);
@@ -161,7 +160,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
         SegmentInfos sis = new SegmentInfos();
         sis.read(dir);
         assertEquals(1, sis.size());
-        FieldInfos fis1 = _TestUtil.getFieldInfos(sis.info(0).info);
+        FieldInfos fis1 = SegmentReader.readFieldInfos(sis.info(0));
         assertEquals("f1", fis1.fieldInfo(0).name);
         assertEquals("f2", fis1.fieldInfo(1).name);
       }
@@ -180,8 +179,8 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
         SegmentInfos sis = new SegmentInfos();
         sis.read(dir);
         assertEquals(2, sis.size());
-        FieldInfos fis1 = _TestUtil.getFieldInfos(sis.info(0).info);
-        FieldInfos fis2 = _TestUtil.getFieldInfos(sis.info(1).info);
+        FieldInfos fis1 = SegmentReader.readFieldInfos(sis.info(0));
+        FieldInfos fis2 = SegmentReader.readFieldInfos(sis.info(1));
         assertEquals("f1", fis1.fieldInfo(0).name);
         assertEquals("f2", fis1.fieldInfo(1).name);
         assertEquals("f1", fis2.fieldInfo(0).name);
@@ -203,9 +202,9 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
         SegmentInfos sis = new SegmentInfos();
         sis.read(dir);
         assertEquals(3, sis.size());
-        FieldInfos fis1 = _TestUtil.getFieldInfos(sis.info(0).info);
-        FieldInfos fis2 = _TestUtil.getFieldInfos(sis.info(1).info);
-        FieldInfos fis3 = _TestUtil.getFieldInfos(sis.info(2).info);
+        FieldInfos fis1 = SegmentReader.readFieldInfos(sis.info(0));
+        FieldInfos fis2 = SegmentReader.readFieldInfos(sis.info(1));
+        FieldInfos fis3 = SegmentReader.readFieldInfos(sis.info(2));
         assertEquals("f1", fis1.fieldInfo(0).name);
         assertEquals("f2", fis1.fieldInfo(1).name);
         assertEquals("f1", fis2.fieldInfo(0).name);
@@ -237,7 +236,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
       SegmentInfos sis = new SegmentInfos();
       sis.read(dir);
       assertEquals(1, sis.size());
-      FieldInfos fis1 = _TestUtil.getFieldInfos(sis.info(0).info);
+      FieldInfos fis1 = SegmentReader.readFieldInfos(sis.info(0));
       assertEquals("f1", fis1.fieldInfo(0).name);
       assertEquals("f2", fis1.fieldInfo(1).name);
       assertEquals("f3", fis1.fieldInfo(2).name);
@@ -274,8 +273,8 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
 
     SegmentInfos sis = new SegmentInfos();
     sis.read(dir);
-    for (SegmentInfoPerCommit si : sis) {
-      FieldInfos fis = _TestUtil.getFieldInfos(si.info);
+    for (SegmentCommitInfo si : sis) {
+      FieldInfos fis = SegmentReader.readFieldInfos(si);
 
       for (FieldInfo fi : fis) {
         Field expected = getField(Integer.parseInt(fi.name));

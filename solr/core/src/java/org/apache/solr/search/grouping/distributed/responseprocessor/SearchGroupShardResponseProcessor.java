@@ -92,10 +92,15 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
           if (srsp.getSolrResponse() != null) {
             nl.add("time", srsp.getSolrResponse().getElapsedTime());
           }
-
+          if (srsp.getShardAddress() != null) {
+            nl.add("shardAddress", srsp.getShardAddress());
+          }
           shardInfo.add(srsp.getShard(), nl);
         }
         if (rb.req.getParams().getBool(ShardParams.SHARDS_TOLERANT, false) && srsp.getException() != null) {
+          if(rb.rsp.getResponseHeader().get("partialResults") == null) {
+            rb.rsp.getResponseHeader().add("partialResults", Boolean.TRUE);
+          }
           continue; // continue if there was an error and we're tolerant.  
         }
         maxElapsedTime = (int) Math.max(maxElapsedTime, srsp.getSolrResponse().getElapsedTime());

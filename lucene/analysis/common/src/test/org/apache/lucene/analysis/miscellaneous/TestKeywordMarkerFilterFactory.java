@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.miscellaneous;
 import java.io.Reader;
 import java.io.StringReader;
 
-import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.util.StringMockResourceLoader;
@@ -32,7 +31,7 @@ public class TestKeywordMarkerFilterFactory extends BaseTokenStreamFactoryTestCa
   
   public void testKeywords() throws Exception {
     Reader reader = new StringReader("dogs cats");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("KeywordMarker", TEST_VERSION_CURRENT,
         new StringMockResourceLoader("cats"),
         "protected", "protwords.txt").create(stream);
@@ -42,7 +41,7 @@ public class TestKeywordMarkerFilterFactory extends BaseTokenStreamFactoryTestCa
   
   public void testKeywords2() throws Exception {
     Reader reader = new StringReader("dogs cats");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("KeywordMarker",
         "pattern", "cats|Dogs").create(stream);
     stream = tokenFilterFactory("PorterStem").create(stream);
@@ -51,7 +50,7 @@ public class TestKeywordMarkerFilterFactory extends BaseTokenStreamFactoryTestCa
   
   public void testKeywordsMixed() throws Exception {
     Reader reader = new StringReader("dogs cats birds");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("KeywordMarker", TEST_VERSION_CURRENT,
         new StringMockResourceLoader("cats"),
         "protected", "protwords.txt",
@@ -62,7 +61,7 @@ public class TestKeywordMarkerFilterFactory extends BaseTokenStreamFactoryTestCa
   
   public void testKeywordsCaseInsensitive() throws Exception {
     Reader reader = new StringReader("dogs cats Cats");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("KeywordMarker", TEST_VERSION_CURRENT,
         new StringMockResourceLoader("cats"),
         "protected", "protwords.txt",
@@ -73,7 +72,7 @@ public class TestKeywordMarkerFilterFactory extends BaseTokenStreamFactoryTestCa
   
   public void testKeywordsCaseInsensitive2() throws Exception {
     Reader reader = new StringReader("dogs cats Cats");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("KeywordMarker",
         "pattern", "Cats",
         "ignoreCase", "true").create(stream);
@@ -83,7 +82,7 @@ public class TestKeywordMarkerFilterFactory extends BaseTokenStreamFactoryTestCa
   
   public void testKeywordsCaseInsensitiveMixed() throws Exception {
     Reader reader = new StringReader("dogs cats Cats Birds birds");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("KeywordMarker", TEST_VERSION_CURRENT,
         new StringMockResourceLoader("cats"),
         "protected", "protwords.txt",

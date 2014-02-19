@@ -34,8 +34,8 @@ public class TestLimitTokenPositionFilter extends BaseTokenStreamTestCase {
     for (final boolean consumeAll : new boolean[] { true, false }) {
       Analyzer a = new Analyzer() {
         @Override
-        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-          MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        protected TokenStreamComponents createComponents(String fieldName) {
+          MockTokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
           // if we are consuming all tokens, we can use the checks, otherwise we can't
           tokenizer.setEnableChecks(consumeAll);
           return new TokenStreamComponents(tokenizer, new LimitTokenPositionFilter(tokenizer, 2, consumeAll));
@@ -43,23 +43,23 @@ public class TestLimitTokenPositionFilter extends BaseTokenStreamTestCase {
       };
 
       // dont use assertAnalyzesTo here, as the end offset is not the end of the string (unless consumeAll is true, in which case its correct)!
-      assertTokenStreamContents(a.tokenStream("dummy", new StringReader("1  2     3  4  5")), 
+      assertTokenStreamContents(a.tokenStream("dummy", "1  2     3  4  5"), 
                                 new String[] { "1", "2" }, new int[] { 0, 3 }, new int[] { 1, 4 }, consumeAll ? 16 : null);
       assertTokenStreamContents(a.tokenStream("dummy", new StringReader("1 2 3 4 5")), 
                                 new String[] { "1", "2" }, new int[] { 0, 2 }, new int[] { 1, 3 }, consumeAll ? 9 : null);
 
       // less than the limit, ensure we behave correctly
-      assertTokenStreamContents(a.tokenStream("dummy", new StringReader("1  ")),
+      assertTokenStreamContents(a.tokenStream("dummy", "1  "),
                                 new String[] { "1" }, new int[] { 0 }, new int[] { 1 }, consumeAll ? 3 : null);
                                                                                    
       // equal to limit
-      assertTokenStreamContents(a.tokenStream("dummy", new StringReader("1  2  ")), 
+      assertTokenStreamContents(a.tokenStream("dummy", "1  2  "), 
                                 new String[] { "1", "2" }, new int[] { 0, 3 }, new int[] { 1, 4 }, consumeAll ? 6 : null);
     }
   }
   
   public void testMaxPosition3WithSynomyms() throws IOException {
-    MockTokenizer tokenizer = new MockTokenizer(new StringReader("one two three four five"), MockTokenizer.WHITESPACE, false);
+    MockTokenizer tokenizer = whitespaceMockTokenizer("one two three four five");
     tokenizer.setEnableChecks(false); // LimitTokenPositionFilter doesn't consume the entire stream that it wraps
     
     SynonymMap.Builder builder = new SynonymMap.Builder(true);

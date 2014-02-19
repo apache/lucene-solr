@@ -350,4 +350,8 @@ public class ZkTestServer {
   public void setTheTickTime(int theTickTime) {
     this.theTickTime = theTickTime;
   }
+
+  public String getZkDir() {
+    return zkDir;
+  }
 }

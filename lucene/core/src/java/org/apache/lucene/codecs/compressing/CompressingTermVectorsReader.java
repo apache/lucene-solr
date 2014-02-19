@@ -31,7 +31,6 @@ import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -722,11 +721,6 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     }
 
     @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
-    }
-
-    @Override
     public long size() throws IOException {
       return numTerms;
     }
@@ -744,6 +738,11 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     @Override
     public int getDocCount() throws IOException {
       return 1;
+    }
+
+    @Override
+    public boolean hasFreqs() {
+      return true;
     }
 
     @Override
@@ -819,12 +818,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     }
 
     @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
-    }
-
-    @Override
-    public SeekStatus seekCeil(BytesRef text, boolean useCache)
+    public SeekStatus seekCeil(BytesRef text)
         throws IOException {
       if (ord < numTerms && ord >= 0) {
         final int cmp = term().compareTo(text);
@@ -851,16 +845,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
 
     @Override
     public void seekExact(long ord) throws IOException {
-      if (ord < -1 || ord >= numTerms) {
-        throw new IOException("ord is out of range: ord=" + ord + ", numTerms=" + numTerms);
-      }
-      if (ord < this.ord) {
-        reset();
-      }
-      for (int i = this.ord; i < ord; ++i) {
-        next();
-      }
-      assert ord == this.ord();
+      throw new UnsupportedOperationException();
     }
 
     @Override
@@ -870,7 +855,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
 
     @Override
     public long ord() throws IOException {
-      return ord;
+      throw new UnsupportedOperationException();
     }
 
     @Override
@@ -1048,6 +1033,11 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       sum += el;
     }
     return sum;
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return indexReader.ramBytesUsed();
   }
 
 }

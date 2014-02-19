@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 public class TestHunspellStemFilterFactory extends BaseTokenStreamFactoryTestCase {
   public void testStemming() throws Exception {
     Reader reader = new StringReader("abc");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("HunspellStem",
         "dictionary", "test.dic",
         "affix", "test.aff").create(stream);

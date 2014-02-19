@@ -25,6 +25,7 @@ import junit.framework.Assert;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.AllDeletedFilterReader;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
@@ -38,7 +39,6 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 
 import static org.apache.lucene.util.LuceneTestCase.TEST_VERSION_CURRENT;
 
@@ -132,7 +132,7 @@ public class QueryUtils {
   
   public static void purgeFieldCache(IndexReader r) throws IOException {
     // this is just a hack, to get an atomic reader that contains all subreaders for insanity checks
-    FieldCache.DEFAULT.purge(SlowCompositeReaderWrapper.wrap(r));
+    FieldCache.DEFAULT.purgeByCacheKey(SlowCompositeReaderWrapper.wrap(r).getCoreCacheKey());
   }
   
   /** This is a MultiReader that can be used for randomly wrapping other readers
@@ -193,7 +193,7 @@ public class QueryUtils {
   static final IndexReader[] emptyReaders = new IndexReader[8];
   static {
     try {
-      emptyReaders[0] = makeEmptyIndex(new Random(0), 0);
+      emptyReaders[0] = new MultiReader();
       emptyReaders[4] = makeEmptyIndex(new Random(0), 4);
       emptyReaders[5] = makeEmptyIndex(new Random(0), 5);
       emptyReaders[7] = makeEmptyIndex(new Random(0), 7);
@@ -202,31 +202,18 @@ public class QueryUtils {
     }
   }
 
-  private static DirectoryReader makeEmptyIndex(Random random, final int numDeletedDocs) 
-    throws IOException {
+  private static IndexReader makeEmptyIndex(Random random, final int numDocs) throws IOException {
+    assert numDocs > 0;
     Directory d = new MockDirectoryWrapper(random, new RAMDirectory());
-      IndexWriter w = new IndexWriter(d, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
-      for (int i = 0; i < numDeletedDocs; i++) {
-        w.addDocument(new Document());
-      }
-      w.commit();
-      w.deleteDocuments( new MatchAllDocsQuery() );
-      _TestUtil.keepFullyDeletedSegments(w);
-      w.commit();
-
-      if (0 < numDeletedDocs)
-        Assert.assertTrue("writer has no deletions", w.hasDeletions());
-
-      Assert.assertEquals("writer is missing some deleted docs", 
-                          numDeletedDocs, w.maxDoc());
-      Assert.assertEquals("writer has non-deleted docs", 
-                          0, w.numDocs());
-      w.close();
-      DirectoryReader r = DirectoryReader.open(d);
-      Assert.assertEquals("reader has wrong number of deleted docs", 
-                          numDeletedDocs, r.numDeletedDocs());
-      return r;
+    IndexWriter w = new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    for (int i = 0; i < numDocs; i++) {
+      w.addDocument(new Document());
+    }
+    w.forceMerge(1);
+    w.commit();
+    w.close();
+    DirectoryReader reader = DirectoryReader.open(d);
+    return new AllDeletedFilterReader(LuceneTestCase.getOnlySegmentReader(reader));
   }
 
   /** alternate scorer skipTo(),skipTo(),next(),next(),skipTo(),skipTo(), etc

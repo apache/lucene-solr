@@ -138,33 +138,34 @@ public class BlockDirectory extends Directory {
   }
   
   static class CachedIndexInput extends CustomBufferedIndexInput {
-    
-    private IndexInput _source;
-    private int _blockSize;
-    private long _fileLength;
-    private String _cacheName;
-    private Cache _cache;
+    private final Store store;
+    private IndexInput source;
+    private final int blockSize;
+    private final long fileLength;
+    private final String cacheName;
+    private final Cache cache;
     
     public CachedIndexInput(IndexInput source, int blockSize, String name,
         String cacheName, Cache cache, int bufferSize) {
       super(name, bufferSize);
-      _source = source;
-      _blockSize = blockSize;
-      _fileLength = source.length();
-      _cacheName = cacheName;
-      _cache = cache;
+      this.source = source;
+      this.blockSize = blockSize;
+      fileLength = source.length();
+      this.cacheName = cacheName;
+      this.cache = cache;
+      store = BufferStore.instance(blockSize);
     }
     
     @Override
     public IndexInput clone() {
       CachedIndexInput clone = (CachedIndexInput) super.clone();
-      clone._source = (IndexInput) _source.clone();
+      clone.source = (IndexInput) source.clone();
       return clone;
     }
     
     @Override
     public long length() {
-      return _source.length();
+      return source.length();
     }
     
     @Override
@@ -186,7 +187,7 @@ public class BlockDirectory extends Directory {
       // read whole block into cache and then provide needed data
       long blockId = getBlock(position);
       int blockOffset = (int) getPosition(position);
-      int lengthToReadInBlock = Math.min(len, _blockSize - blockOffset);
+      int lengthToReadInBlock = Math.min(len, blockSize - blockOffset);
       if (checkCache(blockId, blockOffset, b, off, lengthToReadInBlock)) {
         return lengthToReadInBlock;
       } else {
@@ -199,25 +200,25 @@ public class BlockDirectory extends Directory {
     private void readIntoCacheAndResult(long blockId, int blockOffset,
         byte[] b, int off, int lengthToReadInBlock) throws IOException {
       long position = getRealPosition(blockId, 0);
-      int length = (int) Math.min(_blockSize, _fileLength - position);
-      _source.seek(position);
+      int length = (int) Math.min(blockSize, fileLength - position);
+      source.seek(position);
       
-      byte[] buf = BufferStore.takeBuffer(_blockSize);
-      _source.readBytes(buf, 0, length);
+      byte[] buf = store.takeBuffer(blockSize);
+      source.readBytes(buf, 0, length);
       System.arraycopy(buf, blockOffset, b, off, lengthToReadInBlock);
-      _cache.update(_cacheName, blockId, 0, buf, 0, _blockSize);
-      BufferStore.putBuffer(buf);
+      cache.update(cacheName, blockId, 0, buf, 0, blockSize);
+      store.putBuffer(buf);
     }
     
     private boolean checkCache(long blockId, int blockOffset, byte[] b,
         int off, int lengthToReadInBlock) {
-      return _cache.fetch(_cacheName, blockId, blockOffset, b, off,
+      return cache.fetch(cacheName, blockId, blockOffset, b, off,
           lengthToReadInBlock);
     }
     
     @Override
     protected void closeInternal() throws IOException {
-      _source.close();
+      source.close();
     }
   }
   

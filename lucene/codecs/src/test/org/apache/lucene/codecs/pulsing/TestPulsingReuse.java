@@ -27,7 +27,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
@@ -36,7 +35,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Tests that pulsing codec reuses its enums and wrapped enums
@@ -45,7 +44,7 @@ public class TestPulsingReuse extends LuceneTestCase {
   // TODO: this is a basic test. this thing is complicated, add more
   public void testSophisticatedReuse() throws Exception {
     // we always run this test with pulsing codec.
-    Codec cp = _TestUtil.alwaysPostingsFormat(new Pulsing41PostingsFormat(1));
+    Codec cp = TestUtil.alwaysPostingsFormat(new Pulsing41PostingsFormat(1));
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setCodec(cp));
@@ -83,7 +82,7 @@ public class TestPulsingReuse extends LuceneTestCase {
   /** tests reuse with Pulsing1(Pulsing2(Standard)) */
   public void testNestedPulsing() throws Exception {
     // we always run this test with pulsing codec.
-    Codec cp = _TestUtil.alwaysPostingsFormat(new NestedPulsingPostingsFormat());
+    Codec cp = TestUtil.alwaysPostingsFormat(new NestedPulsingPostingsFormat());
     BaseDirectoryWrapper dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setCodec(cp));

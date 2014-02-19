@@ -34,8 +34,8 @@ public class TestNorwegianAnalyzer extends BaseTokenStreamTestCase {
   public void testBasics() throws IOException {
     Analyzer a = new NorwegianAnalyzer(TEST_VERSION_CURRENT);
     // stemming
-    checkOneTermReuse(a, "havnedistriktene", "havnedistrikt");
-    checkOneTermReuse(a, "havnedistrikter", "havnedistrikt");
+    checkOneTerm(a, "havnedistriktene", "havnedistrikt");
+    checkOneTerm(a, "havnedistrikter", "havnedistrikt");
     // stopword
     assertAnalyzesTo(a, "det", new String[] {});
   }
@@ -45,8 +45,8 @@ public class TestNorwegianAnalyzer extends BaseTokenStreamTestCase {
     CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("havnedistriktene"), false);
     Analyzer a = new NorwegianAnalyzer(TEST_VERSION_CURRENT, 
         NorwegianAnalyzer.getDefaultStopSet(), exclusionSet);
-    checkOneTermReuse(a, "havnedistriktene", "havnedistriktene");
-    checkOneTermReuse(a, "havnedistrikter", "havnedistrikt");
+    checkOneTerm(a, "havnedistriktene", "havnedistriktene");
+    checkOneTerm(a, "havnedistrikter", "havnedistrikt");
   }
   
   /** blast some random strings through the analyzer */

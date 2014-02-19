@@ -107,12 +107,14 @@ public abstract class FieldFragList {
       private final String text;  // unnecessary member, just exists for debugging purpose
       private final List<Toffs> termsOffsets;   // usually termsOffsets.size() == 1,
                               // but if position-gap > 1 and slop > 0 then size() could be greater than 1
-      private int seqnum;
+      private final int seqnum;
+      private final float boost; // used for scoring split WeightedPhraseInfos.
 
-      public SubInfo( String text, List<Toffs> termsOffsets, int seqnum ){
+      public SubInfo( String text, List<Toffs> termsOffsets, int seqnum, float boost ){
         this.text = text;
         this.termsOffsets = termsOffsets;
         this.seqnum = seqnum;
+        this.boost = boost;
       }
       
       public List<Toffs> getTermsOffsets(){
@@ -125,6 +127,10 @@ public abstract class FieldFragList {
 
       public String getText(){
         return text;
+      }
+
+      public float getBoost(){
+        return boost;
       }
 
       @Override

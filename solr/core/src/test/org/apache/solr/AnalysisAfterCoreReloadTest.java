@@ -121,7 +121,7 @@ public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
       String configDir = core.getResourceLoader().getConfigDir();
       FileUtils.moveFile(new File(configDir, "stopwords.txt"), new File(configDir, "stopwords.txt.bak"));
       File file = new File(configDir, "stopwords.txt");
-      FileUtils.writeStringToFile(file, stopwords);
+      FileUtils.writeStringToFile(file, stopwords, "UTF-8");
      
     } finally {
       core.close();

@@ -20,6 +20,7 @@ import org.apache.solr.common.util.NamedList;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,8 @@ public class FieldStatsInfo implements Serializable {
   Object max;
   Object sum;
   Long count;
+  Long countDistinct;
+  Collection<Object> distinctValues;
   Long missing;
   Object mean = null;
   Double sumOfSquares = null;
@@ -60,6 +63,12 @@ public class FieldStatsInfo implements Serializable {
       }
       else if( "count".equals( entry.getKey() ) ) {
         count = (Long)entry.getValue();
+      }
+      else if ("countDistinct".equals(entry.getKey())) {
+        countDistinct = (Long) entry.getValue();
+      }
+      else if ("distinctValues".equals(entry.getKey())) {
+        distinctValues = (Collection<Object>) entry.getValue();
       }
       else if( "missing".equals( entry.getKey() ) ) {
         missing = (Long)entry.getValue();
@@ -112,6 +121,12 @@ public class FieldStatsInfo implements Serializable {
     if( count != null ) {
       sb.append( " count:").append( count );
     }
+    if (countDistinct != null) {
+      sb.append(" countDistinct:").append(countDistinct);
+    }
+    if (distinctValues != null) {
+      sb.append(" distinctValues:").append(distinctValues);
+    }
     if( missing != null ) {
       sb.append( " missing:").append( missing );
     }
@@ -143,6 +158,14 @@ public class FieldStatsInfo implements Serializable {
 
   public Long getCount() {
     return count;
+  }
+
+  public Long getCountDistinct() {
+    return countDistinct;
+  }
+
+  public Collection<Object> getDistinctValues() {
+    return distinctValues;
   }
 
   public Long getMissing() {

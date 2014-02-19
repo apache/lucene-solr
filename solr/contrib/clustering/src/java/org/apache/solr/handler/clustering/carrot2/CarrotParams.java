@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableSet;
 
 /**
  * Carrot2 parameter mapping (recognized and mapped if passed via Solr configuration).
+ * @lucene.experimental
  */
 public final class CarrotParams {
 
@@ -43,8 +44,20 @@ public final class CarrotParams {
 
   public static String NUM_DESCRIPTIONS = CARROT_PREFIX + "numDescriptions";
   public static String OUTPUT_SUB_CLUSTERS = CARROT_PREFIX + "outputSubClusters";
-  public static String LEXICAL_RESOURCES_DIR = CARROT_PREFIX + "lexicalResourcesDir";
+
   public static String LANGUAGE_CODE_MAP = CARROT_PREFIX + "lcmap";
+
+  /**
+   * Use {@link #RESOURCES_DIR}.
+   */
+  @Deprecated
+  public static String LEXICAL_RESOURCES_DIR = CARROT_PREFIX + "lexicalResourcesDir";
+  
+  /**
+   * A replacement property pointing to Carrot<sup>2</sup> resources
+   * (a more generic version of the deprecated {@link #LEXICAL_RESOURCES_DIR}).
+   */
+  public static String RESOURCES_DIR = CARROT_PREFIX + "resourcesDir";
 
   static final Set<String> CARROT_PARAM_NAMES = ImmutableSet.of(
           ALGORITHM, 
@@ -62,6 +75,7 @@ public final class CarrotParams {
           NUM_DESCRIPTIONS, 
           OUTPUT_SUB_CLUSTERS, 
           LEXICAL_RESOURCES_DIR,
+          RESOURCES_DIR,
           LANGUAGE_CODE_MAP);
   
   /** No instances. */

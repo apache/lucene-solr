@@ -34,9 +34,13 @@
 
   <path id="classpath">
     <pathelement path="${analyzers-common.jar}"/>
-    <pathelement path="${tests.userdir}"/>
     <path refid="uimajars"/>
     <path refid="base.classpath"/>
+  </path>
+  
+  <path id="test.classpath">
+    <path refid="test.base.classpath"/>
+    <pathelement path="${tests.userdir}"/>
   </path>
 
   <target name="compile-core" depends="jar-analyzers-common, common.compile-core" />

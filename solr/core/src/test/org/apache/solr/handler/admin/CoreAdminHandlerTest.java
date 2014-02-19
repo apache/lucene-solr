@@ -17,26 +17,30 @@
 
 package org.apache.solr.handler.admin;
 
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.admin.CoreAdminHandler;
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import org.apache.commons.codec.Charsets;
+import org.apache.commons.io.FileUtils;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrXMLCoresLocator;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.SolrTestCaseJ4;
-
-import java.util.Map;
-import java.io.File;
-import java.io.IOException;
-
-import javax.xml.xpath.XPathExpressionException;
-
-import org.apache.commons.io.FileUtils;
-
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
-import org.xml.sax.SAXException;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
+
+import java.io.File;
+import java.util.Map;
 
 public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
   
@@ -44,7 +48,89 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
   }
-  
+
+  @Rule
+  public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
+
+  public String getCoreName() { return this.getClass().getName() + "_sys_vars"; }
+
+  @Test
+  public void testCreateWithSysVars() throws Exception {
+    useFactory(null); // I require FS-based indexes for this test.
+
+    final File workDir = new File(TEMP_DIR, getCoreName());
+
+    if (workDir.exists()) {
+      FileUtils.deleteDirectory(workDir);
+    }
+    assertTrue("Failed to mkdirs workDir", workDir.mkdirs());
+    String coreName = "with_sys_vars";
+    File instDir = new File(workDir, coreName);
+    File subHome = new File(instDir, "conf");
+    assertTrue("Failed to make subdirectory ", subHome.mkdirs());
+
+    // Be sure we pick up sysvars when we create this
+    String srcDir = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
+    FileUtils.copyFile(new File(srcDir, "schema-tiny.xml"), new File(subHome, "schema_ren.xml"));
+    FileUtils.copyFile(new File(srcDir, "solrconfig-minimal.xml"), new File(subHome, "solrconfig_ren.xml"));
+    FileUtils.copyFile(new File(srcDir, "solrconfig.snippet.randomindexconfig.xml"),
+        new File(subHome, "solrconfig.snippet.randomindexconfig.xml"));
+
+    final CoreContainer cores = h.getCoreContainer();
+    SolrXMLCoresLocator.NonPersistingLocator locator
+        = (SolrXMLCoresLocator.NonPersistingLocator) cores.getCoresLocator();
+
+    final CoreAdminHandler admin = new CoreAdminHandler(cores);
+
+    // create a new core (using CoreAdminHandler) w/ properties
+    System.setProperty("INSTDIR_TEST", instDir.getAbsolutePath());
+    System.setProperty("CONFIG_TEST", "solrconfig_ren.xml");
+    System.setProperty("SCHEMA_TEST", "schema_ren.xml");
+
+    File dataDir = new File(workDir.getAbsolutePath(), "data_diff");
+    System.setProperty("DATA_TEST", dataDir.getAbsolutePath());
+
+    SolrQueryResponse resp = new SolrQueryResponse();
+    admin.handleRequestBody
+        (req(CoreAdminParams.ACTION,
+            CoreAdminParams.CoreAdminAction.CREATE.toString(),
+            CoreAdminParams.NAME, getCoreName(),
+            CoreAdminParams.INSTANCE_DIR, "${INSTDIR_TEST}",
+            CoreAdminParams.CONFIG, "${CONFIG_TEST}",
+            CoreAdminParams.SCHEMA, "${SCHEMA_TEST}",
+            CoreAdminParams.DATA_DIR, "${DATA_TEST}"),
+            resp);
+    assertNull("Exception on create", resp.getException());
+
+    // First assert that these values are persisted.
+    h.validateXPath
+        (locator.xml
+            ,"/solr/cores/core[@name='" + getCoreName() + "' and @instanceDir='${INSTDIR_TEST}']"
+            ,"/solr/cores/core[@name='" + getCoreName() + "' and @dataDir='${DATA_TEST}']"
+            ,"/solr/cores/core[@name='" + getCoreName() + "' and @schema='${SCHEMA_TEST}']"
+            ,"/solr/cores/core[@name='" + getCoreName() + "' and @config='${CONFIG_TEST}']"
+        );
+
+    // Now assert that certain values are properly dereferenced in the process of creating the core, see
+    // SOLR-4982.
+
+    // Should NOT be a datadir named ${DATA_TEST} (literal). This is the bug after all
+    File badDir = new File(instDir, "${DATA_TEST}");
+    assertFalse("Should have substituted the sys var, found file " + badDir.getAbsolutePath(), badDir.exists());
+
+    // For the other 3 vars, we couldn't get past creating the core fi dereferencing didn't work correctly.
+
+    // Should have segments in the directory pointed to by the ${DATA_TEST}.
+    File test = new File(dataDir, "index");
+    assertTrue("Should have found index dir at " + test.getAbsolutePath(), test.exists());
+    test = new File(test,"segments.gen");
+    assertTrue("Should have found segments.gen at " + test.getAbsolutePath(), test.exists());
+
+    // Cleanup
+    FileUtils.deleteDirectory(workDir);
+
+  }
+
   @Test
   public void testCoreAdminHandler() throws Exception {
     final File workDir = new File(TEMP_DIR, this.getClass().getName());
@@ -55,7 +141,6 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     assertTrue("Failed to mkdirs workDir", workDir.mkdirs());
     
     final CoreContainer cores = h.getCoreContainer();
-    cores.setPersistent(false); // we'll do this explicitly as needed
 
     final CoreAdminHandler admin = new CoreAdminHandler(cores);
 
@@ -88,18 +173,13 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
        resp);
     assertNull("Exception on create", resp.getException());
 
-    // verify props are in persisted file
-
-    final File xml = new File(workDir, "persist-solr.xml");
-    cores.persistFile(xml);
-    
-    assertXmlFile
-      (xml
-       ,"/solr/cores/core[@name='props']/property[@name='hoss' and @value='man']"
-       ,"/solr/cores/core[@name='props']/property[@name='foo' and @value='baz']"
-       );
+    CoreDescriptor cd = cores.getCoreDescriptor("props");
+    assertNotNull("Core not added!", cd);
+    assertEquals(cd.getCoreProperty("hoss", null), "man");
+    assertEquals(cd.getCoreProperty("foo", null), "baz");
 
     // attempt to create a bogus core and confirm failure
+    ignoreException("Could not load config");
     try {
       resp = new SolrQueryResponse();
       admin.handleRequestBody
@@ -113,6 +193,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
       // :NOOP:
       // :TODO: CoreAdminHandler's exception messages are terrible, otherwise we could assert something useful here
     }
+    unIgnoreException("Could not load config");
 
     // check specifically for status of the failed core name
     resp = new SolrQueryResponse();
@@ -141,6 +222,72 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
                
     // :TODO: because of SOLR-3665 we can't ask for status from all cores
 
+    // cleanup
+    FileUtils.deleteDirectory(workDir);
+
   }
 
+  @Test
+  public void testDeleteInstanceDir() throws Exception  {
+    File solrHomeDirectory = new File(TEMP_DIR, getClass().getName() + "-corex-"
+        + System.currentTimeMillis());
+    solrHomeDirectory.mkdirs();
+    copySolrHomeToTemp(solrHomeDirectory, "corex", true);
+    File corex = new File(solrHomeDirectory, "corex");
+    FileUtils.write(new File(corex, "core.properties"), "", Charsets.UTF_8.toString());
+    JettySolrRunner runner = new JettySolrRunner(solrHomeDirectory.getAbsolutePath(), "/solr", 0);
+    HttpSolrServer server = null;
+    try {
+      runner.start();
+      server = new HttpSolrServer("http://localhost:" + runner.getLocalPort() + "/solr/corex");
+      server.setConnectionTimeout(SolrTestCaseJ4.DEFAULT_CONNECTION_TIMEOUT);
+      server.setSoTimeout(SolrTestCaseJ4.DEFAULT_CONNECTION_TIMEOUT);
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", "123");
+      server.add(doc);
+      server.commit();
+      server.shutdown();
+
+      server = new HttpSolrServer("http://localhost:" + runner.getLocalPort() + "/solr");
+      server.setConnectionTimeout(SolrTestCaseJ4.DEFAULT_CONNECTION_TIMEOUT);
+      server.setSoTimeout(SolrTestCaseJ4.DEFAULT_CONNECTION_TIMEOUT);
+      CoreAdminRequest.Unload req = new CoreAdminRequest.Unload(false);
+      req.setDeleteInstanceDir(true);
+      req.setCoreName("corex");
+      req.process(server);
+      server.shutdown();
+
+      runner.stop();
+
+      assertFalse("Instance directory exists after core unload with deleteInstanceDir=true : " + corex,
+          corex.exists());
+    } catch (Exception e) {
+      log.error("Exception testing core unload with deleteInstanceDir=true", e);
+    } finally {
+      if (server != null) {
+        server.shutdown();
+      }
+      if (!runner.isStopped())  {
+        runner.stop();
+      }
+      recurseDelete(solrHomeDirectory);
+    }
+  }
+
+  @Test
+  public void testNonexistentCoreReload() throws Exception {
+    final CoreAdminHandler admin = new CoreAdminHandler(h.getCoreContainer());
+    SolrQueryResponse resp = new SolrQueryResponse();
+
+    try {
+      admin.handleRequestBody(
+          req(CoreAdminParams.ACTION,
+              CoreAdminParams.CoreAdminAction.RELOAD.toString(),
+              CoreAdminParams.CORE, "non-existent-core")
+          , resp);
+      fail("Was able to successfully reload non-existent-core");
+    } catch (Exception e) {
+      assertEquals("Expected error message for non-existent core.", "Core with core name [non-existent-core] does not exist.", e.getMessage());
+    }
+  }
 }

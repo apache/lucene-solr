@@ -224,15 +224,22 @@ public class Config {
     }
   }
 
-  public Node getNode(String path, boolean errIfMissing) {
-   XPath xpath = xpathFactory.newXPath();
-   Node nd = null;
-   String xstr = normalize(path);
+  public Node getNode(String path, boolean errifMissing) {
+    return getNode(path, doc, errifMissing);
+  }
+
+  public Node getUnsubstitutedNode(String path, boolean errIfMissing) {
+    return getNode(path, origDoc, errIfMissing);
+  }
+
+  public Node getNode(String path, Document doc, boolean errIfMissing) {
+    XPath xpath = xpathFactory.newXPath();
+    String xstr = normalize(path);
 
     try {
-      nd = (Node)xpath.evaluate(xstr, doc, XPathConstants.NODE);
-
-      if (nd==null) {
+      NodeList nodes = (NodeList)xpath.evaluate(xstr, doc, 
+                                                XPathConstants.NODESET);
+      if (nodes==null || 0 == nodes.getLength() ) {
         if (errIfMissing) {
           throw new RuntimeException(name + " missing "+path);
         } else {
@@ -240,7 +247,11 @@ public class Config {
           return null;
         }
       }
-
+      if ( 1 < nodes.getLength() ) {
+        throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
+                                 name + " contains more than one value for config path: " + path);
+      }
+      Node nd = nodes.item(0);
       log.trace(name + ":" + path + "=" + nd);
       return nd;
 
@@ -249,7 +260,7 @@ public class Config {
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error in xpath:" + xstr + " for " + name,e);
     } catch (SolrException e) {
       throw(e);
-    } catch (Throwable e) {
+    } catch (Exception e) {
       SolrException.log(log,"Error in xpath",e);
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error in xpath:" + xstr+ " for " + name,e);
     }
@@ -279,7 +290,7 @@ public class Config {
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error in xpath:" + xstr + " for " + name,e);
     } catch (SolrException e) {
       throw(e);
-    } catch (Throwable e) {
+    } catch (Exception e) {
       SolrException.log(log,"Error in xpath",e);
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error in xpath:" + xstr+ " for " + name,e);
     }

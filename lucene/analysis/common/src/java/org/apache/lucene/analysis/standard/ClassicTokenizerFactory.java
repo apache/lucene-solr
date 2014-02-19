@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.standard;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
-import java.io.Reader;
 import java.util.Map;
 
 /**
@@ -46,8 +45,8 @@ public class ClassicTokenizerFactory extends TokenizerFactory {
   }
 
   @Override
-  public ClassicTokenizer create(AttributeFactory factory, Reader input) {
-    ClassicTokenizer tokenizer = new ClassicTokenizer(luceneMatchVersion, factory, input); 
+  public ClassicTokenizer create(AttributeFactory factory) {
+    ClassicTokenizer tokenizer = new ClassicTokenizer(luceneMatchVersion, factory);
     tokenizer.setMaxTokenLength(maxTokenLength);
     return tokenizer;
   }

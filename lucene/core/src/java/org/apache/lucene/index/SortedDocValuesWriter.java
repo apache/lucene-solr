@@ -30,18 +30,19 @@ import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.packed.AppendingLongBuffer;
+import org.apache.lucene.util.packed.AppendingDeltaPackedLongBuffer;
+import org.apache.lucene.util.packed.PackedInts;
 
 /** Buffers up pending byte[] per doc, deref and sorting via
  *  int ord, then flushes when segment flushes. */
 class SortedDocValuesWriter extends DocValuesWriter {
   final BytesRefHash hash;
-  private AppendingLongBuffer pending;
+  private AppendingDeltaPackedLongBuffer pending;
   private final Counter iwBytesUsed;
   private long bytesUsed; // this currently only tracks differences in 'pending'
   private final FieldInfo fieldInfo;
 
-  private static final BytesRef EMPTY = new BytesRef(BytesRef.EMPTY_BYTES);
+  private static final int EMPTY_ORD = -1;
 
   public SortedDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     this.fieldInfo = fieldInfo;
@@ -51,7 +52,7 @@ class SortedDocValuesWriter extends DocValuesWriter {
             new ByteBlockPool.DirectTrackingAllocator(iwBytesUsed)),
             BytesRefHash.DEFAULT_CAPACITY,
             new DirectBytesStartArray(BytesRefHash.DEFAULT_CAPACITY, iwBytesUsed));
-    pending = new AppendingLongBuffer();
+    pending = new AppendingDeltaPackedLongBuffer(PackedInts.COMPACT);
     bytesUsed = pending.ramBytesUsed();
     iwBytesUsed.addAndGet(bytesUsed);
   }
@@ -69,7 +70,7 @@ class SortedDocValuesWriter extends DocValuesWriter {
 
     // Fill in any holes:
     while(pending.size() < docID) {
-      addOneValue(EMPTY);
+      pending.add(EMPTY_ORD);
     }
 
     addOneValue(value);
@@ -78,8 +79,9 @@ class SortedDocValuesWriter extends DocValuesWriter {
   @Override
   public void finish(int maxDoc) {
     while(pending.size() < maxDoc) {
-      addOneValue(EMPTY);
+      pending.add(EMPTY_ORD);
     }
+    updateBytesUsed();
   }
 
   private void addOneValue(BytesRef value) {
@@ -176,7 +178,7 @@ class SortedDocValuesWriter extends DocValuesWriter {
   
   // iterates over the ords for each doc we have in ram
   private class OrdsIterator implements Iterator<Number> {
-    final AppendingLongBuffer.Iterator iter = pending.iterator();
+    final AppendingDeltaPackedLongBuffer.Iterator iter = pending.iterator();
     final int ordMap[];
     final int maxDoc;
     int docUpto;
@@ -199,8 +201,7 @@ class SortedDocValuesWriter extends DocValuesWriter {
       }
       int ord = (int) iter.next();
       docUpto++;
-      // TODO: make reusable Number
-      return ordMap[ord];
+      return ord == -1 ? ord : ordMap[ord];
     }
 
     @Override

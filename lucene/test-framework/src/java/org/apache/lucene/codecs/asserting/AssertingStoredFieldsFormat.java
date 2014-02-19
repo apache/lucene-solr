@@ -71,6 +71,11 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
     public StoredFieldsReader clone() {
       return new AssertingStoredFieldsReader(in.clone(), maxDoc);
     }
+
+    @Override
+    public long ramBytesUsed() {
+      return in.ramBytesUsed();
+    }
   }
 
   enum Status {
@@ -130,7 +135,6 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
     @Override
     public void close() throws IOException {
       in.close();
-      assert docStatus != Status.STARTED;
     }
   }
 }

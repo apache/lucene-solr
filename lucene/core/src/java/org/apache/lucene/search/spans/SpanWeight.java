@@ -52,7 +52,7 @@ public class SpanWeight extends Weight {
     final TermStatistics termStats[] = new TermStatistics[terms.size()];
     int i = 0;
     for (Term term : terms) {
-      TermContext state = TermContext.build(context, term, true);
+      TermContext state = TermContext.build(context, term);
       termStats[i] = searcher.termStatistics(term, state);
       termContexts.put(term, state);
       i++;

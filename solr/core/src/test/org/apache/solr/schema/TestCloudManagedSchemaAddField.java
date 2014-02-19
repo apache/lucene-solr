@@ -26,6 +26,8 @@ import org.restlet.ext.servlet.ServerServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.junit.BeforeClass;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedMap;
@@ -42,9 +44,15 @@ public class TestCloudManagedSchemaAddField extends AbstractFullDistribZkTestBas
     shardCount = 8;
   }
 
+  @BeforeClass
+  public static void initSysProperties() {
+    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("enable.update.log", "true");
+  }
+
   @Override
   protected String getCloudSolrConfig() {
-    return "solrconfig-tlog-mutable-managed-schema.xml";
+    return "solrconfig-managed-schema.xml";
   }
   
   @Override
@@ -92,7 +100,7 @@ public class TestCloudManagedSchemaAddField extends AbstractFullDistribZkTestBas
       }
         
       int maxAttempts = 20;
-      long retryPauseMillis = 10;
+      long retryPauseMillis = 20;
 
       for (RestTestHarness client : restTestHarnesses) {
         boolean stillTrying = true;

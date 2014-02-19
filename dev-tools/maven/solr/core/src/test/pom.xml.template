@@ -42,20 +42,20 @@
       <!-- dependencies are always ordered before inherited dependencies.       -->
       <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-test-framework</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>${project.groupId}</groupId>
+      <groupId>org.apache.solr</groupId>
       <artifactId>solr-test-framework</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.easymock</groupId>
-      <artifactId>easymock</artifactId>
+      <groupId>org.apache.solr</groupId>
+      <artifactId>solr-core</artifactId>
       <scope>test</scope>
     </dependency>
+@solr-core.internal.test.dependencies@
+@solr-core.external.test.dependencies@
   </dependencies>
   <build>
     <sourceDirectory/>
@@ -133,12 +133,11 @@
               <bundledSignatures>
                 <bundledSignature>jdk-unsafe</bundledSignature>
                 <bundledSignature>jdk-deprecated</bundledSignature>
-                <bundledSignature>commons-io-unsafe-${commons-io.version}</bundledSignature>
+                <bundledSignature>commons-io-unsafe-@commons-io:commons-io.version@</bundledSignature>
               </bundledSignatures>
               <signaturesFiles>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/base.txt</signaturesFile>
                 <signaturesFile>${top-level}/lucene/tools/forbiddenApis/servlet-api.txt</signaturesFile>
-                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/executors.txt</signaturesFile>
-                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/chars.txt</signaturesFile>
               </signaturesFiles>
             </configuration>
             <goals>

@@ -21,7 +21,6 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -30,9 +29,8 @@ import java.io.OutputStreamWriter;
 
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.lucene.benchmark.BenchmarkTestCase;
-import org.apache.lucene.benchmark.byTask.utils.StreamUtils;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -138,14 +136,14 @@ public class StreamUtilsTest extends BenchmarkTestCase {
   public void setUp() throws Exception {
     super.setUp();
     testDir = new File(getWorkDir(),"ContentSourceTest");
-    _TestUtil.rmDir(testDir);
+    TestUtil.rmDir(testDir);
     assertTrue(testDir.mkdirs());
   }
 
   @Override
   @After
   public void tearDown() throws Exception {
-    _TestUtil.rmDir(testDir);
+    TestUtil.rmDir(testDir);
     super.tearDown();
   }
 

@@ -18,12 +18,12 @@
 package org.apache.lucene.search.spell;
 
 import java.io.IOException;
-import java.util.Comparator;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.BytesRef;
 
@@ -56,11 +56,11 @@ public class HighFrequencyDictionary implements Dictionary {
   }
 
   @Override
-  public final BytesRefIterator getWordsIterator() throws IOException {
+  public final InputIterator getEntryIterator() throws IOException {
     return new HighFrequencyIterator();
   }
 
-  final class HighFrequencyIterator implements TermFreqIterator {
+  final class HighFrequencyIterator implements InputIterator {
     private final BytesRef spare = new BytesRef();
     private final TermsEnum termsEnum;
     private int minNumDocs;
@@ -101,12 +101,13 @@ public class HighFrequencyDictionary implements Dictionary {
     }
 
     @Override
-    public Comparator<BytesRef> getComparator() {
-      if (termsEnum == null) {
-        return null;
-      } else {
-        return termsEnum.getComparator();
-      }
+    public BytesRef payload() {
+      return null;
+    }
+
+    @Override
+    public boolean hasPayloads() {
+      return false;
     }
   }
 }

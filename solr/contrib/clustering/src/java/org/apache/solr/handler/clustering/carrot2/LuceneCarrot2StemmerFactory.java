@@ -48,6 +48,8 @@ import org.tartarus.snowball.ext.TurkishStemmer;
  * An implementation of Carrot2's {@link IStemmerFactory} based on Lucene's
  * APIs. Should the relevant Lucene APIs need to change, the changes can be made
  * in this class.
+ * 
+ * @lucene.experimental
  */
 public class LuceneCarrot2StemmerFactory implements IStemmerFactory {
   final static Logger logger = org.slf4j.LoggerFactory
@@ -222,7 +224,7 @@ public class LuceneCarrot2StemmerFactory implements IStemmerFactory {
     public static IStemmer createStemmer() {
       try {
         return new LuceneStemmerAdapter();
-      } catch (Throwable e) {
+      } catch (Exception e) {
         return IdentityStemmer.INSTANCE;
       }
     }

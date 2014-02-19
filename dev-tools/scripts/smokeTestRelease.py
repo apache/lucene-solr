@@ -249,8 +249,12 @@ def checkJARMetaData(desc, jarFile, svnRevision, version):
 def normSlashes(path):
   return path.replace(os.sep, '/')
     
-def checkAllJARs(topDir, project, svnRevision, version):
-  print('    verify JAR/WAR metadata...')  
+def checkAllJARs(topDir, project, svnRevision, version, tmpDir, baseURL):
+  print('    verify JAR metadata/identity/no javax.* or java.* classes...')
+  if project == 'solr':
+    luceneDistFilenames = dict()
+    for file in getBinaryDistFiles('lucene', tmpDir, version, baseURL):
+      luceneDistFilenames[os.path.basename(file)] = file
   for root, dirs, files in os.walk(topDir):
 
     normRoot = normSlashes(root)
@@ -262,7 +266,7 @@ def checkAllJARs(topDir, project, svnRevision, version):
     for file in files:
       if file.lower().endswith('.jar'):
         if project == 'solr':
-          if normRoot.endswith('/contrib/dataimporthandler/lib') and (file.startswith('mail-') or file.startswith('activation-')):
+          if (normRoot.endswith('/contrib/dataimporthandler/lib') and (file.startswith('mail-') or file.startswith('activation-'))) or (normRoot.endswith('/test-framework/lib') and file.startswith('jersey-')):
             print('      **WARNING**: skipping check of %s/%s: it has javax.* classes' % (root, file))
             continue
         else:
@@ -272,29 +276,54 @@ def checkAllJARs(topDir, project, svnRevision, version):
         noJavaPackageClasses('JAR file "%s"' % fullPath, fullPath)
         if file.lower().find('lucene') != -1 or file.lower().find('solr') != -1:
           checkJARMetaData('JAR file "%s"' % fullPath, fullPath, svnRevision, version)
-  
+        if project == 'solr' and file.lower().find('lucene') != -1:
+          jarFilename = os.path.basename(file)
+          if jarFilename not in luceneDistFilenames:
+            raise RuntimeError('Artifact %s is not present in Lucene binary distribution' % fullPath)
+          identical = filecmp.cmp(fullPath, luceneDistFilenames[jarFilename], shallow=False)
+          if not identical:
+            raise RuntimeError('Artifact %s is not identical to %s in Lucene binary distribution'
+                               % (fullPath, luceneDistFilenames[jarFilename]))
 
-def checkSolrWAR(warFileName, svnRevision, version):
+
+def checkSolrWAR(warFileName, svnRevision, version, tmpDir, baseURL):
 
   """
   Crawls for JARs inside the WAR and ensures there are no classes
   under java.* or javax.* namespace.
   """
 
-  print('    make sure WAR file has no javax.* or java.* classes...')
+  print('    verify WAR metadata/contained JAR identity/no javax.* or java.* classes...')
 
   checkJARMetaData(warFileName, warFileName, svnRevision, version)
+
+  distFilenames = dict()
+  for file in getBinaryDistFiles('lucene', tmpDir, version, baseURL):
+    distFilenames[os.path.basename(file)] = file
 
   with zipfile.ZipFile(warFileName, 'r') as z:
     for name in z.namelist():
       if name.endswith('.jar'):
+        jarInsideWarContents = z.read(name)
         noJavaPackageClasses('JAR file %s inside WAR file %s' % (name, warFileName),
-                             io.BytesIO(z.read(name)))
+                             io.BytesIO(jarInsideWarContents))
         if name.lower().find('lucene') != -1 or name.lower().find('solr') != -1:
           checkJARMetaData('JAR file %s inside WAR file %s' % (name, warFileName),
-                           io.BytesIO(z.read(name)),
+                           io.BytesIO(jarInsideWarContents),
                            svnRevision,
                            version)
+        if name.lower().find('lucene') != -1:              
+          jarInsideWarFilename = os.path.basename(name)
+          if jarInsideWarFilename not in distFilenames:
+            raise RuntimeError('Artifact %s in %s is not present in Lucene binary distribution'
+                              % (name, warFileName))
+          distJarName = distFilenames[jarInsideWarFilename]
+          with open(distJarName, "rb", buffering=0) as distJarFile:
+            distJarContents = distJarFile.readall()
+          if jarInsideWarContents != distJarContents:
+            raise RuntimeError('Artifact %s in %s is not identical to %s in Lucene binary distribution'
+                              % (name, warFileName, distJarName))
+          
         
 def checkSigs(project, urlString, version, tmpDir, isSigned):
 
@@ -575,7 +604,7 @@ def getDirEntries(urlString):
       if text == 'Parent Directory' or text == '..':
         return links[(i+1):]
 
-def unpackAndVerify(project, tmpDir, artifact, svnRevision, version, testArgs):
+def unpackAndVerify(project, tmpDir, artifact, svnRevision, version, testArgs, baseURL):
   destDir = '%s/unpack' % tmpDir
   if os.path.exists(destDir):
     shutil.rmtree(destDir)
@@ -595,14 +624,14 @@ def unpackAndVerify(project, tmpDir, artifact, svnRevision, version, testArgs):
     raise RuntimeError('unpack produced entries %s; expected only %s' % (l, expected))
 
   unpackPath = '%s/%s' % (destDir, expected)
-  verifyUnpacked(project, artifact, unpackPath, svnRevision, version, testArgs)
+  verifyUnpacked(project, artifact, unpackPath, svnRevision, version, testArgs, tmpDir, baseURL)
 
 LUCENE_NOTICE = None
 LUCENE_LICENSE = None
 SOLR_NOTICE = None
 SOLR_LICENSE = None
 
-def verifyUnpacked(project, artifact, unpackPath, svnRevision, version, testArgs):
+def verifyUnpacked(project, artifact, unpackPath, svnRevision, version, testArgs, tmpDir, baseURL):
   global LUCENE_NOTICE
   global LUCENE_LICENSE
   global SOLR_NOTICE
@@ -651,9 +680,9 @@ def verifyUnpacked(project, artifact, unpackPath, svnRevision, version, testArgs
 
   if project == 'lucene':
     # TODO: clean this up to not be a list of modules that we must maintain
-    extras = ('analysis', 'benchmark', 'classification', 'codecs', 'core', 'demo', 'docs', 'facet', 'grouping', 'highlighter', 'join', 'memory', 'misc', 'queries', 'queryparser', 'replicator', 'sandbox', 'spatial', 'suggest', 'test-framework', 'licenses')
+    extras = ('analysis', 'benchmark', 'classification', 'codecs', 'core', 'demo', 'docs', 'expressions', 'facet', 'grouping', 'highlighter', 'join', 'memory', 'misc', 'queries', 'queryparser', 'replicator', 'sandbox', 'spatial', 'suggest', 'test-framework', 'licenses')
     if isSrc:
-      extras += ('build.xml', 'common-build.xml', 'module-build.xml', 'ivy-settings.xml', 'backwards', 'tools', 'site')
+      extras += ('build.xml', 'common-build.xml', 'module-build.xml', 'ivy-settings.xml', 'ivy-versions.properties', 'backwards', 'tools', 'site')
   else:
     extras = ()
 
@@ -720,13 +749,13 @@ def verifyUnpacked(project, artifact, unpackPath, svnRevision, version, testArgs
 
   else:
 
-    checkAllJARs(os.getcwd(), project, svnRevision, version)
+    checkAllJARs(os.getcwd(), project, svnRevision, version, tmpDir, baseURL)
     
     if project == 'lucene':
       testDemo(isSrc, version, '1.7')
 
     else:
-      checkSolrWAR('%s/example/webapps/solr.war' % unpackPath, svnRevision, version)
+      checkSolrWAR('%s/example/webapps/solr.war' % unpackPath, svnRevision, version, tmpDir, baseURL)
 
       print('    copying unpacked distribution for Java 7 ...')
       java7UnpackPath = '%s-java7' %unpackPath
@@ -913,11 +942,10 @@ def checkMaven(baseURL, tmpDir, svnRevision, version, isSigned):
     if text == releaseBranchText:
       releaseBranchSvnURL = subURL
 
-  print('    get POM templates', end=' ')
   POMtemplates = defaultdict()
   getPOMtemplates(POMtemplates, tmpDir, releaseBranchSvnURL)
   print()
-  print('    download artifacts', end=' ')
+  print('    download artifacts')
   artifacts = {'lucene': [], 'solr': []}
   for project in ('lucene', 'solr'):
     artifactsURL = '%s/%s/maven/org/apache/%s' % (baseURL, project, project)
@@ -926,80 +954,56 @@ def checkMaven(baseURL, tmpDir, svnRevision, version, isSigned):
       os.makedirs(targetDir)
     crawl(artifacts[project], artifactsURL, targetDir)
   print()
-  print('    verify that each binary artifact has a deployed POM...')
   verifyPOMperBinaryArtifact(artifacts, version)
-  print('    verify that there is an artifact for each POM template...')
   verifyArtifactPerPOMtemplate(POMtemplates, artifacts, tmpDir, version)
-  print("    verify Maven artifacts' md5/sha1 digests...")
   verifyMavenDigests(artifacts)
-  print('    verify that all non-Mavenized deps are deployed...')
-  nonMavenizedDeps = dict()
-  checkNonMavenizedDeps(nonMavenizedDeps, POMtemplates, artifacts, tmpDir,
-                        version, releaseBranchSvnURL)
-  print('    check for javadoc and sources artifacts...')
-  checkJavadocAndSourceArtifacts(nonMavenizedDeps, artifacts, version)
-  print("    verify deployed POMs' coordinates...")
+  checkJavadocAndSourceArtifacts(artifacts, version)
   verifyDeployedPOMsCoordinates(artifacts, version)
   if isSigned:
-    print('    verify maven artifact sigs', end=' ')
     verifyMavenSigs(baseURL, tmpDir, artifacts)
 
-  distributionFiles = getDistributionsForMavenChecks(tmpDir, version, baseURL)
+  distFiles = getBinaryDistFilesForMavenChecks(tmpDir, version, baseURL)
+  checkIdenticalMavenArtifacts(distFiles, artifacts, version)
 
-  print('    verify that non-Mavenized deps are same as in the binary distribution...')
-  checkIdenticalNonMavenizedDeps(distributionFiles, nonMavenizedDeps)
-  print('    verify that Maven artifacts are same as in the binary distribution...')
-  checkIdenticalMavenArtifacts(distributionFiles, nonMavenizedDeps, artifacts, version)
+  checkAllJARs('%s/maven/org/apache/lucene' % tmpDir, 'lucene', svnRevision, version, tmpDir, baseURL)
+  checkAllJARs('%s/maven/org/apache/solr' % tmpDir, 'solr', svnRevision, version, tmpDir, baseURL)
 
-  checkAllJARs('%s/maven/org/apache/lucene' % tmpDir, 'lucene', svnRevision, version)
-  checkAllJARs('%s/maven/org/apache/solr' % tmpDir, 'solr', svnRevision, version)
-
-def getDistributionsForMavenChecks(tmpDir, version, baseURL):
-  distributionFiles = defaultdict()
+def getBinaryDistFilesForMavenChecks(tmpDir, version, baseURL):
+  distFiles = defaultdict()
   for project in ('lucene', 'solr'):
-    distribution = '%s-%s.tgz' % (project, version)
-    if not os.path.exists('%s/%s' % (tmpDir, distribution)):
-      distURL = '%s/%s/%s' % (baseURL, project, distribution)
-      print('    download %s...' % distribution, end=' ')
-      download(distribution, distURL, tmpDir)
-    destDir = '%s/unpack-%s-maven' % (tmpDir, project)
-    if os.path.exists(destDir):
-      shutil.rmtree(destDir)
-    os.makedirs(destDir)
-    os.chdir(destDir)
-    print('    unpack %s...' % distribution)
-    unpackLogFile = '%s/unpack-%s-maven-checks.log' % (tmpDir, distribution)
-    run('tar xzf %s/%s' % (tmpDir, distribution), unpackLogFile)
-    distributionFiles[project] = []
-    for root, dirs, files in os.walk(destDir):
-      distributionFiles[project].extend([os.path.join(root, file) for file in files])
+    distFiles[project] = getBinaryDistFiles(project, tmpDir, version, baseURL)
+  return distFiles
+    
+def getBinaryDistFiles(project, tmpDir, version, baseURL):
+  distribution = '%s-%s.tgz' % (project, version)
+  if not os.path.exists('%s/%s' % (tmpDir, distribution)):
+    distURL = '%s/%s/%s' % (baseURL, project, distribution)
+    print('    download %s...' % distribution, end=' ')
+    download(distribution, distURL, tmpDir)
+  destDir = '%s/unpack-%s-getBinaryDistFiles' % (tmpDir, project)
+  if os.path.exists(destDir):
+    shutil.rmtree(destDir)
+  os.makedirs(destDir)
+  os.chdir(destDir)
+  print('    unpack %s...' % distribution)
+  unpackLogFile = '%s/unpack-%s-getBinaryDistFiles.log' % (tmpDir, distribution)
+  run('tar xzf %s/%s' % (tmpDir, distribution), unpackLogFile)
+  distributionFiles = []
+  for root, dirs, files in os.walk(destDir):
+    distributionFiles.extend([os.path.join(root, file) for file in files])
   return distributionFiles
 
-def checkJavadocAndSourceArtifacts(nonMavenizedDeps, artifacts, version):
+def checkJavadocAndSourceArtifacts(artifacts, version):
+  print('    check for javadoc and sources artifacts...')
   for project in ('lucene', 'solr'):
     for artifact in artifacts[project]:
-      if artifact.endswith(version + '.jar') and artifact not in nonMavenizedDeps:
+      if artifact.endswith(version + '.jar'):
         javadocJar = artifact[:-4] + '-javadoc.jar'
         if javadocJar not in artifacts[project]:
           raise RuntimeError('missing: %s' % javadocJar)
         sourcesJar = artifact[:-4] + '-sources.jar'
         if sourcesJar not in artifacts[project]:
           raise RuntimeError('missing: %s' % sourcesJar)
-
-def checkIdenticalNonMavenizedDeps(distributionFiles, nonMavenizedDeps):
-  for project in ('lucene', 'solr'):
-    distFilenames = dict()
-    for file in distributionFiles[project]:
-      distFilenames[os.path.basename(file)] = file
-    for dep in nonMavenizedDeps.keys():
-      if ('/%s/' % project) in dep:
-        depOrigFilename = os.path.basename(nonMavenizedDeps[dep])
-        if not depOrigFilename in distFilenames:
-          raise RuntimeError('missing: non-mavenized dependency %s' % nonMavenizedDeps[dep])
-        identical = filecmp.cmp(dep, distFilenames[depOrigFilename], shallow=False)
-        if not identical:
-          raise RuntimeError('Deployed non-mavenized dep %s differs from distribution dep %s'
-                            % (dep, distFilenames[depOrigFilename]))
 
 def getZipFileEntries(fileName):
   entries = []
@@ -1010,36 +1014,28 @@ def getZipFileEntries(fileName):
   entries.sort()
   return entries
 
-def checkIdenticalMavenArtifacts(distributionFiles, nonMavenizedDeps, artifacts, version):
+def checkIdenticalMavenArtifacts(distFiles, artifacts, version):
+  print('    verify that Maven artifacts are same as in the binary distribution...')
   reJarWar = re.compile(r'%s\.[wj]ar$' % version) # exclude *-javadoc.jar and *-sources.jar
   for project in ('lucene', 'solr'):
     distFilenames = dict()
-    for file in distributionFiles[project]:
+    for file in distFiles[project]:
       baseName = os.path.basename(file)
       distFilenames[baseName] = file
     for artifact in artifacts[project]:
       if reJarWar.search(artifact):
-        entries = getZipFileEntries(artifact)
-        if artifact not in nonMavenizedDeps:
-          artifactFilename = os.path.basename(artifact)
-          if artifactFilename not in distFilenames:
-            raise RuntimeError('Maven artifact %s is not present in %s binary distribution'
-                              % (artifact, project))
-          else:
-            binaryEntries = getZipFileEntries(distFilenames[artifactFilename])
-            if binaryEntries != entries:
-              raise RuntimeError('Maven artifact %s has different contents than binary distribution\n  maven:\n%s\n  binary:\n%s\n' % \
-                    (artifactFilename,
-                     '\n'.join(entries),
-                     '\n'.join(binaryEntries)))
-          
-         # TODO: Either fix the build to ensure that maven artifacts *are* identical, or recursively compare contents
-         # identical = filecmp.cmp(artifact, distFilenames[artifactFilename], shallow=False)
-         # if not identical:
-         #   raise RuntimeError('Maven artifact %s is not identical to %s in %s binary distribution'
-         #                     % (artifact, distFilenames[artifactFilename], project))
+        artifactFilename = os.path.basename(artifact)
+        if artifactFilename not in distFilenames:
+          raise RuntimeError('Maven artifact %s is not present in %s binary distribution'
+                            % (artifact, project))
+        else:
+          identical = filecmp.cmp(artifact, distFilenames[artifactFilename], shallow=False)
+          if not identical:
+            raise RuntimeError('Maven artifact %s is not identical to %s in %s binary distribution'
+                              % (artifact, distFilenames[artifactFilename], project))
 
 def verifyMavenDigests(artifacts):
+  print("    verify Maven artifacts' md5/sha1 digests...")
   reJarWarPom = re.compile(r'\.(?:[wj]ar|pom)$')
   for project in ('lucene', 'solr'):
     for artifactFile in [a for a in artifacts[project] if reJarWarPom.search(a)]:
@@ -1070,76 +1066,6 @@ def verifyMavenDigests(artifacts):
         raise RuntimeError('SHA1 digest mismatch for %s: expected %s but got %s'
                            % (artifactFile, sha1Expected, sha1Actual))
 
-def checkNonMavenizedDeps(nonMavenizedDependencies, POMtemplates, artifacts,
-                          tmpDir, version, releaseBranchSvnURL):
-  """
-  - check for non-mavenized dependencies listed in the grandfather POM template
-  - nonMavenizedDependencies is populated with a map from non-mavenized dependency
-    artifact path to the original jar path
-  """
-  namespace = '{http://maven.apache.org/POM/4.0.0}'
-  xpathProfile = '{0}profiles/{0}profile'.format(namespace)
-  xpathPlugin = '{0}build/{0}plugins/{0}plugin'.format(namespace)
-  xpathExecution= '{0}executions/{0}execution'.format(namespace)
-  xpathResourceDir = '{0}configuration/{0}resources/{0}resource/{0}directory'.format(namespace)
-
-  treeRoot = ET.parse(POMtemplates['grandfather'][0]).getroot()
-  for profile in treeRoot.findall(xpathProfile):
-    pomDirs = []
-    profileId = profile.find('%sid' % namespace)
-    if profileId is not None and profileId.text == 'bootstrap':
-      plugins = profile.findall(xpathPlugin)
-      for plugin in plugins:
-        artifactId = plugin.find('%sartifactId' % namespace).text.strip()
-        if artifactId == 'maven-resources-plugin':
-          for config in plugin.findall(xpathExecution):
-            pomDirs.append(config.find(xpathResourceDir).text.strip())
-      for plugin in plugins:
-        artifactId = plugin.find('%sartifactId' % namespace).text.strip()
-        if artifactId == 'maven-install-plugin':
-          for execution in plugin.findall(xpathExecution):
-            groupId, artifactId, file, pomFile = '', '', '', ''
-            for child in execution.find('%sconfiguration' % namespace).getchildren():
-              text = child.text.strip()
-              if child.tag == '%sgroupId' % namespace:
-                groupId = text if text != '${project.groupId}' else 'org.apache.lucene'
-              elif child.tag == '%sartifactId' % namespace: artifactId = text
-              elif child.tag == '%sfile' % namespace: file = text
-              elif child.tag == '%spomFile' % namespace: pomFile = text
-            if groupId in ('org.apache.lucene', 'org.apache.solr'):
-              depJar = '%s/maven/%s/%s/%s/%s-%s.jar'    \
-                     % (tmpDir, groupId.replace('.', '/'),
-                        artifactId, version, artifactId, version)
-              if depJar not in artifacts['lucene']  \
-                  and depJar not in artifacts['solr']:
-                raise RuntimeError('Missing non-mavenized dependency %s' % depJar)
-              nonMavenizedDependencies[depJar] = file
-            elif pomFile: # Find non-Mavenized deps with associated POMs
-              pomFile = pomFile.split('/')[-1] # remove path
-              doc2 = None
-              workingCopy = os.path.abspath('%s/../..' % sys.path[0])
-              for pomDir in pomDirs:
-                if releaseBranchSvnURL is None:
-                  pomPath = '%s/%s/%s' % (workingCopy, pomDir, pomFile)
-                  if os.path.exists(pomPath):
-                    doc2 = ET.XML(open(pomPath, encoding='UTF-8').read())
-                    break
-                else:
-                  entries = getDirEntries('%s/%s' % (releaseBranchSvnURL, pomDir))
-                  for text, subURL in entries:
-                    if text == pomFile:
-                      doc2 = ET.XML(load(subURL))
-                      break
-                  if doc2 is not None: break
-
-              groupId2, artifactId2, packaging2, POMversion = getPOMcoordinate(doc2)
-              depJar = '%s/maven/%s/%s/%s/%s-%s.jar' \
-                     % (tmpDir, groupId2.replace('.', '/'),
-                        artifactId2, version, artifactId2, version)
-              if depJar not in artifacts['lucene'] and depJar not in artifacts['solr']:
-                raise RuntimeError('Missing non-mavenized dependency %s' % depJar)
-              nonMavenizedDependencies[depJar] = file
-
 def getPOMcoordinate(treeRoot):
   namespace = '{http://maven.apache.org/POM/4.0.0}'
   groupId = treeRoot.find('%sgroupId' % namespace)
@@ -1156,7 +1082,7 @@ def getPOMcoordinate(treeRoot):
   return groupId, artifactId, packaging, version
 
 def verifyMavenSigs(baseURL, tmpDir, artifacts):
-  """Verify Maven artifact signatures"""
+  print('    verify maven artifact sigs', end=' ')
   for project in ('lucene', 'solr'):
     keysFile = '%s/%s.KEYS' % (tmpDir, project)
     if not os.path.exists(keysFile):
@@ -1206,7 +1132,7 @@ def verifyMavenSigs(baseURL, tmpDir, artifacts):
   print()
 
 def verifyPOMperBinaryArtifact(artifacts, version):
-  """verify that each binary jar and war has a corresponding POM file"""
+  print('    verify that each binary artifact has a deployed POM...')
   reBinaryJarWar = re.compile(r'%s\.[jw]ar$' % re.escape(version))
   for project in ('lucene', 'solr'):
     for artifact in [a for a in artifacts[project] if reBinaryJarWar.search(a)]:
@@ -1219,6 +1145,7 @@ def verifyDeployedPOMsCoordinates(artifacts, version):
   verify that each POM's coordinate (drawn from its content) matches
   its filepath, and verify that the corresponding artifact exists.
   """
+  print("    verify deployed POMs' coordinates...")
   for project in ('lucene', 'solr'):
     for POM in [a for a in artifacts[project] if a.endswith('.pom')]:
       treeRoot = ET.parse(POM).getroot()
@@ -1234,7 +1161,7 @@ def verifyDeployedPOMsCoordinates(artifacts, version):
         raise RuntimeError('Missing corresponding .%s artifact for POM %s' % (packaging, POM))
 
 def verifyArtifactPerPOMtemplate(POMtemplates, artifacts, tmpDir, version):
-  """verify that each POM template's artifact is present in artifacts"""
+  print('    verify that there is an artifact for each POM template...')
   namespace = '{http://maven.apache.org/POM/4.0.0}'
   xpathPlugin = '{0}build/{0}plugins/{0}plugin'.format(namespace)
   xpathSkipConfiguration = '{0}configuration/{0}skip'.format(namespace)
@@ -1257,6 +1184,7 @@ def verifyArtifactPerPOMtemplate(POMtemplates, artifacts, tmpDir, version):
           raise RuntimeError('Missing artifact %s' % artifact)
 
 def getPOMtemplates(POMtemplates, tmpDir, releaseBranchSvnURL):
+  print('    get POM templates')
   allPOMtemplates = []
   sourceLocation = releaseBranchSvnURL
   if sourceLocation is None:
@@ -1384,15 +1312,15 @@ def smokeTest(baseURL, svnRevision, version, tmpDir, isSigned, testArgs):
   print('Test Lucene...')
   checkSigs('lucene', lucenePath, version, tmpDir, isSigned)
   for artifact in ('lucene-%s.tgz' % version, 'lucene-%s.zip' % version):
-    unpackAndVerify('lucene', tmpDir, artifact, svnRevision, version, testArgs)
-  unpackAndVerify('lucene', tmpDir, 'lucene-%s-src.tgz' % version, svnRevision, version, testArgs)
+    unpackAndVerify('lucene', tmpDir, artifact, svnRevision, version, testArgs, baseURL)
+  unpackAndVerify('lucene', tmpDir, 'lucene-%s-src.tgz' % version, svnRevision, version, testArgs, baseURL)
 
   print()
   print('Test Solr...')
   checkSigs('solr', solrPath, version, tmpDir, isSigned)
   for artifact in ('solr-%s.tgz' % version, 'solr-%s.zip' % version):
-    unpackAndVerify('solr', tmpDir, artifact, svnRevision, version, testArgs)
-  unpackAndVerify('solr', tmpDir, 'solr-%s-src.tgz' % version, svnRevision, version, testArgs)
+    unpackAndVerify('solr', tmpDir, artifact, svnRevision, version, testArgs, baseURL)
+  unpackAndVerify('solr', tmpDir, 'solr-%s-src.tgz' % version, svnRevision, version, testArgs, baseURL)
 
   print()
   print('Test Maven artifacts for Lucene and Solr...')

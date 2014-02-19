@@ -159,7 +159,6 @@
   <property name="javac.source.backwards" value="1.7"/>
   <property name="javac.target.backwards" value="1.7"/>
   <property name="javac.args" value="-Xlint -Xlint:-deprecation -Xlint:-serial -Xlint:-options"/>
-  <property name="bootclasspath" value=""/>
   <property name="javadoc.link" value="http://download.oracle.com/javase/7/docs/api/"/>
   <property name="javadoc.link.junit" value="http://junit.sourceforge.net/javadoc/"/>
   <property name="javadoc.packagelist.dir" location="${common.dir}/tools/javadoc"/>
@@ -169,6 +168,35 @@
   <property name="javadoc.dir" location="${common.dir}/build/docs"/>
   <property name="javadoc.maxmemory" value="512m" />
   <property name="javadoc.noindex" value="true"/>
+
+  <!-- detect bootclasspath from given bootjdk path (including crazy AppleJDK special case) -->
+  <first id="-boot-rt.jar">
+    <fileset dir="${bootjdk}" erroronmissingdir="false" followsymlinks="true">
+      <include name="jre/lib/rt.jar" /><!-- Oracle JDK -->
+      <include name="lib/rt.jar" /><!-- Oracle JRE -->
+      <include name="bundle/Classes/classes.jar" /><!-- Apple JDK -->
+    </fileset>
+  </first>
+  <property name="bootclasspath" value="${toString:-boot-rt.jar}" />
+  <fail message="Invalid 'bootjdk' parameter, because it contains no class library JAR: ${bootjdk}">
+    <condition>
+      <and>
+        <isset property="bootjdk" />
+        <equals arg1="${bootclasspath}" arg2=""/>
+      </and>
+    </condition>
+  </fail>
+  <fail message="Invalid 'bootclasspath' parameter, because it does not point to a valid class library JAR: ${bootclasspath}">
+    <condition>
+      <not>
+        <or>
+          <equals arg1="${bootclasspath}" arg2=""/>
+          <available classname="java.lang.StringBuilder" classpath="${bootclasspath}" ignoresystemclasses="true"/>
+        </or>
+      </not>
+    </condition>
+  </fail>
+
   <!-- Javadoc classpath -->
   <path id="javadoc.classpath">
     <path refid="classpath"/>
@@ -199,17 +227,6 @@
   <property name="m2.repository.id" value="local"/>
   <property name="m2.credentials.prompt" value="true"/>
 
-  <property name="jflex.home" location="${common.dir}"/>
-
-  <path id="jflex.classpath">
-    <fileset dir="${jflex.home}/">
-      <!-- for a JFlex trunk checkout: -->
-      <include name="jflex/target/*.jar"/>
-      <!-- for a JFlex distribution (not yet available): -->
-      <include name="lib/*.jar"/>
-    </fileset>
-  </path>
-
   <property name="backwards.dir" location="backwards"/>
   <property name="build.dir.backwards" location="${build.dir}/backwards"/>
 
@@ -230,11 +247,9 @@
   <property name="svn.exe" value="svn" />
   <property name="perl.exe" value="perl" />
   
-  <property name="hg.exe" value="hg" />
-  <property name="moman.url" value="https://bitbucket.org/jpbarrette/moman" />
-  <property name="moman.rev" value="120" />
   <property name="python.exe" value="python" />
-  <property name="python32.exe" value="python3.2" />
+  <!-- todo: rename this variable -->
+  <property name="python32.exe" value="python3" />
 
   <property name="gpg.exe" value="gpg" />
   <property name="gpg.key" value="CODE SIGNING KEY" />
@@ -266,6 +281,7 @@
     <propertyref regex=".*\.compiled$$"/>
     <propertyref regex=".*\.loaded$$"/>
     <propertyref name="lucene.javadoc.url"/><!-- for Solr -->
+    <propertyref name="tests.totals.tmpfile" />
   </propertyset>
 
   <patternset id="lucene.local.src.package.patterns"
@@ -356,14 +372,14 @@
   <target name="resolve" depends="ivy-availability-check,ivy-configure">
     <!-- todo, make this a property or something. 
          only special cases need bundles -->
-    <ivy:retrieve type="jar,bundle,tests" log="download-only" 
+    <ivy:retrieve type="jar,bundle,test,test-jar,tests" log="download-only"
                   conf="${ivy.default.configuration}" sync="${ivy.sync}"/>
   </target>
 
   <property name="ivy_install_path" location="${user.home}/.ant/lib" />
   <property name="ivy_bootstrap_url1" value="http://repo1.maven.org/maven2"/>
   <!-- you might need to tweak this from china so it works -->
-  <property name="ivy_bootstrap_url2" value="http://mirror.netcologne.de/maven2"/>
+  <property name="ivy_bootstrap_url2" value="http://uk.maven.org/maven2"/>
   <property name="ivy_checksum_sha1" value="c5ebf1c253ad4959a29f4acfe696ee48cdd9f473"/>
 
   <target name="ivy-availability-check" unless="ivy.available">
@@ -445,45 +461,6 @@
     </sequential>
   </macrodef>
 
-  <target name="jflex-uptodate-check">
-    <uptodate property="jflex.files.uptodate">
-      <srcfiles dir="${src.dir}" includes="**/*.jflex" />
-      <mapper type="glob" from="*.jflex" to="*.java"/>
-    </uptodate>
-  </target>
- 
-  <target name="jflex-notice" depends="jflex-uptodate-check" unless="jflex.files.uptodate">
-    <echo>
-      One or more of the JFlex .jflex files is newer than its corresponding
-      .java file.  Run the "jflex" target to regenerate the artifacts.
-    </echo>
-  </target>
-
-  <target name="jflex-check">
-    <available property="jflex.present" classname="jflex.anttask.JFlexTask">
-      <classpath refid="jflex.classpath"/>
-    </available>
-    <fail unless="jflex.present">
-      ##################################################################
-      JFlex not found.
-      JFlex Home: ${jflex.home}
-
-      Please install the jFlex 1.5 version (currently not released)
-      from its SVN repository:
-
-       svn co http://jflex.svn.sourceforge.net/svnroot/jflex/trunk jflex
-       cd jflex
-       mvn install
-
-      Then, create a build.properties file either in your home
-      directory, or within the Lucene directory and set the jflex.home
-      property to the path where the JFlex trunk checkout is located
-      (in the above example its the directory called "jflex").
-
-      ##################################################################
-    </fail>
-  </target>
-
   <target name="compile-core" depends="init, clover"
           description="Compiles core classes">
     <compile
@@ -507,12 +484,41 @@
     <jarify/>
   </target>
 
+  <property name="lucene.tgz.file" location="${common.dir}/dist/lucene-${version}.tgz"/>
+  <available file="${lucene.tgz.file}" property="lucene.tgz.exists"/>
+  <property name="lucene.tgz.unpack.dir" location="${common.build.dir}/lucene.tgz.unpacked"/>
+  <patternset id="patternset.lucene.solr.jars">
+    <include name="**/lucene-*.jar"/>
+    <include name="**/solr-*.jar"/>
+  </patternset>
+  <available type="dir" file="${lucene.tgz.unpack.dir}" property="lucene.tgz.unpack.dir.exists"/>
+  <target name="-ensure-lucene-tgz-exists" unless="lucene.tgz.exists">
+    <ant dir="${common.dir}" target="package-tgz" inheritall="false"/>
+  </target>
+  <target name="-unpack-lucene-tgz" unless="lucene.tgz.unpack.dir.exists">
+    <antcall target="-ensure-lucene-tgz-exists" inheritall="false"/>
+    <mkdir dir="${lucene.tgz.unpack.dir}"/>
+    <untar compression="gzip" src="${lucene.tgz.file}" dest="${lucene.tgz.unpack.dir}">
+      <patternset refid="patternset.lucene.solr.jars"/>
+    </untar>
+  </target>
+  <property name="dist.jar.dir.prefix" value="${lucene.tgz.unpack.dir}/lucene"/>
+  <pathconvert property="dist.jar.dir.suffix">
+    <mapper>
+      <chainedmapper>
+        <globmapper from="${common.dir}*" to="*"/>
+        <globmapper from="*build.xml" to="*"/>
+      </chainedmapper>
+    </mapper>
+    <path location="${ant.file}"/>
+  </pathconvert>
+
   <macrodef name="m2-deploy" description="Builds a Maven artifact">
   	<element name="artifact-attachments" optional="yes"/>
     <element name="parent-poms" optional="yes"/>
     <element name="credentials" optional="yes"/>
     <attribute name="pom.xml"/>
-    <attribute name="jar.file" default="${build.dir}/${final.name}.jar"/>
+    <attribute name="jar.file" default="${dist.jar.dir.prefix}-${version}/${dist.jar.dir.suffix}/${final.name}.jar"/>
     <sequential>
       <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-7"/>
       <parent-poms/>
@@ -609,6 +615,7 @@
                    value="The Apache Software Foundation"/>
         <attribute name="X-Compile-Source-JDK" value="${javac.source}"/>
         <attribute name="X-Compile-Target-JDK" value="${javac.target}"/>
+        <attribute name="Main-Class" value="${main.class}"/>
       </manifest>
     </sequential>
   </macrodef>
@@ -868,12 +875,16 @@
         <property name="tests.caches" location="${common.dir}/tools/junit4" /> <!-- defaults -->
         <mkdir dir="${tests.cachedir}/${name}" />
 
+        <local name="junit4.stats.nonIgnored" />
+
         <junit4:junit4
             taskName="junit4"
             dir="@{workDir}"
             tempdir="@{workDir}/temp"
-            maxmemory="${tests.heapsize}" 
-            
+            maxmemory="${tests.heapsize}"
+
+            statsPropertyPrefix="junit4.stats"
+
             parallelism="@{threadNum}"
 
             printSummary="true"
@@ -961,6 +972,9 @@
             <!-- disable AWT while running tests -->
             <sysproperty key="java.awt.headless" value="true"/>
 
+            <!-- turn jenkins blood red for hashmap bugs, even on jdk7 -->
+            <sysproperty key="jdk.map.althashing.threshold" value="0"/>
+
             <!-- Only pass these to the test JVMs if defined in ANT. -->
             <syspropertyset>
                 <propertyref prefix="tests.maxfailures" />
@@ -968,6 +982,7 @@
                 <propertyref prefix="tests.badapples" />
                 <propertyref prefix="tests.timeoutSuite" />
                 <propertyref prefix="tests.jettyConnector" />
+                <propertyref prefix="tests.disableHdfs" />
             </syspropertyset>
 
             <!-- Pass randomized settings to the forked JVM. -->
@@ -1022,7 +1037,7 @@
                   </junit4:filtertrace>                    
                 </junit4:report-text>
 
-                <!-- Emits full status for all tests, their relative order on slaves. -->
+                <!-- Emits full status for all tests, their relative order on forked JVMs. -->
                 <junit4:report-text
                     file="@{junit.output.dir}/tests-report.txt"
                     showThrowable="true" 
@@ -1076,6 +1091,9 @@
               </fileset>
             </junit4:duplicate>
         </junit4:junit4>
+
+        <!-- Append the number of non-ignored (actually executed) tests. -->
+        <echo file="${tests.totals.tmpfile}" append="true" encoding="UTF-8"># module: ${ant.project.name}&#x000a;${junit4.stats.nonIgnored}&#x000a;</echo>
 
         <!-- Report the 5 slowest tests from this run to the console. -->
         <echo>5 slowest tests:</echo>
@@ -1241,9 +1259,46 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
 
   <!-- note: order here is important, the taskdef depends on test-framework
        jars so we just order it after compile-test to ensure that -->
-  <target name="test" depends="clover,compile-test,install-junit4-taskdef,validate" description="Runs unit tests">
+  <target name="test" depends="clover,compile-test,install-junit4-taskdef,validate,-init-totals,-test,-check-totals" description="Runs unit tests">
+  </target>
+
+  <!-- Run the actual tests (must be wrapped with -init-totals, -check-totals) -->
+  <target name="-test">
     <mkdir dir="${junit.output.dir}"/>
     <test-macro threadNum="${tests.jvms.override}" />
+  </target>
+
+  <target name="-check-totals" if="tests.totals.toplevel" depends="resolve-groovy">
+    <!-- We are concluding a test pass at the outermost level. Sum up all executed tests. -->
+    <groovy><![CDATA[
+      total = 0;
+      statsFile = new File(project.getProperty("tests.totals.tmpfile"));
+      statsFile.eachLine("UTF-8", { line ->
+        if (line ==~ /^[0-9]+/) {
+          total += Integer.valueOf(line);
+        }
+      });
+      statsFile.delete();
+
+      if (total == 0) {
+        throw new org.apache.tools.ant.BuildException("Not even a single test was executed (a typo in the filter pattern maybe)?");
+      }
+
+      // Interesting but let's keep the build output quiet.
+      // project.log("Grand total of all executed tests (including sub-modules): " + total);
+    ]]></groovy>
+  </target>
+
+  <!-- The groovy dependency is wanted: this is done early before any test or any other submodule is ran, to prevent permgen errors! -->
+  <target name="-init-totals" unless="tests.totals.tmpfile" depends="resolve-groovy">
+    <mkdir dir="${build.dir}" />
+    <tempfile property="tests.totals.tmpfile"
+              destdir="${build.dir}"
+              prefix=".test-totals-"
+              suffix=".tmp"
+              deleteonexit="true"
+              createfile="true" />
+    <property name="tests.totals.toplevel" value="true" />
   </target>
 
   <!--
@@ -1251,7 +1306,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
    -->
   <target name="clover" depends="-clover.disable,-clover.load,-clover.classpath,-clover.setup" description="Instrument the Unit tests using Clover. To use, specify -Drun.clover=true on the command line."/>
   
-  <target name="-clover.load" if="run.clover" unless="clover.loaded">
+  <target name="-clover.load" depends="ivy-availability-check,ivy-configure" if="run.clover" unless="clover.loaded">
     <available file="${clover.license.path}" property="clover.license.available" />
     <fail unless="clover.license.available"><![CDATA[.
 
@@ -1272,8 +1327,8 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
   
 ]]></fail>
     <echo>Code coverage with Atlassian Clover enabled.</echo>
-    <ivy:cachepath organisation="com.cenqua.clover" module="clover" revision="3.1.10"
-      inline="true" conf="master" type="jar" pathid="clover.classpath"/>
+    <ivy:cachepath organisation="com.cenqua.clover" module="clover" revision="3.2.0"
+      inline="true" conf="master" pathid="clover.classpath"/>
     <taskdef resource="cloverlib.xml" classpathref="clover.classpath" />
     <mkdir dir="${clover.db.dir}"/>
     <!-- This is a hack, instead of setting "clover.loaded" to "true", we set it
@@ -1368,10 +1423,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
              classpathref="maven-ant-tasks.classpath"/>
   </target>
 
-  <target name="dist-maven"
-          depends="filter-pom-templates, install-maven-tasks, m2-deploy-lucene-parent-pom, dist-maven-common"/>
-  <target name="dist-maven-common"
-          depends="jar-core, jar-src, javadocs, install-maven-tasks, filter-pom-templates">
+  <target name="-dist-maven" depends="install-maven-tasks, jar-src, javadocs">
     <sequential>
       <property name="top.level.dir" location="${common.dir}/.."/>
       <pathconvert property="pom.xml">
@@ -1394,10 +1446,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     </sequential>
   </target>
 
-  <target name="dist-maven-src-java"
-          depends="filter-pom-templates, install-maven-tasks, m2-deploy-lucene-parent-pom, dist-maven-common-src-java"/>
-  <target name="dist-maven-common-src-java"
-          depends="jar-core, jar-src, javadocs, install-maven-tasks, filter-pom-templates">
+  <target name="-dist-maven-src-java" depends="install-maven-tasks, jar-src, javadocs">
     <sequential>
       <property name="top.level.dir" location="${common.dir}/.."/>
       <pathconvert property="pom.xml">
@@ -1420,7 +1469,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     </sequential>
   </target>
   
-  <target name="-validate-maven-dependencies.init" depends="filter-pom-templates">
+  <target name="-validate-maven-dependencies.init">
     <!-- find the correct pom.xml path and assigns it to property pom.xml -->
     <property name="top.level.dir" location="${common.dir}/.."/>
     <pathconvert property="maven.pom.xml">
@@ -1457,29 +1506,64 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       </excludes>
     </m2-validate-dependencies>
   </target>
+  
+  <property name="module.dependencies.properties.file" location="${common.build.dir}/module.dependencies.properties"/>
 
-  <target name="filter-pom-templates" unless="filtered.pom.templates.uptodate">
-    <mkdir dir="${filtered.pom.templates.dir}"/>
-    <copy todir="${common.dir}/build/poms" overwrite="true" encoding="UTF-8">
+  <target name="-append-module-dependencies-properties">
+    <sequential>
+      <property name="top.level.dir" location="${common.dir}/.."/>
+      <pathconvert property="classpath.list" pathsep="," dirsep="/" setonempty="true">
+        <path refid="classpath"/>
+        <globmapper from="${top.level.dir}/*" to="*" handledirsep="true"/>
+      </pathconvert>
+      <pathconvert property="test.classpath.list" pathsep="," dirsep="/" setonempty="true">
+        <path refid="test.classpath"/>
+        <globmapper from="${top.level.dir}/*" to="*" handledirsep="true"/>
+      </pathconvert>
+      <echo append="true" file="${module.dependencies.properties.file}">
+${ant.project.name}.dependencies=${classpath.list}
+${ant.project.name}.test.dependencies=${test.classpath.list}
+      </echo>
+    </sequential>
+  </target>
+
+  <property name="maven.dependencies.filters.file" location="${common.build.dir}/maven.dependencies.filters.properties"/>
+
+  <target name="-get-maven-dependencies" depends="compile-tools,load-custom-tasks">
+    <ant dir="${common.dir}/.." target="-append-all-modules-dependencies-properties" inheritall="false"/>
+    <get-maven-dependencies-macro
+        dir="${common.dir}/.."
+        centralized.versions.file="${common.dir}/ivy-versions.properties"
+        module.dependencies.properties.file="${module.dependencies.properties.file}"
+        maven.dependencies.filters.file="${maven.dependencies.filters.file}"/>
+  </target>
+
+  <target name="-get-maven-poms" depends="-get-maven-dependencies">
+    <property name="maven-build-dir" location="${common.dir}/../maven-build"/>
+    <copy todir="${maven-build-dir}" overwrite="true" encoding="UTF-8">
       <fileset dir="${common.dir}/../dev-tools/maven"/>
       <filterset begintoken="@" endtoken="@">
         <filter token="version" value="${version}"/>
       </filterset>
+      <filterset>
+        <filtersfile file="${maven.dependencies.filters.file}"/>
+      </filterset>
       <globmapper from="*.template" to="*"/>
     </copy>
-    <property name="filtered.pom.templates.uptodate" value="true"/>
   </target>
 
-  <target name="m2-deploy-lucene-parent-pom" depends="filter-pom-templates,m2-deploy-grandparent-pom"
-          unless="deployed.lucene.parent.pom.uptodate">
-    <m2-deploy pom.xml="${filtered.pom.templates.dir}/lucene/pom.xml"/>    <!-- Lucene parent POM -->
-    <property name="deployed.lucene.parent.pom.uptodate" value="true"/>
-  </target>
-
-  <target name="m2-deploy-grandparent-pom" depends="filter-pom-templates"
-          unless="deployed.grandparent.pom.uptodate">
-    <m2-deploy pom.xml="${filtered.pom.templates.dir}/pom.xml"/>    <!-- Lucene/Solr grandparent POM -->
-    <property name="deployed.grandparent.pom.uptodate" value="true"/>
+  <target name="-filter-pom-templates" depends="-get-maven-dependencies">
+    <mkdir dir="${filtered.pom.templates.dir}"/>
+    <copy todir="${common.dir}/build/poms" overwrite="true" encoding="UTF-8" filtering="on">
+      <fileset dir="${common.dir}/../dev-tools/maven"/>
+      <filterset begintoken="@" endtoken="@">
+        <filter token="version" value="${version}"/>
+      </filterset>
+      <filterset>
+        <filtersfile file="${maven.dependencies.filters.file}"/>
+      </filterset>
+      <globmapper from="*.template" to="*"/>
+    </copy>
   </target>
 
   <target name="stage-maven-artifacts">
@@ -1514,7 +1598,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
   </target>
 
   <target name="rat-sources-typedef" unless="rat.loaded">
-    <ivy:cachepath organisation="org.apache.rat" module="apache-rat" revision="0.9" transitive="false" inline="true" conf="master" type="jar" pathid="rat.classpath"/>
+    <ivy:cachepath organisation="org.apache.rat" module="apache-rat" revision="0.10" transitive="false" inline="true" conf="master" type="jar" pathid="rat.classpath"/>
     <typedef resource="org/apache/rat/anttasks/antlib.xml" uri="antlib:org.apache.rat.anttasks" classpathref="rat.classpath"/>
     <property name="rat.loaded" value="true"/>
   </target>
@@ -1583,6 +1667,8 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
         <pattern substring="This file was generated automatically by the Snowball to Java compiler"/>
       <!-- uima tests generated by JCasGen -->
         <pattern substring="First created by JCasGen"/>
+      <!-- parsers generated by antlr -->
+        <pattern substring="ANTLR GENERATED CODE"/>
       </rat:substringMatcher>
 
       <!-- built in approved licenses -->
@@ -2075,30 +2161,82 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       </scp>
     </sequential>
   </macrodef>
-  
+
+  <!-- JFlex task -->
+  <target name="-install-jflex" unless="jflex.loaded" depends="ivy-availability-check,ivy-configure">
+    <ivy:cachepath organisation="de.jflex" module="jflex" revision="1.5.0"
+                   inline="true" conf="default" transitive="true" pathid="jflex.classpath"/>
+    <taskdef name="jflex" classname="jflex.anttask.JFlexTask" classpathref="jflex.classpath"/>
+    <property name="jflex.loaded" value="true"/>
+  </target>
+
   <!-- GROOVY scripting engine for ANT tasks -->
   <target name="resolve-groovy" unless="groovy.loaded" depends="ivy-availability-check,ivy-configure">
-    <ivy:cachepath organisation="org.codehaus.groovy" module="groovy-all" revision="2.0.4"
+    <ivy:cachepath organisation="org.codehaus.groovy" module="groovy-all" revision="2.2.1"
       inline="true" conf="default" type="jar" transitive="true" pathid="groovy.classpath"/>
+    <taskdef name="groovy"
+      classname="org.codehaus.groovy.ant.Groovy"
+      classpathref="groovy.classpath"/>
     <property name="groovy.loaded" value="true"/>
   </target>
   
   <!-- Forbidden API Task -->
-  <target name="install-forbidden-apis" unless="forbidden-apis.loaded" depends="ivy-availability-check,ivy-configure">
-    <ivy:cachepath organisation="de.thetaphi" module="forbiddenapis" revision="1.3"
+  <property name="forbidden-base-excludes" value=""/>
+  <property name="forbidden-tests-excludes" value=""/>
+  <property name="forbidden-sysout-excludes" value=""/>
+  
+  <target name="-install-forbidden-apis" unless="forbidden-apis.loaded" depends="ivy-availability-check,ivy-configure">
+    <ivy:cachepath organisation="de.thetaphi" module="forbiddenapis" revision="1.4"
       inline="true" conf="default" transitive="true" pathid="forbidden-apis.classpath"/>
     <taskdef name="forbidden-apis" classname="de.thetaphi.forbiddenapis.AntTask" classpathref="forbidden-apis.classpath"/>
     <property name="forbidden-apis.loaded" value="true"/>
+  </target>  
+
+  <target name="-init-forbidden-apis" depends="-install-forbidden-apis">
+    <path id="forbidden-apis.allclasses.classpath">
+      <path refid="classpath"/>
+      <path refid="test.classpath"/>
+      <path refid="junit-path"/>
+      <!-- include the output directories, too (so we can still resolve excluded classes: -->
+      <pathelement path="${build.dir}/classes/java"/>
+      <pathelement path="${build.dir}/classes/test"/>
+    </path>
+  </target>  
+
+  <target name="check-forbidden-apis" depends="-check-forbidden-base,-check-forbidden-tests,-check-forbidden-sysout" description="Check forbidden API calls in compiled class files"/>
+  
+  <target name="-check-forbidden-base" depends="-init-forbidden-apis,compile-core,compile-test">
+    <forbidden-apis internalRuntimeForbidden="true" classpathref="forbidden-apis.allclasses.classpath">
+      <bundledSignatures name="jdk-unsafe-${javac.target}"/>
+      <bundledSignatures name="jdk-deprecated-${javac.target}"/>
+      <signaturesFileSet file="${common.dir}/tools/forbiddenApis/base.txt"/>
+      <fileset dir="${build.dir}/classes/java" excludes="${forbidden-base-excludes}"/>
+      <fileset dir="${build.dir}/classes/test" excludes="${forbidden-tests-excludes}" erroronmissingdir="false"/>
+    </forbidden-apis>
   </target>
   
-  <!-- PEGDOWN macro: Before using depend on the target "resolve-pegdown" -->
+  <target name="-check-forbidden-tests" depends="-init-forbidden-apis,compile-test">
+    <forbidden-apis signaturesFile="${common.dir}/tools/forbiddenApis/tests.txt" classpathref="forbidden-apis.allclasses.classpath"> 
+      <fileset dir="${build.dir}/classes/test" excludes="${forbidden-tests-excludes}"/>
+    </forbidden-apis>
+  </target>
+    
+  <target name="-check-forbidden-sysout" depends="-init-forbidden-apis,compile-core">
+    <forbidden-apis bundledSignatures="jdk-system-out" classpathref="forbidden-apis.allclasses.classpath">
+      <fileset dir="${build.dir}/classes/java" excludes="${forbidden-sysout-excludes}"/>
+    </forbidden-apis>
+  </target>
+
+  <!-- PEGDOWN macro: Before using depend on the target "resolve-pegdown,resolve-groovy" -->
   
   <target name="resolve-pegdown" unless="pegdown.loaded" depends="ivy-availability-check,ivy-configure">
-    <ivy:cachepath organisation="org.pegdown" module="pegdown" revision="1.2.1"
-      inline="true" conf="default" type="jar" transitive="true" pathid="pegdown.classpath"/>
+    <ivy:cachepath organisation="org.pegdown" module="pegdown" revision="1.4.1"
+      inline="true" conf="default" transitive="true" pathid="pegdown.classpath"/>
     <property name="pegdown.loaded" value="true"/>
   </target>
   
+  <target name="regenerate"/>
+	
   <macrodef name="pegdown">
     <attribute name="todir"/>
     <attribute name="flatten" default="false"/>

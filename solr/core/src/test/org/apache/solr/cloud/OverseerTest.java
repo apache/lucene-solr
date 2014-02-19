@@ -19,9 +19,11 @@ package org.apache.solr.cloud;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -47,6 +49,7 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.apache.zookeeper.data.Stat;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -57,7 +60,9 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
   static final int TIMEOUT = 10000;
   private static final boolean DEBUG = false;
-
+  
+  private List<Overseer> overseers = new ArrayList<Overseer>();
+  private List<ZkStateReader> readers = new ArrayList<ZkStateReader>();
   
   public static class MockZKController{
     
@@ -181,6 +186,19 @@ public class OverseerTest extends SolrTestCaseJ4 {
   public static void afterClass() throws Exception {
     initCore();
     Thread.sleep(3000); //XXX wait for threads to die...
+  }
+  
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+    for (Overseer overseer : overseers) {
+      overseer.close();
+    }
+    overseers.clear();
+    for (ZkStateReader reader : readers) {
+      reader.close();
+    }
+    readers.clear();
   }
 
   @Test
@@ -501,7 +519,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
           return;
         }
       }
-      Thread.sleep(100);
+      Thread.sleep(200);
     }
     
     assertEquals("Unexpected shard leader coll:" + collection + " shard:" + shard, expectedCore, (reader.getClusterState().getLeader(collection, shard)!=null)?reader.getClusterState().getLeader(collection, shard).getStr(ZkStateReader.CORE_NAME_PROP):null);
@@ -726,7 +744,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
       ClusterState state = reader.getClusterState();
       
       int numFound = 0;
-      for (DocCollection collection : state.getCollectionStates().values()) {
+      for (String  c : state.getCollections()) {
+        DocCollection collection = state.getCollection(c);
         for (Slice slice : collection.getSlices()) {
           if (slice.getReplicasMap().get("core_node1") != null) {
             numFound++;
@@ -884,10 +903,12 @@ public class OverseerTest extends SolrTestCaseJ4 {
       KeeperException, ParserConfigurationException, SAXException {
     SolrZkClient zkClient = new SolrZkClient(address, TIMEOUT);
     ZkStateReader reader = new ZkStateReader(zkClient);
+    readers.add(reader);
     LeaderElector overseerElector = new LeaderElector(zkClient);
     // TODO: close Overseer
     Overseer overseer = new Overseer(
         new HttpShardHandlerFactory().getShardHandler(), "/admin/cores", reader);
+    overseers.add(overseer);
     ElectionContext ec = new OverseerElectionContext(zkClient, overseer, address.replaceAll("/", "_"));
     overseerElector.setup(ec);
     overseerElector.joinElection(ec, false);

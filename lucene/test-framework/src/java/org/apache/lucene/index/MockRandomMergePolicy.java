@@ -25,8 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import org.apache.lucene.index.MergePolicy.MergeTrigger;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * MergePolicy that makes random decisions for testing.
@@ -47,10 +46,10 @@ public class MockRandomMergePolicy extends MergePolicy {
 
     int numSegments = segmentInfos.size();
 
-    List<SegmentInfoPerCommit> segments = new ArrayList<SegmentInfoPerCommit>();
-    final Collection<SegmentInfoPerCommit> merging = writer.get().getMergingSegments();
+    List<SegmentCommitInfo> segments = new ArrayList<SegmentCommitInfo>();
+    final Collection<SegmentCommitInfo> merging = writer.get().getMergingSegments();
 
-    for(SegmentInfoPerCommit sipc : segmentInfos) {
+    for(SegmentCommitInfo sipc : segmentInfos) {
       if (!merging.contains(sipc)) {
         segments.add(sipc);
       }
@@ -64,7 +63,7 @@ public class MockRandomMergePolicy extends MergePolicy {
 
       // TODO: sometimes make more than 1 merge?
       mergeSpec = new MergeSpecification();
-      final int segsToMerge = _TestUtil.nextInt(random, 1, numSegments);
+      final int segsToMerge = TestUtil.nextInt(random, 1, numSegments);
       mergeSpec.add(new OneMerge(segments.subList(0, segsToMerge)));
     }
 
@@ -73,11 +72,11 @@ public class MockRandomMergePolicy extends MergePolicy {
 
   @Override
   public MergeSpecification findForcedMerges(
-       SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentInfoPerCommit,Boolean> segmentsToMerge)
+       SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge)
     throws IOException {
 
-    final List<SegmentInfoPerCommit> eligibleSegments = new ArrayList<SegmentInfoPerCommit>();
-    for(SegmentInfoPerCommit info : segmentInfos) {
+    final List<SegmentCommitInfo> eligibleSegments = new ArrayList<SegmentCommitInfo>();
+    for(SegmentCommitInfo info : segmentInfos) {
       if (segmentsToMerge.containsKey(info)) {
         eligibleSegments.add(info);
       }
@@ -93,7 +92,7 @@ public class MockRandomMergePolicy extends MergePolicy {
       int upto = 0;
       while(upto < eligibleSegments.size()) {
         int max = Math.min(10, eligibleSegments.size()-upto);
-        int inc = max <= 2 ? max : _TestUtil.nextInt(random, 2, max);
+        int inc = max <= 2 ? max : TestUtil.nextInt(random, 2, max);
         mergeSpec.add(new OneMerge(eligibleSegments.subList(upto, upto+inc)));
         upto += inc;
       }
@@ -101,7 +100,7 @@ public class MockRandomMergePolicy extends MergePolicy {
 
     if (mergeSpec != null) {
       for(OneMerge merge : mergeSpec.merges) {
-        for(SegmentInfoPerCommit info : merge.segments) {
+        for(SegmentCommitInfo info : merge.segments) {
           assert segmentsToMerge.containsKey(info);
         }
       }
@@ -119,7 +118,7 @@ public class MockRandomMergePolicy extends MergePolicy {
   }
 
   @Override
-  public boolean useCompoundFile(SegmentInfos infos, SegmentInfoPerCommit mergedInfo) throws IOException {
+  public boolean useCompoundFile(SegmentInfos infos, SegmentCommitInfo mergedInfo) throws IOException {
     // 80% of the time we create CFS:
     return random.nextInt(5) != 1;
   }

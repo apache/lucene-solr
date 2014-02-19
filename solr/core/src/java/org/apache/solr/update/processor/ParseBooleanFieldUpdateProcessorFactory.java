@@ -112,7 +112,7 @@ public class ParseBooleanFieldUpdateProcessorFactory extends FieldMutatingUpdate
       }
     }
 
-    Collection<String> trueValuesParam = oneOrMany(args, TRUE_VALUES_PARAM);
+    Collection<String> trueValuesParam = args.removeConfigArgs(TRUE_VALUES_PARAM);
     if ( ! trueValuesParam.isEmpty()) {
       trueValues.clear();
       for (String trueVal : trueValuesParam) {
@@ -120,7 +120,7 @@ public class ParseBooleanFieldUpdateProcessorFactory extends FieldMutatingUpdate
       }
     }
 
-    Collection<String> falseValuesParam = oneOrMany(args, FALSE_VALUES_PARAM);
+    Collection<String> falseValuesParam = args.removeConfigArgs(FALSE_VALUES_PARAM);
     if ( ! falseValuesParam.isEmpty()) {
       falseValues.clear();
       for (String val : falseValuesParam) {

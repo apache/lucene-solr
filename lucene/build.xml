@@ -52,7 +52,7 @@
   </target>
 
   <!-- "-clover.load" is *not* a useless dependency. do not remove -->
-  <target name="test" depends="-clover.load, test-core, test-modules, test-backwards"
+  <target name="test" depends="-clover.load, -init-totals, test-core, test-modules, test-backwards, -check-totals"
           description="Runs all unit tests (core, modules and back-compat)"
   />
 
@@ -169,65 +169,20 @@
     </license-check-macro>
   </target>
 
-  <target name="check-forbidden-apis" depends="compile-tools,compile-test,install-forbidden-apis,-forbidden-apis-classpath,-check-forbidden-jdk-apis,-check-forbidden-test-apis,-check-system-out" description="Check forbidden API calls in compiled class files"/>
-
-  <!-- TODO: Make the forbidden API checks per module! -->
-  <target name="-forbidden-apis-classpath">
-    <path id="forbidden-apis.classpath">
-      <fileset dir="${basedir}" includes="**/lib/*.jar"/>
-      <dirset dir="${basedir}/build" includes="**/classes/*"/>
-    </path>
+  <target name="check-lib-versions" depends="compile-tools,resolve,load-custom-tasks"
+          description="Verify that the '/org/name' keys in ivy-versions.properties are sorted lexically and are neither duplicates nor orphans, and that all dependencies in all ivy.xml files use rev=&quot;$${/org/name}&quot; format.">
+    <lib-versions-check-macro dir="${common.dir}/.." centralized.versions.file="${common.dir}/ivy-versions.properties"/>
   </target>
 
-  <target name="-check-forbidden-jdk-apis">
-    <forbidden-apis internalRuntimeForbidden="true" classpathref="forbidden-apis.classpath">
-      <bundledSignatures name="jdk-unsafe-${javac.target}"/>
-      <bundledSignatures name="jdk-deprecated-${javac.target}"/>
-      <signaturesFileSet dir="${common.dir}/tools/forbiddenApis">
-        <include name="executors.txt" />
-        <include name="chars.txt" />
-      </signaturesFileSet>
-      <fileset dir="${basedir}/build" includes="**/*.class" />
-    </forbidden-apis>
-  </target>
-
-  <target name="-check-forbidden-test-apis">
-    <forbidden-apis signaturesFile="${common.dir}/tools/forbiddenApis/tests.txt" classpathref="forbidden-apis.classpath"> 
-      <classpath refid="junit-path"/>
-      <fileset dir="${basedir}/build" includes="**/classes/test/**/*.class,test-framework/**/*.class" />
-    </forbidden-apis>
-  </target>
-
-  <target name="-check-system-out">
-    <forbidden-apis bundledSignatures="jdk-system-out" classpathref="forbidden-apis.classpath">
-      <fileset dir="${basedir}/build">
-        <include name="**/classes/java/**/*.class"/>
-        <!-- this is basically tests -->
-        <exclude name="test-framework/**"/>
-        <!-- exclude command line tools -->
-        <exclude name="core/classes/java/org/apache/lucene/index/CheckIndex.class"/>
-        <exclude name="core/classes/java/org/apache/lucene/index/IndexUpgrader.class"/>
-        <exclude name="core/classes/java/org/apache/lucene/store/LockVerifyServer.class"/>
-        <exclude name="core/classes/java/org/apache/lucene/store/LockStressTest.class"/>
-        <exclude name="analysis/stempel/classes/java/org/egothor/stemmer/Compile.class"/>
-        <exclude name="analysis/stempel/classes/java/org/egothor/stemmer/DiffIt.class"/>
-        <exclude name="benchmark/**"/>
-        <exclude name="demo/classes/java/org/apache/lucene/**"/>
-        <exclude name="misc/classes/java/org/apache/lucene/index/CompoundFileExtractor.class"/>
-        <exclude name="misc/classes/java/org/apache/lucene/index/IndexSplitter.class"/>
-        <exclude name="misc/classes/java/org/apache/lucene/index/MultiPassIndexSplitter.class"/>
-        <exclude name="misc/classes/java/org/apache/lucene/misc/GetTermInfo.class"/>
-        <exclude name="misc/classes/java/org/apache/lucene/misc/HighFreqTerms.class"/>
-        <exclude name="misc/classes/java/org/apache/lucene/misc/IndexMergeTool.class"/>
-        <!-- not printing, just checking if its a system stream -->
-        <exclude name="core/classes/java/org/apache/lucene/util/PrintStreamInfoStream.class"/>
-        <!-- not printing, just generated code from javacc -->
-        <exclude name="queryparser/classes/java/org/apache/lucene/queryparser/classic/QueryParserTokenManager.class"/>
-        <exclude name="queryparser/classes/java/org/apache/lucene/queryparser/flexible/standard/parser/StandardSyntaxParserTokenManager.class"/>
-        <exclude name="queryparser/classes/java/org/apache/lucene/queryparser/surround/parser/QueryParserTokenManager.class"/>
-        <exclude name="facet/classes/java/org/apache/lucene/facet/util/PrintTaxonomyStats.class"/>
-      </fileset>
-    </forbidden-apis>
+  <!-- -install-forbidden-apis is *not* a useless dependency. do not remove -->
+  <target name="check-forbidden-apis" depends="-install-forbidden-apis" description="Check forbidden API calls in compiled class files">
+    <subant target="check-forbidden-apis" failonerror="true" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+      <fileset dir="core" includes="build.xml"/>
+      <fileset dir="test-framework" includes="build.xml"/>
+      <fileset dir="tools" includes="build.xml"/>
+    </subant>
+    <modules-crawl target="check-forbidden-apis"/>
   </target>
 
   <target name="resolve">
@@ -284,7 +239,8 @@
     <!-- codecs: problems -->
     <!-- core: problems -->
     <check-missing-javadocs dir="build/docs/demo" level="method"/>
-    <!-- facet: problems -->
+    <check-missing-javadocs dir="build/docs/expressions" level="method"/>
+    <check-missing-javadocs dir="build/docs/facet" level="method"/>
     <!-- grouping: problems -->
     <!-- highlighter: problems -->
     <check-missing-javadocs dir="build/docs/join" level="method"/>
@@ -318,6 +274,24 @@
     <makeurl property="process-webpages.buildfiles" separator="|">
       <fileset dir="." includes="**/build.xml" excludes="build.xml,analysis/*,build/**,tools/**,backwards/**,site/**"/>
     </makeurl>
+    <property name="Codec.java" location="core/src/java/org/apache/lucene/codecs/Codec.java"/>
+    <loadfile srcfile="${Codec.java}" property="defaultCodecPackage">
+      <filterchain>
+        <tokenfilter>
+          <filetokenizer/>
+          <scriptfilter language="groovy">
+            <classpath>
+              <path refid="groovy.classpath"/>
+            </classpath><![CDATA[
+            //                   private static Codec defaultCodec   =   Codec    .   forName    (   "Lucene46"   )   ;
+            defaultCodecMatcher = self.getToken() =~ /defaultCodec\s*=\s*Codec\s*\.\s*forName\s*\(\s*"([^"]+)"\s*\)\s*;/
+            self.setToken(defaultCodecMatcher[0][1].toLowerCase());
+            ]]>
+          </scriptfilter>
+        </tokenfilter>
+      </filterchain>
+    </loadfile>
+
     <!--
       The XSL input file is ignored completely, but XSL expects one to be given,
       so we pass ourself (${ant.file}) here. The list of module build.xmls is given
@@ -330,6 +304,7 @@
       <outputproperty name="indent" value="yes"/>
       <param name="buildfiles" expression="${process-webpages.buildfiles}"/>
       <param name="version" expression="${version}"/>
+      <param name="defaultCodecPackage" expression="${defaultCodecPackage}"/>
     </xslt>
     
     <pegdown todir="${javadoc.dir}">
@@ -507,19 +482,26 @@
 
   </target>
 
-  <!-- install-maven-tasks is *not* a useless dependency. do not remove -->
-  <target name="generate-maven-artifacts" depends="install-maven-tasks">
+  <target name="-dist-maven" depends="install-maven-tasks">
     <sequential>
-      <subant target="dist-maven" failonerror="true" inheritall="false">
-        <propertyset refid="uptodate.and.compiled.properties"/>
+      <m2-deploy pom.xml="${filtered.pom.templates.dir}/pom.xml"/>        <!-- Lucene/Solr grandparent POM -->
+      <m2-deploy pom.xml="${filtered.pom.templates.dir}/lucene/pom.xml"/> <!-- Lucene parent POM -->
+      <subant target="-dist-maven" failonerror="true" inheritall="false">
         <fileset dir="${common.dir}/core" includes="build.xml"/>
         <fileset dir="${common.dir}/test-framework" includes="build.xml"/>
       </subant>
-      
-      <modules-crawl target="dist-maven"/>
+      <modules-crawl target="-dist-maven"/>
     </sequential>
   </target>
-	
+
+  <target name="generate-maven-artifacts" depends="-unpack-lucene-tgz">
+    <sequential>
+      <ant dir=".." target="resolve" inheritall="false"/>
+      <antcall target="-filter-pom-templates" inheritall="false"/>
+      <antcall target="-dist-maven" inheritall="false"/>
+    </sequential>
+  </target>
+  
   <target name="-validate-maven-dependencies" depends="compile-tools, install-maven-tasks, load-custom-tasks">
     <sequential>
       <subant target="-validate-maven-dependencies" failonerror="true" inheritall="false">
@@ -598,6 +580,12 @@
     <modules-crawl target="jar-core"/>
   </target>
 
+  <target name="jar-src" description="create source jars for all modules">
+    <ant dir="${common.dir}/core" target="jar-src" inheritAll="false" />
+    <ant dir="${common.dir}/test-framework" target="jar-src" inheritAll="false" />
+    <modules-crawl target="jar-src"/>
+  </target>
+
   <target name="get-jenkins-line-docs" unless="enwiki.exists">
     <sequential>
       <!-- TODO: can get .lzma instead (it's ~17% smaller) but there's no builtin ant support...? -->
@@ -611,4 +599,20 @@
     <jar-checksum-macro srcdir="${common.dir}" dstdir="${common.dir}/licenses"/>
   </target>
 
+  <target name="regenerate">
+    <subant target="regenerate" failonerror="true" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+      <fileset dir="core" includes="build.xml"/>
+      <fileset dir="test-framework" includes="build.xml"/>
+    </subant>
+    <modules-crawl target="regenerate"/>
+  </target>
+
+  <target name="-append-module-dependencies-properties">
+    <sequential>
+      <ant dir="core" target="common.-append-module-dependencies-properties" inheritall="false"/>
+      <ant dir="test-framework" target="common.-append-module-dependencies-properties" inheritall="false"/>
+      <modules-crawl target="-append-module-dependencies-properties" failonerror="true"/>
+    </sequential>
+  </target>
 </project>

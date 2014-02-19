@@ -36,14 +36,20 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.junit.BeforeClass;
 
 // TODO: really this should be in BaseTestPF or somewhere else? useful test!
 public class TestReuseDocsEnum extends LuceneTestCase {
 
+  @BeforeClass
+  public static void beforeClass() {
+    OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true; // explicitly instantiates ancient codec
+  }
+  
   public void testReuseDocsEnumNoReuse() throws IOException {
     Directory dir = newDirectory();
-    Codec cp = _TestUtil.alwaysPostingsFormat(new Lucene40RWPostingsFormat());
+    Codec cp = TestUtil.alwaysPostingsFormat(new Lucene40RWPostingsFormat());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setCodec(cp));
     int numdocs = atLeast(20);
@@ -70,7 +76,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
   // tests for reuse only if bits are the same either null or the same instance
   public void testReuseDocsEnumSameBitsOrNull() throws IOException {
     Directory dir = newDirectory();
-    Codec cp = _TestUtil.alwaysPostingsFormat(new Lucene40RWPostingsFormat());
+    Codec cp = TestUtil.alwaysPostingsFormat(new Lucene40RWPostingsFormat());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setCodec(cp));
     int numdocs = atLeast(20);
@@ -114,7 +120,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
   // make sure we never reuse from another reader even if it is the same field & codec etc
   public void testReuseDocsEnumDifferentReader() throws IOException {
     Directory dir = newDirectory();
-    Codec cp = _TestUtil.alwaysPostingsFormat(new Lucene40RWPostingsFormat());
+    Codec cp = TestUtil.alwaysPostingsFormat(new Lucene40RWPostingsFormat());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setCodec(cp));
     int numdocs = atLeast(20);
@@ -162,7 +168,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
       return null;
     }
     TermsEnum iterator = terms.iterator(null);
-    if (iterator.seekExact(term, true)) {
+    if (iterator.seekExact(term)) {
       return iterator.docs(bits, null, random().nextBoolean() ? DocsEnum.FLAG_FREQS : DocsEnum.FLAG_NONE);
     }
     return null;

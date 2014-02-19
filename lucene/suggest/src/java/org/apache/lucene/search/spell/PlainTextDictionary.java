@@ -17,10 +17,13 @@ package org.apache.lucene.search.spell;
  * limitations under the License.
  */
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
 
-import java.util.Comparator;
-import java.io.*;
-
+import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.IOUtils;
@@ -64,8 +67,8 @@ public class PlainTextDictionary implements Dictionary {
   }
 
   @Override
-  public BytesRefIterator getWordsIterator() throws IOException {
-    return new FileIterator();
+  public InputIterator getEntryIterator() throws IOException {
+    return new InputIterator.InputIteratorWrapper(new FileIterator());
   }
 
   final class FileIterator implements BytesRefIterator {
@@ -96,11 +99,5 @@ public class PlainTextDictionary implements Dictionary {
       }
       return result;
     }
-    
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return null;
-    }
   }
-
 }

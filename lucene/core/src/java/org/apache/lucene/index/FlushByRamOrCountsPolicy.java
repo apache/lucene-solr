@@ -20,23 +20,32 @@ package org.apache.lucene.index;
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
 
 /**
- * Default {@link FlushPolicy} implementation that flushes based on RAM used,
- * document count and number of buffered deletes depending on the IndexWriter's
- * {@link IndexWriterConfig}.
+ * Default {@link FlushPolicy} implementation that flushes new segments based on
+ * RAM used and document count depending on the IndexWriter's
+ * {@link IndexWriterConfig}. It also applies pending deletes based on the
+ * number of buffered delete terms.
  * 
  * <ul>
- * <li>{@link #onDelete(DocumentsWriterFlushControl, DocumentsWriterPerThreadPool.ThreadState)} - flushes
- * based on the global number of buffered delete terms iff
- * {@link IndexWriterConfig#getMaxBufferedDeleteTerms()} is enabled</li>
- * <li>{@link #onInsert(DocumentsWriterFlushControl, DocumentsWriterPerThreadPool.ThreadState)} - flushes
- * either on the number of documents per {@link DocumentsWriterPerThread} (
+ * <li>
+ * {@link #onDelete(DocumentsWriterFlushControl, DocumentsWriterPerThreadPool.ThreadState)}
+ * - applies pending delete operations based on the global number of buffered
+ * delete terms iff {@link IndexWriterConfig#getMaxBufferedDeleteTerms()} is
+ * enabled</li>
+ * <li>
+ * {@link #onInsert(DocumentsWriterFlushControl, DocumentsWriterPerThreadPool.ThreadState)}
+ * - flushes either on the number of documents per
+ * {@link DocumentsWriterPerThread} (
  * {@link DocumentsWriterPerThread#getNumDocsInRAM()}) or on the global active
  * memory consumption in the current indexing session iff
  * {@link IndexWriterConfig#getMaxBufferedDocs()} or
  * {@link IndexWriterConfig#getRAMBufferSizeMB()} is enabled respectively</li>
- * <li>{@link #onUpdate(DocumentsWriterFlushControl, DocumentsWriterPerThreadPool.ThreadState)} - calls
- * {@link #onInsert(DocumentsWriterFlushControl, DocumentsWriterPerThreadPool.ThreadState)} and
- * {@link #onDelete(DocumentsWriterFlushControl, DocumentsWriterPerThreadPool.ThreadState)} in order</li>
+ * <li>
+ * {@link #onUpdate(DocumentsWriterFlushControl, DocumentsWriterPerThreadPool.ThreadState)}
+ * - calls
+ * {@link #onInsert(DocumentsWriterFlushControl, DocumentsWriterPerThreadPool.ThreadState)}
+ * and
+ * {@link #onDelete(DocumentsWriterFlushControl, DocumentsWriterPerThreadPool.ThreadState)}
+ * in order</li>
  * </ul>
  * All {@link IndexWriterConfig} settings are used to mark
  * {@link DocumentsWriterPerThread} as flush pending during indexing with
@@ -59,12 +68,11 @@ class FlushByRamOrCountsPolicy extends FlushPolicy {
         control.setApplyAllDeletes();
       }
     }
-    final DocumentsWriter writer = this.writer.get();
     if ((flushOnRAM() &&
         control.getDeleteBytesUsed() > (1024*1024*indexWriterConfig.getRAMBufferSizeMB()))) {
       control.setApplyAllDeletes();
-     if (writer.infoStream.isEnabled("FP")) {
-       writer.infoStream.message("FP", "force apply deletes bytesUsed=" + control.getDeleteBytesUsed() + " vs ramBuffer=" + (1024*1024*indexWriterConfig.getRAMBufferSizeMB()));
+     if (infoStream.isEnabled("FP")) {
+       infoStream.message("FP", "force apply deletes bytesUsed=" + control.getDeleteBytesUsed() + " vs ramBuffer=" + (1024*1024*indexWriterConfig.getRAMBufferSizeMB()));
      }
    }
   }
@@ -80,9 +88,8 @@ class FlushByRamOrCountsPolicy extends FlushPolicy {
       final long limit = (long) (indexWriterConfig.getRAMBufferSizeMB() * 1024.d * 1024.d);
       final long totalRam = control.activeBytes() + control.getDeleteBytesUsed();
       if (totalRam >= limit) {
-        final DocumentsWriter writer = this.writer.get();
-        if (writer.infoStream.isEnabled("FP")) {
-          writer.infoStream.message("FP", "flush: activeBytes=" + control.activeBytes() + " deleteBytes=" + control.getDeleteBytesUsed() + " vs limit=" + limit);
+        if (infoStream.isEnabled("FP")) {
+          infoStream.message("FP", "flush: activeBytes=" + control.activeBytes() + " deleteBytes=" + control.getDeleteBytesUsed() + " vs limit=" + limit);
         }
         markLargestWriterPending(control, state, totalRam);
       }

@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -33,7 +32,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestIndexWriterCommit extends LuceneTestCase {
   /*
@@ -178,8 +177,8 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     // sum because the merged FST may use array encoding for
     // some arcs (which uses more space):
 
-    final String idFormat = _TestUtil.getPostingsFormat("id");
-    final String contentFormat = _TestUtil.getPostingsFormat("content");
+    final String idFormat = TestUtil.getPostingsFormat("id");
+    final String contentFormat = TestUtil.getPostingsFormat("content");
     assumeFalse("This test cannot run with Memory codec", idFormat.equals("Memory") || contentFormat.equals("Memory"));
     MockDirectoryWrapper dir = newMockDirectory();
     Analyzer analyzer;
@@ -187,8 +186,8 @@ public class TestIndexWriterCommit extends LuceneTestCase {
       // no payloads
      analyzer = new Analyzer() {
         @Override
-        public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-          return new TokenStreamComponents(new MockTokenizer(reader, MockTokenizer.WHITESPACE, true));
+        public TokenStreamComponents createComponents(String fieldName) {
+          return new TokenStreamComponents(new MockTokenizer(MockTokenizer.WHITESPACE, true));
         }
       };
     } else {
@@ -196,8 +195,8 @@ public class TestIndexWriterCommit extends LuceneTestCase {
       final int length = random().nextInt(200);
       analyzer = new Analyzer() {
         @Override
-        public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-          Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, true);
+        public TokenStreamComponents createComponents(String fieldName) {
+          Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true);
           return new TokenStreamComponents(tokenizer, new MockFixedLengthPayloadFilter(random(), tokenizer, length));
         }
       };
@@ -330,7 +329,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     final Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig(
                                                                                         TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
-    _TestUtil.reduceOpenFiles(w.w);
+    TestUtil.reduceOpenFiles(w.w);
     w.commit();
     final AtomicBoolean failed = new AtomicBoolean();
     Thread[] threads = new Thread[NUM_THREADS];

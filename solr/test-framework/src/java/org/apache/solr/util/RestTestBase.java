@@ -16,6 +16,12 @@ package org.apache.solr.util;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Map;
+import java.util.SortedMap;
+
+import javax.xml.xpath.XPathExpressionException;
+
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.common.SolrException;
@@ -27,14 +33,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
-import javax.xml.xpath.XPathExpressionException;
-import java.io.IOException;
-import java.util.Map;
-import java.util.SortedMap;
+import org.junit.AfterClass;
 
 abstract public class RestTestBase extends SolrJettyTestBase {
   private static final Logger log = LoggerFactory.getLogger(RestTestBase.class);
   protected static RestTestHarness restTestHarness;
+
+  @AfterClass
+  public static void cleanUpHarness() {
+    restTestHarness = null;
+  }
 
   public static void createJettyAndHarness
       (String solrHome, String configFile, String schemaFile, String context,
@@ -229,8 +237,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
 
     for (String test : tests) {
       if (null == test || 0 == test.length()) continue;
-      String testJSON = test.replaceAll("(?<!\\\\)\'", "\"");
-      testJSON = testJSON.replaceAll("\\\\\'", "'");
+      String testJSON = json(test);
 
       try {
         failed = true;
@@ -311,8 +318,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
 
     for (String test : tests) {
       if (null == test || 0 == test.length()) continue;
-      String testJSON = test.replaceAll("(?<!\\\\)\'", "\"");
-      testJSON = testJSON.replaceAll("\\\\\'", "'");
+      String testJSON = json(test);
 
       try {
         failed = true;
@@ -391,8 +397,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
 
     for (String test : tests) {
       if (null == test || 0 == test.length()) continue;
-      String testJSON = test.replaceAll("(?<!\\\\)\'", "\"");
-      testJSON = testJSON.replaceAll("\\\\\'", "'");
+      String testJSON = json(test);
 
       try {
         failed = true;

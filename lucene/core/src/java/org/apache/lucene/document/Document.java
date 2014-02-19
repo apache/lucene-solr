@@ -60,16 +60,19 @@ public final class Document implements IndexDocument {
       Field newField = new Field(field.name(), (FieldType) field.fieldType());
      
       newField.fieldsData = field.stringValue();
-      if (newField.fieldsData == null) 
+      if (newField.fieldsData == null) {
         newField.fieldsData = field.numericValue();
-      if (newField.fieldsData == null) 
+      }
+      if (newField.fieldsData == null) {
         newField.fieldsData = field.binaryValue();
-      if (newField.fieldsData == null) 
+      }
+      if (newField.fieldsData == null) {
         newField.fieldsData = field.readerValue();
+      }
      
       add(newField);
     }
- }
+  }
 
   
   /**
@@ -273,8 +276,9 @@ public final class Document implements IndexDocument {
     for (int i = 0; i < fields.size(); i++) {
       IndexableField field = fields.get(i);
       buffer.append(field.toString());
-      if (i != fields.size()-1)
+      if (i != fields.size()-1) {
         buffer.append(" ");
+      }
     }
     buffer.append(">");
     return buffer.toString();

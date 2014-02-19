@@ -32,14 +32,16 @@ import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.packed.AppendingLongBuffer;
+import org.apache.lucene.util.packed.AppendingDeltaPackedLongBuffer;
+import org.apache.lucene.util.packed.AppendingPackedLongBuffer;
+import org.apache.lucene.util.packed.PackedInts;
 
 /** Buffers up pending byte[]s per doc, deref and sorting via
  *  int ord, then flushes when segment flushes. */
 class SortedSetDocValuesWriter extends DocValuesWriter {
   final BytesRefHash hash;
-  private AppendingLongBuffer pending; // stream of all termIDs
-  private AppendingLongBuffer pendingCounts; // termIDs per doc
+  private AppendingPackedLongBuffer pending; // stream of all termIDs
+  private AppendingDeltaPackedLongBuffer pendingCounts; // termIDs per doc
   private final Counter iwBytesUsed;
   private long bytesUsed; // this only tracks differences in 'pending' and 'pendingCounts'
   private final FieldInfo fieldInfo;
@@ -56,8 +58,8 @@ class SortedSetDocValuesWriter extends DocValuesWriter {
             new ByteBlockPool.DirectTrackingAllocator(iwBytesUsed)),
             BytesRefHash.DEFAULT_CAPACITY,
             new DirectBytesStartArray(BytesRefHash.DEFAULT_CAPACITY, iwBytesUsed));
-    pending = new AppendingLongBuffer();
-    pendingCounts = new AppendingLongBuffer();
+    pending = new AppendingPackedLongBuffer(PackedInts.COMPACT);
+    pendingCounts = new AppendingDeltaPackedLongBuffer(PackedInts.COMPACT);
     bytesUsed = pending.ramBytesUsed() + pendingCounts.ramBytesUsed();
     iwBytesUsed.addAndGet(bytesUsed);
   }
@@ -224,8 +226,8 @@ class SortedSetDocValuesWriter extends DocValuesWriter {
   
   // iterates over the ords for each doc we have in ram
   private class OrdsIterator implements Iterator<Number> {
-    final AppendingLongBuffer.Iterator iter = pending.iterator();
-    final AppendingLongBuffer.Iterator counts = pendingCounts.iterator();
+    final AppendingPackedLongBuffer.Iterator iter = pending.iterator();
+    final AppendingDeltaPackedLongBuffer.Iterator counts = pendingCounts.iterator();
     final int ordMap[];
     final long numOrds;
     long ordUpto;
@@ -273,7 +275,7 @@ class SortedSetDocValuesWriter extends DocValuesWriter {
   }
   
   private class OrdCountIterator implements Iterator<Number> {
-    final AppendingLongBuffer.Iterator iter = pendingCounts.iterator();
+    final AppendingDeltaPackedLongBuffer.Iterator iter = pendingCounts.iterator();
     final int maxDoc;
     int docUpto;
     

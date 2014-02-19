@@ -30,7 +30,7 @@ import java.util.List;
 
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 import com.carrotsearch.randomizedtesting.SeedUtils;
 /**
@@ -43,7 +43,7 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    tempDir = _TestUtil.getTempDir("jrecrash");
+    tempDir = TestUtil.getTempDir("jrecrash");
     tempDir.delete();
     tempDir.mkdir();
   }
@@ -67,7 +67,7 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
       //    Codec.getDefault().getName().equals("Lucene4x"));
       
       // we are the fork, setup a crashing thread
-      final int crashTime = _TestUtil.nextInt(random(), 3000, 4000);
+      final int crashTime = TestUtil.nextInt(random(), 3000, 4000);
       Thread t = new Thread() {
         @Override
         public void run() {
@@ -162,7 +162,7 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
         // design we don't try to be smart about this case
         // since that too risky):
         if (SegmentInfos.getLastCommitGeneration(dir) > 1) {
-          _TestUtil.checkIndex(dir);
+          TestUtil.checkIndex(dir);
         }
         dir.close();
         return true;

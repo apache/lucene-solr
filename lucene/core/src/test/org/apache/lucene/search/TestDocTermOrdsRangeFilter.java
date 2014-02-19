@@ -33,8 +33,8 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.util._TestUtil;
 
 /**
  * Tests the DocTermOrdsRangeFilter
@@ -53,7 +53,7 @@ public class TestDocTermOrdsRangeFilter extends LuceneTestCase {
     fieldName = random().nextBoolean() ? "field" : ""; // sometimes use an empty string as field name
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
-        .setMaxBufferedDocs(_TestUtil.nextInt(random(), 50, 1000)));
+        .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000)));
     List<String> terms = new ArrayList<String>();
     int num = atLeast(200);
     for (int i = 0; i < num; i++) {
@@ -61,7 +61,7 @@ public class TestDocTermOrdsRangeFilter extends LuceneTestCase {
       doc.add(newStringField("id", Integer.toString(i), Field.Store.NO));
       int numTerms = random().nextInt(4);
       for (int j = 0; j < numTerms; j++) {
-        String s = _TestUtil.randomUnicodeString(random());
+        String s = TestUtil.randomUnicodeString(random());
         doc.add(newStringField(fieldName, s, Field.Store.NO));
         // if the default codec doesn't support sortedset, we will uninvert at search time
         if (defaultCodecSupportsSortedSet()) {
@@ -103,8 +103,8 @@ public class TestDocTermOrdsRangeFilter extends LuceneTestCase {
   public void testRanges() throws Exception {
     int num = atLeast(1000);
     for (int i = 0; i < num; i++) {
-      BytesRef lowerVal = new BytesRef(_TestUtil.randomUnicodeString(random()));
-      BytesRef upperVal = new BytesRef(_TestUtil.randomUnicodeString(random()));
+      BytesRef lowerVal = new BytesRef(TestUtil.randomUnicodeString(random()));
+      BytesRef upperVal = new BytesRef(TestUtil.randomUnicodeString(random()));
       if (upperVal.compareTo(lowerVal) < 0) {
         assertSame(upperVal, lowerVal, random().nextBoolean(), random().nextBoolean());
       } else {

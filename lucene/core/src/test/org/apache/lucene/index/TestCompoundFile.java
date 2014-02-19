@@ -17,23 +17,23 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.io.File;
-
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.CompoundFileDirectory;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.SimpleFSDirectory;
-import org.apache.lucene.store._TestHelper;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
+import java.io.File;
+import java.io.IOException;
+
+import static org.apache.lucene.store.TestHelper.isSimpleFSIndexInput;
+import static org.apache.lucene.store.TestHelper.isSimpleFSIndexInputOpen;
 
 public class TestCompoundFile extends LuceneTestCase
 {
@@ -42,7 +42,7 @@ public class TestCompoundFile extends LuceneTestCase
     @Override
     public void setUp() throws Exception {
        super.setUp();
-       File file = _TestUtil.getTempDir("testIndex");
+       File file = TestUtil.getTempDir("testIndex");
        // use a simple FSDir here, to be sure to have SimpleFSInputs
        dir = new SimpleFSDirectory(file,null);
     }
@@ -345,8 +345,8 @@ public class TestCompoundFile extends LuceneTestCase
         IndexInput expected = dir.openInput("f11", newIOContext(random()));
 
         // this test only works for FSIndexInput
-        assertTrue(_TestHelper.isSimpleFSIndexInput(expected));
-        assertTrue(_TestHelper.isSimpleFSIndexInputOpen(expected));
+        assertTrue(isSimpleFSIndexInput(expected));
+        assertTrue(isSimpleFSIndexInputOpen(expected));
 
         IndexInput one = cr.openInput("f11", newIOContext(random()));
 
@@ -775,7 +775,7 @@ public class TestCompoundFile extends LuceneTestCase
   // when reading a CFS with many subs:
   public void testManySubFiles() throws IOException {
 
-    final Directory d = newFSDirectory(_TestUtil.getTempDir("CFSManySubFiles"));
+    final Directory d = newFSDirectory(TestUtil.getTempDir("CFSManySubFiles"));
     final int FILE_COUNT = atLeast(500);
 
     for(int fileIdx=0;fileIdx<FILE_COUNT;fileIdx++) {
@@ -820,7 +820,7 @@ public class TestCompoundFile extends LuceneTestCase
     doc.add(bodyField);
     for (int i = 0; i < 100; i++) {
       idField.setStringValue(Integer.toString(i));
-      bodyField.setStringValue(_TestUtil.randomUnicodeString(random()));
+      bodyField.setStringValue(TestUtil.randomUnicodeString(random()));
       riw.addDocument(doc);
       if (random().nextInt(7) == 0) {
         riw.commit();

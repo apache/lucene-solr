@@ -35,6 +35,7 @@ import org.apache.lucene.search.DocTermOrdsRewriteMethod;
 import org.apache.lucene.search.FieldCacheRangeFilter;
 import org.apache.lucene.search.FieldCacheRewriteMethod;
 import org.apache.lucene.search.MultiTermQuery;
+import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
@@ -427,6 +428,25 @@ public abstract class FieldType extends FieldProperties {
     return getClass().getName();
   }
 
+
+  /**
+   * Returns a Query instance for doing prefix searches on this field type.
+   * Also, other QueryParser implementations may have different semantics.
+   * <p/>
+   * Sub-classes should override this method to provide their own range query implementation.
+   *
+   * @param parser       the {@link org.apache.solr.search.QParser} calling the method
+   * @param sf           the schema field
+   * @param termStr      the term string for prefix query
+   * @return a Query instance to perform prefix search
+   *
+   */
+  public Query getPrefixQuery(QParser parser, SchemaField sf, String termStr) {
+    PrefixQuery query = new PrefixQuery(new Term(sf.getName(), termStr));
+    query.setRewriteMethod(sf.getType().getRewriteMethod(parser, sf));
+    return query;
+  }
+
   /**
    * Default analyzer for types that only produce 1 verbatim token...
    * A maximum size of chars to be read must be specified
@@ -439,8 +459,8 @@ public abstract class FieldType extends FieldProperties {
     }
 
     @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer ts = new Tokenizer(reader) {
+    public TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer ts = new Tokenizer() {
         final char[] cbuf = new char[maxChars];
         final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
         final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
@@ -931,5 +951,21 @@ public abstract class FieldType extends FieldProperties {
       analyzerProps.add(CLASS_NAME, analyzer.getClass().getName());
     }
     return analyzerProps;
+  }
+  
+  /** 
+   * Convert a value used by the FieldComparator for this FieldType's SortField
+   * into a marshalable value for distributed sorting.
+   */
+  public Object marshalSortValue(Object value) {
+    return value;
+  }
+  
+  /**
+   * Convert a value marshaled via {@link #marshalSortValue} back 
+   * into a value usable by the FieldComparator for this FieldType's SortField
+   */
+  public Object unmarshalSortValue(Object value) {
+    return value;
   }
 }

@@ -106,6 +106,9 @@ public class SortField {
   // Used for 'sortMissingFirst/Last'
   public Object missingValue = null;
 
+  // Only used with type=STRING
+  public boolean sortMissingLast;
+
   /** Creates a sort by terms in the given field with the type of term
    * values explicitly given.
    * @param field  Name of field to sort by.  Can be <code>null</code> if
@@ -165,13 +168,34 @@ public class SortField {
     this.reverse = reverse;
     this.parser = parser;
   }
+
+  /** Pass this to {@link #setMissingValue} to have missing
+   *  string values sort first. */
+  public final static Object STRING_FIRST = new Object() {
+      @Override
+      public String toString() {
+        return "SortField.STRING_FIRST";
+      }
+    };
   
-  public SortField setMissingValue(Object missingValue) {
-    if (type != Type.INT && type != Type.FLOAT && type != Type.LONG && type != Type.DOUBLE) {
-      throw new IllegalArgumentException( "Missing value only works for numeric types" );
+  /** Pass this to {@link #setMissingValue} to have missing
+   *  string values sort last. */
+  public final static Object STRING_LAST = new Object() {
+      @Override
+      public String toString() {
+        return "SortField.STRING_LAST";
+      }
+    };
+
+  public void setMissingValue(Object missingValue) {
+    if (type == Type.STRING) {
+      if (missingValue != STRING_FIRST && missingValue != STRING_LAST) {
+        throw new IllegalArgumentException("For STRING type, missing value must be either STRING_FIRST or STRING_LAST");
+      }
+    } else if (type != Type.INT && type != Type.FLOAT && type != Type.LONG && type != Type.DOUBLE) {
+      throw new IllegalArgumentException("Missing value only works for numeric or STRING types");
     }
     this.missingValue = missingValue;
-    return this;
   }
 
   /** Creates a sort with a custom comparison function.
@@ -294,6 +318,10 @@ public class SortField {
     }
 
     if (reverse) buffer.append('!');
+    if (missingValue != null) {
+      buffer.append(" missingValue=");
+      buffer.append(missingValue);
+    }
 
     return buffer.toString();
   }
@@ -376,9 +404,10 @@ public class SortField {
       return comparatorSource.newComparator(field, numHits, sortPos, reverse);
 
     case STRING:
-      return new FieldComparator.TermOrdValComparator(numHits, field);
+      return new FieldComparator.TermOrdValComparator(numHits, field, missingValue == STRING_LAST);
 
     case STRING_VAL:
+      // TODO: should we remove this?  who really uses it?
       return new FieldComparator.TermValComparator(numHits, field);
 
     case REWRITEABLE:
@@ -401,5 +430,10 @@ public class SortField {
    */
   public SortField rewrite(IndexSearcher searcher) throws IOException {
     return this;
+  }
+  
+  /** Whether the relevance score is needed to sort documents. */
+  public boolean needsScores() {
+    return type == Type.SCORE;
   }
 }

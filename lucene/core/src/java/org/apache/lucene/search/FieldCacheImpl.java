@@ -78,9 +78,9 @@ class FieldCacheImpl implements FieldCache {
   }
 
   @Override
-  public synchronized void purge(AtomicReader r) {
+  public synchronized void purgeByCacheKey(Object coreCacheKey) {
     for(Cache c : caches.values()) {
-      c.purge(r);
+      c.purgeByCacheKey(coreCacheKey);
     }
   }
 
@@ -110,8 +110,8 @@ class FieldCacheImpl implements FieldCache {
   // per-segment fieldcaches don't purge until the shared core closes.
   final SegmentReader.CoreClosedListener purgeCore = new SegmentReader.CoreClosedListener() {
     @Override
-    public void onClose(SegmentReader owner) {
-      FieldCacheImpl.this.purge(owner);
+    public void onClose(Object ownerCoreCacheKey) {
+      FieldCacheImpl.this.purgeByCacheKey(ownerCoreCacheKey);
     }
   };
 
@@ -120,7 +120,7 @@ class FieldCacheImpl implements FieldCache {
     @Override
     public void onClose(IndexReader owner) {
       assert owner instanceof AtomicReader;
-      FieldCacheImpl.this.purge((AtomicReader) owner);
+      FieldCacheImpl.this.purgeByCacheKey(((AtomicReader) owner).getCoreCacheKey());
     }
   };
   
@@ -155,10 +155,9 @@ class FieldCacheImpl implements FieldCache {
         throws IOException;
 
     /** Remove this reader from the cache, if present. */
-    public void purge(AtomicReader r) {
-      Object readerKey = r.getCoreCacheKey();
+    public void purgeByCacheKey(Object coreCacheKey) {
       synchronized(readerCache) {
-        readerCache.remove(readerKey);
+        readerCache.remove(coreCacheKey);
       }
     }
 
@@ -353,12 +352,12 @@ class FieldCacheImpl implements FieldCache {
     caches.get(DocsWithFieldCache.class).put(reader, new CacheKey(field, null), bits);
   }
 
-  // inherit javadocs
+  @Override
   public Ints getInts (AtomicReader reader, String field, boolean setDocsWithField) throws IOException {
     return getInts(reader, field, null, setDocsWithField);
   }
 
-  // inherit javadocs
+  @Override
   public Ints getInts(AtomicReader reader, String field, IntParser parser, boolean setDocsWithField)
       throws IOException {
     final NumericDocValues valuesIn = reader.getNumericDocValues(field);
@@ -501,8 +500,7 @@ class FieldCacheImpl implements FieldCache {
       // field does not exist or has no value
       return new Bits.MatchNoBits(reader.maxDoc());
     } else if (fieldInfo.hasDocValues()) {
-      // doc values are dense
-      return new Bits.MatchAllBits(reader.maxDoc());
+      return reader.getDocsWithField(field);
     } else if (!fieldInfo.isIndexed()) {
       return new Bits.MatchNoBits(reader.maxDoc());
     }
@@ -566,13 +564,13 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  // inherit javadocs
+  @Override
   public Floats getFloats (AtomicReader reader, String field, boolean setDocsWithField)
     throws IOException {
     return getFloats(reader, field, null, setDocsWithField);
   }
 
-  // inherit javadocs
+  @Override
   public Floats getFloats(AtomicReader reader, String field, FloatParser parser, boolean setDocsWithField)
     throws IOException {
     final NumericDocValues valuesIn = reader.getNumericDocValues(field);
@@ -672,12 +670,12 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  // inherit javadocs
+  @Override
   public Longs getLongs(AtomicReader reader, String field, boolean setDocsWithField) throws IOException {
     return getLongs(reader, field, null, setDocsWithField);
   }
   
-  // inherit javadocs
+  @Override
   public Longs getLongs(AtomicReader reader, String field, FieldCache.LongParser parser, boolean setDocsWithField)
       throws IOException {
     final NumericDocValues valuesIn = reader.getNumericDocValues(field);
@@ -791,13 +789,13 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  // inherit javadocs
+  @Override
   public Doubles getDoubles(AtomicReader reader, String field, boolean setDocsWithField)
     throws IOException {
     return getDoubles(reader, field, null, setDocsWithField);
   }
 
-  // inherit javadocs
+  @Override
   public Doubles getDoubles(AtomicReader reader, String field, FieldCache.DoubleParser parser, boolean setDocsWithField)
       throws IOException {
     final NumericDocValues valuesIn = reader.getNumericDocValues(field);
@@ -944,13 +942,13 @@ class FieldCacheImpl implements FieldCache {
     } else {
       final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
       if (info == null) {
-        return EMPTY_TERMSINDEX;
+        return SortedDocValues.EMPTY;
       } else if (info.hasDocValues()) {
         // we don't try to build a sorted instance from numeric/binary doc
         // values because dedup can be very costly
         throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
       } else if (!info.isIndexed()) {
-        return EMPTY_TERMSINDEX;
+        return SortedDocValues.EMPTY;
       }
       return (SortedDocValues) caches.get(SortedDocValues.class).get(reader, new CacheKey(field, acceptableOverheadRatio), false);
     }
@@ -1037,6 +1035,7 @@ class FieldCacheImpl implements FieldCache {
           termOrd++;
         }
       }
+      termOrdToBytesOffset.freeze();
 
       // maybe an int-only impl?
       return new SortedDocValuesImpl(bytes.freeze(true), termOrdToBytesOffset, docToTermOrd.getMutable(), termOrd);
@@ -1056,7 +1055,7 @@ class FieldCacheImpl implements FieldCache {
     public void get(int docID, BytesRef ret) {
       final int pointer = (int) docToOffset.get(docID);
       if (pointer == 0) {
-        ret.bytes = MISSING;
+        ret.bytes = BytesRef.EMPTY_BYTES;
         ret.offset = 0;
         ret.length = 0;
       } else {
@@ -1067,11 +1066,11 @@ class FieldCacheImpl implements FieldCache {
 
   // TODO: this if DocTermsIndex was already created, we
   // should share it...
-  public BinaryDocValues getTerms(AtomicReader reader, String field) throws IOException {
-    return getTerms(reader, field, PackedInts.FAST);
+  public BinaryDocValues getTerms(AtomicReader reader, String field, boolean setDocsWithField) throws IOException {
+    return getTerms(reader, field, setDocsWithField, PackedInts.FAST);
   }
 
-  public BinaryDocValues getTerms(AtomicReader reader, String field, float acceptableOverheadRatio) throws IOException {
+  public BinaryDocValues getTerms(AtomicReader reader, String field, boolean setDocsWithField, float acceptableOverheadRatio) throws IOException {
     BinaryDocValues valuesIn = reader.getBinaryDocValues(field);
     if (valuesIn == null) {
       valuesIn = reader.getSortedDocValues(field);
@@ -1092,7 +1091,7 @@ class FieldCacheImpl implements FieldCache {
       return BinaryDocValues.EMPTY;
     }
 
-    return (BinaryDocValues) caches.get(BinaryDocValues.class).get(reader, new CacheKey(field, acceptableOverheadRatio), false);
+    return (BinaryDocValues) caches.get(BinaryDocValues.class).get(reader, new CacheKey(field, acceptableOverheadRatio), setDocsWithField);
   }
 
   static final class BinaryDocValuesCache extends Cache {
@@ -1101,7 +1100,7 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField /* ignored */)
+    protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException {
 
       // TODO: would be nice to first check if DocTermsIndex
@@ -1170,8 +1169,22 @@ class FieldCacheImpl implements FieldCache {
         }
       }
 
+      final PackedInts.Reader offsetReader = docToOffset.getMutable();
+      if (setDocsWithField) {
+        wrapper.setDocsWithField(reader, key.field, new Bits() {
+          @Override
+          public boolean get(int index) {
+            return offsetReader.get(index) != 0;
+          }
+
+          @Override
+          public int length() {
+            return maxDoc;
+          }
+        });
+      }
       // maybe an int-only impl?
-      return new BinaryDocValuesImpl(bytes.freeze(true), docToOffset.getMutable());
+      return new BinaryDocValuesImpl(bytes.freeze(true), offsetReader);
     }
   }
 

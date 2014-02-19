@@ -18,12 +18,28 @@
 package org.apache.solr.servlet;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.entity.InputStreamEntity;
+import org.apache.http.util.EntityUtils;
+import org.apache.http.Header;
+import org.apache.http.HeaderIterator;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpEntityEnclosingRequest;
+import org.apache.http.HttpResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -35,9 +51,12 @@ import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.core.ConfigSolr;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.handler.ContentStreamHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
@@ -48,6 +67,7 @@ import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.cache.HttpCacheHeaderUtil;
 import org.apache.solr.servlet.cache.Method;
+import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.apache.solr.util.FastWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,12 +80,13 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
-import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -78,7 +99,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.WeakHashMap;
 
 /**
  * This filter looks at the incoming URL maps them to handlers defined in solrconfig.xml
@@ -87,13 +107,17 @@ import java.util.WeakHashMap;
  */
 public class SolrDispatchFilter implements Filter
 {
+  private static final String CONNECTION_HEADER = "Connection";
+  private static final String TRANSFER_ENCODING_HEADER = "Transfer-Encoding";
+  private static final String CONTENT_LENGTH_HEADER = "Content-Length";
+
   final Logger log;
 
   protected volatile CoreContainer cores;
 
   protected String pathPrefix = null; // strip this from the beginning of a path
   protected String abortErrorMessage = null;
-  protected final Map<SolrConfig, SolrRequestParsers> parsers = new WeakHashMap<SolrConfig, SolrRequestParsers>();
+  protected final HttpClient httpClient = HttpClientUtil.createClient(new ModifiableSolrParams());
   
   private static final Charset UTF8 = Charset.forName("UTF-8");
 
@@ -126,9 +150,42 @@ public class SolrDispatchFilter implements Filter
       // catch this so our filter still works
       log.error( "Could not start Solr. Check solr/home property and the logs");
       SolrCore.log( t );
+      if (t instanceof Error) {
+        throw (Error) t;
+      }
     }
 
     log.info("SolrDispatchFilter.init() done");
+  }
+
+  private ConfigSolr loadConfigSolr(SolrResourceLoader loader) {
+
+    String solrxmlLocation = System.getProperty("solr.solrxml.location", "solrhome");
+
+    if (solrxmlLocation == null || "solrhome".equalsIgnoreCase(solrxmlLocation))
+      return ConfigSolr.fromSolrHome(loader, loader.getInstanceDir());
+
+    if ("zookeeper".equalsIgnoreCase(solrxmlLocation)) {
+      String zkHost = System.getProperty("zkHost");
+      log.info("Trying to read solr.xml from " + zkHost);
+      if (StringUtils.isEmpty(zkHost))
+        throw new SolrException(ErrorCode.SERVER_ERROR,
+            "Could not load solr.xml from zookeeper: zkHost system property not set");
+      SolrZkClient zkClient = new SolrZkClient(zkHost, 30000);
+      try {
+        if (!zkClient.exists("/solr.xml", true))
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Could not load solr.xml from zookeeper: node not found");
+        byte[] data = zkClient.getData("/solr.xml", null, null, true);
+        return ConfigSolr.fromInputStream(loader, new ByteArrayInputStream(data));
+      } catch (Exception e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Could not load solr.xml from zookeeper", e);
+      } finally {
+        zkClient.close();
+      }
+    }
+
+    throw new SolrException(ErrorCode.SERVER_ERROR,
+        "Bad solr.solrxml.location set: " + solrxmlLocation + " - should be 'solrhome' or 'zookeeper'");
   }
 
   /**
@@ -136,7 +193,9 @@ public class SolrDispatchFilter implements Filter
    * @return a CoreContainer to hold this server's cores
    */
   protected CoreContainer createCoreContainer() {
-    CoreContainer cores = new CoreContainer();
+    SolrResourceLoader loader = new SolrResourceLoader(SolrResourceLoader.locateSolrHome());
+    ConfigSolr config = loadConfigSolr(loader);
+    CoreContainer cores = new CoreContainer(loader, config);
     cores.load();
     return cores;
   }
@@ -165,7 +224,7 @@ public class SolrDispatchFilter implements Filter
     }
     
     if (this.cores == null) {
-      ((HttpServletResponse)response).sendError( 503, "Server is shutting down" );
+      ((HttpServletResponse)response).sendError( 503, "Server is shutting down or failed to initialize" );
       return;
     }
     CoreContainer cores = this.cores;
@@ -218,6 +277,13 @@ public class SolrDispatchFilter implements Filter
           handleAdminRequest(req, response, handler, solrReq);
           return;
         }
+        // Check for the core admin info url
+        if( path.startsWith( "/admin/info" ) ) {
+          handler = cores.getInfoHandler();
+          solrReq =  SolrRequestParsers.DEFAULT.parse(null,path, req);
+          handleAdminRequest(req, response, handler, solrReq);
+          return;
+        }
         else {
           //otherwise, we should find a core from the path
           idx = path.indexOf( "/", 1 );
@@ -265,8 +331,12 @@ public class SolrDispatchFilter implements Filter
           // if we couldn't find it locally, look on other nodes
           if (core == null && idx > 0) {
             String coreUrl = getRemotCoreUrl(cores, corename, origCorename);
-            if (coreUrl != null) {
-              path = path.substring( idx );
+            // don't proxy for internal update requests
+            SolrParams queryParams = SolrRequestParsers.parseQueryString(req.getQueryString());
+            if (coreUrl != null
+                && queryParams
+                    .get(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM) == null) {
+              path = path.substring(idx);
               remoteQuery(coreUrl + path, req, solrReq, resp);
               return;
             } else {
@@ -292,12 +362,7 @@ public class SolrDispatchFilter implements Filter
         if( core != null ) {
           final SolrConfig config = core.getSolrConfig();
           // get or create/cache the parser for the core
-          SolrRequestParsers parser = null;
-          parser = parsers.get(config);
-          if( parser == null ) {
-            parser = new SolrRequestParsers(config);
-            parsers.put(config, parser );
-          }
+          SolrRequestParsers parser = config.getRequestParsers();
 
           // Handle /schema/* paths via Restlet
           if( path.startsWith("/schema") ) {
@@ -381,17 +446,25 @@ public class SolrDispatchFilter implements Filter
       } 
       catch (Throwable ex) {
         sendError( core, solrReq, request, (HttpServletResponse)response, ex );
+        if (ex instanceof Error) {
+          throw (Error) ex;
+        }
         return;
-      } 
-      finally {
-        if( solrReq != null ) {
-          log.debug("Closing out SolrRequest: {}", solrReq);
-          solrReq.close();
+      } finally {
+        try {
+          if (solrReq != null) {
+            log.debug("Closing out SolrRequest: {}", solrReq);
+            solrReq.close();
+          }
+        } finally {
+          try {
+            if (core != null) {
+              core.close();
+            }
+          } finally {
+            SolrRequestInfo.clearRequestInfo();
+          }
         }
-        if (core != null) {
-          core.close();
-        }
-        SolrRequestInfo.clearRequestInfo();        
       }
     }
 
@@ -434,9 +507,12 @@ public class SolrDispatchFilter implements Filter
       }
     }
   }
-  
+
   private void remoteQuery(String coreUrl, HttpServletRequest req,
       SolrQueryRequest solrReq, HttpServletResponse resp) throws IOException {
+    HttpRequestBase method = null;
+    HttpEntity httpEntity = null;
+    boolean success = false;
     try {
       String urlstr = coreUrl;
       
@@ -445,47 +521,58 @@ public class SolrDispatchFilter implements Filter
       urlstr += queryString == null ? "" : "?" + queryString;
       
       URL url = new URL(urlstr);
-      HttpURLConnection con = (HttpURLConnection) url.openConnection();
-      con.setRequestMethod(req.getMethod());
-      con.setUseCaches(false);
-      
-      con.setDoOutput(true);
-      con.setDoInput(true);
-      for (Enumeration e = req.getHeaderNames(); e.hasMoreElements();) {
-        String headerName = e.nextElement().toString();
-        con.setRequestProperty(headerName, req.getHeader(headerName));
-      }
-      try {
-        con.connect();
+      boolean isPostOrPutRequest = "POST".equals(req.getMethod()) || "PUT".equals(req.getMethod());
 
-        InputStream is;
-        OutputStream os;
-        if ("POST".equals(req.getMethod())) {
-          is = req.getInputStream();
-          os = con.getOutputStream(); // side effect: method is switched to POST
-          try {
-            IOUtils.copyLarge(is, os);
-            os.flush();
-          } finally {
-            IOUtils.closeQuietly(os);
-            IOUtils.closeQuietly(is);  // TODO: I thought we weren't supposed to explicitly close servlet streams
-          }
+      if ("GET".equals(req.getMethod())) {
+        method = new HttpGet(urlstr);
+      }
+      else if ("HEAD".equals(req.getMethod())) {
+        method = new HttpHead(urlstr);
+      }
+      else if (isPostOrPutRequest) {
+        HttpEntityEnclosingRequestBase entityRequest =
+          "POST".equals(req.getMethod()) ? new HttpPost(urlstr) : new HttpPut(urlstr);
+        HttpEntity entity = new InputStreamEntity(req.getInputStream(), req.getContentLength());
+        entityRequest.setEntity(entity);
+        method = entityRequest;
+      }
+      else {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Unexpected method type: " + req.getMethod());
+      }
+
+      for (Enumeration<String> e = req.getHeaderNames(); e.hasMoreElements();) {
+        String headerName = e.nextElement();
+        method.addHeader(headerName, req.getHeader(headerName));
+      }
+      // These headers not supported for HttpEntityEnclosingRequests
+      if (method instanceof HttpEntityEnclosingRequest) {
+        method.removeHeaders(TRANSFER_ENCODING_HEADER);
+        method.removeHeaders(CONTENT_LENGTH_HEADER);
+      }
+
+      final HttpResponse response = httpClient.execute(method);
+      int httpStatus = response.getStatusLine().getStatusCode();
+      httpEntity = response.getEntity();
+
+      resp.setStatus(httpStatus);
+      for (HeaderIterator responseHeaders = response.headerIterator(); responseHeaders.hasNext();) {
+        Header header = responseHeaders.nextHeader();
+
+        // We pull out these two headers below because they can cause chunked
+        // encoding issues with Tomcat
+        if (header != null && !header.getName().equals(TRANSFER_ENCODING_HEADER)
+          && !header.getName().equals(CONNECTION_HEADER)) {
+            resp.addHeader(header.getName(), header.getValue());
         }
-        
-        resp.setStatus(con.getResponseCode());
-        
-        for (Iterator i = con.getHeaderFields().entrySet().iterator(); i
-            .hasNext();) {
-          Map.Entry mapEntry = (Map.Entry) i.next();
-          if (mapEntry.getKey() != null) resp.setHeader(mapEntry.getKey()
-              .toString(), ((List) mapEntry.getValue()).get(0).toString());
-        }
-        
-        resp.setCharacterEncoding(con.getContentEncoding());
-        resp.setContentType(con.getContentType());
-        
-        is = con.getInputStream();
-        os = resp.getOutputStream();
+      }
+
+      if (httpEntity != null) {
+        if (httpEntity.getContentEncoding() != null) resp.setCharacterEncoding(httpEntity.getContentEncoding().getValue());
+        if (httpEntity.getContentType() != null) resp.setContentType(httpEntity.getContentType().getValue());
+
+        InputStream is = httpEntity.getContent();
+        OutputStream os = resp.getOutputStream();
         try {
           IOUtils.copyLarge(is, os);
           os.flush();
@@ -493,28 +580,33 @@ public class SolrDispatchFilter implements Filter
           IOUtils.closeQuietly(os);   // TODO: I thought we weren't supposed to explicitly close servlet streams
           IOUtils.closeQuietly(is);
         }
-      } finally {
-        con.disconnect();
       }
+      success = true;
     } catch (IOException e) {
       sendError(null, solrReq, req, resp, new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
           "Error trying to proxy request for url: " + coreUrl, e));
+    } finally {
+      EntityUtils.consumeQuietly(httpEntity);
+      if (method != null && !success) {
+        method.abort();
+      }
     }
-    
+
   }
   
   private String getRemotCoreUrl(CoreContainer cores, String collectionName, String origCorename) {
     ClusterState clusterState = cores.getZkController().getClusterState();
     Collection<Slice> slices = clusterState.getActiveSlices(collectionName);
     boolean byCoreName = false;
+    
     if (slices == null) {
+      slices = new ArrayList<Slice>();
       // look by core name
       byCoreName = true;
-      Set<String> collections = clusterState.getCollections();
-      for (String collection : collections) {
-        slices = new ArrayList<Slice>();
-        slices.addAll(clusterState.getActiveSlices(collection));
+      slices = getSlicesForCollections(clusterState, slices, true);
+      if (slices == null || slices.size() == 0) {
+        slices = getSlicesForCollections(clusterState, slices, false);
       }
     }
     
@@ -522,6 +614,21 @@ public class SolrDispatchFilter implements Filter
       return null;
     }
     
+    String coreUrl = getCoreUrl(cores, collectionName, origCorename, clusterState,
+        slices, byCoreName, true);
+    
+    if (coreUrl == null) {
+      coreUrl = getCoreUrl(cores, collectionName, origCorename, clusterState,
+          slices, byCoreName, false);
+    }
+    
+    return coreUrl;
+  }
+
+  private String getCoreUrl(CoreContainer cores, String collectionName,
+      String origCorename, ClusterState clusterState, Collection<Slice> slices,
+      boolean byCoreName, boolean activeReplicas) {
+    String coreUrl;
     Set<String> liveNodes = clusterState.getLiveNodes();
     Iterator<Slice> it = slices.iterator();
     while (it.hasNext()) {
@@ -529,8 +636,9 @@ public class SolrDispatchFilter implements Filter
       Map<String,Replica> sliceShards = slice.getReplicasMap();
       for (ZkNodeProps nodeProps : sliceShards.values()) {
         ZkCoreNodeProps coreNodeProps = new ZkCoreNodeProps(nodeProps);
-        if (liveNodes.contains(coreNodeProps.getNodeName())
-            && coreNodeProps.getState().equals(ZkStateReader.ACTIVE)) {
+        if (!activeReplicas || (liveNodes.contains(coreNodeProps.getNodeName())
+            && coreNodeProps.getState().equals(ZkStateReader.ACTIVE))) {
+
           if (byCoreName && !collectionName.equals(coreNodeProps.getCoreName())) {
             // if it's by core name, make sure they match
             continue;
@@ -539,7 +647,7 @@ public class SolrDispatchFilter implements Filter
             // don't count a local core
             continue;
           }
-          String coreUrl;
+
           if (origCorename != null) {
             coreUrl = coreNodeProps.getBaseUrl() + "/" + origCorename;
           } else {
@@ -554,6 +662,19 @@ public class SolrDispatchFilter implements Filter
       }
     }
     return null;
+  }
+
+  private Collection<Slice> getSlicesForCollections(ClusterState clusterState,
+      Collection<Slice> slices, boolean activeSlices) {
+    Set<String> collections = clusterState.getCollections();
+    for (String collection : collections) {
+      if (activeSlices) {
+        slices.addAll(clusterState.getActiveSlices(collection));
+      } else {
+        slices.addAll(clusterState.getSlices(collection));
+      }
+    }
+    return slices;
   }
   
   private SolrCore getCoreByCollection(CoreContainer cores, String corename, String path) {
@@ -664,6 +785,8 @@ public class SolrDispatchFilter implements Filter
       ServletRequest request, 
       HttpServletResponse response, 
       Throwable ex) throws IOException {
+    Exception exp = null;
+    SolrCore localCore = null;
     try {
       SolrQueryResponse solrResp = new SolrQueryResponse();
       if(ex instanceof Exception) {
@@ -673,7 +796,9 @@ public class SolrDispatchFilter implements Filter
         solrResp.setException(new RuntimeException(ex));
       }
       if(core==null) {
-        core = cores.getCore(""); // default core
+        localCore = cores.getCore(""); // default core
+      } else {
+        localCore = core;
       }
       if(req==null) {
         final SolrParams solrParams;
@@ -689,11 +814,21 @@ public class SolrDispatchFilter implements Filter
       QueryResponseWriter writer = core.getQueryResponseWriter(req);
       writeResponse(solrResp, response, writer, req, Method.GET);
     }
-    catch( Throwable t ) { // This error really does not matter
-      SimpleOrderedMap info = new SimpleOrderedMap();
-      int code = ResponseUtils.getErrorInfo(ex, info, log);
-      response.sendError( code, info.toString() );
-    }
+    catch (Exception e) { // This error really does not matter
+         exp = e;
+    } finally {
+      try {
+        if (exp != null) {
+          SimpleOrderedMap info = new SimpleOrderedMap();
+          int code = ResponseUtils.getErrorInfo(ex, info, log);
+          response.sendError(code, info.toString());
+        }
+      } finally {
+        if (core == null && localCore != null) {
+          localCore.close();
+        }
+      }
+   }
   }
 
   //---------------------------------------------------------------------

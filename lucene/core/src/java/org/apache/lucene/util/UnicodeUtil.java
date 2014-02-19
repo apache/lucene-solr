@@ -96,7 +96,7 @@ package org.apache.lucene.util;
 public final class UnicodeUtil {
   
   /** A binary term consisting of a number of 0xff bytes, likely to be bigger than other terms
-   *  one would normally encounter, and definitely bigger than any UTF-8 terms.
+   *  (e.g. collation keys) one would normally encounter, and definitely bigger than any UTF-8 terms.
    *  <p>
    *  WARNING: This is not a valid UTF8 Term  
    **/

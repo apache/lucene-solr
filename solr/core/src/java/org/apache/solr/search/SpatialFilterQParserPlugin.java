@@ -49,7 +49,7 @@ import org.apache.solr.request.SolrQueryRequest;
  * to the field, making it useful as a component of the main query or a boosting query.
  */
 public class SpatialFilterQParserPlugin extends QParserPlugin {
-  public static String NAME = "geofilt";
+  public static final String NAME = "geofilt";
 
   @Override
   public QParser createParser(String qstr, SolrParams localParams,

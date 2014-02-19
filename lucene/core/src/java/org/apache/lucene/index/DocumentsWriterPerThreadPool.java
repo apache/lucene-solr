@@ -71,12 +71,16 @@ abstract class DocumentsWriterPerThreadPool implements Cloneable {
      * for indexing anymore.
      * @see #isActive()  
      */
-    private void resetWriter(DocumentsWriterPerThread dwpt) {
+  
+    private void deactivate() {
       assert this.isHeldByCurrentThread();
-      if (dwpt == null) {
-        isActive = false;
-      }
-      this.dwpt = dwpt;
+      isActive = false;
+      reset();
+    }
+    
+    private void reset() {
+      assert this.isHeldByCurrentThread();
+      this.dwpt = null;
       this.bytesUsed = 0;
       this.flushPending = false;
     }
@@ -89,6 +93,11 @@ abstract class DocumentsWriterPerThreadPool implements Cloneable {
     boolean isActive() {
       assert this.isHeldByCurrentThread();
       return isActive;
+    }
+    
+    boolean isInitialized() {
+      assert this.isHeldByCurrentThread();
+      return isActive() && dwpt != null;
     }
     
     /**
@@ -121,9 +130,7 @@ abstract class DocumentsWriterPerThreadPool implements Cloneable {
 
   private ThreadState[] threadStates;
   private volatile int numThreadStatesActive;
-  private SetOnce<FieldNumbers> globalFieldMap = new SetOnce<FieldNumbers>();
-  private SetOnce<DocumentsWriter> documentsWriter = new SetOnce<DocumentsWriter>();
-  
+
   /**
    * Creates a new {@link DocumentsWriterPerThreadPool} with a given maximum of {@link ThreadState}s.
    */
@@ -133,21 +140,18 @@ abstract class DocumentsWriterPerThreadPool implements Cloneable {
     }
     threadStates = new ThreadState[maxNumThreadStates];
     numThreadStatesActive = 0;
-  }
-
-  void initialize(DocumentsWriter documentsWriter, FieldNumbers globalFieldMap, LiveIndexWriterConfig config) {
-    this.documentsWriter.set(documentsWriter); // thread pool is bound to DW
-    this.globalFieldMap.set(globalFieldMap);
     for (int i = 0; i < threadStates.length; i++) {
-      final FieldInfos.Builder infos = new FieldInfos.Builder(globalFieldMap);
-      threadStates[i] = new ThreadState(new DocumentsWriterPerThread(documentsWriter.directory, documentsWriter, infos, documentsWriter.chain));
+      threadStates[i] = new ThreadState(null);
     }
   }
 
   @Override
   public DocumentsWriterPerThreadPool clone() {
     // We should only be cloned before being used:
-    assert numThreadStatesActive == 0;
+    if (numThreadStatesActive != 0) {
+      throw new IllegalStateException("clone this object before it is used!");
+    }
+    
     DocumentsWriterPerThreadPool clone;
     try {
       clone = (DocumentsWriterPerThreadPool) super.clone();
@@ -155,9 +159,10 @@ abstract class DocumentsWriterPerThreadPool implements Cloneable {
       // should not happen
       throw new RuntimeException(e);
     }
-    clone.documentsWriter = new SetOnce<DocumentsWriter>();
-    clone.globalFieldMap = new SetOnce<FieldNumbers>();
     clone.threadStates = new ThreadState[threadStates.length];
+    for (int i = 0; i < threadStates.length; i++) {
+      clone.threadStates[i] = new ThreadState(null);
+    }
     return clone;
   }
   
@@ -175,6 +180,7 @@ abstract class DocumentsWriterPerThreadPool implements Cloneable {
   int getActiveThreadState() {
     return numThreadStatesActive;
   }
+  
 
   /**
    * Returns a new {@link ThreadState} iff any new state is available otherwise
@@ -195,8 +201,7 @@ abstract class DocumentsWriterPerThreadPool implements Cloneable {
         if (threadState.isActive()) {
           // unreleased thread states are deactivated during DW#close()
           numThreadStatesActive++; // increment will publish the ThreadState
-          assert threadState.dwpt != null;
-          threadState.dwpt.initialize();
+          assert threadState.dwpt == null;
           unlock = false;
           return threadState;
         }
@@ -217,7 +222,7 @@ abstract class DocumentsWriterPerThreadPool implements Cloneable {
     for (int i = numThreadStatesActive; i < threadStates.length; i++) {
       assert threadStates[i].tryLock() : "unreleased threadstate should not be locked";
       try {
-        assert !threadStates[i].isActive() : "expected unreleased thread state to be inactive";
+        assert !threadStates[i].isInitialized() : "expected unreleased thread state to be inactive";
       } finally {
         threadStates[i].unlock();
       }
@@ -233,24 +238,20 @@ abstract class DocumentsWriterPerThreadPool implements Cloneable {
       final ThreadState threadState = threadStates[i];
       threadState.lock();
       try {
-        threadState.resetWriter(null);
+        threadState.deactivate();
       } finally {
         threadState.unlock();
       }
     }
   }
   
-  DocumentsWriterPerThread replaceForFlush(ThreadState threadState, boolean closed) {
+  DocumentsWriterPerThread reset(ThreadState threadState, boolean closed) {
     assert threadState.isHeldByCurrentThread();
-    assert globalFieldMap.get() != null;
     final DocumentsWriterPerThread dwpt = threadState.dwpt;
     if (!closed) {
-      final FieldInfos.Builder infos = new FieldInfos.Builder(globalFieldMap.get());
-      final DocumentsWriterPerThread newDwpt = new DocumentsWriterPerThread(dwpt, infos);
-      newDwpt.initialize();
-      threadState.resetWriter(newDwpt);
+      threadState.reset();
     } else {
-      threadState.resetWriter(null);
+      threadState.deactivate();
     }
     return dwpt;
   }
@@ -325,18 +326,6 @@ abstract class DocumentsWriterPerThreadPool implements Cloneable {
    */
   void deactivateThreadState(ThreadState threadState) {
     assert threadState.isActive();
-    threadState.resetWriter(null);
-  }
-
-  /**
-   * Reinitialized an active {@link ThreadState}. A {@link ThreadState} should
-   * only be reinitialized if it is active without any pending documents.
-   * 
-   * @param threadState the state to reinitialize
-   */
-  void reinitThreadState(ThreadState threadState) {
-    assert threadState.isActive;
-    assert threadState.dwpt.getNumDocsInRAM() == 0;
-    threadState.dwpt.initialize();
+    threadState.deactivate();
   }
 }

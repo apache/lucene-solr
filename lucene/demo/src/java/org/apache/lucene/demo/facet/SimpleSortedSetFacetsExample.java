@@ -23,15 +23,15 @@ import java.util.List;
 
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.facet.params.FacetSearchParams;
-import org.apache.lucene.facet.search.CountFacetRequest;
-import org.apache.lucene.facet.search.DrillDownQuery;
-import org.apache.lucene.facet.search.FacetResult;
-import org.apache.lucene.facet.search.FacetsCollector;
-import org.apache.lucene.facet.sortedset.SortedSetDocValuesAccumulator;
-import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetFields;
+import org.apache.lucene.facet.DrillDownQuery;
+import org.apache.lucene.facet.FacetResult;
+import org.apache.lucene.facet.Facets;
+import org.apache.lucene.facet.FacetsCollector;
+import org.apache.lucene.facet.FacetsConfig;
+import org.apache.lucene.facet.sortedset.DefaultSortedSetDocValuesReaderState;
+import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetCounts;
+import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetField;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -41,40 +41,46 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
 /** Shows simple usage of faceted indexing and search,
- *  using {@link SortedSetDocValuesFacetFields} and {@link
- *  SortedSetDocValuesAccumulator}.  */
+ *  using {@link SortedSetDocValuesFacetField} and {@link
+ *  SortedSetDocValuesFacetCounts}.  */
 
 public class SimpleSortedSetFacetsExample {
 
   private final Directory indexDir = new RAMDirectory();
+  private final FacetsConfig config = new FacetsConfig();
 
   /** Empty constructor */
-  public SimpleSortedSetFacetsExample() {}
-  
-  private void add(IndexWriter indexWriter, SortedSetDocValuesFacetFields facetFields, String ... categoryPaths) throws IOException {
-    Document doc = new Document();
-    
-    List<CategoryPath> paths = new ArrayList<CategoryPath>();
-    for (String categoryPath : categoryPaths) {
-      paths.add(new CategoryPath(categoryPath, '/'));
-    }
-    facetFields.addFields(doc, paths);
-    indexWriter.addDocument(doc);
+  public SimpleSortedSetFacetsExample() {
   }
 
   /** Build the example index. */
   private void index() throws IOException {
     IndexWriter indexWriter = new IndexWriter(indexDir, new IndexWriterConfig(FacetExamples.EXAMPLES_VER, 
         new WhitespaceAnalyzer(FacetExamples.EXAMPLES_VER)));
+    Document doc = new Document();
+    doc.add(new SortedSetDocValuesFacetField("Author", "Bob"));
+    doc.add(new SortedSetDocValuesFacetField("Publish Year", "2010"));
+    indexWriter.addDocument(config.build(doc));
 
-    // Reused across documents, to add the necessary facet fields
-    SortedSetDocValuesFacetFields facetFields = new SortedSetDocValuesFacetFields();
+    doc = new Document();
+    doc.add(new SortedSetDocValuesFacetField("Author", "Lisa"));
+    doc.add(new SortedSetDocValuesFacetField("Publish Year", "2010"));
+    indexWriter.addDocument(config.build(doc));
 
-    add(indexWriter, facetFields, "Author/Bob", "Publish Year/2010");
-    add(indexWriter, facetFields, "Author/Lisa", "Publish Year/2010");
-    add(indexWriter, facetFields, "Author/Lisa", "Publish Year/2012");
-    add(indexWriter, facetFields, "Author/Susan", "Publish Year/2012");
-    add(indexWriter, facetFields, "Author/Frank", "Publish Year/1999");
+    doc = new Document();
+    doc.add(new SortedSetDocValuesFacetField("Author", "Lisa"));
+    doc.add(new SortedSetDocValuesFacetField("Publish Year", "2012"));
+    indexWriter.addDocument(config.build(doc));
+
+    doc = new Document();
+    doc.add(new SortedSetDocValuesFacetField("Author", "Susan"));
+    doc.add(new SortedSetDocValuesFacetField("Publish Year", "2012"));
+    indexWriter.addDocument(config.build(doc));
+
+    doc = new Document();
+    doc.add(new SortedSetDocValuesFacetField("Author", "Frank"));
+    doc.add(new SortedSetDocValuesFacetField("Publish Year", "1999"));
+    indexWriter.addDocument(config.build(doc));
     
     indexWriter.close();
   }
@@ -83,49 +89,45 @@ public class SimpleSortedSetFacetsExample {
   private List<FacetResult> search() throws IOException {
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     IndexSearcher searcher = new IndexSearcher(indexReader);
-    SortedSetDocValuesReaderState state = new SortedSetDocValuesReaderState(indexReader);
-
-    // Count both "Publish Year" and "Author" dimensions
-    FacetSearchParams fsp = new FacetSearchParams(
-        new CountFacetRequest(new CategoryPath("Publish Year"), 10), 
-        new CountFacetRequest(new CategoryPath("Author"), 10));
+    SortedSetDocValuesReaderState state = new DefaultSortedSetDocValuesReaderState(indexReader);
 
     // Aggregatses the facet counts
-    FacetsCollector fc = FacetsCollector.create(new SortedSetDocValuesAccumulator(fsp, state));
+    FacetsCollector fc = new FacetsCollector();
 
     // MatchAllDocsQuery is for "browsing" (counts facets
     // for all non-deleted docs in the index); normally
-    // you'd use a "normal" query, and use MultiCollector to
-    // wrap collecting the "normal" hits and also facets:
-    searcher.search(new MatchAllDocsQuery(), fc);
+    // you'd use a "normal" query:
+    FacetsCollector.search(searcher, new MatchAllDocsQuery(), 10, fc);
 
     // Retrieve results
-    List<FacetResult> facetResults = fc.getFacetResults();
-    
+    Facets facets = new SortedSetDocValuesFacetCounts(state, fc);
+
+    List<FacetResult> results = new ArrayList<FacetResult>();
+    results.add(facets.getTopChildren(10, "Author"));
+    results.add(facets.getTopChildren(10, "Publish Year"));
     indexReader.close();
     
-    return facetResults;
+    return results;
   }
   
   /** User drills down on 'Publish Year/2010'. */
-  private List<FacetResult> drillDown() throws IOException {
+  private FacetResult drillDown() throws IOException {
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     IndexSearcher searcher = new IndexSearcher(indexReader);
-    SortedSetDocValuesReaderState state = new SortedSetDocValuesReaderState(indexReader);
+    SortedSetDocValuesReaderState state = new DefaultSortedSetDocValuesReaderState(indexReader);
 
     // Now user drills down on Publish Year/2010:
-    FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(new CategoryPath("Author"), 10));
-    DrillDownQuery q = new DrillDownQuery(fsp.indexingParams, new MatchAllDocsQuery());
-    q.add(new CategoryPath("Publish Year/2010", '/'));
-    FacetsCollector fc = FacetsCollector.create(new SortedSetDocValuesAccumulator(fsp, state));
-    searcher.search(q, fc);
+    DrillDownQuery q = new DrillDownQuery(config);
+    q.add("Publish Year", "2010");
+    FacetsCollector fc = new FacetsCollector();
+    FacetsCollector.search(searcher, q, 10, fc);
 
     // Retrieve results
-    List<FacetResult> facetResults = fc.getFacetResults();
-    
+    Facets facets = new SortedSetDocValuesFacetCounts(state, fc);
+    FacetResult result = facets.getTopChildren(10, "Author");
     indexReader.close();
     
-    return facetResults;
+    return result;
   }
 
   /** Runs the search example. */
@@ -135,7 +137,7 @@ public class SimpleSortedSetFacetsExample {
   }
   
   /** Runs the drill-down example. */
-  public List<FacetResult> runDrillDown() throws IOException {
+  public FacetResult runDrillDown() throws IOException {
     index();
     return drillDown();
   }
@@ -144,18 +146,14 @@ public class SimpleSortedSetFacetsExample {
   public static void main(String[] args) throws Exception {
     System.out.println("Facet counting example:");
     System.out.println("-----------------------");
-    List<FacetResult> results = new SimpleSortedSetFacetsExample().runSearch();
-    for (FacetResult res : results) {
-      System.out.println(res);
-    }
+    SimpleSortedSetFacetsExample example = new SimpleSortedSetFacetsExample();
+    List<FacetResult> results = example.runSearch();
+    System.out.println("Author: " + results.get(0));
+    System.out.println("Publish Year: " + results.get(0));
 
     System.out.println("\n");
     System.out.println("Facet drill-down example (Publish Year/2010):");
     System.out.println("---------------------------------------------");
-    results = new SimpleSortedSetFacetsExample().runDrillDown();
-    for (FacetResult res : results) {
-      System.out.println(res);
-    }
+    System.out.println("Author: " + example.runDrillDown());
   }
-  
 }

@@ -20,7 +20,8 @@ package org.apache.lucene.analysis.tokenattributes;
 import org.apache.lucene.analysis.TestToken;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+
 import java.nio.CharBuffer;
 import java.util.HashMap;
 import java.util.Formatter;
@@ -132,7 +133,7 @@ public class TestCharTermAttributeImpl extends LuceneTestCase {
   public void testAttributeReflection() throws Exception {
     CharTermAttributeImpl t = new CharTermAttributeImpl();
     t.append("foobar");
-    _TestUtil.assertAttributeReflection(t, new HashMap<String,Object>() {{
+    TestUtil.assertAttributeReflection(t, new HashMap<String, Object>() {{
       put(CharTermAttribute.class.getName() + "#term", "foobar");
       put(TermToBytesRefAttribute.class.getName() + "#bytes", new BytesRef("foobar"));
     }});

@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 public class TestFrenchLightStemFilterFactory extends BaseTokenStreamFactoryTestCase {
   public void testStemming() throws Exception {
     Reader reader = new StringReader("administrativement");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("FrenchLightStem").create(stream);
     assertTokenStreamContents(stream, new String[] { "administratif" });
   }

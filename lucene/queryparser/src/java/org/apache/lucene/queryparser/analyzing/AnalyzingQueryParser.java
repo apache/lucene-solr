@@ -18,7 +18,6 @@ package org.apache.lucene.queryparser.analyzing;
  */
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -163,9 +162,7 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryparser.classic.
    */
   protected String analyzeSingleChunk(String field, String termStr, String chunk) throws ParseException{
     String analyzed = null;
-    TokenStream stream = null;
-    try{
-      stream = getAnalyzer().tokenStream(field, new StringReader(chunk));
+    try (TokenStream stream = getAnalyzer().tokenStream(field, chunk)) {
       stream.reset();
       CharTermAttribute termAtt = stream.getAttribute(CharTermAttribute.class);
       // get first and hopefully only output token
@@ -187,7 +184,6 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryparser.classic.
           multipleOutputs.append('"');
         }
         stream.end();
-        stream.close();
         if (null != multipleOutputs) {
           throw new ParseException(
               String.format(getLocale(),
@@ -197,7 +193,6 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryparser.classic.
         // nothing returned by analyzer.  Was it a stop word and the user accidentally
         // used an analyzer with stop words?
         stream.end();
-        stream.close();
         throw new ParseException(String.format(getLocale(), "Analyzer returned nothing for \"%s\"", chunk));
       }
     } catch (IOException e){

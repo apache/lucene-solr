@@ -21,16 +21,14 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.Random;
 
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-
 public class TestLookaheadTokenFilter extends BaseTokenStreamTestCase {
 
   public void testRandomStrings() throws Exception {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      protected TokenStreamComponents createComponents(String fieldName) {
         Random random = random();
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, random.nextBoolean());
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, random.nextBoolean());
         TokenStream output = new MockRandomLookaheadTokenFilter(random, tokenizer);
         return new TokenStreamComponents(tokenizer, output);
       }
@@ -57,12 +55,42 @@ public class TestLookaheadTokenFilter extends BaseTokenStreamTestCase {
   public void testNeverCallingPeek() throws Exception {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, random().nextBoolean());
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, random().nextBoolean());
         TokenStream output = new NeverPeeksLookaheadTokenFilter(tokenizer);
         return new TokenStreamComponents(tokenizer, output);
       }
       };
     checkRandomData(random(), a, 200*RANDOM_MULTIPLIER, 8192);
+  }
+
+  public void testMissedFirstToken() throws Exception {
+    Analyzer analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+        TrivialLookaheadFilter filter = new TrivialLookaheadFilter(source);
+        return new TokenStreamComponents(source, filter);
+     }
+    };
+
+    assertAnalyzesTo(analyzer,
+        "Only he who is running knows .",
+        new String[]{
+            "Only",
+            "Only-huh?",
+            "he",
+            "he-huh?",
+            "who",
+            "who-huh?",
+            "is",
+            "is-huh?",
+            "running",
+            "running-huh?",
+            "knows",
+            "knows-huh?",
+            ".",
+            ".-huh?"
+        });
   }
 }

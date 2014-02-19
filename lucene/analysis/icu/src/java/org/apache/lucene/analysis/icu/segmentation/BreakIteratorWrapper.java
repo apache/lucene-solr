@@ -21,7 +21,6 @@ import java.text.CharacterIterator;
 
 import com.ibm.icu.lang.UCharacter;
 import com.ibm.icu.text.BreakIterator;
-import com.ibm.icu.text.DictionaryBasedBreakIterator;
 import com.ibm.icu.text.RuleBasedBreakIterator;
 import com.ibm.icu.text.UTF16;
 
@@ -60,15 +59,12 @@ abstract class BreakIteratorWrapper {
   }
 
   /**
-   * If its a DictionaryBasedBreakIterator, it doesn't return rulestatus, so
-   * treat it like a generic BreakIterator If its any other
-   * RuleBasedBreakIterator, the rule status can be used for token type. If its
+   * If its a RuleBasedBreakIterator, the rule status can be used for token type. If its
    * any other BreakIterator, the rulestatus method is not available, so treat
    * it like a generic BreakIterator.
    */
   static BreakIteratorWrapper wrap(BreakIterator breakIterator) {
-    if (breakIterator instanceof RuleBasedBreakIterator
-        && !(breakIterator instanceof DictionaryBasedBreakIterator))
+    if (breakIterator instanceof RuleBasedBreakIterator)
       return new RBBIWrapper((RuleBasedBreakIterator) breakIterator);
     else
       return new BIWrapper(breakIterator);

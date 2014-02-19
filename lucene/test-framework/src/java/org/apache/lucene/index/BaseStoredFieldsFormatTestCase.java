@@ -31,21 +31,20 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.StoredFieldsFormat;
-import org.apache.lucene.codecs.compressing.CompressingCodec;
-import org.apache.lucene.codecs.lucene42.Lucene42Codec;
+import org.apache.lucene.codecs.lucene46.Lucene46Codec;
 import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.NumericRangeQuery;
@@ -58,8 +57,8 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
-import org.apache.lucene.util.LuceneTestCase.Nightly;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
@@ -78,6 +77,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
    */
   protected abstract Codec getCodec();
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     // set the default codec, so adding test cases to this isn't fragile
@@ -85,6 +85,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
     Codec.setDefault(getCodec());
   }
 
+  @Override
   public void tearDown() throws Exception {
     Codec.setDefault(savedCodec); // restore
     super.tearDown();
@@ -93,10 +94,10 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
   public void testRandomStoredFields() throws IOException {
     Directory dir = newDirectory();
     Random rand = random();
-    RandomIndexWriter w = new RandomIndexWriter(rand, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(_TestUtil.nextInt(rand, 5, 20)));
+    RandomIndexWriter w = new RandomIndexWriter(rand, dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(TestUtil.nextInt(rand, 5, 20)));
     //w.w.setNoCFSRatio(0.0);
     final int docCount = atLeast(200);
-    final int fieldCount = _TestUtil.nextInt(rand, 1, 5);
+    final int fieldCount = TestUtil.nextInt(rand, 1, 5);
 
     final List<Integer> fieldIDs = new ArrayList<Integer>();
 
@@ -129,7 +130,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
       for(int field: fieldIDs) {
         final String s;
         if (rand.nextInt(4) != 3) {
-          s = _TestUtil.randomUnicodeString(rand, 1000);
+          s = TestUtil.randomUnicodeString(rand, 1000);
           doc.add(newField("f"+field, s, customType2));
         } else {
           s = null;
@@ -349,7 +350,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
     ft.setStored(true);
     ft.freeze();
 
-    final String string = _TestUtil.randomSimpleString(random(), 50);
+    final String string = TestUtil.randomSimpleString(random(), 50);
     final byte[] bytes = string.getBytes("UTF-8");
     final long l = random().nextBoolean() ? random().nextInt(42) : random().nextLong();
     final int i = random().nextBoolean() ? random().nextInt(42) : random().nextInt();
@@ -502,14 +503,14 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
     // get another codec, other than the default: so we are merging segments across different codecs
     final Codec otherCodec;
     if ("SimpleText".equals(Codec.getDefault().getName())) {
-      otherCodec = new Lucene42Codec();
+      otherCodec = new Lucene46Codec();
     } else {
       otherCodec = new SimpleTextCodec();
     }
     Directory dir = newDirectory();
     IndexWriterConfig iwConf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwConf.setMaxBufferedDocs(RandomInts.randomIntBetween(random(), 2, 30));
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConf);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConf.clone());
     
     final int docCount = atLeast(200);
     final byte[][][] data = new byte [docCount][][];
@@ -548,7 +549,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
         } else {
           iwConf.setCodec(otherCodec);
         }
-        iw = new RandomIndexWriter(random(), dir, iwConf);
+        iw = new RandomIndexWriter(random(), dir, iwConf.clone());
       }
     }
 
@@ -597,7 +598,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
     // for this test we force a FS dir
     // we can't just use newFSDirectory, because this test doesn't really index anything.
     // so if we get NRTCachingDir+SimpleText, we make massive stored fields and OOM (LUCENE-4484)
-    Directory dir = new MockDirectoryWrapper(random(), new MMapDirectory(_TestUtil.getTempDir("testBigDocuments")));
+    Directory dir = new MockDirectoryWrapper(random(), new MMapDirectory(TestUtil.getTempDir("testBigDocuments")));
     IndexWriterConfig iwConf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwConf.setMaxBufferedDocs(RandomInts.randomIntBetween(random(), 2, 30));
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConf);

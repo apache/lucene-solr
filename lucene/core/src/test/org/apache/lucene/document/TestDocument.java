@@ -17,10 +17,12 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.StringReader;
 import java.util.List;
 
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -28,6 +30,7 @@ import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
@@ -99,28 +102,31 @@ public class TestDocument extends LuceneTestCase {
    */
   public void testRemoveForNewDocument() throws Exception {
     Document doc = makeDocumentWithFields();
-    assertEquals(8, doc.getFields().size());
+    assertEquals(10, doc.getFields().size());
     doc.removeFields("keyword");
-    assertEquals(6, doc.getFields().size());
+    assertEquals(8, doc.getFields().size());
     doc.removeFields("doesnotexists"); // removing non-existing fields is
                                        // siltenlty ignored
     doc.removeFields("keyword"); // removing a field more than once
+    assertEquals(8, doc.getFields().size());
+    doc.removeField("text");
+    assertEquals(7, doc.getFields().size());
+    doc.removeField("text");
     assertEquals(6, doc.getFields().size());
     doc.removeField("text");
-    assertEquals(5, doc.getFields().size());
-    doc.removeField("text");
-    assertEquals(4, doc.getFields().size());
-    doc.removeField("text");
-    assertEquals(4, doc.getFields().size());
+    assertEquals(6, doc.getFields().size());
     doc.removeField("doesnotexists"); // removing non-existing fields is
                                       // siltenlty ignored
-    assertEquals(4, doc.getFields().size());
+    assertEquals(6, doc.getFields().size());
     doc.removeFields("unindexed");
-    assertEquals(2, doc.getFields().size());
+    assertEquals(4, doc.getFields().size());
     doc.removeFields("unstored");
-    assertEquals(0, doc.getFields().size());
+    assertEquals(2, doc.getFields().size());
     doc.removeFields("doesnotexists"); // removing non-existing fields is
                                        // siltenlty ignored
+    assertEquals(2, doc.getFields().size());
+    
+    doc.removeFields("indexed_not_tokenized");
     assertEquals(0, doc.getFields().size());
   }
 
@@ -149,14 +155,14 @@ public class TestDocument extends LuceneTestCase {
 
   public void testClearDocument() {
     Document doc = makeDocumentWithFields();
-    assertEquals(8, doc.getFields().size());
+    assertEquals(10, doc.getFields().size());
     doc.clear();
     assertEquals(0, doc.getFields().size());
   }
 
   public void testGetFieldsImmutable() {
     Document doc = makeDocumentWithFields();
-    assertEquals(8, doc.getFields().size());
+    assertEquals(10, doc.getFields().size());
     List<Field> fields = doc.getFields();
     try {
       fields.add( new StringField("name", "value", Field.Store.NO) );
@@ -224,10 +230,33 @@ public class TestDocument extends LuceneTestCase {
                  doc.getValues("nope"));
   }
   
+  public void testPositionIncrementMultiFields() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    writer.addDocument(makeDocumentWithFields());
+    IndexReader reader = writer.getReader();
+    
+    IndexSearcher searcher = newSearcher(reader);
+    PhraseQuery query = new PhraseQuery();
+    query.add(new Term("indexed_not_tokenized", "test1"));
+    query.add(new Term("indexed_not_tokenized", "test2"));
+    
+    ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals(1, hits.length);
+    
+    doAssert(searcher.doc(hits[0].doc));
+    writer.close();
+    reader.close();
+    dir.close();    
+  }
+  
   private Document makeDocumentWithFields() {
     Document doc = new Document();
     FieldType stored = new FieldType();
     stored.setStored(true);
+    FieldType indexedNotTokenized = new FieldType();
+    indexedNotTokenized.setIndexed(true);
+    indexedNotTokenized.setTokenized(false);
     doc.add(new StringField("keyword", "test1", Field.Store.YES));
     doc.add(new StringField("keyword", "test2", Field.Store.YES));
     doc.add(new TextField("text", "test1", Field.Store.YES));
@@ -238,6 +267,8 @@ public class TestDocument extends LuceneTestCase {
         .add(new TextField("unstored", "test1", Field.Store.NO));
     doc
         .add(new TextField("unstored", "test2", Field.Store.NO));
+    doc.add(new Field("indexed_not_tokenized", "test1", indexedNotTokenized));
+    doc.add(new Field("indexed_not_tokenized", "test2", indexedNotTokenized));
     return doc;
   }
   
@@ -314,10 +345,14 @@ public class TestDocument extends LuceneTestCase {
   // LUCENE-3616
   public void testInvalidFields() {
     try {
-      new Field("foo", new MockTokenizer(new StringReader("")), StringField.TYPE_STORED);
+      Tokenizer tok = new MockTokenizer();
+      tok.setReader(new StringReader(""));
+      new Field("foo", tok, StringField.TYPE_STORED);
       fail("did not hit expected exc");
     } catch (IllegalArgumentException iae) {
       // expected
+    } catch (IOException ioe) {
+      throw new RuntimeException(ioe);
     }
   }
   

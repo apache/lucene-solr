@@ -181,7 +181,7 @@ public class TestPhoneticFilterFactory extends BaseTokenStreamTestCase {
   
   static void assertAlgorithm(String algName, String inject, String input,
       String[] expected) throws Exception {
-    Tokenizer tokenizer = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
+    Tokenizer tokenizer = whitespaceMockTokenizer(input);
     Map<String,String> args = new HashMap<String,String>();
     args.put("encoder", algName);
     args.put("inject", inject);

@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.Random;
 
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 // TODO: sometimes remove tokens too...?
 
@@ -55,7 +55,7 @@ public final class MockGraphTokenFilter extends LookaheadTokenFilter<LookaheadTo
     }
     if (random.nextInt(7) == 5) {
 
-      final int posLength = _TestUtil.nextInt(random, 1, 5);
+      final int posLength = TestUtil.nextInt(random, 1, 5);
 
       if (DEBUG) {
         System.out.println("  do insert! posLen=" + posLength);
@@ -76,7 +76,7 @@ public final class MockGraphTokenFilter extends LookaheadTokenFilter<LookaheadTo
         insertToken();
         clearAttributes();
         posLenAtt.setPositionLength(posLength);
-        termAtt.append(_TestUtil.randomUnicodeString(random));
+        termAtt.append(TestUtil.randomUnicodeString(random));
         posIncAtt.setPositionIncrement(0);
         offsetAtt.setOffset(positions.get(outputPos).startOffset,
                             posEndData.endOffset);
@@ -105,9 +105,18 @@ public final class MockGraphTokenFilter extends LookaheadTokenFilter<LookaheadTo
   }
 
   @Override
+  public void close() throws IOException {
+    super.close();
+    this.random = null;
+  }
+
+  @Override
   public boolean incrementToken() throws IOException {
     if (DEBUG) {
       System.out.println("MockGraphTF.incr inputPos=" + inputPos + " outputPos=" + outputPos);
+    }
+    if (random == null) {
+      throw new IllegalStateException("incrementToken called in wrong state!");
     }
     return nextToken();
   }

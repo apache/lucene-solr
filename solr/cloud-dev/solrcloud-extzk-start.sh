@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 zkaddress = localhost:2181/solr
 

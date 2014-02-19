@@ -205,7 +205,7 @@ public class Sort {
   /** Whether the relevance score is needed to sort documents. */
   boolean needsScores() {
     for (SortField sortField : fields) {
-      if (sortField.getType() == SortField.Type.SCORE) {
+      if (sortField.needsScores()) {
         return true;
       }
     }

@@ -28,11 +28,10 @@ import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
-import org.apache.lucene.util._TestUtil;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.io.StringReader;
 import java.util.Random;
 
@@ -45,7 +44,7 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    input = new MockTokenizer(new StringReader("abcde"), MockTokenizer.WHITESPACE, false);
+    input = whitespaceMockTokenizer("abcde");
   }
   
   public void testInvalidInput() throws Exception {
@@ -108,13 +107,14 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
   }
   
   public void testSmallTokenInStream() throws Exception {
-    input = new MockTokenizer(new StringReader("abc de fgh"), MockTokenizer.WHITESPACE, false);
+    input = whitespaceMockTokenizer("abc de fgh");
     NGramTokenFilter filter = new NGramTokenFilter(TEST_VERSION_CURRENT, input, 3, 3);
     assertTokenStreamContents(filter, new String[]{"abc","fgh"}, new int[]{0,7}, new int[]{3,10}, new int[] {1, 2});
   }
   
   public void testReset() throws Exception {
-    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("abcde"));
+    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT);
+    tokenizer.setReader(new StringReader("abcde"));
     NGramTokenFilter filter = new NGramTokenFilter(TEST_VERSION_CURRENT, tokenizer, 1, 1);
     assertTokenStreamContents(filter, new String[]{"a","b","c","d","e"}, new int[]{0,0,0,0,0}, new int[]{5,5,5,5,5}, new int[]{1,0,0,0,0});
     tokenizer.setReader(new StringReader("abcde"));
@@ -128,8 +128,8 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
   public void testInvalidOffsets() throws Exception {
     Analyzer analyzer = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         TokenFilter filters = new ASCIIFoldingFilter(tokenizer);
         filters = new NGramTokenFilter(TEST_VERSION_CURRENT, filters, 2, 2);
         return new TokenStreamComponents(tokenizer, filters);
@@ -144,23 +144,27 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-        return new TokenStreamComponents(tokenizer, 
-            new NGramTokenFilter(TEST_VERSION_CURRENT, tokenizer, 2, 4));
-      }    
-    };
-    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER, 20, false, false);
+    for (int i = 0; i < 10; i++) {
+      final int min = TestUtil.nextInt(random(), 2, 10);
+      final int max = TestUtil.nextInt(random(), min, 20);
+      Analyzer a = new Analyzer() {
+        @Override
+        protected TokenStreamComponents createComponents(String fieldName) {
+          Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+          return new TokenStreamComponents(tokenizer, 
+              new NGramTokenFilter(TEST_VERSION_CURRENT, tokenizer, min, max));
+        }    
+      };
+      checkRandomData(random(), a, 200*RANDOM_MULTIPLIER, 20);
+    }
   }
   
   public void testEmptyTerm() throws Exception {
     Random random = random();
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new KeywordTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
         return new TokenStreamComponents(tokenizer, 
             new NGramTokenFilter(TEST_VERSION_CURRENT, tokenizer, 2, 15));
       }    
@@ -181,11 +185,12 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
   }
 
   public void testSupplementaryCharacters() throws IOException {
-    final String s = _TestUtil.randomUnicodeString(random(), 10);
+    final String s = TestUtil.randomUnicodeString(random(), 10);
     final int codePointCount = s.codePointCount(0, s.length());
-    final int minGram = _TestUtil.nextInt(random(), 1, 3);
-    final int maxGram = _TestUtil.nextInt(random(), minGram, 10);
-    TokenStream tk = new KeywordTokenizer(new StringReader(s));
+    final int minGram = TestUtil.nextInt(random(), 1, 3);
+    final int maxGram = TestUtil.nextInt(random(), minGram, 10);
+    TokenStream tk = new KeywordTokenizer();
+    ((Tokenizer)tk).setReader(new StringReader(s));
     tk = new NGramTokenFilter(TEST_VERSION_CURRENT, tk, minGram, maxGram);
     final CharTermAttribute termAtt = tk.addAttribute(CharTermAttribute.class);
     final OffsetAttribute offsetAtt = tk.addAttribute(OffsetAttribute.class);

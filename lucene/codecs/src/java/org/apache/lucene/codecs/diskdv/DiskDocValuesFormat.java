@@ -22,14 +22,16 @@ import java.io.IOException;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.DocValuesFormat;
+import org.apache.lucene.codecs.lucene45.Lucene45DocValuesConsumer;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * DocValues format that keeps most things on disk.
  * <p>
- * Things like ordinals and disk offsets are loaded into ram,
- * for single-seek access to all the types.
+ * Only things like disk offsets are loaded into ram.
  * <p>
  * @lucene.experimental
  */
@@ -41,7 +43,12 @@ public final class DiskDocValuesFormat extends DocValuesFormat {
 
   @Override
   public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    return new DiskDocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
+    return new Lucene45DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION) {
+      @Override
+      protected void addTermsDict(FieldInfo field, Iterable<BytesRef> values) throws IOException {
+        addBinaryField(field, values);
+      }
+    };
   }
 
   @Override
@@ -53,10 +60,4 @@ public final class DiskDocValuesFormat extends DocValuesFormat {
   public static final String DATA_EXTENSION = "dvdd";
   public static final String META_CODEC = "DiskDocValuesMetadata";
   public static final String META_EXTENSION = "dvdm";
-  public static final int VERSION_START = 0;
-  public static final int VERSION_CURRENT = VERSION_START;
-  public static final byte NUMERIC = 0;
-  public static final byte BINARY = 1;
-  public static final byte SORTED = 2;
-  public static final byte SORTED_SET = 3;
 }

@@ -134,6 +134,9 @@ abstract class BaseSchemaResource extends ServerResource {
           }
         }
       } catch (Throwable t) {
+        if (t instanceof OutOfMemoryError) {
+          throw (OutOfMemoryError) t;
+        }
         setExisting(false);
         throw new ResourceException(t);
       }

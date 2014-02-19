@@ -259,7 +259,7 @@ class DocHelper {
    * named "test"; returns the SegmentInfo describing the new
    * segment 
    */ 
-  public static SegmentInfoPerCommit writeDoc(Random random, Directory dir, Document doc) throws IOException
+  public static SegmentCommitInfo writeDoc(Random random, Directory dir, Document doc) throws IOException
   {
     return writeDoc(random, dir, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false), null, doc);
   }
@@ -269,13 +269,13 @@ class DocHelper {
    * and the similarity score; returns the SegmentInfo
    * describing the new segment
    */ 
-  public static SegmentInfoPerCommit writeDoc(Random random, Directory dir, Analyzer analyzer, Similarity similarity, Document doc) throws IOException {
+  public static SegmentCommitInfo writeDoc(Random random, Directory dir, Analyzer analyzer, Similarity similarity, Document doc) throws IOException {
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig( /* LuceneTestCase.newIndexWriterConfig(random, */ 
         TEST_VERSION_CURRENT, analyzer).setSimilarity(similarity == null ? IndexSearcher.getDefaultSimilarity() : similarity));
     //writer.setNoCFSRatio(0.0);
     writer.addDocument(doc);
     writer.commit();
-    SegmentInfoPerCommit info = writer.newestSegment();
+    SegmentCommitInfo info = writer.newestSegment();
     writer.close();
     return info;
   }

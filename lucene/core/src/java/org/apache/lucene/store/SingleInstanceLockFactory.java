@@ -71,7 +71,7 @@ class SingleInstanceLock extends Lock {
   }
 
   @Override
-  public void release() {
+  public void close() {
     synchronized(locks) {
       locks.remove(lockName);
     }

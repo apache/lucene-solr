@@ -35,8 +35,7 @@ public class TestHighFrequencyDictionary extends LuceneTestCase {
     writer.close();
     IndexReader ir = DirectoryReader.open(dir);
     Dictionary dictionary = new HighFrequencyDictionary(ir, "bogus", 0.1f);
-    BytesRefIterator tf = dictionary.getWordsIterator();
-    assertNull(tf.getComparator());
+    BytesRefIterator tf = dictionary.getEntryIterator();
     assertNull(tf.next());
     dir.close();
   }

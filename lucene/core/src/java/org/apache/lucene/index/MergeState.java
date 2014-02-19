@@ -77,6 +77,7 @@ public class MergeState {
           ++del;
         }
       }
+      docMap.freeze();
       final int numDeletedDocs = del;
       assert docMap.size() == maxDoc;
       return new DocMap() {
@@ -104,11 +105,11 @@ public class MergeState {
 
   }
 
-  private static class NoDelDocMap extends DocMap {
+  private static final class NoDelDocMap extends DocMap {
 
     private final int maxDoc;
 
-    private NoDelDocMap(int maxDoc) {
+    NoDelDocMap(int maxDoc) {
       this.maxDoc = maxDoc;
     }
 
@@ -149,6 +150,10 @@ public class MergeState {
 
   /** InfoStream for debugging messages. */
   public final InfoStream infoStream;
+
+  /** Counter used for periodic calls to checkAbort
+   * @lucene.internal */
+  public int checkAbortCount;
 
   // TODO: get rid of this? it tells you which segments are 'aligned' (e.g. for bulk merging)
   // but is this really so expensive to compute again in different components, versus once in SM?

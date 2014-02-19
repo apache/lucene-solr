@@ -19,16 +19,28 @@ package org.apache.lucene.codecs.lucene40;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BaseDocValuesFormatTestCase;
+import org.junit.BeforeClass;
 
 /**
  * Tests Lucene40DocValuesFormat
  */
 public class TestLucene40DocValuesFormat extends BaseDocValuesFormatTestCase {
   private final Codec codec = new Lucene40RWCodec();
+  
+  @BeforeClass
+  public static void beforeClass() {
+    OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true; // explicitly instantiates ancient codec
+  }
 
   @Override
   protected Codec getCodec() {
     return codec;
   }
-  
+
+  // LUCENE-4583: This codec should throw IAE on huge binary values:
+  @Override
+  protected boolean codecAcceptsHugeBinaryValues(String field) {
+    return false;
+  }
+
 }

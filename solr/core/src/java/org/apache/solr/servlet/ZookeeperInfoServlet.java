@@ -290,21 +290,6 @@ public final class ZookeeperInfoServlet extends HttpServlet {
           printZnode(json, path);
         }
 
-        /*
-        if (stat.getNumChildren() != 0)
-        {
-          writeKeyValue(json, "children_count",  stat.getNumChildren(), false );
-          out.println(", \"children_count\" : \"" + stat.getNumChildren() + "\"");
-        }
-        */
-
-        //if (stat.getDataLength() != 0)
-        if (data != null) {
-          String str = new BytesRef(data).utf8ToString();
-          //?? writeKeyValue(json, "content", str, false );
-          // Does nothing now, but on the assumption this will be used later we'll leave it in. If it comes out
-          // the catches below need to be restructured.
-        }
       } catch (IllegalArgumentException e) {
         // path doesn't exist (must have been removed)
         writeKeyValue(json, "warning", "(path gone)", false);
@@ -381,6 +366,16 @@ public final class ZookeeperInfoServlet extends HttpServlet {
         // Trickily, the call to zkClient.getData fills in the stat variable
         byte[] data = zkClient.getData(path, null, stat, true);
 
+        String dataStr = null;
+        String dataStrErr = null;
+        if (null != data) {
+          try {
+            dataStr = (new BytesRef(data)).utf8ToString();
+          } catch (Exception e) {
+            dataStrErr = "data is not parsable as a utf8 String: " + e.toString();
+          }
+        }
+
         json.writeString("znode");
         json.writeNameSeparator();
         json.startObject();
@@ -397,15 +392,18 @@ public final class ZookeeperInfoServlet extends HttpServlet {
         writeKeyValue(json, "ctime", time(stat.getCtime()), false);
         writeKeyValue(json, "cversion", stat.getCversion(), false);
         writeKeyValue(json, "czxid", stat.getCzxid(), false);
-        writeKeyValue(json, "dataLength", stat.getDataLength(), false);
         writeKeyValue(json, "ephemeralOwner", stat.getEphemeralOwner(), false);
         writeKeyValue(json, "mtime", time(stat.getMtime()), false);
         writeKeyValue(json, "mzxid", stat.getMzxid(), false);
         writeKeyValue(json, "pzxid", stat.getPzxid(), false);
+        writeKeyValue(json, "dataLength", stat.getDataLength(), false);
+        if (null != dataStrErr) {
+          writeKeyValue(json, "dataNote", dataStrErr, false);
+        }
         json.endObject();
 
-        if (data != null) {
-          writeKeyValue(json, "data", new BytesRef(data).utf8ToString(), false);
+        if (null != dataStr) {
+          writeKeyValue(json, "data", dataStr, false);
         }
         json.endObject();
       } catch (KeeperException e) {

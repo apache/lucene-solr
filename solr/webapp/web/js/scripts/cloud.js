@@ -612,7 +612,7 @@ var init_tree = function( tree_element )
                     var data_element = $( '#data', this );
 
                     var highlight = false;
-                    var data = '<em>File "' + response.znode.path + '" has no Content</em>';
+                    var data = '<em>Node "' + response.znode.path + '" has no utf8 Content</em>';
 
                     if( response.znode.data )
                     {

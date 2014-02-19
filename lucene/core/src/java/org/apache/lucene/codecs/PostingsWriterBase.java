@@ -17,28 +17,29 @@ package org.apache.lucene.codecs;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.io.Closeable;
+import java.io.IOException;
 
-import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.index.DocsAndPositionsEnum; // javadocs
+import org.apache.lucene.index.DocsEnum; // javadocs
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitSet;
 
 /**
- * Extension of {@link PostingsConsumer} to support pluggable term dictionaries.
- * <p>
- * This class contains additional hooks to interact with the provided
- * term dictionaries such as {@link BlockTreeTermsWriter}. If you want
- * to re-use an existing implementation and are only interested in
- * customizing the format of the postings list, extend this class
- * instead.
+ * Class that plugs into term dictionaries, such as {@link
+ * BlockTreeTermsWriter}, and handles writing postings.
  * 
  * @see PostingsReaderBase
  * @lucene.experimental
  */
 // TODO: find a better name; this defines the API that the
 // terms dict impls use to talk to a postings impl.
-// TermsDict + PostingsReader/WriterBase == PostingsConsumer/Producer
-public abstract class PostingsWriterBase extends PostingsConsumer implements Closeable {
+// TermsDict + PostingsReader/WriterBase == FieldsProducer/Consumer
+public abstract class PostingsWriterBase implements Closeable {
 
   /** Sole constructor. (For invocation by subclass 
    *  constructors, typically implicit.) */
@@ -48,25 +49,40 @@ public abstract class PostingsWriterBase extends PostingsConsumer implements Clo
   /** Called once after startup, before any terms have been
    *  added.  Implementations typically write a header to
    *  the provided {@code termsOut}. */
-  public abstract void start(IndexOutput termsOut) throws IOException;
+  public abstract void init(IndexOutput termsOut) throws IOException;
 
-  /** Start a new term.  Note that a matching call to {@link
-   *  #finishTerm(TermStats)} is done, only if the term has at least one
-   *  document. */
-  public abstract void startTerm() throws IOException;
+  /** Write all postings for one term; use the provided
+   *  {@link TermsEnum} to pull a {@link DocsEnum} or {@link
+   *  DocsAndPositionsEnum}.  This method should not
+   *  re-position the {@code TermsEnum}!  It is already
+   *  positioned on the term that should be written.  This
+   *  method must set the bit in the provided {@link
+   *  FixedBitSet} for every docID written.  If no docs
+   *  were written, this method should return null, and the
+   *  terms dict will skip the term. */
+  public abstract BlockTermState writeTerm(BytesRef term, TermsEnum termsEnum, FixedBitSet docsSeen) throws IOException;
 
-  /** Flush count terms starting at start "backwards", as a
-   *  block. start is a negative offset from the end of the
-   *  terms stack, ie bigger start means further back in
-   *  the stack. */
-  public abstract void flushTermsBlock(int start, int count) throws IOException;
+  /**
+   * Encode metadata as long[] and byte[]. {@code absolute} controls whether 
+   * current term is delta encoded according to latest term. 
+   * Usually elements in {@code longs} are file pointers, so each one always 
+   * increases when a new term is consumed. {@code out} is used to write generic
+   * bytes, which are not monotonic.
+   *
+   * NOTE: sometimes long[] might contain "don't care" values that are unused, e.g. 
+   * the pointer to postings list may not be defined for some terms but is defined
+   * for others, if it is designed to inline  some postings data in term dictionary.
+   * In this case, the postings writer should always use the last value, so that each
+   * element in metadata long[] remains monotonic.
+   */
+  public abstract void encodeTerm(long[] longs, DataOutput out, FieldInfo fieldInfo, BlockTermState state, boolean absolute) throws IOException;
 
-  /** Finishes the current term.  The provided {@link
-   *  TermStats} contains the term's summary statistics. */
-  public abstract void finishTerm(TermStats stats) throws IOException;
-
-  /** Called when the writing switches to another field. */
-  public abstract void setField(FieldInfo fieldInfo);
+  /** 
+   * Sets the current field for writing, and returns the
+   * fixed length of long[] metadata (which is fixed per
+   * field), called when the writing switches to another field. */
+  // TODO: better name?
+  public abstract int setField(FieldInfo fieldInfo);
 
   @Override
   public abstract void close() throws IOException;

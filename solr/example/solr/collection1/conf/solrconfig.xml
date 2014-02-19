@@ -35,7 +35,7 @@
        that you fully re-index after changing this setting as it can
        affect both how text is indexed and queried.
   -->
-  <luceneMatchVersion>LUCENE_50</luceneMatchVersion>
+  <luceneMatchVersion>5.0</luceneMatchVersion>
 
   <!-- <lib/> directives can be used to instruct Solr to load an Jars
        identified and use them to resolve any "plugins" specified in
@@ -117,7 +117,20 @@
        persistent, and doesn't work with replication.
     -->
   <directoryFactory name="DirectoryFactory" 
-                    class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/> 
+                    class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}">
+    
+         
+    <!-- These will be used if you are using the solr.HdfsDirectoryFactory,
+         otherwise they will be ignored. If you don't plan on using hdfs,
+         you can safely remove this section. -->      
+    <!-- The root directory that collection data should be written to. -->     
+    <str name="solr.hdfs.home">${solr.hdfs.home:}</str>
+    <!-- The hadoop configuration files to use for the hdfs client. -->    
+    <str name="solr.hdfs.confdir">${solr.hdfs.confdir:}</str>
+    <!-- Enable/Disable the hdfs cache. -->    
+    <str name="solr.hdfs.blockcache.enabled">${solr.hdfs.blockcache.enabled:true}</str>
+    
+  </directoryFactory> 
 
   <!-- The CodecFactory for defining the format of the inverted index.
        The default implementation is SchemaCodecFactory, which is the official Lucene
@@ -257,17 +270,14 @@
     <!--
     <unlockOnStartup>false</unlockOnStartup>
       -->
-    
-    <!-- Expert: Controls how often Lucene loads terms into memory
-         Default is 128 and is likely good for most everyone.
-      -->
-    <!-- <termIndexInterval>128</termIndexInterval> -->
 
-    <!-- If true, IndexReaders will be reopened (often more efficient)
-         instead of closed and then opened. Default: true
+    <!-- If true, IndexReaders will be opened/reopened from the IndexWriter
+         instead of from the Directory. Hosts in a master/slave setup
+         should have this set to false while those in a SolrCloud
+         cluster need to be set to true. Default: true
       -->
     <!-- 
-    <reopenReaders>true</reopenReaders>
+    <nrtMode>true</nrtMode>
       -->
 
     <!-- Commit Deletion Policy
@@ -441,15 +451,6 @@
     <str name="someArg">Some Value</str>
   </indexReaderFactory >
   -->
-  <!-- By explicitly declaring the Factory, the termIndexDivisor can
-       be specified.
-    -->
-  <!--
-     <indexReaderFactory name="IndexReaderFactory" 
-                         class="solr.StandardIndexReaderFactory">
-       <int name="setTermIndexDivisor">12</int>
-     </indexReaderFactory >
-    -->
 
   <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
        Query section - these settings control query time things like caches
@@ -528,6 +529,14 @@
                    initialSize="512"
                    autowarmCount="0"/>
     
+    <!-- custom cache currently used by block join --> 
+    <cache name="perSegFilter"
+      class="solr.search.LRUCache"
+      size="10"
+      initialSize="0"
+      autowarmCount="10"
+      regenerator="solr.NoOpRegenerator" />
+
     <!-- Field Value Cache
          
          Cache used to hold field values that are quickly accessible
@@ -876,7 +885,15 @@
 
   <!-- realtime get handler, guaranteed to return the latest stored fields of
        any document, without the need to commit or open a new searcher.  The
-       current implementation relies on the updateLog feature being enabled. -->
+       current implementation relies on the updateLog feature being enabled.
+
+       ** WARNING **
+       Do NOT disable the realtime get handler at /get if you are using
+       SolrCloud otherwise any leader election will cause a full sync in ALL
+       replicas for the shard in question. Similarly, a replica recovery will
+       also always fetch the complete index from the leader because a partial
+       sync will not be possible in the absence of this handler.
+  -->
   <requestHandler name="/get" class="solr.RealTimeGetHandler">
      <lst name="defaults">
        <str name="omitHeader">true</str>
@@ -1015,12 +1032,12 @@
   </requestHandler>
 
   <!-- for back compat with clients using /update/json and /update/csv -->  
-  <requestHandler name="/update/json" class="solr.JsonUpdateRequestHandler">
+  <requestHandler name="/update/json" class="solr.UpdateRequestHandler">
         <lst name="defaults">
          <str name="stream.contentType">application/json</str>
        </lst>
   </requestHandler>
-  <requestHandler name="/update/csv" class="solr.CSVRequestHandler">
+  <requestHandler name="/update/csv" class="solr.UpdateRequestHandler">
         <lst name="defaults">
          <str name="stream.contentType">application/csv</str>
        </lst>
@@ -1120,7 +1137,9 @@
      <requestHandler name="/admin/file"       class="solr.admin.ShowFileRequestHandler" >
     -->
   <!-- If you wish to hide files under ${solr.home}/conf, explicitly
-       register the ShowFileRequestHandler using: 
+       register the ShowFileRequestHandler using the definition below. 
+       NOTE: The glob pattern ('*') is the only pattern supported at present, *.xml will
+             not exclude all files ending in '.xml'. Use it to exclude _all_ updates
     -->
   <!--
      <requestHandler name="/admin/file" 
@@ -1128,10 +1147,24 @@
        <lst name="invariants">
          <str name="hidden">synonyms.txt</str> 
          <str name="hidden">anotherfile.txt</str> 
+         <str name="hidden">*</str> 
        </lst>
      </requestHandler>
     -->
 
+  <!--
+    Enabling this request handler (which is NOT a default part of the admin handler) will allow the Solr UI to edit
+    all the config files. This is intended for secure/development use ONLY! Leaving available and publically
+    accessible is a security vulnerability and should be done with extreme caution!
+  -->
+  <!--
+  <requestHandler name="/admin/fileedit" class="solr.admin.EditFileRequestHandler" >
+    <lst name="invariants">
+         <str name="hidden">synonyms.txt</str>
+         <str name="hidden">anotherfile.txt</str>
+    </lst>
+  </requestHandler>
+  -->
   <!-- ping/healthcheck -->
   <requestHandler name="/admin/ping" class="solr.PingRequestHandler">
     <lst name="invariants">
@@ -1321,7 +1354,7 @@
        </lst>
       -->
   </searchComponent>
-
+  
   <!-- A request handler for demonstrating the spellcheck component.  
 
        NOTE: This is purely as an example.  The whole purpose of the
@@ -1359,6 +1392,26 @@
     </arr>
   </requestHandler>
 
+  <searchComponent name="suggest" class="solr.SuggestComponent">
+  	<lst name="suggester">
+      <str name="name">mySuggester</str>
+      <str name="lookupImpl">FuzzyLookupFactory</str>      <!-- org.apache.solr.spelling.suggest.fst -->
+      <str name="dictionaryImpl">DocumentDictionaryFactory</str>     <!-- org.apache.solr.spelling.suggest.HighFrequencyDictionaryFactory --> 
+      <str name="field">cat</str>
+      <str name="weightField">price</str>
+      <str name="suggestAnalyzerFieldType">string</str>
+    </lst>
+  </searchComponent>
+
+  <requestHandler name="/suggest" class="solr.SearchHandler" startup="lazy">
+    <lst name="defaults">
+      <str name="suggest">true</str>
+      <str name="suggest.count">10</str>
+    </lst>
+    <arr name="components">
+      <str>suggest</str>
+    </arr>
+  </requestHandler>
   <!-- Term Vector Component
 
        http://wiki.apache.org/solr/TermVectorComponent
@@ -1384,69 +1437,59 @@
 
   <!-- Clustering Component
 
-       http://wiki.apache.org/solr/ClusteringComponent
-
        You'll need to set the solr.clustering.enabled system property
        when running solr to run with clustering enabled:
 
             java -Dsolr.clustering.enabled=true -jar start.jar
 
+       http://wiki.apache.org/solr/ClusteringComponent
+       http://carrot2.github.io/solr-integration-strategies/
     -->
   <searchComponent name="clustering"
                    enable="${solr.clustering.enabled:false}"
                    class="solr.clustering.ClusteringComponent" >
-    <!-- Declare an engine -->
     <lst name="engine">
-      <!-- The name, only one can be named "default" -->
-      <str name="name">default</str>
+      <str name="name">lingo</str>
 
-      <!-- Class name of Carrot2 clustering algorithm.
+      <!-- Class name of a clustering algorithm compatible with the Carrot2 framework.
 
-           Currently available algorithms are:
-           
+           Currently available open source algorithms are:
            * org.carrot2.clustering.lingo.LingoClusteringAlgorithm
            * org.carrot2.clustering.stc.STCClusteringAlgorithm
            * org.carrot2.clustering.kmeans.BisectingKMeansClusteringAlgorithm
-           
-           See http://project.carrot2.org/algorithms.html for the
-           algorithm's characteristics.
+
+           See http://project.carrot2.org/algorithms.html for more information.
+
+           A commercial algorithm Lingo3G (needs to be installed separately) is defined as:
+           * com.carrotsearch.lingo3g.Lingo3GClusteringAlgorithm
         -->
       <str name="carrot.algorithm">org.carrot2.clustering.lingo.LingoClusteringAlgorithm</str>
 
-      <!-- Overriding values for Carrot2 default algorithm attributes.
+      <!-- Override location of the clustering algorithm's resources 
+           (attribute definitions and lexical resources).
 
-           For a description of all available attributes, see:
-           http://download.carrot2.org/stable/manual/#chapter.components.
-           Use attribute key as name attribute of str elements
-           below. These can be further overridden for individual
-           requests by specifying attribute key as request parameter
-           name and attribute value as parameter value.
-        -->
-      <str name="LingoClusteringAlgorithm.desiredClusterCountBase">20</str>
-
-      <!-- Location of Carrot2 lexical resources.
-
-           A directory from which to load Carrot2-specific stop words
-           and stop labels. Absolute or relative to Solr config directory.
-           If a specific resource (e.g. stopwords.en) is present in the
-           specified dir, it will completely override the corresponding
-           default one that ships with Carrot2.
+           A directory from which to load algorithm-specific stop words,
+           stop labels and attribute definition XMLs. 
 
            For an overview of Carrot2 lexical resources, see:
            http://download.carrot2.org/head/manual/#chapter.lexical-resources
-        -->
-      <str name="carrot.lexicalResourcesDir">clustering/carrot2</str>
 
-      <!-- The language to assume for the documents.
-
-           For a list of allowed values, see:
-           http://download.carrot2.org/stable/manual/#section.attribute.lingo.MultilingualClustering.defaultLanguage
+           For an overview of Lingo3G lexical resources, see:
+           http://download.carrotsearch.com/lingo3g/manual/#chapter.lexical-resources
        -->
-      <str name="MultilingualClustering.defaultLanguage">ENGLISH</str>
+      <str name="carrot.resourcesDir">clustering/carrot2</str>
     </lst>
+
+    <!-- An example definition for the STC clustering algorithm. -->
     <lst name="engine">
       <str name="name">stc</str>
       <str name="carrot.algorithm">org.carrot2.clustering.stc.STCClusteringAlgorithm</str>
+    </lst>
+
+    <!-- An example definition for the bisecting kmeans clustering algorithm. -->
+    <lst name="engine">
+      <str name="name">kmeans</str>
+      <str name="carrot.algorithm">org.carrot2.clustering.kmeans.BisectingKMeansClusteringAlgorithm</str>
     </lst>
   </searchComponent>
 
@@ -1463,28 +1506,29 @@
                   class="solr.SearchHandler">
     <lst name="defaults">
       <bool name="clustering">true</bool>
-      <str name="clustering.engine">default</str>
       <bool name="clustering.results">true</bool>
-      <!-- The title field -->
+      <!-- Field name with the logical "title" of a each document (optional) -->
       <str name="carrot.title">name</str>
+      <!-- Field name with the logical "URL" of a each document (optional) -->
       <str name="carrot.url">id</str>
-      <!-- The field to cluster on -->
-       <str name="carrot.snippet">features</str>
-       <!-- produce summaries -->
-       <bool name="carrot.produceSummary">true</bool>
-       <!-- the maximum number of labels per cluster -->
-       <!--<int name="carrot.numDescriptions">5</int>-->
-       <!-- produce sub clusters -->
-       <bool name="carrot.outputSubClusters">false</bool>
-       
-       <str name="defType">edismax</str>
-       <str name="qf">
-         text^0.5 features^1.0 name^1.2 sku^1.5 id^10.0 manu^1.1 cat^1.4
-       </str>
-       <str name="q.alt">*:*</str>
-       <str name="rows">10</str>
-       <str name="fl">*,score</str>
-    </lst>     
+      <!-- Field name with the logical "content" of a each document (optional) -->
+      <str name="carrot.snippet">features</str>
+      <!-- Apply highlighter to the title/ content and use this for clustering. -->
+      <bool name="carrot.produceSummary">true</bool>
+      <!-- the maximum number of labels per cluster -->
+      <!--<int name="carrot.numDescriptions">5</int>-->
+      <!-- produce sub clusters -->
+      <bool name="carrot.outputSubClusters">false</bool>
+
+      <!-- Configure the remaining request handler parameters. -->
+      <str name="defType">edismax</str>
+      <str name="qf">
+        text^0.5 features^1.0 name^1.2 sku^1.5 id^10.0 manu^1.1 cat^1.4
+      </str>
+      <str name="q.alt">*:*</str>
+      <str name="rows">10</str>
+      <str name="fl">*,score</str>
+    </lst>
     <arr name="last-components">
       <str>clustering</str>
     </arr>

@@ -121,7 +121,7 @@ public class SolrZkServer {
             zkServer.runFromConfig(sc);
           }
           log.info("ZooKeeper Server exited.");
-        } catch (Throwable e) {
+        } catch (Exception e) {
           log.error("ZooKeeper Server ERROR", e);
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
@@ -179,7 +179,7 @@ class SolrZkServerProps extends QuorumPeerConfig {
       Properties cfg = new Properties();
       FileInputStream in = new FileInputStream(configFile);
       try {
-        cfg.load(in);
+        cfg.load(new InputStreamReader(in, IOUtils.CHARSET_UTF_8));
       } finally {
         in.close();
       }

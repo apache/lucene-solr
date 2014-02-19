@@ -18,12 +18,9 @@ package org.apache.lucene.analysis.hi;
  */
 
 import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
@@ -84,7 +81,7 @@ public class TestHindiStemmer extends BaseTokenStreamTestCase {
   }
   
   private void check(String input, String output) throws IOException {
-    Tokenizer tokenizer = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
+    Tokenizer tokenizer = whitespaceMockTokenizer(input);
     TokenFilter tf = new HindiStemFilter(tokenizer);
     assertTokenStreamContents(tf, new String[] { output });
   }
@@ -92,11 +89,11 @@ public class TestHindiStemmer extends BaseTokenStreamTestCase {
   public void testEmptyTerm() throws IOException {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new KeywordTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
         return new TokenStreamComponents(tokenizer, new HindiStemFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

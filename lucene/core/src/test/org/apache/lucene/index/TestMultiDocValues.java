@@ -26,9 +26,11 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /** Tests MultiDocValues versus ordinary segment merging */
 public class TestMultiDocValues extends LuceneTestCase {
@@ -80,7 +82,7 @@ public class TestMultiDocValues extends LuceneTestCase {
 
     int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; i++) {
-      ref.copyChars(_TestUtil.randomUnicodeString(random()));
+      ref.copyChars(TestUtil.randomUnicodeString(random()));
       iw.addDocument(doc);
       if (random().nextInt(17) == 0) {
         iw.commit();
@@ -119,7 +121,10 @@ public class TestMultiDocValues extends LuceneTestCase {
 
     int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; i++) {
-      ref.copyChars(_TestUtil.randomUnicodeString(random()));
+      ref.copyChars(TestUtil.randomUnicodeString(random()));
+      if (defaultCodecSupportsDocsWithField() && random().nextInt(7) == 0) {
+        iw.addDocument(new Document());
+      }
       iw.addDocument(doc);
       if (random().nextInt(17) == 0) {
         iw.commit();
@@ -139,7 +144,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     for (int i = 0; i < numDocs; i++) {
       // check ord
       assertEquals(single.getOrd(i), multi.getOrd(i));
-      // check ord value
+      // check value
       single.get(i, expected);
       multi.get(i, actual);
       assertEquals(expected, actual);
@@ -163,7 +168,7 @@ public class TestMultiDocValues extends LuceneTestCase {
 
     int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; i++) {
-      ref.copyChars(_TestUtil.randomSimpleString(random(), 2));
+      ref.copyChars(TestUtil.randomSimpleString(random(), 2));
       iw.addDocument(doc);
       if (random().nextInt(17) == 0) {
         iw.commit();
@@ -206,7 +211,7 @@ public class TestMultiDocValues extends LuceneTestCase {
       Document doc = new Document();
       int numValues = random().nextInt(5);
       for (int j = 0; j < numValues; j++) {
-        doc.add(new SortedSetDocValuesField("bytes", new BytesRef(_TestUtil.randomUnicodeString(random()))));
+        doc.add(new SortedSetDocValuesField("bytes", new BytesRef(TestUtil.randomUnicodeString(random()))));
       }
       iw.addDocument(doc);
       if (random().nextInt(17) == 0) {
@@ -271,7 +276,7 @@ public class TestMultiDocValues extends LuceneTestCase {
       Document doc = new Document();
       int numValues = random().nextInt(5);
       for (int j = 0; j < numValues; j++) {
-        doc.add(new SortedSetDocValuesField("bytes", new BytesRef(_TestUtil.randomSimpleString(random(), 2))));
+        doc.add(new SortedSetDocValuesField("bytes", new BytesRef(TestUtil.randomSimpleString(random(), 2))));
       }
       iw.addDocument(doc);
       if (random().nextInt(17) == 0) {
@@ -317,6 +322,54 @@ public class TestMultiDocValues extends LuceneTestCase {
       }
     }
     
+    ir.close();
+    ir2.close();
+    dir.close();
+  }
+  
+  public void testDocsWithField() throws Exception {
+    assumeTrue("codec does not support docsWithField", defaultCodecSupportsDocsWithField());
+    Directory dir = newDirectory();
+    
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), TEST_VERSION_CURRENT, null);
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+
+    int numDocs = atLeast(500);
+    for (int i = 0; i < numDocs; i++) {
+      Document doc = new Document();
+      if (random().nextInt(4) >= 0) {
+        doc.add(new NumericDocValuesField("numbers", random().nextLong()));
+      }
+      doc.add(new NumericDocValuesField("numbersAlways", random().nextLong()));
+      iw.addDocument(doc);
+      if (random().nextInt(17) == 0) {
+        iw.commit();
+      }
+    }
+    DirectoryReader ir = iw.getReader();
+    iw.forceMerge(1);
+    DirectoryReader ir2 = iw.getReader();
+    AtomicReader merged = getOnlySegmentReader(ir2);
+    iw.close();
+    
+    Bits multi = MultiDocValues.getDocsWithField(ir, "numbers");
+    Bits single = merged.getDocsWithField("numbers");
+    if (multi == null) {
+      assertNull(single);
+    } else {
+      assertEquals(single.length(), multi.length());
+      for (int i = 0; i < numDocs; i++) {
+        assertEquals(single.get(i), multi.get(i));
+      }
+    }
+    
+    multi = MultiDocValues.getDocsWithField(ir, "numbersAlways");
+    single = merged.getDocsWithField("numbersAlways");
+    assertEquals(single.length(), multi.length());
+    for (int i = 0; i < numDocs; i++) {
+      assertEquals(single.get(i), multi.get(i));
+    }
     ir.close();
     ir2.close();
     dir.close();

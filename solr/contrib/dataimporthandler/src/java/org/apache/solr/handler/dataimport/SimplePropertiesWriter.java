@@ -22,9 +22,10 @@ import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVE
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -33,6 +34,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.core.SolrCore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -128,7 +130,8 @@ public class SimplePropertiesWriter extends DIHProperties {
     
   }
   
-  protected String convertDateToString(Date d) {
+  @Override
+  public String convertDateToString(Date d) {
     return dateFormat.format(d);
   }
   protected Date convertStringToDate(String s) {
@@ -179,7 +182,7 @@ public class SimplePropertiesWriter extends DIHProperties {
   
   @Override
   public void persist(Map<String, Object> propObjs) {
-    OutputStream propOutput = null;    
+    Writer propOutput = null;    
     Properties existingProps = mapToProperties(readIndexerProperties());    
     Properties newProps = mapToProperties(propObjs);
     try {
@@ -189,18 +192,14 @@ public class SimplePropertiesWriter extends DIHProperties {
         filePath += File.separator;
       }
       filePath += filename;
-      propOutput = new FileOutputStream(filePath);
+      propOutput = new OutputStreamWriter(new FileOutputStream(filePath), IOUtils.CHARSET_UTF_8);
       existingProps.store(propOutput, null);
       log.info("Wrote last indexed time to " + filename);
     } catch (Exception e) {
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
           "Unable to persist Index Start Time", e);
     } finally {
-      try {
-        if (propOutput != null) propOutput.close();
-      } catch (IOException e) {
-        propOutput = null;
-      }
+      IOUtils.closeWhileHandlingException(propOutput);
     }
   }
   
@@ -215,16 +214,12 @@ public class SimplePropertiesWriter extends DIHProperties {
       }
       filePath += filename;
       propInput = new FileInputStream(filePath);
-      props.load(propInput);
+      props.load(new InputStreamReader(propInput, IOUtils.CHARSET_UTF_8));
       log.info("Read " + filename);
     } catch (Exception e) {
       log.warn("Unable to read: " + filename);
     } finally {
-      try {
-        if (propInput != null) propInput.close();
-      } catch (IOException e) {
-        propInput = null;
-      }
+      IOUtils.closeWhileHandlingException(propInput);
     }    
     return propertiesToMap(props);
   }

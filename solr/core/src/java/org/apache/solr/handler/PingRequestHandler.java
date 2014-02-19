@@ -253,8 +253,8 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
       core.execute(handler, req, pingrsp );
       ex = pingrsp.getException();
     }
-    catch( Throwable th ) {
-      ex = th;
+    catch( Exception e ) {
+      ex = e;
     }
     
     // Send an error or an 'OK' message (response code will be 200)

@@ -71,10 +71,10 @@ public abstract class TokenizerFactory extends AbstractAnalysisFactory {
   }
 
   /** Creates a TokenStream of the specified input using the default attribute factory. */
-  public final Tokenizer create(Reader input) {
-    return create(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, input);
+  public final Tokenizer create() {
+    return create(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY);
   }
   
   /** Creates a TokenStream of the specified input using the given AttributeFactory */
-  abstract public Tokenizer create(AttributeFactory factory, Reader input);
+  abstract public Tokenizer create(AttributeFactory factory);
 }

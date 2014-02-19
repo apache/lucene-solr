@@ -47,10 +47,11 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -243,18 +244,18 @@ public class TestJoinUtil extends LuceneTestCase {
   @Test
   @Slow
   public void testSingleValueRandomJoin() throws Exception {
-    int maxIndexIter = _TestUtil.nextInt(random(), 6, 12);
-    int maxSearchIter = _TestUtil.nextInt(random(), 13, 26);
-    executeRandomJoin(false, maxIndexIter, maxSearchIter, _TestUtil.nextInt(random(), 87, 764));
+    int maxIndexIter = TestUtil.nextInt(random(), 6, 12);
+    int maxSearchIter = TestUtil.nextInt(random(), 13, 26);
+    executeRandomJoin(false, maxIndexIter, maxSearchIter, TestUtil.nextInt(random(), 87, 764));
   }
 
   @Test
   @Slow
   // This test really takes more time, that is why the number of iterations are smaller.
   public void testMultiValueRandomJoin() throws Exception {
-    int maxIndexIter = _TestUtil.nextInt(random(), 3, 6);
-    int maxSearchIter = _TestUtil.nextInt(random(), 6, 12);
-    executeRandomJoin(true, maxIndexIter, maxSearchIter, _TestUtil.nextInt(random(), 11, 57));
+    int maxIndexIter = TestUtil.nextInt(random(), 3, 6);
+    int maxSearchIter = TestUtil.nextInt(random(), 6, 12);
+    executeRandomJoin(true, maxIndexIter, maxSearchIter, TestUtil.nextInt(random(), 11, 57));
   }
 
   private void executeRandomJoin(boolean multipleValuesPerDocument, int maxIndexIter, int maxSearchIter, int numberOfDocumentsToIndex) throws Exception {
@@ -386,7 +387,7 @@ public class TestJoinUtil extends LuceneTestCase {
     for (int i = 0; i < numRandomValues; i++) {
       String uniqueRandomValue;
       do {
-        uniqueRandomValue = _TestUtil.randomRealisticUnicodeString(random());
+        uniqueRandomValue = TestUtil.randomRealisticUnicodeString(random());
 //        uniqueRandomValue = _TestUtil.randomSimpleString(random);
       } while ("".equals(uniqueRandomValue) || trackSet.contains(uniqueRandomValue));
       // Generate unique values and empty strings aren't allowed.
@@ -511,13 +512,14 @@ public class TestJoinUtil extends LuceneTestCase {
 
           private Scorer scorer;
           private BinaryDocValues terms;
+          private Bits docsWithField;
           private final BytesRef spare = new BytesRef();
 
           @Override
           public void collect(int doc) throws IOException {
             terms.get(doc, spare);
             BytesRef joinValue = spare;
-            if (joinValue.bytes == BinaryDocValues.MISSING) {
+            if (joinValue.length == 0 && !docsWithField.get(doc)) {
               return;
             }
 
@@ -530,7 +532,8 @@ public class TestJoinUtil extends LuceneTestCase {
 
           @Override
           public void setNextReader(AtomicReaderContext context) throws IOException {
-            terms = FieldCache.DEFAULT.getTerms(context.reader(), fromField);
+            terms = FieldCache.DEFAULT.getTerms(context.reader(), fromField, true);
+            docsWithField = FieldCache.DEFAULT.getDocsWithField(context.reader(), fromField);
           }
 
           @Override
@@ -557,7 +560,7 @@ public class TestJoinUtil extends LuceneTestCase {
             joinValues.addAll(joinValueToJoinScores.keySet());
             for (BytesRef joinValue : joinValues) {
               termsEnum = terms.iterator(termsEnum);
-              if (termsEnum.seekExact(joinValue, true)) {
+              if (termsEnum.seekExact(joinValue)) {
                 docsEnum = termsEnum.docs(slowCompositeReader.getLiveDocs(), docsEnum, DocsEnum.FLAG_NONE);
                 JoinScore joinScore = joinValueToJoinScores.get(joinValue);
 
@@ -628,7 +631,7 @@ public class TestJoinUtil extends LuceneTestCase {
 
           @Override
           public void setNextReader(AtomicReaderContext context) throws IOException {
-            terms = FieldCache.DEFAULT.getTerms(context.reader(), toField);
+            terms = FieldCache.DEFAULT.getTerms(context.reader(), toField, false);
             docBase = context.docBase;
           }
 

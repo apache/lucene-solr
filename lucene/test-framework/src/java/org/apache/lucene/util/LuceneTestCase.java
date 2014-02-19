@@ -20,6 +20,7 @@ package org.apache.lucene.util;
 import java.io.*;
 import java.lang.annotation.*;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.*;
@@ -227,6 +228,7 @@ public abstract class LuceneTestCase extends Assert {
   // for all suites ever since.
   // -----------------------------------------------------------------
 
+  // :Post-Release-Update-Version.LUCENE_XY:
   /** 
    * Use this constant when creating Analyzers and any other version-dependent stuff.
    * <p><b>NOTE:</b> Change this when development starts for new Lucene version:
@@ -331,9 +333,13 @@ public abstract class LuceneTestCase extends Assert {
   // -----------------------------------------------------------------
 
   /**
-   * @lucene.internal 
+   * When {@code true}, Codecs for old Lucene version will support writing
+   * indexes in that format. Defaults to {@code false}, can be disabled by
+   * specific tests on demand.
+   * 
+   * @lucene.internal
    */
-  public static boolean PREFLEX_IMPERSONATION_IS_ACTIVE;
+  public static boolean OLD_FORMAT_IMPERSONATION_IS_ACTIVE = false;
 
 
   // -----------------------------------------------------------------
@@ -632,7 +638,7 @@ public abstract class LuceneTestCase extends Assert {
   public static int atLeast(Random random, int i) {
     int min = (TEST_NIGHTLY ? 2*i : i) * RANDOM_MULTIPLIER;
     int max = min+(min/2);
-    return _TestUtil.nextInt(random, min, max);
+    return TestUtil.nextInt(random, min, max);
   }
   
   public static int atLeast(int i) {
@@ -738,8 +744,8 @@ public abstract class LuceneTestCase extends Assert {
     if (r.nextBoolean()) {
       c.setMergeScheduler(new SerialMergeScheduler());
     } else if (rarely(r)) {
-      int maxThreadCount = _TestUtil.nextInt(random(), 1, 4);
-      int maxMergeCount = _TestUtil.nextInt(random(), maxThreadCount, maxThreadCount+4);
+      int maxThreadCount = TestUtil.nextInt(random(), 1, 4);
+      int maxMergeCount = TestUtil.nextInt(random(), maxThreadCount, maxThreadCount + 4);
       ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
       cms.setMaxMergesAndThreads(maxMergeCount, maxThreadCount);
       c.setMergeScheduler(cms);
@@ -747,24 +753,15 @@ public abstract class LuceneTestCase extends Assert {
     if (r.nextBoolean()) {
       if (rarely(r)) {
         // crazy value
-        c.setMaxBufferedDocs(_TestUtil.nextInt(r, 2, 15));
+        c.setMaxBufferedDocs(TestUtil.nextInt(r, 2, 15));
       } else {
         // reasonable value
-        c.setMaxBufferedDocs(_TestUtil.nextInt(r, 16, 1000));
+        c.setMaxBufferedDocs(TestUtil.nextInt(r, 16, 1000));
       }
     }
     if (r.nextBoolean()) {
-      if (rarely(r)) {
-        // crazy value
-        c.setTermIndexInterval(r.nextBoolean() ? _TestUtil.nextInt(r, 1, 31) : _TestUtil.nextInt(r, 129, 1000));
-      } else {
-        // reasonable value
-        c.setTermIndexInterval(_TestUtil.nextInt(r, 32, 128));
-      }
-    }
-    if (r.nextBoolean()) {
-      int maxNumThreadStates = rarely(r) ? _TestUtil.nextInt(r, 5, 20) // crazy value
-          : _TestUtil.nextInt(r, 1, 4); // reasonable value
+      int maxNumThreadStates = rarely(r) ? TestUtil.nextInt(r, 5, 20) // crazy value
+          : TestUtil.nextInt(r, 1, 4); // reasonable value
 
       Method setIndexerThreadPoolMethod = null;
       try {
@@ -802,22 +799,29 @@ public abstract class LuceneTestCase extends Assert {
       }
     }
 
-    if (rarely(r)) {
-      c.setMergePolicy(new MockRandomMergePolicy(r));
-    } else if (r.nextBoolean()) {
-      c.setMergePolicy(newTieredMergePolicy());
-    } else if (r.nextInt(5) == 0) { 
-      c.setMergePolicy(newAlcoholicMergePolicy());
-    } else {
-      c.setMergePolicy(newLogMergePolicy());
-    }
+    c.setMergePolicy(newMergePolicy(r));
+
     if (rarely(r)) {
       c.setMergedSegmentWarmer(new SimpleMergedSegmentWarmer(c.getInfoStream()));
     }
     c.setUseCompoundFile(r.nextBoolean());
     c.setReaderPooling(r.nextBoolean());
-    c.setReaderTermsIndexDivisor(_TestUtil.nextInt(r, 1, 4));
     return c;
+  }
+
+  public static MergePolicy newMergePolicy(Random r) {
+    if (rarely(r)) {
+      return new MockRandomMergePolicy(r);
+    } else if (r.nextBoolean()) {
+      return newTieredMergePolicy(r);
+    } else if (r.nextInt(5) == 0) { 
+      return newAlcoholicMergePolicy(r, classEnvRule.timeZone);
+    }
+    return newLogMergePolicy(r);
+  }
+
+  public static MergePolicy newMergePolicy() {
+    return newMergePolicy(random());
   }
 
   public static LogMergePolicy newLogMergePolicy() {
@@ -840,9 +844,9 @@ public abstract class LuceneTestCase extends Assert {
     LogMergePolicy logmp = r.nextBoolean() ? new LogDocMergePolicy() : new LogByteSizeMergePolicy();
     logmp.setCalibrateSizeByDeletes(r.nextBoolean());
     if (rarely(r)) {
-      logmp.setMergeFactor(_TestUtil.nextInt(r, 2, 9));
+      logmp.setMergeFactor(TestUtil.nextInt(r, 2, 9));
     } else {
-      logmp.setMergeFactor(_TestUtil.nextInt(r, 10, 50));
+      logmp.setMergeFactor(TestUtil.nextInt(r, 10, 50));
     }
     configureRandom(r, logmp);
     return logmp;
@@ -865,11 +869,11 @@ public abstract class LuceneTestCase extends Assert {
   public static TieredMergePolicy newTieredMergePolicy(Random r) {
     TieredMergePolicy tmp = new TieredMergePolicy();
     if (rarely(r)) {
-      tmp.setMaxMergeAtOnce(_TestUtil.nextInt(r, 2, 9));
-      tmp.setMaxMergeAtOnceExplicit(_TestUtil.nextInt(r, 2, 9));
+      tmp.setMaxMergeAtOnce(TestUtil.nextInt(r, 2, 9));
+      tmp.setMaxMergeAtOnceExplicit(TestUtil.nextInt(r, 2, 9));
     } else {
-      tmp.setMaxMergeAtOnce(_TestUtil.nextInt(r, 10, 50));
-      tmp.setMaxMergeAtOnceExplicit(_TestUtil.nextInt(r, 10, 50));
+      tmp.setMaxMergeAtOnce(TestUtil.nextInt(r, 10, 50));
+      tmp.setMaxMergeAtOnceExplicit(TestUtil.nextInt(r, 10, 50));
     }
     if (rarely(r)) {
       tmp.setMaxMergedSegmentMB(0.2 + r.nextDouble() * 2.0);
@@ -879,9 +883,9 @@ public abstract class LuceneTestCase extends Assert {
     tmp.setFloorSegmentMB(0.2 + r.nextDouble() * 2.0);
     tmp.setForceMergeDeletesPctAllowed(0.0 + r.nextDouble() * 30.0);
     if (rarely(r)) {
-      tmp.setSegmentsPerTier(_TestUtil.nextInt(r, 2, 20));
+      tmp.setSegmentsPerTier(TestUtil.nextInt(r, 2, 20));
     } else {
-      tmp.setSegmentsPerTier(_TestUtil.nextInt(r, 10, 50));
+      tmp.setSegmentsPerTier(TestUtil.nextInt(r, 10, 50));
     }
     configureRandom(r, tmp);
     tmp.setReclaimDeletesWeight(r.nextDouble()*4);
@@ -1137,8 +1141,8 @@ public abstract class LuceneTestCase extends Assert {
     FSDirectory d = null;
     try {
       d = CommandLineUtil.newFSDirectory(clazz, file);
-    } catch (Exception e) {
-      d = FSDirectory.open(file);
+    } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
+      Rethrow.rethrow(e);
     }
     return d;
   }
@@ -1156,7 +1160,7 @@ public abstract class LuceneTestCase extends Assert {
       final Class<? extends Directory> clazz = CommandLineUtil.loadDirectoryClass(clazzName);
       // If it is a FSDirectory type, try its ctor(File)
       if (FSDirectory.class.isAssignableFrom(clazz)) {
-        final File dir = _TestUtil.getTempDir("index");
+        final File dir = TestUtil.getTempDir("index");
         dir.mkdirs(); // ensure it's created so we 'have' it.
         return newFSDirectoryImpl(clazz.asSubclass(FSDirectory.class), dir);
       }
@@ -1252,7 +1256,7 @@ public abstract class LuceneTestCase extends Assert {
     } else if (oldContext.mergeInfo != null) {
       // Always return at least the estimatedMergeBytes of
       // the incoming IOContext:
-      return new IOContext(new MergeInfo(randomNumDocs, Math.max(oldContext.mergeInfo.estimatedMergeBytes, size), random.nextBoolean(), _TestUtil.nextInt(random, 1, 100)));
+      return new IOContext(new MergeInfo(randomNumDocs, Math.max(oldContext.mergeInfo.estimatedMergeBytes, size), random.nextBoolean(), TestUtil.nextInt(random, 1, 100)));
     } else {
       // Make a totally random IOContext:
       final IOContext context;
@@ -1308,7 +1312,7 @@ public abstract class LuceneTestCase extends Assert {
         // TODO: not useful to check DirectoryReader (redundant with checkindex)
         // but maybe sometimes run this on the other crazy readers maybeWrapReader creates?
         try {
-          _TestUtil.checkReader(r);
+          TestUtil.checkReader(r);
         } catch (IOException e) {
           throw new AssertionError(e);
         }
@@ -1322,7 +1326,7 @@ public abstract class LuceneTestCase extends Assert {
       if (random.nextBoolean()) {
         ex = null;
       } else {
-        threads = _TestUtil.nextInt(random, 1, 8);
+        threads = TestUtil.nextInt(random, 1, 8);
         ex = new ThreadPoolExecutor(threads, threads, 0L, TimeUnit.MILLISECONDS,
             new LinkedBlockingQueue<Runnable>(),
             new NamedThreadFactory("LuceneTestCase"));
@@ -1336,7 +1340,7 @@ public abstract class LuceneTestCase extends Assert {
        r.addReaderClosedListener(new ReaderClosedListener() {
          @Override
          public void onClose(IndexReader reader) {
-           _TestUtil.shutdownExecutorService(ex);
+           TestUtil.shutdownExecutorService(ex);
          }
        });
       }
@@ -1361,10 +1365,41 @@ public abstract class LuceneTestCase extends Assert {
     }
   }
   
+  /** Returns true if the default codec supports single valued docvalues with missing values */ 
+  public static boolean defaultCodecSupportsMissingDocValues() {
+    String name = Codec.getDefault().getName();
+    if (name.equals("Lucene3x") ||
+        name.equals("Lucene40") || name.equals("Appending") ||
+        name.equals("Lucene41") || 
+        name.equals("Lucene42")) {
+      return false;
+    }
+    return true;
+  }
+  
   /** Returns true if the default codec supports SORTED_SET docvalues */ 
   public static boolean defaultCodecSupportsSortedSet() {
     String name = Codec.getDefault().getName();
     if (name.equals("Lucene40") || name.equals("Lucene41")) {
+      return false;
+    }
+    return true;
+  }
+  
+  /** Returns true if the codec "supports" docsWithField 
+   * (other codecs return MatchAllBits, because you couldnt write missing values before) */
+  public static boolean defaultCodecSupportsDocsWithField() {
+    String name = Codec.getDefault().getName();
+    if (name.equals("Lucene40") || name.equals("Lucene41") || name.equals("Lucene42")) {
+      return false;
+    }
+    return true;
+  }
+  
+  /** Returns true if the codec "supports" field updates. */
+  public static boolean defaultCodecSupportsFieldUpdates() {
+    String name = Codec.getDefault().getName();
+    if (name.equals("Lucene40") || name.equals("Lucene41") || name.equals("Lucene42") || name.equals("Lucene45")) {
       return false;
     }
     return true;
@@ -1464,7 +1499,6 @@ public abstract class LuceneTestCase extends Assert {
    * checks collection-level statistics on Terms 
    */
   public void assertTermsStatisticsEquals(String info, Terms leftTerms, Terms rightTerms) throws IOException {
-    assert leftTerms.getComparator() == rightTerms.getComparator();
     if (leftTerms.getDocCount() != -1 && rightTerms.getDocCount() != -1) {
       assertEquals(info, leftTerms.getDocCount(), rightTerms.getDocCount());
     }
@@ -1729,7 +1763,7 @@ public abstract class LuceneTestCase extends Assert {
               tests.add(new BytesRef(new byte[] {(byte) 0xFF, (byte) 0xFF})); // past the last term
               break;
             case 2:
-              tests.add(new BytesRef(_TestUtil.randomSimpleString(random()))); // random term
+              tests.add(new BytesRef(TestUtil.randomSimpleString(random()))); // random term
               break;
             default:
               throw new AssertionError();
@@ -1751,14 +1785,13 @@ public abstract class LuceneTestCase extends Assert {
         rightEnum = rightTerms.iterator(rightEnum);
       }
 
-      final boolean useCache = random().nextBoolean();
       final boolean seekExact = random().nextBoolean();
 
       if (seekExact) {
-        assertEquals(info, leftEnum.seekExact(b, useCache), rightEnum.seekExact(b, useCache));
+        assertEquals(info, leftEnum.seekExact(b), rightEnum.seekExact(b));
       } else {
-        SeekStatus leftStatus = leftEnum.seekCeil(b, useCache);
-        SeekStatus rightStatus = rightEnum.seekCeil(b, useCache);
+        SeekStatus leftStatus = leftEnum.seekCeil(b);
+        SeekStatus rightStatus = rightEnum.seekCeil(b);
         assertEquals(info, leftStatus, rightStatus);
         if (leftStatus != SeekStatus.END) {
           assertEquals(info, leftEnum.term(), rightEnum.term());
@@ -1962,6 +1995,20 @@ public abstract class LuceneTestCase extends Assert {
         } else {
           assertNull(info, leftValues);
           assertNull(info, rightValues);
+        }
+      }
+      
+      {
+        Bits leftBits = MultiDocValues.getDocsWithField(leftReader, field);
+        Bits rightBits = MultiDocValues.getDocsWithField(rightReader, field);
+        if (leftBits != null && rightBits != null) {
+          assertEquals(info, leftBits.length(), rightBits.length());
+          for (int i = 0; i < leftBits.length(); i++) {
+            assertEquals(info, leftBits.get(i), rightBits.get(i));
+          }
+        } else {
+          assertNull(info, leftBits);
+          assertNull(info, rightBits);
         }
       }
     }

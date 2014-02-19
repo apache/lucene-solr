@@ -153,6 +153,7 @@ public class TestQueryParser extends QueryParserTestBase {
   //
   // This test is here as a safety, in case that ant step
   // doesn't work for some reason.
+  @SuppressWarnings("rawtype")
   public void testProtectedCtors() throws Exception {
     try {
       QueryParser.class.getConstructor(new Class[] {CharStream.class});
@@ -321,8 +322,8 @@ public class TestQueryParser extends QueryParserTestBase {
   /** adds synonym of "dog" for "dogs". */
   static class MockSynonymAnalyzer extends Analyzer {
     @Override
-    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      MockTokenizer tokenizer = new MockTokenizer(reader);
+    protected TokenStreamComponents createComponents(String fieldName) {
+      MockTokenizer tokenizer = new MockTokenizer();
       return new TokenStreamComponents(tokenizer, new MockSynonymFilter(tokenizer));
     }
   }
@@ -391,8 +392,8 @@ public class TestQueryParser extends QueryParserTestBase {
   
   static class MockCJKSynonymAnalyzer extends Analyzer {
     @Override
-    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer tokenizer = new SimpleCJKTokenizer(reader);
+    protected TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer tokenizer = new SimpleCJKTokenizer();
       return new TokenStreamComponents(tokenizer, new MockCJKSynonymFilter(tokenizer));
     }
   }

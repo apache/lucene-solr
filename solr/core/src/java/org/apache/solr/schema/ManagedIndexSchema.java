@@ -40,6 +40,7 @@ import java.io.OutputStreamWriter;
 import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 
 /** Solr-managed schema - non-user-editable, but can be mutable via internal and external REST API requests. */
@@ -169,23 +170,36 @@ public final class ManagedIndexSchema extends IndexSchema {
     return addFields(Arrays.asList(newField));
   }
 
+  @Override
+  public ManagedIndexSchema addField(SchemaField newField, Collection<String> copyFieldNames) {
+    return addFields(Arrays.asList(newField), Collections.singletonMap(newField.getName(), copyFieldNames));
+  }
+
   public class FieldExistsException extends SolrException {
     public FieldExistsException(ErrorCode code, String msg) {
       super(code, msg);
     }
   }
-  
+
   @Override
   public ManagedIndexSchema addFields(Collection<SchemaField> newFields) {
+    return addFields(newFields, Collections.<String, Collection<String>>emptyMap());
+  }
+
+  @Override
+  public ManagedIndexSchema addFields(Collection<SchemaField> newFields, Map<String, Collection<String>> copyFieldNames) {
     ManagedIndexSchema newSchema = null;
     if (isMutable) {
       boolean success = false;
+      if (copyFieldNames == null){
+        copyFieldNames = Collections.emptyMap();
+      }
       while ( ! success) { // optimistic concurrency
         // even though fields is volatile, we need to synchronize to avoid two addFields
         // happening concurrently (and ending up missing one of them)
         synchronized (getSchemaUpdateLock()) {
           newSchema = shallowCopy(true);
-          
+
           for (SchemaField newField : newFields) {
             if (null != newSchema.getFieldOrNull(newField.getName())) {
               String msg = "Field '" + newField.getName() + "' already exists.";
@@ -200,6 +214,12 @@ public final class ManagedIndexSchema extends IndexSchema {
             if (newField.isRequired()) {
               log.debug("{} is required in this schema", newField.getName());
               newSchema.requiredFields.add(newField);
+            }
+            Collection<String> copyFields = copyFieldNames.get(newField.getName());
+            if (copyFields != null) {
+              for (String copyField : copyFields) {
+                newSchema.registerCopyField(newField.getName(), copyField);
+              }
             }
           }
           // Run the callbacks on SchemaAware now that everything else is done
@@ -218,6 +238,39 @@ public final class ManagedIndexSchema extends IndexSchema {
       String msg = "This ManagedIndexSchema is not mutable.";
       log.error(msg);
       throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+    }
+    return newSchema;
+  }
+
+  @Override
+  public ManagedIndexSchema addCopyFields(Map<String, Collection<String>> copyFields) {
+    ManagedIndexSchema newSchema = null;
+    if (isMutable) {
+      boolean success = false;
+      while (!success) { // optimistic concurrency
+        // even though fields is volatile, we need to synchronize to avoid two addCopyFields
+        // happening concurrently (and ending up missing one of them)
+        synchronized (getSchemaUpdateLock()) {
+          newSchema = shallowCopy(true);
+          for (Map.Entry<String, Collection<String>> entry : copyFields.entrySet()) {
+            //Key is the name of the field, values are the destinations
+
+            for (String destination : entry.getValue()) {
+              newSchema.registerCopyField(entry.getKey(), destination);
+            }
+          }
+          //TODO: move this common stuff out to shared methods
+           // Run the callbacks on SchemaAware now that everything else is done
+          for (SchemaAware aware : newSchema.schemaAware) {
+            aware.inform(newSchema);
+          }
+          newSchema.refreshAnalyzers();
+          success = newSchema.persistManagedSchema(false); // don't just create - update it if it already exists
+          if (success) {
+            log.debug("Added copy fields for {} sources", copyFields.size());
+          }
+        }
+      }
     }
     return newSchema;
   }
@@ -336,6 +389,9 @@ public final class ManagedIndexSchema extends IndexSchema {
     newSchema.uniqueKeyField = uniqueKeyField;
     newSchema.uniqueKeyFieldName = uniqueKeyFieldName;
     newSchema.uniqueKeyFieldType = uniqueKeyFieldType;
+    
+    // After the schema is persisted, resourceName is the same as managedSchemaResourceName
+    newSchema.resourceName = managedSchemaResourceName;
 
     if (includeFieldDataStructures) {
       // These need new collections, since addFields() can add members to them

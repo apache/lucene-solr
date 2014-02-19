@@ -81,7 +81,6 @@ public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
 
     setupCoreContainer();
     SolrCore.log.info("CORES=" + cores + " : " + cores.getCoreNames());
-    cores.setPersistent(false);
 
   }
 

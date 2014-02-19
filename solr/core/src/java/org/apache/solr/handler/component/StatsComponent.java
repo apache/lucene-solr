@@ -102,7 +102,16 @@ public class StatsComponent extends SearchComponent {
     StatsInfo si = rb._statsInfo;
 
     for (ShardResponse srsp : sreq.responses) {
-      NamedList stats = (NamedList) srsp.getSolrResponse().getResponse().get("stats");
+      NamedList stats = null;
+      try {
+        stats = (NamedList) srsp.getSolrResponse().getResponse().get("stats");
+      } catch (Exception e) {
+        if (rb.req.getParams().getBool(ShardParams.SHARDS_TOLERANT, false)) {
+          continue; // looks like a shard did not return anything
+        }
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Unable to read stats info for shard: " + srsp.getShard(), e);
+      }
 
       NamedList stats_fields = (NamedList) stats.get("stats_fields");
       if (stats_fields != null) {
@@ -167,8 +176,9 @@ class StatsInfo {
     String[] statsFs = params.getParams(StatsParams.STATS_FIELD);
     if (statsFs != null) {
       for (String field : statsFs) {
+        boolean calcDistinct = params.getFieldBool(field, StatsParams.STATS_CALC_DISTINCT, false);
         SchemaField sf = rb.req.getSchema().getField(field);
-        statsFields.put(field, StatsValuesFactory.createStatsValues(sf));
+        statsFields.put(field, StatsValuesFactory.createStatsValues(sf, calcDistinct));
       }
     }
   }
@@ -207,6 +217,7 @@ class SimpleStats {
     if (null != statsFs) {
       final IndexSchema schema = searcher.getSchema();
       for (String f : statsFs) {
+        boolean calcDistinct = params.getFieldBool(f, StatsParams.STATS_CALC_DISTINCT, false);
         String[] facets = params.getFieldParams(f, StatsParams.STATS_FACET);
         if (facets == null) {
           facets = new String[0]; // make sure it is something...
@@ -218,9 +229,9 @@ class SimpleStats {
         if (sf.multiValued() || ft.multiValuedFieldCache()) {
           //use UnInvertedField for multivalued fields
           UnInvertedField uif = UnInvertedField.getUnInvertedField(f, searcher);
-          stv = uif.getStats(searcher, docs, facets).getStatsValues();
+          stv = uif.getStats(searcher, docs, calcDistinct, facets).getStatsValues();
         } else {
-          stv = getFieldCacheStats(f, facets);
+          stv = getFieldCacheStats(f, calcDistinct, facets);
         }
         if (isShard == true || (Long) stv.get("count") > 0) {
           res.add(f, stv);
@@ -232,11 +243,11 @@ class SimpleStats {
     return res;
   }
 
-  public NamedList<?> getFieldCacheStats(String fieldName, String[] facet) throws IOException {
+  public NamedList<?> getFieldCacheStats(String fieldName, boolean calcDistinct, String[] facet) throws IOException {
     IndexSchema schema = searcher.getSchema();
     final SchemaField sf = schema.getField(fieldName);
 
-    final StatsValues allstats = StatsValuesFactory.createStatsValues(sf);
+    final StatsValues allstats = StatsValuesFactory.createStatsValues(sf, calcDistinct);
 
     List<FieldFacetStats> facetStats = new ArrayList<FieldFacetStats>();
     for( String facetField : facet ) {
@@ -247,7 +258,7 @@ class SimpleStats {
           "Stats can only facet on single-valued fields, not: " + facetField );
       }
 
-      facetStats.add(new FieldFacetStats(searcher, facetField, sf, fsf));
+      facetStats.add(new FieldFacetStats(searcher, facetField, sf, fsf, calcDistinct));
     }
 
     final Iterator<AtomicReaderContext> ctxIt = searcher.getIndexReader().leaves().iterator();

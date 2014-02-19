@@ -22,6 +22,7 @@ import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.params.CursorMarkParams;
 
 import java.util.*;
 
@@ -43,6 +44,7 @@ public class QueryResponse extends SolrResponseBase
   private NamedList<NamedList<Object>> _spellInfo = null;
   private NamedList<Object> _statsInfo = null;
   private NamedList<NamedList<Number>> _termsInfo = null;
+  private String _cursorMarkNext = null;
 
   // Grouping response
   private NamedList<Object> _groupedInfo = null;
@@ -133,6 +135,9 @@ public class QueryResponse extends SolrResponseBase
         _termsInfo = (NamedList<NamedList<Number>>) res.getVal( i );
         extractTermsInfo( _termsInfo );
       }
+      else if ( CursorMarkParams.CURSOR_MARK_NEXT.equals( n ) ) {
+        _cursorMarkNext = (String) res.getVal( i );
+      }
     }
     if(_facetInfo != null) extractFacetInfo( _facetInfo );
   }
@@ -218,7 +223,13 @@ public class QueryResponse extends SolrResponseBase
           _groupResponse.add(groupedCommand);
         } else if (queryCommand != null) {
           Integer iMatches = (Integer) oMatches;
-          GroupCommand groupCommand = new GroupCommand(fieldName, iMatches);
+          GroupCommand groupCommand;
+          if (oNGroups != null) {
+            Integer iNGroups = (Integer) oNGroups;
+            groupCommand = new GroupCommand(fieldName, iMatches, iNGroups);
+          } else {
+            groupCommand = new GroupCommand(fieldName, iMatches);
+          }
           SolrDocumentList docList = (SolrDocumentList) queryCommand;
           groupCommand.add(new Group(fieldName, docList));
           _groupResponse.add(groupCommand);
@@ -486,6 +497,10 @@ public class QueryResponse extends SolrResponseBase
 
   public Map<String, FieldStatsInfo> getFieldStatsInfo() {
     return _fieldStatsInfo;
+  }
+
+  public String getNextCursorMark() {
+    return _cursorMarkNext;
   }
 }
 

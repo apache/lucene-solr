@@ -48,6 +48,7 @@ public class FieldFacetStats {
   public final String name;
   final SchemaField facet_sf;
   final SchemaField field_sf;
+  final boolean calcDistinct;
 
   public final Map<String, StatsValues> facetStatsValues;
 
@@ -63,10 +64,11 @@ public class FieldFacetStats {
 
   private final BytesRef tempBR = new BytesRef();
 
-  public FieldFacetStats(SolrIndexSearcher searcher, String name, SchemaField field_sf, SchemaField facet_sf) {
+  public FieldFacetStats(SolrIndexSearcher searcher, String name, SchemaField field_sf, SchemaField facet_sf, boolean calcDistinct) {
     this.name = name;
     this.field_sf = field_sf;
     this.facet_sf = facet_sf;
+    this.calcDistinct = calcDistinct;
 
     topLevelReader = searcher.getAtomicReader();
     valueSource = facet_sf.getType().getValueSource(facet_sf, null);
@@ -78,7 +80,7 @@ public class FieldFacetStats {
   private StatsValues getStatsValues(String key) throws IOException {
     StatsValues stats = facetStatsValues.get(key);
     if (stats == null) {
-      stats = StatsValuesFactory.createStatsValues(field_sf);
+      stats = StatsValuesFactory.createStatsValues(field_sf, calcDistinct);
       facetStatsValues.put(key, stats);
       stats.setNextReader(context);
     }
@@ -139,7 +141,7 @@ public class FieldFacetStats {
       String key = (String) pairs.getKey();
       StatsValues facetStats = facetStatsValues.get(key);
       if (facetStats == null) {
-        facetStats = StatsValuesFactory.createStatsValues(field_sf);
+        facetStats = StatsValuesFactory.createStatsValues(field_sf, calcDistinct);
         facetStatsValues.put(key, facetStats);
       }
       Integer count = (Integer) pairs.getValue();

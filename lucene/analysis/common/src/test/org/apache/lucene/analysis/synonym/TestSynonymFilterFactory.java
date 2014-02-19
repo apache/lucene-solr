@@ -19,37 +19,58 @@ package org.apache.lucene.analysis.synonym;
 
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.pattern.PatternTokenizerFactory;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
-import org.apache.lucene.analysis.util.ClasspathResourceLoader;
 import org.apache.lucene.analysis.util.StringMockResourceLoader;
+import org.apache.lucene.analysis.cjk.CJKAnalyzer;
 
 public class TestSynonymFilterFactory extends BaseTokenStreamFactoryTestCase {
-  /** test that we can parse and use the solr syn file */
-  public void testSynonyms() throws Exception {
+
+  /** checks for synonyms of "GB" in synonyms.txt */
+  private void checkSolrSynonyms(TokenFilterFactory factory) throws Exception {
     Reader reader = new StringReader("GB");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-    stream = tokenFilterFactory("Synonym", "synonyms", "synonyms.txt").create(stream);
+    TokenStream stream = whitespaceMockTokenizer(reader);
+    stream = factory.create(stream);
     assertTrue(stream instanceof SynonymFilter);
-    assertTokenStreamContents(stream, 
+    assertTokenStreamContents(stream,
         new String[] { "GB", "gib", "gigabyte", "gigabytes" },
         new int[] { 1, 0, 0, 0 });
+  }
+
+  /** checks for synonyms of "second" in synonyms-wordnet.txt */
+  private void checkWordnetSynonyms(TokenFilterFactory factory) throws Exception {
+    Reader reader = new StringReader("second");
+    TokenStream stream = whitespaceMockTokenizer(reader);
+    stream = factory.create(stream);
+    assertTrue(stream instanceof SynonymFilter);
+    assertTokenStreamContents(stream,
+        new String[] { "second", "2nd", "two" },
+        new int[] { 1, 0, 0 });
+  }
+
+  /** test that we can parse and use the solr syn file */
+  public void testSynonyms() throws Exception {
+    checkSolrSynonyms(tokenFilterFactory("Synonym", "synonyms", "synonyms.txt"));
   }
   
   /** if the synonyms are completely empty, test that we still analyze correctly */
   public void testEmptySynonyms() throws Exception {
     Reader reader = new StringReader("GB");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("Synonym", TEST_VERSION_CURRENT, 
         new StringMockResourceLoader(""), // empty file!
         "synonyms", "synonyms.txt").create(stream);
     assertTokenStreamContents(stream, new String[] { "GB" });
+  }
+
+  public void testFormat() throws Exception {
+    checkSolrSynonyms(tokenFilterFactory("Synonym", "synonyms", "synonyms.txt", "format", "solr"));
+    checkWordnetSynonyms(tokenFilterFactory("Synonym", "synonyms", "synonyms-wordnet.txt", "format", "wordnet"));
+    // explicit class should work the same as the "solr" alias
+    checkSolrSynonyms(tokenFilterFactory("Synonym", "synonyms", "synonyms.txt",
+        "format", SolrSynonymParser.class.getName()));
   }
   
   /** Test that bogus arguments result in exception */
@@ -61,6 +82,28 @@ public class TestSynonymFilterFactory extends BaseTokenStreamFactoryTestCase {
       fail();
     } catch (IllegalArgumentException expected) {
       assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
+  }
+
+  /** Test that analyzer and tokenizerFactory is both specified */
+  public void testAnalyzer() throws Exception {
+    final String analyzer = CJKAnalyzer.class.getName();
+    final String tokenizerFactory = PatternTokenizerFactory.class.getName();
+    TokenFilterFactory factory = null;
+
+    factory = tokenFilterFactory("Synonym",
+        "synonyms", "synonyms2.txt",
+        "analyzer", analyzer);
+    assertNotNull(factory);
+
+    try {
+      tokenFilterFactory("Synonym",
+          "synonyms", "synonyms.txt",
+          "analyzer", analyzer,
+          "tokenizerFactory", tokenizerFactory);
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("Analyzer and TokenizerFactory can't be specified both"));
     }
   }
 
@@ -110,6 +153,8 @@ public class TestSynonymFilterFactory extends BaseTokenStreamFactoryTestCase {
       // :NOOP:
     }
   }
+
+
 }
 
 

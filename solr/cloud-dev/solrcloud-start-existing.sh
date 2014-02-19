@@ -1,21 +1,29 @@
-#!/usr/bin/env bash
+#!/bin/bash
+
+numServers=$1
+baseJettyPort=7572
+baseStopPort=6572
+
+die () {
+    echo >&2 "$@"
+    exit 1
+}
+
+[ "$#" -eq 1 ] || die "1 argument required, $# provided, usage: solrcloud-start-exisiting.sh {numServers}"
+
 
 cd ..
 
-cd example
-java -DzkRun -DSTOP.PORT=7983 -DSTOP.KEY=key -jar start.jar 1>example.log 2>&1 &
+cd example1
+echo "starting example1"
+java -DzkRun -DSTOP.PORT=7983 -DSTOP.KEY=key -jar start.jar 1>example1.log 2>&1 &
 
-cd ../example2
-java -Djetty.port=7574 -DzkHost=localhost:9983 -DSTOP.PORT=6574 -DSTOP.KEY=key -jar start.jar 1>example2.log 2>&1 &
 
-cd ../example3
-java -Djetty.port=7575 -DzkHost=localhost:9983 -DSTOP.PORT=6575 -DSTOP.KEY=key -jar start.jar 1>example3.log 2>&1 &
-
-cd ../example4
-java -Djetty.port=7576 -DzkHost=localhost:9983 -DSTOP.PORT=6576 -DSTOP.KEY=key -jar start.jar 1>example4.log 2>&1 &
-
-cd ../example5
-java -Djetty.port=7577 -DzkHost=localhost:9983 -DSTOP.PORT=6577 -DSTOP.KEY=key -jar start.jar 1>example5.log 2>&1 &
-
-cd ../example6
-java -Djetty.port=7578 -DzkHost=localhost:9983 -DSTOP.PORT=6578 -DSTOP.KEY=key -jar start.jar 1>example6.log 2>&1 &
+for (( i=2; i <= $numServers; i++ ))
+do
+  echo "starting example$i"
+  cd ../example$i
+  stopPort=`expr $baseStopPort + $i`
+  jettyPort=`expr $baseJettyPort + $i`
+  java -Xmx1g -Djetty.port=$jettyPort -DzkHost=localhost:9983 -DnumShards=1 -DSTOP.PORT=$stopPort -DSTOP.KEY=key -jar start.jar 1>example$i.log 2>&1 &
+done

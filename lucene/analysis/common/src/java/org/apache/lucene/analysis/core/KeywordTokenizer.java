@@ -37,20 +37,19 @@ public final class KeywordTokenizer extends Tokenizer {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   
-  public KeywordTokenizer(Reader input) {
-    this(input, DEFAULT_BUFFER_SIZE);
+  public KeywordTokenizer() {
+    this(DEFAULT_BUFFER_SIZE);
   }
 
-  public KeywordTokenizer(Reader input, int bufferSize) {
-    super(input);
+  public KeywordTokenizer(int bufferSize) {
     if (bufferSize <= 0) {
       throw new IllegalArgumentException("bufferSize must be > 0");
     }
     termAtt.resizeBuffer(bufferSize);
   }
 
-  public KeywordTokenizer(AttributeFactory factory, Reader input, int bufferSize) {
-    super(factory, input);
+  public KeywordTokenizer(AttributeFactory factory, int bufferSize) {
+    super(factory);
     if (bufferSize <= 0) {
       throw new IllegalArgumentException("bufferSize must be > 0");
     }
@@ -80,13 +79,15 @@ public final class KeywordTokenizer extends Tokenizer {
   }
   
   @Override
-  public final void end() {
+  public final void end() throws IOException {
+    super.end();
     // set final offset 
     offsetAtt.setOffset(finalOffset, finalOffset);
   }
 
   @Override
   public void reset() throws IOException {
+    super.reset();
     this.done = false;
   }
 }

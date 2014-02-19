@@ -24,6 +24,7 @@ import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.xml.transform.OutputKeys;
@@ -85,22 +86,27 @@ public class SolrZkClient {
   }
   
   public SolrZkClient(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, OnReconnect onReonnect) {
-    this(zkServerAddress, zkClientTimeout, new DefaultConnectionStrategy(), onReonnect, zkClientConnectTimeout);
+    this(zkServerAddress, zkClientTimeout, zkClientConnectTimeout, new DefaultConnectionStrategy(), onReonnect);
   }
 
   public SolrZkClient(String zkServerAddress, int zkClientTimeout,
       ZkClientConnectionStrategy strat, final OnReconnect onReconnect) {
-    this(zkServerAddress, zkClientTimeout, strat, onReconnect, DEFAULT_CLIENT_CONNECT_TIMEOUT);
+    this(zkServerAddress, zkClientTimeout, DEFAULT_CLIENT_CONNECT_TIMEOUT, strat, onReconnect);
+  }
+  
+  public SolrZkClient(String zkServerAddress, int zkClientTimeout, int clientConnectTimeout,
+      ZkClientConnectionStrategy strat, final OnReconnect onReconnect) {
+    this(zkServerAddress, zkClientTimeout, clientConnectTimeout, strat, onReconnect, null);
   }
 
-  public SolrZkClient(String zkServerAddress, int zkClientTimeout,
-      ZkClientConnectionStrategy strat, final OnReconnect onReconnect, int clientConnectTimeout) {
+  public SolrZkClient(String zkServerAddress, int zkClientTimeout, int clientConnectTimeout, 
+      ZkClientConnectionStrategy strat, final OnReconnect onReconnect, BeforeReconnect beforeReconnect) {
     this.zkClientConnectionStrategy = strat;
     this.zkClientTimeout = zkClientTimeout;
     // we must retry at least as long as the session timeout
     zkCmdExecutor = new ZkCmdExecutor(zkClientTimeout);
     connManager = new ConnectionManager("ZooKeeperConnection Watcher:"
-        + zkServerAddress, this, zkServerAddress, zkClientTimeout, strat, onReconnect);
+        + zkServerAddress, this, zkServerAddress, strat, onReconnect, beforeReconnect);
     try {
       strat.connect(zkServerAddress, zkClientTimeout, connManager,
           new ZkUpdate() {
@@ -118,20 +124,36 @@ public class SolrZkClient {
               }
             }
           });
-    } catch (Throwable e) {
+    } catch (Exception e) {
       connManager.close();
-      throw new RuntimeException(e);
+      if (keeper != null) {
+        try {
+          keeper.close();
+        } catch (InterruptedException e1) {
+          Thread.currentThread().interrupt();
+        }
+      }
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
     
     try {
       connManager.waitForConnected(clientConnectTimeout);
-    } catch (Throwable e) {
+    } catch (Exception e) {
       connManager.close();
-      throw new RuntimeException(e);
+      try {
+        keeper.close();
+      } catch (InterruptedException e1) {
+        Thread.currentThread().interrupt();
+      }
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
     numOpens.incrementAndGet();
   }
 
+  public ConnectionManager getConnectionManager() {
+    return connManager;
+  }
+  
   public ZkClientConnectionStrategy getZkClientConnectionStrategy() {
     return zkClientConnectionStrategy;
   }
@@ -464,31 +486,9 @@ public class SolrZkClient {
       log.info("Write to ZooKeepeer " + file.getAbsolutePath() + " to " + path);
     }
 
-    String data = FileUtils.readFileToString(file);
-    return setData(path, data.getBytes("UTF-8"), retryOnConnLoss);
+    byte[] data = FileUtils.readFileToByteArray(file);
+    return setData(path, data, retryOnConnLoss);
   }
-
-  /**
-   * Returns the baseURL corrisponding to a given node's nodeName -- 
-   * NOTE: does not (currently) imply that the nodeName (or resulting 
-   * baseURL) exists in the cluster.
-   * @lucene.experimental
-   */
-  public String getBaseUrlForNodeName(final String nodeName) {
-    final int _offset = nodeName.indexOf("_");
-    if (_offset < 0) {
-      throw new IllegalArgumentException("nodeName does not contain expected '_' seperator: " + nodeName);
-    }
-    final String hostAndPort = nodeName.substring(0,_offset);
-    try {
-      final String path = URLDecoder.decode(nodeName.substring(1+_offset),
-                                            "UTF-8");
-      return "http://" + hostAndPort + (path.isEmpty() ? "" : ("/" + path));
-    } catch (UnsupportedEncodingException e) {
-      throw new IllegalStateException("JVM Does not seem to support UTF-8", e);
-    }
-  }
-
 
   /**
    * Fills string with printout of current ZooKeeper layout.

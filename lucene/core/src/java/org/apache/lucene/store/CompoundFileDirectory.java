@@ -71,7 +71,7 @@ import java.io.IOException;
  * 
  * @lucene.experimental
  */
-public final class CompoundFileDirectory extends Directory {
+public final class CompoundFileDirectory extends BaseDirectory {
   
   /** Offset/Length for a slice inside of a compound file */
   public static final class FileEntry {

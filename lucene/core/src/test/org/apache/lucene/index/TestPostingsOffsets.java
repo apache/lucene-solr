@@ -44,7 +44,7 @@ import org.apache.lucene.util.English;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 // TODO: we really need to test indexingoffsets, but then getting only docs / docs + freqs.
 // not all codecs store prx separate...
@@ -183,7 +183,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     int numSkippingTests = atLeast(50);
     
     for (int j = 0; j < numSkippingTests; j++) {
-      int num = _TestUtil.nextInt(random(), 100, Math.min(numDocs-1, 999));
+      int num = TestUtil.nextInt(random(), 100, Math.min(numDocs - 1, 999));
       DocsAndPositionsEnum dp = MultiFields.getTermPositionsEnum(reader, null, "numbers", new BytesRef("hundred"));
       int doc = dp.advance(num);
       assertEquals(num, doc);
@@ -301,7 +301,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
       final FieldCache.Ints docIDToID = FieldCache.DEFAULT.getInts(sub, "id", false);
       for(String term : terms) {
         //System.out.println("  term=" + term);
-        if (termsEnum.seekExact(new BytesRef(term), random().nextBoolean())) {
+        if (termsEnum.seekExact(new BytesRef(term))) {
           docs = termsEnum.docs(null, docs);
           assertNotNull(docs);
           int doc;
@@ -379,7 +379,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
       riw.addDocument(doc);
     }
     CompositeReader ir = riw.getReader();
-    SlowCompositeReaderWrapper slow = new SlowCompositeReaderWrapper(ir);
+    AtomicReader slow = SlowCompositeReaderWrapper.wrap(ir);
     FieldInfos fis = slow.getFieldInfos();
     assertEquals(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS, fis.fieldInfo("foo").getIndexOptions());
     slow.close();

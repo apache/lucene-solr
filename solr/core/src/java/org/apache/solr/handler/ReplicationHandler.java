@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Writer;
 import java.nio.ByteBuffer;
@@ -48,6 +49,10 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+
+import static org.apache.lucene.util.IOUtils.CHARSET_UTF_8;
+
+import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
@@ -813,7 +818,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         try {
           final InputStream is = new PropertiesInputStream(input);
           Properties props = new Properties();
-          props.load(is);
+          props.load(new InputStreamReader(is, CHARSET_UTF_8));
           return props;
         } finally {
           input.close();
@@ -856,6 +861,14 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
     NamedList master = (NamedList) initArgs.get("master");
     boolean enableMaster = isEnabled( master );
+
+    if (enableMaster || enableSlave) {
+      if (core.getCoreDescriptor().getCoreContainer().getZkController() != null) {
+        LOG.warn("SolrCloud is enabled for core " + core.getName() + " but so is old-style replication. Make sure you" +
+            " intend this behavior, it usually indicates a mis-configuration. Master setting is " +
+            Boolean.toString(enableMaster) + " and slave setting is " + Boolean.toString(enableSlave));
+      }
+    }
     
     if (!enableSlave && !enableMaster) {
       enableMaster = true;
@@ -1000,7 +1013,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
       @Override
       public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
-        return "application/octet-stream";
+        return BinaryResponseParser.BINARY_CONTENT_TYPE;
       }
 
       @Override

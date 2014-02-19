@@ -23,7 +23,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestCodecHoldsOpenFiles extends LuceneTestCase {
   public void test() throws Exception {
@@ -49,7 +50,7 @@ public class TestCodecHoldsOpenFiles extends LuceneTestCase {
     }
 
     for(AtomicReaderContext cxt : r.leaves()) {
-      _TestUtil.checkReader(cxt.reader());
+      TestUtil.checkReader(cxt.reader());
     }
 
     r.close();

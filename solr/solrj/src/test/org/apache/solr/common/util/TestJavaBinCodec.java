@@ -21,14 +21,14 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestJavaBinCodec extends LuceneTestCase {
   
  public void testStrings() throws Exception {
     JavaBinCodec javabin = new JavaBinCodec();
     for (int i = 0; i < 10000*RANDOM_MULTIPLIER; i++) {
-      String s = _TestUtil.randomUnicodeString(random());
+      String s = TestUtil.randomUnicodeString(random());
       ByteArrayOutputStream os = new ByteArrayOutputStream();
       javabin.marshal(s, os);
       ByteArrayInputStream is = new ByteArrayInputStream(os.toByteArray());

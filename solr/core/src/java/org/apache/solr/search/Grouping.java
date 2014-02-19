@@ -17,13 +17,38 @@
 
 package org.apache.solr.search;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
-import org.apache.lucene.search.*;
-import org.apache.lucene.search.grouping.*;
+import org.apache.lucene.search.CachingCollector;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.MultiCollector;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TimeLimitingCollector;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopDocsCollector;
+import org.apache.lucene.search.TopFieldCollector;
+import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.TotalHitCountCollector;
+import org.apache.lucene.search.grouping.AbstractAllGroupHeadsCollector;
+import org.apache.lucene.search.grouping.GroupDocs;
+import org.apache.lucene.search.grouping.SearchGroup;
+import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.search.grouping.function.FunctionAllGroupHeadsCollector;
 import org.apache.lucene.search.grouping.function.FunctionAllGroupsCollector;
 import org.apache.lucene.search.grouping.function.FunctionFirstPassGroupingCollector;
@@ -33,8 +58,6 @@ import org.apache.lucene.search.grouping.term.TermAllGroupsCollector;
 import org.apache.lucene.search.grouping.term.TermFirstPassGroupingCollector;
 import org.apache.lucene.search.grouping.term.TermSecondPassGroupingCollector;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
@@ -46,9 +69,6 @@ import org.apache.solr.schema.StrFieldSource;
 import org.apache.solr.search.grouping.collector.FilterCollector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.*;
 
 /**
  * Basic Solr Grouping infrastructure.
@@ -346,13 +366,14 @@ public class Grouping {
 
     if (allCollectors != null) {
       searchWithTimeLimiter(luceneFilter, allCollectors);
+
+      if(allCollectors instanceof DelegatingCollector) {
+        ((DelegatingCollector) allCollectors).finish();
+      }
     }
 
     if (getGroupedDocSet && allGroupHeadsCollector != null) {
-      FixedBitSet fixedBitSet = allGroupHeadsCollector.retrieveGroupHeads(maxDoc);
-      long[] bits = fixedBitSet.getBits();
-      OpenBitSet openBitSet = new OpenBitSet(bits, bits.length);
-      qr.setDocSet(new BitDocSet(openBitSet));
+      qr.setDocSet(new BitDocSet(allGroupHeadsCollector.retrieveGroupHeads(maxDoc)));
     } else if (getDocSet) {
       qr.setDocSet(setCollector.getDocSet());
     }
@@ -382,6 +403,10 @@ public class Grouping {
             secondPhaseCollectors = pf.postFilter;
           }
           searchWithTimeLimiter(luceneFilter, secondPhaseCollectors);
+
+          if(secondPhaseCollectors instanceof DelegatingCollector) {
+            ((DelegatingCollector) secondPhaseCollectors).finish();
+          }
         }
       }
     }

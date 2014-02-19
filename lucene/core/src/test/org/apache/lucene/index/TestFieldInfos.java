@@ -17,19 +17,16 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import java.io.IOException;
+
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldInfosReader;
 import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
-
-import java.io.IOException;
-import java.util.Arrays;
+import org.apache.lucene.util.LuceneTestCase;
 
 //import org.cnlp.utils.properties.ResourceBundleHelper;
 
@@ -60,14 +57,14 @@ public class TestFieldInfos extends LuceneTestCase {
     //Use a RAMOutputStream
   
     FieldInfosWriter writer = Codec.getDefault().fieldInfosFormat().getFieldInfosWriter();
-    writer.write(dir, filename, fieldInfos, IOContext.DEFAULT);
+    writer.write(dir, filename, "", fieldInfos, IOContext.DEFAULT);
     output.close();
     return fieldInfos;
   }
   
   public FieldInfos readFieldInfos(Directory dir, String filename) throws IOException {
     FieldInfosReader reader = Codec.getDefault().fieldInfosFormat().getFieldInfosReader();
-    return reader.read(dir, filename, IOContext.DEFAULT);
+    return reader.read(dir, filename, "", IOContext.DEFAULT);
   }
   
   public void test() throws IOException {

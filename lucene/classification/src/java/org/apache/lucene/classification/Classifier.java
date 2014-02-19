@@ -18,6 +18,7 @@ package org.apache.lucene.classification;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.search.Query;
 
 import java.io.IOException;
 
@@ -45,6 +46,30 @@ public interface Classifier<T> {
    * @throws IOException If there is a low-level I/O error.
    */
   public void train(AtomicReader atomicReader, String textFieldName, String classFieldName, Analyzer analyzer)
+      throws IOException;
+
+  /**
+   * Train the classifier using the underlying Lucene index
+   * @param atomicReader the reader to use to access the Lucene index
+   * @param textFieldName the name of the field used to compare documents
+   * @param classFieldName the name of the field containing the class assigned to documents
+   * @param analyzer the analyzer used to tokenize / filter the unseen text
+   * @param query the query to filter which documents use for training
+   * @throws IOException If there is a low-level I/O error.
+   */
+  public void train(AtomicReader atomicReader, String textFieldName, String classFieldName, Analyzer analyzer, Query query)
+      throws IOException;
+
+  /**
+   * Train the classifier using the underlying Lucene index
+   * @param atomicReader the reader to use to access the Lucene index
+   * @param textFieldNames the names of the fields to be used to compare documents
+   * @param classFieldName the name of the field containing the class assigned to documents
+   * @param analyzer the analyzer used to tokenize / filter the unseen text
+   * @param query the query to filter which documents use for training
+   * @throws IOException If there is a low-level I/O error.
+   */
+  public void train(AtomicReader atomicReader, String[] textFieldNames, String classFieldName, Analyzer analyzer, Query query)
       throws IOException;
 
 }

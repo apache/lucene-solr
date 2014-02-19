@@ -29,7 +29,7 @@ import java.util.Map;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
  *     &lt;filter class="solr.ShingleFilterFactory" minShingleSize="2" maxShingleSize="2"
- *             outputUnigrams="true" outputUnigramsIfNoShingles="false" tokenSeparator=" "/&gt;
+ *             outputUnigrams="true" outputUnigramsIfNoShingles="false" tokenSeparator=" " fillerToken="_"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  */
@@ -39,6 +39,7 @@ public class ShingleFilterFactory extends TokenFilterFactory {
   private final boolean outputUnigrams;
   private final boolean outputUnigramsIfNoShingles;
   private final String tokenSeparator;
+  private final String fillerToken;
 
   /** Creates a new ShingleFilterFactory */
   public ShingleFilterFactory(Map<String, String> args) {
@@ -57,7 +58,8 @@ public class ShingleFilterFactory extends TokenFilterFactory {
     }
     outputUnigrams = getBoolean(args, "outputUnigrams", true);
     outputUnigramsIfNoShingles = getBoolean(args, "outputUnigramsIfNoShingles", false);
-    tokenSeparator = get(args, "tokenSeparator", ShingleFilter.TOKEN_SEPARATOR);
+    tokenSeparator = get(args, "tokenSeparator", ShingleFilter.DEFAULT_TOKEN_SEPARATOR);
+    fillerToken = get(args, "fillerToken", ShingleFilter.DEFAULT_FILLER_TOKEN);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -69,6 +71,7 @@ public class ShingleFilterFactory extends TokenFilterFactory {
     r.setOutputUnigrams(outputUnigrams);
     r.setOutputUnigramsIfNoShingles(outputUnigramsIfNoShingles);
     r.setTokenSeparator(tokenSeparator);
+    r.setFillerToken(fillerToken);
     return r;
   }
 }

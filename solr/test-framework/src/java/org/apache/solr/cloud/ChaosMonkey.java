@@ -17,11 +17,14 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.servlet.Filter;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrServer;
@@ -34,6 +37,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.slf4j.Logger;
@@ -56,8 +60,9 @@ public class ChaosMonkey {
   private static final int EXPIRE_PERCENT = 10; // 0 - 10 = 0 - 100%
   private Map<String,List<CloudJettyRunner>> shardToJetty;
   
-  private static final boolean CONN_LOSS = Boolean.valueOf(System.getProperty("solr.tests.cloud.cm.connloss", "true"));
-  private static final boolean EXP = Boolean.valueOf(System.getProperty("solr.tests.cloud.cm.exp", "true"));
+  private static final Boolean MONKEY_ENABLED = Boolean.valueOf(System.getProperty("solr.tests.cloud.cm.enabled", "true"));
+  private static final Boolean CONN_LOSS = Boolean.valueOf(System.getProperty("solr.tests.cloud.cm.connloss", null));
+  private static final Boolean EXP = Boolean.valueOf(System.getProperty("solr.tests.cloud.cm.exp", null));
   
   private ZkTestServer zkServer;
   private ZkStateReader zkStateReader;
@@ -73,7 +78,9 @@ public class ChaosMonkey {
   private boolean causeConnectionLoss;
   private boolean aggressivelyKillLeaders;
   private Map<String,CloudJettyRunner> shardToLeaderJetty;
-  private long startTime;
+  private volatile long startTime;
+  
+  private List<CloudJettyRunner> deadPool = new ArrayList<CloudJettyRunner>();
 
   private Thread monkeyThread;
   
@@ -85,10 +92,25 @@ public class ChaosMonkey {
     this.zkServer = zkServer;
     this.zkStateReader = zkStateReader;
     this.collection = collection;
-    Random random = LuceneTestCase.random();
-    expireSessions = EXP; //= random.nextBoolean();
     
-    causeConnectionLoss = CONN_LOSS;//= random.nextBoolean();
+    if (!MONKEY_ENABLED) {
+      monkeyLog("The Monkey is Disabled and will not run");
+      return;
+    }
+    
+    Random random = LuceneTestCase.random();
+    if (EXP != null) {
+      expireSessions = EXP; 
+    } else {
+      expireSessions = random.nextBoolean();
+    }
+    if (CONN_LOSS != null) {
+      causeConnectionLoss = CONN_LOSS;
+    } else {
+      causeConnectionLoss = random.nextBoolean();
+    }
+    
+    
     monkeyLog("init - expire sessions:" + expireSessions
         + " cause connection loss:" + causeConnectionLoss);
   }
@@ -153,11 +175,11 @@ public class ChaosMonkey {
     }
   }
   
-  private void causeConnectionLoss(JettySolrRunner jetty) {
+  public static void causeConnectionLoss(JettySolrRunner jetty) {
     causeConnectionLoss(jetty, ZkTestServer.TICK_TIME * 2 + 200);
   }
   
-  private void causeConnectionLoss(JettySolrRunner jetty, int pauseTime) {
+  public static void causeConnectionLoss(JettySolrRunner jetty, int pauseTime) {
     SolrDispatchFilter solrDispatchFilter = (SolrDispatchFilter) jetty
         .getDispatchFilter().getFilter();
     if (solrDispatchFilter != null) {
@@ -210,6 +232,21 @@ public class ChaosMonkey {
   }
   
   public static void kill(CloudJettyRunner cjetty) throws Exception {
+    FilterHolder filterHolder = cjetty.jetty.getDispatchFilter();
+    if (filterHolder != null) {
+      Filter filter = filterHolder.getFilter();
+      if (filter != null) {
+        CoreContainer cores = ((SolrDispatchFilter) filter).getCores();
+        if (cores != null) {
+          int zklocalport = ((InetSocketAddress) cores.getZkController()
+              .getZkClient().getSolrZooKeeper().getSocketAddress()).getPort();
+          IpTables.blockPort(zklocalport);
+        }
+      }
+    }
+
+    IpTables.blockPort(cjetty.jetty.getLocalPort());
+    
     JettySolrRunner jetty = cjetty.jetty;
     monkeyLog("kill shard! " + jetty.getLocalPort());
     
@@ -284,51 +321,9 @@ public class ChaosMonkey {
   
   public CloudJettyRunner getRandomJetty(String slice, boolean aggressivelyKillLeaders) throws KeeperException, InterruptedException {
     
-
-    int numRunning = 0;
-    int numRecovering = 0;
     int numActive = 0;
     
-    for (CloudJettyRunner cloudJetty : shardToJetty.get(slice)) {
-      boolean running = true;
-      
-      // get latest cloud state
-      zkStateReader.updateClusterState(true);
-      
-      Slice theShards = zkStateReader.getClusterState().getSlicesMap(collection)
-          .get(slice);
-      
-      ZkNodeProps props = theShards.getReplicasMap().get(cloudJetty.coreNodeName);
-      if (props == null) {
-        throw new RuntimeException("shard name " + cloudJetty.coreNodeName + " not found in " + theShards.getReplicasMap().keySet());
-      }
-      
-      String state = props.getStr(ZkStateReader.STATE_PROP);
-      String nodeName = props.getStr(ZkStateReader.NODE_NAME_PROP);
-      
-      
-      if (!cloudJetty.jetty.isRunning()
-          || !state.equals(ZkStateReader.ACTIVE)
-          || !zkStateReader.getClusterState().liveNodesContain(nodeName)) {
-        running = false;
-      }
-      
-      if (cloudJetty.jetty.isRunning()
-          && state.equals(ZkStateReader.RECOVERING)
-          && zkStateReader.getClusterState().liveNodesContain(nodeName)) {
-        numRecovering++;
-      }
-      
-      if (cloudJetty.jetty.isRunning()
-          && state.equals(ZkStateReader.ACTIVE)
-          && zkStateReader.getClusterState().liveNodesContain(nodeName)) {
-        numActive++;
-      }
-      
-      if (running) {
-        numRunning++;
-      }
-    }
+    numActive = checkIfKillIsLegal(slice, numActive);
     
     // TODO: stale state makes this a tough call
     if (numActive < 2) {
@@ -336,6 +331,21 @@ public class ChaosMonkey {
       monkeyLog("only one active node in shard - monkey cannot kill :(");
       return null;
     }
+    
+    // let's check the deadpool count
+    int numRunning = 0;
+    for (CloudJettyRunner cjetty : shardToJetty.get(slice)) {
+      if (!deadPool.contains(cjetty)) {
+        numRunning++;
+      }
+    }
+    
+    if (numRunning < 2) {
+      // we cannot kill anyone
+      monkeyLog("only one active node in shard - monkey cannot kill :(");
+      return null;
+    }
+    
     Random random = LuceneTestCase.random();
     int chance = random.nextInt(10);
     CloudJettyRunner cjetty;
@@ -404,6 +414,33 @@ public class ChaosMonkey {
   
     return cjetty;
   }
+
+  private int checkIfKillIsLegal(String slice, int numActive)
+      throws KeeperException, InterruptedException {
+    for (CloudJettyRunner cloudJetty : shardToJetty.get(slice)) {
+      
+      // get latest cloud state
+      zkStateReader.updateClusterState(true);
+      
+      Slice theShards = zkStateReader.getClusterState().getSlicesMap(collection)
+          .get(slice);
+      
+      ZkNodeProps props = theShards.getReplicasMap().get(cloudJetty.coreNodeName);
+      if (props == null) {
+        throw new RuntimeException("shard name " + cloudJetty.coreNodeName + " not found in " + theShards.getReplicasMap().keySet());
+      }
+      
+      String state = props.getStr(ZkStateReader.STATE_PROP);
+      String nodeName = props.getStr(ZkStateReader.NODE_NAME_PROP);
+      
+      if (cloudJetty.jetty.isRunning()
+          && state.equals(ZkStateReader.ACTIVE)
+          && zkStateReader.getClusterState().liveNodesContain(nodeName)) {
+        numActive++;
+      }
+    }
+    return numActive;
+  }
   
   public SolrServer getRandomClient(String slice) throws KeeperException, InterruptedException {
     // get latest cloud state
@@ -420,14 +457,24 @@ public class ChaosMonkey {
   // synchronously starts and stops shards randomly, unless there is only one
   // active shard up for a slice or if there is one active and others recovering
   public void startTheMonkey(boolean killLeaders, final int roundPauseUpperLimit) {
+    if (!MONKEY_ENABLED) {
+      monkeyLog("The Monkey is disabled and will not start");
+      return;
+    }
     monkeyLog("starting");
+    
+    
+    if (LuceneTestCase.random().nextBoolean()) {
+      monkeyLog("Jetty will not commit on shutdown");
+      DirectUpdateHandler2.commitOnClose = false;
+    }
+    
     this.aggressivelyKillLeaders = killLeaders;
     startTime = System.currentTimeMillis();
     // TODO: when kill leaders is on, lets kill a higher percentage of leaders
     
     stop = false;
     monkeyThread = new Thread() {
-      private List<CloudJettyRunner> deadPool = new ArrayList<CloudJettyRunner>();
 
       @Override
       public void run() {
@@ -440,7 +487,7 @@ public class ChaosMonkey {
              if (!deadPool.isEmpty()) {
                int index = random.nextInt(deadPool.size());
                JettySolrRunner jetty = deadPool.get(index).jetty;
-               if (!ChaosMonkey.start(jetty)) {
+               if (jetty.isStopped() && !ChaosMonkey.start(jetty)) {
                  continue;
                }
                //System.out.println("started on port:" + jetty.getLocalPort());
@@ -499,6 +546,13 @@ public class ChaosMonkey {
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
     }
+    
+    DirectUpdateHandler2.commitOnClose = true;
+    
+    float runtime = (System.currentTimeMillis() - startTime)/1000.0f;
+    if (runtime > 20 && stops.get() == 0) {
+      LuceneTestCase.fail("The Monkey ran for over 20 seconds and no jetties were stopped - this is worth investigating!");
+    }
   }
 
   public int getStarts() {
@@ -510,7 +564,8 @@ public class ChaosMonkey {
   }
   
   public static boolean start(JettySolrRunner jetty) throws Exception {
-    
+
+    IpTables.unblockPort(jetty.getLocalPort());
     try {
       jetty.start();
     } catch (Exception e) {
@@ -528,6 +583,18 @@ public class ChaosMonkey {
           // we coud not get the port
           jetty.stop();
           return false;
+        }
+      }
+    }
+    FilterHolder filterHolder = jetty.getDispatchFilter();
+    if (filterHolder != null) {
+      Filter filter = filterHolder.getFilter();
+      if (filter != null) {
+        CoreContainer cores = ((SolrDispatchFilter) filter).getCores();
+        if (cores != null) {
+          int zklocalport = ((InetSocketAddress) cores.getZkController()
+              .getZkClient().getSolrZooKeeper().getSocketAddress()).getPort();
+          IpTables.unblockPort(zklocalport);
         }
       }
     }

@@ -19,8 +19,11 @@ package org.apache.solr.core;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.handler.admin.CollectionsHandler;
+import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.handler.admin.InfoHandler;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -36,6 +39,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
+
+import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
 
 public class TestCoreContainer extends SolrTestCaseJ4 {
 
@@ -81,7 +87,6 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     System.setProperty("shareSchema", "true");
     final CoreContainer cores = init("_shareSchema");
     try {
-      cores.setPersistent(false);
       assertTrue(cores.isShareSchema());
       
       CoreDescriptor descriptor1 = new CoreDescriptor(cores, "core1", "./collection1");
@@ -143,125 +148,17 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
   }
 
-  @Test
-  public void testPersist() throws Exception {
-    final File workDir = new File(TEMP_DIR, this.getClass().getName()
-        + "_persist");
-    if (workDir.exists()) {
-      FileUtils.deleteDirectory(workDir);
-    }
-    assertTrue("Failed to mkdirs workDir", workDir.mkdirs());
-    
-    final CoreContainer cores = h.getCoreContainer();
 
-    cores.setPersistent(true); // is this needed since we make explicit calls?
-
-    String instDir = null;
-    {
-      SolrCore template = null;
-      try {
-        template = cores.getCore("collection1");
-        instDir = template.getCoreDescriptor().getRawInstanceDir();
-      } finally {
-        if (null != template) template.close();
-      }
-    }
-    
-    final File instDirFile = new File(cores.getSolrHome(), instDir);
-    assertTrue("instDir doesn't exist: " + instDir, instDirFile.exists());
-    
-    // sanity check the basic persistence of the default init
-    
-    final File oneXml = new File(workDir, "1.solr.xml");
-    cores.persistFile(oneXml);
-
-    assertXmlFile(oneXml, "/solr[@persistent='true']",
-        "/solr/cores[@defaultCoreName='collection1' and not(@transientCacheSize)]",
-        "/solr/cores/core[@name='collection1' and @instanceDir='" + instDir +
-        "' and @transient='false' and @loadOnStartup='true' ]", "1=count(/solr/cores/core)");
-
-    // create some new cores and sanity check the persistence
-    
-    final File dataXfile = new File(workDir, "dataX");
-    final String dataX = dataXfile.getAbsolutePath();
-    assertTrue("dataXfile mkdirs failed: " + dataX, dataXfile.mkdirs());
-    
-    final File instYfile = new File(workDir, "instY");
-    FileUtils.copyDirectory(instDirFile, instYfile);
-    
-    // :HACK: dataDir leaves off trailing "/", but instanceDir uses it
-    final String instY = instYfile.getAbsolutePath() + "/";
-    
-    final CoreDescriptor xd = new CoreDescriptor(cores, "X", instDir);
-    xd.setDataDir(dataX);
-    
-    final CoreDescriptor yd = new CoreDescriptor(cores, "Y", instY);
-    
-    SolrCore x = null;
-    SolrCore y = null;
-    try {
-      x = cores.create(xd);
-      y = cores.create(yd);
-      cores.register(x, false);
-      cores.register(y, false);
-      
-      assertEquals("cores not added?", 3, cores.getCoreNames().size());
-      
-      final File twoXml = new File(workDir, "2.solr.xml");
-
-      cores.persistFile(twoXml);
-
-      assertXmlFile(twoXml, "/solr[@persistent='true']",
-          "/solr/cores[@defaultCoreName='collection1']",
-          "/solr/cores/core[@name='collection1' and @instanceDir='" + instDir
-              + "']", "/solr/cores/core[@name='X' and @instanceDir='" + instDir
-              + "' and @dataDir='" + dataX + "']",
-          "/solr/cores/core[@name='Y' and @instanceDir='" + instY + "']",
-          "3=count(/solr/cores/core)");
-
-      // Test for saving implicit properties, we should not do this.
-      assertXmlFile(twoXml, "/solr/cores/core[@name='X' and not(@solr.core.instanceDir) and not (@solr.core.configName)]");
-
-      // delete a core, check persistence again
-      assertNotNull("removing X returned null", cores.remove("X"));
-      
-      final File threeXml = new File(workDir, "3.solr.xml");
-      cores.persistFile(threeXml);
-      
-      assertXmlFile(threeXml, "/solr[@persistent='true']",
-          "/solr/cores[@defaultCoreName='collection1']",
-          "/solr/cores/core[@name='collection1' and @instanceDir='" + instDir + "']",
-          "/solr/cores/core[@name='Y' and @instanceDir='" + instY + "']",
-          "2=count(/solr/cores/core)");
-      
-      // sanity check that persisting w/o changes has no changes
-      
-      final File fourXml = new File(workDir, "4.solr.xml");
-      cores.persistFile(fourXml);
-      
-      assertTrue("3 and 4 should be identical files",
-          FileUtils.contentEquals(threeXml, fourXml));
-      
-    } finally {
-      // y is closed by the container, but
-      // x has been removed from the container
-      if (x != null) {
-        try {
-          x.close();
-        } catch (Exception e) {
-          log.error("", e);
-        }
-      }
-    }
-  }
-  
 
   @Test
   public void testNoCores() throws IOException, ParserConfigurationException, SAXException {
     //create solrHome
     File solrHomeDirectory = new File(TEMP_DIR, this.getClass().getName()
         + "_noCores");
-    SetUpHome(solrHomeDirectory, EMPTY_SOLR_XML);
+    
+    boolean oldSolrXml = random().nextBoolean();
+    
+    SetUpHome(solrHomeDirectory, oldSolrXml ? EMPTY_SOLR_XML : EMPTY_SOLR_XML2);
     CoreContainer cores = new CoreContainer(solrHomeDirectory.getAbsolutePath());
     cores.load();
     try {
@@ -278,14 +175,19 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
       assertEquals("There core registered", 1, cores.getCores().size());
 
-
-      assertXmlFile(new File(solrHomeDirectory, "solr.xml"),
-          "/solr/cores[@transientCacheSize='32']");
+      if (oldSolrXml) {
+        assertXmlFile(new File(solrHomeDirectory, "solr.xml"),
+            "/solr/cores[@transientCacheSize='32']");
+      }
 
       newCore.close();
       cores.remove("core1");
       //assert cero cores
       assertEquals("There should not be cores", 0, cores.getCores().size());
+      
+      // try and remove a core that does not exist
+      SolrCore ret = cores.remove("non_existent_core");
+      assertNull(ret);
     } finally {
       cores.shutdown();
       FileUtils.deleteDirectory(solrHomeDirectory);
@@ -293,6 +195,11 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
   }
 
+  @Test
+  public void testLogWatcherEnabledByDefault() {
+    assertNotNull(h.getCoreContainer().getLogging());
+  }
+  
   private void SetUpHome(File solrHomeDirectory, String xmlFile) throws IOException {
     if (solrHomeDirectory.exists()) {
       FileUtils.deleteDirectory(solrHomeDirectory);
@@ -316,7 +223,6 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   public void testClassLoaderHierarchy() throws Exception {
     final CoreContainer cc = init("_classLoaderHierarchy");
     try {
-      cc.setPersistent(false);
       ClassLoader sharedLoader = cc.loader.getClassLoader();
       ClassLoader contextLoader = Thread.currentThread().getContextClassLoader();
       assertSame(contextLoader, sharedLoader.getParent());
@@ -334,7 +240,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
   @Test
   public void testSharedLib() throws Exception {
-    File tmpRoot = _TestUtil.getTempDir("testSharedLib");
+    File tmpRoot = TestUtil.getTempDir("testSharedLib");
 
     File lib = new File(tmpRoot, "lib");
     lib.mkdirs();
@@ -383,4 +289,52 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       "  <cores adminPath=\"/admin/cores\" transientCacheSize=\"32\" >\n" +
       "  </cores>\n" +
       "</solr>";
+  
+  private static final String EMPTY_SOLR_XML2 ="<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
+      "<solr>\n" +
+      "</solr>";
+
+  private static final String CUSTOM_HANDLERS_SOLR_XML = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
+      "<solr>" +
+      " <str name=\"collectionsHandler\">" + CustomCollectionsHandler.class.getName() + "</str>" +
+      " <str name=\"infoHandler\">" + CustomInfoHandler.class.getName() + "</str>" +
+      " <str name=\"adminHandler\">" + CustomCoreAdminHandler.class.getName() + "</str>" +
+      "</solr>";
+
+  public static class CustomCollectionsHandler extends CollectionsHandler {
+    public CustomCollectionsHandler(CoreContainer cc) {
+      super(cc);
+    }
+  }
+
+  public static class CustomInfoHandler extends InfoHandler {
+    public CustomInfoHandler(CoreContainer cc) {
+      super(cc);
+    }
+  }
+
+  public static class CustomCoreAdminHandler extends CoreAdminHandler {
+    public CustomCoreAdminHandler(CoreContainer cc) {
+      super(cc);
+    }
+  }
+
+  @Test
+  public void testCustomHandlers() throws Exception {
+
+    SolrResourceLoader loader = new SolrResourceLoader("solr/collection1");
+    ConfigSolr config = ConfigSolr.fromString(loader, CUSTOM_HANDLERS_SOLR_XML);
+
+    CoreContainer cc = new CoreContainer(loader, config);
+    try {
+      cc.load();
+      assertThat(cc.getCollectionsHandler(), is(instanceOf(CustomCollectionsHandler.class)));
+      assertThat(cc.getInfoHandler(), is(instanceOf(CustomInfoHandler.class)));
+      assertThat(cc.getMultiCoreHandler(), is(instanceOf(CustomCoreAdminHandler.class)));
+    }
+    finally {
+      cc.shutdown();
+    }
+
+  }
 }

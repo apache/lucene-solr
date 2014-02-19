@@ -20,46 +20,46 @@ package org.apache.lucene.search.suggest.fst;
 import java.util.*;
 
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
-import org.apache.lucene.search.suggest.TermFreq;
-import org.apache.lucene.search.suggest.TermFreqArrayIterator;
+import org.apache.lucene.search.suggest.Input;
+import org.apache.lucene.search.suggest.InputArrayIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class WFSTCompletionTest extends LuceneTestCase {
   
   public void testBasic() throws Exception {
-    TermFreq keys[] = new TermFreq[] {
-        new TermFreq("foo", 50),
-        new TermFreq("bar", 10),
-        new TermFreq("barbar", 12),
-        new TermFreq("barbara", 6)
+    Input keys[] = new Input[] {
+        new Input("foo", 50),
+        new Input("bar", 10),
+        new Input("barbar", 12),
+        new Input("barbara", 6)
     };
     
     Random random = new Random(random().nextLong());
     WFSTCompletionLookup suggester = new WFSTCompletionLookup();
-    suggester.build(new TermFreqArrayIterator(keys));
+    suggester.build(new InputArrayIterator(keys));
     
     // top N of 2, but only foo is available
-    List<LookupResult> results = suggester.lookup(_TestUtil.stringToCharSequence("f", random), false, 2);
+    List<LookupResult> results = suggester.lookup(TestUtil.stringToCharSequence("f", random), false, 2);
     assertEquals(1, results.size());
     assertEquals("foo", results.get(0).key.toString());
     assertEquals(50, results.get(0).value, 0.01F);
 
     // make sure we don't get a dup exact suggestion:
-    results = suggester.lookup(_TestUtil.stringToCharSequence("foo", random), false, 2);
+    results = suggester.lookup(TestUtil.stringToCharSequence("foo", random), false, 2);
     assertEquals(1, results.size());
     assertEquals("foo", results.get(0).key.toString());
     assertEquals(50, results.get(0).value, 0.01F);
 
     // top N of 1 for 'bar': we return this even though barbar is higher
-    results = suggester.lookup(_TestUtil.stringToCharSequence("bar", random), false, 1);
+    results = suggester.lookup(TestUtil.stringToCharSequence("bar", random), false, 1);
     assertEquals(1, results.size());
     assertEquals("bar", results.get(0).key.toString());
     assertEquals(10, results.get(0).value, 0.01F);
     
     // top N Of 2 for 'b'
-    results = suggester.lookup(_TestUtil.stringToCharSequence("b", random), false, 2);
+    results = suggester.lookup(TestUtil.stringToCharSequence("b", random), false, 2);
     assertEquals(2, results.size());
     assertEquals("barbar", results.get(0).key.toString());
     assertEquals(12, results.get(0).value, 0.01F);
@@ -67,7 +67,7 @@ public class WFSTCompletionTest extends LuceneTestCase {
     assertEquals(10, results.get(1).value, 0.01F);
     
     // top N of 3 for 'ba'
-    results = suggester.lookup(_TestUtil.stringToCharSequence("ba", random), false, 3);
+    results = suggester.lookup(TestUtil.stringToCharSequence("ba", random), false, 3);
     assertEquals(3, results.size());
     assertEquals("barbar", results.get(0).key.toString());
     assertEquals(12, results.get(0).value, 0.01F);
@@ -81,9 +81,9 @@ public class WFSTCompletionTest extends LuceneTestCase {
 
     WFSTCompletionLookup suggester = new WFSTCompletionLookup(true);
 
-    suggester.build(new TermFreqArrayIterator(new TermFreq[] {
-          new TermFreq("x y", 20),
-          new TermFreq("x", 2),
+    suggester.build(new InputArrayIterator(new Input[] {
+          new Input("x y", 20),
+          new Input("x", 2),
         }));
 
     for(int topN=1;topN<4;topN++) {
@@ -105,9 +105,9 @@ public class WFSTCompletionTest extends LuceneTestCase {
 
     WFSTCompletionLookup suggester = new WFSTCompletionLookup(false);
 
-    suggester.build(new TermFreqArrayIterator(new TermFreq[] {
-          new TermFreq("x y", 20),
-          new TermFreq("x", 2),
+    suggester.build(new InputArrayIterator(new Input[] {
+          new Input("x y", 20),
+          new Input("x", 2),
         }));
 
     for(int topN=1;topN<4;topN++) {
@@ -131,14 +131,14 @@ public class WFSTCompletionTest extends LuceneTestCase {
     final TreeMap<String,Long> slowCompletor = new TreeMap<String,Long>();
     final TreeSet<String> allPrefixes = new TreeSet<String>();
     
-    TermFreq[] keys = new TermFreq[numWords];
+    Input[] keys = new Input[numWords];
     
     for (int i = 0; i < numWords; i++) {
       String s;
       while (true) {
         // TODO: would be nice to fix this slowCompletor/comparator to
         // use full range, but we might lose some coverage too...
-        s = _TestUtil.randomSimpleString(random());
+        s = TestUtil.randomSimpleString(random());
         if (!slowCompletor.containsKey(s)) {
           break;
         }
@@ -150,16 +150,17 @@ public class WFSTCompletionTest extends LuceneTestCase {
       // we can probably do Integer.MAX_VALUE here, but why worry.
       int weight = random().nextInt(1<<24);
       slowCompletor.put(s, (long)weight);
-      keys[i] = new TermFreq(s, weight);
+      keys[i] = new Input(s, weight);
     }
 
     WFSTCompletionLookup suggester = new WFSTCompletionLookup(false);
-    suggester.build(new TermFreqArrayIterator(keys));
+    suggester.build(new InputArrayIterator(keys));
 
+    assertEquals(numWords, suggester.getCount());
     Random random = new Random(random().nextLong());
     for (String prefix : allPrefixes) {
-      final int topN = _TestUtil.nextInt(random, 1, 10);
-      List<LookupResult> r = suggester.lookup(_TestUtil.stringToCharSequence(prefix, random), false, topN);
+      final int topN = TestUtil.nextInt(random, 1, 10);
+      List<LookupResult> r = suggester.lookup(TestUtil.stringToCharSequence(prefix, random), false, topN);
 
       // 2. go thru whole treemap (slowCompletor) and check its actually the best suggestion
       final List<LookupResult> matches = new ArrayList<LookupResult>();
@@ -205,16 +206,17 @@ public class WFSTCompletionTest extends LuceneTestCase {
 
     WFSTCompletionLookup suggester = new WFSTCompletionLookup(false);
 
-    suggester.build(new TermFreqArrayIterator(new TermFreq[] {
-          new TermFreq(key1, 50),
-          new TermFreq(key2, 50),
+    suggester.build(new InputArrayIterator(new Input[] {
+          new Input(key1, 50),
+          new Input(key2, 50),
         }));
   }
 
   public void testEmpty() throws Exception {
     WFSTCompletionLookup suggester = new WFSTCompletionLookup(false);
 
-    suggester.build(new TermFreqArrayIterator(new TermFreq[0]));
+    suggester.build(new InputArrayIterator(new Input[0]));
+    assertEquals(0, suggester.getCount());
     List<LookupResult> result = suggester.lookup("a", false, 20);
     assertTrue(result.isEmpty());
   }

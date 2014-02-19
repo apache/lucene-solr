@@ -27,7 +27,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestOmitNorms extends LuceneTestCase {
   // Tests whether the DocumentWriter correctly enable the
@@ -281,7 +281,7 @@ public class TestOmitNorms extends LuceneTestCase {
     riw.addDocument(d);
     
     // add a mix of f1's and f2's
-    int numExtraDocs = _TestUtil.nextInt(random(), 1, 1000);
+    int numExtraDocs = TestUtil.nextInt(random(), 1, 1000);
     for (int i = 0; i < numExtraDocs; i++) {
       d = new Document();
       d.add(random().nextBoolean() ? f1 : f2);

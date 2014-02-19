@@ -24,6 +24,7 @@ package org.apache.lucene.codecs.intblock;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.sep.IntIndexOutput;
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
 
 // TODO: much of this can be shared code w/ the fixed case
@@ -60,7 +61,7 @@ public abstract class VariableIntBlockIndexOutput extends IntIndexOutput {
   protected abstract int add(int value) throws IOException;
 
   @Override
-  public IntIndexOutput.Index index() throws IOException {
+  public IntIndexOutput.Index index() {
     return new Index();
   }
 
@@ -88,7 +89,7 @@ public abstract class VariableIntBlockIndexOutput extends IntIndexOutput {
     }
 
     @Override
-    public void write(IndexOutput indexOut, boolean absolute) throws IOException {
+    public void write(DataOutput indexOut, boolean absolute) throws IOException {
       assert upto >= 0;
       if (absolute) {
         indexOut.writeVInt(upto);

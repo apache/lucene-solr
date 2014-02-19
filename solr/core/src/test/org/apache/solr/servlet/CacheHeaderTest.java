@@ -27,23 +27,30 @@ import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.cookie.DateUtils;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.common.params.CommonParams;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.apache.lucene.util._TestUtil;
+import com.google.common.base.Charsets;
 
 /**
  * A test case for the several HTTP cache headers emitted by Solr
  */
 public class CacheHeaderTest extends CacheHeaderTestBase {
-
+    private static final File solrHomeDirectory = new File(TEMP_DIR, "CacheHeaderTest");
+    
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createJetty("solr/", null, null);
+    setupJettyTestHome(solrHomeDirectory, "collection1");
+    createJetty(solrHomeDirectory.getAbsolutePath(), null, null);
   }
 
-  protected static final String CHARSET = "UTF-8";
+  @AfterClass
+  public static void afterTest() throws Exception {
+    cleanUpJettyHome(solrHomeDirectory);
+  }
 
   protected static final String CONTENTS = "id\n100\n101\n102";
 
@@ -241,12 +248,12 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
   }
 
   protected File makeFile(String contents) {
-    return makeFile(contents, CHARSET);
+    return makeFile(contents, Charsets.UTF_8.toString());
   }
 
   protected File makeFile(String contents, String charset) {
     try {
-      File f = _TestUtil.createTempFile("cachetest_csv", null, TEMP_DIR);
+      File f = TestUtil.createTempFile("cachetest_csv", null, TEMP_DIR);
       Writer out = new OutputStreamWriter(new FileOutputStream(f), charset);
       out.write(contents);
       out.close();

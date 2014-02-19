@@ -22,7 +22,8 @@ import java.util.Arrays;
 
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.BeforeClass;
 
 public class SortingAtomicReaderTest extends SorterTestBase {
@@ -78,7 +79,7 @@ public class SortingAtomicReaderTest extends SorterTestBase {
       System.out.println();
     }
     
-    _TestUtil.checkReader(reader);
+    TestUtil.checkReader(reader);
   }
 
 }

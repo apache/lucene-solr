@@ -172,6 +172,9 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
     singleTest(field,"map(\0,0,0,500)",10,10, -4,-4, 0,500);
     singleTest(field,"map(\0,-4,5,500)",100,100, -4,500, 0,500, 5,500, 10,10, 25,25);
+    singleTest(field,"map(\0,0,0,sum(\0,500))",10,10, -4,-4, 0,500);
+    singleTest(field,"map(\0,0,0,sum(\0,500),sum(\0,1))",10,11, -4,-3, 0,500);
+    singleTest(field,"map(\0,-4,5,sum(\0,1))",100,100, -4,-3, 0,1, 5,6, 10,10, 25,25);
 
     singleTest(field,"scale(\0,-1,1)",-4,-1, 100,1, 0,-0.9230769f);
     singleTest(field,"scale(\0,-10,1000)",-4,-10, 100,1000, 0,28.846153f);
@@ -721,6 +724,34 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
     assertJQ(req("q", "id:1", "fl", "a:1,b:2.0,c:'X',d:{!func}foo_s,e:{!func}bar_s")  // if exists() is false, no pseudo-field should be added
         , "/response/docs/[0]=={'a':1, 'b':2.0,'c':'X','d':'A'}");
+  }
+
+  public void testMissingFieldFunctionBehavior() throws Exception {
+    clearIndex();
+    // add a doc that has no values in any interesting fields
+    assertU(adoc("id", "1"));
+    assertU(commit());
+
+    // it's important that these functions not only use fields that
+    // out doc have no values for, but also that that no other doc ever added
+    // to the index might have ever had a value for, so that the segment
+    // term metadata doesn't exist
+    
+    for (String suffix : new String[] {"s", "b", "dt", "tdt",
+                                       "i", "l", "f", "d", 
+                                       "pi", "pl", "pf", "pd",
+                                       "ti", "tl", "tf", "td"    }) {
+      final String field = "no__vals____" + suffix;
+      assertQ(req("q","id:1",
+                  "fl","noval_if:if("+field+",42,-99)",
+                  "fl","noval_def:def("+field+",-99)",
+                  "fl","noval_not:not("+field+")",
+                  "fl","noval_exists:exists("+field+")"),
+              "//long[@name='noval_if']='-99'",
+              "//long[@name='noval_def']='-99'",
+              "//bool[@name='noval_not']='true'",
+              "//bool[@name='noval_exists']='false'");
+    }
   }
 
 }

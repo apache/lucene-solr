@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -57,17 +59,26 @@ public class JavaBinUpdateRequestCodec {
     }
     Iterator<SolrInputDocument> docIter = null;
 
-    if (updateRequest.getDocuments() != null) {
-      docIter = updateRequest.getDocuments().iterator();
-    }
     if(updateRequest.getDocIterator() != null){
       docIter = updateRequest.getDocIterator();
     }
+    
+    Map<SolrInputDocument,Map<String,Object>> docMap = updateRequest.getDocumentsMap();
 
     nl.add("params", params);// 0: params
-    nl.add("delById", updateRequest.getDeleteById());
+    if (updateRequest.getDeleteByIdMap() != null) {
+      nl.add("delByIdMap", updateRequest.getDeleteByIdMap());
+    }
     nl.add("delByQ", updateRequest.getDeleteQuery());
-    nl.add("docs", docIter);
+
+    if (docMap != null) {
+      nl.add("docsMap", docMap.entrySet().iterator());
+    } else {
+      if (updateRequest.getDocuments() != null) {
+        docIter = updateRequest.getDocuments().iterator();
+      }
+      nl.add("docs", docIter);
+    }
     JavaBinCodec codec = new JavaBinCodec();
     codec.marshal(nl, os);
   }
@@ -86,7 +97,9 @@ public class JavaBinUpdateRequestCodec {
   public UpdateRequest unmarshal(InputStream is, final StreamingUpdateHandler handler) throws IOException {
     final UpdateRequest updateRequest = new UpdateRequest();
     List<List<NamedList>> doclist;
+    List<Entry<SolrInputDocument,Map<Object,Object>>>  docMap;
     List<String> delById;
+    Map<String,Map<String,Object>> delByIdMap;
     List<String> delByQ;
     final NamedList[] namedList = new NamedList[1];
     JavaBinCodec codec = new JavaBinCodec() {
@@ -124,9 +137,11 @@ public class JavaBinUpdateRequestCodec {
       }
 
       private List readOuterMostDocIterator(DataInputInputStream fis) throws IOException {
-        NamedList params = (NamedList) namedList[0].getVal(0);
+        NamedList params = (NamedList) namedList[0].get("params");
         updateRequest.setParams(new ModifiableSolrParams(SolrParams.toSolrParams(params)));
         if (handler == null) return super.readIterator(fis);
+        Integer commitWithin = null;
+        Boolean overwrite = null;
         while (true) {
           Object o = readVal(fis);
           if (o == END_OBJ) break;
@@ -136,16 +151,24 @@ public class JavaBinUpdateRequestCodec {
           } else if (o instanceof NamedList)  {
             UpdateRequest req = new UpdateRequest();
             req.setParams(new ModifiableSolrParams(SolrParams.toSolrParams((NamedList) o)));
-            handler.update(null, req);
+            handler.update(null, req, null, null);
+          } else if (o instanceof Map.Entry){
+            sdoc = (SolrInputDocument) ((Map.Entry) o).getKey();
+            Map p = (Map) ((Map.Entry) o).getValue();
+            if (p != null) {
+              commitWithin = (Integer) p.get(UpdateRequest.COMMIT_WITHIN);
+              overwrite = (Boolean) p.get(UpdateRequest.OVERWRITE);
+            }
           } else  {
+          
             sdoc = (SolrInputDocument) o;
           }
-          handler.update(sdoc, updateRequest);
+          handler.update(sdoc, updateRequest, commitWithin, overwrite);
         }
         return Collections.EMPTY_LIST;
       }
-    };
 
+    };
 
     codec.unmarshal(is);
     
@@ -158,23 +181,30 @@ public class JavaBinUpdateRequestCodec {
       }
     }
     delById = (List<String>) namedList[0].get("delById");
+    delByIdMap = (Map<String,Map<String,Object>>) namedList[0].get("delByIdMap");
     delByQ = (List<String>) namedList[0].get("delByQ");
     doclist = (List) namedList[0].get("docs");
+    docMap =  (List<Entry<SolrInputDocument,Map<Object,Object>>>) namedList[0].get("docsMap");
+    
 
-    if (doclist != null && !doclist.isEmpty()) {
-      List<SolrInputDocument> solrInputDocs = new ArrayList<SolrInputDocument>();
-      for (Object o : doclist) {
-        if (o instanceof List) {
-          solrInputDocs.add(listToSolrInputDocument((List<NamedList>)o));
-        } else  {
-          solrInputDocs.add((SolrInputDocument)o);
-        }
-      }
-      updateRequest.add(solrInputDocs);
-    }
+    // we don't add any docs, because they were already processed
+    // deletes are handled later, and must be passed back on the UpdateRequest
+    
     if (delById != null) {
       for (String s : delById) {
         updateRequest.deleteById(s);
+      }
+    }
+    if (delByIdMap != null) {
+      for (Map.Entry<String,Map<String,Object>> entry : delByIdMap.entrySet()) {
+        Map<String,Object> params = entry.getValue();
+        if (params != null) {
+          Long version = (Long) params.get(UpdateRequest.VER);
+          updateRequest.deleteById(entry.getKey(), version);
+        } else {
+          updateRequest.deleteById(entry.getKey());
+        }
+  
       }
     }
     if (delByQ != null) {
@@ -182,8 +212,8 @@ public class JavaBinUpdateRequestCodec {
         updateRequest.deleteByQuery(s);
       }
     }
+    
     return updateRequest;
-
   }
 
   private SolrInputDocument listToSolrInputDocument(List<NamedList> namedList) {
@@ -207,6 +237,6 @@ public class JavaBinUpdateRequestCodec {
   }
 
   public static interface StreamingUpdateHandler {
-    public void update(SolrInputDocument document, UpdateRequest req);
+    public void update(SolrInputDocument document, UpdateRequest req, Integer commitWithin, Boolean override);
   }
 }

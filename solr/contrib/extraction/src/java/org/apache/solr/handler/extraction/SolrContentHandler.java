@@ -303,6 +303,13 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
     bldrStack.getLast().append(chars, offset, length);
   }
 
+  /**
+   * Treat the same as any other characters
+   */
+  @Override
+  public void ignorableWhitespace(char[] chars, int offset, int length) throws SAXException {
+    characters(chars, offset, length);
+  }
 
   /**
    * Can be used to transform input values based on their {@link org.apache.solr.schema.SchemaField}

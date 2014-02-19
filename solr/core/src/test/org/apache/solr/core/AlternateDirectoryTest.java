@@ -20,25 +20,34 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+/**
+ * test that configs can override the DirectoryFactory and 
+ * IndexReaderFactory used in solr.
+ */
 public class AlternateDirectoryTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-altdirectory.xml", "schema.xml");
   }
 
-  /**
-   * Simple test to ensure that alternate IndexReaderFactory is being used.
-   */
-  @Test
   public void testAltDirectoryUsed() throws Exception {
     assertQ(req("q","*:*","qt","standard"));
     assertTrue(TestFSDirectoryFactory.openCalled);
     assertTrue(TestIndexReaderFactory.newReaderCalled);
+  }
+  
+  public void testAltReaderUsed() throws Exception {
+    IndexReaderFactory readerFactory = h.getCore().getIndexReaderFactory();
+    assertNotNull("Factory is null", readerFactory);
+    assertEquals("readerFactory is wrong class",
+                 AlternateDirectoryTest.TestIndexReaderFactory.class.getName(), 
+                 readerFactory.getClass().getName());
   }
 
   static public class TestFSDirectoryFactory extends StandardDirectoryFactory {
@@ -62,6 +71,12 @@ public class AlternateDirectoryTest extends SolrTestCaseJ4 {
     public DirectoryReader newReader(Directory indexDir, SolrCore core) throws IOException {
       TestIndexReaderFactory.newReaderCalled = true;
       return DirectoryReader.open(indexDir);
+    }
+
+    @Override
+    public DirectoryReader newReader(IndexWriter writer, SolrCore core) throws IOException {
+      TestIndexReaderFactory.newReaderCalled = true;
+      return DirectoryReader.open(writer, true);
     }
   }
 

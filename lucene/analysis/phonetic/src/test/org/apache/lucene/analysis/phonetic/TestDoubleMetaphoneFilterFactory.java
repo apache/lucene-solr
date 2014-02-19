@@ -31,7 +31,7 @@ public class TestDoubleMetaphoneFilterFactory extends BaseTokenStreamTestCase {
 
   public void testDefaults() throws Exception {
     DoubleMetaphoneFilterFactory factory = new DoubleMetaphoneFilterFactory(new HashMap<String, String>());
-    TokenStream inputStream = new MockTokenizer(new StringReader("international"), MockTokenizer.WHITESPACE, false);
+    TokenStream inputStream = whitespaceMockTokenizer("international");
 
     TokenStream filteredStream = factory.create(inputStream);
     assertEquals(DoubleMetaphoneFilter.class, filteredStream.getClass());
@@ -44,32 +44,11 @@ public class TestDoubleMetaphoneFilterFactory extends BaseTokenStreamTestCase {
     parameters.put("maxCodeLength", "8");
     DoubleMetaphoneFilterFactory factory = new DoubleMetaphoneFilterFactory(parameters);
 
-    TokenStream inputStream = new MockTokenizer(new StringReader("international"), MockTokenizer.WHITESPACE, false);
+    TokenStream inputStream = whitespaceMockTokenizer("international");
 
     TokenStream filteredStream = factory.create(inputStream);
     assertEquals(DoubleMetaphoneFilter.class, filteredStream.getClass());
     assertTokenStreamContents(filteredStream, new String[] { "ANTRNXNL" });
-  }
-  
-  /**
-   * Ensure that reset() removes any state (buffered tokens)
-   */
-  public void testReset() throws Exception {
-    DoubleMetaphoneFilterFactory factory = new DoubleMetaphoneFilterFactory(new HashMap<String, String>());
-    TokenStream inputStream = new MockTokenizer(new StringReader("international"), MockTokenizer.WHITESPACE, false);
-
-    TokenStream filteredStream = factory.create(inputStream);
-    CharTermAttribute termAtt = filteredStream.addAttribute(CharTermAttribute.class);
-    assertEquals(DoubleMetaphoneFilter.class, filteredStream.getClass());
-    
-    filteredStream.reset();
-    assertTrue(filteredStream.incrementToken());
-    assertEquals(13, termAtt.length());
-    assertEquals("international", termAtt.toString());
-    filteredStream.reset();
-    
-    // ensure there are no more tokens, such as ANTRNXNL
-    assertFalse(filteredStream.incrementToken());
   }
   
   /** Test that bogus arguments result in exception */

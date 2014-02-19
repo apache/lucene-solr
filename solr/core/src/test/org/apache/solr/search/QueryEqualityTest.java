@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.Map;
 
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
@@ -195,6 +196,39 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
+  public void testQueryCollapse() throws Exception {
+    SolrQueryRequest req = req("myField","foo_s");
+
+    try {
+      assertQueryEquals("collapse", req,
+          "{!collapse field=$myField}");
+
+      assertQueryEquals("collapse", req,
+          "{!collapse field=$myField max=a}");
+
+      assertQueryEquals("collapse", req,
+          "{!collapse field=$myField min=a}");
+
+      assertQueryEquals("collapse", req,
+          "{!collapse field=$myField max=a nullPolicy=expand}");
+
+      //Add boosted documents to the request context.
+      Map context = req.getContext();
+      Set boosted = new HashSet();
+      boosted.add("doc1");
+      boosted.add("doc2");
+      context.put("BOOSTED", boosted);
+
+      assertQueryEquals("collapse", req,
+          "{!collapse field=$myField min=a}",
+          "{!collapse field=$myField min=a nullPolicy=ignore}");
+
+
+    } finally {
+      req.close();
+    }
+  }
+
   public void testQueryNested() throws Exception {
     SolrQueryRequest req = req("df", "foo_s");
     try {
@@ -298,6 +332,13 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
+  public void testBlockJoin() throws Exception {
+    assertQueryEquals("parent", "{!parent which=foo_s:parent}dude",
+        "{!parent which=foo_s:parent}dude");
+    assertQueryEquals("child", "{!child of=foo_s:parent}dude",
+        "{!child of=foo_s:parent}dude");
+  }
+
   public void testQuerySurround() throws Exception {
     assertQueryEquals("surround", "{!surround}and(apache,solr)", 
                       "and(apache,solr)", "apache AND solr");
@@ -326,6 +367,11 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   public void testFuncRord() throws Exception {
     assertFuncEquals("rord(foo_s)","rord(foo_s    )"); 
   }
+
+  public void testFuncCscore() throws Exception {
+    assertFuncEquals("cscore()", "cscore(  )");
+  }
+
   public void testFuncTop() throws Exception {
     assertFuncEquals("top(sum(3,foo_i))");
   }
@@ -727,6 +773,17 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     doAssertParserCoverage = true;
   }
 
+  public void testQuerySimple() throws Exception {
+    SolrQueryRequest req = req("myField","foo_s");
+    try {
+      assertQueryEquals("simple", req,
+          "{!simple f=$myField}asdf",
+          "{!simple f=$myField v=asdf}",
+          "{!simple f=foo_s}asdf");
+    } finally {
+      req.close();
+    }
+  }
 
   /**
    * NOTE: defType is not only used to pick the parser, but also to record 

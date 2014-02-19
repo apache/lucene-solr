@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.index.MergePolicy.MergeTrigger;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -33,7 +32,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestPerSegmentDeletes extends LuceneTestCase {
   public void testDeletes1() throws Exception {
@@ -74,12 +73,12 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     // flushing without applying deletes means
     // there will still be deletes in the segment infos
     writer.flush(false, false);
-    assertTrue(writer.bufferedDeletesStream.any());
+    assertTrue(writer.bufferedUpdatesStream.any());
 
     // get reader flushes pending deletes
     // so there should not be anymore
     IndexReader r1 = writer.getReader();
-    assertFalse(writer.bufferedDeletesStream.any());
+    assertFalse(writer.bufferedUpdatesStream.any());
     r1.close();
 
     // delete id:2 from the first segment
@@ -208,8 +207,8 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     //System.out.println("segdels4:" + writer.docWriter.deletesToString());
   }
 
-  boolean segThere(SegmentInfoPerCommit info, SegmentInfos infos) {
-    for (SegmentInfoPerCommit si : infos) {
+  boolean segThere(SegmentCommitInfo info, SegmentInfos infos) {
+    for (SegmentCommitInfo si : infos) {
       if (si.info.name.equals(info.info.name)) return true;
     }
     return false;
@@ -227,8 +226,8 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     Fields fields = MultiFields.getFields(reader);
     Terms cterms = fields.terms(term.field);
     TermsEnum ctermsEnum = cterms.iterator(null);
-    if (ctermsEnum.seekExact(new BytesRef(term.text()), false)) {
-      DocsEnum docsEnum = _TestUtil.docs(random(), ctermsEnum, bits, null, DocsEnum.FLAG_NONE);
+    if (ctermsEnum.seekExact(new BytesRef(term.text()))) {
+      DocsEnum docsEnum = TestUtil.docs(random(), ctermsEnum, bits, null, DocsEnum.FLAG_NONE);
       return toArray(docsEnum);
     }
     return null;
@@ -272,7 +271,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
 
     @Override
     public MergeSpecification findForcedMerges(SegmentInfos segmentInfos,
-        int maxSegmentCount, Map<SegmentInfoPerCommit,Boolean> segmentsToMerge)
+        int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge)
         throws IOException {
       return null;
     }
@@ -284,7 +283,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     }
 
     @Override
-    public boolean useCompoundFile(SegmentInfos segments, SegmentInfoPerCommit newSegment) {
+    public boolean useCompoundFile(SegmentInfos segments, SegmentCommitInfo newSegment) {
       return useCompoundFile;
     }
   }

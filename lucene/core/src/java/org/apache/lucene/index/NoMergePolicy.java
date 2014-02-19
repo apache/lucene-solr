@@ -60,19 +60,19 @@ public final class NoMergePolicy extends MergePolicy {
 
   @Override
   public MergeSpecification findForcedMerges(SegmentInfos segmentInfos,
-             int maxSegmentCount, Map<SegmentInfoPerCommit,Boolean> segmentsToMerge) { return null; }
+             int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge) { return null; }
 
   @Override
   public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos) { return null; }
 
   @Override
-  public boolean useCompoundFile(SegmentInfos segments, SegmentInfoPerCommit newSegment) { return useCompoundFile; }
+  public boolean useCompoundFile(SegmentInfos segments, SegmentCommitInfo newSegment) { return useCompoundFile; }
 
   @Override
   public void setIndexWriter(IndexWriter writer) {}
   
   @Override
-  protected long size(SegmentInfoPerCommit info) throws IOException {
+  protected long size(SegmentCommitInfo info) throws IOException {
       return Long.MAX_VALUE;
   }
 

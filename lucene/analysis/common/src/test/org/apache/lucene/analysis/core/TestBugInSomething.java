@@ -1,5 +1,6 @@
 package org.apache.lucene.analysis.core;
 
+import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.nio.CharBuffer;
@@ -11,11 +12,16 @@ import org.apache.lucene.analysis.MockCharFilter;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.charfilter.MappingCharFilter;
 import org.apache.lucene.analysis.charfilter.NormalizeCharMap;
 import org.apache.lucene.analysis.commongrams.CommonGramsFilter;
+import org.apache.lucene.analysis.ngram.EdgeNGramTokenizer;
+import org.apache.lucene.analysis.ngram.NGramTokenFilter;
+import org.apache.lucene.analysis.shingle.ShingleFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -34,6 +40,7 @@ import org.apache.lucene.analysis.util.CharArraySet;
  * limitations under the License.
  */
 
+@SuppressCodecs("Direct")
 public class TestBugInSomething extends BaseTokenStreamTestCase {
   public void test() throws Exception {
     final CharArraySet cas = new CharArraySet(TEST_VERSION_CURRENT, 3, false);
@@ -49,8 +56,8 @@ public class TestBugInSomething extends BaseTokenStreamTestCase {
     
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer t = new MockTokenizer(new TestRandomChains.CheckThatYouDidntReadAnythingReaderWrapper(reader), MockTokenFilter.ENGLISH_STOPSET, false, -65);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer t = new MockTokenizer(MockTokenFilter.ENGLISH_STOPSET, false, -65);
         TokenFilter f = new CommonGramsFilter(TEST_VERSION_CURRENT, t, cas);
         return new TokenStreamComponents(t, f);
       }
@@ -59,6 +66,7 @@ public class TestBugInSomething extends BaseTokenStreamTestCase {
       protected Reader initReader(String fieldName, Reader reader) {
         reader = new MockCharFilter(reader, 0);
         reader = new MappingCharFilter(map, reader);
+        reader = new TestRandomChains.CheckThatYouDidntReadAnythingReaderWrapper(reader);
         return reader;
       }
     };
@@ -194,5 +202,59 @@ public class TestBugInSomething extends BaseTokenStreamTestCase {
     } catch (Exception e) {
       assertEquals("read(char[], int, int)", e.getMessage());
     }
+  }
+  
+  // todo: test framework?
+  
+  static final class SopTokenFilter extends TokenFilter {
+
+    SopTokenFilter(TokenStream input) {
+      super(input);
+    }
+
+    @Override
+    public boolean incrementToken() throws IOException {
+      if (input.incrementToken()) {
+        System.out.println(input.getClass().getSimpleName() + "->" + this.reflectAsString(false));
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    @Override
+    public void end() throws IOException {
+      super.end();
+      System.out.println(input.getClass().getSimpleName() + ".end()");
+    }
+
+    @Override
+    public void close() throws IOException {
+      super.close();
+      System.out.println(input.getClass().getSimpleName() + ".close()");
+    }
+
+    @Override
+    public void reset() throws IOException {
+      super.reset();
+      System.out.println(input.getClass().getSimpleName() + ".reset()");
+    }
+  }
+  
+  // LUCENE-5269
+  public void testUnicodeShinglesAndNgrams() throws Exception {
+    Analyzer analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new EdgeNGramTokenizer(TEST_VERSION_CURRENT, 2, 94);
+        //TokenStream stream = new SopTokenFilter(tokenizer);
+        TokenStream stream = new ShingleFilter(tokenizer, 5);
+        //stream = new SopTokenFilter(stream);
+        stream = new NGramTokenFilter(TEST_VERSION_CURRENT, stream, 55, 83);
+        //stream = new SopTokenFilter(stream);
+        return new TokenStreamComponents(tokenizer, stream);
+      }  
+    };
+    checkRandomData(random(), analyzer, 2000);
   }
 }

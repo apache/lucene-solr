@@ -22,9 +22,11 @@ import java.util.List;
 
 import org.apache.lucene.index.MultiTermsEnum.TermsEnumIndex;
 import org.apache.lucene.index.MultiTermsEnum.TermsEnumWithSlice;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.packed.AppendingLongBuffer;
+import org.apache.lucene.util.packed.AppendingPackedLongBuffer;
 import org.apache.lucene.util.packed.MonotonicAppendingLongBuffer;
+import org.apache.lucene.util.packed.PackedInts;
 
 /**
  * A wrapper for CompositeIndexReader providing access to DocValues.
@@ -132,6 +134,51 @@ public class MultiDocValues {
           return values[subIndex].get(docID - starts[subIndex]);
         }
       };
+    }
+  }
+  
+  /** Returns a Bits for a reader's docsWithField (potentially merging on-the-fly) 
+   * <p>
+   * This is a slow way to access this bitset. Instead, access them per-segment
+   * with {@link AtomicReader#getDocsWithField(String)}
+   * </p> 
+   * */
+  public static Bits getDocsWithField(final IndexReader r, final String field) throws IOException {
+    final List<AtomicReaderContext> leaves = r.leaves();
+    final int size = leaves.size();
+    if (size == 0) {
+      return null;
+    } else if (size == 1) {
+      return leaves.get(0).reader().getDocsWithField(field);
+    }
+
+    boolean anyReal = false;
+    boolean anyMissing = false;
+    final Bits[] values = new Bits[size];
+    final int[] starts = new int[size+1];
+    for (int i = 0; i < size; i++) {
+      AtomicReaderContext context = leaves.get(i);
+      Bits v = context.reader().getDocsWithField(field);
+      if (v == null) {
+        v = new Bits.MatchNoBits(context.reader().maxDoc());
+        anyMissing = true;
+      } else {
+        anyReal = true;
+        if (v instanceof Bits.MatchAllBits == false) {
+          anyMissing = true;
+        }
+      }
+      values[i] = v;
+      starts[i] = context.docBase;
+    }
+    starts[size] = r.maxDoc();
+
+    if (!anyReal) {
+      return null;
+    } else if (!anyMissing) {
+      return new Bits.MatchAllBits(r.maxDoc());
+    } else {
+      return new MultiBits(values, starts, false);
     }
   }
 
@@ -272,13 +319,13 @@ public class MultiDocValues {
   // TODO: use more efficient packed ints structures?
   // TODO: pull this out? its pretty generic (maps between N ord()-enabled TermsEnums) 
   public static class OrdinalMap {
-    // cache key of whoever asked for this aweful thing
+    // cache key of whoever asked for this awful thing
     final Object owner;
-    // globalOrd -> (globalOrd - segmentOrd)
+    // globalOrd -> (globalOrd - segmentOrd) where segmentOrd is the the ordinal in the first segment that contains this term
     final MonotonicAppendingLongBuffer globalOrdDeltas;
-    // globalOrd -> sub index
-    final AppendingLongBuffer subIndexes;
-    // segmentOrd -> (globalOrd - segmentOrd)
+    // globalOrd -> first segment container
+    final AppendingPackedLongBuffer firstSegments;
+    // for every segment, segmentOrd -> (globalOrd - segmentOrd)
     final MonotonicAppendingLongBuffer ordDeltas[];
     
     /** 
@@ -293,8 +340,8 @@ public class MultiDocValues {
       // create the ordinal mappings by pulling a termsenum over each sub's 
       // unique terms, and walking a multitermsenum over those
       this.owner = owner;
-      globalOrdDeltas = new MonotonicAppendingLongBuffer();
-      subIndexes = new AppendingLongBuffer();
+      globalOrdDeltas = new MonotonicAppendingLongBuffer(PackedInts.COMPACT);
+      firstSegments = new AppendingPackedLongBuffer(PackedInts.COMPACT);
       ordDeltas = new MonotonicAppendingLongBuffer[subs.length];
       for (int i = 0; i < ordDeltas.length; i++) {
         ordDeltas[i] = new MonotonicAppendingLongBuffer();
@@ -312,21 +359,26 @@ public class MultiDocValues {
       while (mte.next() != null) {        
         TermsEnumWithSlice matches[] = mte.getMatchArray();
         for (int i = 0; i < mte.getMatchCount(); i++) {
-          int subIndex = matches[i].index;
+          int segmentIndex = matches[i].index;
           long segmentOrd = matches[i].terms.ord();
           long delta = globalOrd - segmentOrd;
-          // for each unique term, just mark the first subindex/delta where it occurs
+          // for each unique term, just mark the first segment index/delta where it occurs
           if (i == 0) {
-            subIndexes.add(subIndex);
+            firstSegments.add(segmentIndex);
             globalOrdDeltas.add(delta);
           }
           // for each per-segment ord, map it back to the global term.
-          while (segmentOrds[subIndex] <= segmentOrd) {
-            ordDeltas[subIndex].add(delta);
-            segmentOrds[subIndex]++;
+          while (segmentOrds[segmentIndex] <= segmentOrd) {
+            ordDeltas[segmentIndex].add(delta);
+            segmentOrds[segmentIndex]++;
           }
         }
         globalOrd++;
+      }
+      firstSegments.freeze();
+      globalOrdDeltas.freeze();
+      for (int i = 0; i < ordDeltas.length; ++i) {
+        ordDeltas[i].freeze();
       }
     }
     
@@ -334,24 +386,24 @@ public class MultiDocValues {
      * Given a segment number and segment ordinal, returns
      * the corresponding global ordinal.
      */
-    public long getGlobalOrd(int subIndex, long segmentOrd) {
-      return segmentOrd + ordDeltas[subIndex].get(segmentOrd);
+    public long getGlobalOrd(int segmentIndex, long segmentOrd) {
+      return segmentOrd + ordDeltas[segmentIndex].get(segmentOrd);
     }
 
     /**
-     * Given a segment number and global ordinal, returns
-     * the corresponding segment ordinal.
+     * Given global ordinal, returns the ordinal of the first segment which contains
+     * this ordinal (the corresponding to the segment return {@link #getFirstSegmentNumber}).
      */
-    public long getSegmentOrd(int subIndex, long globalOrd) {
+    public long getFirstSegmentOrd(long globalOrd) {
       return globalOrd - globalOrdDeltas.get(globalOrd);
     }
     
     /** 
      * Given a global ordinal, returns the index of the first
-     * sub that contains this term.
+     * segment that contains this term.
      */
-    public int getSegmentNumber(long globalOrd) {
-      return (int) subIndexes.get(globalOrd);
+    public int getFirstSegmentNumber(long globalOrd) {
+      return (int) firstSegments.get(globalOrd);
     }
     
     /**
@@ -359,6 +411,17 @@ public class MultiDocValues {
      */
     public long getValueCount() {
       return globalOrdDeltas.size();
+    }
+    
+    /** 
+     * Returns total byte size used by this ordinal map. 
+     */
+    public long ramBytesUsed() {
+      long size = globalOrdDeltas.ramBytesUsed() + firstSegments.ramBytesUsed();
+      for (int i = 0; i < ordDeltas.length; i++) {
+        size += ordDeltas[i].ramBytesUsed();
+      }
+      return size;
     }
   }
   
@@ -387,13 +450,13 @@ public class MultiDocValues {
     public int getOrd(int docID) {
       int subIndex = ReaderUtil.subIndex(docID, docStarts);
       int segmentOrd = values[subIndex].getOrd(docID - docStarts[subIndex]);
-      return (int) mapping.getGlobalOrd(subIndex, segmentOrd);
+      return segmentOrd == -1 ? segmentOrd : (int) mapping.getGlobalOrd(subIndex, segmentOrd);
     }
  
     @Override
     public void lookupOrd(int ord, BytesRef result) {
-      int subIndex = mapping.getSegmentNumber(ord);
-      int segmentOrd = (int) mapping.getSegmentOrd(subIndex, ord);
+      int subIndex = mapping.getFirstSegmentNumber(ord);
+      int segmentOrd = (int) mapping.getFirstSegmentOrd(ord);
       values[subIndex].lookupOrd(segmentOrd, result);
     }
  
@@ -443,8 +506,8 @@ public class MultiDocValues {
  
     @Override
     public void lookupOrd(long ord, BytesRef result) {
-      int subIndex = mapping.getSegmentNumber(ord);
-      long segmentOrd = mapping.getSegmentOrd(subIndex, ord);
+      int subIndex = mapping.getFirstSegmentNumber(ord);
+      long segmentOrd = mapping.getFirstSegmentOrd(ord);
       values[subIndex].lookupOrd(segmentOrd, result);
     }
  

@@ -134,7 +134,7 @@ public abstract class RSLPStemmerBase {
         if (!exceptions[i].endsWith(suffix))
           throw new RuntimeException("useless exception '" + exceptions[i] + "' does not end with '" + suffix + "'");
       }
-      this.exceptions = new CharArraySet(Version.LUCENE_50,
+      this.exceptions = new CharArraySet(Version.LUCENE_CURRENT,
            Arrays.asList(exceptions), false);
     }
 

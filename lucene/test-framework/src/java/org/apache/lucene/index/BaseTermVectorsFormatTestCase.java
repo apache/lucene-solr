@@ -48,7 +48,7 @@ import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
@@ -216,17 +216,17 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
         final int o = random().nextInt(sampleTerms.length);
         terms[i] = sampleTerms[o];
         termBytes[i] = sampleTermBytes[o];
-        positionsIncrements[i] = _TestUtil.nextInt(random(), i == 0 ? 1 : 0, 10);
+        positionsIncrements[i] = TestUtil.nextInt(random(), i == 0 ? 1 : 0, 10);
         if (offsetsGoBackwards) {
           startOffsets[i] = random().nextInt();
           endOffsets[i] = random().nextInt();
         } else {
           if (i == 0) {
-            startOffsets[i] = _TestUtil.nextInt(random(), 0, 1 << 16);
+            startOffsets[i] = TestUtil.nextInt(random(), 0, 1 << 16);
           } else {
-            startOffsets[i] = startOffsets[i-1] + _TestUtil.nextInt(random(), 0, rarely() ? 1 << 16 : 20);
+            startOffsets[i] = startOffsets[i-1] + TestUtil.nextInt(random(), 0, rarely() ? 1 << 16 : 20);
           }
-          endOffsets[i] = startOffsets[i] + _TestUtil.nextInt(random(), 0, rarely() ? 1 << 10 : 20);
+          endOffsets[i] = startOffsets[i] + TestUtil.nextInt(random(), 0, rarely() ? 1 << 10 : 20);
         }
       }
 
@@ -320,7 +320,7 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
           this.fieldNames[i] = RandomPicks.randomFrom(random(), fieldNames);
         } while (usedFileNames.contains(this.fieldNames[i]));
         usedFileNames.add(this.fieldNames[i]);
-        tokenStreams[i] = new RandomTokenStream(_TestUtil.nextInt(random(), 1, maxTermCount), sampleTerms, sampleTermBytes);
+        tokenStreams[i] = new RandomTokenStream(TestUtil.nextInt(random(), 1, maxTermCount), sampleTerms, sampleTermBytes);
       }
     }
 
@@ -343,14 +343,14 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
     protected RandomDocumentFactory(int distinctFieldNames, int disctinctTerms) {
       final Set<String> fieldNames = new HashSet<String>();
       while (fieldNames.size() < distinctFieldNames) {
-        fieldNames.add(_TestUtil.randomSimpleString(random()));
+        fieldNames.add(TestUtil.randomSimpleString(random()));
         fieldNames.remove("id");
       }
       this.fieldNames = fieldNames.toArray(new String[0]);
       terms = new String[disctinctTerms];
       termBytes = new BytesRef[disctinctTerms];
       for (int i = 0; i < disctinctTerms; ++i) {
-        terms[i] = _TestUtil.randomRealisticUnicodeString(random());
+        terms[i] = TestUtil.randomRealisticUnicodeString(random());
         termBytes[i] = new BytesRef(terms[i]);
       }
     }
@@ -406,7 +406,7 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
       uniqueTerms.add(new BytesRef(term));
     }
     final BytesRef[] sortedTerms = uniqueTerms.toArray(new BytesRef[0]);
-    Arrays.sort(sortedTerms, terms.getComparator());
+    Arrays.sort(sortedTerms);
     final TermsEnum termsEnum = terms.iterator(random().nextBoolean() ? null : this.termsEnum.get());
     this.termsEnum.set(termsEnum);
     for (int i = 0; i < sortedTerms.length; ++i) {
@@ -500,9 +500,9 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
     assertNull(termsEnum.next());
     for (int i = 0; i < 5; ++i) {
       if (random().nextBoolean()) {
-        assertTrue(termsEnum.seekExact(RandomPicks.randomFrom(random(), tk.termBytes), random().nextBoolean()));
+        assertTrue(termsEnum.seekExact(RandomPicks.randomFrom(random(), tk.termBytes)));
       } else {
-        assertEquals(SeekStatus.FOUND, termsEnum.seekCeil(RandomPicks.randomFrom(random(), tk.termBytes), random().nextBoolean()));
+        assertEquals(SeekStatus.FOUND, termsEnum.seekCeil(RandomPicks.randomFrom(random(), tk.termBytes)));
       }
     }
   }
@@ -525,7 +525,7 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
       final Document emptyDoc = new Document();
       final Directory dir = newDirectory();
       final RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-      final RandomDocument doc = docFactory.newDocument(_TestUtil.nextInt(random(), 1, 3), 20, options);
+      final RandomDocument doc = docFactory.newDocument(TestUtil.nextInt(random(), 1, 3), 20, options);
       for (int i = 0; i < numDocs; ++i) {
         if (i == docWithVectors) {
           writer.addDocument(addId(doc.toDocument(), "42"));
@@ -560,7 +560,7 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
       }
       final Directory dir = newDirectory();
       final RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-      final RandomDocument doc = docFactory.newDocument(_TestUtil.nextInt(random(), 1, 2), atLeast(20000), options);
+      final RandomDocument doc = docFactory.newDocument(TestUtil.nextInt(random(), 1, 2), atLeast(20000), options);
       writer.addDocument(doc.toDocument());
       final IndexReader reader = writer.getReader();
       assertEquals(doc, reader.getTermVectors(0));
@@ -587,7 +587,7 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
 
   // different options for the same field
   public void testMixedOptions() throws IOException {
-    final int numFields = _TestUtil.nextInt(random(), 1, 3);
+    final int numFields = TestUtil.nextInt(random(), 1, 3);
     final RandomDocumentFactory docFactory = new RandomDocumentFactory(numFields, 10);
     for (Options options1 : validOptions()) {
       for (Options options2 : validOptions()) {
@@ -617,7 +617,7 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
     final int numDocs = atLeast(100);
     final RandomDocument[] docs = new RandomDocument[numDocs];
     for (int i = 0; i < numDocs; ++i) {
-      docs[i] = docFactory.newDocument(_TestUtil.nextInt(random(), 1, 3), _TestUtil.nextInt(random(), 10, 50), randomOptions());
+      docs[i] = docFactory.newDocument(TestUtil.nextInt(random(), 1, 3), TestUtil.nextInt(random(), 10, 50), randomOptions());
     }
     final Directory dir = newDirectory();
     final RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -645,7 +645,7 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
     for (Options options : validOptions()) {
       final RandomDocument[] docs = new RandomDocument[numDocs];
       for (int i = 0; i < numDocs; ++i) {
-        docs[i] = docFactory.newDocument(_TestUtil.nextInt(random(), 1, 3), atLeast(10), options);
+        docs[i] = docFactory.newDocument(TestUtil.nextInt(random(), 1, 3), atLeast(10), options);
       }
       final Directory dir = newDirectory();
       final RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -681,7 +681,7 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
     for (Options options : validOptions()) {
       final RandomDocument[] docs = new RandomDocument[numDocs];
       for (int i = 0; i < numDocs; ++i) {
-        docs[i] = docFactory.newDocument(_TestUtil.nextInt(random(), 1, 3), atLeast(10), options);
+        docs[i] = docFactory.newDocument(TestUtil.nextInt(random(), 1, 3), atLeast(10), options);
       }
       final Directory dir = newDirectory();
       final RandomIndexWriter writer = new RandomIndexWriter(random(), dir);

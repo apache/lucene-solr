@@ -36,7 +36,7 @@ import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Test that norms info is preserved during index life - including
@@ -107,7 +107,7 @@ public class TestNorms extends LuceneTestCase {
   }
   
   public void testMaxByteNorms() throws IOException {
-    Directory dir = newFSDirectory(_TestUtil.getTempDir("TestNorms.testMaxByteNorms"));
+    Directory dir = newFSDirectory(TestUtil.getTempDir("TestNorms.testMaxByteNorms"));
     buildIndex(dir);
     AtomicReader open = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
     NumericDocValues normValues = open.getNormValues(byteTestField);

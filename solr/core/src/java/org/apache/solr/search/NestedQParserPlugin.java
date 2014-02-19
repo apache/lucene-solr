@@ -32,7 +32,7 @@ import org.apache.solr.request.SolrQueryRequest;
  *     created from the lucene syntax string that matches documents with inStock=true.
  */
 public class NestedQParserPlugin extends QParserPlugin {
-  public static String NAME = "query";
+  public static final String NAME = "query";
 
   @Override
   public void init(NamedList args) {

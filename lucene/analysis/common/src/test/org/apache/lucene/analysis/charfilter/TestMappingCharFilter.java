@@ -33,8 +33,8 @@ import org.apache.lucene.analysis.CharFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.util._TestUtil;
 
 public class TestMappingCharFilter extends BaseTokenStreamTestCase {
 
@@ -82,67 +82,67 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
 
   public void testNothingChange() throws Exception {
     CharFilter cs = new MappingCharFilter( normMap, new StringReader( "x" ) );
-    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
+    TokenStream ts =whitespaceMockTokenizer(cs);
     assertTokenStreamContents(ts, new String[]{"x"}, new int[]{0}, new int[]{1}, 1);
   }
 
   public void test1to1() throws Exception {
     CharFilter cs = new MappingCharFilter( normMap, new StringReader( "h" ) );
-    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
+    TokenStream ts =whitespaceMockTokenizer(cs);
     assertTokenStreamContents(ts, new String[]{"i"}, new int[]{0}, new int[]{1}, 1);
   }
 
   public void test1to2() throws Exception {
     CharFilter cs = new MappingCharFilter( normMap, new StringReader( "j" ) );
-    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
+    TokenStream ts =whitespaceMockTokenizer(cs);
     assertTokenStreamContents(ts, new String[]{"jj"}, new int[]{0}, new int[]{1}, 1);
   }
 
   public void test1to3() throws Exception {
     CharFilter cs = new MappingCharFilter( normMap, new StringReader( "k" ) );
-    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
+    TokenStream ts =whitespaceMockTokenizer(cs);
     assertTokenStreamContents(ts, new String[]{"kkk"}, new int[]{0}, new int[]{1}, 1);
   }
 
   public void test2to4() throws Exception {
     CharFilter cs = new MappingCharFilter( normMap, new StringReader( "ll" ) );
-    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
+    TokenStream ts =whitespaceMockTokenizer(cs);
     assertTokenStreamContents(ts, new String[]{"llll"}, new int[]{0}, new int[]{2}, 2);
   }
 
   public void test2to1() throws Exception {
     CharFilter cs = new MappingCharFilter( normMap, new StringReader( "aa" ) );
-    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
+    TokenStream ts =whitespaceMockTokenizer(cs);
     assertTokenStreamContents(ts, new String[]{"a"}, new int[]{0}, new int[]{2}, 2);
   }
 
   public void test3to1() throws Exception {
     CharFilter cs = new MappingCharFilter( normMap, new StringReader( "bbb" ) );
-    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
+    TokenStream ts =whitespaceMockTokenizer(cs);
     assertTokenStreamContents(ts, new String[]{"b"}, new int[]{0}, new int[]{3}, 3);
   }
 
   public void test4to2() throws Exception {
     CharFilter cs = new MappingCharFilter( normMap, new StringReader( "cccc" ) );
-    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
+    TokenStream ts =whitespaceMockTokenizer(cs);
     assertTokenStreamContents(ts, new String[]{"cc"}, new int[]{0}, new int[]{4}, 4);
   }
 
   public void test5to0() throws Exception {
     CharFilter cs = new MappingCharFilter( normMap, new StringReader( "empty" ) );
-    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
+    TokenStream ts =whitespaceMockTokenizer(cs);
     assertTokenStreamContents(ts, new String[0], new int[]{}, new int[]{}, 5);
   }
 
   public void testNonBMPChar() throws Exception {
     CharFilter cs = new MappingCharFilter( normMap, new StringReader( UnicodeUtil.newString(new int[] {0x1D122}, 0, 1) ) );
-    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
+    TokenStream ts =whitespaceMockTokenizer(cs);
     assertTokenStreamContents(ts, new String[]{"fclef"}, new int[]{0}, new int[]{2}, 2);
   }
 
   public void testFullWidthChar() throws Exception {
     CharFilter cs = new MappingCharFilter( normMap, new StringReader( "\uff01") );
-    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
+    TokenStream ts =whitespaceMockTokenizer(cs);
     assertTokenStreamContents(ts, new String[]{"full-width-exclamation"}, new int[]{0}, new int[]{1}, 1);
   }
 
@@ -167,7 +167,7 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
   public void testTokenStream() throws Exception {
     String testString = "h i j k ll cccc bbb aa";
     CharFilter cs = new MappingCharFilter( normMap, new StringReader( testString ) );
-    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
+    TokenStream ts =whitespaceMockTokenizer(cs);
     assertTokenStreamContents(ts,
       new String[]{"i","i","jj","kkk","llll","cc","b","a"},
       new int[]{0,2,4,6,8,11,16,20},
@@ -190,7 +190,7 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
     String testString = "aaaa ll h";
     CharFilter cs = new MappingCharFilter( normMap,
         new MappingCharFilter( normMap, new StringReader( testString ) ) );
-    TokenStream ts = new MockTokenizer(cs, MockTokenizer.WHITESPACE, false);
+    TokenStream ts =whitespaceMockTokenizer(cs);
     assertTokenStreamContents(ts,
       new String[]{"a","llllllll","i"},
       new int[]{0,5,8},
@@ -203,8 +203,8 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
     Analyzer analyzer = new Analyzer() {
 
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
 
@@ -229,8 +229,8 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
 
     Analyzer analyzer = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
 
@@ -251,8 +251,8 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
       final NormalizeCharMap map = randomMap();
       Analyzer analyzer = new Analyzer() {
         @Override
-        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-          Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+        protected TokenStreamComponents createComponents(String fieldName) {
+          Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
           return new TokenStreamComponents(tokenizer, tokenizer);
         }
 
@@ -274,9 +274,9 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
     int num = random.nextInt(5);
     //System.out.println("NormalizeCharMap=");
     for (int i = 0; i < num; i++) {
-      String key = _TestUtil.randomSimpleString(random);
+      String key = TestUtil.randomSimpleString(random);
       if (!keys.contains(key) && key.length() != 0) {
-        String value = _TestUtil.randomSimpleString(random);
+        String value = TestUtil.randomSimpleString(random);
         builder.add(key, value);
         keys.add(key);
         //System.out.println("mapping: '" + key + "' => '" + value + "'");
@@ -294,7 +294,7 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
         System.out.println("\nTEST iter=" + iter);
       }
 
-      final char endLetter = (char) _TestUtil.nextInt(random, 'b', 'z');
+      final char endLetter = (char) TestUtil.nextInt(random, 'b', 'z');
 
       final Map<String,String> map = new HashMap<String,String>();
       final NormalizeCharMap.Builder builder = new NormalizeCharMap.Builder();
@@ -303,9 +303,9 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
         System.out.println("  mappings:");
       }
       while (map.size() < numMappings) {
-        final String key = _TestUtil.randomSimpleStringRange(random, 'a', endLetter, 7);
+        final String key = TestUtil.randomSimpleStringRange(random, 'a', endLetter, 7);
         if (key.length() != 0 && !map.containsKey(key)) {
-          final String value = _TestUtil.randomSimpleString(random);
+          final String value = TestUtil.randomSimpleString(random);
           map.put(key, value);
           builder.add(key, value);
           if (VERBOSE) {
@@ -321,7 +321,7 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
       }
 
       for(int iter2=0;iter2<100;iter2++) {
-        final String content = _TestUtil.randomSimpleStringRange(random, 'a', endLetter, atLeast(1000));
+        final String content = TestUtil.randomSimpleStringRange(random, 'a', endLetter, atLeast(1000));
 
         if (VERBOSE) {
           System.out.println("  content=" + content);
@@ -427,7 +427,7 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
             }
             actualBuilder.append((char) ch);
           } else {
-            final char[] buffer = new char[_TestUtil.nextInt(random, 1, 100)];
+            final char[] buffer = new char[TestUtil.nextInt(random, 1, 100)];
             final int off = buffer.length == 1 ? 0 : random.nextInt(buffer.length-1);
             final int count = mapFilter.read(buffer, off, buffer.length-off);
             if (count == -1) {

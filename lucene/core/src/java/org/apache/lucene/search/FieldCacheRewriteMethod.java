@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
@@ -26,8 +25,7 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.LongBitSet;
 
 /**
  * Rewrites MultiTermQueries into a filter, using the FieldCache for term enumeration.
@@ -87,13 +85,8 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
     public DocIdSet getDocIdSet(AtomicReaderContext context, final Bits acceptDocs) throws IOException {
       final SortedDocValues fcsi = FieldCache.DEFAULT.getTermsIndex(context.reader(), query.field);
       // Cannot use FixedBitSet because we require long index (ord):
-      final OpenBitSet termSet = new OpenBitSet(fcsi.getValueCount());
+      final LongBitSet termSet = new LongBitSet(fcsi.getValueCount());
       TermsEnum termsEnum = query.getTermsEnum(new Terms() {
-        
-        @Override
-        public Comparator<BytesRef> getComparator() {
-          return BytesRef.getUTF8SortedAsUnicodeComparator();
-        }
         
         @Override
         public TermsEnum iterator(TermsEnum reuse) {
@@ -121,6 +114,11 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
         }
 
         @Override
+        public boolean hasFreqs() {
+          return false;
+        }
+
+        @Override
         public boolean hasOffsets() {
           return false;
         }
@@ -138,7 +136,7 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
       
       assert termsEnum != null;
       if (termsEnum.next() != null) {
-        // fill into a OpenBitSet
+        // fill into a bitset
         do {
           long ord = termsEnum.ord();
           if (ord >= 0) {

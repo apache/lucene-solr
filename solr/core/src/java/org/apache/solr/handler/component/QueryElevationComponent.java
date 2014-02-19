@@ -43,7 +43,9 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.QueryElevationParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -72,7 +74,6 @@ import javax.xml.xpath.XPathFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -208,7 +209,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         ZkController zkController = core.getCoreDescriptor().getCoreContainer().getZkController();
         if (zkController != null) {
           // TODO : shouldn't have to keep reading the config name when it has been read before
-          exists = zkController.configFileExists(zkController.readConfigName(core.getCoreDescriptor().getCloudDescriptor().getCollectionName()), f);
+          exists = zkController.configFileExists(zkController.getZkStateReader().readConfigName(core.getCoreDescriptor().getCloudDescriptor().getCollectionName()), f);
         } else {
           File fC = new File(core.getResourceLoader().getConfigDir(), f);
           File fD = new File(core.getDataDir(), f);
@@ -344,16 +345,16 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       return query;
     }
     StringBuilder norm = new StringBuilder();
-    TokenStream tokens = analyzer.tokenStream("", new StringReader(query));
-    tokens.reset();
+    try (TokenStream tokens = analyzer.tokenStream("", query)) {
+      tokens.reset();
 
-    CharTermAttribute termAtt = tokens.addAttribute(CharTermAttribute.class);
-    while (tokens.incrementToken()) {
-      norm.append(termAtt.buffer(), 0, termAtt.length());
+      CharTermAttribute termAtt = tokens.addAttribute(CharTermAttribute.class);
+      while (tokens.incrementToken()) {
+        norm.append(termAtt.buffer(), 0, termAtt.length());
+      }
+      tokens.end();
+      return norm.toString();
     }
-    tokens.end();
-    tokens.close();
-    return norm.toString();
   }
 
   //---------------------------------------------------------------------------------
@@ -373,17 +374,26 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     // A runtime parameter can alter the config value for forceElevation
     boolean force = params.getBool(QueryElevationParams.FORCE_ELEVATION, forceElevation);
     boolean markExcludes = params.getBool(QueryElevationParams.MARK_EXCLUDES, false);
+    String boostStr = params.get(QueryElevationParams.IDS);
+    String exStr = params.get(QueryElevationParams.EXCLUDE);
+
     Query query = rb.getQuery();
     String qstr = rb.getQueryString();
     if (query == null || qstr == null) {
       return;
     }
 
-    qstr = getAnalyzedQuery(qstr);
-    IndexReader reader = req.getSearcher().getIndexReader();
     ElevationObj booster = null;
     try {
-      booster = getElevationMap(reader, req.getCore()).get(qstr);
+      if(boostStr != null || exStr != null) {
+        List<String> boosts = (boostStr != null) ? StrUtils.splitSmart(boostStr,",", true) : new ArrayList<String>(0);
+        List<String> excludes = (exStr != null) ? StrUtils.splitSmart(exStr, ",", true) : new ArrayList<String>(0);
+        booster = new ElevationObj(qstr, boosts, excludes);
+      } else {
+        IndexReader reader = req.getSearcher().getIndexReader();
+        qstr = getAnalyzedQuery(qstr);
+        booster = getElevationMap(reader, req.getCore()).get(qstr);
+      }
     } catch (Exception ex) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Error loading elevation", ex);
@@ -419,29 +429,31 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       // insert documents in their proper place 
       SortSpec sortSpec = rb.getSortSpec();
       if (sortSpec.getSort() == null) {
-        sortSpec.setSort(new Sort(new SortField[]{
-            new SortField("_elevate_", comparator, true),
-            new SortField(null, SortField.Type.SCORE, false)
-        }));
+        sortSpec.setSortAndFields(new Sort(new SortField[]{
+              new SortField("_elevate_", comparator, true),
+              new SortField(null, SortField.Type.SCORE, false)
+            }),
+          Arrays.asList(new SchemaField[2]));
       } else {
         // Check if the sort is based on score
-        boolean modify = false;
-        SortField[] current = sortSpec.getSort().getSort();
-        ArrayList<SortField> sorts = new ArrayList<SortField>(current.length + 1);
-        // Perhaps force it to always sort by score
-        if (force && current[0].getType() != SortField.Type.SCORE) {
-          sorts.add(new SortField("_elevate_", comparator, true));
-          modify = true;
+        SortSpec modSortSpec = this.modifySortSpec(sortSpec, force, comparator);
+        if (null != modSortSpec) {
+          rb.setSortSpec(modSortSpec);
         }
-        for (SortField sf : current) {
-          if (sf.getType() == SortField.Type.SCORE) {
-            sorts.add(new SortField("_elevate_", comparator, !sf.getReverse()));
-            modify = true;
-          }
-          sorts.add(sf);
+      }
+
+      // alter the sorting in the grouping specification if there is one
+      GroupingSpecification groupingSpec = rb.getGroupingSpec();
+      if(groupingSpec != null) {
+        SortField[] groupSort = groupingSpec.getGroupSort().getSort();
+        Sort modGroupSort = this.modifySort(groupSort, force, comparator);
+        if(modGroupSort != null) {
+          groupingSpec.setGroupSort(modGroupSort);
         }
-        if (modify) {
-          sortSpec.setSort(new Sort(sorts.toArray(new SortField[sorts.size()])));
+        SortField[] withinGroupSort = groupingSpec.getSortWithinGroup().getSort();
+        Sort modWithinGroupSort = this.modifySort(withinGroupSort, force, comparator);
+        if(modWithinGroupSort != null) {
+          groupingSpec.setSortWithinGroup(modWithinGroupSort);
         }
       }
     }
@@ -465,6 +477,46 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         rb.addDebugInfo("queryBoosting", dbg);
       }
     }
+  }
+
+  private Sort modifySort(SortField[] current, boolean force, ElevationComparatorSource comparator) {
+    SortSpec tmp = new SortSpec(new Sort(current), Arrays.asList(new SchemaField[current.length]));
+    tmp = modifySortSpec(tmp, force, comparator);
+    return null == tmp ? null : tmp.getSort();
+  }
+
+  private SortSpec modifySortSpec(SortSpec current, boolean force, ElevationComparatorSource comparator) {
+    boolean modify = false;
+    SortField[] currentSorts = current.getSort().getSort();
+    List<SchemaField> currentFields = current.getSchemaFields();
+
+    ArrayList<SortField> sorts = new ArrayList<SortField>(currentSorts.length + 1);
+    List<SchemaField> fields = new ArrayList<SchemaField>(currentFields.size() + 1);
+
+    // Perhaps force it to always sort by score
+    if (force && currentSorts[0].getType() != SortField.Type.SCORE) {
+      sorts.add(new SortField("_elevate_", comparator, true));
+      fields.add(null);
+      modify = true;
+    }
+    for (int i = 0; i < currentSorts.length; i++) {
+      SortField sf = currentSorts[i];
+      if (sf.getType() == SortField.Type.SCORE) {
+        sorts.add(new SortField("_elevate_", comparator, !sf.getReverse()));
+        fields.add(null);
+        modify = true;
+      }
+      sorts.add(sf);
+      fields.add(currentFields.get(i));
+    }
+    if (modify) {
+      SortSpec newSpec = new SortSpec(new Sort(sorts.toArray(new SortField[sorts.size()])),
+                                      fields);
+      newSpec.setOffset(current.getOffset());
+      newSpec.setCount(current.getCount());
+      return newSpec;
+    }
+    return null;
   }
 
   @Override
@@ -513,6 +565,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     return new FieldComparator<Integer>() {
       private final int[] values = new int[numHits];
       private int bottomVal;
+      private int topVal;
       private TermsEnum termsEnum;
       private DocsEnum docsEnum;
       Set<String> seen = new HashSet<String>(elevations.ids.size());
@@ -525,6 +578,11 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       @Override
       public void setBottom(int slot) {
         bottomVal = values[slot];
+      }
+
+      @Override
+      public void setTopValue(Integer value) {
+        topVal = value.intValue();
       }
 
       private int docVal(int doc) {
@@ -563,7 +621,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
         for (String id : elevations.ids) {
           term.copyChars(id);
-          if (seen.contains(id) == false  && termsEnum.seekExact(term, false)) {
+          if (seen.contains(id) == false  && termsEnum.seekExact(term)) {
             docsEnum = termsEnum.docs(liveDocs, docsEnum, DocsEnum.FLAG_NONE);
             if (docsEnum != null) {
               int docId = docsEnum.nextDoc();
@@ -583,10 +641,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       }
 
       @Override
-      public int compareDocToValue(int doc, Integer valueObj) {
-        final int value = valueObj.intValue();
+      public int compareTop(int doc) {
         final int docValue = docVal(doc);
-        return docValue - value;  // values will be small enough that there is no overflow concern
+        return topVal - docValue;  // values will be small enough that there is no overflow concern
       }
     };
   }

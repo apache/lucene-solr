@@ -18,8 +18,6 @@ package org.apache.lucene.analysis.ja;
  */
 
 import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
 import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -28,8 +26,8 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.ja.JapaneseTokenizer.Mode;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 
 @Slow
@@ -37,8 +35,8 @@ public class TestExtendedMode extends BaseTokenStreamTestCase {
   private final Analyzer analyzer = new Analyzer() {
     
     @Override
-    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer tokenizer = new JapaneseTokenizer(reader, null, true, Mode.EXTENDED);
+    protected TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer tokenizer = new JapaneseTokenizer(null, true, Mode.EXTENDED);
       return new TokenStreamComponents(tokenizer, tokenizer);
     }
   };
@@ -53,12 +51,14 @@ public class TestExtendedMode extends BaseTokenStreamTestCase {
   public void testSurrogates2() throws IOException {
     int numIterations = atLeast(1000);
     for (int i = 0; i < numIterations; i++) {
-      String s = _TestUtil.randomUnicodeString(random(), 100);
-      TokenStream ts = analyzer.tokenStream("foo", new StringReader(s));
-      CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
-      ts.reset();
-      while (ts.incrementToken()) {
-        assertTrue(UnicodeUtil.validUTF16String(termAtt));
+      String s = TestUtil.randomUnicodeString(random(), 100);
+      try (TokenStream ts = analyzer.tokenStream("foo", s)) {
+        CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
+        ts.reset();
+        while (ts.incrementToken()) {
+          assertTrue(UnicodeUtil.validUTF16String(termAtt));
+        }
+        ts.end();
       }
     }
   }

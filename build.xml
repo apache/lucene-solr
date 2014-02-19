@@ -36,10 +36,7 @@
           depends="check-svn-working-copy,validate,documentation-lint"/>
 
   <target name="test" description="Test both Lucene and Solr">
-    <subant target="test" inheritall="false" failonerror="true">
-      <fileset dir="lucene" includes="build.xml" />
-      <fileset dir="solr" includes="build.xml" />
-    </subant>
+    <subant buildpath="." antfile="extra-targets.xml" target="-run-test" inheritall="false" failonerror="true" />
   </target>
 
   <target name="pitest" description="Run PITest on both Lucene and Solr">
@@ -68,6 +65,7 @@
       <fileset dir="lucene" includes="build.xml" />
       <fileset dir="solr" includes="build.xml" />
     </subant>
+    <subant buildpath="lucene" target="check-lib-versions" inheritall="false" failonerror="true"/>
   </target>
   
   <target name="-validate-source-patterns" unless="disable.source-patterns">
@@ -125,19 +123,22 @@
     </subant>
   </target>
 
+  <target name="jar-src" description="Build Lucene and Solr Source Jar files">
+    <subant target="jar-src" inheritall="false" failonerror="true">
+      <fileset dir="lucene" includes="build.xml"/>
+      <fileset dir="solr" includes="build.xml"/>
+    </subant>
+  </target>
+
   <property name="version" value="5.0-SNAPSHOT"/>
   <property name="maven-build-dir" value="maven-build"/>
   <property name="maven-version" value="2.2.1"/>
-  
-  <target name="get-maven-poms"
+
+  <property name="maven.dependencies.filters.file" location="lucene/build/maven.dependencies.filters.properties"/>
+
+  <target name="get-maven-poms" depends="resolve" 
           description="Copy Maven POMs from dev-tools/maven/ to maven-build/">
-    <copy todir="${maven-build-dir}" overwrite="true" encoding="UTF-8">
-      <fileset dir="${basedir}/dev-tools/maven"/>
-      <filterset begintoken="@" endtoken="@">
-        <filter token="version" value="${version}"/>
-      </filterset>
-      <globmapper from="*.template" to="*"/>
-    </copy>
+    <ant dir="lucene" target="-get-maven-poms" inheritall="false"/>
   </target>
 
   <target name="clean-maven-build"
@@ -145,25 +146,30 @@
     <delete failonerror="true" dir="${maven-build-dir}/"/>
   </target>
 
-  <target name="generate-maven-artifacts"
+  <target name="generate-maven-artifacts" depends="resolve"
           description="Generate Maven Artifacts for Lucene and Solr">
     <property name="maven.dist.dir"  location="dist/maven" />
     <mkdir dir="${maven.dist.dir}" />
-    <ant dir="lucene" target="filter-pom-templates"/>
-    <subant target="generate-maven-artifacts" inheritall="false" failonerror="true">
+    <ant dir="lucene" inheritall="false">
+      <target name="-unpack-lucene-tgz"/>
+      <target name="-filter-pom-templates"/>
+    </ant>
+    <ant dir="solr" target="-unpack-solr-tgz" inheritall="false"/>
+    <subant target="-dist-maven" inheritall="false" failonerror="true">
       <property name="maven.dist.dir"  location="${maven.dist.dir}" />
-      <property name="filtered.pom.templates.uptodate" value="true"/>
       <fileset dir="lucene" includes="build.xml" />
       <fileset dir="solr" includes="build.xml" />
     </subant>
   </target>
 
-  <target name="validate-maven-dependencies" depends="generate-maven-artifacts" description="Validates maven dependencies, licenses, etc.">
-    <subant target="-validate-maven-dependencies" inheritall="false" failonerror="true">
-      <property name="filtered.pom.templates.uptodate" value="true"/>
-      <fileset dir="lucene" includes="build.xml"/>
-      <fileset dir="solr" includes="build.xml"/>
-    </subant>
+  <target name="validate-maven-dependencies" depends="generate-maven-artifacts"
+          description="Validates maven dependencies, licenses, etc.">
+    <sequential>
+      <subant target="-validate-maven-dependencies" inheritall="false" failonerror="true">
+        <fileset dir="lucene" includes="build.xml"/>
+        <fileset dir="solr" includes="build.xml"/>
+      </subant>
+    </sequential>
   </target>
   
   <target name="run-maven-build" depends="get-maven-poms" description="Runs the Maven build using automatically generated POMs">
@@ -183,6 +189,39 @@
         <include name="org/apache/solr/**"/>
       </fileset>
     </delete>
+  </target>
+
+  <target name="netbeans" depends="resolve" description="Setup Netbeans configuration">
+    <pathconvert property="netbeans.fileset.sourcefolders" pathsep="|" dirsep="/">
+      <dirset dir="${basedir}/lucene" includes="**/src/java, **/src/examples, **/src/test, **/src/resources" 
+              excludes="tools/**, build/**, backwards/**" />
+      <dirset dir="${basedir}/solr" includes="**/src/java, **/src/examples, **/src/test, **/src/resources" 
+              excludes="build/**" />
+      <map from="${basedir}/" to=""/>
+    </pathconvert>
+    <!-- TODO: find a better way to exclude duplicate JAR files & fix the servlet-api mess! -->
+    <pathconvert property="netbeans.path.libs" pathsep=":" dirsep="/">
+      <fileset dir="${basedir}/lucene" includes="**/lib/*.jar" 
+               excludes="**/*servlet-api*.jar, analysis/uima/**, tools/**, build/**"/>
+      <fileset dir="${basedir}/solr" includes="**/test-lib/*.jar,**/lib/*.jar" 
+               excludes="core/test-lib/*servlet-api*.jar, contrib/analysis-extras/**, test-framework/lib/junit*, test-framework/lib/ant*, test-framework/lib/randomizedtesting*, build/**, dist/**, package/**, example/solr-webapp/**" />
+      <map from="${basedir}/" to=""/>
+    </pathconvert>
+    <mkdir dir="nbproject"/>
+    <copy todir="nbproject" overwrite="true">
+      <fileset dir="dev-tools/netbeans/nbproject"/>
+    </copy>
+    <xslt in="${ant.file}" out="nbproject/project.xml" style="dev-tools/netbeans/nb-project.xsl" force="true">
+      <outputproperty name="indent" value="yes"/>
+      <param name="netbeans.fileset.sourcefolders" expression="${netbeans.fileset.sourcefolders}"/>
+      <param name="netbeans.path.libs" expression="${netbeans.path.libs}"/>
+      <param name="netbeans.source-level" expression="1.7"/>
+    </xslt>
+  </target>
+
+  <target name="clean-netbeans" description="Removes all Netbeans configuration files">
+    <delete dir="nbproject" failonerror="true"/>
+    <delete dir="nb-build" failonerror="true"/>
   </target>
 
   <target name="eclipse" depends="resolve" description="Setup Eclipse configuration">
@@ -205,7 +244,7 @@
     <!-- TODO: find a better way to exclude duplicate JAR files & fix the servlet-api mess! -->
     <pathconvert property="eclipse.fileset.libs" pathsep="|" dirsep="/">
       <fileset dir="${basedir}/lucene" includes="**/lib/*.jar" excludes="**/*servlet-api*.jar, analysis/uima/**, tools/**, build/**"/>
-      <fileset dir="${basedir}/solr" includes="**/lib/*.jar" excludes="core/lib/*servlet-api*.jar, contrib/analysis-extras/**, test-framework/lib/junit*, test-framework/lib/ant*, test-framework/lib/randomizedtesting*, build/**, dist/**, package/**" />
+      <fileset dir="${basedir}/solr" includes="**/test-lib/*.jar,**/lib/*.jar" excludes="core/test-lib/*servlet-api*.jar, contrib/analysis-extras/**, test-framework/lib/junit*, test-framework/lib/ant*, test-framework/lib/randomizedtesting*, build/**, dist/**, package/**" />
       <map from="${basedir}/" to=""/>
     </pathconvert>
     <xslt in="${ant.file}" out=".classpath" style="dev-tools/eclipse/dot.classpath.xsl" force="true">
@@ -229,12 +268,37 @@
   </target>
 
   <target name="idea" depends="resolve" description="Setup IntelliJ IDEA configuration">
+    <!-- Look for property definition for ${idea.jdk} in various *build.properties files -->
+    <property file="lucene/build.properties"/>    <!-- Look in the current project first -->
+    <property file="${user.home}/lucene.build.properties"/>
+    <property file="${user.home}/build.properties"/>
+    <condition property="idea.jdk.is.set">
+      <isset property="idea.jdk"/>
+    </condition>
+    <!-- Define ${idea.jdk} if it's not yet defined - otherwise literal "${idea.jdk}" is substituted -->
+    <property name="idea.jdk" value=""/>
     <copy todir=".">
       <fileset dir="dev-tools/idea"/>
+      <filterset begintoken="subst.=&quot;" endtoken="&quot;">
+        <filter token="idea.jdk" value="${idea.jdk}"/>
+      </filterset>
     </copy>
+    <antcall target="-post-idea-instructions"/>
+  </target>
+  
+  <target name="-post-idea-instructions" unless="idea.jdk.is.set">
     <echo>
-      To complete IntelliJ IDEA setup, you must manually configure
-      File | Project Structure | Project | Project SDK.
+To complete IntelliJ IDEA setup, you must manually configure
+File | Project Structure | Project | Project SDK.
+      
+You won't have to do this in the future if you define property
+$${idea.jdk}, e.g. in ~/lucene.build.properties, ~/build.properties
+or lucene/build.properties, with a value consisting of the
+following two XML attributes/values (adjust values according to
+JDKs you have defined locally - see 
+File | Project Structure | Platform Settings | SDKs):
+
+    idea.jdk = project-jdk-name="1.7" project-jdk-type="JavaSDK"
     </echo>
   </target>
 
@@ -287,6 +351,9 @@
   
   <target name="nightly-smoke" description="Builds an unsigned release and smoke tests it" depends="clean,-env-JAVA7_HOME">
    <fail unless="JAVA7_HOME">JAVA7_HOME property or environment variable is not defined.</fail>
+   <exec executable="${python32.exe}" failonerror="true">
+      <arg value="-V"/>
+   </exec>
    <property name="svnversion.exe" value="svnversion" />
    <subant target="prepare-release-no-sign" inheritall="false" failonerror="true">
      <fileset dir="lucene" includes="build.xml" />
@@ -419,5 +486,29 @@
       <target name="run-clover"/>
     </antcall>
   </target>
-  
+
+  <target name="regenerate" description="Runs all code regenerators">
+    <subant target="regenerate" inheritall="false" failonerror="false">
+      <fileset dir="lucene" includes="build.xml" />
+      <!-- todo:
+      <fileset dir="solr" includes="build.xml" />-->
+    </subant>
+  </target>
+
+  <target name="-check-after-regeneration">
+    <subant buildpath="." antfile="extra-targets.xml" target="-check-after-regeneration" inheritall="false" failonerror="true"/>
+  </target>
+
+  <!-- TODO: remove me when jenkins works -->
+  <target name="regenerateAndCheck" depends="regenerate,-check-after-regeneration"/>
+
+  <target name="-append-all-modules-dependencies-properties">
+    <sequential>
+      <delete file="lucene/build/module.dependencies.properties"/>
+      <subant target="-append-module-dependencies-properties" inheritall="false" failonerror="true">
+        <fileset dir="lucene" includes="build.xml" />
+        <fileset dir="solr" includes="build.xml" />
+      </subant>
+    </sequential>
+  </target>
 </project>

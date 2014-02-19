@@ -55,6 +55,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.CharacterCodingException;
@@ -78,7 +79,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
 
   static final String project = "solr";
   static final String base = "org.apache" + "." + project;
-  static final String[] packages = {"","analysis.","schema.","handler.","search.","update.","core.","response.","request.","update.processor.","util.", "spelling.", "handler.component.", "handler.dataimport." };
+  static final String[] packages = {"","analysis.","schema.","handler.","search.","update.","core.","response.","request.","update.processor.","util.", "spelling.", "handler.component.", "handler.dataimport.", "spelling.suggest.", "spelling.suggest.fst." };
 
   protected URLClassLoader classLoader;
   private final String instanceDir;
@@ -250,7 +251,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   }
 
   public String getConfigDir() {
-    return instanceDir + "conf/";
+    return instanceDir + "conf" + File.separator;
   }
   
   public String getDataDir()    {
@@ -299,27 +300,46 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   public InputStream openResource(String resource) throws IOException {
     InputStream is=null;
     try {
-      File f0 = new File(resource);
-      File f = f0;
+      File f0 = new File(resource), f = f0;
       if (!f.isAbsolute()) {
         // try $CWD/$configDir/$resource
-        f = new File(getConfigDir() + resource);
+        f = new File(getConfigDir() + resource).getAbsoluteFile();
       }
-      if (f.isFile() && f.canRead()) {
+      boolean found = f.isFile() && f.canRead();
+      if (!found) { // no success with $CWD/$configDir/$resource
+        f = f0.getAbsoluteFile();
+        found = f.isFile() && f.canRead();
+      }
+      // check that we don't escape instance dir
+      if (found) {
+        if (!Boolean.parseBoolean(System.getProperty("solr.allow.unsafe.resourceloading", "false"))) {
+          final URI instanceURI = new File(getInstanceDir()).getAbsoluteFile().toURI().normalize();
+          final URI fileURI = f.toURI().normalize();
+          if (instanceURI.relativize(fileURI) == fileURI) {
+            // no URI relativize possible, so they don't share same base folder
+            throw new IOException("For security reasons, SolrResourceLoader cannot load files from outside the instance's directory: " + f +
+                "; if you want to override this safety feature and you are sure about the consequences, you can pass the system property "+
+                "-Dsolr.allow.unsafe.resourceloading=true to your JVM");
+          }
+        }
+        // relativize() returned a relative, new URI, so we are fine!
         return new FileInputStream(f);
-      } else if (f != f0) { // no success with $CWD/$configDir/$resource
-        if (f0.isFile() && f0.canRead())
-          return new FileInputStream(f0);
       }
-      // delegate to the class loader (looking into $INSTANCE_DIR/lib jars)
-      is = classLoader.getResourceAsStream(resource);
-      if (is == null)
-        is = classLoader.getResourceAsStream(getConfigDir() + resource);
+      // Delegate to the class loader (looking into $INSTANCE_DIR/lib jars).
+      // We need a ClassLoader-compatible (forward-slashes) path here!
+      is = classLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'));
+      // This is a hack just for tests (it is not done in ZKResourceLoader)!
+      // -> the getConfigDir's path must not be absolute!
+      if (is == null && System.getProperty("jetty.testMode") != null && !new File(getConfigDir()).isAbsolute()) {
+        is = classLoader.getResourceAsStream((getConfigDir() + resource).replace(File.separatorChar, '/'));
+      }
+    } catch (IOException ioe) {
+      throw ioe;
     } catch (Exception e) {
       throw new IOException("Error opening " + resource, e);
     }
     if (is==null) {
-      throw new IOException("Can't find resource '" + resource + "' in classpath or '" + getConfigDir() + "', cwd="+System.getProperty("user.dir"));
+      throw new IOException("Can't find resource '" + resource + "' in classpath or '" + new File(getConfigDir()).getAbsolutePath() + "'");
     }
     return is;
   }
@@ -406,56 +426,66 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
 
       }
     }
+    
     Class<? extends T> clazz = null;
-    
-    // first try legacy analysis patterns, now replaced by Lucene's Analysis package:
-    final Matcher m = legacyAnalysisPattern.matcher(cname);
-    if (m.matches()) {
-      final String name = m.group(4);
-      log.trace("Trying to load class from analysis SPI using name='{}'", name);
-      try {
-        if (CharFilterFactory.class.isAssignableFrom(expectedType)) {
-          return clazz = CharFilterFactory.lookupClass(name).asSubclass(expectedType);
-        } else if (TokenizerFactory.class.isAssignableFrom(expectedType)) {
-          return clazz = TokenizerFactory.lookupClass(name).asSubclass(expectedType);
-        } else if (TokenFilterFactory.class.isAssignableFrom(expectedType)) {
-          return clazz = TokenFilterFactory.lookupClass(name).asSubclass(expectedType);
-        } else {
-          log.warn("'{}' looks like an analysis factory, but caller requested different class type: {}", cname, expectedType.getName());
-        }
-      } catch (IllegalArgumentException ex) { 
-        // ok, we fall back to legacy loading
-      }
-    }
-    
-    // first try cname == full name
     try {
-      return Class.forName(cname, true, classLoader).asSubclass(expectedType);
-    } catch (ClassNotFoundException e) {
-      String newName=cname;
-      if (newName.startsWith(project)) {
-        newName = cname.substring(project.length()+1);
-      }
-      for (String subpackage : subpackages) {
+      // first try legacy analysis patterns, now replaced by Lucene's Analysis package:
+      final Matcher m = legacyAnalysisPattern.matcher(cname);
+      if (m.matches()) {
+        final String name = m.group(4);
+        log.trace("Trying to load class from analysis SPI using name='{}'", name);
         try {
-          String name = base + '.' + subpackage + newName;
-          log.trace("Trying class name " + name);
-          return clazz = Class.forName(name,true,classLoader).asSubclass(expectedType);
-        } catch (ClassNotFoundException e1) {
-          // ignore... assume first exception is best.
+          if (CharFilterFactory.class.isAssignableFrom(expectedType)) {
+            return clazz = CharFilterFactory.lookupClass(name).asSubclass(expectedType);
+          } else if (TokenizerFactory.class.isAssignableFrom(expectedType)) {
+            return clazz = TokenizerFactory.lookupClass(name).asSubclass(expectedType);
+          } else if (TokenFilterFactory.class.isAssignableFrom(expectedType)) {
+            return clazz = TokenFilterFactory.lookupClass(name).asSubclass(expectedType);
+          } else {
+            log.warn("'{}' looks like an analysis factory, but caller requested different class type: {}", cname, expectedType.getName());
+          }
+        } catch (IllegalArgumentException ex) { 
+          // ok, we fall back to legacy loading
         }
       }
-  
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Error loading class '" + cname + "'", e);
-    }finally{
-      //cache the shortname vs FQN if it is loaded by the webapp classloader  and it is loaded
-      // using a shortname
-      if ( clazz != null &&
-              clazz.getClassLoader() == SolrResourceLoader.class.getClassLoader() &&
+      
+      // first try cname == full name
+      try {
+        return clazz = Class.forName(cname, true, classLoader).asSubclass(expectedType);
+      } catch (ClassNotFoundException e) {
+        String newName=cname;
+        if (newName.startsWith(project)) {
+          newName = cname.substring(project.length()+1);
+        }
+        for (String subpackage : subpackages) {
+          try {
+            String name = base + '.' + subpackage + newName;
+            log.trace("Trying class name " + name);
+            return clazz = Class.forName(name,true,classLoader).asSubclass(expectedType);
+          } catch (ClassNotFoundException e1) {
+            // ignore... assume first exception is best.
+          }
+        }
+    
+        throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Error loading class '" + cname + "'", e);
+      }
+      
+    } finally {
+      if (clazz != null) {
+        //cache the shortname vs FQN if it is loaded by the webapp classloader  and it is loaded
+        // using a shortname
+        if (clazz.getClassLoader() == SolrResourceLoader.class.getClassLoader() &&
               !cname.equals(clazz.getName()) &&
               (subpackages.length == 0 || subpackages == packages)) {
-        //store in the cache
-        classNameCache.put(cname, clazz.getName());
+          //store in the cache
+          classNameCache.put(cname, clazz.getName());
+        }
+        
+        // print warning if class is deprecated
+        if (clazz.isAnnotationPresent(Deprecated.class)) {
+          log.warn("Solr loaded a deprecated plugin/analysis class [{}]. Please consult documentation how to replace it accordingly.",
+              cname);
+        }
       }
     }
   }
@@ -645,8 +675,8 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
     for (SolrInfoMBean bean : arr) {
       try {
         infoRegistry.put(bean.getName(), bean);
-      } catch (Throwable t) {
-        log.warn("could not register MBean '" + bean.getName() + "'.", t);
+      } catch (Exception e) {
+        log.warn("could not register MBean '" + bean.getName() + "'.", e);
       }
     }
   }

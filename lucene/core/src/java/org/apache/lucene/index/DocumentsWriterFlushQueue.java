@@ -34,8 +34,7 @@ class DocumentsWriterFlushQueue {
   private final AtomicInteger ticketCount = new AtomicInteger();
   private final ReentrantLock purgeLock = new ReentrantLock();
 
-  void addDeletesAndPurge(DocumentsWriter writer,
-      DocumentsWriterDeleteQueue deleteQueue) throws IOException {
+  void addDeletes(DocumentsWriterDeleteQueue deleteQueue) throws IOException {
     synchronized (this) {
       incTickets();// first inc the ticket count - freeze opens
                    // a window for #anyChanges to fail
@@ -49,9 +48,6 @@ class DocumentsWriterFlushQueue {
         }
       }
     }
-    // don't hold the lock on the FlushQueue when forcing the purge - this blocks and deadlocks 
-    // if we hold the lock.
-    forcePurge(writer);
   }
   
   private void incTickets() {
@@ -98,8 +94,9 @@ class DocumentsWriterFlushQueue {
     return ticketCount.get() != 0;
   }
 
-  private void innerPurge(DocumentsWriter writer) throws IOException {
+  private int innerPurge(IndexWriter writer) throws IOException {
     assert purgeLock.isHeldByCurrentThread();
+    int numPurged = 0;
     while (true) {
       final FlushTicket head;
       final boolean canPublish;
@@ -108,6 +105,7 @@ class DocumentsWriterFlushQueue {
         canPublish = head != null && head.canPublish(); // do this synced 
       }
       if (canPublish) {
+        numPurged++;
         try {
           /*
            * if we block on publish -> lock IW -> lock BufferedDeletes we don't block
@@ -116,6 +114,7 @@ class DocumentsWriterFlushQueue {
            * be a ticket still in the queue. 
            */
           head.publish(writer);
+          
         } finally {
           synchronized (this) {
             // finally remove the published ticket from the queue
@@ -128,27 +127,31 @@ class DocumentsWriterFlushQueue {
         break;
       }
     }
+    return numPurged;
   }
 
-  void forcePurge(DocumentsWriter writer) throws IOException {
+  int forcePurge(IndexWriter writer) throws IOException {
     assert !Thread.holdsLock(this);
+    assert !Thread.holdsLock(writer);
     purgeLock.lock();
     try {
-      innerPurge(writer);
+      return innerPurge(writer);
     } finally {
       purgeLock.unlock();
     }
   }
 
-  void tryPurge(DocumentsWriter writer) throws IOException {
+  int tryPurge(IndexWriter writer) throws IOException {
     assert !Thread.holdsLock(this);
+    assert !Thread.holdsLock(writer);
     if (purgeLock.tryLock()) {
       try {
-        innerPurge(writer);
+        return innerPurge(writer);
       } finally {
         purgeLock.unlock();
       }
     }
+    return 0;
   }
 
   public int getTicketCount() {
@@ -161,29 +164,68 @@ class DocumentsWriterFlushQueue {
   }
 
   static abstract class FlushTicket {
-    protected FrozenBufferedDeletes frozenDeletes;
+    protected FrozenBufferedUpdates frozenUpdates;
     protected boolean published = false;
 
-    protected FlushTicket(FrozenBufferedDeletes frozenDeletes) {
-      assert frozenDeletes != null;
-      this.frozenDeletes = frozenDeletes;
+    protected FlushTicket(FrozenBufferedUpdates frozenUpdates) {
+      assert frozenUpdates != null;
+      this.frozenUpdates = frozenUpdates;
     }
 
-    protected abstract void publish(DocumentsWriter writer) throws IOException;
+    protected abstract void publish(IndexWriter writer) throws IOException;
     protected abstract boolean canPublish();
+    
+    /**
+     * Publishes the flushed segment, segment private deletes (if any) and its
+     * associated global delete (if present) to IndexWriter.  The actual
+     * publishing operation is synced on IW -> BDS so that the {@link SegmentInfo}'s
+     * delete generation is always GlobalPacket_deleteGeneration + 1
+     */
+    protected final void publishFlushedSegment(IndexWriter indexWriter, FlushedSegment newSegment, FrozenBufferedUpdates globalPacket)
+        throws IOException {
+      assert newSegment != null;
+      assert newSegment.segmentInfo != null;
+      final FrozenBufferedUpdates segmentUpdates = newSegment.segmentUpdates;
+      //System.out.println("FLUSH: " + newSegment.segmentInfo.info.name);
+      if (indexWriter.infoStream.isEnabled("DW")) {
+          indexWriter.infoStream.message("DW", "publishFlushedSegment seg-private updates=" + segmentUpdates);  
+      }
+      
+      if (segmentUpdates != null && indexWriter.infoStream.isEnabled("DW")) {
+          indexWriter.infoStream.message("DW", "flush: push buffered seg private updates: " + segmentUpdates);
+      }
+      // now publish!
+      indexWriter.publishFlushedSegment(newSegment.segmentInfo, segmentUpdates, globalPacket);
+    }
+    
+    protected final void finishFlush(IndexWriter indexWriter, FlushedSegment newSegment, FrozenBufferedUpdates bufferedUpdates)
+            throws IOException {
+        // Finish the flushed segment and publish it to IndexWriter
+        if (newSegment == null) {
+          assert bufferedUpdates != null;
+          if (bufferedUpdates != null && bufferedUpdates.any()) {
+            indexWriter.publishFrozenUpdates(bufferedUpdates);
+            if (indexWriter.infoStream.isEnabled("DW")) {
+                indexWriter.infoStream.message("DW", "flush: push buffered updates: " + bufferedUpdates);
+            }
+          }
+        } else {
+            publishFlushedSegment(indexWriter, newSegment, bufferedUpdates);  
+        }
+      }
   }
   
   static final class GlobalDeletesTicket extends FlushTicket {
 
-    protected GlobalDeletesTicket(FrozenBufferedDeletes frozenDeletes) {
-      super(frozenDeletes);
+    protected GlobalDeletesTicket(FrozenBufferedUpdates frozenUpdates) {
+      super(frozenUpdates);
     }
     @Override
-    protected void publish(DocumentsWriter writer) throws IOException {
+    protected void publish(IndexWriter writer) throws IOException {
       assert !published : "ticket was already publised - can not publish twice";
       published = true;
       // its a global ticket - no segment to publish
-      writer.finishFlush(null, frozenDeletes);
+      finishFlush(writer, null, frozenUpdates);
     }
 
     @Override
@@ -196,15 +238,15 @@ class DocumentsWriterFlushQueue {
     private FlushedSegment segment;
     private boolean failed = false;
     
-    protected SegmentFlushTicket(FrozenBufferedDeletes frozenDeletes) {
+    protected SegmentFlushTicket(FrozenBufferedUpdates frozenDeletes) {
       super(frozenDeletes);
     }
     
     @Override
-    protected void publish(DocumentsWriter writer) throws IOException {
+    protected void publish(IndexWriter writer) throws IOException {
       assert !published : "ticket was already publised - can not publish twice";
       published = true;
-      writer.finishFlush(segment, frozenDeletes);
+      finishFlush(writer, segment, frozenUpdates);
     }
     
     protected void setSegment(FlushedSegment segment) {

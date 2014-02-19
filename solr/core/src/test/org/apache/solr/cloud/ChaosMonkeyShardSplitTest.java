@@ -135,7 +135,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
       killerThread.start();
       killCounter.incrementAndGet();
 
-      splitShard(SHARD1);
+      splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1, null, null);
 
       log.info("Layout after split: \n");
       printLayout();
@@ -184,23 +184,23 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
               Thread.sleep(800);
               overseerClient.close();
               overseerClient = electNewOverseer(zkAddress);
-            } catch (Throwable e) {
+            } catch (Exception e) {
               // e.printStackTrace();
             }
           }
           try {
             Thread.sleep(100);
-          } catch (Throwable e) {
+          } catch (Exception e) {
             // e.printStackTrace();
           }
         }
-      } catch (Throwable t) {
+      } catch (Exception t) {
         // ignore
       } finally {
         if (overseerClient != null) {
           try {
             overseerClient.close();
-          } catch (Throwable t) {
+          } catch (Exception t) {
             // ignore
           }
         }

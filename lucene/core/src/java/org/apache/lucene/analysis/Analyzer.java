@@ -31,14 +31,14 @@ import java.util.Map;
  * policy for extracting index terms from text.
  * <p>
  * In order to define what analysis is done, subclasses must define their
- * {@link TokenStreamComponents TokenStreamComponents} in {@link #createComponents(String, Reader)}.
+ * {@link TokenStreamComponents TokenStreamComponents} in {@link #createComponents(String)}.
  * The components are then reused in each call to {@link #tokenStream(String, Reader)}.
  * <p>
  * Simple example:
  * <pre class="prettyprint">
  * Analyzer analyzer = new Analyzer() {
  *  {@literal @Override}
- *   protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+ *   protected TokenStreamComponents createComponents(String fieldName) {
  *     Tokenizer source = new FooTokenizer(reader);
  *     TokenStream filter = new FooFilter(source);
  *     filter = new BarFilter(filter);
@@ -72,12 +72,15 @@ public abstract class Analyzer implements Closeable {
 
   private final ReuseStrategy reuseStrategy;
 
+  // non final as it gets nulled if closed; pkg private for access by ReuseStrategy's final helper methods:
+  CloseableThreadLocal<Object> storedValue = new CloseableThreadLocal<Object>();
+
   /**
    * Create a new Analyzer, reusing the same set of components per-thread
    * across calls to {@link #tokenStream(String, Reader)}. 
    */
   public Analyzer() {
-    this(new GlobalReuseStrategy());
+    this(GLOBAL_REUSE_STRATEGY);
   }
 
   /**
@@ -98,18 +101,54 @@ public abstract class Analyzer implements Closeable {
    * @param fieldName
    *          the name of the fields content passed to the
    *          {@link TokenStreamComponents} sink as a reader
-   * @param reader
-   *          the reader passed to the {@link Tokenizer} constructor
+
    * @return the {@link TokenStreamComponents} for this analyzer.
    */
-  protected abstract TokenStreamComponents createComponents(String fieldName,
-      Reader reader);
+  protected abstract TokenStreamComponents createComponents(String fieldName);
 
   /**
    * Returns a TokenStream suitable for <code>fieldName</code>, tokenizing
    * the contents of <code>reader</code>.
    * <p>
-   * This method uses {@link #createComponents(String, Reader)} to obtain an
+   * This method uses {@link #createComponents(String)} to obtain an
+   * instance of {@link TokenStreamComponents}. It returns the sink of the
+   * components and stores the components internally. Subsequent calls to this
+   * method will reuse the previously stored components after resetting them
+   * through {@link TokenStreamComponents#setReader(Reader)}.
+   * <p>
+   * <b>NOTE:</b> After calling this method, the consumer must follow the 
+   * workflow described in {@link TokenStream} to properly consume its contents.
+   * See the {@link org.apache.lucene.analysis Analysis package documentation} for
+   * some examples demonstrating this.
+   * 
+   * <b>NOTE:</b> If your data is available as a {@code String}, use
+   * {@link #tokenStream(String, String)} which reuses a {@code StringReader}-like
+   * instance internally.
+   * 
+   * @param fieldName the name of the field the created TokenStream is used for
+   * @param reader the reader the streams source reads from
+   * @return TokenStream for iterating the analyzed content of <code>reader</code>
+   * @throws AlreadyClosedException if the Analyzer is closed.
+   * @throws IOException if an i/o error occurs.
+   * @see #tokenStream(String, String)
+   */
+  public final TokenStream tokenStream(final String fieldName,
+                                       final Reader reader) throws IOException {
+    TokenStreamComponents components = reuseStrategy.getReusableComponents(this, fieldName);
+    final Reader r = initReader(fieldName, reader);
+    if (components == null) {
+      components = createComponents(fieldName);
+      reuseStrategy.setReusableComponents(this, fieldName, components);
+    }
+    components.setReader(r);
+    return components.getTokenStream();
+  }
+  
+  /**
+   * Returns a TokenStream suitable for <code>fieldName</code>, tokenizing
+   * the contents of <code>text</code>.
+   * <p>
+   * This method uses {@link #createComponents(String)} to obtain an
    * instance of {@link TokenStreamComponents}. It returns the sink of the
    * components and stores the components internally. Subsequent calls to this
    * method will reuse the previously stored components after resetting them
@@ -121,24 +160,29 @@ public abstract class Analyzer implements Closeable {
    * some examples demonstrating this.
    * 
    * @param fieldName the name of the field the created TokenStream is used for
-   * @param reader the reader the streams source reads from
+   * @param text the String the streams source reads from
    * @return TokenStream for iterating the analyzed content of <code>reader</code>
    * @throws AlreadyClosedException if the Analyzer is closed.
-   * @throws IOException if an i/o error occurs.
+   * @throws IOException if an i/o error occurs (may rarely happen for strings).
+   * @see #tokenStream(String, Reader)
    */
-  public final TokenStream tokenStream(final String fieldName,
-                                       final Reader reader) throws IOException {
-    TokenStreamComponents components = reuseStrategy.getReusableComponents(fieldName);
-    final Reader r = initReader(fieldName, reader);
+  public final TokenStream tokenStream(final String fieldName, final String text) throws IOException {
+    TokenStreamComponents components = reuseStrategy.getReusableComponents(this, fieldName);
+    @SuppressWarnings("resource") final ReusableStringReader strReader = 
+        (components == null || components.reusableStringReader == null) ?
+        new ReusableStringReader() : components.reusableStringReader;
+    strReader.setValue(text);
+    final Reader r = initReader(fieldName, strReader);
     if (components == null) {
-      components = createComponents(fieldName, r);
-      reuseStrategy.setReusableComponents(fieldName, components);
-    } else {
-      components.setReader(r);
+      components = createComponents(fieldName);
+      reuseStrategy.setReusableComponents(this, fieldName, components);
     }
+
+    components.setReader(r);
+    components.reusableStringReader = strReader;
     return components.getTokenStream();
   }
-  
+    
   /**
    * Override this if you want to add a CharFilter chain.
    * <p>
@@ -185,10 +229,20 @@ public abstract class Analyzer implements Closeable {
     return 1;
   }
 
+  /**
+   * Returns the used {@link ReuseStrategy}.
+   */
+  public final ReuseStrategy getReuseStrategy() {
+    return reuseStrategy;
+  }
+
   /** Frees persistent resources used by this Analyzer */
   @Override
   public void close() {
-    reuseStrategy.close();
+    if (storedValue != null) {
+      storedValue.close();
+      storedValue = null;
+    }
   }
 
   /**
@@ -208,6 +262,9 @@ public abstract class Analyzer implements Closeable {
      * the chain. This can be the source if there are no filters.
      */
     protected final TokenStream sink;
+    
+    /** Internal cache only used by {@link Analyzer#tokenStream(String, String)}. */
+    transient ReusableStringReader reusableStringReader;
 
     /**
      * Creates a new {@link TokenStreamComponents} instance.
@@ -270,126 +327,101 @@ public abstract class Analyzer implements Closeable {
    * Strategy defining how TokenStreamComponents are reused per call to
    * {@link Analyzer#tokenStream(String, java.io.Reader)}.
    */
-  public static abstract class ReuseStrategy implements Closeable {
-
-    private CloseableThreadLocal<Object> storedValue = new CloseableThreadLocal<Object>();
+  public static abstract class ReuseStrategy {
 
     /** Sole constructor. (For invocation by subclass constructors, typically implicit.) */
     public ReuseStrategy() {}
 
     /**
-     * Gets the reusable TokenStreamComponents for the field with the given name
+     * Gets the reusable TokenStreamComponents for the field with the given name.
      *
+     * @param analyzer Analyzer from which to get the reused components. Use
+     *        {@link #getStoredValue(Analyzer)} and {@link #setStoredValue(Analyzer, Object)}
+     *        to access the data on the Analyzer.
      * @param fieldName Name of the field whose reusable TokenStreamComponents
      *        are to be retrieved
      * @return Reusable TokenStreamComponents for the field, or {@code null}
      *         if there was no previous components for the field
      */
-    public abstract TokenStreamComponents getReusableComponents(String fieldName);
+    public abstract TokenStreamComponents getReusableComponents(Analyzer analyzer, String fieldName);
 
     /**
      * Stores the given TokenStreamComponents as the reusable components for the
-     * field with the give name
+     * field with the give name.
      *
      * @param fieldName Name of the field whose TokenStreamComponents are being set
      * @param components TokenStreamComponents which are to be reused for the field
      */
-    public abstract void setReusableComponents(String fieldName, TokenStreamComponents components);
+    public abstract void setReusableComponents(Analyzer analyzer, String fieldName, TokenStreamComponents components);
 
     /**
-     * Returns the currently stored value
+     * Returns the currently stored value.
      *
      * @return Currently stored value or {@code null} if no value is stored
-     * @throws AlreadyClosedException if the ReuseStrategy is closed.
+     * @throws AlreadyClosedException if the Analyzer is closed.
      */
-    protected final Object getStoredValue() {
-      try {
-        return storedValue.get();
-      } catch (NullPointerException npe) {
-        if (storedValue == null) {
-          throw new AlreadyClosedException("this Analyzer is closed");
-        } else {
-          throw npe;
-        }
+    protected final Object getStoredValue(Analyzer analyzer) {
+      if (analyzer.storedValue == null) {
+        throw new AlreadyClosedException("this Analyzer is closed");
       }
+      return analyzer.storedValue.get();
     }
 
     /**
-     * Sets the stored value
+     * Sets the stored value.
      *
      * @param storedValue Value to store
-     * @throws AlreadyClosedException if the ReuseStrategy is closed.
+     * @throws AlreadyClosedException if the Analyzer is closed.
      */
-    protected final void setStoredValue(Object storedValue) {
-      try {
-        this.storedValue.set(storedValue);
-      } catch (NullPointerException npe) {
-        if (storedValue == null) {
-          throw new AlreadyClosedException("this Analyzer is closed");
-        } else {
-          throw npe;
-        }
+    protected final void setStoredValue(Analyzer analyzer, Object storedValue) {
+      if (analyzer.storedValue == null) {
+        throw new AlreadyClosedException("this Analyzer is closed");
       }
+      analyzer.storedValue.set(storedValue);
     }
 
-    /**
-     * Closes the ReuseStrategy, freeing any resources
-     */
-    @Override
-    public void close() {
-      if (storedValue != null) {
-        storedValue.close();
-        storedValue = null;
-      }
-    }
   }
 
   /**
-   * Implementation of {@link ReuseStrategy} that reuses the same components for
+   * A predefined {@link ReuseStrategy}  that reuses the same components for
    * every field.
    */
-  public final static class GlobalReuseStrategy extends ReuseStrategy {
-    
-    /** Creates a new instance, with empty per-thread values */
-    public GlobalReuseStrategy() {}
+  public static final ReuseStrategy GLOBAL_REUSE_STRATEGY = new ReuseStrategy() {
 
     @Override
-    public TokenStreamComponents getReusableComponents(String fieldName) {
-      return (TokenStreamComponents) getStoredValue();
+    public TokenStreamComponents getReusableComponents(Analyzer analyzer, String fieldName) {
+      return (TokenStreamComponents) getStoredValue(analyzer);
     }
 
     @Override
-    public void setReusableComponents(String fieldName, TokenStreamComponents components) {
-      setStoredValue(components);
+    public void setReusableComponents(Analyzer analyzer, String fieldName, TokenStreamComponents components) {
+      setStoredValue(analyzer, components);
     }
-  }
+  };
 
   /**
-   * Implementation of {@link ReuseStrategy} that reuses components per-field by
+   * A predefined {@link ReuseStrategy} that reuses components per-field by
    * maintaining a Map of TokenStreamComponent per field name.
    */
-  public static class PerFieldReuseStrategy extends ReuseStrategy {
-
-    /** Creates a new instance, with empty per-thread-per-field values */
-    public PerFieldReuseStrategy() {}
+  public static final ReuseStrategy PER_FIELD_REUSE_STRATEGY = new ReuseStrategy() {
 
     @SuppressWarnings("unchecked")
     @Override
-    public TokenStreamComponents getReusableComponents(String fieldName) {
-      Map<String, TokenStreamComponents> componentsPerField = (Map<String, TokenStreamComponents>) getStoredValue();
+    public TokenStreamComponents getReusableComponents(Analyzer analyzer, String fieldName) {
+      Map<String, TokenStreamComponents> componentsPerField = (Map<String, TokenStreamComponents>) getStoredValue(analyzer);
       return componentsPerField != null ? componentsPerField.get(fieldName) : null;
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public void setReusableComponents(String fieldName, TokenStreamComponents components) {
-      Map<String, TokenStreamComponents> componentsPerField = (Map<String, TokenStreamComponents>) getStoredValue();
+    public void setReusableComponents(Analyzer analyzer, String fieldName, TokenStreamComponents components) {
+      Map<String, TokenStreamComponents> componentsPerField = (Map<String, TokenStreamComponents>) getStoredValue(analyzer);
       if (componentsPerField == null) {
         componentsPerField = new HashMap<String, TokenStreamComponents>();
-        setStoredValue(componentsPerField);
+        setStoredValue(analyzer, componentsPerField);
       }
       componentsPerField.put(fieldName, components);
     }
-  }
+  };
 
 }

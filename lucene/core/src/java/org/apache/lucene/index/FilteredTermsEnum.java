@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.AttributeSource;
@@ -28,7 +27,7 @@ import org.apache.lucene.util.Bits;
  * Abstract class for enumerating a subset of all terms. 
  * 
  * <p>Term enumerations are always ordered by
- * {@link #getComparator}.  Each term in the enumeration is
+ * {@link BytesRef#compareTo}.  Each term in the enumeration is
  * greater than all that precede it.</p>
  * <p><em>Please note:</em> Consumers of this enum cannot
  * call {@code seek()}, it is forward only; it throws
@@ -135,11 +134,6 @@ public abstract class FilteredTermsEnum extends TermsEnum {
   }
 
   @Override
-  public Comparator<BytesRef> getComparator() {
-    return tenum.getComparator();
-  }
-    
-  @Override
   public int docFreq() throws IOException {
     return tenum.docFreq();
   }
@@ -154,7 +148,7 @@ public abstract class FilteredTermsEnum extends TermsEnum {
    *         support seeking.
    */
   @Override
-  public boolean seekExact(BytesRef term, boolean useCache) throws IOException {
+  public boolean seekExact(BytesRef term) throws IOException {
     throw new UnsupportedOperationException(getClass().getName()+" does not support seeking");
   }
 
@@ -163,7 +157,7 @@ public abstract class FilteredTermsEnum extends TermsEnum {
    *         support seeking.
    */
   @Override
-  public SeekStatus seekCeil(BytesRef term, boolean useCache) throws IOException {
+  public SeekStatus seekCeil(BytesRef term) throws IOException {
     throw new UnsupportedOperationException(getClass().getName()+" does not support seeking");
   }
 
@@ -221,8 +215,8 @@ public abstract class FilteredTermsEnum extends TermsEnum {
         final BytesRef t = nextSeekTerm(actualTerm);
         //System.out.println("  seek to t=" + (t == null ? "null" : t.utf8ToString()) + " tenum=" + tenum);
         // Make sure we always seek forward:
-        assert actualTerm == null || t == null || getComparator().compare(t, actualTerm) > 0: "curTerm=" + actualTerm + " seekTerm=" + t;
-        if (t == null || tenum.seekCeil(t, false) == SeekStatus.END) {
+        assert actualTerm == null || t == null || t.compareTo(actualTerm) > 0: "curTerm=" + actualTerm + " seekTerm=" + t;
+        if (t == null || tenum.seekCeil(t) == SeekStatus.END) {
           // no more terms to seek to or enum exhausted
           //System.out.println("  return null");
           return null;

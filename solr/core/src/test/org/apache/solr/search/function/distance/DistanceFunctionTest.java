@@ -76,7 +76,7 @@ public class DistanceFunctionTest extends SolrTestCaseJ4 {
 
   @Test
   public void testLatLon() throws Exception {
-    assertU(adoc("id", "100", "store", "1,2"));
+    assertU(adoc("id", "100", "store", "1,2"));//copied to store_rpt
     assertU(commit());
    
     assertJQ(req("defType","func", 
@@ -126,6 +126,16 @@ public class DistanceFunctionTest extends SolrTestCaseJ4 {
              , 1e-5
              ,"/response/docs/[0]/score==314.40338"
              );
+
+    // if pt missing, use sfield (RPT)
+    assertJQ(req("defType","func",
+        "q","geodist(3,4)",
+        "sfield","store_rpt",
+        "fq","id:100",
+        "fl","id,score")
+        , 1e-5
+        ,"/response/docs/[0]/score==314.40338"
+    );
     
     // read both pt and sfield
     assertJQ(req("defType","func", 
@@ -136,6 +146,16 @@ public class DistanceFunctionTest extends SolrTestCaseJ4 {
              , 1e-5
              ,"/response/docs/[0]/score==314.40338"
              );
+
+    // read both pt and sfield (RPT)
+    assertJQ(req("defType","func",
+        "q","geodist()","pt","3,4",
+        "sfield","store_rpt",
+        "fq","id:100",
+        "fl","id,score")
+        , 1e-5
+        ,"/response/docs/[0]/score==314.40338"
+    );
 
     // param substitution
     assertJQ(req("defType","func", 

@@ -330,7 +330,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
           } else if (SKIP.equals(onError)) {
             LOG.warn(msg, e);
             Map<String, Object> map = new HashMap<String, Object>();
-            map.put(SKIP_DOC, Boolean.TRUE);
+            map.put(DocBuilder.SKIP_DOC, Boolean.TRUE);
             rows.add(map);
           } else if (CONTINUE.equals(onError)) {
             LOG.warn(msg, e);

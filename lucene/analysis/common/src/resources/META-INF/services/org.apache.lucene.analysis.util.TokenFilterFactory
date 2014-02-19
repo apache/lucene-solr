@@ -19,6 +19,8 @@ org.apache.lucene.analysis.bg.BulgarianStemFilterFactory
 org.apache.lucene.analysis.br.BrazilianStemFilterFactory
 org.apache.lucene.analysis.cjk.CJKBigramFilterFactory
 org.apache.lucene.analysis.cjk.CJKWidthFilterFactory
+org.apache.lucene.analysis.ckb.SoraniNormalizationFilterFactory
+org.apache.lucene.analysis.ckb.SoraniStemFilterFactory
 org.apache.lucene.analysis.commongrams.CommonGramsFilterFactory
 org.apache.lucene.analysis.commongrams.CommonGramsQueryFilterFactory
 org.apache.lucene.analysis.compound.DictionaryCompoundWordTokenFilterFactory
@@ -55,6 +57,7 @@ org.apache.lucene.analysis.it.ItalianLightStemFilterFactory
 org.apache.lucene.analysis.lv.LatvianStemFilterFactory
 org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilterFactory
 org.apache.lucene.analysis.miscellaneous.CapitalizationFilterFactory
+org.apache.lucene.analysis.miscellaneous.CodepointCountFilterFactory
 org.apache.lucene.analysis.miscellaneous.HyphenatedWordsFilterFactory
 org.apache.lucene.analysis.miscellaneous.KeepWordFilterFactory
 org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilterFactory

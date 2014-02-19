@@ -70,6 +70,8 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 
 /**
@@ -81,7 +83,17 @@ import org.junit.Ignore;
 // TODO: really this should extend QueryParserTestBase too!
 public class TestQPHelper extends LuceneTestCase {
 
-  public static Analyzer qpAnalyzer = new QPTestAnalyzer();
+  public static Analyzer qpAnalyzer;
+
+  @BeforeClass
+  public static void beforeClass() {
+    qpAnalyzer = new QPTestAnalyzer();
+  }
+
+  @AfterClass
+  public static void afterClass() {
+    qpAnalyzer = null;
+  }
 
   public static final class QPTestFilter extends TokenFilter {
     private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
@@ -135,8 +147,8 @@ public class TestQPHelper extends LuceneTestCase {
 
     /** Filters MockTokenizer with StopFilter. */
     @Override
-    public final TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+    public final TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer tokenizer = new MockTokenizer(MockTokenizer.SIMPLE, true);
       return new TokenStreamComponents(tokenizer, new QPTestFilter(tokenizer));
     }
   }
@@ -333,8 +345,8 @@ public class TestQPHelper extends LuceneTestCase {
   private class SimpleCJKTokenizer extends Tokenizer {
     private CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
-    public SimpleCJKTokenizer(Reader input) {
-      super(input);
+    public SimpleCJKTokenizer() {
+      super();
     }
 
     @Override
@@ -350,8 +362,8 @@ public class TestQPHelper extends LuceneTestCase {
 
   private class SimpleCJKAnalyzer extends Analyzer {
     @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      return new TokenStreamComponents(new SimpleCJKTokenizer(reader));
+    public TokenStreamComponents createComponents(String fieldName) {
+      return new TokenStreamComponents(new SimpleCJKTokenizer());
     }
   }
   
@@ -1255,8 +1267,8 @@ public class TestQPHelper extends LuceneTestCase {
     private final PositionIncrementAttribute posIncr = addAttribute(PositionIncrementAttribute.class);
     private final CharTermAttribute term = addAttribute(CharTermAttribute.class);
 
-    public CannedTokenizer(Reader reader) {
-      super(reader);
+    public CannedTokenizer() {
+      super();
     }
 
     @Override
@@ -1291,8 +1303,8 @@ public class TestQPHelper extends LuceneTestCase {
 
   private class CannedAnalyzer extends Analyzer {
     @Override
-    public TokenStreamComponents createComponents(String ignored, Reader alsoIgnored) {
-      return new TokenStreamComponents(new CannedTokenizer(alsoIgnored));
+    public TokenStreamComponents createComponents(String ignored) {
+      return new TokenStreamComponents(new CannedTokenizer());
     }
   }
 

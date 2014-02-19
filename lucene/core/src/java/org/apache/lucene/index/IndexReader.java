@@ -168,8 +168,9 @@ public abstract class IndexReader implements Closeable {
    * @see #tryIncRef
    */
   public final void incRef() {
-    ensureOpen();
-    refCount.incrementAndGet();
+    if (!tryIncRef()) {
+       ensureOpen();
+    }
   }
   
   /**

@@ -31,8 +31,8 @@ import org.apache.lucene.analysis.util.CharArraySet;
 public class TestJapaneseBaseFormFilter extends BaseTokenStreamTestCase {
   private Analyzer analyzer = new Analyzer() {
     @Override
-    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer tokenizer = new JapaneseTokenizer(reader, null, true, JapaneseTokenizer.DEFAULT_MODE);
+    protected TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer tokenizer = new JapaneseTokenizer(null, true, JapaneseTokenizer.DEFAULT_MODE);
       return new TokenStreamComponents(tokenizer, new JapaneseBaseFormFilter(tokenizer));
     }
   };
@@ -47,8 +47,8 @@ public class TestJapaneseBaseFormFilter extends BaseTokenStreamTestCase {
     final CharArraySet exclusionSet = new CharArraySet(TEST_VERSION_CURRENT, asSet("あり"), false);
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer source = new JapaneseTokenizer(reader, null, true, JapaneseTokenizer.DEFAULT_MODE);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer source = new JapaneseTokenizer(null, true, JapaneseTokenizer.DEFAULT_MODE);
         TokenStream sink = new SetKeywordMarkerFilter(source, exclusionSet);
         return new TokenStreamComponents(source, new JapaneseBaseFormFilter(sink));
       }
@@ -70,11 +70,11 @@ public class TestJapaneseBaseFormFilter extends BaseTokenStreamTestCase {
   public void testEmptyTerm() throws IOException {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new KeywordTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
         return new TokenStreamComponents(tokenizer, new JapaneseBaseFormFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

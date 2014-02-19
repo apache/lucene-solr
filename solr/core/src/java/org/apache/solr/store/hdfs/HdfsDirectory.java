@@ -23,29 +23,30 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.lucene.store.Directory;
+import org.apache.hadoop.ipc.RemoteException;
+import org.apache.lucene.store.BaseDirectory;
+import org.apache.lucene.store.BufferedIndexOutput;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.NoLockFactory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.store.blockcache.CustomBufferedIndexInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HdfsDirectory extends Directory {
+public class HdfsDirectory extends BaseDirectory {
   public static Logger LOG = LoggerFactory.getLogger(HdfsDirectory.class);
   
   public static final int BUFFER_SIZE = 8192;
   
   private static final String LF_EXT = ".lf";
   protected static final String SEGMENTS_GEN = "segments.gen";
-  protected static final IndexOutput NULL_WRITER = new NullIndexOutput();
   protected Path hdfsDirPath;
   protected Configuration configuration;
   
@@ -53,19 +54,41 @@ public class HdfsDirectory extends Directory {
   
   public HdfsDirectory(Path hdfsDirPath, Configuration configuration)
       throws IOException {
-    assert hdfsDirPath.toString().startsWith("hdfs:/") : hdfsDirPath.toString();
     setLockFactory(NoLockFactory.getNoLockFactory());
     this.hdfsDirPath = hdfsDirPath;
     this.configuration = configuration;
     fileSystem = FileSystem.newInstance(hdfsDirPath.toUri(), configuration);
-    try {
-      if (!fileSystem.exists(hdfsDirPath)) {
-        fileSystem.mkdirs(hdfsDirPath);
+    
+    while (true) {
+      try {
+        if (!fileSystem.exists(hdfsDirPath)) {
+          boolean success = fileSystem.mkdirs(hdfsDirPath);
+          if (!success) {
+            throw new RuntimeException("Could not create directory: " + hdfsDirPath);
+          }
+        } else {
+          fileSystem.mkdirs(hdfsDirPath); // check for safe mode
+        }
+        
+        break;
+      } catch (RemoteException e) {
+        if (e.getClassName().equals("org.apache.hadoop.hdfs.server.namenode.SafeModeException")) {
+          LOG.warn("The NameNode is in SafeMode - Solr will wait 5 seconds and try again.");
+          try {
+            Thread.sleep(5000);
+          } catch (InterruptedException e1) {
+            Thread.interrupted();
+          }
+          continue;
+        }
+        org.apache.solr.util.IOUtils.closeQuietly(fileSystem);
+        throw new RuntimeException(
+            "Problem creating directory: " + hdfsDirPath, e);
+      } catch (Exception e) {
+        org.apache.solr.util.IOUtils.closeQuietly(fileSystem);
+        throw new RuntimeException(
+            "Problem creating directory: " + hdfsDirPath, e);
       }
-    } catch (Exception e) {
-      IOUtils.closeQuietly(fileSystem);
-      throw new RuntimeException("Problem creating directory: " + hdfsDirPath,
-          e);
     }
   }
   
@@ -79,7 +102,7 @@ public class HdfsDirectory extends Directory {
   public IndexOutput createOutput(String name, IOContext context)
       throws IOException {
     if (SEGMENTS_GEN.equals(name)) {
-      return NULL_WRITER;
+      return new NullIndexOutput();
     }
     HdfsFileWriter writer = new HdfsFileWriter(getFileSystem(), new Path(
         hdfsDirPath, name));
@@ -109,7 +132,7 @@ public class HdfsDirectory extends Directory {
   }
   
   private IndexInput openInput(String name, int bufferSize) throws IOException {
-    return new HdfsNormalIndexInput(name, getFileSystem(), new Path(
+    return new HdfsIndexInput(name, getFileSystem(), new Path(
         hdfsDirPath, name), BUFFER_SIZE);
   }
   
@@ -164,16 +187,16 @@ public class HdfsDirectory extends Directory {
     return configuration;
   }
   
-  static class HdfsNormalIndexInput extends CustomBufferedIndexInput {
+  static class HdfsIndexInput extends CustomBufferedIndexInput {
     public static Logger LOG = LoggerFactory
-        .getLogger(HdfsNormalIndexInput.class);
+        .getLogger(HdfsIndexInput.class);
     
     private final Path path;
     private final FSDataInputStream inputStream;
     private final long length;
     private boolean clone = false;
     
-    public HdfsNormalIndexInput(String name, FileSystem fileSystem, Path path,
+    public HdfsIndexInput(String name, FileSystem fileSystem, Path path,
         int bufferSize) throws IOException {
       super(name);
       this.path = path;
@@ -186,12 +209,12 @@ public class HdfsDirectory extends Directory {
     @Override
     protected void readInternal(byte[] b, int offset, int length)
         throws IOException {
-      inputStream.read(getFilePointer(), b, offset, length);
+      inputStream.readFully(getFilePointer(), b, offset, length);
     }
     
     @Override
     protected void seekInternal(long pos) throws IOException {
-      inputStream.seek(pos);
+
     }
     
     @Override
@@ -209,13 +232,13 @@ public class HdfsDirectory extends Directory {
     
     @Override
     public IndexInput clone() {
-      HdfsNormalIndexInput clone = (HdfsNormalIndexInput) super.clone();
+      HdfsIndexInput clone = (HdfsIndexInput) super.clone();
       clone.clone = true;
       return clone;
     }
   }
   
-  static class HdfsIndexOutput extends IndexOutput {
+  static class HdfsIndexOutput extends BufferedIndexOutput {
     
     private HdfsFileWriter writer;
     
@@ -225,32 +248,25 @@ public class HdfsDirectory extends Directory {
     
     @Override
     public void close() throws IOException {
-      writer.close();
+      IOException priorE = null;
+      try {
+        super.close();
+      } catch (IOException ioe) {
+        priorE = ioe;
+      } finally {
+        IOUtils.closeWhileHandlingException(priorE, writer);
+      }
     }
-    
+
     @Override
-    public void flush() throws IOException {
-      writer.flush();
+    protected void flushBuffer(byte[] b, int offset, int len)
+        throws IOException {
+      writer.writeBytes(b, offset, len);
     }
-    
+
     @Override
-    public long getFilePointer() {
-      return writer.getPosition();
-    }
-    
-    @Override
-    public long length() {
+    public long length() throws IOException {
       return writer.length();
-    }
-    
-    @Override
-    public void writeByte(byte b) throws IOException {
-      writer.writeByte(b);
-    }
-    
-    @Override
-    public void writeBytes(byte[] b, int offset, int length) throws IOException {
-      writer.writeBytes(b, offset, length);
     }
   }
   

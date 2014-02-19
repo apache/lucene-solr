@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.BasicOperations;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
@@ -70,13 +70,13 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
     Analyzer left = new MockAnalyzer(random, jvmLetter, false);
     Analyzer right = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT, reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT);
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
     for (int i = 0; i < 1000; i++) {
-      String s = _TestUtil.randomSimpleString(random);
+      String s = TestUtil.randomSimpleString(random);
       assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
                    right.tokenStream("foo", newStringReader(s)));
     }
@@ -90,14 +90,14 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
     left.setMaxTokenLength(255); // match CharTokenizer's max token length
     Analyzer right = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT, reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT);
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
     int numIterations = atLeast(50);
     for (int i = 0; i < numIterations; i++) {
-      String s = _TestUtil.randomSimpleString(random, maxLength);
+      String s = TestUtil.randomSimpleString(random, maxLength);
       assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
                    right.tokenStream("foo", newStringReader(s)));
     }
@@ -108,13 +108,13 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
     Analyzer left = new MockAnalyzer(random, jvmLetter, false);
     Analyzer right = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT, reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT);
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
     for (int i = 0; i < 1000; i++) {
-      String s = _TestUtil.randomHtmlishString(random, 20);
+      String s = TestUtil.randomHtmlishString(random, 20);
       assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
                    right.tokenStream("foo", newStringReader(s)));
     }
@@ -127,14 +127,14 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
     left.setMaxTokenLength(255); // match CharTokenizer's max token length
     Analyzer right = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT, reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT);
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
     int numIterations = atLeast(50);
     for (int i = 0; i < numIterations; i++) {
-      String s = _TestUtil.randomHtmlishString(random, maxLength);
+      String s = TestUtil.randomHtmlishString(random, maxLength);
       assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
                    right.tokenStream("foo", newStringReader(s)));
     }
@@ -145,13 +145,13 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
     Analyzer left = new MockAnalyzer(random(), jvmLetter, false);
     Analyzer right = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT, reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT);
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
     for (int i = 0; i < 1000; i++) {
-      String s = _TestUtil.randomUnicodeString(random);
+      String s = TestUtil.randomUnicodeString(random);
       assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
                    right.tokenStream("foo", newStringReader(s)));
     }
@@ -164,14 +164,14 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
     left.setMaxTokenLength(255); // match CharTokenizer's max token length
     Analyzer right = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT, reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT);
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
     int numIterations = atLeast(50);
     for (int i = 0; i < numIterations; i++) {
-      String s = _TestUtil.randomUnicodeString(random, maxLength);
+      String s = TestUtil.randomUnicodeString(random, maxLength);
       assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
                    right.tokenStream("foo", newStringReader(s)));
     }

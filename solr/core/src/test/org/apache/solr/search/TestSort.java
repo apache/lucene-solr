@@ -18,7 +18,11 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Random;
 
 import org.apache.lucene.analysis.core.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
@@ -28,15 +32,27 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.BitsFilteredDocIdSet;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortField.Type;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.OpenBitSet;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.SchemaField;
 import org.junit.BeforeClass;
 
 public class TestSort extends SolrTestCaseJ4 {
@@ -80,12 +96,12 @@ public class TestSort extends SolrTestCaseJ4 {
 
     for (int i = 0; i < iters; i++) {
       final StringBuilder input = new StringBuilder();
-      final String[] names = new String[_TestUtil.nextInt(r,1,10)];
+      final String[] names = new String[TestUtil.nextInt(r, 1, 10)];
       final boolean[] reverse = new boolean[names.length];
       for (int j = 0; j < names.length; j++) {
         names[j] = null;
         for (int k = 0; k < nonBlankAttempts && null == names[j]; k++) {
-          names[j] = _TestUtil.randomRealisticUnicodeString(r, 1, 100);
+          names[j] = TestUtil.randomRealisticUnicodeString(r, 1, 100);
 
           // munge anything that might make this a function
           names[j] = names[j].replaceFirst("\\{","\\{\\{");
@@ -114,13 +130,18 @@ public class TestSort extends SolrTestCaseJ4 {
       }
       input.deleteCharAt(input.length()-1);
       SortField[] sorts = null;
+      List<SchemaField> fields = null;
       try {
-        sorts = QueryParsing.parseSort(input.toString(), req).getSort();
+        SortSpec spec = QueryParsing.parseSortSpec(input.toString(), req);
+        sorts = spec.getSort().getSort();
+        fields = spec.getSchemaFields();
       } catch (RuntimeException e) {
         throw new RuntimeException("Failed to parse sort: " + input, e);
       }
       assertEquals("parsed sorts had unexpected size", 
                    names.length, sorts.length);
+      assertEquals("parsed sort schema fields had unexpected size", 
+                   names.length, fields.size());
       for (int j = 0; j < names.length; j++) {
         assertEquals("sorts["+j+"] had unexpected reverse: " + input,
                      reverse[j], sorts[j].getReverse());
@@ -144,6 +165,9 @@ public class TestSort extends SolrTestCaseJ4 {
           assertEquals("sorts["+j+"] ("+type.toString()+
                        ") had unexpected field in: " + input,
                        names[j], sorts[j].getField());
+          assertEquals("fields["+j+"] ("+type.toString()+
+                       ") had unexpected name in: " + input,
+                       names[j], fields.get(j).getName());
         }
       }
     }
@@ -311,10 +335,10 @@ public class TestSort extends SolrTestCaseJ4 {
   }
 
   public DocIdSet randSet(int sz) {
-    OpenBitSet obs = new OpenBitSet(sz);
+    FixedBitSet obs = new FixedBitSet(sz);
     int n = r.nextInt(sz);
     for (int i=0; i<n; i++) {
-      obs.fastSet(r.nextInt(sz));
+      obs.set(r.nextInt(sz));
     }
     return obs;
   }  

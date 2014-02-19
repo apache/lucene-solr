@@ -42,12 +42,10 @@ public final class WhitespaceTokenizer extends CharTokenizer {
   /**
    * Construct a new WhitespaceTokenizer. * @param matchVersion Lucene version
    * to match See {@link <a href="#version">above</a>}
-   * 
-   * @param in
-   *          the input to split up into tokens
+   *
    */
-  public WhitespaceTokenizer(Version matchVersion, Reader in) {
-    super(matchVersion, in);
+  public WhitespaceTokenizer(Version matchVersion) {
+    super(matchVersion);
   }
 
   /**
@@ -59,11 +57,9 @@ public final class WhitespaceTokenizer extends CharTokenizer {
    *          {@link <a href="#version">above</a>}
    * @param factory
    *          the attribute factory to use for this {@link Tokenizer}
-   * @param in
-   *          the input to split up into tokens
    */
-  public WhitespaceTokenizer(Version matchVersion, AttributeFactory factory, Reader in) {
-    super(matchVersion, factory, in);
+  public WhitespaceTokenizer(Version matchVersion, AttributeFactory factory) {
+    super(matchVersion, factory);
   }
   
   /** Collects only characters which do not satisfy

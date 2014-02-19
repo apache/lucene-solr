@@ -33,7 +33,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestConcurrentMergeScheduler extends LuceneTestCase {
   
@@ -215,6 +215,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(
         directory,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
+            // Force excessive merging:
             setMaxBufferedDocs(2).
             setMergePolicy(newLogMergePolicy(100))
     );
@@ -249,7 +250,9 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
           directory,
           newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
               setOpenMode(OpenMode.APPEND).
-              setMergePolicy(newLogMergePolicy(100))
+              setMergePolicy(newLogMergePolicy(100)).
+              // Force excessive merging:
+              setMaxBufferedDocs(2)
       );
     }
     writer.close();
@@ -262,8 +265,8 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
 
-    final int maxMergeCount = _TestUtil.nextInt(random(), 1, 5);
-    final int maxMergeThreads = _TestUtil.nextInt(random(), 1, maxMergeCount);
+    final int maxMergeCount = TestUtil.nextInt(random(), 1, 5);
+    final int maxMergeThreads = TestUtil.nextInt(random(), 1, maxMergeCount);
     final CountDownLatch enoughMergesWaiting = new CountDownLatch(maxMergeCount);
     final AtomicInteger runningMergeCount = new AtomicInteger(0);
     final AtomicBoolean failed = new AtomicBoolean();
@@ -349,9 +352,9 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwc.setMaxBufferedDocs(5);
     iwc.setMergeScheduler(new TrackingCMS());
-    if (_TestUtil.getPostingsFormat("id").equals("SimpleText")) {
+    if (TestUtil.getPostingsFormat("id").equals("SimpleText")) {
       // no
-      iwc.setCodec(_TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat()));
+      iwc.setCodec(TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat()));
     }
     RandomIndexWriter w = new RandomIndexWriter(random(), d, iwc);
     for(int i=0;i<1000;i++) {

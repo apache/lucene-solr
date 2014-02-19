@@ -328,6 +328,12 @@
       <str name="carrot.algorithm">org.apache.solr.handler.clustering.carrot2.MockClusteringAlgorithm</str>
     </lst>
     <lst name="engine">
+      <str name="name">mock-external-attrs</str>
+      <str name="carrot.algorithm">org.apache.solr.handler.clustering.carrot2.MockClusteringAlgorithm</str>
+      <!-- takes precedence over external XML -->
+      <int name="MockClusteringAlgorithm.labels">4</int>
+    </lst>
+    <lst name="engine">
       <str name="name">echo</str>
       <str name="carrot.algorithm">org.apache.solr.handler.clustering.carrot2.EchoClusteringAlgorithm</str>
     </lst>
@@ -337,6 +343,11 @@
     </lst>
     <lst name="engine">
       <str name="name">lexical-resource-check-custom-resource-dir</str>
+      <str name="carrot.algorithm">org.apache.solr.handler.clustering.carrot2.LexicalResourcesCheckClusteringAlgorithm</str>
+      <str name="carrot.resourcesDir">clustering/custom</str>
+    </lst>
+    <lst name="engine">
+      <str name="name">lexical-resource-check-custom-resource-dir-deprecated</str>
       <str name="carrot.algorithm">org.apache.solr.handler.clustering.carrot2.LexicalResourcesCheckClusteringAlgorithm</str>
       <str name="carrot.lexicalResourcesDir">clustering/custom</str>
     </lst>
@@ -362,7 +373,47 @@
   </searchComponent>
  
 
+  <searchComponent class="org.apache.solr.handler.clustering.ClusteringComponent" name="clustering-name-default">
+    <lst name="engine">
+      <str name="name">stc</str>
+      <str name="carrot.algorithm">org.carrot2.clustering.stc.STCClusteringAlgorithm</str>
+    </lst>
+    <lst name="engine">
+      <str name="name">default</str>
+      <str name="carrot.algorithm">org.carrot2.clustering.lingo.LingoClusteringAlgorithm</str>
+    </lst>
+    <lst name="engine">
+      <str name="name">mock</str>
+      <str name="carrot.algorithm">org.apache.solr.handler.clustering.carrot2.MockClusteringAlgorithm</str>
+    </lst>
+  </searchComponent>
+
+  <searchComponent class="org.apache.solr.handler.clustering.ClusteringComponent" name="clustering-name-decl-order">
+    <lst name="engine">
+      <str name="name">lingo</str>
+      <str name="carrot.algorithm">org.carrot2.clustering.lingo.LingoClusteringAlgorithm</str>
+    </lst>
+    <lst name="engine">
+      <str name="name">stc</str>
+      <str name="carrot.algorithm">org.carrot2.clustering.stc.STCClusteringAlgorithm</str>
+    </lst>
+    <lst name="engine">
+      <str name="name">mock</str>
+      <str name="carrot.algorithm">org.apache.solr.handler.clustering.carrot2.MockClusteringAlgorithm</str>
+    </lst>
+  </searchComponent>
   
+  <searchComponent class="org.apache.solr.handler.clustering.ClusteringComponent" name="clustering-name-dups">
+    <lst name="engine">
+      <str name="carrot.algorithm">org.carrot2.clustering.lingo.LingoClusteringAlgorithm</str>
+    </lst>
+    <lst name="engine">
+      <str name="carrot.algorithm">org.carrot2.clustering.stc.STCClusteringAlgorithm</str>
+    </lst>
+    <lst name="engine">
+      <str name="carrot.algorithm">org.apache.solr.handler.clustering.carrot2.MockClusteringAlgorithm</str>
+    </lst>
+  </searchComponent>
 
   <!-- Update request handler.  
   

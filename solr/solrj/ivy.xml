@@ -20,15 +20,15 @@
     <info organisation="org.apache.solr" module="solrj"/>
 
     <dependencies>
-      <dependency org="org.apache.zookeeper" name="zookeeper" rev="3.4.5" transitive="false"/>
-      <dependency org="org.apache.httpcomponents" name="httpclient" rev="4.2.3" transitive="false"/>
+      <dependency org="org.apache.zookeeper" name="zookeeper" rev="${/org.apache.zookeeper/zookeeper}" transitive="false"/>
+      <dependency org="org.apache.httpcomponents" name="httpclient" rev="${/org.apache.httpcomponents/httpclient}" transitive="false"/>
       <!--
         The httpmime rev should be kept in sync with the httpclient rev, since both the
         httpclient and the httpmime modules are sub-modules of the httpcomponents-client
         module, and both sub-modules draw their version from the httpcomponents-client
         parent POM.
        -->
-      <dependency org="org.apache.httpcomponents" name="httpmime" rev="4.2.3" transitive="false"/>
+      <dependency org="org.apache.httpcomponents" name="httpmime" rev="${/org.apache.httpcomponents/httpmime}" transitive="false"/>
       <!--
         The httpcore rev should be drawn from the httpcomponents-client POM (the parent POM
         of the httpclient POM - see the comment above) - the httpclient version and the httpcore
@@ -38,15 +38,15 @@
         - look for <httpcore.version> under <properties>:
         https://svn.apache.org/repos/asf/httpcomponents/httpclient/tags/4.2.3/pom.xml
        -->
-      <dependency org="org.apache.httpcomponents" name="httpcore" rev="4.2.2" transitive="false"/>
-      <dependency org="commons-io" name="commons-io" rev="${commons-io.version}" transitive="false"/>
-      <dependency org="org.codehaus.woodstox" name="wstx-asl" rev="3.2.7" transitive="false"/>
-      <dependency org="org.noggit" name="noggit" rev="0.5" transitive="false"/>
-      <dependency org="log4j" name="log4j" rev="1.2.16" transitive="false"/>
-      <dependency org="org.slf4j" name="slf4j-api" rev="1.6.6" transitive="false"/>
-      <dependency org="org.slf4j" name="jcl-over-slf4j" rev="1.6.6" transitive="false"/>
-      <dependency org="org.slf4j" name="jul-to-slf4j" rev="1.6.6" transitive="false"/> 
-      <dependency org="org.slf4j" name="slf4j-log4j12" rev="1.6.6" transitive="false"/> 
+      <dependency org="org.apache.httpcomponents" name="httpcore" rev="${/org.apache.httpcomponents/httpcore}" transitive="false"/>
+      <dependency org="commons-io" name="commons-io" rev="${/commons-io/commons-io}" transitive="false"/>
+      <dependency org="org.codehaus.woodstox" name="wstx-asl" rev="${/org.codehaus.woodstox/wstx-asl}" transitive="false"/>
+      <dependency org="org.noggit" name="noggit" rev="${/org.noggit/noggit}" transitive="false"/>
+      <dependency org="log4j" name="log4j" rev="${/log4j/log4j}" transitive="false"/>
+      <dependency org="org.slf4j" name="slf4j-api" rev="${/org.slf4j/slf4j-api}" transitive="false"/>
+      <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" transitive="false"/>
+      <dependency org="org.slf4j" name="jul-to-slf4j" rev="${/org.slf4j/jul-to-slf4j}" transitive="false"/> 
+      <dependency org="org.slf4j" name="slf4j-log4j12" rev="${/org.slf4j/slf4j-log4j12}" transitive="false"/> 
       <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
     </dependencies>
 </ivy-module>

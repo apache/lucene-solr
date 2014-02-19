@@ -174,10 +174,10 @@ class PerSegmentSingleValuedFaceting {
     while (queue.size() > 0) {
       SegFacet seg = queue.top();
 
-      // make a shallow copy
-      val.bytes = seg.tempBR.bytes;
-      val.offset = seg.tempBR.offset;
-      val.length = seg.tempBR.length;
+      // we will normally end up advancing the term enum for this segment
+      // while still using "val", so we need to make a copy since the BytesRef
+      // may be shared across calls.
+      val.copyBytes(seg.tempBR);
 
       int count = 0;
 

@@ -37,7 +37,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.DocIdBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * FilteredQuery JUnit tests.
@@ -375,7 +375,6 @@ public class TestFilteredQuery extends LuceneTestCase {
   public void testRewrite() throws Exception {
     assertRewrite(new FilteredQuery(new TermQuery(new Term("field", "one")), new PrefixFilter(new Term("field", "o")), randomFilterStrategy()), FilteredQuery.class);
     assertRewrite(new FilteredQuery(new PrefixQuery(new Term("field", "one")), new PrefixFilter(new Term("field", "o")), randomFilterStrategy()), FilteredQuery.class);
-    assertRewrite(new FilteredQuery(new MatchAllDocsQuery(), new PrefixFilter(new Term("field", "o")), randomFilterStrategy()), ConstantScoreQuery.class);
   }
   
   public void testGetFilterStrategy() {
@@ -393,7 +392,7 @@ public class TestFilteredQuery extends LuceneTestCase {
         }
       };
     }
-    return _TestUtil.randomFilterStrategy(random);
+    return TestUtil.randomFilterStrategy(random);
   }
   
   /*

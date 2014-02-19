@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Random;
 
 import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -39,7 +39,7 @@ import org.junit.Test;
  * to the indexed facet results as if it were just another faceting method.
  */
 @Slow
-@SuppressCodecs({"Lucene40", "Lucene41"})
+@SuppressCodecs({"Lucene40", "Lucene41", "Lucene42"})
 public class TestRandomDVFaceting extends SolrTestCaseJ4 {
 
   @BeforeClass
@@ -66,6 +66,7 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
     types.add(new FldType("small2_s",ZERO_ONE, new SVal('a',(char)('c'+indexSize/3),1,1)));
     types.add(new FldType("small2_ss",ZERO_TWO, new SVal('a',(char)('c'+indexSize/3),1,1)));
     types.add(new FldType("small3_ss",new IRange(0,25), new SVal('A','z',1,1)));
+    types.add(new FldType("small4_ss",ZERO_ONE, new SVal('a',(char)('c'+indexSize/3),1,1))); // to test specialization when a multi-valued field is actually single-valued
     types.add(new FldType("small_i",ZERO_ONE, new IRange(0,5+indexSize/3)));
     types.add(new FldType("small2_i",ZERO_ONE, new IRange(0,5+indexSize/3)));
     types.add(new FldType("small2_is",ZERO_TWO, new IRange(0,5+indexSize/3)));
@@ -95,7 +96,7 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
     }
     if (ids.size() == 0) return;
 
-    StringBuffer sb = new StringBuffer("id:(");
+    StringBuilder sb = new StringBuilder("id:(");
     for (String id : ids) {
       sb.append(id).append(' ');
       model.remove(id);
@@ -162,6 +163,8 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
 
       SchemaField sf = req.getSchema().getField(ftype.fname);
       boolean multiValued = sf.getType().multiValuedFieldCache();
+      boolean indexed = sf.indexed();
+      boolean numeric = sf.getType().getNumericType() != null;
 
       int offset = 0;
       if (rand.nextInt(100) < 20) {
@@ -179,21 +182,30 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
         params.add("facet.limit", Integer.toString(limit));
       }
 
-      if (rand.nextBoolean()) {
-        params.add("facet.sort", rand.nextBoolean() ? "index" : "count");
+      // the following two situations cannot work for unindexed single-valued numerics:
+      // (currently none of the dv fields in this test config)
+      //     facet.sort = index
+      //     facet.minCount = 0
+      if (!numeric || sf.multiValued()) {
+        if (rand.nextBoolean()) {
+          params.add("facet.sort", rand.nextBoolean() ? "index" : "count");
+        }
+        
+        if (rand.nextInt(100) < 10) {
+          params.add("facet.mincount", Integer.toString(rand.nextInt(5)));
+        }
+      } else {
+        params.add("facet.sort", "count");
+        params.add("facet.mincount", Integer.toString(1+rand.nextInt(5)));
       }
 
       if ((ftype.vals instanceof SVal) && rand.nextInt(100) < 20) {
         // validate = false;
         String prefix = ftype.createValue().toString();
-        if (rand.nextInt(100) < 5) prefix =  _TestUtil.randomUnicodeString(rand);
+        if (rand.nextInt(100) < 5) prefix =  TestUtil.randomUnicodeString(rand);
         else if (rand.nextInt(100) < 10) prefix = Character.toString((char)rand.nextInt(256));
         else if (prefix.length() > 0) prefix = prefix.substring(0, rand.nextInt(prefix.length()));
         params.add("facet.prefix", prefix);
-      }
-
-      if (rand.nextInt(100) < 10) {
-        params.add("facet.mincount", Integer.toString(rand.nextInt(5)));
       }
 
       if (rand.nextInt(100) < 20) {
@@ -208,7 +220,7 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
       for (String method : methods) {
         if (method.equals("dv")) {
           params.set("facet.field", "{!key="+facet_field+"}"+facet_field+"_dv");
-          params.set("facet.method", null);
+          params.set("facet.method",(String) null);
         } else {
           params.set("facet.field", facet_field);
           params.set("facet.method", method);

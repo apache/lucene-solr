@@ -22,6 +22,8 @@ import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.SchemaField;
+
 /**
  * Create a prefix query from the input value.  Currently no analysis or
  * value transformation is done to create this prefix query (subject to change).
@@ -30,7 +32,7 @@ import org.apache.solr.request.SolrQueryRequest;
  * to the Lucene query parser expression <code>myfield:foo*</code>
  */
 public class PrefixQParserPlugin extends QParserPlugin {
-  public static String NAME = "prefix";
+  public static final String NAME = "prefix";
 
   @Override
   public void init(NamedList args) {
@@ -41,7 +43,8 @@ public class PrefixQParserPlugin extends QParserPlugin {
     return new QParser(qstr, localParams, params, req) {
       @Override
       public Query parse() {
-        return new PrefixQuery(new Term(localParams.get(QueryParsing.F), localParams.get(QueryParsing.V)));
+        SchemaField sf = req.getSchema().getField(localParams.get(QueryParsing.F));
+        return sf.getType().getPrefixQuery(this, sf, localParams.get(QueryParsing.V));
       }
     };
   }

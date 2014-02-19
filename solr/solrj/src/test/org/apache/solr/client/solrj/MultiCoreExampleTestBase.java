@@ -46,11 +46,6 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
 
   @Override public String getSolrHome() { return ExternalPaths.EXAMPLE_MULTICORE_HOME; }
 
-  protected void setupCoreContainer() {
-    cores = new CoreContainer();
-    cores.load();
-  }
-  
   @Override public void setUp() throws Exception {
     super.setUp();
 
@@ -64,12 +59,6 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
     
     System.setProperty( "solr.core0.data.dir", this.dataDir1.getCanonicalPath() ); 
     System.setProperty( "solr.core1.data.dir", this.dataDir2.getCanonicalPath() );
-
-    setupCoreContainer();
-
-    SolrCore.log.info("CORES=" + cores + " : " + cores.getCoreNames());
-    cores.setPersistent(false);
-
 
   }
   
@@ -85,8 +74,6 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
         System.err.println("!!!! WARNING: best effort to remove " + dataDir2.getAbsolutePath() + " FAILED !!!!!");
       }
     }
-
-    cores.shutdown();
   }
 
   @Override

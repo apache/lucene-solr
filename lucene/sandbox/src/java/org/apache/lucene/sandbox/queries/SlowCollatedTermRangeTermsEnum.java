@@ -17,7 +17,6 @@ package org.apache.lucene.sandbox.queries;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.text.Collator;
 
 import org.apache.lucene.index.TermsEnum;
@@ -28,7 +27,7 @@ import org.apache.lucene.util.BytesRef;
  * Subclass of FilteredTermEnum for enumerating all terms that match the
  * specified range parameters.
  * <p>Term enumerations are always ordered by
- * {@link #getComparator}.  Each term in the enumeration is
+ * {@link BytesRef#compareTo}.  Each term in the enumeration is
  * greater than all that precede it.</p>
  * @deprecated Index collation keys with CollationKeyAnalyzer or ICUCollationKeyAnalyzer instead.
  *  This class will be removed in Lucene 5.0

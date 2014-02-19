@@ -223,10 +223,29 @@ public class FieldInfos implements Iterable<FieldInfo> {
         (dvType == null || docValuesType.get(name) == null || dvType == docValuesType.get(name));
     }
 
+    /**
+     * Returns true if the {@code fieldName} exists in the map and is of the
+     * same {@code dvType}.
+     */
+    synchronized boolean contains(String fieldName, DocValuesType dvType) {
+      // used by IndexWriter.updateNumericDocValue
+      if (!nameToNumber.containsKey(fieldName)) {
+        return false;
+      } else {
+        // only return true if the field has the same dvType as the requested one
+        return dvType == docValuesType.get(fieldName);
+      }
+    }
+    
     synchronized void clear() {
       numberToName.clear();
       nameToNumber.clear();
       docValuesType.clear();
+    }
+
+    synchronized void setDocValuesType(int number, String name, DocValuesType dvType) {
+      assert containsConsistent(number, name, dvType);
+      docValuesType.put(name, dvType);
     }
   }
   
@@ -287,7 +306,14 @@ public class FieldInfos implements Iterable<FieldInfo> {
         fi.update(isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions);
 
         if (docValues != null) {
-          fi.setDocValuesType(docValues);
+          // only pay the synchronization cost if fi does not already have a DVType
+          boolean updateGlobal = !fi.hasDocValues();
+          fi.setDocValuesType(docValues); // this will also perform the consistency check.
+          if (updateGlobal) {
+            // must also update docValuesType map so it's
+            // aware of this field's DocValueType 
+            globalFieldNumbers.setDocValuesType(fi.number, name, docValues);
+          }
         }
 
         if (!fi.omitsNorms() && normType != null) {

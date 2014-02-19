@@ -34,7 +34,7 @@ public class TestBulgarianStemFilterFactory extends BaseTokenStreamFactoryTestCa
    */
   public void testStemming() throws Exception {
     Reader reader = new StringReader("компютри");
-    Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    Tokenizer tokenizer = whitespaceMockTokenizer(reader);
     TokenStream stream = tokenFilterFactory("BulgarianStem").create(tokenizer);
     assertTokenStreamContents(stream, new String[] { "компютр" });
   }

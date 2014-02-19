@@ -22,8 +22,8 @@ import java.util.List;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.FacetSource;
-import org.apache.lucene.facet.index.FacetFields;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.FacetField;
+import org.apache.lucene.facet.FacetsConfig;
 
 /**
  * Add a faceted document.
@@ -44,8 +44,7 @@ import org.apache.lucene.facet.taxonomy.CategoryPath;
  */
 public class AddFacetedDocTask extends AddDocTask {
 
-  private final List<CategoryPath> facets = new ArrayList<CategoryPath>();
-  private FacetFields facetFields;
+  private FacetsConfig config;
   
   public AddFacetedDocTask(PerfRunData runData) {
     super(runData);
@@ -54,19 +53,19 @@ public class AddFacetedDocTask extends AddDocTask {
   @Override
   public void setup() throws Exception {
     super.setup();
-    if (facetFields == null) {
+    if (config == null) {
       boolean withFacets = getRunData().getConfig().get("with.facets", true);
       if (withFacets) {
         FacetSource facetsSource = getRunData().getFacetSource();
-        facetFields = withFacets ? new FacetFields(getRunData().getTaxonomyWriter()) : null;
-        facetsSource.getNextFacets(facets);
+        config = new FacetsConfig();
+        facetsSource.configure(config);
       }
     }
   }
 
   @Override
   protected String getLogMessage(int recsCount) {
-    if (facetFields == null) {
+    if (config == null) {
       return super.getLogMessage(recsCount);
     }
     return super.getLogMessage(recsCount)+ " with facets";
@@ -74,10 +73,14 @@ public class AddFacetedDocTask extends AddDocTask {
   
   @Override
   public int doLogic() throws Exception {
-    if (facetFields != null) {
-      facetFields.addFields(doc, facets);
+    if (config != null) {
+      List<FacetField> facets = new ArrayList<FacetField>();
+      getRunData().getFacetSource().getNextFacets(facets);
+      for(FacetField ff : facets) {
+        doc.add(ff);
+      }
+      doc = config.build(getRunData().getTaxonomyWriter(), doc);
     }
     return super.doLogic();
   }
-
 }

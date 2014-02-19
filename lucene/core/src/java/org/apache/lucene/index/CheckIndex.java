@@ -30,8 +30,8 @@ import java.util.Map;
 
 import org.apache.lucene.codecs.BlockTreeTermsReader;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.PostingsFormat; // javadocs
-import org.apache.lucene.document.FieldType; // for javadocs
+import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -42,7 +42,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CommandLineUtil;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.LongBitSet;
 import org.apache.lucene.util.StringHelper;
 
 /**
@@ -158,19 +158,6 @@ public class CheckIndex {
       /** Net size (MB) of the files referenced by this
        *  segment. */
       public double sizeMB;
-
-      /** Doc store offset, if this segment shares the doc
-       *  store files (stored fields and term vectors) with
-       *  other segments.  This is -1 if it does not share. */
-      public int docStoreOffset = -1;
-    
-      /** String of the shared doc store segment, or null if
-       *  this segment does not share the doc store files. */
-      public String docStoreSegment;
-
-      /** True if the shared doc store files are compound file
-       *  format. */
-      public boolean docStoreCompoundFile;
 
       /** True if this segment has pending deletions. */
       public boolean hasDeletions;
@@ -297,10 +284,21 @@ public class CheckIndex {
       DocValuesStatus() {
       }
 
-      /** Number of documents tested. */
-      public int docCount;
       /** Total number of docValues tested. */
       public long totalValueFields;
+      
+      /** Total number of numeric fields */
+      public long totalNumericFields;
+      
+      /** Total number of binary fields */
+      public long totalBinaryFields;
+      
+      /** Total number of sorted fields */
+      public long totalSortedFields;
+      
+      /** Total number of sortedset fields */
+      public long totalSortedSetFields;
+      
       /** Exception thrown during doc values test (null on success) */
       public Throwable error = null;
     }
@@ -391,7 +389,7 @@ public class CheckIndex {
     String oldSegs = null;
     boolean foundNonNullVersion = false;
     Comparator<String> versionComparator = StringHelper.getVersionComparator();
-    for (SegmentInfoPerCommit si : sis) {
+    for (SegmentCommitInfo si : sis) {
       String version = si.info.getVersion();
       if (version == null) {
         // pre-3.1 segment
@@ -412,7 +410,7 @@ public class CheckIndex {
     // note: we only read the format byte (required preamble) here!
     IndexInput input = null;
     try {
-      input = dir.openInput(segmentsFileName, IOContext.DEFAULT);
+      input = dir.openInput(segmentsFileName, IOContext.READONCE);
     } catch (Throwable t) {
       msg(infoStream, "ERROR: could not open segments file in directory");
       if (infoStream != null)
@@ -485,7 +483,7 @@ public class CheckIndex {
     result.maxSegmentName = -1;
 
     for(int i=0;i<numSegments;i++) {
-      final SegmentInfoPerCommit info = sis.info(i);
+      final SegmentCommitInfo info = sis.info(i);
       int segmentName = Integer.parseInt(info.info.name.substring(1), Character.MAX_RADIX);
       if (segmentName > result.maxSegmentName) {
         result.maxSegmentName = segmentName;
@@ -498,6 +496,11 @@ public class CheckIndex {
       msg(infoStream, "  " + (1+i) + " of " + numSegments + ": name=" + info.info.name + " docCount=" + info.info.getDocCount());
       segInfoStat.name = info.info.name;
       segInfoStat.docCount = info.info.getDocCount();
+      
+      final String version = info.info.getVersion();
+      if (info.info.getDocCount() <= 0 && version != null && versionComparator.compare(version, "4.5") >= 0) {
+        throw new RuntimeException("illegal number of documents: maxDoc=" + info.info.getDocCount());
+      }
 
       int toLoseDocCount = info.info.getDocCount();
 
@@ -519,11 +522,6 @@ public class CheckIndex {
           msg(infoStream, "    diagnostics = " + diagnostics);
         }
 
-        Map<String,String> atts = info.info.attributes();
-        if (atts != null && !atts.isEmpty()) {
-          msg(infoStream, "    attributes = " + atts);
-        }
-
         if (!info.hasDeletions()) {
           msg(infoStream, "    no deletions");
           segInfoStat.hasDeletions = false;
@@ -535,7 +533,7 @@ public class CheckIndex {
         }
         if (infoStream != null)
           infoStream.print("    test: open reader.........");
-        reader = new SegmentReader(info, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, IOContext.DEFAULT);
+        reader = new SegmentReader(info, IOContext.DEFAULT);
 
         segInfoStat.openReaderPassed = true;
 
@@ -746,10 +744,40 @@ public class CheckIndex {
         continue;
       }
       
+      final boolean hasFreqs = terms.hasFreqs();
       final boolean hasPositions = terms.hasPositions();
+      final boolean hasPayloads = terms.hasPayloads();
       final boolean hasOffsets = terms.hasOffsets();
-      // term vectors cannot omit TF
-      final boolean hasFreqs = isVectors || fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
+
+      // term vectors cannot omit TF:
+      final boolean expectedHasFreqs = (isVectors || fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0);
+
+      if (hasFreqs != expectedHasFreqs) {
+        throw new RuntimeException("field \"" + field + "\" should have hasFreqs=" + expectedHasFreqs + " but got " + hasFreqs);
+      }
+
+      if (hasFreqs == false) {
+        if (terms.getSumTotalTermFreq() != -1) {
+          throw new RuntimeException("field \"" + field + "\" hasFreqs is false, but Terms.getSumTotalTermFreq()=" + terms.getSumTotalTermFreq() + " (should be -1)");
+        }
+      }
+
+      if (!isVectors) {
+        final boolean expectedHasPositions = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+        if (hasPositions != expectedHasPositions) {
+          throw new RuntimeException("field \"" + field + "\" should have hasPositions=" + expectedHasPositions + " but got " + hasPositions);
+        }
+
+        final boolean expectedHasPayloads = fieldInfo.hasPayloads();
+        if (hasPayloads != expectedHasPayloads) {
+          throw new RuntimeException("field \"" + field + "\" should have hasPayloads=" + expectedHasPayloads + " but got " + hasPayloads);
+        }
+
+        final boolean expectedHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+        if (hasOffsets != expectedHasOffsets) {
+          throw new RuntimeException("field \"" + field + "\" should have hasOffsets=" + expectedHasOffsets + " but got " + hasOffsets);
+        }
+      }
 
       final TermsEnum termsEnum = terms.iterator(null);
       
@@ -757,8 +785,6 @@ public class CheckIndex {
       final long termCountStart = status.delTermCount + status.termCount;
       
       BytesRef lastTerm = null;
-      
-      Comparator<BytesRef> termComp = terms.getComparator();
       
       long sumTotalTermFreq = 0;
       long sumDocFreq = 0;
@@ -777,7 +803,7 @@ public class CheckIndex {
         if (lastTerm == null) {
           lastTerm = BytesRef.deepCopyOf(term);
         } else {
-          if (termComp.compare(lastTerm, term) >= 0) {
+          if (lastTerm.compareTo(term) >= 0) {
             throw new RuntimeException("terms out of order: lastTerm=" + lastTerm + " term=" + term);
           }
           lastTerm.copyBytes(term);
@@ -791,6 +817,12 @@ public class CheckIndex {
         
         docs = termsEnum.docs(liveDocs, docs);
         postings = termsEnum.docsAndPositions(liveDocs, postings);
+
+        if (hasFreqs == false) {
+          if (termsEnum.totalTermFreq() != -1) {
+            throw new RuntimeException("field \"" + field + "\" hasFreqs is false, but TermsEnum.totalTermFreq()=" + termsEnum.totalTermFreq() + " (should be -1)");   
+          }
+        }
         
         if (hasOrd) {
           long ord = -1;
@@ -833,6 +865,13 @@ public class CheckIndex {
             }
             status.totPos += freq;
             totalTermFreq += freq;
+          } else {
+            // When a field didn't index freq, it must
+            // consistently "lie" and pretend that freq was
+            // 1:
+            if (docs2.freq() != 1) {
+              throw new RuntimeException("term " + term + ": doc " + doc + ": freq " + freq + " != 1 when Terms.hasFreqs() is false");
+            }
           }
           docCount++;
           
@@ -1117,7 +1156,7 @@ public class CheckIndex {
             long totDocCountNoDeletes = 0;
             long totDocFreq = 0;
             for(int i=0;i<seekCount;i++) {
-              if (!termsEnum.seekExact(seekTerms[i], true)) {
+              if (!termsEnum.seekExact(seekTerms[i])) {
                 throw new RuntimeException("seek to existing term " + seekTerms[i] + " failed");
               }
               
@@ -1272,18 +1311,23 @@ public class CheckIndex {
       for (FieldInfo fieldInfo : reader.getFieldInfos()) {
         if (fieldInfo.hasDocValues()) {
           status.totalValueFields++;
-          checkDocValues(fieldInfo, reader, infoStream);
+          checkDocValues(fieldInfo, reader, infoStream, status);
         } else {
           if (reader.getBinaryDocValues(fieldInfo.name) != null ||
               reader.getNumericDocValues(fieldInfo.name) != null ||
               reader.getSortedDocValues(fieldInfo.name) != null || 
-              reader.getSortedSetDocValues(fieldInfo.name) != null) {
+              reader.getSortedSetDocValues(fieldInfo.name) != null || 
+              reader.getDocsWithField(fieldInfo.name) != null) {
             throw new RuntimeException("field: " + fieldInfo.name + " has docvalues but should omit them!");
           }
         }
       }
 
-      msg(infoStream, "OK [" + status.docCount + " total doc count; " + status.totalValueFields + " docvalues fields]");
+      msg(infoStream, "OK [" + status.totalValueFields + " docvalues fields; "
+                             + status.totalBinaryFields + " BINARY; " 
+                             + status.totalNumericFields + " NUMERIC; "
+                             + status.totalSortedFields + " SORTED; "
+                             + status.totalSortedSetFields + " SORTED_SET]");
     } catch (Throwable e) {
       msg(infoStream, "ERROR [" + String.valueOf(e.getMessage()) + "]");
       status.error = e;
@@ -1294,26 +1338,37 @@ public class CheckIndex {
     return status;
   }
   
-  private static void checkBinaryDocValues(String fieldName, AtomicReader reader, BinaryDocValues dv) {
+  private static void checkBinaryDocValues(String fieldName, AtomicReader reader, BinaryDocValues dv, Bits docsWithField) {
     BytesRef scratch = new BytesRef();
     for (int i = 0; i < reader.maxDoc(); i++) {
       dv.get(i, scratch);
       assert scratch.isValid();
+      if (docsWithField.get(i) == false && scratch.length > 0) {
+        throw new RuntimeException("dv for field: " + fieldName + " is missing but has value=" + scratch + " for doc: " + i);
+      }
     }
   }
   
-  private static void checkSortedDocValues(String fieldName, AtomicReader reader, SortedDocValues dv) {
-    checkBinaryDocValues(fieldName, reader, dv);
+  private static void checkSortedDocValues(String fieldName, AtomicReader reader, SortedDocValues dv, Bits docsWithField) {
+    checkBinaryDocValues(fieldName, reader, dv, docsWithField);
     final int maxOrd = dv.getValueCount()-1;
     FixedBitSet seenOrds = new FixedBitSet(dv.getValueCount());
     int maxOrd2 = -1;
     for (int i = 0; i < reader.maxDoc(); i++) {
       int ord = dv.getOrd(i);
-      if (ord < 0 || ord > maxOrd) {
+      if (ord == -1) {
+        if (docsWithField.get(i)) {
+          throw new RuntimeException("dv for field: " + fieldName + " has -1 ord but is not marked missing for doc: " + i);
+        }
+      } else if (ord < -1 || ord > maxOrd) {
         throw new RuntimeException("ord out of bounds: " + ord);
+      } else {
+        if (!docsWithField.get(i)) {
+          throw new RuntimeException("dv for field: " + fieldName + " is missing but has ord=" + ord + " for doc: " + i);
+        }
+        maxOrd2 = Math.max(maxOrd2, ord);
+        seenOrds.set(ord);
       }
-      maxOrd2 = Math.max(maxOrd2, ord);
-      seenOrds.set(ord);
     }
     if (maxOrd != maxOrd2) {
       throw new RuntimeException("dv for field: " + fieldName + " reports wrong maxOrd=" + maxOrd + " but this is not the case: " + maxOrd2);
@@ -1335,24 +1390,36 @@ public class CheckIndex {
     }
   }
   
-  private static void checkSortedSetDocValues(String fieldName, AtomicReader reader, SortedSetDocValues dv) {
+  private static void checkSortedSetDocValues(String fieldName, AtomicReader reader, SortedSetDocValues dv, Bits docsWithField) {
     final long maxOrd = dv.getValueCount()-1;
-    OpenBitSet seenOrds = new OpenBitSet(dv.getValueCount());
+    LongBitSet seenOrds = new LongBitSet(dv.getValueCount());
     long maxOrd2 = -1;
     for (int i = 0; i < reader.maxDoc(); i++) {
       dv.setDocument(i);
       long lastOrd = -1;
       long ord;
-      while ((ord = dv.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
-        if (ord <= lastOrd) {
-          throw new RuntimeException("ords out of order: " + ord + " <= " + lastOrd + " for doc: " + i);
+      if (docsWithField.get(i)) {
+        int ordCount = 0;
+        while ((ord = dv.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+          ordCount++;
+          if (ord <= lastOrd) {
+            throw new RuntimeException("ords out of order: " + ord + " <= " + lastOrd + " for doc: " + i);
+          }
+          if (ord < 0 || ord > maxOrd) {
+            throw new RuntimeException("ord out of bounds: " + ord);
+          }
+          lastOrd = ord;
+          maxOrd2 = Math.max(maxOrd2, ord);
+          seenOrds.set(ord);
         }
-        if (ord < 0 || ord > maxOrd) {
-          throw new RuntimeException("ord out of bounds: " + ord);
+        if (ordCount == 0) {
+          throw new RuntimeException("dv for field: " + fieldName + " has no ordinals but is not marked missing for doc: " + i);
         }
-        lastOrd = ord;
-        maxOrd2 = Math.max(maxOrd2, ord);
-        seenOrds.set(ord);
+      } else {
+        long o = dv.nextOrd();
+        if (o != SortedSetDocValues.NO_MORE_ORDS) {
+          throw new RuntimeException("dv for field: " + fieldName + " is marked missing but has ord=" + o + " for doc: " + i);
+        }
       }
     }
     if (maxOrd != maxOrd2) {
@@ -1376,16 +1443,26 @@ public class CheckIndex {
     }
   }
 
-  private static void checkNumericDocValues(String fieldName, AtomicReader reader, NumericDocValues ndv) {
+  private static void checkNumericDocValues(String fieldName, AtomicReader reader, NumericDocValues ndv, Bits docsWithField) {
     for (int i = 0; i < reader.maxDoc(); i++) {
-      ndv.get(i);
+      long value = ndv.get(i);
+      if (docsWithField.get(i) == false && value != 0) {
+        throw new RuntimeException("dv for field: " + fieldName + " is marked missing but has value=" + value + " for doc: " + i);
+      }
     }
   }
   
-  private static void checkDocValues(FieldInfo fi, AtomicReader reader, PrintStream infoStream) throws Exception {
+  private static void checkDocValues(FieldInfo fi, AtomicReader reader, PrintStream infoStream, DocValuesStatus status) throws Exception {
+    Bits docsWithField = reader.getDocsWithField(fi.name);
+    if (docsWithField == null) {
+      throw new RuntimeException(fi.name + " docsWithField does not exist");
+    } else if (docsWithField.length() != reader.maxDoc()) {
+      throw new RuntimeException(fi.name + " docsWithField has incorrect length: " + docsWithField.length() + ",expected: " + reader.maxDoc());
+    }
     switch(fi.getDocValuesType()) {
       case SORTED:
-        checkSortedDocValues(fi.name, reader, reader.getSortedDocValues(fi.name));
+        status.totalSortedFields++;
+        checkSortedDocValues(fi.name, reader, reader.getSortedDocValues(fi.name), docsWithField);
         if (reader.getBinaryDocValues(fi.name) != null ||
             reader.getNumericDocValues(fi.name) != null ||
             reader.getSortedSetDocValues(fi.name) != null) {
@@ -1393,7 +1470,8 @@ public class CheckIndex {
         }
         break;
       case SORTED_SET:
-        checkSortedSetDocValues(fi.name, reader, reader.getSortedSetDocValues(fi.name));
+        status.totalSortedSetFields++;
+        checkSortedSetDocValues(fi.name, reader, reader.getSortedSetDocValues(fi.name), docsWithField);
         if (reader.getBinaryDocValues(fi.name) != null ||
             reader.getNumericDocValues(fi.name) != null ||
             reader.getSortedDocValues(fi.name) != null) {
@@ -1401,7 +1479,8 @@ public class CheckIndex {
         }
         break;
       case BINARY:
-        checkBinaryDocValues(fi.name, reader, reader.getBinaryDocValues(fi.name));
+        status.totalBinaryFields++;
+        checkBinaryDocValues(fi.name, reader, reader.getBinaryDocValues(fi.name), docsWithField);
         if (reader.getNumericDocValues(fi.name) != null ||
             reader.getSortedDocValues(fi.name) != null ||
             reader.getSortedSetDocValues(fi.name) != null) {
@@ -1409,7 +1488,8 @@ public class CheckIndex {
         }
         break;
       case NUMERIC:
-        checkNumericDocValues(fi.name, reader, reader.getNumericDocValues(fi.name));
+        status.totalNumericFields++;
+        checkNumericDocValues(fi.name, reader, reader.getNumericDocValues(fi.name), docsWithField);
         if (reader.getBinaryDocValues(fi.name) != null ||
             reader.getSortedDocValues(fi.name) != null ||
             reader.getSortedSetDocValues(fi.name) != null) {
@@ -1424,7 +1504,7 @@ public class CheckIndex {
   private static void checkNorms(FieldInfo fi, AtomicReader reader, PrintStream infoStream) throws IOException {
     switch(fi.getNormType()) {
       case NUMERIC:
-        checkNumericDocValues(fi.name, reader, reader.getNormValues(fi.name));
+        checkNumericDocValues(fi.name, reader, reader.getNormValues(fi.name), new Bits.MatchAllBits(reader.maxDoc()));
         break;
       default:
         throw new AssertionError("wtf: " + fi.getNormType());
@@ -1543,7 +1623,7 @@ public class CheckIndex {
                 }
 
                 final DocsEnum postingsDocs2;
-                if (!postingsTermsEnum.seekExact(term, true)) {
+                if (!postingsTermsEnum.seekExact(term)) {
                   throw new RuntimeException("vector term=" + term + " field=" + field + " does not exist in postings; doc=" + j);
                 }
                 postingsPostings = postingsTermsEnum.docsAndPositions(null, postingsPostings);
@@ -1677,7 +1757,7 @@ public class CheckIndex {
    *
    * <p><b>WARNING</b>: Make sure you only call this when the
    *  index is not opened  by any writer. */
-  public void fixIndex(Status result, Codec codec) throws IOException {
+  public void fixIndex(Status result) throws IOException {
     if (result.partial)
       throw new IllegalArgumentException("can only fix an index that was fully checked (this status checked a subset of segments)");
     result.newSegments.changed();
@@ -1732,7 +1812,6 @@ public class CheckIndex {
 
     boolean doFix = false;
     boolean doCrossCheckTermVectors = false;
-    Codec codec = Codec.getDefault(); // only used when fixing
     boolean verbose = false;
     List<String> onlySegments = new ArrayList<String>();
     String indexPath = null;
@@ -1744,13 +1823,6 @@ public class CheckIndex {
         doFix = true;
       } else if ("-crossCheckTermVectors".equals(arg)) {
         doCrossCheckTermVectors = true;
-      } else if ("-codec".equals(arg)) {
-        if (i == args.length-1) {
-          System.out.println("ERROR: missing name for -codec option");
-          System.exit(1);
-        }
-        i++;
-        codec = Codec.forName(args[i]);
       } else if (arg.equals("-verbose")) {
         verbose = true;
       } else if (arg.equals("-segment")) {
@@ -1851,7 +1923,7 @@ public class CheckIndex {
           System.out.println("  " + (5-s) + "...");
         }
         System.out.println("Writing...");
-        checker.fixIndex(result, codec);
+        checker.fixIndex(result);
         System.out.println("OK");
         System.out.println("Wrote new segments file \"" + result.newSegments.getSegmentsFileName() + "\"");
       }

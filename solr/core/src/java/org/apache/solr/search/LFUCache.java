@@ -182,7 +182,7 @@ public class LFUCache<K, V> implements SolrCache<K, V> {
           boolean continueRegen = regenerator.regenerateItem(searcher,
               this, old, itemsArr[i].getKey(), itemsArr[i].getValue());
           if (!continueRegen) break;
-        } catch (Throwable e) {
+        } catch (Exception e) {
           SolrException.log(log, "Error during auto-warming of key:" + itemsArr[i].getKey(), e);
         }
       }

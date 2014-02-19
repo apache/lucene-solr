@@ -130,7 +130,7 @@
           depends="compile-core, compile-contrib"/>
 
   <target name="test" description="Validate, then run core, solrj, and contrib unit tests."
-          depends="test-core, test-contrib"/>
+          depends="-init-totals, test-core, test-contrib, -check-totals"/>
   <!-- "-clover.load" is *not* a useless dependency. do not remove -->
   <target name="test-core" description="Runs the core and solrj unit tests."
           depends="-clover.load, test-solr-core, test-solrj"/>
@@ -175,6 +175,14 @@
 
   <target name="jar" depends="jar-core,jar-solrj,jar-solr-test-framework,jar-contrib"
           description="Jar solr core, solrj, solr-test-framework, and all contribs"/>
+
+  <target name="jar-src" 
+          description="Create source jars for solr core, solrj, solr-test-framework, and all contribs">
+    <ant dir="core" target="jar-src" inheritAll="false"/>
+    <ant dir="solrj" target="jar-src" inheritAll="false"/>
+    <ant dir="test-framework" target="jar-src" inheritAll="false"/>
+    <contrib-crawl target="jar-src"/>
+  </target>
 
   <!-- Solr core targets -->
   <target name="test-solr-core" description="Test solr core">
@@ -226,7 +234,21 @@
   </target>
     
   <!-- Validation (license/notice/api checks). -->
-  <target name="validate" depends="check-licenses,rat-sources,check-forbidden-apis" description="Validate stuff." />
+  <target name="validate" depends="check-example-lucene-match-version,check-licenses,rat-sources,check-forbidden-apis" description="Validate stuff." />
+
+  <target name="check-example-lucene-match-version">
+    <fail message="Some example solrconfig.xml files do not refer to the correct luceneMatchVersion: ${tests.luceneMatchVersion}">
+      <condition>
+        <resourcecount when="greater" count="0">
+          <fileset dir="${example}" includes="**/solrconfig.xml">
+            <not>
+              <contains text="&lt;luceneMatchVersion&gt;${tests.luceneMatchVersion}&lt;" casesensitive="no"/>
+            </not>
+          </fileset>
+        </resourcecount>
+      </condition>
+    </fail>
+  </target>
 
   <target name="check-licenses" depends="compile-tools,resolve,load-custom-tasks" description="Validate license stuff.">
     <license-check-macro dir="${basedir}" licensedir="${common-solr.dir}/licenses">
@@ -245,49 +267,14 @@
     </license-check-macro>
   </target>
   
-  <target name="check-forbidden-apis" depends="compile-tools,compile-test,install-forbidden-apis,-forbidden-apis-classpath,-check-forbidden-java-apis,-check-forbidden-test-apis" 
-          description="Check forbidden API calls in compiled class files."/>
-
-  <!-- TODO: Make the forbidden API checks per module! Also remove failOnMissingClasses="false" below!!! -->
-  <target name="-forbidden-apis-classpath">
-    <path id="forbidden-apis.classpath">
-      <fileset dir="${basedir}" includes="**/lib/*.jar"/>
-      <dirset dir="${basedir}/build" includes="**/classes/*"/>
-      <path refid="solr.lucene.libs"/>
-      <path refid="classpath"/>
-      <path refid="test.classpath"/>
-    </path>
-  </target>
-
-  <target name="-check-forbidden-java-apis">
-    <forbidden-apis internalRuntimeForbidden="true" classpathref="forbidden-apis.classpath" failOnMissingClasses="false">
-      <bundledSignatures name="jdk-unsafe-${javac.target}"/>
-      <bundledSignatures name="jdk-deprecated-${javac.target}"/>
-      <bundledSignatures name="commons-io-unsafe-${commons-io.version}"/>
-      <signaturesFileSet dir="${common.dir}/tools/forbiddenApis">
-        <include name="executors.txt" />
-        <include name="chars.txt" />
-        <include name="servlet-api.txt" />
-      </signaturesFileSet>
-      <fileset dir="${basedir}/build">
-        <include name="**/*.class" />        
-        <!-- violates the servlet-api restrictions, but it is safe to do so in this test: -->
-        <exclude name="solr-solrj/classes/test/org/apache/solr/client/solrj/impl/BasicHttpSolrServerTest$DebugServlet.class"/>
-      </fileset>
-    </forbidden-apis>
-  </target>
-
-  <target name="-check-forbidden-test-apis">
-    <forbidden-apis signaturesFile="${common.dir}/tools/forbiddenApis/tests.txt" classpathref="forbidden-apis.classpath" failOnMissingClasses="false">
-      <fileset dir="${basedir}/build">
-        <include name="**/classes/test/**/*.class"/>
-        <include name="solr-test-framework/**/*.class"/>
-        <!-- not actually a test -->
-        <exclude name="solr-core/classes/test/org/apache/solr/search/DocSetPerf.class"/>
-        <!-- imported code -->
-        <exclude name="solr-core/classes/test/org/apache/solr/internal/**/*.class"/>
-      </fileset>
-    </forbidden-apis>
+  <target name="check-forbidden-apis" depends="-install-forbidden-apis" description="Check forbidden API calls in compiled class files.">
+    <subant target="check-forbidden-apis" inheritall="false" >
+      <propertyset refid="uptodate.and.compiled.properties"/>
+      <fileset dir="core" includes="build.xml"/>
+      <fileset dir="solrj" includes="build.xml"/>
+      <fileset dir="test-framework" includes="build.xml"/>
+    </subant>
+    <contrib-crawl target="check-forbidden-apis" failonerror="true"/>
   </target>
 
   <!-- rat sources -->
@@ -443,8 +430,14 @@
   </target>
 
   <target name="create-package"
-          description="Packages the Solr Binary Distribution"
-          depends="init-dist, dist, example, documentation">
+          description="Packages the Solr Binary Distribution">
+    <antcall inheritall="true">
+      <param name="called.from.create-package" value="true"/>
+      <target name="init-dist"/>
+      <target name="dist"/>
+      <target name="example"/>
+      <target name="documentation"/>
+    </antcall>
     <mkdir dir="${dest}/${fullnamever}"/>
     <delete includeemptydirs="true">
       <fileset dir="${example}/solr-webapp" includes="**/*"/>
@@ -462,10 +455,9 @@
       <tarfileset dir="."
                   prefix="${fullnamever}"
                   includes="LICENSE.txt NOTICE.txt CHANGES.txt README.txt SYSTEM_REQUIREMENTS.txt
-                            example/** client/README.txt client/ruby/solr-ruby/** 
-                            contrib/**/lib/** contrib/**/README.txt 
+                            example/** contrib/**/lib/** contrib/**/README.txt 
                             licenses/**"
-                  excludes="lib/README.committers.txt **/data/ **/logs/* 
+                  excludes="licenses/README.committers.txt **/data/ **/logs/* 
                             **/classes/ **/*.sh **/ivy.xml **/build.xml
                             **/bin/ **/*.iml **/*.ipr **/*.iws **/pom.xml 
                             **/*pom.xml.template" />
@@ -576,26 +568,29 @@
     <contrib-crawl target="-ecj-javadoc-lint"/>
   </target>
 
-  <!-- install-maven-tasks and define-lucene-javadoc-url are *not* a useless dependencies. Do not remove! -->
-  <target name="generate-maven-artifacts" depends="install-maven-tasks,define-lucene-javadoc-url">
+  <!-- define-lucene-javadoc-url is *not* a useless dependencies. Do not remove! -->
+  <target name="-dist-maven" depends="install-maven-tasks,define-lucene-javadoc-url">
     <sequential>
-      <subant target="dist-maven" inheritall="false" >
+      <m2-deploy pom.xml="${filtered.pom.templates.dir}/solr/pom.xml"/>    <!-- Solr parent POM -->
+      <subant target="-dist-maven" inheritall="false" >
         <propertyset refid="uptodate.and.compiled.properties"/>
         <fileset dir="core" includes="build.xml"/>
         <fileset dir="solrj" includes="build.xml"/>
         <fileset dir="test-framework" includes="build.xml"/>
         <fileset dir="webapp" includes="build.xml"/>
       </subant>
-      <contrib-crawl target="dist-maven"/>
+      <contrib-crawl target="-dist-maven"/>
     </sequential>
   </target>
-
-  <!-- only used by validate below, it needs the lucene artifacts installed: can we do this better?! -->
-  <target name="-generate-lucene-maven-artifacts">
-    <subant target="generate-maven-artifacts" inheritall="false">
-       <propertyset refid="uptodate.and.compiled.properties"/>
-       <fileset dir="${common.dir}" includes="build.xml"/>
-    </subant>
+  
+  <target name="generate-maven-artifacts" depends="-unpack-solr-tgz">
+    <sequential>
+      <ant dir=".." target="resolve" inheritall="false"/>
+      <antcall target="-filter-pom-templates" inheritall="false"/>
+      <antcall target="-dist-maven" inheritall="false">
+        <propertyset refid="uptodate.and.compiled.properties"/>
+      </antcall>
+    </sequential>
   </target>
  
   <target name="-validate-maven-dependencies" depends="compile-tools, install-maven-tasks, load-custom-tasks">
@@ -617,7 +612,7 @@
   
   <property name="analysis-common.res.dir"  value="../lucene/analysis/common/src/resources/org/apache/lucene/analysis"/>
   <property name="analysis-kuromoji.res.dir"  value="../lucene/analysis/kuromoji/src/resources/org/apache/lucene/analysis"/>
-  <property name="analysis.conf.dest" value="${example}/solr/conf/lang"/>
+  <property name="analysis.conf.dest" value="${example}/solr/collection1/conf/lang"/>
 
   <target name="sync-analyzers"
           description="Committers' Helper: synchronizes analysis resources (e.g. stoplists) to the example">
@@ -630,6 +625,9 @@
     <!-- catalan -->
     <copy verbose="true" file="${analysis-common.res.dir}/ca/stopwords.txt"
                          tofile="${analysis.conf.dest}/stopwords_ca.txt"/>
+    <!-- kurdish -->
+    <copy verbose="true" file="${analysis-common.res.dir}/ckb/stopwords.txt"
+                         tofile="${analysis.conf.dest}/stopwords_ckb.txt"/>
     <!-- czech -->
     <copy verbose="true" file="${analysis-common.res.dir}/cz/stopwords.txt"
                          tofile="${analysis.conf.dest}/stopwords_cz.txt"/>
@@ -716,4 +714,10 @@
     <jar-checksum-macro srcdir="${common-solr.dir}" dstdir="${common-solr.dir}/licenses"/>
   </target>
 
+  <target name="-append-module-dependencies-properties">
+    <ant dir="core" target="-append-module-dependencies-properties" inheritAll="false"/>
+    <ant dir="solrj" target="-append-module-dependencies-properties" inheritAll="false"/>
+    <ant dir="test-framework" target="-append-module-dependencies-properties" inheritAll="false"/>
+    <contrib-crawl target="-append-module-dependencies-properties"/>
+  </target>
 </project>

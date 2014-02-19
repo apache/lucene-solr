@@ -35,7 +35,7 @@ import org.apache.lucene.replicator.Replicator;
 import org.apache.lucene.replicator.ReplicatorTestCase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -68,7 +68,7 @@ public class HttpReplicatorTest extends ReplicatorTestCase {
   public void setUp() throws Exception {
     super.setUp();
     System.setProperty("org.eclipse.jetty.LEVEL", "DEBUG"); // sets stderr logging to DEBUG level
-    clientWorkDir = _TestUtil.getTempDir("httpReplicatorTest");
+    clientWorkDir = TestUtil.getTempDir("httpReplicatorTest");
     handlerIndexDir = newDirectory();
     serverIndexDir = newDirectory();
     serverReplicator = new LocalReplicator();

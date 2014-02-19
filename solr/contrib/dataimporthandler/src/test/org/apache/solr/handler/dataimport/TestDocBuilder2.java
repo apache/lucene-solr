@@ -132,7 +132,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   public void testSkipDoc() throws Exception {
     List rows = new ArrayList();
     rows.add(createMap("id", "1", "desc", "one"));
-    rows.add(createMap("id", "2", "desc", "two", "$skipDoc", "true"));
+    rows.add(createMap("id", "2", "desc", "two", DocBuilder.SKIP_DOC, "true"));
     MockDataSource.setIterator("select * from x", rows.iterator());
 
     runFullImport(dataConfigWithDynamicTransformer);
@@ -146,7 +146,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   public void testSkipRow() throws Exception {
     List rows = new ArrayList();
     rows.add(createMap("id", "1", "desc", "one"));
-    rows.add(createMap("id", "2", "desc", "two", "$skipRow", "true"));
+    rows.add(createMap("id", "2", "desc", "two", DocBuilder.SKIP_ROW, "true"));
     MockDataSource.setIterator("select * from x", rows.iterator());
 
     runFullImport(dataConfigWithDynamicTransformer);
@@ -166,7 +166,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
     MockDataSource.setIterator("3", rows.iterator());
 
     rows = new ArrayList();
-    rows.add(createMap("name_s", "xyz", "$skipRow", "true"));
+    rows.add(createMap("name_s", "xyz", DocBuilder.SKIP_ROW, "true"));
     MockDataSource.setIterator("4", rows.iterator());
 
     runFullImport(dataConfigWithTwoEntities);
@@ -197,7 +197,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
     List rows = new ArrayList();
     rows.add(createMap("id", "1", "desc", "one"));
     rows.add(createMap("id", "2", "desc", "two"));
-    rows.add(createMap("id", "3", "desc", "two", "$deleteDocById", "2"));
+    rows.add(createMap("id", "3", "desc", "two", DocBuilder.DELETE_DOC_BY_ID, "2"));
     MockDataSource.setIterator("select * from x", rows.iterator());
 
     runFullImport(dataConfigForSkipTransform);
@@ -213,7 +213,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
     rows = new ArrayList();
     rows.add(createMap("id", "1", "desc", "one"));
     rows.add(createMap("id", "2", "desc", "one"));
-    rows.add(createMap("id", "3", "desc", "two", "$deleteDocByQuery", "desc:one"));
+    rows.add(createMap("id", "3", "desc", "two", DocBuilder.DELETE_DOC_BY_QUERY, "desc:one"));
     MockDataSource.setIterator("select * from x", rows.iterator());
 
     runFullImport(dataConfigForSkipTransform);
@@ -227,7 +227,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
     
     MockDataSource.clearCache();
     rows = new ArrayList();
-    rows.add(createMap("$deleteDocById", "3"));
+    rows.add(createMap(DocBuilder.DELETE_DOC_BY_ID, "3"));
     MockDataSource.setIterator("select * from x", rows.iterator());
     runFullImport(dataConfigForSkipTransform, createMap("clean","false"));
     assertQ(req("id:3"), "//*[@numFound='0']");

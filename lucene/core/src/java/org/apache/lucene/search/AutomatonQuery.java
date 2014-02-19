@@ -128,4 +128,9 @@ public class AutomatonQuery extends MultiTermQuery {
     buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
+  
+  /** Returns the automaton used to create this query */
+  public Automaton getAutomaton() {
+    return automaton;
+  }
 }

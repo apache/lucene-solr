@@ -46,21 +46,14 @@
   <dependencies>
     <dependency> 
       <!-- lucene-test-framework dependency must be declared before lucene-core -->
-      <groupId>${project.groupId}</groupId>
+      <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-test-framework</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>lucene-core</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>lucene-analyzers-common</artifactId>
-      <version>${project.version}</version>
-    </dependency>
+@lucene-facet.internal.dependencies@
+@lucene-facet.external.dependencies@
+@lucene-facet.internal.test.dependencies@
+@lucene-facet.external.test.dependencies@
   </dependencies>
   <build>
     <sourceDirectory>${module-path}/src/java</sourceDirectory>
@@ -97,8 +90,7 @@
                 <bundledSignature>jdk-deprecated</bundledSignature>
               </bundledSignatures>
               <signaturesFiles>
-                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/executors.txt</signaturesFile>
-                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/chars.txt</signaturesFile>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/base.txt</signaturesFile>
               </signaturesFiles>
             </configuration>
             <goals>
@@ -113,7 +105,7 @@
               </bundledSignatures>
               <excludes>
                 <!-- exclude command line tools -->
-                <exclude>org/apache/lucene/facet/util/PrintTaxonomyStats.class</exclude>
+                <exclude>org/apache/lucene/facet/taxonomy/PrintTaxonomyStats.class</exclude>
               </excludes>
             </configuration>
             <goals>

@@ -30,7 +30,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestDocsAndPositions extends LuceneTestCase {
   private String fieldName;
@@ -95,7 +95,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     Terms terms = reader.terms(fieldName);
     if (terms != null) {
       TermsEnum te = terms.iterator(null);
-      if (te.seekExact(bytes, true)) {
+      if (te.seekExact(bytes)) {
         return te.docsAndPositions(liveDocs, null);
       }
     }
@@ -224,7 +224,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
       IndexReaderContext topReaderContext = reader.getContext();
       for (AtomicReaderContext context : topReaderContext.leaves()) {
         int maxDoc = context.reader().maxDoc();
-        DocsEnum docsEnum = _TestUtil.docs(random(), context.reader(), fieldName, bytes, null, null, DocsEnum.FLAG_FREQS);
+        DocsEnum docsEnum = TestUtil.docs(random(), context.reader(), fieldName, bytes, null, null, DocsEnum.FLAG_FREQS);
         if (findNext(freqInDoc, context.docBase, context.docBase + maxDoc) == Integer.MAX_VALUE) {
           assertNull(docsEnum);
           continue;
@@ -334,15 +334,15 @@ public class TestDocsAndPositions extends LuceneTestCase {
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
     AtomicReader r = getOnlySegmentReader(reader);
-    DocsEnum disi = _TestUtil.docs(random(), r, "foo", new BytesRef("bar"), null, null, DocsEnum.FLAG_NONE);
+    DocsEnum disi = TestUtil.docs(random(), r, "foo", new BytesRef("bar"), null, null, DocsEnum.FLAG_NONE);
     int docid = disi.docID();
     assertEquals(-1, docid);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     
     // now reuse and check again
     TermsEnum te = r.terms("foo").iterator(null);
-    assertTrue(te.seekExact(new BytesRef("bar"), true));
-    disi = _TestUtil.docs(random(), te, null, disi, DocsEnum.FLAG_NONE);
+    assertTrue(te.seekExact(new BytesRef("bar")));
+    disi = TestUtil.docs(random(), te, null, disi, DocsEnum.FLAG_NONE);
     docid = disi.docID();
     assertEquals(-1, docid);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -366,7 +366,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     
     // now reuse and check again
     TermsEnum te = r.terms("foo").iterator(null);
-    assertTrue(te.seekExact(new BytesRef("bar"), true));
+    assertTrue(te.seekExact(new BytesRef("bar")));
     disi = te.docsAndPositions(null, disi);
     docid = disi.docID();
     assertEquals(-1, docid);

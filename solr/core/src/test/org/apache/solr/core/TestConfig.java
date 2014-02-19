@@ -18,12 +18,16 @@
 package org.apache.solr.core;
 
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.TieredMergePolicy;
+import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.handler.admin.ShowFileRequestHandler;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.SolrIndexConfig;
 import org.apache.solr.util.RefCounted;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.IndexSchemaFactory;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.w3c.dom.Node;
@@ -38,7 +42,7 @@ public class TestConfig extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-termindex.xml","schema-reversed.xml");
+    initCore("solrconfig-test-misc.xml","schema-reversed.xml");
   }
 
   @Test
@@ -66,6 +70,11 @@ public class TestConfig extends SolrTestCaseJ4 {
       assertNull("should not have been able to find " + f, data);
     }
   }
+  @Test
+  public void testDisableRequetsHandler() throws Exception {
+    assertNull(h.getCore().getRequestHandler("disabled"));
+    assertNotNull(h.getCore().getRequestHandler("enabled"));
+  }
 
   @Test
   public void testJavaProperty() {
@@ -91,16 +100,6 @@ public class TestConfig extends SolrTestCaseJ4 {
     assertEquals("prefix-proptwo-suffix", node.getTextContent());
   }
 
-  @Test
-  public void testLucene23Upgrades() throws Exception {
-    double bufferSize = solrConfig.indexConfig.ramBufferSizeMB;
-    assertTrue(bufferSize + " does not equal: " + 100, bufferSize == 100);
-    String mergePolicy = solrConfig.indexConfig.mergePolicyInfo.className;
-    assertEquals(TieredMergePolicy.class.getName(), mergePolicy);
-    String mergeSched = solrConfig.indexConfig.mergeSchedulerInfo.className;
-    assertTrue(mergeSched + " is not equal to " + SolrIndexConfig.DEFAULT_MERGE_SCHEDULER_CLASSNAME, mergeSched.equals(SolrIndexConfig.DEFAULT_MERGE_SCHEDULER_CLASSNAME) == true);
-  }
-
   // sometime if the config referes to old things, it must be replaced with new stuff
   @Test
   public void testAutomaticDeprecationSupport() {
@@ -114,27 +113,6 @@ public class TestConfig extends SolrTestCaseJ4 {
     assertTrue(handler.getHiddenFiles().contains("PROTWORDS.TXT"));
   }
 
-  @Test
-  public void testTermIndexInterval() throws Exception {
-    RefCounted<IndexWriter> iw = ((DirectUpdateHandler2) h.getCore()
-        .getUpdateHandler()).getSolrCoreState().getIndexWriter(h.getCore());
-    int interval = 0;
-    try {
-      IndexWriter writer = iw.get();
-      interval = writer.getConfig().getTermIndexInterval();
-    } finally {
-      iw.decref();
-    }
-    assertEquals(256, interval);
-  }
-
-  @Test
-  public void testTermIndexDivisor() throws Exception {
-    IndexReaderFactory irf = h.getCore().getIndexReaderFactory();
-    StandardIndexReaderFactory sirf = (StandardIndexReaderFactory) irf;
-    assertEquals(12, sirf.termInfosIndexDivisor);
-  }
-
   // If defaults change, add test methods to cover each version
   @Test
   public void testDefaults() throws Exception {
@@ -145,19 +123,28 @@ public class TestConfig extends SolrTestCaseJ4 {
     assertEquals("default LockType", SolrIndexConfig.LOCK_TYPE_NATIVE, sic.lockType);
     assertEquals("default useCompoundFile", false, sic.useCompoundFile);
 
+    IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema("schema.xml", solrConfig);
+    IndexWriterConfig iwc = sic.toIndexWriterConfig(indexSchema);
+
+    assertNotNull("null mp", iwc.getMergePolicy());
+    assertTrue("mp is not TMP", iwc.getMergePolicy() instanceof TieredMergePolicy);
+
+    assertNotNull("null ms", iwc.getMergeScheduler());
+    assertTrue("ms is not CMS", iwc.getMergeScheduler() instanceof ConcurrentMergeScheduler);
   }
 
 
   // sanity check that sys propertis are working as expected
   public void testSanityCheckTestSysPropsAreUsed() throws Exception {
-    final boolean expectCFS 
-      = Boolean.parseBoolean(System.getProperty("useCompoundFile"));
 
     SolrConfig sc = new SolrConfig(new SolrResourceLoader("solr/collection1"), "solrconfig-basic.xml", null);
     SolrIndexConfig sic = sc.indexConfig;
-    assertEquals("default ramBufferSizeMB", 100.0D, sic.ramBufferSizeMB, 0.0D);
-    assertEquals("default LockType", SolrIndexConfig.LOCK_TYPE_NATIVE, sic.lockType);
-    assertEquals("useCompoundFile sysprop", expectCFS, sic.useCompoundFile);
+
+    assertEquals("ramBufferSizeMB sysprop", 
+                 Double.parseDouble(System.getProperty("solr.tests.ramBufferSizeMB")), 
+                                    sic.ramBufferSizeMB, 0.0D);
+    assertEquals("useCompoundFile sysprop", 
+                 Boolean.parseBoolean(System.getProperty("useCompoundFile")), sic.useCompoundFile);
   }
 
 }

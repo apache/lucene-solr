@@ -92,7 +92,7 @@ public class TestSearch extends LuceneTestCase {
       doTestSearch(random(), pw, false);
       pw.close();
       sw.close();
-      String multiFileOutput = sw.getBuffer().toString();
+      String multiFileOutput = sw.toString();
       //System.out.println(multiFileOutput);
 
       sw = new StringWriter();
@@ -100,7 +100,7 @@ public class TestSearch extends LuceneTestCase {
       doTestSearch(random(), pw, true);
       pw.close();
       sw.close();
-      String singleFileOutput = sw.getBuffer().toString();
+      String singleFileOutput = sw.toString();
 
       assertEquals(multiFileOutput, singleFileOutput);
     }

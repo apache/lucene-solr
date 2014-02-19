@@ -44,7 +44,25 @@
   <property name="changes.target.dir" location="${dest}/docs/changes"/>
   <property name="license.dir" location="${common-solr.dir}/licenses"/>
 
+  <property name="solr.tgz.unpack.dir" location="${common-solr.dir}/build/solr.tgz.unpacked"/>
+  <property name="dist.jar.dir.prefix" value="${solr.tgz.unpack.dir}/solr"/>
+  <property name="dist.jar.dir.suffix" value="dist"/>
+
   <import file="${common-solr.dir}/../lucene/module-build.xml"/>
+
+  <property name="solr.tgz.file" location="${common-solr.dir}/package/solr-${version}.tgz"/>
+  <available file="${solr.tgz.file}" property="solr.tgz.exists"/>
+  <available type="dir" file="${solr.tgz.unpack.dir}" property="solr.tgz.unpack.dir.exists"/>
+  <target name="-ensure-solr-tgz-exists" unless="solr.tgz.exists">
+    <ant dir="${common-solr.dir}" target="create-package" inheritall="false"/>
+  </target>
+  <target name="-unpack-solr-tgz" unless="${solr.tgz.unpack.dir.exists}">
+    <antcall target="-ensure-solr-tgz-exists"/>
+    <mkdir dir="${solr.tgz.unpack.dir}"/>
+    <untar compression="gzip" src="${solr.tgz.file}" dest="${solr.tgz.unpack.dir}">
+      <patternset refid="patternset.lucene.solr.jars"/>
+    </untar>
+  </target>
 
   <!-- backwards compatibility with existing targets/tasks; TODO: remove this! -->
   <property name="fullnamever" value="${final.name}"/>
@@ -56,10 +74,6 @@
   	<fileset dir="${common-solr.dir}/example/example-DIH/solr/db/lib" excludes="${common.classpath.excludes}"/>  	
   	<fileset dir="lib" excludes="${common.classpath.excludes}" erroronmissingdir="false"/>
   </path>
-
-  <!-- defined here to be able to make the forbidden-api checker correctly
-   reference it. 'ivy.xml' is also referencing this property. -->
-  <property name="commons-io.version" value="2.1" />
 
   <path id="solr.lucene.libs">
     <!-- List of jars that will be used as the foundation for both
@@ -78,10 +92,12 @@
     <pathelement location="${memory.jar}"/>
     <pathelement location="${misc.jar}"/>
     <pathelement location="${spatial.jar}"/>
+    <pathelement location="${expressions.jar}"/>
     <pathelement location="${suggest.jar}"/>
     <pathelement location="${grouping.jar}"/>
     <pathelement location="${queries.jar}"/>
     <pathelement location="${queryparser.jar}"/>
+    <pathelement location="${join.jar}"/>
   </path>
 
   <path id="solr.base.classpath">
@@ -123,6 +139,12 @@
     </sequential>
   </macrodef>
 
+  <!-- we don't want to run HDFS tests on Windows, because they require Cygwin.
+    If you have Cygwin, you can override this property on command line: -->
+  <condition property="tests.disableHdfs" value="true">
+    <os family="windows"/>
+  </condition>
+
   <target name="validate" depends="compile-tools">
   </target>
 
@@ -134,24 +156,38 @@
   </target>
 
   <target name="prep-lucene-jars" 
-  	      depends="jar-lucene-core, jar-analyzers-phonetic, jar-analyzers-kuromoji, jar-codecs, jar-suggest, jar-highlighter, jar-memory,
-  	               jar-misc, jar-spatial, jar-grouping, jar-queries, jar-queryparser">
+  	      depends="jar-lucene-core, jar-analyzers-phonetic, jar-analyzers-kuromoji, jar-codecs,jar-expressions, jar-suggest, jar-highlighter, jar-memory,
+  	               jar-misc, jar-spatial, jar-grouping, jar-queries, jar-queryparser, jar-join">
   	  <property name="solr.deps.compiled" value="true"/>
   </target>
 	
-  <target name="lucene-jars-to-solr" depends="prep-lucene-jars">
-    <!-- TODO: clean this up -->
+  <target name="lucene-jars-to-solr" 
+          depends="-lucene-jars-to-solr-not-for-package,-lucene-jars-to-solr-package"/>
+  
+  <target name="-lucene-jars-to-solr-not-for-package" unless="called.from.create-package">
     <sequential>
-    <ant dir="${common.dir}" target="default" inheritall="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-    <copy todir="${lucene-libs}" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
-      <path refid="solr.lucene.libs" />
-      <!-- NOTE: lucene-core is not already included in "solr.lucene.libs" 
-	   because of it's use in classpaths.
-      -->
-      <fileset file="${lucene-core.jar}" />
-    </copy>
+      <antcall target="prep-lucene-jars" inheritall="true"/>
+      <property name="solr.deps.compiled" value="true"/>
+      <copy todir="${lucene-libs}" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
+        <path refid="solr.lucene.libs" />
+        <!-- NOTE: lucene-core is not already included in "solr.lucene.libs" because of its use in classpaths. -->
+        <fileset file="${lucene-core.jar}" />
+      </copy>
+    </sequential>
+  </target>
+  
+  <target name="-lucene-jars-to-solr-package" if="called.from.create-package">
+    <sequential>
+      <antcall target="-unpack-lucene-tgz" inheritall="true"/>
+      <pathconvert property="relative.solr.lucene.libs" pathsep=",">
+        <path refid="solr.lucene.libs"/>
+        <fileset file="${lucene-core.jar}"/>
+        <globmapper from="${common.build.dir}/*" to="*" handledirsep="true"/>
+      </pathconvert>
+      <mkdir dir="${lucene-libs}"/>
+      <copy todir="${lucene-libs}" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
+        <fileset dir="${lucene.tgz.unpack.dir}/lucene-${version}" includes="${relative.solr.lucene.libs}"/>
+      </copy>
     </sequential>
   </target>
 
@@ -193,7 +229,7 @@
   <property name="lucenedocs" location="${common.dir}/build/docs"/>
 
   <!-- dependency to ensure all lucene javadocs are present -->
-  <target name="lucene-javadocs" depends="javadocs-lucene-core,javadocs-analyzers-common,javadocs-analyzers-icu,javadocs-analyzers-kuromoji,javadocs-analyzers-phonetic,javadocs-analyzers-smartcn,javadocs-analyzers-morfologik,javadocs-analyzers-stempel,javadocs-analyzers-uima,javadocs-codecs,javadocs-suggest,javadocs-grouping,javadocs-queries,javadocs-queryparser,javadocs-highlighter,javadocs-memory,javadocs-misc,javadocs-spatial,javadocs-test-framework"/>
+  <target name="lucene-javadocs" depends="javadocs-lucene-core,javadocs-analyzers-common,javadocs-analyzers-icu,javadocs-analyzers-kuromoji,javadocs-analyzers-phonetic,javadocs-analyzers-smartcn,javadocs-analyzers-morfologik,javadocs-analyzers-stempel,javadocs-analyzers-uima,javadocs-codecs,javadocs-expressions,javadocs-suggest,javadocs-grouping,javadocs-queries,javadocs-queryparser,javadocs-highlighter,javadocs-memory,javadocs-misc,javadocs-spatial,javadocs-test-framework"/>
 
   <!-- create javadocs for the current module -->
   <target name="javadocs" depends="compile-core,define-lucene-javadoc-url,lucene-javadocs,javadocs-solr-core">
@@ -260,6 +296,7 @@
           <link offline="true" href="${lucene.javadoc.url}analyzers-stempel" packagelistloc="${lucenedocs}/analyzers-stempel"/>
           <link offline="true" href="${lucene.javadoc.url}analyzers-uima" packagelistloc="${lucenedocs}/analyzers-uima"/>
           <link offline="true" href="${lucene.javadoc.url}codecs" packagelistloc="${lucenedocs}/codecs"/>
+          <link offline="true" href="${lucene.javadoc.url}expressions" packagelistloc="${lucenedocs}/expressions"/>
           <link offline="true" href="${lucene.javadoc.url}suggest" packagelistloc="${lucenedocs}/suggest"/>
           <link offline="true" href="${lucene.javadoc.url}grouping" packagelistloc="${lucenedocs}/grouping"/>
           <link offline="true" href="${lucene.javadoc.url}queries" packagelistloc="${lucenedocs}/queries"/>
@@ -276,7 +313,7 @@
   </macrodef>
 
   <target name="define-lucene-javadoc-url" depends="resolve-groovy" unless="lucene.javadoc.url">
-    <script language="groovy" classpathref="groovy.classpath"><![CDATA[
+    <groovy><![CDATA[
       String url, version = project.getProperty('version');
       if (version.contains('-SNAPSHOT')) {
         url = new File(project.getProperty('common.dir'), 'build' + File.separator + 'docs').toURI().toASCIIString();
@@ -285,26 +322,19 @@
         version = version.replace('.', '_');
         url = 'http://lucene.apache.org/core/' + version + '/';
       }
-      self.log('Using the following URL to refer to Lucene Javadocs: ' + url);
+      task.log('Using the following URL to refer to Lucene Javadocs: ' + url);
       project.setProperty('lucene.javadoc.url', url);
-    ]]></script>
+    ]]></groovy>
   </target>
 
-  <target name="jar-src" depends="init">
-  	<solr-jarify basedir="${src.dir}" destfile="${build.dir}/${final.name}-src.jar"/>
+  <target name="jar-src">
+    <sequential>
+      <mkdir dir="${build.dir}"/>
+      <solr-jarify basedir="${src.dir}" destfile="${build.dir}/${final.name}-src.jar">
+        <fileset dir="${resources.dir}" erroronmissingdir="no"/>
+      </solr-jarify>
+    </sequential>
   </target>
-
-  <target name="m2-deploy-solr-parent-pom" depends="filter-pom-templates"
-          unless="deployed.solr.parent.pom.uptodate">
-    <m2-deploy pom.xml="${filtered.pom.templates.dir}/solr/pom.xml"/>    <!-- Solr parent POM -->
-    <property name="deployed.solr.parent.pom.uptodate" value="true"/>
-  </target>
-
-  <target name="dist-maven"
-          depends="filter-pom-templates, install-maven-tasks, m2-deploy-solr-parent-pom, dist-maven-common"/>
-
-  <target name="dist-maven-src-java"
-          depends="filter-pom-templates, install-maven-tasks, m2-deploy-solr-parent-pom, dist-maven-common-src-java"/>
 
   <target name="-validate-maven-dependencies" depends="-validate-maven-dependencies.init">
     <m2-validate-dependencies pom.xml="${maven.pom.xml}" licenseDirectory="${license.dir}">
@@ -438,6 +468,24 @@
     <contrib-crawl target="add-to-war"/>
   </target>
   
+  <!-- Forbidden API Task, customizations for Solr -->
+  <target name="-check-forbidden-base" depends="-init-forbidden-apis,compile-core,compile-test">
+    <property file="${common.dir}/ivy-versions.properties"/> <!-- for commons-io version -->
+    <forbidden-apis internalRuntimeForbidden="true" classpathref="forbidden-apis.allclasses.classpath">
+      <bundledSignatures name="jdk-unsafe-${javac.target}"/>
+      <bundledSignatures name="jdk-deprecated-${javac.target}"/>
+      <bundledSignatures name="commons-io-unsafe-${/commons-io/commons-io}"/>
+      <signaturesFileSet dir="${common.dir}/tools/forbiddenApis">
+        <include name="base.txt" />
+        <include name="servlet-api.txt" />
+      </signaturesFileSet>
+      <fileset dir="${build.dir}/classes/java" excludes="${forbidden-base-excludes}"/>
+      <fileset dir="${build.dir}/classes/test" excludes="${forbidden-tests-excludes}" erroronmissingdir="false"/>
+    </forbidden-apis>
+  </target>
+  
+  <target name="-check-forbidden-sysout"/>
+
   <!-- hack for now to disable *all* Solr tests on Jenkins when "tests.disable-solr" property is set -->
   <target name="test" unless="tests.disable-solr">
     <antcall target="common.test" inheritrefs="true" inheritall="true"/>

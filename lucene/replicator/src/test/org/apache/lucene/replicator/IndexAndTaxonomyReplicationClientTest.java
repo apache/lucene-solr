@@ -20,19 +20,17 @@ package org.apache.lucene.replicator;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.facet.index.FacetFields;
-import org.apache.lucene.facet.params.FacetIndexingParams;
-import org.apache.lucene.facet.params.FacetSearchParams;
-import org.apache.lucene.facet.search.CountFacetRequest;
-import org.apache.lucene.facet.search.DrillDownQuery;
-import org.apache.lucene.facet.search.FacetsCollector;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.DrillDownQuery;
+import org.apache.lucene.facet.FacetField;
+import org.apache.lucene.facet.Facets;
+import org.apache.lucene.facet.FacetsCollector;
+import org.apache.lucene.facet.FacetsConfig;
+import org.apache.lucene.facet.taxonomy.FastTaxonomyFacetCounts;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
@@ -50,8 +48,8 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.ThreadInterruptedException;
-import org.apache.lucene.util._TestUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -63,11 +61,14 @@ public class IndexAndTaxonomyReplicationClientTest extends ReplicatorTestCase {
     private final Directory indexDir, taxoDir;
     private DirectoryReader indexReader;
     private DirectoryTaxonomyReader taxoReader;
+    private FacetsConfig config;
     private long lastIndexGeneration = -1;
     
     public IndexAndTaxonomyReadyCallback(Directory indexDir, Directory taxoDir) throws IOException {
       this.indexDir = indexDir;
       this.taxoDir = taxoDir;
+      config = new FacetsConfig();
+      config.setHierarchical("A", true);
       if (DirectoryReader.indexExists(indexDir)) {
         indexReader = DirectoryReader.open(indexDir);
         lastIndexGeneration = indexReader.getIndexCommit().getGeneration();
@@ -90,7 +91,7 @@ public class IndexAndTaxonomyReplicationClientTest extends ReplicatorTestCase {
         indexReader.close();
         indexReader = newReader;
         lastIndexGeneration = newGeneration;
-        _TestUtil.checkIndex(indexDir);
+        TestUtil.checkIndex(indexDir);
         
         // verify taxonomy index
         DirectoryTaxonomyReader newTaxoReader = TaxonomyReader.openIfChanged(taxoReader);
@@ -98,18 +99,18 @@ public class IndexAndTaxonomyReplicationClientTest extends ReplicatorTestCase {
           taxoReader.close();
           taxoReader = newTaxoReader;
         }
-        _TestUtil.checkIndex(taxoDir);
+        TestUtil.checkIndex(taxoDir);
         
         // verify faceted search
         int id = Integer.parseInt(indexReader.getIndexCommit().getUserData().get(VERSION_ID), 16);
-        CategoryPath cp = new CategoryPath("A", Integer.toString(id, 16));
         IndexSearcher searcher = new IndexSearcher(indexReader);
-        FacetsCollector fc = FacetsCollector.create(new FacetSearchParams(new CountFacetRequest(cp, 10)), indexReader, taxoReader);
+        FacetsCollector fc = new FacetsCollector();
         searcher.search(new MatchAllDocsQuery(), fc);
-        assertEquals(1, (int) fc.getFacetResults().get(0).getFacetResultNode().value);
+        Facets facets = new FastTaxonomyFacetCounts(taxoReader, config, fc);
+        assertEquals(1, facets.getSpecificValue("A", Integer.toString(id, 16)).intValue());
         
-        DrillDownQuery drillDown = new DrillDownQuery(FacetIndexingParams.DEFAULT);
-        drillDown.add(cp);
+        DrillDownQuery drillDown = new DrillDownQuery(config);
+        drillDown.add("A", Integer.toString(id, 16));
         TopDocs docs = searcher.search(drillDown, 10);
         assertEquals(1, docs.totalHits);
       }
@@ -130,6 +131,7 @@ public class IndexAndTaxonomyReplicationClientTest extends ReplicatorTestCase {
   private ReplicationHandler handler;
   private IndexWriter publishIndexWriter;
   private SnapshotDirectoryTaxonomyWriter publishTaxoWriter;
+  private FacetsConfig config;
   private IndexAndTaxonomyReadyCallback callback;
   private File clientWorkDir;
   
@@ -177,9 +179,8 @@ public class IndexAndTaxonomyReplicationClientTest extends ReplicatorTestCase {
   
   private Document newDocument(TaxonomyWriter taxoWriter, int id) throws IOException {
     Document doc = new Document();
-    FacetFields facetFields = new FacetFields(taxoWriter);
-    facetFields.addFields(doc, Collections.singleton(new CategoryPath("A", Integer.toString(id, 16))));
-    return doc;
+    doc.add(new FacetField("A", Integer.toString(id, 16)));
+    return config.build(publishTaxoWriter, doc);
   }
   
   @Override
@@ -190,7 +191,7 @@ public class IndexAndTaxonomyReplicationClientTest extends ReplicatorTestCase {
     publishTaxoDir = newDirectory();
     handlerIndexDir = newMockDirectory();
     handlerTaxoDir = newMockDirectory();
-    clientWorkDir = _TestUtil.getTempDir("replicationClientTest");
+    clientWorkDir = TestUtil.getTempDir("replicationClientTest");
     sourceDirFactory = new PerSessionDirectoryFactory(clientWorkDir);
     replicator = new LocalReplicator();
     callback = new IndexAndTaxonomyReadyCallback(handlerIndexDir, handlerTaxoDir);
@@ -201,6 +202,8 @@ public class IndexAndTaxonomyReplicationClientTest extends ReplicatorTestCase {
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
     publishIndexWriter = new IndexWriter(publishIndexDir, conf);
     publishTaxoWriter = new SnapshotDirectoryTaxonomyWriter(publishTaxoDir);
+    config = new FacetsConfig();
+    config.setHierarchical("A", true);
   }
   
   @After
@@ -396,11 +399,11 @@ public class IndexAndTaxonomyReplicationClientTest extends ReplicatorTestCase {
               reader.close();
             }
             // verify index is fully consistent
-            _TestUtil.checkIndex(handlerIndexDir.getDelegate());
+            TestUtil.checkIndex(handlerIndexDir.getDelegate());
             
             // verify taxonomy index is fully consistent (since we only add one
             // category to all documents, there's nothing much more to validate
-            _TestUtil.checkIndex(handlerTaxoDir.getDelegate());
+            TestUtil.checkIndex(handlerTaxoDir.getDelegate());
           } catch (IOException e) {
             throw new RuntimeException(e);
           } finally {

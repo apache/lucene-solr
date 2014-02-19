@@ -20,7 +20,6 @@ package org.apache.lucene.codecs.ramonly;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -32,14 +31,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
-import org.apache.lucene.codecs.PostingsConsumer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.TermStats;
-import org.apache.lucene.codecs.TermsConsumer;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
@@ -49,7 +47,9 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /** Stores all postings data in RAM, but writes a small
  *  token (header + single int) to identify which "slot" the
@@ -58,41 +58,6 @@ import org.apache.lucene.util.IOUtils;
  *  NOTE: this codec sorts terms by reverse-unicode-order! */
 
 public final class RAMOnlyPostingsFormat extends PostingsFormat {
-
-  // For fun, test that we can override how terms are
-  // sorted, and basic things still work -- this comparator
-  // sorts in reversed unicode code point order:
-  private static final Comparator<BytesRef> reverseUnicodeComparator = new Comparator<BytesRef>() {
-      @Override
-      public int compare(BytesRef t1, BytesRef t2) {
-        byte[] b1 = t1.bytes;
-        byte[] b2 = t2.bytes;
-        int b1Stop;
-        int b1Upto = t1.offset;
-        int b2Upto = t2.offset;
-        if (t1.length < t2.length) {
-          b1Stop = t1.offset + t1.length;
-        } else {
-          b1Stop = t1.offset + t2.length;
-        }
-        while(b1Upto < b1Stop) {
-          final int bb1 = b1[b1Upto++] & 0xff;
-          final int bb2 = b2[b2Upto++] & 0xff;
-          if (bb1 != bb2) {
-            //System.out.println("cmp 1=" + t1 + " 2=" + t2 + " return " + (bb2-bb1));
-            return bb2 - bb1;
-          }
-        }
-
-        // One is prefix of another, or they are equal
-        return t2.length-t1.length;
-      }
-
-      @Override
-      public boolean equals(Object other) {
-        return this == other;
-      }
-    };
 
   public RAMOnlyPostingsFormat() {
     super("RAMOnly");
@@ -120,6 +85,15 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     @Override
     public void close() {
     }
+
+    @Override
+    public long ramBytesUsed() {
+      long sizeInBytes = 0;
+      for(RAMField field : fieldToTerms.values()) {
+        sizeInBytes += field.ramBytesUsed();
+      }
+      return sizeInBytes;
+    }
   } 
 
   static class RAMField extends Terms {
@@ -133,6 +107,15 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     RAMField(String field, FieldInfo info) {
       this.field = field;
       this.info = info;
+    }
+
+    /** Returns approximate RAM bytes used */
+    public long ramBytesUsed() {
+      long sizeInBytes = 0;
+      for(RAMTerm term : termToDocs.values()) {
+        sizeInBytes += term.ramBytesUsed();
+      }
+      return sizeInBytes;
     }
 
     @Override
@@ -161,8 +144,8 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public Comparator<BytesRef> getComparator() {
-      return reverseUnicodeComparator;
+    public boolean hasFreqs() {
+      return info.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
     }
 
     @Override
@@ -188,6 +171,15 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     public RAMTerm(String term) {
       this.term = term;
     }
+
+    /** Returns approximate RAM bytes used */
+    public long ramBytesUsed() {
+      long sizeInBytes = 0;
+      for(RAMDoc rDoc : docs) {
+        sizeInBytes += rDoc.ramBytesUsed();
+      }
+      return sizeInBytes;
+    }
   }
 
   static class RAMDoc {
@@ -199,6 +191,19 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
       this.docID = docID;
       positions = new int[freq];
     }
+
+    /** Returns approximate RAM bytes used */
+    public long ramBytesUsed() {
+      long sizeInBytes = 0;
+      sizeInBytes +=  (positions!=null) ? RamUsageEstimator.sizeOf(positions) : 0;
+      
+      if (payloads != null) {
+        for(byte[] payload: payloads) {
+          sizeInBytes += (payload!=null) ? RamUsageEstimator.sizeOf(payload) : 0;
+        }
+      }
+      return sizeInBytes;
+    }
   }
 
   // Classes for writing to the postings state
@@ -206,29 +211,128 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
 
     private final RAMPostings postings;
     private final RAMTermsConsumer termsConsumer = new RAMTermsConsumer();
+    private final SegmentWriteState state;
 
-    public RAMFieldsConsumer(RAMPostings postings) {
+    public RAMFieldsConsumer(SegmentWriteState writeState, RAMPostings postings) {
       this.postings = postings;
+      this.state = writeState;
     }
 
     @Override
-    public TermsConsumer addField(FieldInfo field) {
-      if (field.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) {
-        throw new UnsupportedOperationException("this codec cannot index offsets");
+    public void write(Fields fields) throws IOException {
+      for(String field : fields) {
+
+        Terms terms = fields.terms(field);
+        if (terms == null) {
+          continue;
+        }
+
+        TermsEnum termsEnum = terms.iterator(null);
+
+        FieldInfo fieldInfo = state.fieldInfos.fieldInfo(field);
+        if (fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) {
+          throw new UnsupportedOperationException("this codec cannot index offsets");
+        }
+
+        RAMField ramField = new RAMField(field, fieldInfo);
+        postings.fieldToTerms.put(field, ramField);
+        termsConsumer.reset(ramField);
+
+        FixedBitSet docsSeen = new FixedBitSet(state.segmentInfo.getDocCount());
+        long sumTotalTermFreq = 0;
+        long sumDocFreq = 0;
+        DocsEnum docsEnum = null;
+        DocsAndPositionsEnum posEnum = null;
+        int enumFlags;
+
+        IndexOptions indexOptions = fieldInfo.getIndexOptions();
+        boolean writeFreqs = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
+        boolean writePositions = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+        boolean writeOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;        
+        boolean writePayloads = fieldInfo.hasPayloads();
+
+        if (writeFreqs == false) {
+          enumFlags = 0;
+        } else if (writePositions == false) {
+          enumFlags = DocsEnum.FLAG_FREQS;
+        } else if (writeOffsets == false) {
+          if (writePayloads) {
+            enumFlags = DocsAndPositionsEnum.FLAG_PAYLOADS;
+          } else {
+            enumFlags = 0;
+          }
+        } else {
+          if (writePayloads) {
+            enumFlags = DocsAndPositionsEnum.FLAG_PAYLOADS | DocsAndPositionsEnum.FLAG_OFFSETS;
+          } else {
+            enumFlags = DocsAndPositionsEnum.FLAG_OFFSETS;
+          }
+        }
+
+        while (true) {
+          BytesRef term = termsEnum.next();
+          if (term == null) {
+            break;
+          }
+          RAMPostingsWriterImpl postingsWriter = termsConsumer.startTerm(term);
+
+          if (writePositions) {
+            posEnum = termsEnum.docsAndPositions(null, posEnum, enumFlags);
+            docsEnum = posEnum;
+          } else {
+            docsEnum = termsEnum.docs(null, docsEnum, enumFlags);
+            posEnum = null;
+          }
+
+          int docFreq = 0;
+          long totalTermFreq = 0;
+          while (true) {
+            int docID = docsEnum.nextDoc();
+            if (docID == DocsEnum.NO_MORE_DOCS) {
+              break;
+            }
+            docsSeen.set(docID);
+            docFreq++;
+
+            int freq;
+            if (writeFreqs) {
+              freq = docsEnum.freq();
+              totalTermFreq += freq;
+            } else {
+              freq = -1;
+            }
+
+            postingsWriter.startDoc(docID, freq);
+            if (writePositions) {
+              for (int i=0;i<freq;i++) {
+                int pos = posEnum.nextPosition();
+                BytesRef payload = writePayloads ? posEnum.getPayload() : null;
+                int startOffset;
+                int endOffset;
+                if (writeOffsets) {
+                  startOffset = posEnum.startOffset();
+                  endOffset = posEnum.endOffset();
+                } else {
+                  startOffset = -1;
+                  endOffset = -1;
+                }
+                postingsWriter.addPosition(pos, payload, startOffset, endOffset);
+              }
+            }
+
+            postingsWriter.finishDoc();
+          }
+          termsConsumer.finishTerm(term, new TermStats(docFreq, totalTermFreq));
+          sumDocFreq += docFreq;
+          sumTotalTermFreq += totalTermFreq;
+        }
+
+        termsConsumer.finish(sumTotalTermFreq, sumDocFreq, docsSeen.cardinality());
       }
-      RAMField ramField = new RAMField(field.name, field);
-      postings.fieldToTerms.put(field.name, ramField);
-      termsConsumer.reset(ramField);
-      return termsConsumer;
-    }
-
-    @Override
-    public void close() {
-      // TODO: finalize stuff
     }
   }
 
-  private static class RAMTermsConsumer extends TermsConsumer {
+  private static class RAMTermsConsumer {
     private RAMField field;
     private final RAMPostingsWriterImpl postingsWriter = new RAMPostingsWriterImpl();
     RAMTerm current;
@@ -237,21 +341,13 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
       this.field = field;
     }
       
-    @Override
-    public PostingsConsumer startTerm(BytesRef text) {
+    public RAMPostingsWriterImpl startTerm(BytesRef text) {
       final String term = text.utf8ToString();
       current = new RAMTerm(term);
       postingsWriter.reset(current);
       return postingsWriter;
     }
 
-      
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
-    }
-
-    @Override
     public void finishTerm(BytesRef text, TermStats stats) {
       assert stats.docFreq > 0;
       assert stats.docFreq == current.docs.size();
@@ -259,7 +355,6 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
       field.termToDocs.put(current.term, current);
     }
 
-    @Override
     public void finish(long sumTotalTermFreq, long sumDocFreq, int docCount) {
       field.sumTotalTermFreq = sumTotalTermFreq;
       field.sumDocFreq = sumDocFreq;
@@ -267,7 +362,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     }
   }
 
-  static class RAMPostingsWriterImpl extends PostingsConsumer {
+  static class RAMPostingsWriterImpl {
     private RAMTerm term;
     private RAMDoc current;
     private int posUpto = 0;
@@ -276,14 +371,12 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
       this.term = term;
     }
 
-    @Override
     public void startDoc(int docID, int freq) {
       current = new RAMDoc(docID, freq);
       term.docs.add(current);
       posUpto = 0;
     }
 
-    @Override
     public void addPosition(int position, BytesRef payload, int startOffset, int endOffset) {
       assert startOffset == -1;
       assert endOffset == -1;
@@ -298,7 +391,6 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
       posUpto++;
     }
 
-    @Override
     public void finishDoc() {
       assert posUpto == current.positions.length;
     }
@@ -313,11 +405,6 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
       this.ramField = field;
     }
       
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
-    }
-
     @Override
     public BytesRef next() {
       if (it == null) {
@@ -336,7 +423,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public SeekStatus seekCeil(BytesRef term, boolean useCache) {
+    public SeekStatus seekCeil(BytesRef term) {
       current = term.utf8ToString();
       it = null;
       if (ramField.termToDocs.containsKey(current)) {
@@ -545,7 +632,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     }
     
     final RAMPostings postings = new RAMPostings();
-    final RAMFieldsConsumer consumer = new RAMFieldsConsumer(postings);
+    final RAMFieldsConsumer consumer = new RAMFieldsConsumer(writeState, postings);
 
     synchronized(state) {
       state.put(id, postings);

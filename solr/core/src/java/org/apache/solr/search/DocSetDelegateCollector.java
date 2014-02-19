@@ -17,13 +17,12 @@ package org.apache.solr.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
+import java.io.IOException;
+
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.util.OpenBitSet;
-
-import java.io.IOException;
+import org.apache.lucene.util.FixedBitSet;
 
 /**
  *
@@ -53,8 +52,8 @@ public class DocSetDelegateCollector extends DocSetCollector {
     } else {
       // this conditional could be removed if BitSet was preallocated, but that
       // would take up more memory, and add more GC time...
-      if (bits==null) bits = new OpenBitSet(maxDoc);
-      bits.fastSet(doc);
+      if (bits==null) bits = new FixedBitSet(maxDoc);
+      bits.set(doc);
     }
 
     pos++;
@@ -67,7 +66,7 @@ public class DocSetDelegateCollector extends DocSetCollector {
       return new SortedIntDocSet(scratch, pos);
     } else {
       // set the bits for ids that were collected in the array
-      for (int i=0; i<scratch.length; i++) bits.fastSet(scratch[i]);
+      for (int i=0; i<scratch.length; i++) bits.set(scratch[i]);
       return new BitDocSet(bits,pos);
     }
   }

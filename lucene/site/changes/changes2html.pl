@@ -27,6 +27,7 @@ use warnings;
 # JIRA REST API documentation: <http://docs.atlassian.com/jira/REST/latest/>
 my $project_info_url = 'https://issues.apache.org/jira/rest/api/2/project';
 my $jira_url_prefix = 'http://issues.apache.org/jira/browse/';
+my $github_pull_request_prefix = 'https://github.com/apache/lucene-solr/pull/';
 my $bugzilla_url_prefix = 'http://issues.apache.org/bugzilla/show_bug.cgi?id=';
 my $month_regex = &setup_month_regex;
 my %month_nums = &setup_month_nums;
@@ -113,10 +114,13 @@ for (my $line_num = 0 ; $line_num <= $#lines ; ++$line_num) {
   }
 
   # Section heading: no leading whitespace, initial word capitalized,
-  #                  five words or less, and no trailing punctuation
-  if (    /^([A-Z]\S*(?:\s+\S+){0,4})(?<![-.:;!()])\s*$/
+  #                  five words or less, and no trailing punctuation, 
+  #                  except colons - don't match the one otherwise matching
+  #                  non-section-name by excluding "StandardTokenizer"
+  if (    /^(?!.*StandardTokenizer)([A-Z]\S*(?:\s+\S+){0,4})(?<![-.;!()])\s*$/
       and not $in_major_component_versions_section) {
     my $heading = $1;
+    $heading =~ s/:$//; # Strip trailing colon, if any
     $items = [];
     unless (@releases) {
       $sections = [];
@@ -195,7 +199,7 @@ for (my $line_num = 0 ; $line_num <= $#lines ; ++$line_num) {
     my $line;
     my $item = $_;
     $item =~ s/^(\s*\Q$type\E\s*)//;       # Trim the leading bullet
-    my $leading_ws_width = length($1);
+    my $leading_ws_width = defined($1) ? length($1) : 0;
     $item =~ s/\s+$//;                     # Trim trailing whitespace
     $item .= "\n";
 
@@ -551,6 +555,9 @@ for my $rel (@releases) {
       # Link Lucene XXX, SOLR XXX and INFRA XXX to JIRA
       $item =~ s{((LUCENE|SOLR|INFRA)\s+(\d{3,}))}
                 {<a href="${jira_url_prefix}\U$2\E-$3">$1</a>}gi;
+      # Link "[ github | gh ] pull request [ # ] X+" to Github pull request
+      $item =~ s{((?:(?:(?:github|gh)\s+)?pull\s+request\s*(?:\#?\s*)?|gh-)(\d+))}
+                {<a href="${github_pull_request_prefix}$2">$1</a>}gi;
       if ($product eq 'LUCENE') {
         # Find single Bugzilla issues
         $item =~ s~((?i:bug|patch|issue)\s*\#?\s*(\d+))

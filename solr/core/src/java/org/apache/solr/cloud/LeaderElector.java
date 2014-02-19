@@ -59,14 +59,21 @@ public  class LeaderElector {
   
   private final static Pattern LEADER_SEQ = Pattern.compile(".*?/?.*?-n_(\\d+)");
   private final static Pattern SESSION_ID = Pattern.compile(".*?/?(.*?-.*?)-n_\\d+");
-  
+  private final static Pattern  NODE_NAME = Pattern.compile(".*?/?(.*?-)(.*?)-n_\\d+");
+
   protected SolrZkClient zkClient;
   
   private ZkCmdExecutor zkCmdExecutor;
-  
+
+  private volatile ElectionContext context;
+
   public LeaderElector(SolrZkClient zkClient) {
     this.zkClient = zkClient;
-    zkCmdExecutor = new ZkCmdExecutor((int) (zkClient.getZkClientTimeout()/1000.0 + 3000));
+    zkCmdExecutor = new ZkCmdExecutor(zkClient.getZkClientTimeout());
+  }
+  
+  public ElectionContext getContext() {
+    return context;
   }
   
   /**
@@ -79,6 +86,7 @@ public  class LeaderElector {
    */
   private void checkIfIamLeader(final int seq, final ElectionContext context, boolean replacement) throws KeeperException,
       InterruptedException, IOException {
+    context.checkIfIamLeaderFired();
     // get all other numbers...
     final String holdElectionPath = context.electionPath + ELECTION_NODE;
     List<String> seqs = zkClient.getChildren(holdElectionPath, null, true);
@@ -153,7 +161,7 @@ public  class LeaderElector {
   // TODO: get this core param out of here
   protected void runIamLeaderProcess(final ElectionContext context, boolean weAreReplacement) throws KeeperException,
       InterruptedException, IOException {
-    context.runLeaderProcess(weAreReplacement);
+    context.runLeaderProcess(weAreReplacement,0);
   }
   
   /**
@@ -161,7 +169,7 @@ public  class LeaderElector {
    * 
    * @return sequence number
    */
-  private int getSeq(String nStringSequence) {
+  public static int getSeq(String nStringSequence) {
     int seq = 0;
     Matcher m = LEADER_SEQ.matcher(nStringSequence);
     if (m.matches()) {
@@ -183,6 +191,19 @@ public  class LeaderElector {
           + nStringSequence);
     }
     return id;
+  }
+
+  public static String getNodeName(String nStringSequence){
+    String result;
+    Matcher m = NODE_NAME.matcher(nStringSequence);
+    if (m.matches()) {
+      result = m.group(2);
+    } else {
+      throw new IllegalStateException("Could not find regex match in:"
+          + nStringSequence);
+    }
+    return result;
+
   }
   
   /**
@@ -208,6 +229,8 @@ public  class LeaderElector {
    * @return sequential node number
    */
   public int joinElection(ElectionContext context, boolean replacement) throws KeeperException, InterruptedException, IOException {
+    context.joinedElectionFired();
+    
     final String shardsElectZkPath = context.electionPath + LeaderElector.ELECTION_NODE;
     
     long sessionId = zkClient.getSolrZooKeeper().getSessionId();
@@ -273,6 +296,7 @@ public  class LeaderElector {
    */
   public void setup(final ElectionContext context) throws InterruptedException,
       KeeperException {
+    this.context = context;
     String electZKPath = context.electionPath + LeaderElector.ELECTION_NODE;
     
     zkCmdExecutor.ensureExists(electZKPath, zkClient);
@@ -281,7 +305,7 @@ public  class LeaderElector {
   /**
    * Sort n string sequence list.
    */
-  private void sortSeqs(List<String> seqs) {
+  public static void sortSeqs(List<String> seqs) {
     Collections.sort(seqs, new Comparator<String>() {
       
       @Override
@@ -290,5 +314,9 @@ public  class LeaderElector {
             Integer.valueOf(getSeq(o2)));
       }
     });
+  }
+  void retryElection() throws KeeperException, InterruptedException, IOException {
+    context.cancelElection();
+    joinElection(context, true);
   }
 }

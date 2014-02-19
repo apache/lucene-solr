@@ -65,6 +65,11 @@ public class AnalyzingLookupFactory extends LookupFactory {
   public static final String QUERY_ANALYZER = "suggestAnalyzerFieldType";
 
   /**
+   * Whether position holes should appear in the automaton.
+   */
+  public static final String PRESERVE_POSITION_INCREMENTS = "preservePositionIncrements";
+  
+  /**
    * File name for the automaton.
    * 
    */
@@ -78,6 +83,10 @@ public class AnalyzingLookupFactory extends LookupFactory {
       throw new IllegalArgumentException("Error in configuration: " + QUERY_ANALYZER + " parameter is mandatory");
     }
     FieldType ft = core.getLatestSchema().getFieldTypeByName(fieldTypeName.toString());
+    if (ft == null) {
+      throw new IllegalArgumentException("Error in configuration: " + fieldTypeName.toString() + " is not defined in the schema");
+    }
+    
     Analyzer indexAnalyzer = ft.getAnalyzer();
     Analyzer queryAnalyzer = ft.getQueryAnalyzer();
     
@@ -106,9 +115,14 @@ public class AnalyzingLookupFactory extends LookupFactory {
     int maxGraphExpansions = params.get(MAX_EXPANSIONS) != null
     ? Integer.parseInt(params.get(MAX_EXPANSIONS).toString())
     : -1;
+    
+    boolean preservePositionIncrements = params.get(PRESERVE_POSITION_INCREMENTS) != null
+    ? Boolean.valueOf(params.get(PRESERVE_POSITION_INCREMENTS).toString())
+    : false;
 
     
-    return new AnalyzingSuggester(indexAnalyzer, queryAnalyzer, flags, maxSurfaceFormsPerAnalyzedForm, maxGraphExpansions);
+    return new AnalyzingSuggester(indexAnalyzer, queryAnalyzer, flags, maxSurfaceFormsPerAnalyzedForm,
+        maxGraphExpansions, preservePositionIncrements);
   }
 
   @Override

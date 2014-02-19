@@ -24,9 +24,8 @@ import java.io.IOException;
  * <p>Implements {@link LockFactory} using {@link
  * File#createNewFile()}.</p>
  *
- * <p><b>NOTE:</b> the <a target="_top"
- * href="http://java.sun.com/j2se/1.4.2/docs/api/java/io/File.html#createNewFile()">javadocs
- * for <code>File.createNewFile</code></a> contain a vague
+ * <p><b>NOTE:</b> the {@linkplain File#createNewFile() javadocs
+ * for <code>File.createNewFile()</code>} contain a vague
  * yet spooky warning about not using the API for file
  * locking.  This warning was added due to <a target="_top"
  * href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4676183">this
@@ -129,9 +128,10 @@ class SimpleFSLock extends Lock {
   }
 
   @Override
-  public void release() throws LockReleaseFailedException {
-    if (lockFile.exists() && !lockFile.delete())
+  public void close() throws LockReleaseFailedException {
+    if (lockFile.exists() && !lockFile.delete()) {
       throw new LockReleaseFailedException("failed to delete " + lockFile);
+    }
   }
 
   @Override

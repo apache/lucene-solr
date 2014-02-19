@@ -41,16 +41,16 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
     sb.append(whitespace);
     sb.append("testing 1234");
     String input = sb.toString();
-    StandardTokenizer tokenizer = new StandardTokenizer(TEST_VERSION_CURRENT, new StringReader(input));
+    StandardTokenizer tokenizer = new StandardTokenizer(TEST_VERSION_CURRENT);
+    tokenizer.setReader(new StringReader(input));
     BaseTokenStreamTestCase.assertTokenStreamContents(tokenizer, new String[] { "testing", "1234" });
   }
 
   private Analyzer a = new Analyzer() {
     @Override
-    protected TokenStreamComponents createComponents
-      (String fieldName, Reader reader) {
+    protected TokenStreamComponents createComponents(String fieldName) {
 
-      Tokenizer tokenizer = new StandardTokenizer(TEST_VERSION_CURRENT, reader);
+      Tokenizer tokenizer = new StandardTokenizer(TEST_VERSION_CURRENT);
       return new TokenStreamComponents(tokenizer);
     }
   };
@@ -202,7 +202,7 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
   }
   
   public void testUnicodeWordBreaks() throws Exception {
-    WordBreakTestUnicode_6_1_0 wordBreakTest = new WordBreakTestUnicode_6_1_0();
+    WordBreakTestUnicode_6_3_0 wordBreakTest = new WordBreakTestUnicode_6_3_0();
     wordBreakTest.test(a);
   }
   
@@ -231,6 +231,36 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
     checkOneTerm(a, "아゙",  "아゙"); // hangul
   }
 
+  /**
+   * Multiple consecutive chars in \p{WB:MidLetter}, \p{WB:MidNumLet},
+   * and/or \p{MidNum} should trigger a token split.
+   */
+  public void testMid() throws Exception {
+    // ':' is in \p{WB:MidLetter}, which should trigger a split unless there is a Letter char on both sides
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "A:B", new String[] { "A:B" });
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "A::B", new String[] { "A", "B" });
+
+    // '.' is in \p{WB:MidNumLet}, which should trigger a split unless there is a Letter or Numeric char on both sides
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "1.2", new String[] { "1.2" });
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "A.B", new String[] { "A.B" });
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "1..2", new String[] { "1", "2" });
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "A..B", new String[] { "A", "B" });
+
+    // ',' is in \p{WB:MidNum}, which should trigger a split unless there is a Numeric char on both sides
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "1,2", new String[] { "1,2" });
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "1,,2", new String[] { "1", "2" });
+
+    // Mixed consecutive \p{WB:MidLetter} and \p{WB:MidNumLet} should trigger a split
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "A.:B", new String[] { "A", "B" });
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "A:.B", new String[] { "A", "B" });
+
+    // Mixed consecutive \p{WB:MidNum} and \p{WB:MidNumLet} should trigger a split
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "1,.2", new String[] { "1", "2" });
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "1.,2", new String[] { "1", "2" });
+  }
+
+
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     checkRandomData(random(), new StandardAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
@@ -248,8 +278,8 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
     checkRandomData(random,
                     new Analyzer() {
                       @Override
-                      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-                        Tokenizer tokenizer = new StandardTokenizer(TEST_VERSION_CURRENT, reader);
+                      protected TokenStreamComponents createComponents(String fieldName) {
+                        Tokenizer tokenizer = new StandardTokenizer(TEST_VERSION_CURRENT);
                         TokenStream tokenStream = new MockGraphTokenFilter(random(), tokenizer);
                         return new TokenStreamComponents(tokenizer, tokenStream);
                       }

@@ -98,7 +98,7 @@ public class IndexSplitter {
   public void listSegments() throws IOException {
     DecimalFormat formatter = new DecimalFormat("###,###.###", DecimalFormatSymbols.getInstance(Locale.ROOT));
     for (int x = 0; x < infos.size(); x++) {
-      SegmentInfoPerCommit info = infos.info(x);
+      SegmentCommitInfo info = infos.info(x);
       String sizeStr = formatter.format(info.sizeInBytes());
       System.out.println(info.info.name + " " + sizeStr);
     }
@@ -112,7 +112,7 @@ public class IndexSplitter {
     return -1;
   }
 
-  private SegmentInfoPerCommit getInfo(String name) {
+  private SegmentCommitInfo getInfo(String name) {
     for (int x = 0; x < infos.size(); x++) {
       if (name.equals(infos.info(x).info.name))
         return infos.info(x);
@@ -135,13 +135,12 @@ public class IndexSplitter {
     SegmentInfos destInfos = new SegmentInfos();
     destInfos.counter = infos.counter;
     for (String n : segs) {
-      SegmentInfoPerCommit infoPerCommit = getInfo(n);
+      SegmentCommitInfo infoPerCommit = getInfo(n);
       SegmentInfo info = infoPerCommit.info;
       // Same info just changing the dir:
       SegmentInfo newInfo = new SegmentInfo(destFSDir, info.getVersion(), info.name, info.getDocCount(), 
-                                            info.getUseCompoundFile(),
-                                            info.getCodec(), info.getDiagnostics(), info.attributes());
-      destInfos.add(new SegmentInfoPerCommit(newInfo, infoPerCommit.getDelCount(), infoPerCommit.getDelGen()));
+                                            info.getUseCompoundFile(), info.getCodec(), info.getDiagnostics());
+      destInfos.add(new SegmentCommitInfo(newInfo, infoPerCommit.getDelCount(), infoPerCommit.getDelGen(), infoPerCommit.getFieldInfosGen()));
       // now copy files over
       Collection<String> files = infoPerCommit.files();
       for (final String srcName : files) {

@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
@@ -75,13 +74,6 @@ public abstract class Terms {
     }
   }
 
-  /** Return the BytesRef Comparator used to sort terms
-   *  provided by the iterator.  This method may return null
-   *  if there are no terms.  This method may be invoked
-   *  many times; it's best to cache a single instance &
-   *  reuse it. */
-  public abstract Comparator<BytesRef> getComparator();
-
   /** Returns the number of terms for this field, or -1 if this 
    *  measure isn't stored by the codec. Note that, just like 
    *  other term measures, this measure does not take deleted 
@@ -109,7 +101,11 @@ public abstract class Terms {
    *  measures, this measure does not take deleted documents
    *  into account. */
   public abstract int getDocCount() throws IOException;
-  
+
+  /** Returns true if documents in this field store
+   *  per-document term frequency ({@link DocsEnum#freq}). */
+  public abstract boolean hasFreqs();
+
   /** Returns true if documents in this field store offsets. */
   public abstract boolean hasOffsets();
   

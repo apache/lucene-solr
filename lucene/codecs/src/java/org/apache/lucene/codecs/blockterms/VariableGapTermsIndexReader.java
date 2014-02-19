@@ -32,8 +32,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IntsRef;
-import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
@@ -45,11 +44,6 @@ import org.apache.lucene.util.fst.Util; // for toDot
 public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
 
   private final PositiveIntOutputs fstOutputs = PositiveIntOutputs.getSingleton();
-  private int indexDivisor;
-
-  // Closed if indexLoaded is true:
-  private IndexInput in;
-  private volatile boolean indexLoaded;
 
   final HashMap<FieldInfo,FieldIndexData> fields = new HashMap<FieldInfo,FieldIndexData>();
   
@@ -59,17 +53,15 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
   private final int version;
 
   final String segment;
-  public VariableGapTermsIndexReader(Directory dir, FieldInfos fieldInfos, String segment, int indexDivisor, String segmentSuffix, IOContext context)
+  public VariableGapTermsIndexReader(Directory dir, FieldInfos fieldInfos, String segment, String segmentSuffix, IOContext context)
     throws IOException {
-    in = dir.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, VariableGapTermsIndexWriter.TERMS_INDEX_EXTENSION), new IOContext(context, true));
+    final IndexInput in = dir.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, VariableGapTermsIndexWriter.TERMS_INDEX_EXTENSION), new IOContext(context, true));
     this.segment = segment;
     boolean success = false;
-    assert indexDivisor == -1 || indexDivisor > 0;
 
     try {
       
       version = readHeader(in);
-      this.indexDivisor = indexDivisor;
 
       seekDir(in, dirOffset);
 
@@ -83,26 +75,19 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
         final int field = in.readVInt();
         final long indexStart = in.readVLong();
         final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
-        FieldIndexData previous = fields.put(fieldInfo, new FieldIndexData(fieldInfo, indexStart));
+        FieldIndexData previous = fields.put(fieldInfo, new FieldIndexData(in, fieldInfo, indexStart));
         if (previous != null) {
           throw new CorruptIndexException("duplicate field: " + fieldInfo.name + " (resource=" + in + ")");
         }
       }
       success = true;
     } finally {
-      if (indexDivisor > 0) {
-        in.close();
-        in = null;
-        if (success) {
-          indexLoaded = true;
-        }
+      if (success) {
+        IOUtils.close(in);
+      } else {
+        IOUtils.closeWhileHandlingException(in);
       }
     }
-  }
-
-  @Override
-  public int getDivisor() {
-    return indexDivisor;
   }
   
   private int readHeader(IndexInput input) throws IOException {
@@ -168,52 +153,26 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
   }
 
   private final class FieldIndexData {
+    private final FST<Long> fst;
 
-    private final long indexStart;
-    // Set only if terms index is loaded:
-    private volatile FST<Long> fst;
+    public FieldIndexData(IndexInput in, FieldInfo fieldInfo, long indexStart) throws IOException {
+      IndexInput clone = in.clone();
+      clone.seek(indexStart);
+      fst = new FST<Long>(clone, fstOutputs);
+      clone.close();
 
-    public FieldIndexData(FieldInfo fieldInfo, long indexStart) throws IOException {
-      this.indexStart = indexStart;
-
-      if (indexDivisor > 0) {
-        loadTermsIndex();
-      }
+      /*
+      final String dotFileName = segment + "_" + fieldInfo.name + ".dot";
+      Writer w = new OutputStreamWriter(new FileOutputStream(dotFileName));
+      Util.toDot(fst, w, false, false);
+      System.out.println("FST INDEX: SAVED to " + dotFileName);
+      w.close();
+      */
     }
 
-    private void loadTermsIndex() throws IOException {
-      if (fst == null) {
-        IndexInput clone = in.clone();
-        clone.seek(indexStart);
-        fst = new FST<Long>(clone, fstOutputs);
-        clone.close();
-
-        /*
-        final String dotFileName = segment + "_" + fieldInfo.name + ".dot";
-        Writer w = new OutputStreamWriter(new FileOutputStream(dotFileName));
-        Util.toDot(fst, w, false, false);
-        System.out.println("FST INDEX: SAVED to " + dotFileName);
-        w.close();
-        */
-
-        if (indexDivisor > 1) {
-          // subsample
-          final IntsRef scratchIntsRef = new IntsRef();
-          final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
-          final Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, outputs);
-          final BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<Long>(fst);
-          BytesRefFSTEnum.InputOutput<Long> result;
-          int count = indexDivisor;
-          while((result = fstEnum.next()) != null) {
-            if (count == indexDivisor) {
-              builder.add(Util.toIntsRef(result.input, scratchIntsRef), result.output);
-              count = 0;
-            }
-            count++;
-          }
-          fst = builder.finish();
-        }
-      }
+    /** Returns approximate RAM bytes used */
+    public long ramBytesUsed() {
+      return fst == null ? 0 : fst.sizeInBytes();
     }
   }
 
@@ -228,11 +187,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
   }
 
   @Override
-  public void close() throws IOException {
-    if (in != null && !indexLoaded) {
-      in.close();
-    }
-  }
+  public void close() throws IOException {}
 
   private void seekDir(IndexInput input, long dirOffset) throws IOException {
     if (version >= VariableGapTermsIndexWriter.VERSION_APPEND_ONLY) {
@@ -240,5 +195,14 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
       dirOffset = input.readLong();
     }
     input.seek(dirOffset);
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    long sizeInBytes = 0;
+    for(FieldIndexData entry : fields.values()) {
+      sizeInBytes += entry.ramBytesUsed();
+    }
+    return sizeInBytes;
   }
 }

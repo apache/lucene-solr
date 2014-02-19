@@ -26,8 +26,8 @@ import org.apache.lucene.analysis.MockTokenizer;
 public class TestPersianCharFilter extends BaseTokenStreamTestCase {
   private Analyzer analyzer = new Analyzer() {
     @Override
-    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      return new TokenStreamComponents(new MockTokenizer(reader));
+    protected TokenStreamComponents createComponents(String fieldName) {
+      return new TokenStreamComponents(new MockTokenizer());
     }
 
     @Override

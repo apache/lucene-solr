@@ -17,8 +17,10 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.ThreadInterruptedException;
+import java.io.Closeable;
 import java.io.IOException;
+
+import org.apache.lucene.util.ThreadInterruptedException;
 
 /** An interprocess mutex lock.
  * <p>Typical use might look like:<pre class="prettyprint">
@@ -30,8 +32,10 @@ import java.io.IOException;
  * </pre>
  *
  * @see Directory#makeLock(String)
+ *
+ * @lucene.internal
  */
-public abstract class Lock {
+public abstract class Lock implements Closeable {
 
   /** How long {@link #obtain(long)} waits, in milliseconds,
    *  in between attempts to acquire the lock. */
@@ -42,7 +46,8 @@ public abstract class Lock {
   public static final long LOCK_OBTAIN_WAIT_FOREVER = -1;
 
   /** Attempts to obtain exclusive access and immediately return
-   *  upon success or failure.
+   *  upon success or failure.  Use {@link #close} to
+   *  release the lock.
    * @return true iff exclusive access is obtained
    */
   public abstract boolean obtain() throws IOException;
@@ -98,7 +103,7 @@ public abstract class Lock {
   }
 
   /** Releases exclusive access. */
-  public abstract void release() throws IOException;
+  public abstract void close() throws IOException;
 
   /** Returns true if the resource is currently locked.  Note that one must
    * still call {@link #obtain()} before using the resource. */
@@ -134,8 +139,9 @@ public abstract class Lock {
          locked = lock.obtain(lockWaitTimeout);
          return doBody();
       } finally {
-        if (locked)
-          lock.release();
+        if (locked) {
+          lock.close();
+        }
       }
     }
   }

@@ -24,25 +24,17 @@ import java.util.*;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
-import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType.NumericType;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.FloatField;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.LongField;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.store.BaseDirectory;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -112,7 +104,7 @@ public class TestFieldsReader extends LuceneTestCase {
   }
 
 
-  public static class FaultyFSDirectory extends Directory {
+  public static class FaultyFSDirectory extends BaseDirectory {
 
     Directory fsDir;
     
@@ -199,7 +191,7 @@ public class TestFieldsReader extends LuceneTestCase {
 
   // LUCENE-1262
   public void testExceptions() throws Throwable {
-    File indexDir = _TestUtil.getTempDir("testfieldswriterexceptions");
+    File indexDir = TestUtil.getTempDir("testfieldswriterexceptions");
 
     try {
       Directory dir = new FaultyFSDirectory(indexDir);
@@ -235,7 +227,7 @@ public class TestFieldsReader extends LuceneTestCase {
       reader.close();
       dir.close();
     } finally {
-      _TestUtil.rmDir(indexDir);
+      TestUtil.rmDir(indexDir);
     }
 
   }

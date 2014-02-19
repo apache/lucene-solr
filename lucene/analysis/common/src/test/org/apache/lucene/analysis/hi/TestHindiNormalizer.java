@@ -62,7 +62,7 @@ public class TestHindiNormalizer extends BaseTokenStreamTestCase {
     check("आईऊॠॡऐऔीूॄॣैौ", "अइउऋऌएओिुृॢेो");
   }
   private void check(String input, String output) throws IOException {
-    Tokenizer tokenizer = new MockTokenizer(new StringReader(input), MockTokenizer.WHITESPACE, false);
+    Tokenizer tokenizer = whitespaceMockTokenizer(input);
     TokenFilter tf = new HindiNormalizationFilter(tokenizer);
     assertTokenStreamContents(tf, new String[] { output });
   }
@@ -70,11 +70,11 @@ public class TestHindiNormalizer extends BaseTokenStreamTestCase {
   public void testEmptyTerm() throws IOException {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new KeywordTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
         return new TokenStreamComponents(tokenizer, new HindiNormalizationFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

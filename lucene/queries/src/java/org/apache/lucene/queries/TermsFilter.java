@@ -193,7 +193,7 @@ public final class TermsFilter extends Filter {
         for (int i = termsAndField.start; i < termsAndField.end; i++) {
           spare.offset = offsets[i];
           spare.length = offsets[i+1] - offsets[i];
-          if (termsEnum.seekExact(spare, false)) { // don't use cache since we could pollute the cache here easily
+          if (termsEnum.seekExact(spare)) {
             docs = termsEnum.docs(acceptDocs, docs, DocsEnum.FLAG_NONE); // no freq since we don't need them
             if (result == null) {
               if (docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {

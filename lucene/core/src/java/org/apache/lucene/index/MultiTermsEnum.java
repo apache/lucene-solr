@@ -23,7 +23,6 @@ import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Comparator;
 
 /**
  * Exposes {@link TermsEnum} API, merged from {@link TermsEnum} API of sub-segments.
@@ -47,7 +46,6 @@ public final class MultiTermsEnum extends TermsEnum {
   private int numTop;
   private int numSubs;
   private BytesRef current;
-  private Comparator<BytesRef> termComp;
 
   static class TermsEnumIndex {
     public final static TermsEnumIndex[] EMPTY_ARRAY = new TermsEnumIndex[0];
@@ -95,35 +93,17 @@ public final class MultiTermsEnum extends TermsEnum {
     return current;
   }
 
-  @Override
-  public Comparator<BytesRef> getComparator() {
-    return termComp;
-  }
-
   /** The terms array must be newly created TermsEnum, ie
    *  {@link TermsEnum#next} has not yet been called. */
   public TermsEnum reset(TermsEnumIndex[] termsEnumsIndex) throws IOException {
     assert termsEnumsIndex.length <= top.length;
     numSubs = 0;
     numTop = 0;
-    termComp = null;
     queue.clear();
     for(int i=0;i<termsEnumsIndex.length;i++) {
 
       final TermsEnumIndex termsEnumIndex = termsEnumsIndex[i];
       assert termsEnumIndex != null;
-
-      // init our term comp
-      if (termComp == null) {
-        queue.termComp = termComp = termsEnumIndex.termsEnum.getComparator();
-      } else {
-        // We cannot merge sub-readers that have
-        // different TermComps
-        final Comparator<BytesRef> subTermComp = termsEnumIndex.termsEnum.getComparator();
-        if (subTermComp != null && !subTermComp.equals(termComp)) {
-          throw new IllegalStateException("sub-readers have different BytesRef.Comparators: " + subTermComp + " vs " + termComp + "; cannot merge");
-        }
-      }
 
       final BytesRef term = termsEnumIndex.termsEnum.next();
       if (term != null) {
@@ -144,12 +124,12 @@ public final class MultiTermsEnum extends TermsEnum {
   }
 
   @Override
-  public boolean seekExact(BytesRef term, boolean useCache) throws IOException {
+  public boolean seekExact(BytesRef term) throws IOException {
     queue.clear();
     numTop = 0;
 
     boolean seekOpt = false;
-    if (lastSeek != null && termComp.compare(lastSeek, term) <= 0) {
+    if (lastSeek != null && lastSeek.compareTo(term) <= 0) {
       seekOpt = true;
     }
 
@@ -167,19 +147,19 @@ public final class MultiTermsEnum extends TermsEnum {
       if (seekOpt) {
         final BytesRef curTerm = currentSubs[i].current;
         if (curTerm != null) {
-          final int cmp = termComp.compare(term, curTerm);
+          final int cmp = term.compareTo(curTerm);
           if (cmp == 0) {
             status = true;
           } else if (cmp < 0) {
             status = false;
           } else {
-            status = currentSubs[i].terms.seekExact(term, useCache);
+            status = currentSubs[i].terms.seekExact(term);
           }
         } else {
           status = false;
         }
       } else {
-        status = currentSubs[i].terms.seekExact(term, useCache);
+        status = currentSubs[i].terms.seekExact(term);
       }
 
       if (status) {
@@ -195,13 +175,13 @@ public final class MultiTermsEnum extends TermsEnum {
   }
 
   @Override
-  public SeekStatus seekCeil(BytesRef term, boolean useCache) throws IOException {
+  public SeekStatus seekCeil(BytesRef term) throws IOException {
     queue.clear();
     numTop = 0;
     lastSeekExact = false;
 
     boolean seekOpt = false;
-    if (lastSeek != null && termComp.compare(lastSeek, term) <= 0) {
+    if (lastSeek != null && lastSeek.compareTo(term) <= 0) {
       seekOpt = true;
     }
 
@@ -219,19 +199,19 @@ public final class MultiTermsEnum extends TermsEnum {
       if (seekOpt) {
         final BytesRef curTerm = currentSubs[i].current;
         if (curTerm != null) {
-          final int cmp = termComp.compare(term, curTerm);
+          final int cmp = term.compareTo(curTerm);
           if (cmp == 0) {
             status = SeekStatus.FOUND;
           } else if (cmp < 0) {
             status = SeekStatus.NOT_FOUND;
           } else {
-            status = currentSubs[i].terms.seekCeil(term, useCache);
+            status = currentSubs[i].terms.seekCeil(term);
           }
         } else {
           status = SeekStatus.END;
         }
       } else {
-        status = currentSubs[i].terms.seekCeil(term, useCache);
+        status = currentSubs[i].terms.seekCeil(term);
       }
 
       if (status == SeekStatus.FOUND) {
@@ -519,14 +499,13 @@ public final class MultiTermsEnum extends TermsEnum {
   }
 
   private final static class TermMergeQueue extends PriorityQueue<TermsEnumWithSlice> {
-    Comparator<BytesRef> termComp;
     TermMergeQueue(int size) {
       super(size);
     }
 
     @Override
     protected boolean lessThan(TermsEnumWithSlice termsA, TermsEnumWithSlice termsB) {
-      final int cmp = termComp.compare(termsA.current, termsB.current);
+      final int cmp = termsA.current.compareTo(termsB.current);
       if (cmp != 0) {
         return cmp < 0;
       } else {

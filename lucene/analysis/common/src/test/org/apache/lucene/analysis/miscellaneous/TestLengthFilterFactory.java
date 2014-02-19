@@ -21,13 +21,15 @@ import java.io.StringReader;
 
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
 public class TestLengthFilterFactory extends BaseTokenStreamFactoryTestCase {
 
   public void testPositionIncrements() throws Exception {
     Reader reader = new StringReader("foo foobar super-duper-trooper");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+    TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    ((Tokenizer)stream).setReader(reader);
     stream = tokenFilterFactory("Length",
         "min", "4",
         "max", "10").create(stream);

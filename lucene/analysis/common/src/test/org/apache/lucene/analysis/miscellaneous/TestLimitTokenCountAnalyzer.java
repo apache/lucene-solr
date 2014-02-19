@@ -18,13 +18,10 @@ package org.apache.lucene.analysis.miscellaneous;
  */
 
 import java.io.IOException;
-import java.io.StringReader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
@@ -33,7 +30,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestLimitTokenCountAnalyzer extends BaseTokenStreamTestCase {
 
@@ -47,14 +44,14 @@ public class TestLimitTokenCountAnalyzer extends BaseTokenStreamTestCase {
       Analyzer a = new LimitTokenCountAnalyzer(mock, 2, consumeAll);
     
       // dont use assertAnalyzesTo here, as the end offset is not the end of the string (unless consumeAll is true, in which case its correct)!
-      assertTokenStreamContents(a.tokenStream("dummy", new StringReader("1  2     3  4  5")), new String[] { "1", "2" }, new int[] { 0, 3 }, new int[] { 1, 4 }, consumeAll ? 16 : null);
-      assertTokenStreamContents(a.tokenStream("dummy", new StringReader("1 2 3 4 5")), new String[] { "1", "2" }, new int[] { 0, 2 }, new int[] { 1, 3 }, consumeAll ? 9 : null);
+      assertTokenStreamContents(a.tokenStream("dummy", "1  2     3  4  5"), new String[] { "1", "2" }, new int[] { 0, 3 }, new int[] { 1, 4 }, consumeAll ? 16 : null);
+      assertTokenStreamContents(a.tokenStream("dummy", "1 2 3 4 5"), new String[] { "1", "2" }, new int[] { 0, 2 }, new int[] { 1, 3 }, consumeAll ? 9 : null);
       
       // less than the limit, ensure we behave correctly
-      assertTokenStreamContents(a.tokenStream("dummy", new StringReader("1  ")), new String[] { "1" }, new int[] { 0 }, new int[] { 1 }, consumeAll ? 3 : null);
+      assertTokenStreamContents(a.tokenStream("dummy", "1  "), new String[] { "1" }, new int[] { 0 }, new int[] { 1 }, consumeAll ? 3 : null);
     
       // equal to limit
-      assertTokenStreamContents(a.tokenStream("dummy", new StringReader("1  2  ")), new String[] { "1", "2" }, new int[] { 0, 3 }, new int[] { 1, 4 }, consumeAll ? 6 : null);
+      assertTokenStreamContents(a.tokenStream("dummy", "1  2  "), new String[] { "1", "2" }, new int[] { 0, 3 }, new int[] { 1, 4 }, consumeAll ? 6 : null);
     }
   }
 
@@ -62,7 +59,7 @@ public class TestLimitTokenCountAnalyzer extends BaseTokenStreamTestCase {
     
     for (boolean consumeAll : new boolean[] { true, false }) {
       Directory dir = newDirectory();
-      int limit = _TestUtil.nextInt(random(), 50, 101000);
+      int limit = TestUtil.nextInt(random(), 50, 101000);
       MockAnalyzer mock = new MockAnalyzer(random());
 
       // if we are consuming all tokens, we can use the checks, 

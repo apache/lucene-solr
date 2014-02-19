@@ -76,31 +76,31 @@ final class TermVectorsConsumerPerField extends TermsHashConsumerPerField {
             doVectorPayloads |= field.fieldType().storeTermVectorPayloads();
           } else if (field.fieldType().storeTermVectorPayloads()) {
             // TODO: move this check somewhere else, and impl the other missing ones
-            throw new IllegalArgumentException("cannot index term vector payloads for field: " + field + " without term vector positions");
+            throw new IllegalArgumentException("cannot index term vector payloads without term vector positions (field=\"" + field.name() + "\")");
           }
         } else {
           if (field.fieldType().storeTermVectorOffsets()) {
-            throw new IllegalArgumentException("cannot index term vector offsets when term vectors are not indexed (field=\"" + field.name());
+            throw new IllegalArgumentException("cannot index term vector offsets when term vectors are not indexed (field=\"" + field.name() + "\")");
           }
           if (field.fieldType().storeTermVectorPositions()) {
-            throw new IllegalArgumentException("cannot index term vector positions when term vectors are not indexed (field=\"" + field.name());
+            throw new IllegalArgumentException("cannot index term vector positions when term vectors are not indexed (field=\"" + field.name() + "\")");
           }
           if (field.fieldType().storeTermVectorPayloads()) {
-            throw new IllegalArgumentException("cannot index term vector payloads when term vectors are not indexed (field=\"" + field.name());
+            throw new IllegalArgumentException("cannot index term vector payloads when term vectors are not indexed (field=\"" + field.name() + "\")");
           }
         }
       } else {
         if (field.fieldType().storeTermVectors()) {
-          throw new IllegalArgumentException("cannot index term vectors when field is not indexed (field=\"" + field.name());
+          throw new IllegalArgumentException("cannot index term vectors when field is not indexed (field=\"" + field.name() + "\")");
         }
         if (field.fieldType().storeTermVectorOffsets()) {
-          throw new IllegalArgumentException("cannot index term vector offsets when field is not indexed (field=\"" + field.name());
+          throw new IllegalArgumentException("cannot index term vector offsets when field is not indexed (field=\"" + field.name() + "\")");
         }
         if (field.fieldType().storeTermVectorPositions()) {
-          throw new IllegalArgumentException("cannot index term vector positions when field is not indexed (field=\"" + field.name());
+          throw new IllegalArgumentException("cannot index term vector positions when field is not indexed (field=\"" + field.name() + "\")");
         }
         if (field.fieldType().storeTermVectorPayloads()) {
-          throw new IllegalArgumentException("cannot index term vector payloads when field is not indexed (field=\"" + field.name());
+          throw new IllegalArgumentException("cannot index term vector payloads when field is not indexed (field=\"" + field.name() + "\")");
         }
       }
     }
@@ -156,7 +156,7 @@ final class TermVectorsConsumerPerField extends TermsHashConsumerPerField {
     TermVectorsPostingsArray postings = (TermVectorsPostingsArray) termsHashPerField.postingsArray;
     final TermVectorsWriter tv = termsWriter.writer;
 
-    final int[] termIDs = termsHashPerField.sortPostings(tv.getComparator());
+    final int[] termIDs = termsHashPerField.sortPostings();
 
     tv.startField(fieldInfo, numPostings, doVectorPositions, doVectorOffsets, hasPayloads);
     
@@ -189,11 +189,6 @@ final class TermVectorsConsumerPerField extends TermsHashConsumerPerField {
     termsHashPerField.reset();
 
     fieldInfo.setStoreTermVectors();
-  }
-
-  void shrinkHash() {
-    termsHashPerField.shrinkHash(maxNumPostings);
-    maxNumPostings = 0;
   }
 
   @Override

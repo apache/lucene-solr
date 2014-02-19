@@ -45,7 +45,7 @@ public class DocCollection extends ZkNodeProps {
    * @param props  The properties of the slice.  This is used directly and a copy is not made.
    */
   public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
-    super( props==null ? Collections.<String,Object>emptyMap() : props);
+    super( props==null ? props = new HashMap<String,Object>() : props);
     this.name = name;
 
     this.slices = slices;

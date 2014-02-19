@@ -29,24 +29,25 @@ import org.apache.lucene.analysis.util.CharArraySet;
 public class TestGermanAnalyzer extends BaseTokenStreamTestCase {
   public void testReusableTokenStream() throws Exception {
     Analyzer a = new GermanAnalyzer(TEST_VERSION_CURRENT);
-    checkOneTermReuse(a, "Tisch", "tisch");
-    checkOneTermReuse(a, "Tische", "tisch");
-    checkOneTermReuse(a, "Tischen", "tisch");
+    checkOneTerm(a, "Tisch", "tisch");
+    checkOneTerm(a, "Tische", "tisch");
+    checkOneTerm(a, "Tischen", "tisch");
   }
   
   public void testWithKeywordAttribute() throws IOException {
     CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
     set.add("fischen");
+    final LowerCaseTokenizer in = new LowerCaseTokenizer(TEST_VERSION_CURRENT);
+    in.setReader(new StringReader("Fischen Trinken"));
     GermanStemFilter filter = new GermanStemFilter(
-        new SetKeywordMarkerFilter(new LowerCaseTokenizer(TEST_VERSION_CURRENT, new StringReader( 
-            "Fischen Trinken")), set));
+        new SetKeywordMarkerFilter(in, set));
     assertTokenStreamContents(filter, new String[] { "fischen", "trink" });
   }
 
   public void testStemExclusionTable() throws Exception {
     GermanAnalyzer a = new GermanAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET, 
         new CharArraySet(TEST_VERSION_CURRENT, asSet("tischen"), false));
-    checkOneTermReuse(a, "tischen", "tischen");
+    checkOneTerm(a, "tischen", "tischen");
   }
   
   /** test some features of the new snowball filter
@@ -55,8 +56,8 @@ public class TestGermanAnalyzer extends BaseTokenStreamTestCase {
   public void testGermanSpecials() throws Exception {
     GermanAnalyzer a = new GermanAnalyzer(TEST_VERSION_CURRENT);
     // a/o/u + e is equivalent to the umlaut form
-    checkOneTermReuse(a, "Schaltflächen", "schaltflach");
-    checkOneTermReuse(a, "Schaltflaechen", "schaltflach");
+    checkOneTerm(a, "Schaltflächen", "schaltflach");
+    checkOneTerm(a, "Schaltflaechen", "schaltflach");
   }
   
   /** blast some random strings through the analyzer */

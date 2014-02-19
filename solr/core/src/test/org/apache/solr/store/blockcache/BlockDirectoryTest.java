@@ -179,11 +179,25 @@ public class BlockDirectoryTest extends LuceneTestCase {
     assertEquals(fsInput.length(), hdfsInput.length());
     int fileLength = (int) fsInput.length();
     for (int i = 0; i < reads; i++) {
-      byte[] fsBuf = new byte[random.nextInt(Math.min(MAX_BUFFER_SIZE - MIN_BUFFER_SIZE, fileLength)) + MIN_BUFFER_SIZE];
+      int rnd;
+      if (fileLength == 0) {
+        rnd = 0;
+      } else {
+        rnd = random.nextInt(Math.min(MAX_BUFFER_SIZE - MIN_BUFFER_SIZE, fileLength));
+      }
+
+      byte[] fsBuf = new byte[rnd + MIN_BUFFER_SIZE];
       byte[] hdfsBuf = new byte[fsBuf.length];
       int offset = random.nextInt(fsBuf.length);
       int length = random.nextInt(fsBuf.length - offset);
-      int pos = random.nextInt(fileLength - length);
+      
+      int pos;
+      if (fileLength == 0) {
+        pos = 0;
+      } else {
+        pos = random.nextInt(fileLength - length);
+      }
+    
       fsInput.seek(pos);
       fsInput.readBytes(fsBuf, offset, length);
       hdfsInput.seek(pos);

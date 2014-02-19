@@ -60,7 +60,7 @@ public class MultiSpansWrapper extends Spans { // can't be package private due t
     TreeSet<Term> terms = new TreeSet<Term>();
     query.extractTerms(terms);
     for (Term term : terms) {
-      termContexts.put(term, TermContext.build(topLevelReaderContext, term, true));
+      termContexts.put(term, TermContext.build(topLevelReaderContext, term));
     }
     final List<AtomicReaderContext> leaves = topLevelReaderContext.leaves();
     if(leaves.size() == 1) {

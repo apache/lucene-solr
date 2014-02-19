@@ -206,8 +206,8 @@ public class TestTermRangeQuery extends LuceneTestCase {
       boolean done = false;
       CharTermAttribute termAtt;
       
-      public SingleCharTokenizer(Reader r) {
-        super(r);
+      public SingleCharTokenizer() {
+        super();
         termAtt = addAttribute(CharTermAttribute.class);
       }
 
@@ -227,14 +227,15 @@ public class TestTermRangeQuery extends LuceneTestCase {
       }
 
       @Override
-      public void reset() throws IOException {;
+      public void reset() throws IOException {
+        super.reset();
         done = false;
       }
     }
 
     @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      return new TokenStreamComponents(new SingleCharTokenizer(reader));
+    public TokenStreamComponents createComponents(String fieldName) {
+      return new TokenStreamComponents(new SingleCharTokenizer());
     }
   }
 

@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.MergedIterator;
 
 /**
  * Exposes flex API, merged from flex API of sub-segments.
@@ -150,7 +151,7 @@ public final class MultiFields extends Fields {
     final Terms terms = getTerms(r, field);
     if (terms != null) {
       final TermsEnum termsEnum = terms.iterator(null);
-      if (termsEnum.seekExact(term, true)) {
+      if (termsEnum.seekExact(term)) {
         return termsEnum.docs(liveDocs, null, flags);
       }
     }
@@ -178,7 +179,7 @@ public final class MultiFields extends Fields {
     final Terms terms = getTerms(r, field);
     if (terms != null) {
       final TermsEnum termsEnum = terms.iterator(null);
-      if (termsEnum.seekExact(term, true)) {
+      if (termsEnum.seekExact(term)) {
         return termsEnum.docsAndPositions(liveDocs, null, flags);
       }
     }

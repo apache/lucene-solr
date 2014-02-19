@@ -32,7 +32,9 @@ public class NumericPayloadTokenFilterTest extends BaseTokenStreamTestCase {
   public void test() throws IOException {
     String test = "The quick red fox jumped over the lazy brown dogs";
 
-    NumericPayloadTokenFilter nptf = new NumericPayloadTokenFilter(new WordTokenFilter(new MockTokenizer(new StringReader(test), MockTokenizer.WHITESPACE, false)), 3, "D");
+    final MockTokenizer input = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    input.setReader(new StringReader(test));
+    NumericPayloadTokenFilter nptf = new NumericPayloadTokenFilter(new WordTokenFilter(input), 3, "D");
     boolean seenDogs = false;
     CharTermAttribute termAtt = nptf.getAttribute(CharTermAttribute.class);
     TypeAttribute typeAtt = nptf.getAttribute(TypeAttribute.class);

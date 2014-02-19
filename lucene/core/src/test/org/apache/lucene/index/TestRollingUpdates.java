@@ -43,7 +43,7 @@ public class TestRollingUpdates extends LuceneTestCase {
 
     //provider.register(new MemoryCodec());
     if (random().nextBoolean()) {
-      Codec.setDefault(_TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat(random().nextBoolean(), random.nextFloat())));
+      Codec.setDefault(TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat(random().nextBoolean(), random.nextFloat())));
     }
 
     final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
@@ -138,7 +138,7 @@ public class TestRollingUpdates extends LuceneTestCase {
     SegmentInfos infos = new SegmentInfos();
     infos.read(dir);
     long totalBytes = 0;
-    for(SegmentInfoPerCommit sipc : infos) {
+    for(SegmentCommitInfo sipc : infos) {
       totalBytes += sipc.sizeInBytes();
     }
     long totalBytes2 = 0;
@@ -160,7 +160,7 @@ public class TestRollingUpdates extends LuceneTestCase {
       final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(2));
       final int numUpdates = atLeast(20);
-      int numThreads = _TestUtil.nextInt(random(), 2, 6);
+      int numThreads = TestUtil.nextInt(random(), 2, 6);
       IndexingThread[] threads = new IndexingThread[numThreads];
       for (int i = 0; i < numThreads; i++) {
         threads[i] = new IndexingThread(docs, w, numUpdates);

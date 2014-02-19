@@ -22,7 +22,6 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.queries.function.valuesource.MultiValueSource;
 import org.apache.lucene.search.IndexSearcher;
-import com.spatial4j.core.distance.DistanceUtils;
 import org.apache.solr.common.SolrException;
 
 import java.io.IOException;
@@ -75,7 +74,79 @@ public class VectorDistanceFunction extends ValueSource {
     double[] vals2 = new double[source1.dimension()];
     dv1.doubleVal(doc, vals1);
     dv2.doubleVal(doc, vals2);
-    return DistanceUtils.vectorDistance(vals1, vals2, power, oneOverPower);
+    return vectorDistance(vals1, vals2, power, oneOverPower);
+  }
+
+  /**
+   * Calculate the p-norm (i.e. length) between two vectors.
+   * <p/>
+   * See <a href="http://en.wikipedia.org/wiki/Lp_space">Lp space</a>
+   *
+   * @param vec1  The first vector
+   * @param vec2  The second vector
+   * @param power The power (2 for cartesian distance, 1 for manhattan, etc.)
+   * @return The length.
+   *
+   * @see #vectorDistance(double[], double[], double, double)
+   *
+   */
+  public static double vectorDistance(double[] vec1, double[] vec2, double power) {
+    //only calc oneOverPower if it's needed
+    double oneOverPower = (power == 0 || power == 1.0 || power == 2.0) ? Double.NaN : 1.0 / power;
+    return vectorDistance(vec1, vec2, power, oneOverPower);
+  }
+
+  /**
+   * Calculate the p-norm (i.e. length) between two vectors.
+   *
+   * @param vec1         The first vector
+   * @param vec2         The second vector
+   * @param power        The power (2 for cartesian distance, 1 for manhattan, etc.)
+   * @param oneOverPower If you've pre-calculated oneOverPower and cached it, use this method to save
+   *                     one division operation over {@link #vectorDistance(double[], double[], double)}.
+   * @return The length.
+   */
+  public static double vectorDistance(double[] vec1, double[] vec2, double power, double oneOverPower) {
+    double result = 0;
+
+    if (power == 0) {
+      for (int i = 0; i < vec1.length; i++) {
+        result += vec1[i] - vec2[i] == 0 ? 0 : 1;
+      }
+    } else if (power == 1.0) { // Manhattan
+      for (int i = 0; i < vec1.length; i++) {
+        result += Math.abs(vec1[i] - vec2[i]);
+      }
+    } else if (power == 2.0) { // Cartesian
+      result = Math.sqrt(distSquaredCartesian(vec1, vec2));
+    } else if (power == Integer.MAX_VALUE || Double.isInfinite(power)) {//infinite norm?
+      for (int i = 0; i < vec1.length; i++) {
+        result = Math.max(result, Math.max(vec1[i], vec2[i]));
+      }
+    } else {
+      for (int i = 0; i < vec1.length; i++) {
+        result += Math.pow(vec1[i] - vec2[i], power);
+      }
+      result = Math.pow(result, oneOverPower);
+    }
+    return result;
+  }
+
+  /**
+   * The square of the cartesian Distance.  Not really a distance, but useful if all that matters is
+   * comparing the result to another one.
+   *
+   * @param vec1 The first point
+   * @param vec2 The second point
+   * @return The squared cartesian distance
+   */
+  public static double distSquaredCartesian(double[] vec1, double[] vec2) {
+    double result = 0;
+    for (int i = 0; i < vec1.length; i++) {
+      double v = vec1[i] - vec2[i];
+      result += v * v;
+    }
+    return result;
   }
 
   @Override

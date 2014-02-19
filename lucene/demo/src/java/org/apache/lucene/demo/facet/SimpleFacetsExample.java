@@ -1,29 +1,5 @@
 package org.apache.lucene.demo.facet;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.facet.index.FacetFields;
-import org.apache.lucene.facet.params.FacetSearchParams;
-import org.apache.lucene.facet.search.CountFacetRequest;
-import org.apache.lucene.facet.search.DrillDownQuery;
-import org.apache.lucene.facet.search.FacetResult;
-import org.apache.lucene.facet.search.FacetsCollector;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -41,26 +17,42 @@ import org.apache.lucene.store.RAMDirectory;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.facet.DrillDownQuery;
+import org.apache.lucene.facet.FacetField;
+import org.apache.lucene.facet.FacetResult;
+import org.apache.lucene.facet.Facets;
+import org.apache.lucene.facet.FacetsCollector;
+import org.apache.lucene.facet.FacetsConfig;
+import org.apache.lucene.facet.taxonomy.FastTaxonomyFacetCounts;
+import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RAMDirectory;
+
 /** Shows simple usage of faceted indexing and search. */
 public class SimpleFacetsExample {
 
   private final Directory indexDir = new RAMDirectory();
   private final Directory taxoDir = new RAMDirectory();
+  private final FacetsConfig config = new FacetsConfig();
 
   /** Empty constructor */
-  public SimpleFacetsExample() {}
-  
-  private void add(IndexWriter indexWriter, FacetFields facetFields, String ... categoryPaths) throws IOException {
-    Document doc = new Document();
-    
-    List<CategoryPath> paths = new ArrayList<CategoryPath>();
-    for (String categoryPath : categoryPaths) {
-      paths.add(new CategoryPath(categoryPath, '/'));
-    }
-    facetFields.addFields(doc, paths);
-    indexWriter.addDocument(doc);
+  public SimpleFacetsExample() {
+    config.setHierarchical("Publish Date", true);
   }
-
+  
   /** Build the example index. */
   private void index() throws IOException {
     IndexWriter indexWriter = new IndexWriter(indexDir, new IndexWriterConfig(FacetExamples.EXAMPLES_VER, 
@@ -69,14 +61,30 @@ public class SimpleFacetsExample {
     // Writes facet ords to a separate directory from the main index
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
 
-    // Reused across documents, to add the necessary facet fields
-    FacetFields facetFields = new FacetFields(taxoWriter);
+    Document doc = new Document();
+    doc.add(new FacetField("Author", "Bob"));
+    doc.add(new FacetField("Publish Date", "2010", "10", "15"));
+    indexWriter.addDocument(config.build(taxoWriter, doc));
 
-    add(indexWriter, facetFields, "Author/Bob", "Publish Date/2010/10/15");
-    add(indexWriter, facetFields, "Author/Lisa", "Publish Date/2010/10/20");
-    add(indexWriter, facetFields, "Author/Lisa", "Publish Date/2012/1/1");
-    add(indexWriter, facetFields, "Author/Susan", "Publish Date/2012/1/7");
-    add(indexWriter, facetFields, "Author/Frank", "Publish Date/1999/5/5");
+    doc = new Document();
+    doc.add(new FacetField("Author", "Lisa"));
+    doc.add(new FacetField("Publish Date", "2010", "10", "20"));
+    indexWriter.addDocument(config.build(taxoWriter, doc));
+
+    doc = new Document();
+    doc.add(new FacetField("Author", "Lisa"));
+    doc.add(new FacetField("Publish Date", "2012", "1", "1"));
+    indexWriter.addDocument(config.build(taxoWriter, doc));
+
+    doc = new Document();
+    doc.add(new FacetField("Author", "Susan"));
+    doc.add(new FacetField("Publish Date", "2012", "1", "7"));
+    indexWriter.addDocument(config.build(taxoWriter, doc));
+
+    doc = new Document();
+    doc.add(new FacetField("Author", "Frank"));
+    doc.add(new FacetField("Publish Date", "1999", "5", "5"));
+    indexWriter.addDocument(config.build(taxoWriter, doc));
     
     indexWriter.close();
     taxoWriter.close();
@@ -88,52 +96,50 @@ public class SimpleFacetsExample {
     IndexSearcher searcher = new IndexSearcher(indexReader);
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
 
-    // Count both "Publish Date" and "Author" dimensions
-    FacetSearchParams fsp = new FacetSearchParams(
-        new CountFacetRequest(new CategoryPath("Publish Date"), 10), 
-        new CountFacetRequest(new CategoryPath("Author"), 10));
-
-    // Aggregatses the facet counts
-    FacetsCollector fc = FacetsCollector.create(fsp, searcher.getIndexReader(), taxoReader);
+    FacetsCollector fc = new FacetsCollector();
 
     // MatchAllDocsQuery is for "browsing" (counts facets
     // for all non-deleted docs in the index); normally
-    // you'd use a "normal" query, and use MultiCollector to
-    // wrap collecting the "normal" hits and also facets:
-    searcher.search(new MatchAllDocsQuery(), fc);
+    // you'd use a "normal" query:
+    FacetsCollector.search(searcher, new MatchAllDocsQuery(), 10, fc);
 
     // Retrieve results
-    List<FacetResult> facetResults = fc.getFacetResults();
+    List<FacetResult> results = new ArrayList<FacetResult>();
+
+    // Count both "Publish Date" and "Author" dimensions
+    Facets facets = new FastTaxonomyFacetCounts(taxoReader, config, fc);
+    results.add(facets.getTopChildren(10, "Author"));
+    results.add(facets.getTopChildren(10, "Publish Date"));
     
     indexReader.close();
     taxoReader.close();
     
-    return facetResults;
+    return results;
   }
   
   /** User drills down on 'Publish Date/2010'. */
-  private List<FacetResult> drillDown() throws IOException {
+  private FacetResult drillDown() throws IOException {
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     IndexSearcher searcher = new IndexSearcher(indexReader);
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
 
-    // Now user drills down on Publish Date/2010:
-    FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(new CategoryPath("Author"), 10));
-
     // Passing no baseQuery means we drill down on all
     // documents ("browse only"):
-    DrillDownQuery q = new DrillDownQuery(fsp.indexingParams);
-    q.add(new CategoryPath("Publish Date/2010", '/'));
-    FacetsCollector fc = FacetsCollector.create(fsp, searcher.getIndexReader(), taxoReader);
-    searcher.search(q, fc);
+    DrillDownQuery q = new DrillDownQuery(config);
+
+    // Now user drills down on Publish Date/2010:
+    q.add("Publish Date", "2010");
+    FacetsCollector fc = new FacetsCollector();
+    FacetsCollector.search(searcher, q, 10, fc);
 
     // Retrieve results
-    List<FacetResult> facetResults = fc.getFacetResults();
-    
+    Facets facets = new FastTaxonomyFacetCounts(taxoReader, config, fc);
+    FacetResult result = facets.getTopChildren(10, "Author");
+
     indexReader.close();
     taxoReader.close();
     
-    return facetResults;
+    return result;
   }
 
   /** Runs the search example. */
@@ -143,7 +149,7 @@ public class SimpleFacetsExample {
   }
   
   /** Runs the drill-down example. */
-  public List<FacetResult> runDrillDown() throws IOException {
+  public FacetResult runDrillDown() throws IOException {
     index();
     return drillDown();
   }
@@ -152,18 +158,15 @@ public class SimpleFacetsExample {
   public static void main(String[] args) throws Exception {
     System.out.println("Facet counting example:");
     System.out.println("-----------------------");
-    List<FacetResult> results = new SimpleFacetsExample().runSearch();
-    for (FacetResult res : results) {
-      System.out.println(res);
-    }
+    SimpleFacetsExample example = new SimpleFacetsExample();
+    List<FacetResult> results = example.runSearch();
+    System.out.println("Author: " + results.get(0));
+    System.out.println("Publish Date: " + results.get(1));
 
     System.out.println("\n");
     System.out.println("Facet drill-down example (Publish Date/2010):");
     System.out.println("---------------------------------------------");
-    results = new SimpleFacetsExample().runDrillDown();
-    for (FacetResult res : results) {
-      System.out.println(res);
-    }
+    System.out.println("Author: " + example.runDrillDown());
   }
   
 }

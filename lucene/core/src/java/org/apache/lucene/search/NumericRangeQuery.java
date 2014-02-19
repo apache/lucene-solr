@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.LinkedList;
 
 import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
@@ -392,7 +391,6 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
     private BytesRef currentLowerBound, currentUpperBound;
 
     private final LinkedList<BytesRef> rangeBounds = new LinkedList<BytesRef>();
-    private final Comparator<BytesRef> termComp;
 
     NumericRangeTermsEnum(final TermsEnum tenum) {
       super(tenum);
@@ -481,15 +479,13 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
           // should never happen
           throw new IllegalArgumentException("Invalid NumericType");
       }
-
-      termComp = getComparator();
     }
     
     private void nextRange() {
       assert rangeBounds.size() % 2 == 0;
 
       currentLowerBound = rangeBounds.removeFirst();
-      assert currentUpperBound == null || termComp.compare(currentUpperBound, currentLowerBound) <= 0 :
+      assert currentUpperBound == null || currentUpperBound.compareTo(currentLowerBound) <= 0 :
         "The current upper bound must be <= the new lower bound";
       
       currentUpperBound = rangeBounds.removeFirst();
@@ -501,10 +497,10 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
         nextRange();
         
         // if the new upper bound is before the term parameter, the sub-range is never a hit
-        if (term != null && termComp.compare(term, currentUpperBound) > 0)
+        if (term != null && term.compareTo(currentUpperBound) > 0)
           continue;
         // never seek backwards, so use current term if lower bound is smaller
-        return (term != null && termComp.compare(term, currentLowerBound) > 0) ?
+        return (term != null && term.compareTo(currentLowerBound) > 0) ?
           term : currentLowerBound;
       }
       
@@ -516,11 +512,11 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
     
     @Override
     protected final AcceptStatus accept(BytesRef term) {
-      while (currentUpperBound == null || termComp.compare(term, currentUpperBound) > 0) {
+      while (currentUpperBound == null || term.compareTo(currentUpperBound) > 0) {
         if (rangeBounds.isEmpty())
           return AcceptStatus.END;
         // peek next sub-range, only seek if the current term is smaller than next lower bound
-        if (termComp.compare(term, rangeBounds.getFirst()) < 0)
+        if (term.compareTo(rangeBounds.getFirst()) < 0)
           return AcceptStatus.NO_AND_SEEK;
         // step forward to next range without seeking, as next lower range bound is less or equal current term
         nextRange();

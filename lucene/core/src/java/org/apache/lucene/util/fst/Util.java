@@ -238,11 +238,16 @@ public final class Util {
     }    
   }
 
-  private static class FSTPath<T> {
+  /** Represents a path in TopNSearcher.
+   *
+   *  @lucene.experimental
+   */
+  public static class FSTPath<T> {
     public FST.Arc<T> arc;
     public T cost;
     public final IntsRef input;
 
+    /** Sole constructor */
     public FSTPath(T cost, FST.Arc<T> arc, IntsRef input) {
       this.arc = new FST.Arc<T>().copyFrom(arc);
       this.cost = cost;
@@ -300,7 +305,7 @@ public final class Util {
     }
 
     // If back plus this arc is competitive then add to queue:
-    private void addIfCompetitive(FSTPath<T> path) {
+    protected void addIfCompetitive(FSTPath<T> path) {
 
       assert queue != null;
 
@@ -399,6 +404,7 @@ public final class Util {
 
         if (queue == null) {
           // Ran out of paths
+          //System.out.println("  break queue=null");
           break;
         }
 
@@ -408,6 +414,7 @@ public final class Util {
 
         if (path == null) {
           // There were less than topN paths available:
+          //System.out.println("  break no more paths");
           break;
         }
 
@@ -478,6 +485,7 @@ public final class Util {
             //System.out.println("    done!: " + path);
             T finalOutput = fst.outputs.add(path.cost, path.arc.output);
             if (acceptResult(path.input, finalOutput)) {
+              //System.out.println("    add result: " + path);
               results.add(new MinResult<T>(path.input, finalOutput));
             } else {
               rejectCount++;
@@ -761,11 +769,12 @@ public final class Util {
    * Ensures an arc's label is indeed printable (dot uses US-ASCII). 
    */
   private static String printableLabel(int label) {
-    if (label >= 0x20 && label <= 0x7d) {
+    // Any ordinary ascii character, except for " or \, are
+    // printed as the character; else, as a hex string:
+    if (label >= 0x20 && label <= 0x7d && label != 0x22 && label != 0x5c) {  // " OR \
       return Character.toString((char) label);
-    } else {
-      return "0x" + Integer.toHexString(label);
     }
+    return "0x" + Integer.toHexString(label);
   }
 
   /** Just maps each UTF16 unit (char) to the ints in an

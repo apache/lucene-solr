@@ -18,7 +18,7 @@
 package org.apache.solr;
 
 import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
@@ -59,8 +59,11 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
     types.add(new FldType("small_f",ONE_ONE, new FVal(-4,5)));
     types.add(new FldType("small_d",ONE_ONE, new FVal(-4,5)));
     types.add(new FldType("foo_i",ZERO_ONE, new IRange(-2,indexSize)));
-    types.add(new FldType("small_s",ZERO_ONE, new SVal('a',(char)('c'+indexSize/3),1,1)));
-    types.add(new FldType("small2_s",ZERO_ONE, new SVal('a',(char)('c'+indexSize/3),1,1)));
+    types.add(new FldType("rare_s1",new IValsPercent(95,0,5,1), new SVal('a','b',1,5)));
+    types.add(new FldType("str_s1",ZERO_ONE, new SVal('a','z',1,2)));
+    types.add(new FldType("long_s1",ZERO_ONE, new SVal('a','b',1,5)));
+    types.add(new FldType("small_s1",ZERO_ONE, new SVal('a',(char)('c'+indexSize/3),1,1)));
+    types.add(new FldType("small2_s1",ZERO_ONE, new SVal('a',(char)('c'+indexSize/3),1,1)));
     types.add(new FldType("small2_ss",ZERO_TWO, new SVal('a',(char)('c'+indexSize/3),1,1)));
     types.add(new FldType("small3_ss",new IRange(0,25), new SVal('A','z',1,1)));
     types.add(new FldType("small_i",ZERO_ONE, new IRange(-2,5+indexSize/3)));
@@ -70,7 +73,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
 
     types.add(new FldType("missing_i",new IRange(0,0), new IRange(0,100)));
     types.add(new FldType("missing_is",new IRange(0,0), new IRange(0,100)));
-    types.add(new FldType("missing_s",new IRange(0,0), new SVal('a','b',1,1)));
+    types.add(new FldType("missing_s1",new IRange(0,0), new SVal('a','b',1,1)));
     types.add(new FldType("missing_ss",new IRange(0,0), new SVal('a','b',1,1)));
 
     // TODO: doubles, multi-floats, ints with precisionStep>0, booleans
@@ -92,7 +95,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
     }
     if (ids.size() == 0) return;
 
-    StringBuffer sb = new StringBuffer("id:(");
+    StringBuilder sb = new StringBuilder("id:(");
     for (String id : ids) {
       sb.append(id).append(' ');
       model.remove(id);
@@ -182,7 +185,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
       if ((ftype.vals instanceof SVal) && rand.nextInt(100) < 20) {
         // validate = false;
         String prefix = ftype.createValue().toString();
-        if (rand.nextInt(100) < 5) prefix =  _TestUtil.randomUnicodeString(rand);
+        if (rand.nextInt(100) < 5) prefix =  TestUtil.randomUnicodeString(rand);
         else if (rand.nextInt(100) < 10) prefix = Character.toString((char)rand.nextInt(256));
         else if (prefix.length() > 0) prefix = prefix.substring(0, rand.nextInt(prefix.length()));
         params.add("facet.prefix", prefix);

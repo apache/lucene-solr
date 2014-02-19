@@ -36,6 +36,8 @@ public class Slice extends ZkNodeProps {
   public static String ACTIVE = "active";
   public static String INACTIVE = "inactive";
   public static String CONSTRUCTION = "construction";
+  public static String RECOVERY = "recovery";
+  public static String PARENT = "parent";
 
   private final String name;
   private final DocRouter.Range range;
@@ -43,6 +45,8 @@ public class Slice extends ZkNodeProps {
   private final Map<String,Replica> replicas;
   private final Replica leader;
   private final String state;
+  private final String parent;
+  private final Map<String, RoutingRule> routingRules;
 
   /**
    * @param name  The name of the slice
@@ -75,11 +79,33 @@ public class Slice extends ZkNodeProps {
     }
     **/
 
+    if (propMap.containsKey(PARENT) && propMap.get(PARENT) != null)
+      this.parent = (String) propMap.get(PARENT);
+    else
+      this.parent = null;
+
     replicationFactor = null;  // future
 
     // add the replicas *after* the other properties (for aesthetics, so it's easy to find slice properties in the JSON output)
     this.replicas = replicas != null ? replicas : makeReplicas((Map<String,Object>)propMap.get(REPLICAS));
     propMap.put(REPLICAS, this.replicas);
+
+    Map<String, Object> rules = (Map<String, Object>) propMap.get("routingRules");
+    if (rules != null) {
+      this.routingRules = new HashMap<String, RoutingRule>();
+      for (Map.Entry<String, Object> entry : rules.entrySet()) {
+        Object o = entry.getValue();
+        if (o instanceof Map) {
+          Map map = (Map) o;
+          RoutingRule rule = new RoutingRule(entry.getKey(), map);
+          routingRules.put(entry.getKey(), rule);
+        } else {
+          routingRules.put(entry.getKey(), (RoutingRule) o);
+        }
+      }
+    } else {
+      this.routingRules = null;
+    }
 
     leader = findLeader();
   }
@@ -148,6 +174,14 @@ public class Slice extends ZkNodeProps {
 
   public String getState() {
     return state;
+  }
+
+  public String getParent() {
+    return parent;
+  }
+
+  public Map<String, RoutingRule> getRoutingRules() {
+    return routingRules;
   }
 
   @Override

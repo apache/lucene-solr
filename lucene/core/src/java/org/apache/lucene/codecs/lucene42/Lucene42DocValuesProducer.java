@@ -17,15 +17,10 @@ package org.apache.lucene.codecs.lucene42;
  * limitations under the License.
  */
 
-import static org.apache.lucene.codecs.lucene42.Lucene42DocValuesConsumer.DELTA_COMPRESSED;
-import static org.apache.lucene.codecs.lucene42.Lucene42DocValuesConsumer.GCD_COMPRESSED;
-import static org.apache.lucene.codecs.lucene42.Lucene42DocValuesConsumer.TABLE_COMPRESSED;
-import static org.apache.lucene.codecs.lucene42.Lucene42DocValuesConsumer.UNCOMPRESSED;
-
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesProducer;
@@ -48,6 +43,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.PagedBytes;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.BytesRefFSTEnum.InputOutput;
 import org.apache.lucene.util.fst.FST;
@@ -78,6 +74,22 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       new HashMap<Integer,FST<Long>>();
   
   private final int maxDoc;
+  private final AtomicLong ramBytesUsed;
+  
+  static final byte NUMBER = 0;
+  static final byte BYTES = 1;
+  static final byte FST = 2;
+
+  static final int BLOCK_SIZE = 4096;
+  
+  static final byte DELTA_COMPRESSED = 0;
+  static final byte TABLE_COMPRESSED = 1;
+  static final byte UNCOMPRESSED = 2;
+  static final byte GCD_COMPRESSED = 3;
+  
+  static final int VERSION_START = 0;
+  static final int VERSION_GCD_COMPRESSION = 1;
+  static final int VERSION_CURRENT = VERSION_GCD_COMPRESSION;
     
   Lucene42DocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     maxDoc = state.segmentInfo.getDocCount();
@@ -85,11 +97,12 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
     // read in the entries from the metadata file.
     IndexInput in = state.directory.openInput(metaName, state.context);
     boolean success = false;
+    ramBytesUsed = new AtomicLong(RamUsageEstimator.shallowSizeOfInstance(getClass()));
     final int version;
     try {
       version = CodecUtil.checkHeader(in, metaCodec, 
-                                      Lucene42DocValuesConsumer.VERSION_START,
-                                      Lucene42DocValuesConsumer.VERSION_CURRENT);
+                                      VERSION_START,
+                                      VERSION_CURRENT);
       numerics = new HashMap<Integer,NumericEntry>();
       binaries = new HashMap<Integer,BinaryEntry>();
       fsts = new HashMap<Integer,FSTEntry>();
@@ -109,8 +122,8 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);
       data = state.directory.openInput(dataName, state.context);
       final int version2 = CodecUtil.checkHeader(data, dataCodec, 
-                                                 Lucene42DocValuesConsumer.VERSION_START,
-                                                 Lucene42DocValuesConsumer.VERSION_CURRENT);
+                                                 VERSION_START,
+                                                 VERSION_CURRENT);
       if (version != version2) {
         throw new CorruptIndexException("Format versions mismatch");
       }
@@ -127,7 +140,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
     int fieldNumber = meta.readVInt();
     while (fieldNumber != -1) {
       int fieldType = meta.readByte();
-      if (fieldType == Lucene42DocValuesConsumer.NUMBER) {
+      if (fieldType == NUMBER) {
         NumericEntry entry = new NumericEntry();
         entry.offset = meta.readLong();
         entry.format = meta.readByte();
@@ -140,11 +153,11 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
           default:
                throw new CorruptIndexException("Unknown format: " + entry.format + ", input=" + meta);
         }
-        if (entry.format != Lucene42DocValuesConsumer.UNCOMPRESSED) {
+        if (entry.format != UNCOMPRESSED) {
           entry.packedIntsVersion = meta.readVInt();
         }
         numerics.put(fieldNumber, entry);
-      } else if (fieldType == Lucene42DocValuesConsumer.BYTES) {
+      } else if (fieldType == BYTES) {
         BinaryEntry entry = new BinaryEntry();
         entry.offset = meta.readLong();
         entry.numBytes = meta.readLong();
@@ -155,7 +168,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
           entry.blockSize = meta.readVInt();
         }
         binaries.put(fieldNumber, entry);
-      } else if (fieldType == Lucene42DocValuesConsumer.FST) {
+      } else if (fieldType == FST) {
         FSTEntry entry = new FSTEntry();
         entry.offset = meta.readLong();
         entry.numOrds = meta.readVLong();
@@ -177,6 +190,11 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
     return instance;
   }
   
+  @Override
+  public long ramBytesUsed() {
+    return ramBytesUsed.get();
+  }
+  
   private NumericDocValues loadNumeric(FieldInfo field) throws IOException {
     NumericEntry entry = numerics.get(field.number);
     data.seek(entry.offset);
@@ -193,6 +211,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
         final int formatID = data.readVInt();
         final int bitsPerValue = data.readVInt();
         final PackedInts.Reader ordsReader = PackedInts.getReaderNoHeader(data, PackedInts.Format.byId(formatID), entry.packedIntsVersion, maxDoc, bitsPerValue);
+        ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(decode) + ordsReader.ramBytesUsed());
         return new NumericDocValues() {
           @Override
           public long get(int docID) {
@@ -202,15 +221,12 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       case DELTA_COMPRESSED:
         final int blockSize = data.readVInt();
         final BlockPackedReader reader = new BlockPackedReader(data, entry.packedIntsVersion, blockSize, maxDoc, false);
-        return new NumericDocValues() {
-          @Override
-          public long get(int docID) {
-            return reader.get(docID);
-          }
-        };
+        ramBytesUsed.addAndGet(reader.ramBytesUsed());
+        return reader;
       case UNCOMPRESSED:
         final byte bytes[] = new byte[maxDoc];
         data.readBytes(bytes, 0, bytes.length);
+        ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(bytes));
         return new NumericDocValues() {
           @Override
           public long get(int docID) {
@@ -222,6 +238,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
         final long mult = data.readLong();
         final int quotientBlockSize = data.readVInt();
         final BlockPackedReader quotientReader = new BlockPackedReader(data, entry.packedIntsVersion, quotientBlockSize, maxDoc, false);
+        ramBytesUsed.addAndGet(quotientReader.ramBytesUsed());
         return new NumericDocValues() {
           @Override
           public long get(int docID) {
@@ -251,6 +268,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
     final PagedBytes.Reader bytesReader = bytes.freeze(true);
     if (entry.minLength == entry.maxLength) {
       final int fixedLength = entry.minLength;
+      ramBytesUsed.addAndGet(bytes.ramBytesUsed());
       return new BinaryDocValues() {
         @Override
         public void get(int docID, BytesRef result) {
@@ -259,6 +277,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       };
     } else {
       final MonotonicBlockPackedReader addresses = new MonotonicBlockPackedReader(data, entry.packedIntsVersion, entry.blockSize, maxDoc, false);
+      ramBytesUsed.addAndGet(bytes.ramBytesUsed() + addresses.ramBytesUsed());
       return new BinaryDocValues() {
         @Override
         public void get(int docID, BytesRef result) {
@@ -279,6 +298,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       if (instance == null) {
         data.seek(entry.offset);
         instance = new FST<Long>(data, PositiveIntOutputs.getSingleton());
+        ramBytesUsed.addAndGet(instance.sizeInBytes());
         fstInstances.put(field.number, instance);
       }
     }
@@ -353,6 +373,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       if (instance == null) {
         data.seek(entry.offset);
         instance = new FST<Long>(data, PositiveIntOutputs.getSingleton());
+        ramBytesUsed.addAndGet(instance.sizeInBytes());
         fstInstances.put(field.number, instance);
       }
     }
@@ -429,6 +450,15 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       }
     };
   }
+  
+  @Override
+  public Bits getDocsWithField(FieldInfo field) throws IOException {
+    if (field.getDocValuesType() == FieldInfo.DocValuesType.SORTED_SET) {
+      return new SortedSetDocsWithField(getSortedSet(field), maxDoc);
+    } else {
+      return new Bits.MatchAllBits(maxDoc);
+    }
+  }
 
   @Override
   public void close() throws IOException {
@@ -485,12 +515,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
     }
 
     @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
-    }
-
-    @Override
-    public SeekStatus seekCeil(BytesRef text, boolean useCache) throws IOException {
+    public SeekStatus seekCeil(BytesRef text) throws IOException {
       if (in.seekCeil(text) == null) {
         return SeekStatus.END;
       } else if (term().equals(text)) {
@@ -503,7 +528,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
     }
 
     @Override
-    public boolean seekExact(BytesRef text, boolean useCache) throws IOException {
+    public boolean seekExact(BytesRef text) throws IOException {
       if (in.seekExact(text) == null) {
         return false;
       } else {

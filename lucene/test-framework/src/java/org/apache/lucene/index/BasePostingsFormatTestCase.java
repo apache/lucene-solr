@@ -30,14 +30,20 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
-import org.apache.lucene.codecs.PostingsConsumer;
-import org.apache.lucene.codecs.TermStats;
-import org.apache.lucene.codecs.TermsConsumer;
+import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.lucene46.Lucene46Codec;
+import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.Directory;
@@ -47,8 +53,10 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -124,6 +132,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
     private final BytesRef payload;
     private final IndexOptions options;
     private final boolean doPositions;
+    private final boolean allowPayloads;
 
     private int docID;
     private int freq;
@@ -136,14 +145,15 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
     private int posSpacing;
     private int posUpto;
 
-    public SeedPostings(long seed, int minDocFreq, int maxDocFreq, Bits liveDocs, IndexOptions options) {
+    public SeedPostings(long seed, int minDocFreq, int maxDocFreq, Bits liveDocs, IndexOptions options, boolean allowPayloads) {
       random = new Random(seed);
       docRandom = new Random(random.nextLong());
-      docFreq = _TestUtil.nextInt(random, minDocFreq, maxDocFreq);
+      docFreq = TestUtil.nextInt(random, minDocFreq, maxDocFreq);
       this.liveDocs = liveDocs;
+      this.allowPayloads = allowPayloads;
 
       // TODO: more realistic to inversely tie this to numDocs:
-      maxDocSpacing = _TestUtil.nextInt(random, 1, 100);
+      maxDocSpacing = TestUtil.nextInt(random, 1, 100);
 
       if (random.nextInt(10) == 7) {
         // 10% of the time create big payloads:
@@ -182,21 +192,21 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
           docID++;
         } else {
           // TODO: sometimes have a biggish gap here!
-          docID += _TestUtil.nextInt(docRandom, 1, maxDocSpacing);
+          docID += TestUtil.nextInt(docRandom, 1, maxDocSpacing);
         }
 
         if (random.nextInt(200) == 17) {
-          freq = _TestUtil.nextInt(random, 1, 1000);
+          freq = TestUtil.nextInt(random, 1, 1000);
         } else if (random.nextInt(10) == 17) {
-          freq = _TestUtil.nextInt(random, 1, 20);
+          freq = TestUtil.nextInt(random, 1, 20);
         } else {
-          freq = _TestUtil.nextInt(random, 1, 4);
+          freq = TestUtil.nextInt(random, 1, 4);
         }
 
         pos = 0;
         offset = 0;
         posUpto = 0;
-        posSpacing = _TestUtil.nextInt(random, 1, 100);
+        posSpacing = TestUtil.nextInt(random, 1, 100);
 
         upto++;
         return docID;
@@ -228,7 +238,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
       } else if (posSpacing == 1) {
         pos++;
       } else {
-        pos += _TestUtil.nextInt(random, 1, posSpacing);
+        pos += TestUtil.nextInt(random, 1, posSpacing);
       }
 
       if (payloadSize != 0) {
@@ -245,6 +255,9 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
           }
         } 
       } else {
+        payload.length = 0;
+      }
+      if (!allowPayloads) {
         payload.length = 0;
       }
 
@@ -293,7 +306,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
   }
 
   // Holds all postings:
-  private static Map<String,Map<BytesRef,Long>> fields;
+  private static Map<String,SortedMap<BytesRef,Long>> fields;
 
   private static FieldInfos fieldInfos;
 
@@ -305,7 +318,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
   private static long totalPostings;
   private static long totalPayloadBytes;
 
-  private static SeedPostings getSeedPostings(String term, long seed, boolean withLiveDocs, IndexOptions options) {
+  private static SeedPostings getSeedPostings(String term, long seed, boolean withLiveDocs, IndexOptions options, boolean allowPayloads) {
     int minDocFreq, maxDocFreq;
     if (term.startsWith("big_")) {
       minDocFreq = RANDOM_MULTIPLIER * 50000;
@@ -321,16 +334,16 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
       maxDocFreq = 3;
     }
 
-    return new SeedPostings(seed, minDocFreq, maxDocFreq, withLiveDocs ? globalLiveDocs : null, options);
+    return new SeedPostings(seed, minDocFreq, maxDocFreq, withLiveDocs ? globalLiveDocs : null, options, allowPayloads);
   }
 
   @BeforeClass
   public static void createPostings() throws IOException {
     totalPostings = 0;
     totalPayloadBytes = 0;
-    fields = new TreeMap<String,Map<BytesRef,Long>>();
+    fields = new TreeMap<String,SortedMap<BytesRef,Long>>();
 
-    final int numFields = _TestUtil.nextInt(random(), 1, 5);
+    final int numFields = TestUtil.nextInt(random(), 1, 5);
     if (VERBOSE) {
       System.out.println("TEST: " + numFields + " fields");
     }
@@ -339,7 +352,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
     FieldInfo[] fieldInfoArray = new FieldInfo[numFields];
     int fieldUpto = 0;
     while (fieldUpto < numFields) {
-      String field = _TestUtil.randomSimpleString(random());
+      String field = TestUtil.randomSimpleString(random());
       if (fields.containsKey(field)) {
         continue;
       }
@@ -349,16 +362,19 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
                                                 null, DocValuesType.NUMERIC, null);
       fieldUpto++;
 
-      Map<BytesRef,Long> postings = new TreeMap<BytesRef,Long>();
+      SortedMap<BytesRef,Long> postings = new TreeMap<BytesRef,Long>();
       fields.put(field, postings);
       Set<String> seenTerms = new HashSet<String>();
 
-      // TODO:
-      //final int numTerms = atLeast(10);
-      final int numTerms = 4;
+      int numTerms;
+      if (random().nextInt(10) == 7) {
+        numTerms = atLeast(50);
+      } else {
+        numTerms = TestUtil.nextInt(random(), 2, 20);
+      }
 
       for(int termUpto=0;termUpto<numTerms;termUpto++) {
-        String term = _TestUtil.randomSimpleString(random());
+        String term = TestUtil.randomSimpleString(random());
         if (seenTerms.contains(term)) {
           continue;
         }
@@ -383,7 +399,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
 
         // NOTE: sort of silly: we enum all the docs just to
         // get the maxDoc
-        DocsEnum docsEnum = getSeedPostings(term, termSeed, false, IndexOptions.DOCS_ONLY);
+        DocsEnum docsEnum = getSeedPostings(term, termSeed, false, IndexOptions.DOCS_ONLY, true);
         int doc;
         int lastDoc = 0;
         while((doc = docsEnum.nextDoc()) != DocsEnum.NO_MORE_DOCS) {
@@ -407,7 +423,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
     }
 
     allTerms = new ArrayList<FieldAndTerm>();
-    for(Map.Entry<String,Map<BytesRef,Long>> fieldEnt : fields.entrySet()) {
+    for(Map.Entry<String,SortedMap<BytesRef,Long>> fieldEnt : fields.entrySet()) {
       String field = fieldEnt.getKey();
       for(Map.Entry<BytesRef,Long> termEnt : fieldEnt.getValue().entrySet()) {
         allTerms.add(new FieldAndTerm(field, termEnt.getKey()));
@@ -427,6 +443,208 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
     globalLiveDocs = null;
   }
 
+  private static class SeedFields extends Fields {
+    final Map<String,SortedMap<BytesRef,Long>> fields;
+    final FieldInfos fieldInfos;
+    final IndexOptions maxAllowed;
+    final boolean allowPayloads;
+
+    public SeedFields(Map<String,SortedMap<BytesRef,Long>> fields, FieldInfos fieldInfos, IndexOptions maxAllowed, boolean allowPayloads) {
+      this.fields = fields;
+      this.fieldInfos = fieldInfos;
+      this.maxAllowed = maxAllowed;
+      this.allowPayloads = allowPayloads;
+    }
+
+    @Override
+    public Iterator<String> iterator() {
+      return fields.keySet().iterator();
+    }
+
+    @Override
+    public Terms terms(String field) {
+      SortedMap<BytesRef,Long> terms = fields.get(field);
+      if (terms == null) {
+        return null;
+      } else {
+        return new SeedTerms(terms, fieldInfos.fieldInfo(field), maxAllowed, allowPayloads);
+      }
+    }
+
+    @Override
+    public int size() {
+      return fields.size();
+    }
+  }
+
+  private static class SeedTerms extends Terms {
+    final SortedMap<BytesRef,Long> terms;
+    final FieldInfo fieldInfo;
+    final IndexOptions maxAllowed;
+    final boolean allowPayloads;
+
+    public SeedTerms(SortedMap<BytesRef,Long> terms, FieldInfo fieldInfo, IndexOptions maxAllowed, boolean allowPayloads) {
+      this.terms = terms;
+      this.fieldInfo = fieldInfo;
+      this.maxAllowed = maxAllowed;
+      this.allowPayloads = allowPayloads;
+    }
+
+    @Override
+    public TermsEnum iterator(TermsEnum reuse) {
+      SeedTermsEnum termsEnum;
+      if (reuse != null && reuse instanceof SeedTermsEnum) {
+        termsEnum = (SeedTermsEnum) reuse;
+        if (termsEnum.terms != terms) {
+          termsEnum = new SeedTermsEnum(terms, maxAllowed, allowPayloads);
+        }
+      } else {
+        termsEnum = new SeedTermsEnum(terms, maxAllowed, allowPayloads);
+      }
+      termsEnum.reset();
+
+      return termsEnum;
+    }
+
+    @Override
+    public long size() {
+      return terms.size();
+    }
+
+    @Override
+    public long getSumTotalTermFreq() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long getSumDocFreq() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int getDocCount() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean hasFreqs() {
+      return fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
+    }
+
+    @Override
+    public boolean hasOffsets() {
+      return fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+    }
+  
+    @Override
+    public boolean hasPositions() {
+      return fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+    }
+  
+    @Override
+    public boolean hasPayloads() {
+      return allowPayloads && fieldInfo.hasPayloads();
+    }
+  }
+
+  private static class SeedTermsEnum extends TermsEnum {
+    final SortedMap<BytesRef,Long> terms;
+    final IndexOptions maxAllowed;
+    final boolean allowPayloads;
+
+    private Iterator<Map.Entry<BytesRef,Long>> iterator;
+
+    private Map.Entry<BytesRef,Long> current;
+
+    public SeedTermsEnum(SortedMap<BytesRef,Long> terms, IndexOptions maxAllowed, boolean allowPayloads) {
+      this.terms = terms;
+      this.maxAllowed = maxAllowed;
+      this.allowPayloads = allowPayloads;
+    }
+
+    void reset() {
+      iterator = terms.entrySet().iterator();
+    }
+
+    @Override
+    public SeekStatus seekCeil(BytesRef text) {
+      SortedMap<BytesRef,Long> tailMap = terms.tailMap(text);
+      if (tailMap.isEmpty()) {
+        return SeekStatus.END;
+      } else {
+        iterator = tailMap.entrySet().iterator();
+        if (tailMap.firstKey().equals(text)) {
+          return SeekStatus.FOUND;
+        } else {
+          return SeekStatus.NOT_FOUND;
+        }
+      }
+    }
+
+    @Override
+    public BytesRef next() {
+      if (iterator.hasNext()) {
+        current = iterator.next();
+        return term();
+      } else {
+        return null;
+      }
+    }
+
+    @Override
+    public void seekExact(long ord) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public BytesRef term() {
+      return current.getKey();
+    }
+
+    @Override
+    public long ord() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int docFreq() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long totalTermFreq() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public final DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
+      if (liveDocs != null) {
+        throw new IllegalArgumentException("liveDocs must be null");
+      }
+      if ((flags & DocsEnum.FLAG_FREQS) != 0 && maxAllowed.compareTo(IndexOptions.DOCS_AND_FREQS) < 0) {
+        return null;
+      }
+      return getSeedPostings(current.getKey().utf8ToString(), current.getValue(), false, maxAllowed, allowPayloads);
+    }
+
+    @Override
+    public final DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
+      if (liveDocs != null) {
+        throw new IllegalArgumentException("liveDocs must be null");
+      }
+      if (maxAllowed.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
+        return null;
+      }
+      if ((flags & DocsAndPositionsEnum.FLAG_OFFSETS) != 0 && maxAllowed.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) < 0) {
+        return null;
+      }
+      if ((flags & DocsAndPositionsEnum.FLAG_PAYLOADS) != 0 && allowPayloads == false) {
+        return null;
+      }
+      return getSeedPostings(current.getKey().utf8ToString(), current.getValue(), false, maxAllowed, allowPayloads);
+    }
+  }
+
   // TODO maybe instead of @BeforeClass just make a single test run: build postings & index & test it?
 
   private FieldInfos currentFieldInfos;
@@ -435,7 +653,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
   // randomly index at lower IndexOption
   private FieldsProducer buildIndex(Directory dir, IndexOptions maxAllowed, boolean allowPayloads, boolean alwaysTestMax) throws IOException {
     Codec codec = getCodec();
-    SegmentInfo segmentInfo = new SegmentInfo(dir, Constants.LUCENE_MAIN_VERSION, "_0", maxDoc, false, codec, null, null);
+    SegmentInfo segmentInfo = new SegmentInfo(dir, Constants.LUCENE_MAIN_VERSION, "_0", maxDoc, false, codec, null);
 
     int maxIndexOption = Arrays.asList(IndexOptions.values()).indexOf(maxAllowed);
     if (VERBOSE) {
@@ -450,7 +668,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
     for(int fieldUpto=0;fieldUpto<fields.size();fieldUpto++) {
       FieldInfo oldFieldInfo = fieldInfos.fieldInfo(fieldUpto);
 
-      String pf = _TestUtil.getPostingsFormat(codec, oldFieldInfo.name);
+      String pf = TestUtil.getPostingsFormat(codec, oldFieldInfo.name);
       int fieldMaxIndexOption;
       if (doesntSupportOffsets.contains(pf)) {
         fieldMaxIndexOption = Math.min(maxIndexOptionNoOffsets, maxIndexOption);
@@ -483,80 +701,11 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
 
     SegmentWriteState writeState = new SegmentWriteState(null, dir,
                                                          segmentInfo, newFieldInfos,
-                                                         32, null, new IOContext(new FlushInfo(maxDoc, bytes)));
-    FieldsConsumer fieldsConsumer = codec.postingsFormat().fieldsConsumer(writeState);
+                                                         null, new IOContext(new FlushInfo(maxDoc, bytes)));
 
-    for(Map.Entry<String,Map<BytesRef,Long>> fieldEnt : fields.entrySet()) {
-      String field = fieldEnt.getKey();
-      Map<BytesRef,Long> terms = fieldEnt.getValue();
+    Fields seedFields = new SeedFields(fields, newFieldInfos, maxAllowed, allowPayloads);
 
-      FieldInfo fieldInfo = newFieldInfos.fieldInfo(field);
-
-      IndexOptions indexOptions = fieldInfo.getIndexOptions();
-
-      if (VERBOSE) {
-        System.out.println("field=" + field + " indexOtions=" + indexOptions);
-      }
-
-      boolean doFreq = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
-      boolean doPos = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
-      boolean doPayloads = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 && allowPayloads;
-      boolean doOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
-      
-      TermsConsumer termsConsumer = fieldsConsumer.addField(fieldInfo);
-      long sumTotalTF = 0;
-      long sumDF = 0;
-      FixedBitSet seenDocs = new FixedBitSet(maxDoc);
-      for(Map.Entry<BytesRef,Long> termEnt : terms.entrySet()) {
-        BytesRef term = termEnt.getKey();
-        SeedPostings postings = getSeedPostings(term.utf8ToString(), termEnt.getValue(), false, maxAllowed);
-        if (VERBOSE) {
-          System.out.println("  term=" + field + ":" + term.utf8ToString() + " docFreq=" + postings.docFreq + " seed=" + termEnt.getValue());
-        }
-        
-        PostingsConsumer postingsConsumer = termsConsumer.startTerm(term);
-        long totalTF = 0;
-        int docID = 0;
-        while((docID = postings.nextDoc()) != DocsEnum.NO_MORE_DOCS) {
-          final int freq = postings.freq();
-          if (VERBOSE) {
-            System.out.println("    " + postings.upto + ": docID=" + docID + " freq=" + postings.freq);
-          }
-          postingsConsumer.startDoc(docID, doFreq ? postings.freq : -1);
-          seenDocs.set(docID);
-          if (doPos) {
-            totalTF += postings.freq;
-            for(int posUpto=0;posUpto<freq;posUpto++) {
-              int pos = postings.nextPosition();
-              BytesRef payload = postings.getPayload();
-
-              if (VERBOSE) {
-                if (doPayloads) {
-                  System.out.println("      pos=" + pos + " payload=" + (payload == null ? "null" : payload.length + " bytes"));
-                } else {
-                  System.out.println("      pos=" + pos);
-                }
-              }
-              postingsConsumer.addPosition(pos, doPayloads ? payload : null,
-                                           doOffsets ? postings.startOffset() : -1,
-                                           doOffsets ? postings.endOffset() : -1);
-            }
-          } else if (doFreq) {
-            totalTF += freq;
-          } else {
-            totalTF++;
-          }
-          postingsConsumer.finishDoc();
-        }
-        termsConsumer.finishTerm(term, new TermStats(postings.docFreq, doFreq ? totalTF : -1));
-        sumTotalTF += totalTF;
-        sumDF += postings.docFreq;
-      }
-
-      termsConsumer.finish(doFreq ? sumTotalTF : -1, sumDF, seenDocs.cardinality());
-    }
-
-    fieldsConsumer.close();
+    codec.postingsFormat().fieldsConsumer(writeState).write(seedFields);
 
     if (VERBOSE) {
       System.out.println("TEST: after indexing: files=");
@@ -567,7 +716,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
 
     currentFieldInfos = newFieldInfos;
 
-    SegmentReadState readState = new SegmentReadState(dir, segmentInfo, newFieldInfos, IOContext.DEFAULT, 1);
+    SegmentReadState readState = new SegmentReadState(dir, segmentInfo, newFieldInfos, IOContext.READ);
 
     return codec.postingsFormat().fieldsProducer(readState);
   }
@@ -595,6 +744,10 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
       System.out.println("  verifyEnum: options=" + options + " maxTestOptions=" + maxTestOptions);
     }
 
+    // Make sure TermsEnum really is positioned on the
+    // expected term:
+    assertEquals(term, termsEnum.term());
+
     // 50% of the time time pass liveDocs:
     boolean useLiveDocs = options.contains(Option.LIVE_DOCS) && random().nextBoolean();
     Bits liveDocs;
@@ -616,7 +769,8 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
     SeedPostings expected = getSeedPostings(term.utf8ToString(), 
                                             fields.get(field).get(term),
                                             useLiveDocs,
-                                            maxIndexOptions);
+                                            maxIndexOptions,
+                                            true);
     assertEquals(expected.docFreq, termsEnum.docFreq());
 
     boolean allowFreqs = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0 &&
@@ -723,7 +877,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
     }
 
     double skipChance = alwaysTestMax ? 0.5 : random().nextDouble();
-    int numSkips = expected.docFreq < 3 ? 1 : _TestUtil.nextInt(random(), 1, Math.min(20, expected.docFreq/3));
+    int numSkips = expected.docFreq < 3 ? 1 : TestUtil.nextInt(random(), 1, Math.min(20, expected.docFreq / 3));
     int skipInc = expected.docFreq/numSkips;
     int skipDocInc = maxDoc/numSkips;
 
@@ -766,7 +920,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
         int targetDocID = -1;
         if (expected.upto < stopAt && random().nextBoolean()) {
           // Pick target we know exists:
-          final int skipCount = _TestUtil.nextInt(random(), 1, skipInc);
+          final int skipCount = TestUtil.nextInt(random(), 1, skipInc);
           for(int skip=0;skip<skipCount;skip++) {
             if (expected.nextDoc() == DocsEnum.NO_MORE_DOCS) {
               break;
@@ -774,7 +928,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
           }
         } else {
           // Pick random target (might not exist):
-          final int skipDocIDs = _TestUtil.nextInt(random(), 1, skipDocInc);
+          final int skipDocIDs = TestUtil.nextInt(random(), 1, skipDocInc);
           if (skipDocIDs > 0) {
             targetDocID = expected.docID() + skipDocIDs;
             expected.advance(targetDocID);
@@ -928,7 +1082,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
                          final boolean alwaysTestMax) throws Exception {
 
     if (options.contains(Option.THREADS)) {
-      int numThreads = _TestUtil.nextInt(random(), 2, 5);
+      int numThreads = TestUtil.nextInt(random(), 2, 5);
       Thread[] threads = new Thread[numThreads];
       for(int threadUpto=0;threadUpto<numThreads;threadUpto++) {
         threads[threadUpto] = new TestThread(this, fieldsSource, options, maxTestOptions, maxIndexOptions, alwaysTestMax);
@@ -983,7 +1137,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
       termsEnum = terms.iterator(null);
 
       if (!useTermState) {
-        assertTrue(termsEnum.seekExact(fieldAndTerm.term, true));
+        assertTrue(termsEnum.seekExact(fieldAndTerm.term));
       } else {
         termsEnum.seekExact(fieldAndTerm.term, termState);
       }
@@ -1057,7 +1211,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
   /** Indexes all fields/terms at the specified
    *  IndexOptions, and fully tests at that IndexOptions. */
   private void testFull(IndexOptions options, boolean withPayloads) throws Exception {
-    File path = _TestUtil.getTempDir("testPostingsFormat.testExact");
+    File path = TestUtil.getTempDir("testPostingsFormat.testExact");
     Directory dir = newFSDirectory(path);
 
     // TODO test thread safety of buildIndex too
@@ -1078,7 +1232,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
 
     fieldsProducer.close();
     dir.close();
-    _TestUtil.rmDir(path);
+    TestUtil.rmDir(path);
   }
 
   public void testDocsOnly() throws Exception {
@@ -1110,7 +1264,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
     int iters = 5;
 
     for(int iter=0;iter<iters;iter++) {
-      File path = _TestUtil.getTempDir("testPostingsFormat");
+      File path = TestUtil.getTempDir("testPostingsFormat");
       Directory dir = newFSDirectory(path);
 
       boolean indexPayloads = random().nextBoolean();
@@ -1127,7 +1281,303 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
       fieldsProducer = null;
 
       dir.close();
-      _TestUtil.rmDir(path);
+      TestUtil.rmDir(path);
     }
+  }
+  
+  public void testEmptyField() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    iwc.setCodec(getCodec());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    Document doc = new Document();
+    doc.add(newStringField("", "something", Field.Store.NO));
+    iw.addDocument(doc);
+    DirectoryReader ir = iw.getReader();
+    AtomicReader ar = getOnlySegmentReader(ir);
+    Fields fields = ar.fields();
+    int fieldCount = fields.size();
+    // -1 is allowed, if the codec doesn't implement fields.size():
+    assertTrue(fieldCount == 1 || fieldCount == -1);
+    Terms terms = ar.terms("");
+    assertNotNull(terms);
+    TermsEnum termsEnum = terms.iterator(null);
+    assertNotNull(termsEnum.next());
+    assertEquals(termsEnum.term(), new BytesRef("something"));
+    assertNull(termsEnum.next());
+    ir.close();
+    iw.close();
+    dir.close();
+  }
+  
+  public void testEmptyFieldAndEmptyTerm() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    iwc.setCodec(getCodec());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    Document doc = new Document();
+    doc.add(newStringField("", "", Field.Store.NO));
+    iw.addDocument(doc);
+    DirectoryReader ir = iw.getReader();
+    AtomicReader ar = getOnlySegmentReader(ir);
+    Fields fields = ar.fields();
+    int fieldCount = fields.size();
+    // -1 is allowed, if the codec doesn't implement fields.size():
+    assertTrue(fieldCount == 1 || fieldCount == -1);
+    Terms terms = ar.terms("");
+    assertNotNull(terms);
+    TermsEnum termsEnum = terms.iterator(null);
+    assertNotNull(termsEnum.next());
+    assertEquals(termsEnum.term(), new BytesRef(""));
+    assertNull(termsEnum.next());
+    ir.close();
+    iw.close();
+    dir.close();
+  }
+  
+  // tests that ghost fields still work
+  // TODO: can this be improved?
+  public void testGhosts() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    iwc.setCodec(getCodec());
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    Document doc = new Document();
+    iw.addDocument(doc);
+    doc.add(newStringField("ghostField", "something", Field.Store.NO));
+    iw.addDocument(doc);
+    iw.forceMerge(1);
+    iw.deleteDocuments(new Term("ghostField", "something")); // delete the only term for the field
+    iw.forceMerge(1);
+    DirectoryReader ir = iw.getReader();
+    AtomicReader ar = getOnlySegmentReader(ir);
+    Fields fields = ar.fields();
+    // Ghost busting terms dict impls will have
+    // fields.size() == 0; all others must be == 1:
+    assertTrue(fields.size() <= 1);
+    Terms terms = fields.terms("ghostField");
+    if (terms != null) {
+      TermsEnum termsEnum = terms.iterator(null);
+      BytesRef term = termsEnum.next();
+      if (term != null) {
+        DocsEnum docsEnum = termsEnum.docs(null, null);
+        assertTrue(docsEnum.nextDoc() == DocsEnum.NO_MORE_DOCS);
+      }
+    }
+    ir.close();
+    iw.close();
+    dir.close();
+  }
+
+  private static class TermFreqs {
+    long totalTermFreq;
+    int docFreq;
+  };
+
+  // LUCENE-5123: make sure we can visit postings twice
+  // during flush/merge
+  public void testInvertedWrite() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+
+    // Must be concurrent because thread(s) can be merging
+    // while up to one thread flushes, and each of those
+    // threads iterates over the map while the flushing
+    // thread might be adding to it:
+    final Map<String,TermFreqs> termFreqs = new ConcurrentHashMap<String,TermFreqs>();
+
+    final AtomicLong sumDocFreq = new AtomicLong();
+    final AtomicLong sumTotalTermFreq = new AtomicLong();
+
+    // TODO: would be better to use / delegate to the current
+    // Codec returned by getCodec()
+
+    iwc.setCodec(new Lucene46Codec() {
+        @Override
+        public PostingsFormat getPostingsFormatForField(String field) {
+
+          PostingsFormat p = getCodec().postingsFormat();
+          if (p instanceof PerFieldPostingsFormat) {
+            p = ((PerFieldPostingsFormat) p).getPostingsFormatForField(field);
+          }
+          final PostingsFormat defaultPostingsFormat = p;
+
+          final Thread mainThread = Thread.currentThread();
+
+          if (field.equals("body")) {
+
+            // A PF that counts up some stats and then in
+            // the end we verify the stats match what the
+            // final IndexReader says, just to exercise the
+            // new freedom of iterating the postings more
+            // than once at flush/merge:
+
+            return new PostingsFormat(defaultPostingsFormat.getName()) {
+
+              @Override
+              public FieldsConsumer fieldsConsumer(final SegmentWriteState state) throws IOException {
+
+                final FieldsConsumer fieldsConsumer = defaultPostingsFormat.fieldsConsumer(state);
+
+                return new FieldsConsumer() {
+                  @Override
+                  public void write(Fields fields) throws IOException {
+                    fieldsConsumer.write(fields);
+
+                    boolean isMerge = state.context.context == IOContext.Context.MERGE;
+
+                    // We only use one thread for flushing
+                    // in this test:
+                    assert isMerge || Thread.currentThread() == mainThread;
+
+                    // We iterate the provided TermsEnum
+                    // twice, so we excercise this new freedom
+                    // with the inverted API; if
+                    // addOnSecondPass is true, we add up
+                    // term stats on the 2nd iteration:
+                    boolean addOnSecondPass = random().nextBoolean();
+
+                    //System.out.println("write isMerge=" + isMerge + " 2ndPass=" + addOnSecondPass);
+
+                    // Gather our own stats:
+                    Terms terms = fields.terms("body");
+                    assert terms != null;
+
+                    TermsEnum termsEnum = terms.iterator(null);
+                    DocsEnum docs = null;
+                    while(termsEnum.next() != null) {
+                      BytesRef term = termsEnum.term();
+                      if (random().nextBoolean()) {
+                        docs = termsEnum.docs(null, docs, DocsEnum.FLAG_FREQS);
+                      } else if (docs instanceof DocsAndPositionsEnum) {
+                        docs = termsEnum.docsAndPositions(null, (DocsAndPositionsEnum) docs, 0);
+                      } else {
+                        docs = termsEnum.docsAndPositions(null, null, 0);
+                      }
+                      int docFreq = 0;
+                      long totalTermFreq = 0;
+                      while (docs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+                        docFreq++;
+                        totalTermFreq += docs.freq();
+                        if (docs instanceof DocsAndPositionsEnum) {
+                          DocsAndPositionsEnum posEnum = (DocsAndPositionsEnum) docs;
+                          int limit = TestUtil.nextInt(random(), 1, docs.freq());
+                          for(int i=0;i<limit;i++) {
+                            posEnum.nextPosition();
+                          }
+                        }
+                      }
+
+                      String termString = term.utf8ToString();
+
+                      // During merge we should only see terms
+                      // we had already seen during a
+                      // previous flush:
+                      assertTrue(isMerge==false || termFreqs.containsKey(termString));
+
+                      if (isMerge == false) {
+                        if (addOnSecondPass == false) {
+                          TermFreqs tf = termFreqs.get(termString);
+                          if (tf == null) {
+                            tf = new TermFreqs();
+                            termFreqs.put(termString, tf);
+                          }
+                          tf.docFreq += docFreq;
+                          tf.totalTermFreq += totalTermFreq;
+                          sumDocFreq.addAndGet(docFreq);
+                          sumTotalTermFreq.addAndGet(totalTermFreq);
+                        } else if (termFreqs.containsKey(termString) == false) {
+                          // Add placeholder (2nd pass will
+                          // set its counts):
+                          termFreqs.put(termString, new TermFreqs());
+                        }
+                      }
+                    }
+
+                    // Also test seeking the TermsEnum:
+                    for(String term : termFreqs.keySet()) {
+                      if (termsEnum.seekExact(new BytesRef(term))) {
+                        if (random().nextBoolean()) {
+                          docs = termsEnum.docs(null, docs, DocsEnum.FLAG_FREQS);
+                        } else if (docs instanceof DocsAndPositionsEnum) {
+                          docs = termsEnum.docsAndPositions(null, (DocsAndPositionsEnum) docs, 0);
+                        } else {
+                          docs = termsEnum.docsAndPositions(null, null, 0);
+                        }
+
+                        int docFreq = 0;
+                        long totalTermFreq = 0;
+                        while (docs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+                          docFreq++;
+                          totalTermFreq += docs.freq();
+                          if (docs instanceof DocsAndPositionsEnum) {
+                            DocsAndPositionsEnum posEnum = (DocsAndPositionsEnum) docs;
+                            int limit = TestUtil.nextInt(random(), 1, docs.freq());
+                            for(int i=0;i<limit;i++) {
+                              posEnum.nextPosition();
+                            }
+                          }
+                        }
+
+                        if (isMerge == false && addOnSecondPass) {
+                          TermFreqs tf = termFreqs.get(term);
+                          assert tf != null;
+                          tf.docFreq += docFreq;
+                          tf.totalTermFreq += totalTermFreq;
+                          sumDocFreq.addAndGet(docFreq);
+                          sumTotalTermFreq.addAndGet(totalTermFreq);
+                        }
+
+                        //System.out.println("  term=" + term + " docFreq=" + docFreq + " ttDF=" + termToDocFreq.get(term));
+                        assertTrue(docFreq <= termFreqs.get(term).docFreq);
+                        assertTrue(totalTermFreq <= termFreqs.get(term).totalTermFreq);
+                      }
+                    }
+                  }
+                };
+              }
+
+              @Override
+              public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
+                return defaultPostingsFormat.fieldsProducer(state);
+              }
+            };
+          } else {
+            return defaultPostingsFormat;
+          }
+        }
+      });
+
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+
+    LineFileDocs docs = new LineFileDocs(random());
+    int bytesToIndex = atLeast(100) * 1024;
+    int bytesIndexed = 0;
+    while (bytesIndexed < bytesToIndex) {
+      Document doc = docs.nextDoc();
+      w.addDocument(doc);
+      bytesIndexed += RamUsageEstimator.sizeOf(doc);
+    }
+
+    IndexReader r = w.getReader();
+    w.close();
+
+    Terms terms = MultiFields.getTerms(r, "body");
+    assertEquals(sumDocFreq.get(), terms.getSumDocFreq());
+    assertEquals(sumTotalTermFreq.get(), terms.getSumTotalTermFreq());
+
+    TermsEnum termsEnum = terms.iterator(null);
+    long termCount = 0;
+    while(termsEnum.next() != null) {
+      BytesRef term = termsEnum.term();
+      termCount++;
+      assertEquals(termFreqs.get(term.utf8ToString()).docFreq, termsEnum.docFreq());
+      assertEquals(termFreqs.get(term.utf8ToString()).totalTermFreq, termsEnum.totalTermFreq());
+    }
+    assertEquals(termFreqs.size(), termCount);
+
+    r.close();
+    dir.close();
   }
 }

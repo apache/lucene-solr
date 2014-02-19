@@ -347,7 +347,7 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
     MockAnalyzer stdAnalyzer = new MockAnalyzer(random());
 
     public AnalyzerReturningNull() {
-      super(new PerFieldReuseStrategy());
+      super(PER_FIELD_REUSE_STRATEGY);
     }
 
     @Override
@@ -363,8 +363,8 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
     }
 
     @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      return stdAnalyzer.createComponents(fieldName, reader);
+    public TokenStreamComponents createComponents(String fieldName) {
+      return stdAnalyzer.createComponents(fieldName);
     }
   }
 

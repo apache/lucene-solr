@@ -17,7 +17,6 @@ package org.apache.lucene.codecs.lucene41;
  * limitations under the License.
  */
 
-import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -53,7 +52,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
@@ -67,10 +67,10 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
   // creates 8 fields with different options and does "duels" of fields against each other
   public void test() throws Exception {
     Directory dir = newDirectory();
-    Analyzer analyzer = new Analyzer(new Analyzer.PerFieldReuseStrategy()) {
+    Analyzer analyzer = new Analyzer(Analyzer.PER_FIELD_REUSE_STRATEGY) {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer();
         if (fieldName.contains("payloadsFixed")) {
           TokenFilter filter = new MockFixedLengthPayloadFilter(new Random(0), tokenizer, 1);
           return new TokenStreamComponents(tokenizer, filter);
@@ -83,10 +83,10 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
       }
     };
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
-    iwc.setCodec(_TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat())); 
+    iwc.setCodec(TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat()));
     // TODO we could actually add more fields implemented with different PFs
     // or, just put this test into the usual rotation?
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc.clone());
     Document doc = new Document();
     FieldType docsOnlyType = new FieldType(TextField.TYPE_NOT_STORED);
     // turn this on for a cross-check
@@ -123,7 +123,7 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
     doc.add(field7);
     doc.add(field8);
     for (int i = 0; i < MAXDOC; i++) {
-      String stringValue = Integer.toString(i) + " verycommon " + English.intToEnglish(i).replace('-', ' ') + " " + _TestUtil.randomSimpleString(random());
+      String stringValue = Integer.toString(i) + " verycommon " + English.intToEnglish(i).replace('-', ' ') + " " + TestUtil.randomSimpleString(random());
       field1.setStringValue(stringValue);
       field2.setStringValue(stringValue);
       field3.setStringValue(stringValue);
@@ -136,9 +136,9 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
     }
     iw.close();
     verify(dir);
-    _TestUtil.checkIndex(dir); // for some extra coverage, checkIndex before we forceMerge
+    TestUtil.checkIndex(dir); // for some extra coverage, checkIndex before we forceMerge
     iwc.setOpenMode(OpenMode.APPEND);
-    IndexWriter iw2 = new IndexWriter(dir, iwc);
+    IndexWriter iw2 = new IndexWriter(dir, iwc.clone());
     iw2.forceMerge(1);
     iw2.close();
     verify(dir);
@@ -235,21 +235,21 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
       leftEnum = leftTerms.iterator(leftEnum);
       rightEnum = rightTerms.iterator(rightEnum);
       
-      assertEquals(leftEnum.seekExact(b, false), rightEnum.seekExact(b, false));
-      assertEquals(leftEnum.seekExact(b, true), rightEnum.seekExact(b, true));
+      assertEquals(leftEnum.seekExact(b), rightEnum.seekExact(b));
+      assertEquals(leftEnum.seekExact(b), rightEnum.seekExact(b));
       
       SeekStatus leftStatus;
       SeekStatus rightStatus;
       
-      leftStatus = leftEnum.seekCeil(b, false);
-      rightStatus = rightEnum.seekCeil(b, false);
+      leftStatus = leftEnum.seekCeil(b);
+      rightStatus = rightEnum.seekCeil(b);
       assertEquals(leftStatus, rightStatus);
       if (leftStatus != SeekStatus.END) {
         assertEquals(leftEnum.term(), rightEnum.term());
       }
       
-      leftStatus = leftEnum.seekCeil(b, true);
-      rightStatus = rightEnum.seekCeil(b, true);
+      leftStatus = leftEnum.seekCeil(b);
+      rightStatus = rightEnum.seekCeil(b);
       assertEquals(leftStatus, rightStatus);
       if (leftStatus != SeekStatus.END) {
         assertEquals(leftEnum.term(), rightEnum.term());
@@ -261,7 +261,6 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
    * checks collection-level statistics on Terms 
    */
   public void assertTermsStatistics(Terms leftTerms, Terms rightTerms) throws Exception {
-    assert leftTerms.getComparator() == rightTerms.getComparator();
     if (leftTerms.getDocCount() != -1 && rightTerms.getDocCount() != -1) {
       assertEquals(leftTerms.getDocCount(), rightTerms.getDocCount());
     }

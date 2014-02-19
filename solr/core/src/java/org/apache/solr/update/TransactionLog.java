@@ -563,6 +563,13 @@ public class TransactionLog {
     return "tlog{file=" + tlogFile.toString() + " refcount=" + refcount.get() + "}";
   }
 
+  public long getLogSize() {
+    if (tlogFile != null) {
+      return tlogFile.length();
+    }
+    return 0;
+  }
+
   /** Returns a reader that can be used while a log is still in use.
    * Currently only *one* LogReader may be outstanding, and that log may only
    * be used from a single thread. */
@@ -574,7 +581,6 @@ public class TransactionLog {
   public ReverseReader getReverseReader() throws IOException {
     return new FSReverseReader();
   }
-
 
   public class LogReader {
     private ChannelFastInputStream fis;

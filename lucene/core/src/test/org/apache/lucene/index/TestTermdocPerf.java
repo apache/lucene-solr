@@ -18,7 +18,6 @@ package org.apache.lucene.index;
 
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -31,7 +30,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 class RepeatingTokenizer extends Tokenizer {
   
@@ -42,8 +41,8 @@ class RepeatingTokenizer extends Tokenizer {
   CharTermAttribute termAtt;
   String value;
 
-   public RepeatingTokenizer(Reader reader, String val, Random random, float percentDocs, int maxTF) {
-     super(reader);
+   public RepeatingTokenizer(String val, Random random, float percentDocs, int maxTF) {
+     super();
      this.value = val;
      this.random = random;
      this.percentDocs = percentDocs;
@@ -80,8 +79,8 @@ public class TestTermdocPerf extends LuceneTestCase {
 
     Analyzer analyzer = new Analyzer() {
       @Override
-      public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        return new TokenStreamComponents(new RepeatingTokenizer(reader, val, random, percentDocs, maxTF));
+      public TokenStreamComponents createComponents(String fieldName) {
+        return new TokenStreamComponents(new RepeatingTokenizer(val, random, percentDocs, maxTF));
       }
     };
 
@@ -124,7 +123,7 @@ public class TestTermdocPerf extends LuceneTestCase {
     final Random random = new Random(random().nextLong());
     for (int i=0; i<iter; i++) {
       tenum.seekCeil(new BytesRef("val"));
-      tdocs = _TestUtil.docs(random, tenum, MultiFields.getLiveDocs(reader), tdocs, DocsEnum.FLAG_NONE);
+      tdocs = TestUtil.docs(random, tenum, MultiFields.getLiveDocs(reader), tdocs, DocsEnum.FLAG_NONE);
       while (tdocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
         ret += tdocs.docID();
       }

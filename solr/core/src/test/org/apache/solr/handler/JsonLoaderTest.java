@@ -44,7 +44,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     initCore("solrconfig.xml","schema.xml");
   }
   
-  static String input = ("{\n" +
+  static String input = json("{\n" +
       "\n" +
       "'add': {\n" +
       "  'doc': {\n" +
@@ -82,7 +82,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
       "'rollback': {}\n" +
       "\n" +
       "}\n" +
-      "").replace('\'', '"');
+      "");
 
 
   public void testParsing() throws Exception
@@ -236,7 +236,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
 
   @Test
   public void testNullValues() throws Exception {
-    updateJ("[{'id':'10','foo_s':null,'foo2_s':['hi',null,'there']}]".replace('\'', '"'), params("commit","true"));
+    updateJ( json( "[{'id':'10','foo_s':null,'foo2_s':['hi',null,'there']}]" ), params("commit","true"));
     assertJQ(req("q","id:10", "fl","foo_s,foo2_s")
         ,"/response/docs/[0]=={'foo2_s':['hi','there']}"
     );
@@ -381,8 +381,8 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
   @Test
   public void testAddNonStringValues() throws Exception {
     // BigInteger and BigDecimal should be typed as strings, since there is no direct support for them
-    updateJ(("[{'id':'1','boolean_b':false,'long_l':19,'double_d':18.6,'big_integer_s':12345678901234567890,"
-        +"      'big_decimal_s':0.1234567890123456789012345}]").replace('\'', '"'), params("commit","true"));
+    updateJ(json( "[{'id':'1','boolean_b':false,'long_l':19,'double_d':18.6,'big_integer_s':12345678901234567890,"
+        +"      'big_decimal_s':0.1234567890123456789012345}]" ), params("commit","true"));
     assertJQ(req("q","id:1", "fl","boolean_b,long_l,double_d,big_integer_s,big_decimal_s")
         ,"/response/docs/[0]=={'boolean_b':[false],'long_l':[19],'double_d':[18.6],"
                              +"'big_integer_s':['12345678901234567890'],"
@@ -395,8 +395,11 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
   public void testAddBigIntegerValueToTrieField() throws Exception {
     // Adding a BigInteger to a long field should fail
     // BigInteger.longValue() returns only the low-order 64 bits.
+
+    ignoreException("big_integer_t");
+
     try {
-      updateJ(("[{'id':'1','big_integer_tl':12345678901234567890}]").replace('\'', '"'), null);
+      updateJ(json( "[{'id':'1','big_integer_tl':12345678901234567890}]" ), null);
       fail("A BigInteger value should overflow a long field");
     } catch (SolrException e) {
       if ( ! (e.getCause() instanceof NumberFormatException)) {
@@ -407,7 +410,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     // Adding a BigInteger to an integer field should fail
     // BigInteger.intValue() returns only the low-order 32 bits.
     try {
-      updateJ(("[{'id':'1','big_integer_ti':12345678901234567890}]").replace('\'', '"'), null);
+      updateJ(json( "[{'id':'1','big_integer_ti':12345678901234567890}]" ), null);
       fail("A BigInteger value should overflow an integer field");
     } catch (SolrException e) {
       if ( ! (e.getCause() instanceof NumberFormatException)) {
@@ -415,19 +418,20 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
       }
     }
 
+    unIgnoreException("big_integer_t");
   }
 
   @Test
   public void testAddBigDecimalValueToTrieField() throws Exception {
     // Adding a BigDecimal to a double field should succeed by reducing precision
-    updateJ(("[{'id':'1','big_decimal_td':100000000000000000000000000001234567890.0987654321}]").replace('\'', '"'),
+    updateJ(json( "[{'id':'1','big_decimal_td':100000000000000000000000000001234567890.0987654321}]" ),
             params("commit", "true"));
     assertJQ(req("q","id:1", "fl","big_decimal_td"), 
              "/response/docs/[0]=={'big_decimal_td':[1.0E38]}"
     );
 
     // Adding a BigDecimal to a float field should succeed by reducing precision
-    updateJ(("[{'id':'2','big_decimal_tf':100000000000000000000000000001234567890.0987654321}]").replace('\'', '"'),
+    updateJ(json( "[{'id':'2','big_decimal_tf':100000000000000000000000000001234567890.0987654321}]" ),
             params("commit", "true"));
     assertJQ(req("q","id:2", "fl","big_decimal_tf"),
              "/response/docs/[0]=={'big_decimal_tf':[1.0E38]}"

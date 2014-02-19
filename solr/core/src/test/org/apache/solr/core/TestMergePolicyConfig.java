@@ -17,6 +17,8 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
+import org.apache.solr.update.SolrIndexConfigTest;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
@@ -25,6 +27,10 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.TieredMergePolicy;
+import org.apache.lucene.index.LogMergePolicy;
+import org.apache.lucene.index.LogByteSizeMergePolicy;
+import org.apache.lucene.index.LogDocMergePolicy;
+import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -32,6 +38,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.junit.After;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/** @see SolrIndexConfigTest */
 public class TestMergePolicyConfig extends SolrTestCaseJ4 {
   
   private static AtomicInteger docIdCounter = new AtomicInteger(42);
@@ -78,7 +85,7 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
     final boolean expectCFS 
       = Boolean.parseBoolean(System.getProperty("useCompoundFile"));
 
-    initCore("solrconfig-mergepolicy.xml","schema-minimal.xml");
+    initCore("solrconfig-tieredmergepolicy.xml","schema-minimal.xml");
     IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore().getLatestSchema());
     assertEquals(expectCFS, iwc.getUseCompoundFile());
 
@@ -110,6 +117,37 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
     assertNumSegments(h.getCore(), 1);
     // we've now forced a merge, and the MP ratio should be in play
     assertCompoundSegments(h.getCore(), false);
+  }
+
+  public void testLogMergePolicyConfig() throws Exception {
+    
+    final Class<? extends LogMergePolicy> mpClass = random().nextBoolean()
+      ? LogByteSizeMergePolicy.class : LogDocMergePolicy.class;
+
+    System.setProperty("solr.test.log.merge.policy", mpClass.getName());
+
+    initCore("solrconfig-logmergepolicy.xml","schema-minimal.xml");
+    IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore().getLatestSchema());
+
+    // verify some props set to -1 get lucene internal defaults
+    assertEquals(-1, solrConfig.indexConfig.maxBufferedDocs);
+    assertEquals(IndexWriterConfig.DISABLE_AUTO_FLUSH, 
+                 iwc.getMaxBufferedDocs());
+    assertEquals(-1, solrConfig.indexConfig.maxIndexingThreads);
+    assertEquals(IndexWriterConfig.DEFAULT_MAX_THREAD_STATES, 
+                 iwc.getMaxThreadStates());
+    assertEquals(-1, solrConfig.indexConfig.ramBufferSizeMB, 0.0D);
+    assertEquals(IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB, 
+                 iwc.getRAMBufferSizeMB(), 0.0D);
+
+
+    LogMergePolicy logMP = assertAndCast(mpClass, iwc.getMergePolicy());
+
+    // set by legacy <mergeFactor> setting
+    assertEquals(11, logMP.getMergeFactor());
+    // set by legacy <maxMergeDocs> setting
+    assertEquals(456, logMP.getMaxMergeDocs());
+
   }
 
   /**

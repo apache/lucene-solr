@@ -42,7 +42,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.NamedThreadFactory;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 @SuppressCodecs({ "SimpleText", "Memory", "Direct" })
 public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
@@ -52,7 +52,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
   private SearcherLifetimeManager.Pruner pruner;
 
   public void testSearcherManager() throws Exception {
-    pruner = new SearcherLifetimeManager.PruneByAge(TEST_NIGHTLY ? _TestUtil.nextInt(random(), 1, 20) : 1);
+    pruner = new SearcherLifetimeManager.PruneByAge(TEST_NIGHTLY ? TestUtil.nextInt(random(), 1, 20) : 1);
     runTest("TestSearcherManager");
   }
 
@@ -105,10 +105,14 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
       @Override
       public void run() {
         try {
+          if (VERBOSE) {
+            System.out.println("[" + Thread.currentThread().getName() + "]: launch reopen thread");
+          }
+
           while(System.currentTimeMillis() < stopTime) {
-            Thread.sleep(_TestUtil.nextInt(random(), 1, 100));
+            Thread.sleep(TestUtil.nextInt(random(), 1, 100));
             writer.commit();
-            Thread.sleep(_TestUtil.nextInt(random(), 1, 5));
+            Thread.sleep(TestUtil.nextInt(random(), 1, 5));
             boolean block = random().nextBoolean();
             if (block) {
               mgr.maybeRefreshBlocking();
@@ -298,6 +302,37 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     sm.close();
     dir.close();
   }
+
+  public void testReferenceDecrementIllegally() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
+        TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergeScheduler(new ConcurrentMergeScheduler()));
+    SearcherManager sm = new SearcherManager(writer, false, new SearcherFactory());
+    writer.addDocument(new Document());
+    writer.commit();
+    sm.maybeRefreshBlocking();
+
+    IndexSearcher acquire = sm.acquire();
+    IndexSearcher acquire2 = sm.acquire();
+    sm.release(acquire);
+    sm.release(acquire2);
+
+
+    acquire = sm.acquire();
+    acquire.getIndexReader().decRef();
+    sm.release(acquire);
+    try {
+      sm.acquire();
+      fail("acquire should have thrown an IllegalStateException since we modified the refCount outside of the manager");
+    } catch (IllegalStateException ex) {
+      //
+    }
+
+    // sm.close(); -- already closed
+    writer.close();
+    dir.close();
+  }
+
 
   public void testEnsureOpen() throws Exception {
     Directory dir = newDirectory();

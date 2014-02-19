@@ -35,7 +35,8 @@ import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.packed.PackedInts;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
@@ -75,7 +76,7 @@ public class TestDocValuesFieldSources extends LuceneTestCase {
         case SORTED:
         case BINARY:
           do {
-            vals[i] = _TestUtil.randomSimpleString(random(), 20);
+            vals[i] = TestUtil.randomSimpleString(random(), 20);
           } while (((String) vals[i]).isEmpty());
           f.setBytesValue(new BytesRef((String) vals[i]));
           break;

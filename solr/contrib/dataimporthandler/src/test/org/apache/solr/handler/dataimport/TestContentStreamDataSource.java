@@ -41,6 +41,7 @@ import java.util.List;
  */
 public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCase {
   private static final String CONF_DIR = "dih/solr/collection1/conf/";
+  private static final String ROOT_DIR = "dih/solr/";
   SolrInstance instance = null;
   JettySolrRunner jetty;
 
@@ -68,8 +69,7 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
     params.set("command", "full-import");
     params.set("clean", "false");
     req.setParams(params);
-    String url = "http://127.0.0.1:" + jetty.getLocalPort() + "/solr";
-    HttpSolrServer solrServer = new HttpSolrServer(url);
+    HttpSolrServer solrServer = new HttpSolrServer(buildUrl(jetty.getLocalPort(), "/solr"));
     solrServer.request(req);
     ModifiableSolrParams qparams = new ModifiableSolrParams();
     qparams.add("q", "*:*");
@@ -88,8 +88,7 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
         "clean", "false", UpdateParams.COMMIT, "false", 
         UpdateParams.COMMIT_WITHIN, "1000");
     req.setParams(params);
-    String url = "http://127.0.0.1:" + jetty.getLocalPort() + "/solr";
-    HttpSolrServer solrServer = new HttpSolrServer(url);
+    HttpSolrServer solrServer = new HttpSolrServer(buildUrl(jetty.getLocalPort(), "/solr"));
     solrServer.request(req);
     Thread.sleep(100);
     ModifiableSolrParams queryAll = params("q", "*");
@@ -144,6 +143,11 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
       return CONF_DIR + "contentstream-solrconfig.xml";
     }
 
+    public String getSolrXmlFile() {
+      return ROOT_DIR + "solr.xml";
+    }
+
+
     public void setUp() throws Exception {
 
       File home = new File(TEMP_DIR,
@@ -158,6 +162,7 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
       dataDir.mkdirs();
       confDir.mkdirs();
 
+      FileUtils.copyFile(getFile(getSolrXmlFile()), new File(homeDir, "solr.xml"));
       File f = new File(confDir, "solrconfig.xml");
       FileUtils.copyFile(getFile(getSolrConfigFile()), f);
       f = new File(confDir, "schema.xml");
@@ -174,7 +179,7 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
 
   private JettySolrRunner createJetty(SolrInstance instance) throws Exception {
     System.setProperty("solr.data.dir", instance.getDataDir());
-    JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), "/solr", 0);
+    JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), "/solr", 0, null, null, true, null, sslConfig);
     jetty.start();
     return jetty;
   }

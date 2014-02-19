@@ -85,8 +85,8 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.AttributeSource.AttributeFactory;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.Rethrow;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
-import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -305,7 +305,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         // TODO: could cause huge ram usage to use full int range for some filters
         // (e.g. allocate enormous arrays)
         // return Integer.valueOf(random.nextInt());
-        return Integer.valueOf(_TestUtil.nextInt(random, -100, 100));
+        return Integer.valueOf(TestUtil.nextInt(random, -100, 100));
       }
     });
     put(char.class, new ArgProducer() {
@@ -372,7 +372,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         Collection<char[]> col = new ArrayList<char[]>();
         int num = random.nextInt(5);
         for (int i = 0; i < num; i++) {
-          col.add(_TestUtil.randomSimpleString(random).toCharArray());
+          col.add(TestUtil.randomSimpleString(random).toCharArray());
         }
         return col;
       }
@@ -383,7 +383,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, num, random.nextBoolean());
         for (int i = 0; i < num; i++) {
           // TODO: make nastier
-          set.add(_TestUtil.randomSimpleString(random));
+          set.add(TestUtil.randomSimpleString(random));
         }
         return set;
       }
@@ -451,7 +451,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           // a token type
           return StandardTokenizer.TOKEN_TYPES[random.nextInt(StandardTokenizer.TOKEN_TYPES.length)];
         } else {
-          return _TestUtil.randomSimpleString(random);
+          return TestUtil.randomSimpleString(random);
         }
       }
     });
@@ -463,9 +463,9 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         int num = random.nextInt(5);
         //System.out.println("NormalizeCharMap=");
         for (int i = 0; i < num; i++) {
-          String key = _TestUtil.randomSimpleString(random);
+          String key = TestUtil.randomSimpleString(random);
           if (!keys.contains(key) && key.length() > 0) {
-            String value = _TestUtil.randomSimpleString(random);
+            String value = TestUtil.randomSimpleString(random);
             builder.add(key, value);
             keys.add(key);
             //System.out.println("mapping: '" + key + "' => '" + value + "'");
@@ -492,7 +492,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         CharArrayMap<String> map = new CharArrayMap<String>(TEST_VERSION_CURRENT, num, random.nextBoolean());
         for (int i = 0; i < num; i++) {
           // TODO: make nastier
-          map.put(_TestUtil.randomSimpleString(random), _TestUtil.randomSimpleString(random));
+          map.put(TestUtil.randomSimpleString(random), TestUtil.randomSimpleString(random));
         }
         return map;
       }
@@ -504,11 +504,11 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         for (int i = 0; i < num; i++) {
           String input = ""; 
           do {
-            input = _TestUtil.randomRealisticUnicodeString(random);
+            input = TestUtil.randomRealisticUnicodeString(random);
           } while(input.isEmpty());
-          String out = ""; _TestUtil.randomSimpleString(random);
+          String out = ""; TestUtil.randomSimpleString(random);
           do {
-            out = _TestUtil.randomRealisticUnicodeString(random);
+            out = TestUtil.randomRealisticUnicodeString(random);
           } while(out.isEmpty());
           builder.add(input, out);
         }
@@ -543,7 +543,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       
       private String randomNonEmptyString(Random random) {
         while(true) {
-          final String s = _TestUtil.randomUnicodeString(random).trim();
+          final String s = TestUtil.randomUnicodeString(random).trim();
           if (s.length() != 0 && s.indexOf('\u0000') == -1) {
             return s;
           }
@@ -578,13 +578,11 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     return (T) producer.create(random);
   }
   
-  static Object[] newTokenizerArgs(Random random, Reader reader, Class<?>[] paramTypes) {
+  static Object[] newTokenizerArgs(Random random, Class<?>[] paramTypes) {
     Object[] args = new Object[paramTypes.length];
     for (int i = 0; i < args.length; i++) {
       Class<?> paramType = paramTypes[i];
-      if (paramType == Reader.class) {
-        args[i] = reader;
-      } else if (paramType == AttributeFactory.class) {
+      if (paramType == AttributeFactory.class) {
         // TODO: maybe the collator one...???
         args[i] = AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY;
       } else if (paramType == AttributeSource.class) {
@@ -637,15 +635,15 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     public boolean offsetsAreCorrect() {
       // TODO: can we not do the full chain here!?
       Random random = new Random(seed);
-      TokenizerSpec tokenizerSpec = newTokenizer(random, new StringReader(""));
+      TokenizerSpec tokenizerSpec = newTokenizer(random);
       TokenFilterSpec filterSpec = newFilterChain(random, tokenizerSpec.tokenizer, tokenizerSpec.offsetsAreCorrect);
       return filterSpec.offsetsAreCorrect;
     }
     
     @Override
-    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+    protected TokenStreamComponents createComponents(String fieldName) {
       Random random = new Random(seed);
-      TokenizerSpec tokenizerSpec = newTokenizer(random, reader);
+      TokenizerSpec tokenizerSpec = newTokenizer(random);
       //System.out.println("seed=" + seed + ",create tokenizer=" + tokenizerSpec.toString);
       TokenFilterSpec filterSpec = newFilterChain(random, tokenizerSpec.tokenizer, tokenizerSpec.offsetsAreCorrect);
       //System.out.println("seed=" + seed + ",create filter=" + filterSpec.toString);
@@ -668,7 +666,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       sb.append(charFilterSpec.toString);
       // intentional: initReader gets its own separate random
       random = new Random(seed);
-      TokenizerSpec tokenizerSpec = newTokenizer(random, charFilterSpec.reader);
+      TokenizerSpec tokenizerSpec = newTokenizer(random);
       sb.append("\n");
       sb.append("tokenizer=");
       sb.append(tokenizerSpec.toString);
@@ -726,13 +724,12 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     }
 
     // create a new random tokenizer from classpath
-    private TokenizerSpec newTokenizer(Random random, Reader reader) {
+    private TokenizerSpec newTokenizer(Random random) {
       TokenizerSpec spec = new TokenizerSpec();
       while (spec.tokenizer == null) {
         final Constructor<? extends Tokenizer> ctor = tokenizers.get(random.nextInt(tokenizers.size()));
         final StringBuilder descr = new StringBuilder();
-        final CheckThatYouDidntReadAnythingReaderWrapper wrapper = new CheckThatYouDidntReadAnythingReaderWrapper(reader);
-        final Object args[] = newTokenizerArgs(random, wrapper, ctor.getParameterTypes());
+        final Object args[] = newTokenizerArgs(random, ctor.getParameterTypes());
         if (broken(ctor, args)) {
           continue;
         }
@@ -740,8 +737,6 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         if (spec.tokenizer != null) {
           spec.offsetsAreCorrect &= !brokenOffsets(ctor, args);
           spec.toString = descr.toString();
-        } else {
-          assertFalse(ctor.getDeclaringClass().getName() + " has read something in ctor but failed with UOE/IAE", wrapper.readSomething);
         }
       }
       return spec;

@@ -28,21 +28,22 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.ChecksumIndexOutput;
-import org.apache.lucene.store.DataOutput; // javadocs
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.NoSuchDirectoryException;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
  * A collection of segmentInfo objects with methods for operating on
@@ -70,7 +71,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * <ul>
  *   <li><tt>segments.gen</tt>: GenHeader, Generation, Generation
  *   <li><tt>segments_N</tt>: Header, Version, NameCounter, SegCount,
- *    &lt;SegName, SegCodec, DelGen, DeletionCount&gt;<sup>SegCount</sup>, 
+ *    &lt;SegName, SegCodec, DelGen, DeletionCount, FieldInfosGen, UpdatesFiles&gt;<sup>SegCount</sup>, 
  *    CommitUserData, Checksum
  * </ul>
  * </p>
@@ -79,9 +80,10 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * <ul>
  *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  *   <li>GenHeader, NameCounter, SegCount, DeletionCount --&gt; {@link DataOutput#writeInt Int32}</li>
- *   <li>Generation, Version, DelGen, Checksum --&gt; {@link DataOutput#writeLong Int64}</li>
+ *   <li>Generation, Version, DelGen, Checksum, FieldInfosGen --&gt; {@link DataOutput#writeLong Int64}</li>
  *   <li>SegName, SegCodec --&gt; {@link DataOutput#writeString String}</li>
  *   <li>CommitUserData --&gt; {@link DataOutput#writeStringStringMap Map&lt;String,String&gt;}</li>
+ *   <li>UpdatesFiles --&gt; {@link DataOutput#writeStringSet(Set) Set&lt;String&gt;}</li>
  * </ul>
  * </p>
  * Field Descriptions:
@@ -104,17 +106,22 @@ import org.apache.lucene.util.ThreadInterruptedException;
  *   <li>CommitUserData stores an optional user-supplied opaque
  *       Map&lt;String,String&gt; that was passed to 
  *       {@link IndexWriter#setCommitData(java.util.Map)}.</li>
+ *   <li>FieldInfosGen is the generation count of the fieldInfos file. If this is -1,
+ *       there are no updates to the fieldInfos in that segment. Anything above zero 
+ *       means there are updates to fieldInfos stored by {@link FieldInfosFormat}.</li>
+ *   <li>UpdatesFiles stores the list of files that were updated in that segment.</li>
  * </ul>
  * </p>
  * 
  * @lucene.experimental
  */
-public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCommit> {
+public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo> {
 
-  /**
-   * The file format version for the segments_N codec header
-   */
+  /** The file format version for the segments_N codec header, up to 4.5. */
   public static final int VERSION_40 = 0;
+
+  /** The file format version for the segments_N codec header, since 4.6+. */
+  public static final int VERSION_46 = 1;
 
   /** Used for the segments.gen file only!
    * Whenever you add a new format, make it 1 smaller (negative version logic)! */
@@ -134,7 +141,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
   /** Opaque Map&lt;String, String&gt; that user can specify during IndexWriter.commit */
   public Map<String,String> userData = Collections.<String,String>emptyMap();
   
-  private List<SegmentInfoPerCommit> segments = new ArrayList<SegmentInfoPerCommit>();
+  private List<SegmentCommitInfo> segments = new ArrayList<SegmentCommitInfo>();
   
   /**
    * If non-null, information about loading segments_N files
@@ -145,14 +152,14 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
   /** Sole constructor. Typically you call this and then
    *  use {@link #read(Directory) or
    *  #read(Directory,String)} to populate each {@link
-   *  SegmentInfoPerCommit}.  Alternatively, you can add/remove your
-   *  own {@link SegmentInfoPerCommit}s. */
+   *  SegmentCommitInfo}.  Alternatively, you can add/remove your
+   *  own {@link SegmentCommitInfo}s. */
   public SegmentInfos() {
   }
 
-  /** Returns {@link SegmentInfoPerCommit} at the provided
+  /** Returns {@link SegmentCommitInfo} at the provided
    *  index. */
-  public SegmentInfoPerCommit info(int i) {
+  public SegmentCommitInfo info(int i) {
     return segments.get(i);
   }
 
@@ -319,14 +326,14 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
         throw new IndexFormatTooOldException(input, magic, CodecUtil.CODEC_MAGIC, CodecUtil.CODEC_MAGIC);
       }
       // 4.0+
-      CodecUtil.checkHeaderNoMagic(input, "segments", VERSION_40, VERSION_40);
+      int format = CodecUtil.checkHeaderNoMagic(input, "segments", VERSION_40, VERSION_46);
       version = input.readLong();
       counter = input.readInt();
       int numSegments = input.readInt();
       if (numSegments < 0) {
         throw new CorruptIndexException("invalid segment count: " + numSegments + " (resource: " + input + ")");
       }
-      for(int seg=0;seg<numSegments;seg++) {
+      for (int seg = 0; seg < numSegments; seg++) {
         String segName = input.readString();
         Codec codec = Codec.forName(input.readString());
         //System.out.println("SIS.read seg=" + seg + " codec=" + codec);
@@ -337,7 +344,25 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
         if (delCount < 0 || delCount > info.getDocCount()) {
           throw new CorruptIndexException("invalid deletion count: " + delCount + " (resource: " + input + ")");
         }
-        add(new SegmentInfoPerCommit(info, delCount, delGen));
+        long fieldInfosGen = -1;
+        if (format >= VERSION_46) {
+          fieldInfosGen = input.readLong();
+        }
+        SegmentCommitInfo siPerCommit = new SegmentCommitInfo(info, delCount, delGen, fieldInfosGen);
+        if (format >= VERSION_46) {
+          int numGensUpdatesFiles = input.readInt();
+          final Map<Long,Set<String>> genUpdatesFiles;
+          if (numGensUpdatesFiles == 0) {
+            genUpdatesFiles = Collections.emptyMap();
+          } else {
+            genUpdatesFiles = new HashMap<Long,Set<String>>(numGensUpdatesFiles);
+            for (int i = 0; i < numGensUpdatesFiles; i++) {
+              genUpdatesFiles.put(input.readLong(), input.readStringSet());
+            }
+          }
+          siPerCommit.setGenUpdatesFiles(genUpdatesFiles);
+        }
+        add(siPerCommit);
       }
       userData = input.readStringStringMap();
 
@@ -361,7 +386,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
   }
 
   /** Find the latest commit ({@code segments_N file}) and
-   *  load all {@link SegmentInfoPerCommit}s. */
+   *  load all {@link SegmentCommitInfo}s. */
   public final void read(Directory directory) throws IOException {
     generation = lastGeneration = -1;
 
@@ -395,16 +420,23 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
 
     try {
       segnOutput = new ChecksumIndexOutput(directory.createOutput(segmentFileName, IOContext.DEFAULT));
-      CodecUtil.writeHeader(segnOutput, "segments", VERSION_40);
+      CodecUtil.writeHeader(segnOutput, "segments", VERSION_46);
       segnOutput.writeLong(version); 
       segnOutput.writeInt(counter); // write counter
       segnOutput.writeInt(size()); // write infos
-      for (SegmentInfoPerCommit siPerCommit : this) {
+      for (SegmentCommitInfo siPerCommit : this) {
         SegmentInfo si = siPerCommit.info;
         segnOutput.writeString(si.name);
         segnOutput.writeString(si.getCodec().getName());
         segnOutput.writeLong(siPerCommit.getDelGen());
         segnOutput.writeInt(siPerCommit.getDelCount());
+        segnOutput.writeLong(siPerCommit.getFieldInfosGen());
+        final Map<Long,Set<String>> genUpdatesFiles = siPerCommit.getUpdatesFiles();
+        segnOutput.writeInt(genUpdatesFiles.size());
+        for (Entry<Long,Set<String>> e : genUpdatesFiles.entrySet()) {
+          segnOutput.writeLong(e.getKey());
+          segnOutput.writeStringSet(e.getValue());
+        }
         assert si.dir == directory;
 
         assert siPerCommit.getDelCount() <= si.getDocCount();
@@ -439,8 +471,8 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
     try {
       final SegmentInfos sis = (SegmentInfos) super.clone();
       // deep clone, first recreate all collections:
-      sis.segments = new ArrayList<SegmentInfoPerCommit>(size());
-      for(final SegmentInfoPerCommit info : this) {
+      sis.segments = new ArrayList<SegmentCommitInfo>(size());
+      for(final SegmentCommitInfo info : this) {
         assert info.info.getCodec() != null;
         // dont directly access segments, use add method!!!
         sis.add(info.clone());
@@ -804,21 +836,18 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
     if (includeSegmentsFile) {
       final String segmentFileName = getSegmentsFileName();
       if (segmentFileName != null) {
-        /*
-         * TODO: if lastGen == -1 we get might get null here it seems wrong to
-         * add null to the files set
-         */
         files.add(segmentFileName);
       }
     }
     final int size = size();
     for(int i=0;i<size;i++) {
-      final SegmentInfoPerCommit info = info(i);
+      final SegmentCommitInfo info = info(i);
       assert info.info.dir == dir;
       if (info.info.dir == dir) {
         files.addAll(info.files());
       }
     }
+    
     return files;
   }
 
@@ -900,7 +929,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
       if (i > 0) {
         buffer.append(' ');
       }
-      final SegmentInfoPerCommit info = info(i);
+      final SegmentCommitInfo info = info(i);
       buffer.append(info.toString(directory, 0));
     }
     return buffer.toString();
@@ -935,7 +964,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
    *  this does not include deletions */
   public int totalDocCount() {
     int count = 0;
-    for(SegmentInfoPerCommit info : this) {
+    for(SegmentCommitInfo info : this) {
       count += info.info.getDocCount();
     }
     return count;
@@ -949,12 +978,12 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
   
   /** applies all changes caused by committing a merge to this SegmentInfos */
   void applyMergeChanges(MergePolicy.OneMerge merge, boolean dropSegment) {
-    final Set<SegmentInfoPerCommit> mergedAway = new HashSet<SegmentInfoPerCommit>(merge.segments);
+    final Set<SegmentCommitInfo> mergedAway = new HashSet<SegmentCommitInfo>(merge.segments);
     boolean inserted = false;
     int newSegIdx = 0;
     for (int segIdx = 0, cnt = segments.size(); segIdx < cnt; segIdx++) {
       assert segIdx >= newSegIdx;
-      final SegmentInfoPerCommit info = segments.get(segIdx);
+      final SegmentCommitInfo info = segments.get(segIdx);
       if (mergedAway.contains(info)) {
         if (!inserted && !dropSegment) {
           segments.set(segIdx, merge.info);
@@ -980,16 +1009,16 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
     }
   }
 
-  List<SegmentInfoPerCommit> createBackupSegmentInfos() {
-    final List<SegmentInfoPerCommit> list = new ArrayList<SegmentInfoPerCommit>(size());
-    for(final SegmentInfoPerCommit info : this) {
+  List<SegmentCommitInfo> createBackupSegmentInfos() {
+    final List<SegmentCommitInfo> list = new ArrayList<SegmentCommitInfo>(size());
+    for(final SegmentCommitInfo info : this) {
       assert info.info.getCodec() != null;
       list.add(info.clone());
     }
     return list;
   }
   
-  void rollbackSegmentInfos(List<SegmentInfoPerCommit> infos) {
+  void rollbackSegmentInfos(List<SegmentCommitInfo> infos) {
     this.clear();
     this.addAll(infos);
   }
@@ -997,45 +1026,45 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
   /** Returns an <b>unmodifiable</b> {@link Iterator} of contained segments in order. */
   // @Override (comment out until Java 6)
   @Override
-  public Iterator<SegmentInfoPerCommit> iterator() {
+  public Iterator<SegmentCommitInfo> iterator() {
     return asList().iterator();
   }
   
   /** Returns all contained segments as an <b>unmodifiable</b> {@link List} view. */
-  public List<SegmentInfoPerCommit> asList() {
+  public List<SegmentCommitInfo> asList() {
     return Collections.unmodifiableList(segments);
   }
 
-  /** Returns number of {@link SegmentInfoPerCommit}s. */
+  /** Returns number of {@link SegmentCommitInfo}s. */
   public int size() {
     return segments.size();
   }
 
-  /** Appends the provided {@link SegmentInfoPerCommit}. */
-  public void add(SegmentInfoPerCommit si) {
+  /** Appends the provided {@link SegmentCommitInfo}. */
+  public void add(SegmentCommitInfo si) {
     segments.add(si);
   }
   
-  /** Appends the provided {@link SegmentInfoPerCommit}s. */
-  public void addAll(Iterable<SegmentInfoPerCommit> sis) {
-    for (final SegmentInfoPerCommit si : sis) {
+  /** Appends the provided {@link SegmentCommitInfo}s. */
+  public void addAll(Iterable<SegmentCommitInfo> sis) {
+    for (final SegmentCommitInfo si : sis) {
       this.add(si);
     }
   }
   
-  /** Clear all {@link SegmentInfoPerCommit}s. */
+  /** Clear all {@link SegmentCommitInfo}s. */
   public void clear() {
     segments.clear();
   }
 
-  /** Remove the provided {@link SegmentInfoPerCommit}.
+  /** Remove the provided {@link SegmentCommitInfo}.
    *
    * <p><b>WARNING</b>: O(N) cost */
-  public void remove(SegmentInfoPerCommit si) {
+  public void remove(SegmentCommitInfo si) {
     segments.remove(si);
   }
   
-  /** Remove the {@link SegmentInfoPerCommit} at the
+  /** Remove the {@link SegmentCommitInfo} at the
    * provided index.
    *
    * <p><b>WARNING</b>: O(N) cost */
@@ -1044,18 +1073,18 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
   }
 
   /** Return true if the provided {@link
-   *  SegmentInfoPerCommit} is contained.
+   *  SegmentCommitInfo} is contained.
    *
    * <p><b>WARNING</b>: O(N) cost */
-  boolean contains(SegmentInfoPerCommit si) {
+  boolean contains(SegmentCommitInfo si) {
     return segments.contains(si);
   }
 
   /** Returns index of the provided {@link
-   *  SegmentInfoPerCommit}.
+   *  SegmentCommitInfo}.
    *
    * <p><b>WARNING</b>: O(N) cost */
-  int indexOf(SegmentInfoPerCommit si) {
+  int indexOf(SegmentCommitInfo si) {
     return segments.indexOf(si);
   }
 }

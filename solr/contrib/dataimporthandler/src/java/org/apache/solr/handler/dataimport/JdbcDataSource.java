@@ -333,7 +333,7 @@ public class JdbcDataSource extends
               result.put(colName, resultSet.getDouble(colName));
               break;
             case Types.DATE:
-              result.put(colName, resultSet.getDate(colName));
+              result.put(colName, resultSet.getTimestamp(colName));
               break;
             case Types.BOOLEAN:
               result.put(colName, resultSet.getBoolean(colName));

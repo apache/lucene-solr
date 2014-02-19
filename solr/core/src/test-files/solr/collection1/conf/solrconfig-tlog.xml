@@ -32,10 +32,7 @@
   
   <dataDir>${solr.data.dir:}</dataDir>
 
-  <indexConfig>
-    <lockType>${solr.lock.type:native}</lockType>
-    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
-  </indexConfig>
+  <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
   <!-- an update processor the explicitly excludes distrib to test
        clean errors when people attempt atomic updates w/o it
@@ -88,6 +85,18 @@
   </updateRequestProcessorChain>
 
   <requestHandler name="/admin/" class="org.apache.solr.handler.admin.AdminHandlers" />
+
+  <requestHandler name="/admin/file" class="solr.admin.ShowFileRequestHandler" >
+    <lst name="invariants">
+      <str name="hidden">bogus.txt</str>
+    </lst>
+  </requestHandler>
+
+  <requestHandler name="/admin/fileedit" class="solr.admin.EditFileRequestHandler" >
+    <lst name="invariants">
+      <str name="hidden">bogus.txt</str>
+    </lst>
+  </requestHandler>
 
   <updateRequestProcessorChain name="distrib-dup-test-chain-explicit">
     <!-- explicit test using processors before and after distrib -->

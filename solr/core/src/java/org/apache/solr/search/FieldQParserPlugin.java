@@ -32,7 +32,7 @@ import org.apache.solr.schema.SchemaField;
  * This is generally equivalent to the Lucene query parser expression <code>myfield:"Foo Bar"</code>
  */
 public class FieldQParserPlugin extends QParserPlugin {
-  public static String NAME = "field";
+  public static final String NAME = "field";
 
   @Override
   public void init(NamedList args) {

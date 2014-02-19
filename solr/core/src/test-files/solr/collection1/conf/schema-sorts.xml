@@ -1,0 +1,162 @@
+<?xml version="1.0" ?>
+<!--
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<!-- 
+
+NOTE: Tests expect every field in this schema to be sortable.
+
+-->
+
+<schema name="sortable" version="1.5">
+  <uniqueKey>id</uniqueKey>
+
+  <fields>
+    <field name="id" type="int" />
+    <field name="_version_" type="long" />
+
+    <field name="str" type="str" />
+    <field name="str_last" type="str_last" />
+    <field name="str_first" type="str_first" />
+    <field name="str_dv" type="str_dv" />
+    <field name="str_dv_last" type="str_dv_last" />
+    <field name="str_dv_first" type="str_dv_first" />
+
+    <field name="bin" type="bin" />
+    <field name="bin_last" type="bin_last" />
+    <field name="bin_first" type="bin_first" />
+    <field name="bin_dv" type="bin_dv" />
+    <field name="bin_dv_last" type="bin_dv_last" />
+    <field name="bin_dv_first" type="bin_dv_first" />
+
+    <field name="int" type="int" />
+    <field name="int_last" type="int_last" />
+    <field name="int_first" type="int_first" />
+    <field name="int_dv" type="int_dv" />
+    <field name="int_dv_last" type="int_dv_last" />
+    <field name="int_dv_first" type="int_dv_first" />
+
+    <field name="long" type="long" />
+    <field name="long_last" type="long_last" />
+    <field name="long_first" type="long_first" />
+    <field name="long_dv" type="long_dv" />
+    <field name="long_dv_last" type="long_dv_last" />
+    <field name="long_dv_first" type="long_dv_first" />
+
+    <field name="float" type="float" />
+    <field name="float_last" type="float_last" />
+    <field name="float_first" type="float_first" />
+    <field name="float_dv" type="float_dv" />
+    <field name="float_dv_last" type="float_dv_last" />
+    <field name="float_dv_first" type="float_dv_first" />
+
+    <field name="double" type="double" />
+    <field name="double_last" type="double_last" />
+    <field name="double_first" type="double_first" />
+    <field name="double_dv" type="double_dv" />
+    <field name="double_dv_last" type="double_dv_last" />
+    <field name="double_dv_first" type="double_dv_first" />
+
+    <!-- ensure function sorts don't mistakenly get interpreted as field sorts
+         https://issues.apache.org/jira/browse/SOLR-5354?focusedCommentId=13835891&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-13835891
+    -->
+    <dynamicField name="*" type="str" multiValued="true" />
+  </fields>
+
+  <copyField source="str" dest="str_last" />
+  <copyField source="str" dest="str_first" />
+  <copyField source="str" dest="str_dv" />
+  <copyField source="str" dest="str_dv_last" />
+  <copyField source="str" dest="str_dv_first" />
+
+  <copyField source="bin" dest="bin_last" />
+  <copyField source="bin" dest="bin_first" />
+  <copyField source="bin" dest="bin_dv" />
+  <copyField source="bin" dest="bin_dv_last" />
+  <copyField source="bin" dest="bin_dv_first" />
+
+  <copyField source="int" dest="int_last" />
+  <copyField source="int" dest="int_first" />
+  <copyField source="int" dest="int_dv" />
+  <copyField source="int" dest="int_dv_last" />
+  <copyField source="int" dest="int_dv_first" />
+
+  <copyField source="long" dest="long_last" />
+  <copyField source="long" dest="long_first" />
+  <copyField source="long" dest="long_dv" />
+  <copyField source="long" dest="long_dv_last" />
+  <copyField source="long" dest="long_dv_first" />
+
+  <copyField source="float" dest="float_last" />
+  <copyField source="float" dest="float_first" />
+  <copyField source="float" dest="float_dv" />
+  <copyField source="float" dest="float_dv_last" />
+  <copyField source="float" dest="float_dv_first" />
+
+  <copyField source="double" dest="double_last" />
+  <copyField source="double" dest="double_first" />
+  <copyField source="double" dest="double_dv" />
+  <copyField source="double" dest="double_dv_last" />
+  <copyField source="double" dest="double_dv_first" />
+
+  <types>
+
+    <fieldtype name="str" class="solr.StrField" stored="true" indexed="true" />
+    <fieldtype name="str_last" class="solr.StrField" stored="true" indexed="true" sortMissingLast="true"/>
+    <fieldtype name="str_first" class="solr.StrField" stored="true" indexed="true" sortMissingFirst="true"/>
+    <fieldtype name="str_dv" class="solr.StrField" stored="true" indexed="false" docValues="true"/>
+    <fieldtype name="str_dv_last" class="solr.StrField" stored="true" indexed="false" docValues="true" sortMissingLast="true"/>
+    <fieldtype name="str_dv_first" class="solr.StrField" stored="true" indexed="false" docValues="true" sortMissingFirst="true"/>
+
+    <fieldtype name="bin" class="solr.SortableBinaryField" stored="true" indexed="true" />
+    <fieldtype name="bin_last" class="solr.SortableBinaryField" stored="true" indexed="true" sortMissingLast="true"/>
+    <fieldtype name="bin_first" class="solr.SortableBinaryField" stored="true" indexed="true" sortMissingFirst="true"/>
+    <fieldtype name="bin_dv" class="solr.SortableBinaryField" stored="true" indexed="false" docValues="true"/>
+    <fieldtype name="bin_dv_last" class="solr.SortableBinaryField" stored="true" indexed="false" docValues="true" sortMissingLast="true"/>
+    <fieldtype name="bin_dv_first" class="solr.SortableBinaryField" stored="true" indexed="false" docValues="true" sortMissingFirst="true"/>
+
+    <fieldtype name="int" class="solr.TrieIntField" stored="true" indexed="true" />
+    <fieldtype name="int_last" class="solr.TrieIntField" stored="true" indexed="true" sortMissingLast="true"/>
+    <fieldtype name="int_first" class="solr.TrieIntField" stored="true" indexed="true" sortMissingFirst="true"/>
+    <fieldtype name="int_dv" class="solr.TrieIntField" stored="true" indexed="false" docValues="true"/>
+    <fieldtype name="int_dv_last" class="solr.TrieIntField" stored="true" indexed="false" docValues="true" sortMissingLast="true"/>
+    <fieldtype name="int_dv_first" class="solr.TrieIntField" stored="true" indexed="false" docValues="true" sortMissingFirst="true"/>
+
+    <fieldtype name="long" class="solr.TrieLongField" stored="true" indexed="true" />
+    <fieldtype name="long_last" class="solr.TrieLongField" stored="true" indexed="true" sortMissingLast="true"/>
+    <fieldtype name="long_first" class="solr.TrieLongField" stored="true" indexed="true" sortMissingFirst="true"/>
+    <fieldtype name="long_dv" class="solr.TrieLongField" stored="true" indexed="false" docValues="true"/>
+    <fieldtype name="long_dv_last" class="solr.TrieLongField" stored="true" indexed="false" docValues="true" sortMissingLast="true"/>
+    <fieldtype name="long_dv_first" class="solr.TrieLongField" stored="true" indexed="false" docValues="true" sortMissingFirst="true"/>
+
+    <fieldtype name="float" class="solr.TrieFloatField" stored="true" indexed="true" />
+    <fieldtype name="float_last" class="solr.TrieFloatField" stored="true" indexed="true" sortMissingLast="true"/>
+    <fieldtype name="float_first" class="solr.TrieFloatField" stored="true" indexed="true" sortMissingFirst="true"/>
+    <fieldtype name="float_dv" class="solr.TrieFloatField" stored="true" indexed="false" docValues="true"/>
+    <fieldtype name="float_dv_last" class="solr.TrieFloatField" stored="true" indexed="false" docValues="true" sortMissingLast="true"/>
+    <fieldtype name="float_dv_first" class="solr.TrieFloatField" stored="true" indexed="false" docValues="true" sortMissingFirst="true"/>
+
+    <fieldtype name="double" class="solr.TrieDoubleField" stored="true" indexed="true" />
+    <fieldtype name="double_last" class="solr.TrieDoubleField" stored="true" indexed="true" sortMissingLast="true"/>
+    <fieldtype name="double_first" class="solr.TrieDoubleField" stored="true" indexed="true" sortMissingFirst="true"/>
+    <fieldtype name="double_dv" class="solr.TrieDoubleField" stored="true" indexed="false" docValues="true"/>
+    <fieldtype name="double_dv_last" class="solr.TrieDoubleField" stored="true" indexed="false" docValues="true" sortMissingLast="true"/>
+    <fieldtype name="double_dv_first" class="solr.TrieDoubleField" stored="true" indexed="false" docValues="true" sortMissingFirst="true"/>
+
+  </types>
+
+</schema>

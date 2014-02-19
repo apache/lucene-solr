@@ -106,7 +106,7 @@ public abstract class LookaheadTokenFilter<T extends LookaheadTokenFilter.Positi
 
   /** This is called when all input tokens leaving a given
    *  position have been returned.  Override this and
-   *  call createToken and then set whichever token's
+   *  call insertToken and then set whichever token's
    *  attributes you want, if you want to inject
    *  a token starting from this position. */
   protected void afterPosition() throws IOException {
@@ -222,6 +222,18 @@ public abstract class LookaheadTokenFilter<T extends LookaheadTokenFilter.Positi
           if (DEBUG) {
             System.out.println("  END");
           }
+          afterPosition();
+          if (insertPending) {
+            // Subclass inserted a token at this same
+            // position:
+            if (DEBUG) {
+              System.out.println("  return inserted token");
+            }
+            assert insertedTokenConsistent();
+            insertPending = false;
+            return true;
+          }
+
           return false;
         }
       } else {
@@ -260,7 +272,7 @@ public abstract class LookaheadTokenFilter<T extends LookaheadTokenFilter.Positi
     final int posLen = posLenAtt.getPositionLength();
     final Position endPosData = positions.get(outputPos + posLen);
     assert endPosData.endOffset != -1;
-    assert offsetAtt.endOffset() == endPosData.endOffset;
+    assert offsetAtt.endOffset() == endPosData.endOffset: "offsetAtt.endOffset=" + offsetAtt.endOffset() + " vs expected=" + endPosData.endOffset;
     return true;
   }
 

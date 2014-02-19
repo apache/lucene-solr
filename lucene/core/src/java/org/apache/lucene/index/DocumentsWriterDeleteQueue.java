@@ -39,7 +39,7 @@ import org.apache.lucene.search.Query;
  * single linked the garbage collector takes care of pruning the list for us.
  * All nodes in the list that are still relevant should be either directly or
  * indirectly referenced by one of the DWPT's private {@link DeleteSlice} or by
- * the global {@link BufferedDeletes} slice.
+ * the global {@link BufferedUpdates} slice.
  * <p>
  * Each DWPT as well as the global delete pool maintain their private
  * DeleteSlice instance. In the DWPT case updating a slice is equivalent to
@@ -52,7 +52,7 @@ import org.apache.lucene.search.Query;
  * <li>updates its private {@link DeleteSlice} either by calling
  * {@link #updateSlice(DeleteSlice)} or {@link #add(Term, DeleteSlice)} (if the
  * document has a delTerm)</li>
- * <li>applies all deletes in the slice to its private {@link BufferedDeletes}
+ * <li>applies all deletes in the slice to its private {@link BufferedUpdates}
  * and resets it</li>
  * <li>increments its internal document id</li>
  * </ol>
@@ -72,7 +72,7 @@ final class DocumentsWriterDeleteQueue {
       .newUpdater(DocumentsWriterDeleteQueue.class, Node.class, "tail");
 
   private final DeleteSlice globalSlice;
-  private final BufferedDeletes globalBufferedDeletes;
+  private final BufferedUpdates globalBufferedUpdates;
   /* only acquired to update the global deletes */
   private final ReentrantLock globalBufferLock = new ReentrantLock();
 
@@ -83,11 +83,11 @@ final class DocumentsWriterDeleteQueue {
   }
   
   DocumentsWriterDeleteQueue(long generation) {
-    this(new BufferedDeletes(), generation);
+    this(new BufferedUpdates(), generation);
   }
 
-  DocumentsWriterDeleteQueue(BufferedDeletes globalBufferedDeletes, long generation) {
-    this.globalBufferedDeletes = globalBufferedDeletes;
+  DocumentsWriterDeleteQueue(BufferedUpdates globalBufferedUpdates, long generation) {
+    this.globalBufferedUpdates = globalBufferedUpdates;
     this.generation = generation;
     /*
      * we use a sentinel instance as our initial tail. No slice will ever try to
@@ -104,6 +104,11 @@ final class DocumentsWriterDeleteQueue {
 
   void addDelete(Term... terms) {
     add(new TermArrayNode(terms));
+    tryApplyGlobalSlice();
+  }
+
+  void addNumericUpdate(NumericUpdate update) {
+    add(new NumericUpdateNode(update));
     tryApplyGlobalSlice();
   }
 
@@ -172,9 +177,9 @@ final class DocumentsWriterDeleteQueue {
       /*
        * check if all items in the global slice were applied 
        * and if the global slice is up-to-date
-       * and if globalBufferedDeletes has changes
+       * and if globalBufferedUpdates has changes
        */
-      return globalBufferedDeletes.any() || !globalSlice.isEmpty() || globalSlice.sliceTail != tail
+      return globalBufferedUpdates.any() || !globalSlice.isEmpty() || globalSlice.sliceTail != tail
           || tail.next != null;
     } finally {
       globalBufferLock.unlock();
@@ -192,7 +197,7 @@ final class DocumentsWriterDeleteQueue {
       try {
         if (updateSlice(globalSlice)) {
 //          System.out.println(Thread.currentThread() + ": apply globalSlice");
-          globalSlice.apply(globalBufferedDeletes, BufferedDeletes.MAX_INT);
+          globalSlice.apply(globalBufferedUpdates, BufferedUpdates.MAX_INT);
         }
       } finally {
         globalBufferLock.unlock();
@@ -200,7 +205,7 @@ final class DocumentsWriterDeleteQueue {
     }
   }
 
-  FrozenBufferedDeletes freezeGlobalBuffer(DeleteSlice callerSlice) {
+  FrozenBufferedUpdates freezeGlobalBuffer(DeleteSlice callerSlice) {
     globalBufferLock.lock();
     /*
      * Here we freeze the global buffer so we need to lock it, apply all
@@ -217,13 +222,13 @@ final class DocumentsWriterDeleteQueue {
     try {
       if (globalSlice.sliceTail != currentTail) {
         globalSlice.sliceTail = currentTail;
-        globalSlice.apply(globalBufferedDeletes, BufferedDeletes.MAX_INT);
+        globalSlice.apply(globalBufferedUpdates, BufferedUpdates.MAX_INT);
       }
 
 //      System.out.println(Thread.currentThread().getName() + ": now freeze global buffer " + globalBufferedDeletes);
-      final FrozenBufferedDeletes packet = new FrozenBufferedDeletes(
-          globalBufferedDeletes, false);
-      globalBufferedDeletes.clear();
+      final FrozenBufferedUpdates packet = new FrozenBufferedUpdates(
+          globalBufferedUpdates, false);
+      globalBufferedUpdates.clear();
       return packet;
     } finally {
       globalBufferLock.unlock();
@@ -257,7 +262,7 @@ final class DocumentsWriterDeleteQueue {
       sliceHead = sliceTail = currentTail;
     }
 
-    void apply(BufferedDeletes del, int docIDUpto) {
+    void apply(BufferedUpdates del, int docIDUpto) {
       if (sliceHead == sliceTail) {
         // 0 length slice
         return;
@@ -297,7 +302,7 @@ final class DocumentsWriterDeleteQueue {
   }
 
   public int numGlobalTermDeletes() {
-    return globalBufferedDeletes.numTermDeletes.get();
+    return globalBufferedUpdates.numTermDeletes.get();
   }
 
   void clear() {
@@ -305,7 +310,7 @@ final class DocumentsWriterDeleteQueue {
     try {
       final Node<?> currentTail = tail;
       globalSlice.sliceHead = globalSlice.sliceTail = currentTail;
-      globalBufferedDeletes.clear();
+      globalBufferedUpdates.clear();
     } finally {
       globalBufferLock.unlock();
     }
@@ -323,7 +328,7 @@ final class DocumentsWriterDeleteQueue {
     static final AtomicReferenceFieldUpdater<Node,Node> nextUpdater = AtomicReferenceFieldUpdater
         .newUpdater(Node.class, Node.class, "next");
 
-    void apply(BufferedDeletes bufferedDeletes, int docIDUpto) {
+    void apply(BufferedUpdates bufferedDeletes, int docIDUpto) {
       throw new IllegalStateException("sentinel item must never be applied");
     }
 
@@ -339,7 +344,7 @@ final class DocumentsWriterDeleteQueue {
     }
 
     @Override
-    void apply(BufferedDeletes bufferedDeletes, int docIDUpto) {
+    void apply(BufferedUpdates bufferedDeletes, int docIDUpto) {
       bufferedDeletes.addTerm(item, docIDUpto);
     }
 
@@ -355,9 +360,9 @@ final class DocumentsWriterDeleteQueue {
     }
 
     @Override
-    void apply(BufferedDeletes bufferedDeletes, int docIDUpto) {
+    void apply(BufferedUpdates bufferedUpdates, int docIDUpto) {
       for (Query query : item) {
-        bufferedDeletes.addQuery(query, docIDUpto);  
+        bufferedUpdates.addQuery(query, docIDUpto);  
       }
     }
   }
@@ -368,9 +373,9 @@ final class DocumentsWriterDeleteQueue {
     }
 
     @Override
-    void apply(BufferedDeletes bufferedDeletes, int docIDUpto) {
+    void apply(BufferedUpdates bufferedUpdates, int docIDUpto) {
       for (Term term : item) {
-        bufferedDeletes.addTerm(term, docIDUpto);  
+        bufferedUpdates.addTerm(term, docIDUpto);  
       }
     }
 
@@ -380,6 +385,22 @@ final class DocumentsWriterDeleteQueue {
     }
   }
 
+  private static final class NumericUpdateNode extends Node<NumericUpdate> {
+
+    NumericUpdateNode(NumericUpdate update) {
+      super(update);
+    }
+
+    @Override
+    void apply(BufferedUpdates bufferedUpdates, int docIDUpto) {
+      bufferedUpdates.addNumericUpdate(item, docIDUpto);
+    }
+
+    @Override
+    public String toString() {
+      return "update=" + item;
+    }
+  }
 
   private boolean forceApplyGlobalSlice() {
     globalBufferLock.lock();
@@ -387,26 +408,26 @@ final class DocumentsWriterDeleteQueue {
     try {
       if (globalSlice.sliceTail != currentTail) {
         globalSlice.sliceTail = currentTail;
-        globalSlice.apply(globalBufferedDeletes, BufferedDeletes.MAX_INT);
+        globalSlice.apply(globalBufferedUpdates, BufferedUpdates.MAX_INT);
       }
-      return globalBufferedDeletes.any();
+      return globalBufferedUpdates.any();
     } finally {
       globalBufferLock.unlock();
     }
   }
 
-  public int getBufferedDeleteTermsSize() {
+  public int getBufferedUpdatesTermsSize() {
     globalBufferLock.lock();
     try {
       forceApplyGlobalSlice();
-      return globalBufferedDeletes.terms.size();
+      return globalBufferedUpdates.terms.size();
     } finally {
       globalBufferLock.unlock();
     }
   }
   
   public long bytesUsed() {
-    return globalBufferedDeletes.bytesUsed.get();
+    return globalBufferedUpdates.bytesUsed.get();
   }
 
   @Override

@@ -43,8 +43,8 @@ public abstract class ZkClientConnectionStrategy {
     for (DisconnectedListener listener : disconnectedListeners) {
       try {
         listener.disconnected();
-      } catch (Throwable t) {
-        SolrException.log(log, "", t);
+      } catch (Exception e) {
+        SolrException.log(log, "", e);
       }
     }
   }
@@ -53,8 +53,8 @@ public abstract class ZkClientConnectionStrategy {
     for (ConnectedListener listener : connectedListeners) {
       try {
         listener.connected();
-      } catch (Throwable t) {
-        SolrException.log(log, "", t);
+      } catch (Exception e) {
+        SolrException.log(log, "", e);
       }
     }
   }

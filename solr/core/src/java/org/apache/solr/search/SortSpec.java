@@ -20,29 +20,63 @@ package org.apache.solr.search;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 
+import org.apache.solr.schema.SchemaField;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Collections;
 /***
  * SortSpec encapsulates a Lucene Sort and a count of the number of documents
  * to return.
  */
 public class SortSpec 
 {
-  Sort sort;
-  int num;
-  int offset;
+  private Sort sort;
+  private List<SchemaField> fields;
+  private int num = 10;
+  private int offset = 0;
 
+  public SortSpec(Sort sort, List<SchemaField> fields) {
+    setSortAndFields(sort, fields);
+  }
+  public SortSpec(Sort sort, SchemaField[] fields) {
+    setSortAndFields(sort, Arrays.asList(fields));
+  }
+
+  /** @deprecated Specify both Sort and SchemaField[] when constructing */
+  @Deprecated
   public SortSpec(Sort sort, int num) {
     this(sort,0,num);
   }
 
+  /** @deprecated Specify both Sort and SchemaField[] when constructing */
+  @Deprecated
   public SortSpec(Sort sort, int offset, int num) {
-    this.sort=sort;
+    setSort(sort);
     this.offset=offset;
     this.num=num;
   }
   
+  /** @deprecated use {@link #setSortAndFields} */
+  @Deprecated
   public void setSort( Sort s )
   {
     sort = s;
+    fields = Collections.unmodifiableList(Arrays.asList(new SchemaField[s.getSort().length]));
+  }
+
+  /** 
+   * the specified SchemaFields must correspond one to one with the Sort's SortFields, 
+   * using null where appropriate.
+   */
+  public void setSortAndFields( Sort s, List<SchemaField> fields )
+  {
+    
+    assert null == s || s.getSort().length == fields.size() 
+      : "SortFields and SchemaFields do not have equal lengths";
+    this.sort = s;
+    this.fields = Collections.unmodifiableList(fields);
   }
 
   public static boolean includesScore(Sort sort) {
@@ -64,9 +98,19 @@ public class SortSpec
   public Sort getSort() { return sort; }
 
   /**
+   * Gets the Solr SchemaFields that correspond to each of the SortFields used
+   * in this sort.  The array may contain null if a SortField doesn't correspond directly 
+   * to a SchemaField (ie: score, lucene docid, custom function sorting, etc...)
+   *
+   * @return an immutable list, may be empty if getSort is null
+   */
+  public List<SchemaField> getSchemaFields() { return fields; }
+
+  /**
    * Offset into the list of results.
    */
   public int getOffset() { return offset; }
+  public void setOffset(int offset) { this.offset = offset; }
 
   /**
    * Gets the number of documents to return after sorting.
@@ -74,6 +118,7 @@ public class SortSpec
    * @return number of docs to return, or -1 for no cut off (just sort)
    */
   public int getCount() { return num; }
+  public void setCount(int count) { this.num = count; }
 
   @Override
   public String toString() {

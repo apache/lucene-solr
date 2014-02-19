@@ -78,6 +78,17 @@ public class ConstantScoreQuery extends Query {
         rewritten.setBoost(this.getBoost());
         return rewritten;
       }
+    } else {
+      assert filter != null;
+      // Fix outdated usage pattern from Lucene 2.x/early-3.x:
+      // because ConstantScoreQuery only accepted filters,
+      // QueryWrapperFilter was used to wrap queries.
+      if (filter instanceof QueryWrapperFilter) {
+        final QueryWrapperFilter qwf = (QueryWrapperFilter) filter;
+        final Query rewritten = new ConstantScoreQuery(qwf.getQuery().rewrite(reader));
+        rewritten.setBoost(this.getBoost());
+        return rewritten;
+      }
     }
     return this;
   }
@@ -239,7 +250,7 @@ public class ConstantScoreQuery extends Query {
     // this optimization allows out of order scoring as top scorer!
     @Override
     public void score(Collector collector) throws IOException {
-      if (docIdSetIterator instanceof Scorer) {
+      if (query != null) {
         ((Scorer) docIdSetIterator).score(wrapCollector(collector));
       } else {
         super.score(collector);
@@ -249,7 +260,7 @@ public class ConstantScoreQuery extends Query {
     // this optimization allows out of order scoring as top scorer,
     @Override
     public boolean score(Collector collector, int max, int firstDocID) throws IOException {
-      if (docIdSetIterator instanceof Scorer) {
+      if (query != null) {
         return ((Scorer) docIdSetIterator).score(wrapCollector(collector), max, firstDocID);
       } else {
         return super.score(collector, max, firstDocID);
@@ -258,7 +269,7 @@ public class ConstantScoreQuery extends Query {
 
     @Override
     public Collection<ChildScorer> getChildren() {
-      if (docIdSetIterator instanceof Scorer)
+      if (query != null)
         return Collections.singletonList(new ChildScorer((Scorer) docIdSetIterator, "constant"));
       else
         return Collections.emptyList();

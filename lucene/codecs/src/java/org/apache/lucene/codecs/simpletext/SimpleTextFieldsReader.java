@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.simpletext;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -28,8 +27,8 @@ import java.util.TreeMap;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.Terms;
@@ -39,9 +38,9 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
-import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.fst.Builder;
@@ -55,6 +54,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
   private final TreeMap<String,Long> fields;
   private final IndexInput in;
   private final FieldInfos fieldInfos;
+  private final int maxDoc;
 
   final static BytesRef END          = SimpleTextFieldsWriter.END;
   final static BytesRef FIELD        = SimpleTextFieldsWriter.FIELD;
@@ -67,6 +67,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
   final static BytesRef PAYLOAD      = SimpleTextFieldsWriter.PAYLOAD;
 
   public SimpleTextFieldsReader(SegmentReadState state) throws IOException {
+    this.maxDoc = state.segmentInfo.getDocCount();
     fieldInfos = state.fieldInfos;
     in = state.directory.openInput(SimpleTextPostingsFormat.getPostingsFileName(state.segmentInfo.name, state.segmentSuffix), state.context);
     boolean success = false;
@@ -109,7 +110,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     @Override
-    public boolean seekExact(BytesRef text, boolean useCache /* ignored */) throws IOException {
+    public boolean seekExact(BytesRef text) throws IOException {
 
       final BytesRefFSTEnum.InputOutput<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>> result = fstEnum.seekExact(text);
       if (result != null) {
@@ -125,7 +126,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     @Override
-    public SeekStatus seekCeil(BytesRef text, boolean useCache /* ignored */) throws IOException {
+    public SeekStatus seekCeil(BytesRef text) throws IOException {
 
       //System.out.println("seek to text=" + text.utf8ToString());
       final BytesRefFSTEnum.InputOutput<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>> result = fstEnum.seekCeil(text);
@@ -217,11 +218,6 @@ class SimpleTextFieldsReader extends FieldsProducer {
         docsAndPositionsEnum = new SimpleTextDocsAndPositionsEnum();
       } 
       return docsAndPositionsEnum.reset(docsStart, liveDocs, indexOptions, docFreq);
-    }
-    
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
     }
   }
 
@@ -498,6 +494,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
   private class SimpleTextTerms extends Terms {
     private final long termsStart;
     private final FieldInfo fieldInfo;
+    private final int maxDoc;
     private long sumTotalTermFreq;
     private long sumDocFreq;
     private int docCount;
@@ -506,7 +503,8 @@ class SimpleTextFieldsReader extends FieldsProducer {
     private final BytesRef scratch = new BytesRef(10);
     private final CharsRef scratchUTF16 = new CharsRef(10);
 
-    public SimpleTextTerms(String field, long termsStart) throws IOException {
+    public SimpleTextTerms(String field, long termsStart, int maxDoc) throws IOException {
+      this.maxDoc = maxDoc;
       this.termsStart = termsStart;
       fieldInfo = fieldInfos.fieldInfo(field);
       loadTerms();
@@ -525,7 +523,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
       long lastDocsStart = -1;
       int docFreq = 0;
       long totalTermFreq = 0;
-      OpenBitSet visitedDocs = new OpenBitSet();
+      FixedBitSet visitedDocs = new FixedBitSet(maxDoc);
       final IntsRef scratchIntsRef = new IntsRef();
       while(true) {
         SimpleTextUtil.readLine(in, scratch);
@@ -574,6 +572,11 @@ class SimpleTextFieldsReader extends FieldsProducer {
       */
       //System.out.println("FST " + fst.sizeInBytes());
     }
+    
+    /** Returns approximate RAM bytes used */
+    public long ramBytesUsed() {
+      return (fst!=null) ? fst.sizeInBytes() : 0;
+    }
 
     @Override
     public TermsEnum iterator(TermsEnum reuse) throws IOException {
@@ -582,11 +585,6 @@ class SimpleTextFieldsReader extends FieldsProducer {
       } else {
         return TermsEnum.EMPTY;
       }
-    }
-
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
     }
 
     @Override
@@ -610,6 +608,11 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     @Override
+    public boolean hasFreqs() {
+      return fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
+    }
+
+    @Override
     public boolean hasOffsets() {
       return fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
     }
@@ -630,7 +633,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     return Collections.unmodifiableSet(fields.keySet()).iterator();
   }
 
-  private final Map<String,Terms> termsCache = new HashMap<String,Terms>();
+  private final Map<String,SimpleTextTerms> termsCache = new HashMap<String,SimpleTextTerms>();
 
   @Override
   synchronized public Terms terms(String field) throws IOException {
@@ -640,8 +643,8 @@ class SimpleTextFieldsReader extends FieldsProducer {
       if (fp == null) {
         return null;
       } else {
-        terms = new SimpleTextTerms(field, fp);
-        termsCache.put(field, terms);
+        terms = new SimpleTextTerms(field, fp, maxDoc);
+        termsCache.put(field, (SimpleTextTerms) terms);
       }
     }
     return terms;
@@ -655,5 +658,14 @@ class SimpleTextFieldsReader extends FieldsProducer {
   @Override
   public void close() throws IOException {
     in.close();
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    long sizeInBytes = 0;
+    for(SimpleTextTerms simpleTextTerms : termsCache.values()) {
+      sizeInBytes += (simpleTextTerms!=null) ? simpleTextTerms.ramBytesUsed() : 0;
+    }
+    return sizeInBytes;
   }
 }

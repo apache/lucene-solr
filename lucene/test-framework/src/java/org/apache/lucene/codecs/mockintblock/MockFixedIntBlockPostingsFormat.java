@@ -37,8 +37,8 @@ import org.apache.lucene.codecs.sep.IntIndexOutput;
 import org.apache.lucene.codecs.sep.IntStreamFactory;
 import org.apache.lucene.codecs.sep.SepPostingsReader;
 import org.apache.lucene.codecs.sep.SepPostingsWriter;
-import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -169,7 +169,6 @@ public final class MockFixedIntBlockPostingsFormat extends PostingsFormat {
       indexReader = new FixedGapTermsIndexReader(state.directory,
                                                        state.fieldInfos,
                                                        state.segmentInfo.name,
-                                                       state.termsIndexDivisor,
                                                        BytesRef.getUTF8SortedAsUnicodeComparator(), state.segmentSuffix,
                                                        IOContext.DEFAULT);
       success = true;
@@ -187,7 +186,6 @@ public final class MockFixedIntBlockPostingsFormat extends PostingsFormat {
                                                 state.segmentInfo,
                                                 postingsReader,
                                                 state.context,
-                                                1024,
                                                 state.segmentSuffix);
       success = true;
       return ret;

@@ -48,12 +48,11 @@ public final class SentenceTokenizer extends Tokenizer {
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
 
-  public SentenceTokenizer(Reader reader) {
-    super(reader);
+  public SentenceTokenizer() {
   }
 
-  public SentenceTokenizer(AttributeFactory factory, Reader reader) {
-    super(factory, reader);
+  public SentenceTokenizer(AttributeFactory factory) {
+    super(factory);
   }
   
   @Override
@@ -108,11 +107,13 @@ public final class SentenceTokenizer extends Tokenizer {
 
   @Override
   public void reset() throws IOException {
+    super.reset();
     tokenStart = tokenEnd = 0;
   }
 
   @Override
-  public void end() {
+  public void end() throws IOException {
+    super.end();
     // set final offset
     final int finalOffset = correctOffset(tokenEnd);
     offsetAtt.setOffset(finalOffset, finalOffset);

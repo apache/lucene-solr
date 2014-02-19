@@ -65,6 +65,104 @@
     <str name="queryAnalyzerFieldType">phrase_suggest</str>
   </searchComponent>
   
+  <!-- AnalyzingInfixLookup suggest component (default)-->
+  <searchComponent class="solr.SpellCheckComponent" name="infix_suggest_analyzing">
+    <lst name="spellchecker">
+      <str name="name">infix_suggest_analyzing</str>
+      <str name="classname">org.apache.solr.spelling.suggest.Suggester</str>
+      <str name="lookupImpl">org.apache.solr.spelling.suggest.fst.AnalyzingInfixLookupFactory</str>
+      <str name="buildOnCommit">false</str>
+
+      <!-- Suggester properties -->
+      <str name="suggestAnalyzerFieldType">text</str>
+      
+      <str name="sourceLocation">analyzingInfixSuggest.txt</str>
+    </lst>
+    
+    <!-- specify a fieldtype using keywordtokenizer + lowercase + cleanup -->
+    <str name="queryAnalyzerFieldType">phrase_suggest</str>
+  </searchComponent>
+
+  
+  <!-- FuzzyLookup suggest component with HighFrequencyDictionary -->
+  <searchComponent class="solr.SuggestComponent" name="fuzzy_suggest_analyzing_with_high_freq_dict">
+    <lst name="suggester">
+      <str name="name">fuzzy_suggest_analyzing_with_high_freq_dict</str>
+      <str name="lookupImpl">org.apache.solr.spelling.suggest.fst.FuzzyLookupFactory</str>
+      <str name="dictionaryImpl">org.apache.solr.spelling.suggest.HighFrequencyDictionaryFactory</str>
+      <str name="storeDir">fuzzy_suggest_analyzing</str>
+      <str name="buildOnCommit">false</str>
+
+      <!-- Suggester properties -->
+      <bool name="exactMatchFirst">true</bool>
+      <str name="suggestAnalyzerFieldType">text</str>
+      <bool name="preserveSep">false</bool>
+      <str name="field">stext</str>
+    </lst>
+    
+  </searchComponent>
+  
+  <searchComponent class="solr.SuggestComponent" name="free_text_suggest">
+    <lst name="suggester">
+      <str name="name">free_text_suggest</str>
+      <str name="lookupImpl">FreeTextLookupFactory</str>
+      <str name="dictionaryImpl">FileDictionaryFactory</str>
+      <str name="storeDir">free_text_suggest</str>
+      <str name="buildOnCommit">false</str>
+      <str name="sourceLocation">freeTextSuggest.txt</str>
+
+      <!-- Suggester properties -->
+      <str name="separator"> </str>
+      <str name="suggestFreeTextAnalyzerFieldType">text</str>
+	  <int name="ngrams">2</int>
+    </lst>
+    
+  </searchComponent>
+  
+  <searchComponent class="solr.SuggestComponent" name="blended_infix_suggest">
+    <lst name="suggester">
+      <str name="name">blended_infix_suggest_linear</str>
+      <str name="lookupImpl">BlendedInfixLookupFactory</str>
+      <str name="dictionaryImpl">FileDictionaryFactory</str>
+      <str name="buildOnCommit">false</str>
+      <str name="sourceLocation">blendedInfixSuggest.txt</str>
+
+      <!-- Suggester properties -->
+      <str name="blenderType">linear</str>
+      <str name="suggestAnalyzerFieldType">text</str>
+    </lst>
+    
+    <lst name="suggester">
+      <str name="name">blended_infix_suggest_reciprocal</str>
+      <str name="lookupImpl">BlendedInfixLookupFactory</str>
+      <str name="dictionaryImpl">FileDictionaryFactory</str>
+      <str name="buildOnCommit">false</str>
+      <str name="sourceLocation">blendedInfixSuggest.txt</str>
+
+      <!-- Suggester properties -->
+      <str name="blenderType">reciprocal</str>
+      <str name="suggestAnalyzerFieldType">text</str>
+    </lst>
+    
+  </searchComponent>
+  
+  <!-- FuzzyLookup suggest component with FileDictionaryFactory -->
+  <searchComponent class="solr.SuggestComponent" name="fuzzy_suggest_analyzing_with_file_dict">
+    <lst name="suggester">
+      <str name="name">fuzzy_suggest_analyzing_with_file_dict</str>
+      <str name="lookupImpl">org.apache.solr.spelling.suggest.fst.FuzzyLookupFactory</str>
+      <str name="dictionaryImpl">org.apache.solr.spelling.suggest.FileDictionaryFactory</str>
+      <str name="storeDir">fuzzy_suggest_analyzing</str>
+      <str name="buildOnCommit">false</str>
+
+      <!-- Suggester properties -->
+      <bool name="exactMatchFirst">true</bool>
+      <str name="suggestAnalyzerFieldType">text</str>
+      <bool name="preserveSep">false</bool>
+      
+      <str name="sourceLocation">fuzzysuggest.txt</str>
+    </lst>
+  </searchComponent>
   <!-- FuzzyLookup suggest component (default)-->
   <searchComponent class="solr.SpellCheckComponent" name="fuzzy_suggest_analyzing">
     <lst name="spellchecker">
@@ -183,7 +281,58 @@
     </arr>
   </requestHandler>
   
-  <!--  Fuzzy analyzing handler with 1 max edit -->
+  <!--  Infix analyzing handler (default) -->
+  <requestHandler class="org.apache.solr.handler.component.SearchHandler" name="/infix_suggest_analyzing">
+    <lst name="defaults">
+      <str name="spellcheck">true</str>
+      <str name="spellcheck.dictionary">infix_suggest_analyzing</str>
+      <str name="spellcheck.collate">false</str>
+      <!-- NOTE: if this is false, results are alpha-ordered, not by weight! -->
+      <str name="spellcheck.onlyMorePopular">true</str>
+    </lst>
+    <arr name="components">
+      <str>infix_suggest_analyzing</str>
+    </arr>
+  </requestHandler>
+
+  <requestHandler class="org.apache.solr.handler.component.SearchHandler" name="/fuzzy_suggest_analyzing_with_file_dict">
+    <lst name="defaults">
+      <str name="suggest">true</str>
+    </lst>
+    <arr name="components">
+      <str>fuzzy_suggest_analyzing_with_file_dict</str>
+    </arr>
+  </requestHandler>
+  
+  
+  <requestHandler class="org.apache.solr.handler.component.SearchHandler" name="/blended_infix_suggest">
+    <lst name="defaults">
+      <str name="suggest">true</str>
+    </lst>
+    <arr name="components">
+      <str>blended_infix_suggest</str>
+    </arr>
+  </requestHandler>
+
+  <requestHandler class="org.apache.solr.handler.component.SearchHandler" name="/free_text_suggest">
+    <lst name="defaults">
+      <str name="suggest">true</str>
+    </lst>
+    <arr name="components">
+      <str>free_text_suggest</str>
+    </arr>
+  </requestHandler>
+  
+
+  <requestHandler class="org.apache.solr.handler.component.SearchHandler" name="/fuzzy_suggest_analyzing_with_high_freq_dict">
+    <lst name="defaults">
+      <str name="suggest">true</str>
+    </lst>
+    <arr name="components">
+      <str>fuzzy_suggest_analyzing_with_high_freq_dict</str>
+    </arr>
+  </requestHandler>
+  
   <requestHandler class="org.apache.solr.handler.component.SearchHandler" name="/fuzzy_suggest_analyzing">
     <lst name="defaults">
       <str name="spellcheck">true</str>

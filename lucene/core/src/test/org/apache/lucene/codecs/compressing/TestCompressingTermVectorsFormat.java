@@ -1,7 +1,20 @@
 package org.apache.lucene.codecs.compressing;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.BaseTermVectorsFormatTestCase;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.TermsEnum.SeekStatus;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
+
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,6 +33,7 @@ import org.apache.lucene.index.BaseTermVectorsFormatTestCase;
  * limitations under the License.
  */
 
+@Repeat(iterations=5) // give it a chance to test various compression modes with different chunk sizes
 public class TestCompressingTermVectorsFormat extends BaseTermVectorsFormatTestCase {
 
   @Override
@@ -27,4 +41,35 @@ public class TestCompressingTermVectorsFormat extends BaseTermVectorsFormatTestC
     return CompressingCodec.randomInstance(random());
   }
   
+  // https://issues.apache.org/jira/browse/LUCENE-5156
+  public void testNoOrds() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
+    ft.setStoreTermVectors(true);
+    doc.add(new Field("foo", "this is a test", ft));
+    iw.addDocument(doc);
+    AtomicReader ir = getOnlySegmentReader(iw.getReader());
+    Terms terms = ir.getTermVector(0, "foo");
+    assertNotNull(terms);
+    TermsEnum termsEnum = terms.iterator(null);
+    assertEquals(SeekStatus.FOUND, termsEnum.seekCeil(new BytesRef("this")));
+    try {
+      termsEnum.ord();
+      fail();
+    } catch (UnsupportedOperationException expected) {
+      // expected exception
+    }
+    
+    try {
+      termsEnum.seekExact(0);
+      fail();
+    } catch (UnsupportedOperationException expected) {
+      // expected exception
+    }
+    ir.close();
+    iw.close();
+    dir.close();
+  }
 }

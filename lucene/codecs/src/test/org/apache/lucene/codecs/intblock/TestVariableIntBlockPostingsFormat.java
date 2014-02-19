@@ -20,14 +20,15 @@ package org.apache.lucene.codecs.intblock;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.mockintblock.MockVariableIntBlockPostingsFormat;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Basic tests for VariableIntBlock
  */
 public class TestVariableIntBlockPostingsFormat extends BasePostingsFormatTestCase {
   // TODO: randomize blocksize
-  private final Codec codec = _TestUtil.alwaysPostingsFormat( new MockVariableIntBlockPostingsFormat());
+  private final Codec codec = TestUtil.alwaysPostingsFormat(new MockVariableIntBlockPostingsFormat());
 
   @Override
   protected Codec getCodec() {

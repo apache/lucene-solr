@@ -1,0 +1,6 @@
+Age,Color,Extras,Type,Used
+2,blue,GPS,"Gas, with electric",""
+10,green,"Labeled ""Vintage, 1913""",,yes
+100,red,"Labeled ""Vintage 1913""",yes
+5,orange,none,"This is a
+multi, line text",no

@@ -152,7 +152,7 @@ public class Log4jWatcher extends LogWatcher<LoggingEvent> {
     doc.setField("time", new Date(event.getTimeStamp()));
     doc.setField("level", event.getLevel().toString());
     doc.setField("logger", event.getLogger().getName());
-    doc.setField("message", event.getMessage().toString());
+    doc.setField("message", event.getRenderedMessage());
     ThrowableInformation t = event.getThrowableInformation();
     if(t!=null) {
       doc.setField("trace", Throwables.getStackTraceAsString(t.getThrowable()));

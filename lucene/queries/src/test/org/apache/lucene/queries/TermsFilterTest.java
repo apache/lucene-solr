@@ -49,7 +49,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TermsFilterTest extends LuceneTestCase {
 
@@ -74,7 +75,7 @@ public class TermsFilterTest extends LuceneTestCase {
       doc.add(newStringField(fieldName, "" + term, Field.Store.YES));
       w.addDocument(doc);
     }
-    IndexReader reader = new SlowCompositeReaderWrapper(w.getReader());
+    IndexReader reader = SlowCompositeReaderWrapper.wrap(w.getReader());
     assertTrue(reader.getContext() instanceof AtomicReaderContext);
     AtomicReaderContext context = (AtomicReaderContext) reader.getContext();
     w.close();
@@ -213,7 +214,7 @@ public class TermsFilterTest extends LuceneTestCase {
     List<Term> terms = new ArrayList<Term>();
     for (int i = 0; i < num; i++) {
       String field = "field" + (singleField ? "1" : random().nextInt(100));
-      String string = _TestUtil.randomRealisticUnicodeString(random());
+      String string = TestUtil.randomRealisticUnicodeString(random());
       terms.add(new Term(field, string));
       Document doc = new Document();
       doc.add(newStringField(field, string, Field.Store.YES));
@@ -279,7 +280,7 @@ public class TermsFilterTest extends LuceneTestCase {
     Set<Term> uniqueTerms = new HashSet<Term>();
     for (int i = 0; i < num; i++) {
       String field = "field" + (singleField ? "1" : random().nextInt(100));
-      String string = _TestUtil.randomRealisticUnicodeString(random());
+      String string = TestUtil.randomRealisticUnicodeString(random());
       terms.add(new Term(field, string));
       uniqueTerms.add(new Term(field, string));
       TermsFilter left = termsFilter(singleField ? random().nextBoolean() : false, uniqueTerms);

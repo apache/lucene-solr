@@ -6,3 +6,9 @@ The API of oal.document was restructured to differentiate between stored
 documents and indexed documents. IndexReader.document(int) now returns 
 StoredDocument instead of Document. In most cases a simple replacement
 of the return type is enough to upgrade.
+
+## Removed Reader from Tokenizer constructor (LUCENE-5388)
+
+The constructor of Tokenizer no longer takes Reader, as this was a leftover
+from before it was reusable. See the org.apache.lucene.analysis package
+documentation for more details.

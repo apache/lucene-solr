@@ -48,7 +48,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.*;
 
 /**
@@ -114,7 +113,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     formatters.put("", fmt);
     formatters.put(null, fmt);
 
-    // Load the formatters
+    // Load the encoders
     SolrEncoder enc = solrCore.initPlugins(info.getChildren("encoder"), encoders,SolrEncoder.class,null);
     if (enc == null) enc = new DefaultEncoder();
     encoders.put("", enc);
@@ -400,7 +399,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
         params.getBool( HighlightParams.USE_PHRASE_HIGHLIGHTER, true ),
         // FVH cannot process hl.requireFieldMatch parameter per-field basis
         params.getBool( HighlightParams.FIELD_MATCH, false ) );
-    fvh.setPhraseLimit(params.getInt(HighlightParams.PHRASE_LIMIT, Integer.MAX_VALUE));
+    fvh.setPhraseLimit(params.getInt(HighlightParams.PHRASE_LIMIT, SolrHighlighter.DEFAULT_PHRASE_LIMIT));
     FieldQuery fieldQuery = fvh.getFieldQuery( query, searcher.getIndexReader() );
 
     // Highlight each document
@@ -603,6 +602,10 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     String alternateField = params.getFieldParam(fieldName, HighlightParams.ALTERNATE_FIELD);
     if (alternateField != null && alternateField.length() > 0) {
       StorableField[] docFields = doc.getFields(alternateField);
+      if (docFields.length == 0) {
+        // The alternate field did not exist, treat the original field as fallback instead
+        docFields = doc.getFields(fieldName);
+      }
       List<String> listFields = new ArrayList<String>();
       for (StorableField field : docFields) {
         if (field.binaryValue() == null)
@@ -636,7 +639,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   private TokenStream createAnalyzerTStream(IndexSchema schema, String fieldName, String docText) throws IOException {
 
     TokenStream tstream;
-    TokenStream ts = schema.getAnalyzer().tokenStream(fieldName, new StringReader(docText));
+    TokenStream ts = schema.getAnalyzer().tokenStream(fieldName, docText);
     ts.reset();
     tstream = new TokenOrderingFilter(ts, 10);
     return tstream;
@@ -691,6 +694,11 @@ final class TokenOrderingFilter extends TokenFilter {
       restoreState(queue.removeFirst().state);
       return true;
     }
+  }
+
+  @Override
+  public void reset() throws IOException {
+    // this looks wrong: but its correct.
   }
 }
 

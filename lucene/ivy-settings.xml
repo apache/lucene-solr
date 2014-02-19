@@ -21,20 +21,27 @@
 
   <property name="local-maven2-dir" value="${user.home}/.m2/repository/" />
   
+  <properties file="${ivy.settings.dir}/ivy-versions.properties" override="false"/>
+  
   <include url="${ivy.default.settings.dir}/ivysettings-public.xml"/>
   <include url="${ivy.default.settings.dir}/ivysettings-shared.xml"/>
   <include url="${ivy.default.settings.dir}/ivysettings-local.xml"/>
   <include url="${ivy.default.settings.dir}/ivysettings-main-chain.xml"/>
 
-  <caches lockStrategy="artifact-lock"/>
+  <caches lockStrategy="artifact-lock" resolutionCacheDir="${common.build.dir}/ivy-resolution-cache" /> 
 
   <resolvers>
     <ibiblio name="sonatype-releases" root="http://oss.sonatype.org/content/repositories/releases" m2compatible="true" />
     <ibiblio name="maven.restlet.org" root="http://maven.restlet.org" m2compatible="true" />
+    <ibiblio name="cloudera" root="https://repository.cloudera.com/artifactory/repo" m2compatible="true" />
+    <ibiblio name="releases.cloudera.com" root="https://repository.cloudera.com/content/repositories/releases" m2compatible="true" />
+    
+    <!-- needed only for newer svnkit releases, e.g. 1.8.x -->
+    <ibiblio name="svnkit-releases" root="http://maven.tmatesoft.com/content/repositories/releases" m2compatible="true" />
 
     <!-- you might need to tweak this from china so it works -->
-    <ibiblio name="working-chinese-mirror" root="http://mirror.netcologne.de/maven2" m2compatible="true" />
-
+    <ibiblio name="working-chinese-mirror" root="http://uk.maven.org/maven2" m2compatible="true" />
+    
     <!--
     <filesystem name="local-maven-2" m2compatible="true" local="true">
       <artifact
@@ -48,8 +55,11 @@
       <resolver ref="local"/>
       <!-- <resolver ref="local-maven-2" /> -->
       <resolver ref="main"/>
+      <resolver ref="cloudera"/>
+      <resolver ref="releases.cloudera.com"/>
       <resolver ref="sonatype-releases" />
       <resolver ref="maven.restlet.org" />
+      <resolver ref="svnkit-releases" />
       <resolver ref="working-chinese-mirror" />
     </chain>
   </resolvers>

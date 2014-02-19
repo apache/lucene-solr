@@ -42,24 +42,10 @@
     <url>${vc-browse-base-url}/${module-directory}</url>
   </scm>
   <dependencies>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>lucene-core</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>lucene-codecs</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.carrotsearch.randomizedtesting</groupId>
-      <artifactId>randomizedtesting-runner</artifactId>
-    </dependency>
+@lucene-test-framework.internal.dependencies@
+@lucene-test-framework.external.dependencies@
+@lucene-test-framework.internal.test.dependencies@
+@lucene-test-framework.external.test.dependencies@
   </dependencies>
   <build>
     <sourceDirectory>${module-path}/src/java</sourceDirectory>
@@ -104,9 +90,8 @@
                 <bundledSignature>jdk-deprecated</bundledSignature>
               </bundledSignatures>
               <signaturesFiles>
+                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/base.txt</signaturesFile>
                 <signaturesFile>${top-level}/lucene/tools/forbiddenApis/tests.txt</signaturesFile>
-                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/executors.txt</signaturesFile>
-                <signaturesFile>${top-level}/lucene/tools/forbiddenApis/chars.txt</signaturesFile>
               </signaturesFiles>
             </configuration>
             <goals>

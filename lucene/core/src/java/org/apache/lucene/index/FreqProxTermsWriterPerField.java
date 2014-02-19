@@ -17,19 +17,10 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Comparator;
-import java.util.Map;
-
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.codecs.FieldsConsumer;
-import org.apache.lucene.codecs.PostingsConsumer;
-import org.apache.lucene.codecs.TermStats;
-import org.apache.lucene.codecs.TermsConsumer;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.RamUsageEstimator;
 
 // TODO: break into separate freq and prox writers as
@@ -42,11 +33,16 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
   final FieldInfo fieldInfo;
   final DocumentsWriterPerThread.DocState docState;
   final FieldInvertState fieldState;
-  private boolean hasFreq;
-  private boolean hasProx;
-  private boolean hasOffsets;
+  boolean hasFreq;
+  boolean hasProx;
+  boolean hasOffsets;
   PayloadAttribute payloadAttribute;
   OffsetAttribute offsetAttribute;
+  long sumTotalTermFreq;
+  long sumDocFreq;
+
+  // How many docs have this field:
+  int docCount;
 
   public FreqProxTermsWriterPerField(TermsHashPerField termsHashPerField, FreqProxTermsWriter parent, FieldInfo fieldInfo) {
     this.termsHashPerField = termsHashPerField;
@@ -68,6 +64,12 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
 
   @Override
   void finish() {
+    sumDocFreq += fieldState.uniqueTermCount;
+    sumTotalTermFreq += fieldState.length;
+    if (fieldState.length > 0) {
+      docCount++;
+    }
+
     if (hasPayloads) {
       fieldInfo.setStorePayloads();
     }
@@ -81,14 +83,6 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
   @Override
   public int compareTo(FreqProxTermsWriterPerField other) {
     return fieldInfo.name.compareTo(other.fieldInfo.name);
-  }
-
-  // Called after flush
-  void reset() {
-    // Record, up front, whether our in-RAM format will be
-    // with or without term freqs:
-    setIndexOptions(fieldInfo.getIndexOptions());
-    payloadAttribute = null;
   }
 
   private void setIndexOptions(IndexOptions indexOptions) {
@@ -318,233 +312,10 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
 
   BytesRef payload;
 
-  /* Walk through all unique text tokens (Posting
-   * instances) found in this field and serialize them
-   * into a single RAM segment. */
-  void flush(String fieldName, FieldsConsumer consumer,  final SegmentWriteState state)
-    throws IOException {
+  int[] sortedTermIDs;
 
-    if (!fieldInfo.isIndexed()) {
-      return; // nothing to flush, don't bother the codec with the unindexed field
-    }
-    
-    final TermsConsumer termsConsumer = consumer.addField(fieldInfo);
-    final Comparator<BytesRef> termComp = termsConsumer.getComparator();
-
-    // CONFUSING: this.indexOptions holds the index options
-    // that were current when we first saw this field.  But
-    // it's possible this has changed, eg when other
-    // documents are indexed that cause a "downgrade" of the
-    // IndexOptions.  So we must decode the in-RAM buffer
-    // according to this.indexOptions, but then write the
-    // new segment to the directory according to
-    // currentFieldIndexOptions:
-    final IndexOptions currentFieldIndexOptions = fieldInfo.getIndexOptions();
-    assert currentFieldIndexOptions != null;
-
-    final boolean writeTermFreq = currentFieldIndexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
-    final boolean writePositions = currentFieldIndexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
-    final boolean writeOffsets = currentFieldIndexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
-
-    final boolean readTermFreq = this.hasFreq;
-    final boolean readPositions = this.hasProx;
-    final boolean readOffsets = this.hasOffsets;
-
-    //System.out.println("flush readTF=" + readTermFreq + " readPos=" + readPositions + " readOffs=" + readOffsets);
-
-    // Make sure FieldInfo.update is working correctly!:
-    assert !writeTermFreq || readTermFreq;
-    assert !writePositions || readPositions;
-    assert !writeOffsets || readOffsets;
-
-    assert !writeOffsets || writePositions;
-
-    final Map<Term,Integer> segDeletes;
-    if (state.segDeletes != null && state.segDeletes.terms.size() > 0) {
-      segDeletes = state.segDeletes.terms;
-    } else {
-      segDeletes = null;
-    }
-
-    final int[] termIDs = termsHashPerField.sortPostings(termComp);
-    final int numTerms = termsHashPerField.bytesHash.size();
-    final BytesRef text = new BytesRef();
-    final FreqProxPostingsArray postings = (FreqProxPostingsArray) termsHashPerField.postingsArray;
-    final ByteSliceReader freq = new ByteSliceReader();
-    final ByteSliceReader prox = new ByteSliceReader();
-
-    FixedBitSet visitedDocs = new FixedBitSet(state.segmentInfo.getDocCount());
-    long sumTotalTermFreq = 0;
-    long sumDocFreq = 0;
-
-    Term protoTerm = new Term(fieldName);
-    for (int i = 0; i < numTerms; i++) {
-      final int termID = termIDs[i];
-      //System.out.println("term=" + termID);
-      // Get BytesRef
-      final int textStart = postings.textStarts[termID];
-      termsHashPerField.bytePool.setBytesRef(text, textStart);
-
-      termsHashPerField.initReader(freq, termID, 0);
-      if (readPositions || readOffsets) {
-        termsHashPerField.initReader(prox, termID, 1);
-      }
-
-      // TODO: really TermsHashPerField should take over most
-      // of this loop, including merge sort of terms from
-      // multiple threads and interacting with the
-      // TermsConsumer, only calling out to us (passing us the
-      // DocsConsumer) to handle delivery of docs/positions
-
-      final PostingsConsumer postingsConsumer = termsConsumer.startTerm(text);
-
-      final int delDocLimit;
-      if (segDeletes != null) {
-        protoTerm.bytes = text;
-        final Integer docIDUpto = segDeletes.get(protoTerm);
-        if (docIDUpto != null) {
-          delDocLimit = docIDUpto;
-        } else {
-          delDocLimit = 0;
-        }
-      } else {
-        delDocLimit = 0;
-      }
-
-      // Now termStates has numToMerge FieldMergeStates
-      // which all share the same term.  Now we must
-      // interleave the docID streams.
-      int docFreq = 0;
-      long totTF = 0;
-      int docID = 0;
-
-      while(true) {
-        //System.out.println("  cycle");
-        final int termFreq;
-        if (freq.eof()) {
-          if (postings.lastDocCodes[termID] != -1) {
-            // Return last doc
-            docID = postings.lastDocIDs[termID];
-            if (readTermFreq) {
-              termFreq = postings.termFreqs[termID];
-            } else {
-              termFreq = -1;
-            }
-            postings.lastDocCodes[termID] = -1;
-          } else {
-            // EOF
-            break;
-          }
-        } else {
-          final int code = freq.readVInt();
-          if (!readTermFreq) {
-            docID += code;
-            termFreq = -1;
-          } else {
-            docID += code >>> 1;
-            if ((code & 1) != 0) {
-              termFreq = 1;
-            } else {
-              termFreq = freq.readVInt();
-            }
-          }
-
-          assert docID != postings.lastDocIDs[termID];
-        }
-
-        docFreq++;
-        assert docID < state.segmentInfo.getDocCount(): "doc=" + docID + " maxDoc=" + state.segmentInfo.getDocCount();
-
-        // NOTE: we could check here if the docID was
-        // deleted, and skip it.  However, this is somewhat
-        // dangerous because it can yield non-deterministic
-        // behavior since we may see the docID before we see
-        // the term that caused it to be deleted.  This
-        // would mean some (but not all) of its postings may
-        // make it into the index, which'd alter the docFreq
-        // for those terms.  We could fix this by doing two
-        // passes, ie first sweep marks all del docs, and
-        // 2nd sweep does the real flush, but I suspect
-        // that'd add too much time to flush.
-        visitedDocs.set(docID);
-        postingsConsumer.startDoc(docID, writeTermFreq ? termFreq : -1);
-        if (docID < delDocLimit) {
-          // Mark it deleted.  TODO: we could also skip
-          // writing its postings; this would be
-          // deterministic (just for this Term's docs).
-          
-          // TODO: can we do this reach-around in a cleaner way????
-          if (state.liveDocs == null) {
-            state.liveDocs = docState.docWriter.codec.liveDocsFormat().newLiveDocs(state.segmentInfo.getDocCount());
-          }
-          if (state.liveDocs.get(docID)) {
-            state.delCountOnFlush++;
-            state.liveDocs.clear(docID);
-          }
-        }
-
-        totTF += termFreq;
-        
-        // Carefully copy over the prox + payload info,
-        // changing the format to match Lucene's segment
-        // format.
-
-        if (readPositions || readOffsets) {
-          // we did record positions (& maybe payload) and/or offsets
-          int position = 0;
-          int offset = 0;
-          for(int j=0;j<termFreq;j++) {
-            final BytesRef thisPayload;
-
-            if (readPositions) {
-              final int code = prox.readVInt();
-              position += code >>> 1;
-
-              if ((code & 1) != 0) {
-
-                // This position has a payload
-                final int payloadLength = prox.readVInt();
-
-                if (payload == null) {
-                  payload = new BytesRef();
-                  payload.bytes = new byte[payloadLength];
-                } else if (payload.bytes.length < payloadLength) {
-                  payload.grow(payloadLength);
-                }
-
-                prox.readBytes(payload.bytes, 0, payloadLength);
-                payload.length = payloadLength;
-                thisPayload = payload;
-
-              } else {
-                thisPayload = null;
-              }
-
-              if (readOffsets) {
-                final int startOffset = offset + prox.readVInt();
-                final int endOffset = startOffset + prox.readVInt();
-                if (writePositions) {
-                  if (writeOffsets) {
-                    assert startOffset >=0 && endOffset >= startOffset : "startOffset=" + startOffset + ",endOffset=" + endOffset + ",offset=" + offset;
-                    postingsConsumer.addPosition(position, thisPayload, startOffset, endOffset);
-                  } else {
-                    postingsConsumer.addPosition(position, thisPayload, -1, -1);
-                  }
-                }
-                offset = startOffset;
-              } else if (writePositions) {
-                postingsConsumer.addPosition(position, thisPayload, -1, -1);
-              }
-            }
-          }
-        }
-        postingsConsumer.finishDoc();
-      }
-      termsConsumer.finishTerm(text, new TermStats(docFreq, writeTermFreq ? totTF : -1));
-      sumTotalTermFreq += totTF;
-      sumDocFreq += docFreq;
-    }
-
-    termsConsumer.finish(writeTermFreq ? sumTotalTermFreq : -1, sumDocFreq, visitedDocs.cardinality());
+  void sortPostings() {
+    assert sortedTermIDs == null;
+    sortedTermIDs = termsHashPerField.sortPostings();
   }
 }

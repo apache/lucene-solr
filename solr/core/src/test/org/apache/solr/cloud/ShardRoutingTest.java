@@ -102,6 +102,10 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
      hash of x is 3e9a9b1b high bits=0 shard=shard3
      hash of y is 477d9216 high bits=1 shard=shard4
      hash of z is c1f69a17 high bits=3 shard=shard2
+
+     hash of f1 is 313bf6b1
+     hash of f2 is ff143f8
+
      ***/
   }
 
@@ -143,28 +147,34 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
     doAddDoc("c!doc2");
     doAddDoc("d!doc3");
     doAddDoc("e!doc4");
+    doAddDoc("f1!f2!doc5");
+    // Check successful addition of a document with a '/' in the id part.
+    doAddDoc("f1!f2!doc5/5");
 
     doRTG("b!doc1");
     doRTG("c!doc2");
     doRTG("d!doc3");
     doRTG("e!doc4");
+    doRTG("f1!f2!doc5");
+    doRTG("f1!f2!doc5/5");
     doRTG("b!doc1,c!doc2");
     doRTG("d!doc3,e!doc4");
 
     commit();
 
-    doQuery("b!doc1,c!doc2,d!doc3,e!doc4", "q","*:*");
-    doQuery("b!doc1,c!doc2,d!doc3,e!doc4", "q","*:*", "shards","shard1,shard2,shard3,shard4");
-    doQuery("b!doc1,c!doc2,d!doc3,e!doc4", "q","*:*", shardKeys,"b!,c!,d!,e!");
+    doQuery("b!doc1,c!doc2,d!doc3,e!doc4,f1!f2!doc5,f1!f2!doc5/5", "q","*:*");
+    doQuery("b!doc1,c!doc2,d!doc3,e!doc4,f1!f2!doc5,f1!f2!doc5/5", "q","*:*", "shards","shard1,shard2,shard3,shard4");
+    doQuery("b!doc1,c!doc2,d!doc3,e!doc4,f1!f2!doc5,f1!f2!doc5/5", "q","*:*", shardKeys,"b!,c!,d!,e!,f1!f2!");
     doQuery("b!doc1", "q","*:*", shardKeys,"b!");
     doQuery("c!doc2", "q","*:*", shardKeys,"c!");
-    doQuery("d!doc3", "q","*:*", shardKeys,"d!");
+    doQuery("d!doc3,f1!f2!doc5,f1!f2!doc5/5", "q","*:*", shardKeys,"d!");
     doQuery("e!doc4", "q","*:*", shardKeys,"e!");
+    doQuery("f1!f2!doc5,d!doc3,f1!f2!doc5/5", "q","*:*", shardKeys,"f1/8!");
 
     // try using shards parameter
     doQuery("b!doc1", "q","*:*", "shards",bucket1);
     doQuery("c!doc2", "q","*:*", "shards",bucket2);
-    doQuery("d!doc3", "q","*:*", "shards",bucket3);
+    doQuery("d!doc3,f1!f2!doc5,f1!f2!doc5/5", "q","*:*", "shards",bucket3);
     doQuery("e!doc4", "q","*:*", "shards",bucket4);
 
 
@@ -174,26 +184,27 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
     doQuery("b!doc1,c!doc2", "q","*:*", shardKeys,"b,c");     // query shards that would contain *documents* "b" and "c" (i.e. not prefixes).  The upper bits are the same, so the shards should be the same.
 
     doQuery("b!doc1,c!doc2", "q","*:*", shardKeys,"b/1!");   // top bit of hash(b)==1, so shard1 and shard2
-    doQuery("d!doc3,e!doc4", "q","*:*", shardKeys,"d/1!");   // top bit of hash(b)==0, so shard3 and shard4
+    doQuery("d!doc3,e!doc4,f1!f2!doc5,f1!f2!doc5/5", "q","*:*", shardKeys,"d/1!");   // top bit of hash(b)==0, so shard3 and shard4
 
     doQuery("b!doc1,c!doc2", "q","*:*", shardKeys,"b!,c!");
 
-    doQuery("b!doc1,c!doc2,d!doc3,e!doc4", "q","*:*", shardKeys,"foo/0!");
+    doQuery("b!doc1,f1!f2!doc5,c!doc2,d!doc3,e!doc4,f1!f2!doc5/5", "q","*:*", shardKeys,"foo/0!");
 
     // test targeting deleteByQuery at only certain shards
     doDBQ("*:*", shardKeys,"b!");
     commit();
-    doQuery("c!doc2,d!doc3,e!doc4", "q","*:*");
+    doQuery("c!doc2,d!doc3,e!doc4,f1!f2!doc5,f1!f2!doc5/5", "q","*:*");
     doAddDoc("b!doc1");
 
-    doDBQ("*:*", shardKeys,"c!");
+    doDBQ("*:*", shardKeys,"f1!");
     commit();
-    doQuery("b!doc1,d!doc3,e!doc4", "q","*:*");
-    doAddDoc("c!doc2");
+    doQuery("b!doc1,c!doc2,e!doc4", "q","*:*");
+    doAddDoc("f1!f2!doc5");
+    doAddDoc("d!doc3");
 
     doDBQ("*:*", shardKeys,"c!");
     commit();
-    doQuery("b!doc1,d!doc3,e!doc4", "q","*:*");
+    doQuery("b!doc1,f1!f2!doc5,d!doc3,e!doc4", "q","*:*");
     doAddDoc("c!doc2");
 
     doDBQ("*:*", shardKeys,"d!,e!");
@@ -201,13 +212,40 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
     doQuery("b!doc1,c!doc2", "q","*:*");
     doAddDoc("d!doc3");
     doAddDoc("e!doc4");
+    doAddDoc("f1!f2!doc5");
 
     commit();
+
+    doDBQ("*:*");
+    commit();
+
+    doAddDoc("b!");
+    doAddDoc("c!doc1");
+    commit();
+    doQuery("b!,c!doc1", "q","*:*");
+    UpdateRequest req = new UpdateRequest();
+    req.deleteById("b!");
+    req.process(cloudClient);
+    commit();
+    doQuery("c!doc1", "q","*:*");
+
+    doDBQ("id:b!");
+    commit();
+    doQuery("c!doc1", "q","*:*");
+
+    doDBQ("*:*");
+    commit();
+
+    doAddDoc("a!b!");
+    doAddDoc("b!doc1");
+    doAddDoc("c!doc2");
+    doAddDoc("d!doc3");
+    doAddDoc("e!doc4");
+    doAddDoc("f1!f2!doc5");
+    doAddDoc("f1!f2!doc5/5");
+    commit();
+    doQuery("a!b!,b!doc1,c!doc2,d!doc3,e!doc4,f1!f2!doc5,f1!f2!doc5/5", "q","*:*");
   }
-
-
-
-
 
 
   public void doTestNumRequests() throws Exception {
@@ -263,6 +301,11 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
     leader2.client.solrClient.query( params("q","*:*", "shard.keys","b!,d!") );
     nEnd = getNumRequests();
     assertEquals(5, nEnd - nStart);   // original + 2 phase distrib search * 2 shards.
+
+    nStart = getNumRequests();
+    leader2.client.solrClient.query( params("q","*:*", "shard.keys","b!,f1!f2!") );
+    nEnd = getNumRequests();
+    assertEquals(5, nEnd - nStart);
   }
 
   public void doAtomicUpdate() throws Exception {
@@ -279,9 +322,10 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
       Object val = ((Map)rsp.getResponse().get("doc")).get("foo_i");
       assertEquals((Integer)expectedVal, val);
     }
+
   }
 
-    long getNumRequests() {
+  long getNumRequests() {
     long n = controlJetty.getDebugFilter().getTotalRequests();
     for (JettySolrRunner jetty : jettys) {
       n += jetty.getDebugFilter().getTotalRequests();

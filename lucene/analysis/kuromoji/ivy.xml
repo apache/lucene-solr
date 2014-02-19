@@ -25,10 +25,10 @@
     </configurations>
 
   <dependencies>
-    <dependency org="mecab" name="mecab-ipadic" rev="2.7.0-20070801" conf="ipadic->default"> 
+    <dependency org="mecab" name="mecab-ipadic" rev="${/mecab/mecab-ipadic}" conf="ipadic->default"> 
        <artifact name="ipadic" type=".tar.gz" url="http://mecab.googlecode.com/files/mecab-ipadic-2.7.0-20070801.tar.gz"/>
      </dependency>
-     <dependency org="mecab" name="mecab-naist-jdic" rev="0.6.3b-20111013" conf="naist->default">
+     <dependency org="mecab" name="mecab-naist-jdic" rev="${/mecab/mecab-naist-jdic}" conf="naist->default">
        <artifact name="mecab-naist-jdic" type=".tar.gz" url="http://sourceforge.jp/frs/redir.php?m=iij&amp;f=/naist-jdic/53500/mecab-naist-jdic-0.6.3b-20111013.tar.gz"/>
      </dependency>
     </dependencies>

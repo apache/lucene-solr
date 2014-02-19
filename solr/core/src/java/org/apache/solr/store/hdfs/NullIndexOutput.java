@@ -49,6 +49,7 @@ public class NullIndexOutput extends IndexOutput {
   @Override
   public void writeByte(byte b) throws IOException {
     pos++;
+    updateLength();
   }
   
   @Override

@@ -25,6 +25,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.PlainIdRouter;
 import org.apache.solr.common.util.Hash;
@@ -96,7 +97,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
       request = lrf.makeRequest("q", "dummy");
 
       SplitIndexCommand command = new SplitIndexCommand(request,
-          Lists.newArrayList(indexDir1.getAbsolutePath(), indexDir2.getAbsolutePath()), null, ranges, new PlainIdRouter());
+          Lists.newArrayList(indexDir1.getAbsolutePath(), indexDir2.getAbsolutePath()), null, ranges, new PlainIdRouter(), null, null);
       new SolrIndexSplitter(command).split();
 
       Directory directory = h.getCore().getDirectoryFactory().get(indexDir1.getAbsolutePath(),
@@ -119,6 +120,49 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
       if (request != null) request.close(); // decrefs the searcher
     }
   }
+  
+  // SOLR-5144
+  public void testSplitDeletes() throws Exception {
+    LocalSolrQueryRequest request = null;
+    try {
+      // add two docs
+      String id1 = "dorothy";
+      assertU(adoc("id", id1));
+      String id2 = "kansas";
+      assertU(adoc("id", id2));
+      assertU(commit());
+      assertJQ(req("q", "*:*"), "/response/numFound==2");
+      assertU(delI(id2)); // delete id2
+      assertU(commit());
+
+
+      // find minHash/maxHash hash ranges
+      List<DocRouter.Range> ranges = getRanges(id1, id2);
+
+      request = lrf.makeRequest("q", "dummy");
+
+      SplitIndexCommand command = new SplitIndexCommand(request,
+          Lists.newArrayList(indexDir1.getAbsolutePath(), indexDir2.getAbsolutePath()), null, ranges, new PlainIdRouter(), null, null);
+      new SolrIndexSplitter(command).split();
+
+      Directory directory = h.getCore().getDirectoryFactory().get(indexDir1.getAbsolutePath(),
+          DirectoryFactory.DirContext.DEFAULT, h.getCore().getSolrConfig().indexConfig.lockType);
+      DirectoryReader reader = DirectoryReader.open(directory);
+      assertEquals("id:dorothy should be present in split index1", 1, reader.docFreq(new Term("id", "dorothy")));
+      assertEquals("id:kansas should not be present in split index1", 0, reader.docFreq(new Term("id", "kansas")));
+      assertEquals("split index1 should have only one document", 1, reader.numDocs());
+      reader.close();
+      h.getCore().getDirectoryFactory().release(directory);
+      directory = h.getCore().getDirectoryFactory().get(indexDir2.getAbsolutePath(),
+          DirectoryFactory.DirContext.DEFAULT, h.getCore().getSolrConfig().indexConfig.lockType);
+      reader = DirectoryReader.open(directory);
+      assertEquals(0, reader.numDocs()); // should be empty
+      reader.close();
+      h.getCore().getDirectoryFactory().release(directory);
+    } finally {
+      if (request != null) request.close(); // decrefs the searcher
+    }
+  }
 
   @Test
   public void testSplitByCores() throws Exception {
@@ -133,21 +177,18 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
 
     SolrCore core1 = null, core2 = null;
     try {
-      CoreDescriptor dcore1 = new CoreDescriptor(h.getCoreContainer(), "split1", h.getCore().getCoreDescriptor().getInstanceDir());
-      dcore1.setDataDir(indexDir1.getAbsolutePath());
-      dcore1.setSchemaName("schema12.xml");
-      
+      String instanceDir = h.getCore().getCoreDescriptor().getInstanceDir();
+
+      CoreDescriptor dcore1 = buildCoreDescriptor(h.getCoreContainer(), "split1", instanceDir)
+          .withDataDir(indexDir1.getAbsolutePath()).withSchema("schema12.xml").build();
       if (h.getCoreContainer().getZkController() != null) {
         h.getCoreContainer().preRegisterInZk(dcore1);
       }
-      
       core1 = h.getCoreContainer().create(dcore1);
       h.getCoreContainer().register(core1, false);
 
-      CoreDescriptor dcore2 = new CoreDescriptor(h.getCoreContainer(), "split2", h.getCore().getCoreDescriptor().getInstanceDir());
-      dcore2.setDataDir(indexDir2.getAbsolutePath());
-      dcore2.setSchemaName("schema12.xml");
-      
+      CoreDescriptor dcore2 = buildCoreDescriptor(h.getCoreContainer(), "split2", instanceDir)
+          .withDataDir(indexDir2.getAbsolutePath()).withSchema("schema12.xml").build();
       if (h.getCoreContainer().getZkController() != null) {
         h.getCoreContainer().preRegisterInZk(dcore2);
       }
@@ -158,7 +199,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
       try {
         request = lrf.makeRequest("q", "dummy");
 
-        SplitIndexCommand command = new SplitIndexCommand(request, null, Lists.newArrayList(core1, core2), ranges, new PlainIdRouter());
+        SplitIndexCommand command = new SplitIndexCommand(request, null, Lists.newArrayList(core1, core2), ranges, new PlainIdRouter(), null, null);
         new SolrIndexSplitter(command).split();
       } finally {
         if (request != null) request.close();
@@ -195,7 +236,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
       request = lrf.makeRequest("q", "dummy");
 
       SplitIndexCommand command = new SplitIndexCommand(request,
-          Lists.newArrayList(indexDir1.getAbsolutePath(), indexDir2.getAbsolutePath(), indexDir3.getAbsolutePath()), null, null, new PlainIdRouter());
+          Lists.newArrayList(indexDir1.getAbsolutePath(), indexDir2.getAbsolutePath(), indexDir3.getAbsolutePath()), null, null, new PlainIdRouter(), null, null);
       new SolrIndexSplitter(command).split();
 
       directory = h.getCore().getDirectoryFactory().get(indexDir1.getAbsolutePath(),
@@ -226,12 +267,75 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
     }
   }
 
+  @Test
+  public void testSplitByRouteKey() throws Exception  {
+    File indexDir = new File(TEMP_DIR, this.getClass().getName() + "testSplitByRouteKey");
+    if (indexDir.exists())  {
+      FileUtils.deleteDirectory(indexDir);
+    }
+    indexDir.mkdirs();
+
+    CompositeIdRouter r1 = new CompositeIdRouter();
+    String splitKey = "sea-line!";
+    String key2 = "soul-raising!";
+
+    // murmur2 has a collision on the above two keys
+    assertEquals(r1.keyHashRange(splitKey), r1.keyHashRange(key2));
+
+    /*
+    More strings with collisions on murmur2 for future reference:
+    "Drava" "dessert spoon"
+    "Bighorn" "pleasure lover"
+    "attributable to" "second edition"
+    "sea-line" "soul-raising"
+    "lift direction" "testimony meeting"
+     */
+
+    for (int i=0; i<10; i++)  {
+      assertU(adoc("id", splitKey + i));
+      assertU(adoc("id", key2 + i));
+    }
+    assertU(commit());
+    assertJQ(req("q", "*:*"), "/response/numFound==20");
+
+    DocRouter.Range splitKeyRange = r1.keyHashRange(splitKey);
+
+    LocalSolrQueryRequest request = null;
+    Directory directory = null;
+    try {
+      request = lrf.makeRequest("q", "dummy");
+      SplitIndexCommand command = new SplitIndexCommand(request,
+          Lists.newArrayList(indexDir.getAbsolutePath()), null, Lists.newArrayList(splitKeyRange), new CompositeIdRouter(), null, splitKey);
+      new SolrIndexSplitter(command).split();
+      directory = h.getCore().getDirectoryFactory().get(indexDir.getAbsolutePath(),
+          DirectoryFactory.DirContext.DEFAULT, h.getCore().getSolrConfig().indexConfig.lockType);
+      DirectoryReader reader = DirectoryReader.open(directory);
+      assertEquals("split index has wrong number of documents", 10, reader.numDocs());
+      reader.close();
+      h.getCore().getDirectoryFactory().release(directory);
+      directory = null;
+    } finally {
+      if (request != null)  {
+        request.close();
+      }
+      if (directory != null)  {
+        h.getCore().getDirectoryFactory().release(directory);
+      }
+    }
+  }
+
   private List<DocRouter.Range> getRanges(String id1, String id2) throws UnsupportedEncodingException {
     // find minHash/maxHash hash ranges
     byte[] bytes = id1.getBytes("UTF-8");
     int minHash = Hash.murmurhash3_x86_32(bytes, 0, bytes.length, 0);
     bytes = id2.getBytes("UTF-8");
     int maxHash = Hash.murmurhash3_x86_32(bytes, 0, bytes.length, 0);
+
+    if (minHash > maxHash)  {
+      int temp = maxHash;
+      maxHash = minHash;
+      minHash = temp;
+    }
 
     PlainIdRouter router = new PlainIdRouter();
     DocRouter.Range fullRange = new DocRouter.Range(minHash, maxHash);

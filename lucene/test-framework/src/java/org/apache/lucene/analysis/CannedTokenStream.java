@@ -17,6 +17,8 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
@@ -34,9 +36,28 @@ public final class CannedTokenStream extends TokenStream {
   private final PositionLengthAttribute posLengthAtt = addAttribute(PositionLengthAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   private final PayloadAttribute payloadAtt = addAttribute(PayloadAttribute.class);
-  
+  private final int finalOffset;
+  private final int finalPosInc;
+
   public CannedTokenStream(Token... tokens) {
     this.tokens = tokens;
+    finalOffset = 0;
+    finalPosInc = 0;
+  }
+
+  /** If you want trailing holes, pass a non-zero
+   *  finalPosInc. */
+  public CannedTokenStream(int finalPosInc, int finalOffset, Token... tokens) {
+    this.tokens = tokens;
+    this.finalOffset = finalOffset;
+    this.finalPosInc = finalPosInc;
+  }
+
+  @Override
+  public void end() throws IOException {
+    super.end();
+    posIncrAtt.setPositionIncrement(finalPosInc);
+    offsetAtt.setOffset(finalOffset, finalOffset);
   }
   
   @Override

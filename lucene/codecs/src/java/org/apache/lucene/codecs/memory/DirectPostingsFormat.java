@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.memory;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
@@ -44,6 +43,7 @@ import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RunAutomaton;
 import org.apache.lucene.util.automaton.Transition;
@@ -147,12 +147,25 @@ public final class DirectPostingsFormat extends PostingsFormat {
     @Override
     public void close() {
     }
+
+    @Override
+    public long ramBytesUsed() {
+      long sizeInBytes = 0;
+      for(Map.Entry<String,DirectField> entry: fields.entrySet()) {
+        sizeInBytes += entry.getKey().length() * RamUsageEstimator.NUM_BYTES_CHAR;
+        sizeInBytes += entry.getValue().ramBytesUsed();
+      }
+      return sizeInBytes;
+    }
   }
 
   private final static class DirectField extends Terms {
 
     private static abstract class TermAndSkip {
       public int[] skips;
+
+      /** Returns the approximate number of RAM bytes used */
+      public abstract long ramBytesUsed();
     }
 
     private static final class LowFreqTerm extends TermAndSkip {
@@ -166,6 +179,12 @@ public final class DirectPostingsFormat extends PostingsFormat {
         this.payloads = payloads;
         this.docFreq = docFreq;
         this.totalTermFreq = totalTermFreq;
+      }
+
+      @Override
+      public long ramBytesUsed() {
+        return ((postings!=null) ? RamUsageEstimator.sizeOf(postings) : 0) + 
+            ((payloads!=null) ? RamUsageEstimator.sizeOf(payloads) : 0);
       }
     }
 
@@ -183,6 +202,31 @@ public final class DirectPostingsFormat extends PostingsFormat {
         this.positions = positions;
         this.payloads = payloads;
         this.totalTermFreq = totalTermFreq;
+      }
+
+      @Override
+      public long ramBytesUsed() {
+         long sizeInBytes = 0;
+         sizeInBytes += (docIDs!=null)? RamUsageEstimator.sizeOf(docIDs) : 0;
+         sizeInBytes += (freqs!=null)? RamUsageEstimator.sizeOf(freqs) : 0;
+         
+         if(positions != null) {
+           for(int[] position : positions) {
+             sizeInBytes += (position!=null) ? RamUsageEstimator.sizeOf(position) : 0;
+           }
+         }
+         
+         if (payloads != null) {
+           for(byte[][] payload : payloads) {
+             if(payload != null) {
+               for(byte[] pload : payload) {
+                 sizeInBytes += (pload!=null) ? RamUsageEstimator.sizeOf(pload) : 0; 
+               }
+             }
+           }
+         }
+         
+         return sizeInBytes;
       }
     }
 
@@ -444,6 +488,24 @@ public final class DirectPostingsFormat extends PostingsFormat {
       assert skipOffset == skipCount;
     }
 
+    /** Returns approximate RAM bytes used */
+    public long ramBytesUsed() {
+      long sizeInBytes = 0;
+      sizeInBytes += ((termBytes!=null) ? RamUsageEstimator.sizeOf(termBytes) : 0);
+      sizeInBytes += ((termOffsets!=null) ? RamUsageEstimator.sizeOf(termOffsets) : 0);
+      sizeInBytes += ((skips!=null) ? RamUsageEstimator.sizeOf(skips) : 0);
+      sizeInBytes += ((skipOffsets!=null) ? RamUsageEstimator.sizeOf(skipOffsets) : 0);
+      sizeInBytes += ((sameCounts!=null) ? RamUsageEstimator.sizeOf(sameCounts) : 0);
+      
+      if(terms!=null) {
+        for(TermAndSkip termAndSkip : terms) {
+          sizeInBytes += (termAndSkip!=null) ? termAndSkip.ramBytesUsed() : 0;
+        }
+      }
+      
+      return sizeInBytes;
+    }
+
     // Compares in unicode (UTF8) order:
     int compare(int ord, BytesRef other) {
       final byte[] otherBytes = other.bytes;
@@ -598,8 +660,8 @@ public final class DirectPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public Comparator<BytesRef> getComparator() {
-      return BytesRef.getUTF8SortedAsUnicodeComparator();
+    public boolean hasFreqs() {
+      return hasFreq;
     }
 
     @Override
@@ -635,11 +697,6 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
       public void reset() {
         termOrd = -1;
-      }
-
-      @Override
-      public Comparator<BytesRef> getComparator() {
-        return BytesRef.getUTF8SortedAsUnicodeComparator();
       }
 
       @Override
@@ -684,7 +741,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       }
 
       @Override
-      public SeekStatus seekCeil(BytesRef term, boolean useCache) {
+      public SeekStatus seekCeil(BytesRef term) {
         // TODO: we should use the skip pointers; should be
         // faster than bin search; we should also hold
         // & reuse current state so seeking forwards is
@@ -707,7 +764,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       }
 
       @Override
-      public boolean seekExact(BytesRef term, boolean useCache) {
+      public boolean seekExact(BytesRef term) {
         // TODO: we should use the skip pointers; should be
         // faster than bin search; we should also hold
         // & reuse current state so seeking forwards is
@@ -1031,11 +1088,6 @@ public final class DirectPostingsFormat extends PostingsFormat {
           //   System.out.println("  loop end; return termOrd=" + termOrd + " stateUpto=" + stateUpto);
           // }
         }
-      }
-
-      @Override
-      public Comparator<BytesRef> getComparator() {
-        return BytesRef.getUTF8SortedAsUnicodeComparator();
       }
 
       private void grow() {
@@ -1413,7 +1465,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       }
 
       @Override
-      public SeekStatus seekCeil(BytesRef term, boolean useCache) {
+      public SeekStatus seekCeil(BytesRef term) {
         throw new UnsupportedOperationException();
       }
 

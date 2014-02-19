@@ -64,6 +64,11 @@ public class MockTokenizer extends Tokenizer {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   int off = 0;
+  
+  // buffered state (previous codepoint and offset). we replay this once we
+  // hit a reject state in case its permissible as the start of a new term.
+  int bufferedCodePoint = -1; // -1 indicates empty buffer
+  int bufferedOff = -1;
 
   // TODO: "register" with LuceneTestCase to ensure all streams are closed() ?
   // currently, we can only check that the lifecycle is correct if someone is reusing,
@@ -84,35 +89,34 @@ public class MockTokenizer extends Tokenizer {
   // evil: but we don't change the behavior with this random, we only switch up how we read
   private final Random random = new Random(RandomizedContext.current().getRandom().nextLong());
   
-  public MockTokenizer(AttributeFactory factory, Reader input, CharacterRunAutomaton runAutomaton, boolean lowerCase, int maxTokenLength) {
-    super(factory, input);
+  public MockTokenizer(AttributeFactory factory, CharacterRunAutomaton runAutomaton, boolean lowerCase, int maxTokenLength) {
+    super(factory);
     this.runAutomaton = runAutomaton;
     this.lowerCase = lowerCase;
     this.state = runAutomaton.getInitialState();
-    this.streamState = State.SETREADER;
     this.maxTokenLength = maxTokenLength;
   }
 
-  public MockTokenizer(Reader input, CharacterRunAutomaton runAutomaton, boolean lowerCase, int maxTokenLength) {
-    this(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, input, runAutomaton, lowerCase, maxTokenLength);
+  public MockTokenizer(CharacterRunAutomaton runAutomaton, boolean lowerCase, int maxTokenLength) {
+    this(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, runAutomaton, lowerCase, maxTokenLength);
   }
 
-  public MockTokenizer(Reader input, CharacterRunAutomaton runAutomaton, boolean lowerCase) {
-    this(input, runAutomaton, lowerCase, DEFAULT_MAX_TOKEN_LENGTH);
+  public MockTokenizer(CharacterRunAutomaton runAutomaton, boolean lowerCase) {
+    this(runAutomaton, lowerCase, DEFAULT_MAX_TOKEN_LENGTH);
   }
-  /** Calls {@link #MockTokenizer(Reader, CharacterRunAutomaton, boolean) MockTokenizer(Reader, WHITESPACE, true)} */
-  public MockTokenizer(Reader input) {
-    this(input, WHITESPACE, true);
-  }
-
-  public MockTokenizer(AttributeFactory factory, Reader input, CharacterRunAutomaton runAutomaton, boolean lowerCase) {
-    this(factory, input, runAutomaton, lowerCase, DEFAULT_MAX_TOKEN_LENGTH);
+  /** Calls {@link #MockTokenizer(CharacterRunAutomaton, boolean) MockTokenizer(Reader, WHITESPACE, true)} */
+  public MockTokenizer() {
+    this(WHITESPACE, true);
   }
 
-  /** Calls {@link #MockTokenizer(org.apache.lucene.util.AttributeSource.AttributeFactory,Reader,CharacterRunAutomaton,boolean)
+  public MockTokenizer(AttributeFactory factory, CharacterRunAutomaton runAutomaton, boolean lowerCase) {
+    this(factory, runAutomaton, lowerCase, DEFAULT_MAX_TOKEN_LENGTH);
+  }
+
+  /** Calls {@link #MockTokenizer(org.apache.lucene.util.AttributeSource.AttributeFactory,CharacterRunAutomaton,boolean)
    *                MockTokenizer(AttributeFactory, Reader, WHITESPACE, true)} */
-  public MockTokenizer(AttributeFactory factory, Reader input) {
-    this(input, WHITESPACE, true);
+  public MockTokenizer(AttributeFactory factory) {
+    this(factory, WHITESPACE, true);
   }
 
   @Override
@@ -121,8 +125,16 @@ public class MockTokenizer extends Tokenizer {
                             : "incrementToken() called while in wrong state: " + streamState;
     clearAttributes();
     for (;;) {
-      int startOffset = off;
-      int cp = readCodePoint();
+      int startOffset;
+      int cp;
+      if (bufferedCodePoint >= 0) {
+        cp = bufferedCodePoint;
+        startOffset = bufferedOff;
+        bufferedCodePoint = -1;
+      } else {
+        startOffset = off;
+        cp = readCodePoint();
+      }
       if (cp < 0) {
         break;
       } else if (isTokenChar(cp)) {
@@ -138,6 +150,14 @@ public class MockTokenizer extends Tokenizer {
           cp = readCodePoint();
         } while (cp >= 0 && isTokenChar(cp));
         
+        if (termAtt.length() < maxTokenLength) {
+          // buffer up, in case the "rejected" char can start a new word of its own
+          bufferedCodePoint = cp;
+          bufferedOff = endOffset;
+        } else {
+          // otherwise, its because we hit term limit.
+          bufferedCodePoint = -1;
+        }
         int correctedStartOffset = correctOffset(startOffset);
         int correctedEndOffset = correctOffset(endOffset);
         assert correctedStartOffset >= 0;
@@ -146,8 +166,11 @@ public class MockTokenizer extends Tokenizer {
         lastOffset = correctedStartOffset;
         assert correctedEndOffset >= correctedStartOffset;
         offsetAtt.setOffset(correctedStartOffset, correctedEndOffset);
-        streamState = State.INCREMENT;
-        return true;
+        if (state == -1 || runAutomaton.isAccept(state)) {
+          // either we hit a reject state (longest match), or end-of-text, but in an accept state
+          streamState = State.INCREMENT;
+          return true;
+        }
       }
     }
     streamState = State.INCREMENT_FALSE;
@@ -203,9 +226,11 @@ public class MockTokenizer extends Tokenizer {
   }
 
   protected boolean isTokenChar(int c) {
-    state = runAutomaton.step(state, c);
     if (state < 0) {
       state = runAutomaton.getInitialState();
+    }
+    state = runAutomaton.step(state, c);
+    if (state < 0) {
       return false;
     } else {
       return true;
@@ -221,6 +246,7 @@ public class MockTokenizer extends Tokenizer {
     super.reset();
     state = runAutomaton.getInitialState();
     lastOffset = off = 0;
+    bufferedCodePoint = -1;
     assert !enableChecks || streamState != State.RESET : "double reset()";
     streamState = State.RESET;
   }
@@ -244,6 +270,7 @@ public class MockTokenizer extends Tokenizer {
 
   @Override
   public void end() throws IOException {
+    super.end();
     int finalOffset = correctOffset(off);
     offsetAtt.setOffset(finalOffset, finalOffset);
     // some tokenizers, such as limiting tokenizers, call end() before incrementToken() returns false.

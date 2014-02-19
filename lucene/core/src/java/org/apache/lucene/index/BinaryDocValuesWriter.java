@@ -22,28 +22,46 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
-import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;
-import org.apache.lucene.util.ByteBlockPool;
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
-import org.apache.lucene.util.packed.AppendingLongBuffer;
-
-import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
-
+import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.PagedBytes;
+import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.packed.AppendingDeltaPackedLongBuffer;
+import org.apache.lucene.util.packed.PackedInts;
 
 /** Buffers up pending byte[] per doc, then flushes when
  *  segment flushes. */
 class BinaryDocValuesWriter extends DocValuesWriter {
 
-  private final ByteBlockPool pool;
-  private final AppendingLongBuffer lengths;
+  /** Maximum length for a binary field. */
+  private static final int MAX_LENGTH = ArrayUtil.MAX_ARRAY_LENGTH;
+
+  // 32 KB block sizes for PagedBytes storage:
+  private final static int BLOCK_BITS = 15;
+
+  private final PagedBytes bytes;
+  private final DataOutput bytesOut;
+
+  private final Counter iwBytesUsed;
+  private final AppendingDeltaPackedLongBuffer lengths;
+  private FixedBitSet docsWithField;
   private final FieldInfo fieldInfo;
-  private int addedValues = 0;
+  private int addedValues;
+  private long bytesUsed;
 
   public BinaryDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     this.fieldInfo = fieldInfo;
-    this.pool = new ByteBlockPool(new DirectTrackingAllocator(iwBytesUsed));
-    this.lengths = new AppendingLongBuffer();
+    this.bytes = new PagedBytes(BLOCK_BITS);
+    this.bytesOut = bytes.getDataOutput();
+    this.lengths = new AppendingDeltaPackedLongBuffer(PackedInts.COMPACT);
+    this.iwBytesUsed = iwBytesUsed;
+    this.docsWithField = new FixedBitSet(64);
+    this.bytesUsed = docsWithFieldBytesUsed();
+    iwBytesUsed.addAndGet(bytesUsed);
   }
 
   public void addValue(int docID, BytesRef value) {
@@ -53,10 +71,10 @@ class BinaryDocValuesWriter extends DocValuesWriter {
     if (value == null) {
       throw new IllegalArgumentException("field=\"" + fieldInfo.name + "\": null value not allowed");
     }
-    if (value.length > (BYTE_BLOCK_SIZE - 2)) {
-      throw new IllegalArgumentException("DocValuesField \"" + fieldInfo.name + "\" is too large, must be <= " + (BYTE_BLOCK_SIZE - 2));
+    if (value.length > MAX_LENGTH) {
+      throw new IllegalArgumentException("DocValuesField \"" + fieldInfo.name + "\" is too large, must be <= " + MAX_LENGTH);
     }
-    
+
     // Fill in any holes:
     while(addedValues < docID) {
       addedValues++;
@@ -64,7 +82,26 @@ class BinaryDocValuesWriter extends DocValuesWriter {
     }
     addedValues++;
     lengths.add(value.length);
-    pool.append(value);
+    try {
+      bytesOut.writeBytes(value.bytes, value.offset, value.length);
+    } catch (IOException ioe) {
+      // Should never happen!
+      throw new RuntimeException(ioe);
+    }
+    docsWithField = FixedBitSet.ensureCapacity(docsWithField, docID);
+    docsWithField.set(docID);
+    updateBytesUsed();
+  }
+  
+  private long docsWithFieldBytesUsed() {
+    // size of the long[] + some overhead
+    return RamUsageEstimator.sizeOf(docsWithField.getBits()) + 64;
+  }
+
+  private void updateBytesUsed() {
+    final long newBytesUsed = lengths.ramBytesUsed() + bytes.ramBytesUsed() + docsWithFieldBytesUsed();
+    iwBytesUsed.addAndGet(newBytesUsed - bytesUsed);
+    bytesUsed = newBytesUsed;
   }
 
   @Override
@@ -74,6 +111,7 @@ class BinaryDocValuesWriter extends DocValuesWriter {
   @Override
   public void flush(SegmentWriteState state, DocValuesConsumer dvConsumer) throws IOException {
     final int maxDoc = state.segmentInfo.getDocCount();
+    bytes.freeze(false);
     dvConsumer.addBinaryField(fieldInfo,
                               new Iterable<BytesRef>() {
                                 @Override
@@ -90,11 +128,11 @@ class BinaryDocValuesWriter extends DocValuesWriter {
   // iterates over the values we have in ram
   private class BytesIterator implements Iterator<BytesRef> {
     final BytesRef value = new BytesRef();
-    final AppendingLongBuffer.Iterator lengthsIterator = lengths.iterator();
+    final AppendingDeltaPackedLongBuffer.Iterator lengthsIterator = lengths.iterator();
+    final DataInput bytesIterator = bytes.getDataInput();
     final int size = (int) lengths.size();
     final int maxDoc;
     int upto;
-    long byteOffset;
     
     BytesIterator(int maxDoc) {
       this.maxDoc = maxDoc;
@@ -110,19 +148,27 @@ class BinaryDocValuesWriter extends DocValuesWriter {
       if (!hasNext()) {
         throw new NoSuchElementException();
       }
+      final BytesRef v;
       if (upto < size) {
         int length = (int) lengthsIterator.next();
         value.grow(length);
         value.length = length;
-        pool.readBytes(byteOffset, value.bytes, value.offset, value.length);
-        byteOffset += length;
+        try {
+          bytesIterator.readBytes(value.bytes, value.offset, value.length);
+        } catch (IOException ioe) {
+          // Should never happen!
+          throw new RuntimeException(ioe);
+        }
+        if (docsWithField.get(upto)) {
+          v = value;
+        } else {
+          v = null;
+        }
       } else {
-        // This is to handle last N documents not having
-        // this DV field in the end of the segment:
-        value.length = 0;
+        v = null;
       }
       upto++;
-      return value;
+      return v;
     }
 
     @Override

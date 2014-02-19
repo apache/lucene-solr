@@ -147,10 +147,14 @@ public class SpellCheckCollator {
           hits = (Integer) checkResponse.rsp.getToLog().get("hits");
         } catch (EarlyTerminatingCollectorException etce) {
           assert (docCollectionLimit > 0);
-          if (etce.getLastDocId() + 1 == maxDocId) {
-            hits = docCollectionLimit;
+          assert 0 < etce.getNumberScanned();
+          assert 0 < etce.getNumberCollected();
+
+          if (etce.getNumberScanned() == maxDocId) {
+            hits = etce.getNumberCollected();
           } else {
-            hits = maxDocId / ((etce.getLastDocId() + 1) / docCollectionLimit);
+            hits = (int) ( ((float)( maxDocId * etce.getNumberCollected() )) 
+                           / (float)etce.getNumberScanned() );
           }
         } catch (Exception e) {
           LOG.warn("Exception trying to re-query to check if a spell check possibility would return any hits.", e);
@@ -202,7 +206,7 @@ public class SpellCheckCollator {
       //then be sure all of the new words have the same optional/required/prohibited status in the query.
       while(indexOfSpace>-1 && indexOfSpace<corr.length()-1) {
         addParenthesis = true;
-        char previousChar = tok.startOffset()>0 ? collation.charAt(tok.startOffset()-1) : ' ';
+        char previousChar = tok.startOffset()>0 ? origQuery.charAt(tok.startOffset()-1) : ' ';
         if(previousChar=='-' || previousChar=='+') {
           corrSb.insert(indexOfSpace + bump, previousChar);
           if(requiredOrProhibited==null) {

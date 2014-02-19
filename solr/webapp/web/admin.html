@@ -30,6 +30,7 @@ limitations under the License.
   <link rel="stylesheet" type="text/css" href="css/styles/cores.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/styles/dashboard.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/styles/dataimport.css?_=${version}">
+  <link rel="stylesheet" type="text/css" href="css/styles/files.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/styles/index.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/styles/java-properties.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/styles/logging.css?_=${version}">
@@ -41,6 +42,8 @@ limitations under the License.
   <link rel="stylesheet" type="text/css" href="css/styles/schema-browser.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/styles/threads.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/chosen.css?_=${version}">
+
+  <meta http-equiv="x-ua-compatible" content="IE=9">
     
   <script type="text/javascript">
     
@@ -113,7 +116,13 @@ limitations under the License.
           </ul>
 
           <div id="core-selector">
-            <select data-placeholder="Core Selector"></select>
+            <div id="has-cores">
+              <select data-placeholder="Core Selector"></select>
+            </div>
+            <p id="has-no-cores"><a href="#/~cores">
+              No cores available
+              <span>Go and create one</span>
+            </a></p>
           </div>
           <div id="core-menu">
             <ul></ul>

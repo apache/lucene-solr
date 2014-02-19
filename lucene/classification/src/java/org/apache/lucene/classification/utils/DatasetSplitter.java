@@ -40,8 +40,8 @@ import java.io.IOException;
  */
 public class DatasetSplitter {
 
-  private double crossValidationRatio;
-  private double testRatio;
+  private final double crossValidationRatio;
+  private final double testRatio;
 
   /**
    * Create a {@link DatasetSplitter} by giving test and cross validation IDXs sizes
@@ -68,9 +68,8 @@ public class DatasetSplitter {
   public void split(AtomicReader originalIndex, Directory trainingIndex, Directory testIndex, Directory crossValidationIndex,
                     Analyzer analyzer, String... fieldNames) throws IOException {
 
-    // TODO : check that the passed fields are stored in the original index
-
     // create IWs for train / test / cv IDXs
+    // :Post-Release-Update-Version.LUCENE_XY:
     IndexWriter testWriter = new IndexWriter(testIndex, new IndexWriterConfig(Version.LUCENE_50, analyzer));
     IndexWriter cvWriter = new IndexWriter(crossValidationIndex, new IndexWriterConfig(Version.LUCENE_50, analyzer));
     IndexWriter trainingWriter = new IndexWriter(trainingIndex, new IndexWriterConfig(Version.LUCENE_50, analyzer));

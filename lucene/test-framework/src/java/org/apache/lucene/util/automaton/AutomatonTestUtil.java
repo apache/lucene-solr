@@ -28,8 +28,8 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.util._TestUtil;
 
 /**
  * Utilities for testing automata.
@@ -65,14 +65,14 @@ public class AutomatonTestUtil {
       if (0 == t && i < end - 1) {
         // Make a surrogate pair
         // High surrogate
-        buffer[i++] = (char) _TestUtil.nextInt(r, 0xd800, 0xdbff);
+        buffer[i++] = (char) TestUtil.nextInt(r, 0xd800, 0xdbff);
         // Low surrogate
-        buffer[i] = (char) _TestUtil.nextInt(r, 0xdc00, 0xdfff);
+        buffer[i] = (char) TestUtil.nextInt(r, 0xdc00, 0xdfff);
       }
       else if (t <= 1) buffer[i] = (char) r.nextInt(0x80);
-      else if (2 == t) buffer[i] = (char) _TestUtil.nextInt(r, 0x80, 0x800);
-      else if (3 == t) buffer[i] = (char) _TestUtil.nextInt(r, 0x800, 0xd7ff);
-      else if (4 == t) buffer[i] = (char) _TestUtil.nextInt(r, 0xe000, 0xffff);
+      else if (2 == t) buffer[i] = (char) TestUtil.nextInt(r, 0x80, 0x800);
+      else if (3 == t) buffer[i] = (char) TestUtil.nextInt(r, 0x800, 0xd7ff);
+      else if (4 == t) buffer[i] = (char) TestUtil.nextInt(r, 0xe000, 0xffff);
       else if (5 == t) buffer[i] = '.';
       else if (6 == t) buffer[i] = '?';
       else if (7 == t) buffer[i] = '*';

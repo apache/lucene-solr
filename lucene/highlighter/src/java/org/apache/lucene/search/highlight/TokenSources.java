@@ -20,11 +20,16 @@ package org.apache.lucene.search.highlight;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Comparator;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.Fields;
@@ -34,11 +39,6 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
-
-import java.io.IOException;
-import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.Comparator;
 
 /**
  * Hides implementation issues associated with obtaining a TokenStream for use
@@ -170,11 +170,14 @@ public class TokenSources {
 
       PositionIncrementAttribute posincAtt;
 
+      PayloadAttribute payloadAtt;
+
       StoredTokenStream(Token tokens[]) {
         this.tokens = tokens;
         termAtt = addAttribute(CharTermAttribute.class);
         offsetAtt = addAttribute(OffsetAttribute.class);
         posincAtt = addAttribute(PositionIncrementAttribute.class);
+        payloadAtt = addAttribute(PayloadAttribute.class);
       }
 
       @Override
@@ -186,6 +189,10 @@ public class TokenSources {
         clearAttributes();
         termAtt.setEmpty().append(token);
         offsetAtt.setOffset(token.startOffset(), token.endOffset());
+        BytesRef payload = token.getPayload();
+        if (payload != null) {
+          payloadAtt.setPayload(payload);
+        }
         posincAtt
             .setPositionIncrement(currentToken <= 1
                 || tokens[currentToken - 1].startOffset() > tokens[currentToken - 2]
@@ -193,6 +200,9 @@ public class TokenSources {
         return true;
       }
     }
+
+    boolean hasPayloads = tpv.hasPayloads();
+
     // code to reconstruct the original sequence of Tokens
     TermsEnum termsEnum = tpv.iterator(null);
     int totalTokens = 0;
@@ -224,6 +234,13 @@ public class TokenSources {
         final Token token = new Token(term,
                                       dpEnum.startOffset(),
                                       dpEnum.endOffset());
+        if (hasPayloads) {
+          // Must make a deep copy of the returned payload,
+          // since D&PEnum API is allowed to re-use on every
+          // call:
+          token.setPayload(BytesRef.deepCopyOf(dpEnum.getPayload()));
+        }
+
         if (tokenPositionsGuaranteedContiguous && pos != -1) {
           // We have positions stored and a guarantee that the token position
           // information is contiguous
@@ -254,9 +271,11 @@ public class TokenSources {
       ArrayUtil.timSort(tokensInOriginalOrder, new Comparator<Token>() {
         @Override
         public int compare(Token t1, Token t2) {
-          if (t1.startOffset() == t2.startOffset()) return t1.endOffset()
-              - t2.endOffset();
-          else return t1.startOffset() - t2.startOffset();
+          if (t1.startOffset() == t2.startOffset()) {
+            return t1.endOffset() - t2.endOffset();
+          } else {
+            return t1.startOffset() - t2.startOffset();
+          }
         }
       });
     }
@@ -314,7 +333,7 @@ public class TokenSources {
   public static TokenStream getTokenStream(String field, String contents,
       Analyzer analyzer) {
     try {
-      return analyzer.tokenStream(field, new StringReader(contents));
+      return analyzer.tokenStream(field, contents);
     } catch (IOException ex) {
       throw new RuntimeException(ex);
     }

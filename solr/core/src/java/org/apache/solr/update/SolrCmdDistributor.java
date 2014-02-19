@@ -18,501 +18,261 @@ package org.apache.solr.update;
  */
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.Future;
-import java.util.concurrent.RejectedExecutionException;
 
+import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
-import org.apache.solr.client.solrj.request.UpdateRequestExt;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.Diagnostics;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.util.AdjustableSemaphore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
 public class SolrCmdDistributor {
-  private static final int MAX_RETRIES_ON_FORWARD = 15;
+  private static final int MAX_RETRIES_ON_FORWARD = 25;
   public static Logger log = LoggerFactory.getLogger(SolrCmdDistributor.class);
-
-  static AdjustableSemaphore semaphore = new AdjustableSemaphore(8);
   
-  CompletionService<Request> completionService;
-  Set<Future<Request>> pending;
+  private StreamingSolrServers servers;
   
-  int maxBufferedAddsPerServer = 10;
-  int maxBufferedDeletesPerServer = 10;
-
-  private Response response = new Response();
+  private int retryPause = 500;
+  private int maxRetriesOnForward = MAX_RETRIES_ON_FORWARD;
   
-  private final Map<Node,List<AddRequest>> adds = new HashMap<Node,List<AddRequest>>();
-  private final Map<Node,List<DeleteRequest>> deletes = new HashMap<Node,List<DeleteRequest>>();
-  private UpdateShardHandler updateShardHandler;
-  
-  class AddRequest {
-    AddUpdateCommand cmd;
-    ModifiableSolrParams params;
-  }
-  
-  class DeleteRequest {
-    DeleteUpdateCommand cmd;
-    ModifiableSolrParams params;
-  }
+  private List<Error> allErrors = new ArrayList<Error>();
+  private List<Error> errors = new ArrayList<Error>();
   
   public static interface AbortCheck {
     public boolean abortCheck();
   }
   
-  public SolrCmdDistributor(int numHosts, UpdateShardHandler updateShardHandler) {
-    int maxPermits = Math.max(16, numHosts * 16);
-    // limits how many tasks can actually execute at once
-    if (maxPermits != semaphore.getMaxPermits()) {
-      semaphore.setMaxPermits(maxPermits);
-    }
-    
-    this.updateShardHandler = updateShardHandler;
-    completionService = new ExecutorCompletionService<Request>(updateShardHandler.getCmdDistribExecutor());
-    pending = new HashSet<Future<Request>>();
+  public SolrCmdDistributor(UpdateShardHandler updateShardHandler) {
+    servers = new StreamingSolrServers(updateShardHandler);
+  }
+  
+  public SolrCmdDistributor(StreamingSolrServers servers, int maxRetriesOnForward, int retryPause) {
+    this.servers = servers;
+    this.maxRetriesOnForward = maxRetriesOnForward;
+    this.retryPause = retryPause;
   }
   
   public void finish() {
+    try {
+      servers.blockUntilFinished();
+      doRetriesIfNeeded();
+    } finally {
+      servers.shutdown();
+    }
+  }
 
-    flushAdds(1);
-    flushDeletes(1);
+  private void doRetriesIfNeeded() {
+    // NOTE: retries will be forwards to a single url
+    
+    List<Error> errors = new ArrayList<Error>(this.errors);
+    errors.addAll(servers.getErrors());
+    List<Error> resubmitList = new ArrayList<Error>();
 
-    checkResponses(true);
+    for (Error err : errors) {
+      try {
+        String oldNodeUrl = err.req.node.getUrl();
+        
+        // if there is a retry url, we want to retry...
+        boolean isRetry = err.req.node.checkRetry();
+        
+        boolean doRetry = false;
+        int rspCode = err.statusCode;
+        
+        if (testing_errorHook != null) Diagnostics.call(testing_errorHook,
+            err.e);
+        
+        // this can happen in certain situations such as shutdown
+        if (isRetry) {
+          if (rspCode == 404 || rspCode == 403 || rspCode == 503) {
+            doRetry = true;
+          }
+          
+          // if its a connect exception, lets try again
+          if (err.e instanceof SolrServerException) {
+            if (((SolrServerException) err.e).getRootCause() instanceof ConnectException) {
+              doRetry = true;
+            }
+          }
+          
+          if (err.e instanceof ConnectException) {
+            doRetry = true;
+          }
+          
+          if (err.req.retries < maxRetriesOnForward && doRetry) {
+            err.req.retries++;
+            
+            SolrException.log(SolrCmdDistributor.log, "forwarding update to "
+                + oldNodeUrl + " failed - retrying ... retries: "
+                + err.req.retries + " " + err.req.cmdString + " params:"
+                + err.req.uReq.getParams() + " rsp:" + rspCode, err.e);
+            try {
+              Thread.sleep(retryPause);
+            } catch (InterruptedException e) {
+              Thread.currentThread().interrupt();
+              log.warn(null, e);
+            }
+            
+            resubmitList.add(err);
+          } else {
+            allErrors.add(err);
+          }
+        } else {
+          allErrors.add(err);
+        }
+      } catch (Exception e) {
+        // continue on
+        log.error("Unexpected Error while doing request retries", e);
+      }
+    }
+    
+    servers.clearErrors();
+    this.errors.clear();
+    for (Error err : resubmitList) {
+      submit(err.req);
+    }
+    
+    if (resubmitList.size() > 0) {
+      servers.blockUntilFinished();
+      doRetriesIfNeeded();
+    }
   }
   
-  public void distribDelete(DeleteUpdateCommand cmd, List<Node> urls, ModifiableSolrParams params) throws IOException {
-    checkResponses(false);
+  public void distribDelete(DeleteUpdateCommand cmd, List<Node> nodes, ModifiableSolrParams params) throws IOException {
+    distribDelete(cmd, nodes, params, false);
+  }
+  
+  public void distribDelete(DeleteUpdateCommand cmd, List<Node> nodes, ModifiableSolrParams params, boolean sync) throws IOException {
     
-    if (cmd.isDeleteById()) {
-      doDelete(cmd, urls, params);
-    } else {
-      doDelete(cmd, urls, params);
+    for (Node node : nodes) {
+      UpdateRequest uReq = new UpdateRequest();
+      uReq.setParams(params);
+      if (cmd.isDeleteById()) {
+        uReq.deleteById(cmd.getId(), cmd.getVersion());
+      } else {
+        uReq.deleteByQuery(cmd.query);
+      }
+      
+      submit(new Req(cmd.toString(), node, uReq, sync));
     }
   }
   
   public void distribAdd(AddUpdateCommand cmd, List<Node> nodes, ModifiableSolrParams params) throws IOException {
-    checkResponses(false);
+    distribAdd(cmd, nodes, params, false);
+  }
+  
+  public void distribAdd(AddUpdateCommand cmd, List<Node> nodes, ModifiableSolrParams params, boolean synchronous) throws IOException {
+
+    for (Node node : nodes) {
+      UpdateRequest uReq = new UpdateRequest();
+      uReq.setParams(params);
+      uReq.add(cmd.solrDoc, cmd.commitWithin, cmd.overwrite);
+      submit(new Req(cmd.toString(), node, uReq, synchronous));
+    }
     
-    // make sure any pending deletes are flushed
-    flushDeletes(1);
-
-    // TODO: this is brittle
-    // need to make a clone since these commands may be reused
-    AddUpdateCommand clone = new AddUpdateCommand(null);
-
-    clone.solrDoc = cmd.solrDoc;
-    clone.commitWithin = cmd.commitWithin;
-    clone.overwrite = cmd.overwrite;
-    clone.setVersion(cmd.getVersion());
-    AddRequest addRequest = new AddRequest();
-    addRequest.cmd = clone;
-    addRequest.params = params;
-
-    for (Node node : nodes) {
-      List<AddRequest> alist = adds.get(node);
-      if (alist == null) {
-        alist = new ArrayList<AddRequest>(2);
-        adds.put(node, alist);
-      }
-      alist.add(addRequest);
-    }
-
-    flushAdds(maxBufferedAddsPerServer);
-  }
-
-  /**
-   * Synchronous (blocking) add to specified node. Any error returned from node is propagated.
-   */
-  public void syncAdd(AddUpdateCommand cmd, Node node, ModifiableSolrParams params) throws IOException {
-    log.info("SYNCADD on {} : {}", node, cmd.getPrintableId());
-    checkResponses(false);
-    // flush all pending deletes
-    flushDeletes(1);
-    // flush all pending adds
-    flushAdds(1);
-    // finish with the pending requests
-    checkResponses(false);
-
-    UpdateRequestExt ureq = new UpdateRequestExt();
-    ureq.add(cmd.solrDoc, cmd.commitWithin, cmd.overwrite);
-    ureq.setParams(params);
-    syncRequest(node, ureq);
-  }
-
-  public void syncDelete(DeleteUpdateCommand cmd, List<Node> nodes, ModifiableSolrParams params) throws IOException {
-    log.info("SYNCDELETE on {} : ", nodes, cmd);
-    checkResponses(false);
-    // flush all pending adds
-    flushAdds(1);
-    // flush all pending deletes
-    flushDeletes(1);
-    // finish pending requests
-    checkResponses(false);
-
-    DeleteUpdateCommand clonedCmd = clone(cmd);
-    DeleteRequest deleteRequest = new DeleteRequest();
-    deleteRequest.cmd = clonedCmd;
-    deleteRequest.params = params;
-
-    UpdateRequestExt ureq = new UpdateRequestExt();
-    if (cmd.isDeleteById()) {
-      ureq.deleteById(cmd.getId(), cmd.getVersion());
-    } else {
-      ureq.deleteByQuery(cmd.query);
-    }
-    ureq.setParams(params);
-    for (Node node : nodes) {
-      syncRequest(node, ureq);
-    }
-  }
-
-  private void syncRequest(Node node, UpdateRequestExt ureq) {
-    Request sreq = new Request();
-    sreq.node = node;
-    sreq.ureq = ureq;
-
-    String url = node.getUrl();
-    String fullUrl;
-    if (!url.startsWith("http://") && !url.startsWith("https://")) {
-      fullUrl = "http://" + url;
-    } else {
-      fullUrl = url;
-    }
-
-    HttpSolrServer server = new HttpSolrServer(fullUrl,
-        updateShardHandler.getHttpClient());
-
-    try {
-      sreq.ursp = server.request(ureq);
-    } catch (Exception e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Failed synchronous update on shard " + sreq.node, sreq.exception);
-    }
   }
 
   public void distribCommit(CommitUpdateCommand cmd, List<Node> nodes,
       ModifiableSolrParams params) throws IOException {
     
-    // make sure we are ordered
-    flushAdds(1);
-    flushDeletes(1);
-
+    // we need to do any retries before commit...
+    servers.blockUntilFinished();
+    doRetriesIfNeeded();
     
-    // Wait for all outstanding responses to make sure that a commit
-    // can't sneak in ahead of adds or deletes we already sent.
-    // We could do this on a per-server basis, but it's more complex
-    // and this solution will lead to commits happening closer together.
-    checkResponses(true);
+    UpdateRequest uReq = new UpdateRequest();
+    uReq.setParams(params);
     
-    // currently, we dont try to piggy back on outstanding adds or deletes
+    addCommit(uReq, cmd);
     
-    UpdateRequestExt ureq = new UpdateRequestExt();
-    ureq.setParams(params);
-    
-    addCommit(ureq, cmd);
-    
-    log.info("Distrib commit to:" + nodes + " params:" + params);
+    log.debug("Distrib commit to: {} params: {}", nodes, params);
     
     for (Node node : nodes) {
-      submit(ureq, node);
+      submit(new Req(cmd.toString(), node, uReq, false));
     }
     
-    // if the command wanted to block until everything was committed,
-    // then do that here.
-    
-    if (cmd.waitSearcher) {
-      checkResponses(true);
-    }
   }
   
-  private void doDelete(DeleteUpdateCommand cmd, List<Node> nodes,
-      ModifiableSolrParams params) {
-    
-    flushAdds(1);
-    
-    DeleteUpdateCommand clonedCmd = clone(cmd);
-    DeleteRequest deleteRequest = new DeleteRequest();
-    deleteRequest.cmd = clonedCmd;
-    deleteRequest.params = params;
-    for (Node node : nodes) {
-      List<DeleteRequest> dlist = deletes.get(node);
-      
-      if (dlist == null) {
-        dlist = new ArrayList<DeleteRequest>(2);
-        deletes.put(node, dlist);
-      }
-      dlist.add(deleteRequest);
-    }
-    
-    flushDeletes(maxBufferedDeletesPerServer);
-  }
-  
-  void addCommit(UpdateRequestExt ureq, CommitUpdateCommand cmd) {
+  void addCommit(UpdateRequest ureq, CommitUpdateCommand cmd) {
     if (cmd == null) return;
     ureq.setAction(cmd.optimize ? AbstractUpdateRequest.ACTION.OPTIMIZE
         : AbstractUpdateRequest.ACTION.COMMIT, false, cmd.waitSearcher, cmd.maxOptimizeSegments, cmd.softCommit, cmd.expungeDeletes);
   }
-  
-  boolean flushAdds(int limit) {
-    // check for pending deletes
-  
-    Set<Node> removeNodes = new HashSet<Node>();
-    Set<Node> nodes = adds.keySet();
- 
-    for (Node node : nodes) {
-      List<AddRequest> alist = adds.get(node);
-      if (alist == null || alist.size() < limit) continue;
-  
-      UpdateRequestExt ureq = new UpdateRequestExt();
-      
-      ModifiableSolrParams combinedParams = new ModifiableSolrParams();
-      
-      for (AddRequest aReq : alist) {
-        AddUpdateCommand cmd = aReq.cmd;
-        combinedParams.add(aReq.params);
-       
-        ureq.add(cmd.solrDoc, cmd.commitWithin, cmd.overwrite);
-      }
-      
-      if (ureq.getParams() == null) ureq.setParams(new ModifiableSolrParams());
-      ureq.getParams().add(combinedParams);
 
-      removeNodes.add(node);
+  private void submit(Req req) {
+    if (req.synchronous) {
+      servers.blockUntilFinished();
+      doRetriesIfNeeded();
       
-      submit(ureq, node);
-    }
-    
-    for (Node node : removeNodes) {
-      adds.remove(node);
-    }
-    
-    return true;
-  }
-  
-  boolean flushDeletes(int limit) {
-    // check for pending deletes
- 
-    Set<Node> removeNodes = new HashSet<Node>();
-    Set<Node> nodes = deletes.keySet();
-    for (Node node : nodes) {
-      List<DeleteRequest> dlist = deletes.get(node);
-      if (dlist == null || dlist.size() < limit) continue;
-      UpdateRequestExt ureq = new UpdateRequestExt();
-      
-      ModifiableSolrParams combinedParams = new ModifiableSolrParams();
-      
-      for (DeleteRequest dReq : dlist) {
-        DeleteUpdateCommand cmd = dReq.cmd;
-        combinedParams.add(dReq.params);
-        if (cmd.isDeleteById()) {
-          ureq.deleteById(cmd.getId(), cmd.getVersion());
-        } else {
-          ureq.deleteByQuery(cmd.query);
-        }
-        
-        if (ureq.getParams() == null) ureq
-            .setParams(new ModifiableSolrParams());
-        ureq.getParams().add(combinedParams);
+      HttpSolrServer server = new HttpSolrServer(req.node.getUrl(),
+          servers.getHttpClient());
+      try {
+        server.request(req.uReq);
+      } catch (Exception e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Failed synchronous update on shard " + req.node + " update: " + req.uReq , e);
+      } finally {
+        server.shutdown();
       }
       
-      removeNodes.add(node);
-      submit(ureq, node);
+      return;
     }
-    
-    for (Node node : removeNodes) {
-      deletes.remove(node);
+    if (log.isDebugEnabled()) {
+      log.debug("sending update to "
+          + req.node.getUrl() + " retry:"
+          + req.retries + " " + req.cmdString + " params:" + req.uReq.getParams());
     }
-    
-    return true;
+    try {
+      SolrServer solrServer = servers.getSolrServer(req);
+      NamedList<Object> rsp = solrServer.request(req.uReq);
+    } catch (Exception e) {
+      SolrException.log(log, e);
+      Error error = new Error();
+      error.e = e;
+      error.req = req;
+      if (e instanceof SolrException) {
+        error.statusCode = ((SolrException) e).code();
+      }
+      errors.add(error);
+    }
   }
   
-  private DeleteUpdateCommand clone(DeleteUpdateCommand cmd) {
-    DeleteUpdateCommand c = (DeleteUpdateCommand)cmd.clone();
-    // TODO: shouldnt the clone do this?
-    c.setFlags(cmd.getFlags());
-    c.setVersion(cmd.getVersion());
-    return c;
-  }
-  
-  public static class Request {
+  public static class Req {
     public Node node;
-    UpdateRequestExt ureq;
-    NamedList<Object> ursp;
-    int rspCode;
-    public Exception exception;
-    int retries;
-  }
-  
-  void submit(UpdateRequestExt ureq, Node node) {
-    Request sreq = new Request();
-    sreq.node = node;
-    sreq.ureq = ureq;
-    submit(sreq);
-  }
-  
-  public void submit(final Request sreq) {
-
-    final String url = sreq.node.getUrl();
-
-    Callable<Request> task = new Callable<Request>() {
-      @Override
-      public Request call() throws Exception {
-        Request clonedRequest = null;
-        try {
-          clonedRequest = new Request();
-          clonedRequest.node = sreq.node;
-          clonedRequest.ureq = sreq.ureq;
-          clonedRequest.retries = sreq.retries;
-          
-          String fullUrl;
-          if (!url.startsWith("http://") && !url.startsWith("https://")) {
-            fullUrl = "http://" + url;
-          } else {
-            fullUrl = url;
-          }
-  
-          HttpSolrServer server = new HttpSolrServer(fullUrl,
-              updateShardHandler.getHttpClient());
-          
-          if (Thread.currentThread().isInterrupted()) {
-            clonedRequest.rspCode = 503;
-            clonedRequest.exception = new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Shutting down.");
-            return clonedRequest;
-          }
-          
-          clonedRequest.ursp = server.request(clonedRequest.ureq);
-          
-          // currently no way to get the request body.
-        } catch (Exception e) {
-          clonedRequest.exception = e;
-          if (e instanceof SolrException) {
-            clonedRequest.rspCode = ((SolrException) e).code();
-          } else {
-            clonedRequest.rspCode = -1;
-          }
-        } finally {
-          semaphore.release();
-        }
-        return clonedRequest;
-      }
-    };
-    try {
-      semaphore.acquire();
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Update thread interrupted", e);
-    }
-    try {
-      pending.add(completionService.submit(task));
-    } catch (RejectedExecutionException e) {
-      semaphore.release();
-      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Shutting down", e);
-    }
+    public UpdateRequest uReq;
+    public int retries;
+    public boolean synchronous;
+    public String cmdString;
     
+    public Req(String cmdString, Node node, UpdateRequest uReq, boolean synchronous) {
+      this.node = node;
+      this.uReq = uReq;
+      this.synchronous = synchronous;
+      this.cmdString = cmdString;
+    }
   }
+    
 
   public static Diagnostics.Callable testing_errorHook;  // called on error when forwarding request.  Currently data=[this, Request]
 
-  void checkResponses(boolean block) {
-
-    while (pending != null && pending.size() > 0) {
-      try {
-        Future<Request> future = block ? completionService.take()
-            : completionService.poll();
-        if (future == null) return;
-        pending.remove(future);
-        
-        try {
-          Request sreq = future.get();
-          if (sreq.rspCode != 0) {
-            // error during request
-
-            if (testing_errorHook != null) Diagnostics.call(testing_errorHook, this, sreq);
-
-            // if there is a retry url, we want to retry...
-            boolean isRetry = sreq.node.checkRetry();
-            boolean doRetry = false;
-            int rspCode = sreq.rspCode;
-            
-            // this can happen in certain situations such as shutdown
-            if (isRetry) {
-              if (rspCode == 404 || rspCode == 403 || rspCode == 503
-                  || rspCode == 500) {
-                doRetry = true;
-              }
-              
-              // if its an ioexception, lets try again
-              if (sreq.exception instanceof IOException) {
-                doRetry = true;
-              } else if (sreq.exception instanceof SolrServerException) {
-                if (((SolrServerException) sreq.exception).getRootCause() instanceof IOException) {
-                  doRetry = true;
-                }
-              }
-            }
-            
-            if (isRetry && sreq.retries < MAX_RETRIES_ON_FORWARD && doRetry) {
-              sreq.retries++;
-              sreq.rspCode = 0;
-              sreq.exception = null;
-              SolrException.log(SolrCmdDistributor.log, "forwarding update to " + sreq.node.getUrl() + " failed - retrying ... ");
-              Thread.sleep(500);
-              submit(sreq);
-            } else {
-              Exception e = sreq.exception;
-              Error error = new Error();
-              error.e = e;
-              error.node = sreq.node;
-              response.errors.add(error);
-              response.sreq = sreq;
-              SolrException.log(SolrCmdDistributor.log, "shard update error "
-                  + sreq.node, sreq.exception);
-            }
-          }
-          
-        } catch (ExecutionException e) {
-          // shouldn't happen since we catch exceptions ourselves
-          SolrException.log(SolrCore.log,
-              "error sending update request to shard", e);
-        }
-        
-      } catch (InterruptedException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
-            "interrupted waiting for shard update response", e);
-      }
-    }
-  }
   
   public static class Response {
-    public Request sreq;
     public List<Error> errors = new ArrayList<Error>();
   }
   
   public static class Error {
-    public Node node;
     public Exception e;
-  }
-
-  public Response getResponse() {
-    return response;
+    public int statusCode = -1;
+    public Req req;
   }
   
   public static abstract class Node {
@@ -595,6 +355,68 @@ public class SolrCmdDistributor {
     }
   }
   
+  // RetryNodes are used in the case of 'forward to leader' where we want
+  // to try the latest leader on a fail in the case the leader just went down.
+  public static class RetryNode extends StdNode {
+    
+    private ZkStateReader zkStateReader;
+    private String collection;
+    private String shardId;
+    
+    public RetryNode(ZkCoreNodeProps nodeProps, ZkStateReader zkStateReader, String collection, String shardId) {
+      super(nodeProps);
+      this.zkStateReader = zkStateReader;
+      this.collection = collection;
+      this.shardId = shardId;
+    }
+
+    @Override
+    public boolean checkRetry() {
+      ZkCoreNodeProps leaderProps;
+      try {
+        leaderProps = new ZkCoreNodeProps(zkStateReader.getLeaderRetry(
+            collection, shardId));
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        return false;
+      } catch (Exception e) {
+        // we retry with same info
+        log.warn(null, e);
+        return true;
+      }
+     
+      this.nodeProps = leaderProps;
+      
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      final int prime = 31;
+      int result = super.hashCode();
+      result = prime * result
+          + ((collection == null) ? 0 : collection.hashCode());
+      result = prime * result + ((shardId == null) ? 0 : shardId.hashCode());
+      return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj) return true;
+      if (!super.equals(obj)) return false;
+      if (getClass() != obj.getClass()) return false;
+      RetryNode other = (RetryNode) obj;
+      if (nodeProps.getCoreUrl() == null) {
+        if (other.nodeProps.getCoreUrl() != null) return false;
+      } else if (!nodeProps.getCoreUrl().equals(other.nodeProps.getCoreUrl())) return false;
+
+      return true;
+    }
+  }
+
+  public List<Error> getErrors() {
+    return allErrors;
+  }
 }
 
 

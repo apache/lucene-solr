@@ -28,11 +28,11 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.PrintStreamInfoStream;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestIndexWriterOutOfFileDescriptors extends LuceneTestCase {
   public void test() throws Exception {
-    MockDirectoryWrapper dir = newMockFSDirectory(_TestUtil.getTempDir("TestIndexWriterOutOfFileDescriptors"));
+    MockDirectoryWrapper dir = newMockFSDirectory(TestUtil.getTempDir("TestIndexWriterOutOfFileDescriptors"));
     dir.setPreventDoubleWrite(false);
     double rate = random().nextDouble()*0.01;
     //System.out.println("rate=" + rate);
@@ -129,7 +129,7 @@ public class TestIndexWriterOutOfFileDescriptors extends LuceneTestCase {
         // it to addIndexes later:
         dir.setRandomIOExceptionRateOnOpen(0.0);
         r = DirectoryReader.open(dir);
-        dirCopy = newMockFSDirectory(_TestUtil.getTempDir("TestIndexWriterOutOfFileDescriptors.copy"));
+        dirCopy = newMockFSDirectory(TestUtil.getTempDir("TestIndexWriterOutOfFileDescriptors.copy"));
         Set<String> files = new HashSet<String>();
         for (String file : dir.listAll()) {
           dir.copy(dirCopy, file, file, IOContext.DEFAULT);

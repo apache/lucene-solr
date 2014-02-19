@@ -24,12 +24,11 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestBooleanOr extends LuceneTestCase {
 
@@ -210,7 +209,7 @@ public class TestBooleanOr extends LuceneTestCase {
       };
 
     while (end.intValue() < docCount) {
-      final int inc = _TestUtil.nextInt(random(), 1, 1000);
+      final int inc = TestUtil.nextInt(random(), 1, 1000);
       end.getAndAdd(inc);
       scorer.score(c, end.intValue(), -1);
     }

@@ -151,7 +151,11 @@ public class AssertingScorer extends Scorer {
 
   @Override
   public Collection<ChildScorer> getChildren() {
-    return in.getChildren();
+    // We cannot hide that we hold a single child, else
+    // collectors (e.g. ToParentBlockJoinCollector) that
+    // need to walk the scorer tree will miss/skip the
+    // Scorer we wrap:
+    return Collections.singletonList(new ChildScorer(in, "SHOULD"));
   }
 
   @Override
@@ -180,6 +184,11 @@ public class AssertingScorer extends Scorer {
   @Override
   public long cost() {
     return in.cost();
+  }
+
+  @Override
+  public String toString() {
+    return "AssertingScorer(" + in + ")";
   }
 }
 

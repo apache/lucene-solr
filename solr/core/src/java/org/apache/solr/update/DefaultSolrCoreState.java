@@ -71,8 +71,8 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
         indexWriter.close();
       }
       indexWriter = null;
-    } catch (Throwable t) {
-      log.error("Error during shutdown of writer.", t);
+    } catch (Exception e) {
+      log.error("Error during shutdown of writer.", e);
     } 
   }
   
@@ -162,17 +162,17 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
             try {
               log.info("Closing old IndexWriter... core=" + coreName);
               indexWriter.close();
-            } catch (Throwable t) {
+            } catch (Exception e) {
               SolrException.log(log, "Error closing old IndexWriter. core="
-                  + coreName, t);
+                  + coreName, e);
             }
           } else {
             try {
               log.info("Rollback old IndexWriter... core=" + coreName);
               indexWriter.rollback();
-            } catch (Throwable t) {
+            } catch (Exception e) {
               SolrException.log(log, "Error rolling back old IndexWriter. core="
-                  + coreName, t);
+                  + coreName, e);
             }
           }
         }
@@ -220,17 +220,17 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
           try {
             log.info("Closing old IndexWriter... core=" + coreName);
             indexWriter.close();
-          } catch (Throwable t) {
+          } catch (Exception e) {
             SolrException.log(log, "Error closing old IndexWriter. core="
-                + coreName, t);
+                + coreName, e);
           }
         } else {
           try {
             log.info("Rollback old IndexWriter... core=" + coreName);
             indexWriter.rollback();
-          } catch (Throwable t) {
+          } catch (Exception e) {
             SolrException.log(log, "Error rolling back old IndexWriter. core="
-                + coreName, t);
+                + coreName, e);
           }
         }
       }

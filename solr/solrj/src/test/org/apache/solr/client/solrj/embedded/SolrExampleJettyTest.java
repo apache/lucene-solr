@@ -43,7 +43,7 @@ public class SolrExampleJettyTest extends SolrExampleTests {
   {
     try {
       // setup the server...
-      String url = "http://127.0.0.1/?core=xxx";
+      String url = "http" + (isSSLMode() ? "s" : "") +  "://127.0.0.1/?core=xxx";
       HttpSolrServer s = new HttpSolrServer( url );
       Assert.fail( "CommonsHttpSolrServer should not allow a path with a parameter: "+s.getBaseURL() );
     }

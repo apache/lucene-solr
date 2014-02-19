@@ -28,6 +28,7 @@ limitations under the License.
 #content #plugins #navigation .highlighting a { background-image: url( ../../img/ico/highlighter-text.png ); }
 #content #plugins #navigation .updatehandler a{ background-image: url( ../../img/ico/arrow-circle.png ); }
 #content #plugins #navigation .queryhandler a { background-image: url( ../../img/ico/magnifier.png ); }
+#content #plugins #navigation .queryparser a { background-image: url( ../../img/ico/asterisk.png ); }
 
 #content #plugins #navigation .PLUGINCHANGES { margin-top: 20px; }
 #content #plugins #navigation .PLUGINCHANGES a { background-image: url( ../../img/ico/eye.png ); }

@@ -32,8 +32,8 @@ import org.apache.lucene.codecs.blockterms.TermsIndexReaderBase;
 import org.apache.lucene.codecs.blockterms.TermsIndexWriterBase;
 import org.apache.lucene.codecs.sep.SepPostingsReader;
 import org.apache.lucene.codecs.sep.SepPostingsWriter;
-import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -92,7 +92,6 @@ public final class MockSepPostingsFormat extends PostingsFormat {
       indexReader = new FixedGapTermsIndexReader(state.directory,
                                                        state.fieldInfos,
                                                        state.segmentInfo.name,
-                                                       state.termsIndexDivisor,
                                                        BytesRef.getUTF8SortedAsUnicodeComparator(),
                                                        state.segmentSuffix, state.context);
       success = true;
@@ -110,7 +109,6 @@ public final class MockSepPostingsFormat extends PostingsFormat {
                                                 state.segmentInfo,
                                                 postingsReader,
                                                 state.context,
-                                                1024,
                                                 state.segmentSuffix);
       success = true;
       return ret;

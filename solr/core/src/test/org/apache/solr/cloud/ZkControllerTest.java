@@ -17,6 +17,7 @@ package org.apache.solr.cloud;
  * the License.
  */
 
+import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -26,10 +27,12 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.CreateMode;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,10 +45,24 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
   static final int TIMEOUT = 10000;
 
   private static final boolean DEBUG = false;
-  
+
+
+  private static final File solrHomeDirectory = new File(TEMP_DIR, "ZkControllerTest");
+
   @BeforeClass
   public static void beforeClass() throws Exception {
+    if (solrHomeDirectory.exists()) {
+      FileUtils.deleteDirectory(solrHomeDirectory);
+    }
+    copyMinFullSetup(solrHomeDirectory);
     initCore();
+  }
+
+  @AfterClass
+  public static void afterClass() throws Exception {
+    if (solrHomeDirectory.exists()) {
+      FileUtils.deleteDirectory(solrHomeDirectory);
+    }
   }
 
   public void testNodeNameUrlConversion() throws Exception {
@@ -81,49 +98,59 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
       AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
 
-      SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
+      ZkStateReader zkStateReader = new ZkStateReader(server.getZkAddress(), TIMEOUT, TIMEOUT);
       try {
-
         // getBaseUrlForNodeName
         assertEquals("http://zzz.xxx:1234/solr",
-                     zkClient.getBaseUrlForNodeName("zzz.xxx:1234_solr"));
+                     zkStateReader.getBaseUrlForNodeName("zzz.xxx:1234_solr"));
         assertEquals("http://xxx:99",
-                     zkClient.getBaseUrlForNodeName("xxx:99_"));
+                     zkStateReader.getBaseUrlForNodeName("xxx:99_"));
         assertEquals("http://foo-bar.baz.org:9999/some_dir",
-                     zkClient.getBaseUrlForNodeName("foo-bar.baz.org:9999_some_dir"));
+                     zkStateReader.getBaseUrlForNodeName("foo-bar.baz.org:9999_some_dir"));
         assertEquals("http://foo-bar.baz.org:9999/solr/sub_dir",
-                     zkClient.getBaseUrlForNodeName("foo-bar.baz.org:9999_solr%2Fsub_dir"));
+                     zkStateReader.getBaseUrlForNodeName("foo-bar.baz.org:9999_solr%2Fsub_dir"));
         
         // generateNodeName + getBaseUrlForNodeName
         assertEquals("http://foo:9876/solr",
-                     zkClient.getBaseUrlForNodeName
+                     zkStateReader.getBaseUrlForNodeName
                      (ZkController.generateNodeName("foo","9876","solr")));
         assertEquals("http://foo:9876/solr",
-                     zkClient.getBaseUrlForNodeName
+                     zkStateReader.getBaseUrlForNodeName
                      (ZkController.generateNodeName("foo","9876","/solr")));
         assertEquals("http://foo:9876/solr",
-                     zkClient.getBaseUrlForNodeName
+                     zkStateReader.getBaseUrlForNodeName
                      (ZkController.generateNodeName("foo","9876","/solr/")));
         assertEquals("http://foo.bar.com:9876/solr/sub_dir",
-                     zkClient.getBaseUrlForNodeName
+                     zkStateReader.getBaseUrlForNodeName
                      (ZkController.generateNodeName("foo.bar.com","9876","solr/sub_dir")));
         assertEquals("http://foo.bar.com:9876/solr/sub_dir",
-                     zkClient.getBaseUrlForNodeName
+                     zkStateReader.getBaseUrlForNodeName
                      (ZkController.generateNodeName("foo.bar.com","9876","/solr/sub_dir/")));
         assertEquals("http://foo-bar:9876",
-                     zkClient.getBaseUrlForNodeName
+                     zkStateReader.getBaseUrlForNodeName
                      (ZkController.generateNodeName("foo-bar","9876","")));
         assertEquals("http://foo-bar:9876",
-                     zkClient.getBaseUrlForNodeName
+                     zkStateReader.getBaseUrlForNodeName
                      (ZkController.generateNodeName("foo-bar","9876","/")));
         assertEquals("http://foo-bar.com:80/some_dir",
-                     zkClient.getBaseUrlForNodeName
+                     zkStateReader.getBaseUrlForNodeName
                      (ZkController.generateNodeName("foo-bar.com","80","some_dir")));
         assertEquals("http://foo-bar.com:80/some_dir",
-                     zkClient.getBaseUrlForNodeName
+                     zkStateReader.getBaseUrlForNodeName
                      (ZkController.generateNodeName("foo-bar.com","80","/some_dir")));
+        
+        //Verify the URL Scheme is taken into account
+        zkStateReader.getZkClient().create(ZkStateReader.CLUSTER_PROPS,
+            ZkStateReader.toJSON(Collections.singletonMap("urlScheme", "https")), CreateMode.PERSISTENT, true);
+        
+        assertEquals("https://zzz.xxx:1234/solr",
+            zkStateReader.getBaseUrlForNodeName("zzz.xxx:1234_solr"));
+        
+        assertEquals("https://foo-bar.com:80/some_dir",
+            zkStateReader.getBaseUrlForNodeName
+            (ZkController.generateNodeName("foo-bar.com","80","/some_dir")));
       } finally {
-        zkClient.close();
+        zkStateReader.close();
       }
     } finally {
       server.shutdown();
@@ -163,7 +190,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       cc = getCoreContainer();
       
       ZkController zkController = new ZkController(cc, server.getZkAddress(), TIMEOUT, 10000,
-          "127.0.0.1", "8983", "solr", "0", true, 10000, 10000, new CurrentCoreDescriptorProvider() {
+          "127.0.0.1", "8983", "solr", 0, true, new CurrentCoreDescriptorProvider() {
             
             @Override
             public List<CoreDescriptor> getCurrentDescriptors() {
@@ -172,7 +199,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
             }
           });
       try {
-        String configName = zkController.readConfigName(COLLECTION_NAME);
+        String configName = zkController.getZkStateReader().readConfigName(COLLECTION_NAME);
         assertEquals(configName, actualConfigName);
       } finally {
         zkController.close();
@@ -203,7 +230,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       cc = getCoreContainer();
       
       zkController = new ZkController(cc, server.getZkAddress(),
-          TIMEOUT, 10000, "127.0.0.1", "8983", "solr", "0", true, 10000, 10000, new CurrentCoreDescriptorProvider() {
+          TIMEOUT, 10000, "127.0.0.1", "8983", "solr", 0, true, new CurrentCoreDescriptorProvider() {
             
             @Override
             public List<CoreDescriptor> getCurrentDescriptors() {
@@ -239,8 +266,48 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
   }
 
+  @Test
+  public void testGetHostName() throws Exception {
+    String zkDir = dataDir.getAbsolutePath() + File.separator
+        + "zookeeper/server1/data";
+    CoreContainer cc = null;
+
+    ZkTestServer server = new ZkTestServer(zkDir);
+    try {
+      server.run();
+
+      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
+      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
+
+      cc = getCoreContainer();
+      ZkController zkController = null;
+
+      try {
+        zkController = new ZkController(cc, server.getZkAddress(), TIMEOUT, 10000,
+            "http://127.0.0.1", "8983", "solr", 0, true, new CurrentCoreDescriptorProvider() {
+
+          @Override
+          public List<CoreDescriptor> getCurrentDescriptors() {
+            // do nothing
+            return null;
+          }
+        });
+      } catch (IllegalArgumentException e) {
+        fail("ZkController did not normalize host name correctly");
+      } finally {
+        if (zkController != null)
+          zkController.close();
+      }
+    } finally {
+      if (cc != null) {
+        cc.shutdown();
+      }
+      server.shutdown();
+    }
+  }
+
   private CoreContainer getCoreContainer() {
-    CoreContainer cc = new CoreContainer(TEMP_DIR.getAbsolutePath());
+    CoreContainer cc = new CoreContainer(solrHomeDirectory.getAbsolutePath());
     cc.load();
     return cc;
   }

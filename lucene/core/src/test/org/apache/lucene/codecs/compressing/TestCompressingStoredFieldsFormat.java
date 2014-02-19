@@ -32,8 +32,10 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.junit.Test;
 
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 
+@Repeat(iterations=5) // give it a chance to test various compression modes with different chunk sizes
 public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTestCase {
 
   @Override

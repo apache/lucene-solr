@@ -26,6 +26,8 @@ import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.PrintStreamInfoStream;
+import org.apache.lucene.util.SetOnce;
+import org.apache.lucene.util.SetOnce.AlreadySetException;
 import org.apache.lucene.util.Version;
 
 /**
@@ -70,9 +72,6 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
     CREATE_OR_APPEND 
   }
 
-  /** Default value is 32. Change using {@link #setTermIndexInterval(int)}. */
-  public static final int DEFAULT_TERM_INDEX_INTERVAL = 32; // TODO: this should be private to the codec, not settable here
-
   /** Denotes a flush trigger is disabled. */
   public final static int DISABLE_AUTO_FLUSH = -1;
 
@@ -97,9 +96,6 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
 
   /** Default setting for {@link #setReaderPooling}. */
   public final static boolean DEFAULT_READER_POOLING = false;
-
-  /** Default value is 1. Change using {@link #setReaderTermsIndexDivisor(int)}. */
-  public static final int DEFAULT_READER_TERMS_INDEX_DIVISOR = DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR;
 
   /** Default value is 1945. Change using {@link #setRAMPerThreadHardLimitMB(int)} */
   public static final int DEFAULT_RAM_PER_THREAD_HARD_LIMIT_MB = 1945;
@@ -132,6 +128,21 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
     return WRITE_LOCK_TIMEOUT;
   }
 
+  // indicates whether this config instance is already attached to a writer.
+  // not final so that it can be cloned properly.
+  private SetOnce<IndexWriter> writer = new SetOnce<IndexWriter>();
+  
+  /**
+   * Sets the {@link IndexWriter} this config is attached to.
+   * 
+   * @throws AlreadySetException
+   *           if this config is already attached to a writer.
+   */
+  IndexWriterConfig setIndexWriter(IndexWriter writer) {
+    this.writer.set(writer);
+    return this;
+  }
+  
   /**
    * Creates a new config that with defaults that match the specified
    * {@link Version} as well as the default {@link
@@ -151,6 +162,8 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
   public IndexWriterConfig clone() {
     try {
       IndexWriterConfig clone = (IndexWriterConfig) super.clone();
+      
+      clone.writer = writer.clone();
       
       // Mostly shallow clone, but do a deepish clone of
       // certain objects that have state that cannot be shared
@@ -484,19 +497,11 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
     return super.getRAMBufferSizeMB();
   }
   
-  @Override
-  public int getReaderTermsIndexDivisor() {
-    return super.getReaderTermsIndexDivisor();
-  }
-  
-  @Override
-  public int getTermIndexInterval() {
-    return super.getTermIndexInterval();
-  }
-  
-  /** If non-null, information about merges, deletes and a
+  /** 
+   * Information about merges, deletes and a
    * message when maxFieldLength is reached will be printed
-   * to this.
+   * to this. Must not be null, but {@link InfoStream#NO_OUTPUT} 
+   * may be used to supress output.
    */
   public IndexWriterConfig setInfoStream(InfoStream infoStream) {
     if (infoStream == null) {
@@ -507,7 +512,9 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
     return this;
   }
   
-  /** Convenience method that uses {@link PrintStreamInfoStream} */
+  /** 
+   * Convenience method that uses {@link PrintStreamInfoStream}.  Must not be null.
+   */
   public IndexWriterConfig setInfoStream(PrintStream printStream) {
     if (printStream == null) {
       throw new IllegalArgumentException("printStream must not be null");
@@ -536,17 +543,15 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
   }
   
   @Override
-  public IndexWriterConfig setReaderTermsIndexDivisor(int divisor) {
-    return (IndexWriterConfig) super.setReaderTermsIndexDivisor(divisor);
-  }
-  
-  @Override
-  public IndexWriterConfig setTermIndexInterval(int interval) {
-    return (IndexWriterConfig) super.setTermIndexInterval(interval);
-  }
-  
   public IndexWriterConfig setUseCompoundFile(boolean useCompoundFile) {
     return (IndexWriterConfig) super.setUseCompoundFile(useCompoundFile);
   }
 
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder(super.toString());
+    sb.append("writer=").append(writer).append("\n");
+    return sb.toString();
+  }
+  
 }

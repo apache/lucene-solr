@@ -44,44 +44,55 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 public class FieldQueryTest extends AbstractTestCase {
+  private float boost;
+
+  /**
+   * Set boost to a random value each time it is called.
+   */
+  private void initBoost() {
+    boost = usually() ? 1F : random().nextFloat() * 10000;
+  }
 
   public void testFlattenBoolean() throws Exception {
+    initBoost();
     BooleanQuery booleanQuery = new BooleanQuery();
-    booleanQuery.add(new TermQuery(new Term(F, "A")), Occur.MUST);
-    booleanQuery.add(new TermQuery(new Term(F, "B")), Occur.MUST);
-    booleanQuery.add(new TermQuery(new Term(F, "C")), Occur.SHOULD);
+    booleanQuery.setBoost( boost );
+    booleanQuery.add(tq("A"), Occur.MUST);
+    booleanQuery.add(tq("B"), Occur.MUST);
+    booleanQuery.add(tq("C"), Occur.SHOULD);
 
     BooleanQuery innerQuery = new BooleanQuery();
-    innerQuery.add(new TermQuery(new Term(F, "D")), Occur.MUST);
-    innerQuery.add(new TermQuery(new Term(F, "E")), Occur.MUST);
+    innerQuery.add(tq("D"), Occur.MUST);
+    innerQuery.add(tq("E"), Occur.MUST);
     booleanQuery.add(innerQuery, Occur.MUST_NOT);
 
     FieldQuery fq = new FieldQuery(booleanQuery, true, true );
     Set<Query> flatQueries = new HashSet<Query>();
     fq.flatten(booleanQuery, reader, flatQueries);
-    assertCollectionQueries( flatQueries, tq( "A" ), tq( "B" ), tq( "C" ) );
+    assertCollectionQueries( flatQueries, tq( boost, "A" ), tq( boost, "B" ), tq( boost, "C" ) );
   }
 
   public void testFlattenDisjunctionMaxQuery() throws Exception {
+    initBoost();
     Query query = dmq( tq( "A" ), tq( "B" ), pqF( "C", "D" ) );
+    query.setBoost( boost );
     FieldQuery fq = new FieldQuery( query, true, true );
     Set<Query> flatQueries = new HashSet<Query>();
     fq.flatten( query, reader, flatQueries );
-    assertCollectionQueries( flatQueries, tq( "A" ), tq( "B" ), pqF( "C", "D" ) );
+    assertCollectionQueries( flatQueries, tq( boost, "A" ), tq( boost, "B" ), pqF( boost, "C", "D" ) );
   }
 
   public void testFlattenTermAndPhrase() throws Exception {
+    initBoost();
     BooleanQuery booleanQuery = new BooleanQuery();
-    booleanQuery.add(new TermQuery(new Term(F, "A")), Occur.MUST);
-    PhraseQuery phraseQuery = new PhraseQuery();
-    phraseQuery.add(new Term(F, "B"));
-    phraseQuery.add(new Term(F, "C"));
-    booleanQuery.add(phraseQuery, Occur.MUST);
+    booleanQuery.setBoost( boost );
+    booleanQuery.add(tq("A"), Occur.MUST);
+    booleanQuery.add(pqF("B", "C"), Occur.MUST);
 
     FieldQuery fq = new FieldQuery(booleanQuery, true, true );
     Set<Query> flatQueries = new HashSet<Query>();
     fq.flatten(booleanQuery, reader, flatQueries);
-    assertCollectionQueries( flatQueries, tq( "A" ), pqF( "B", "C" ) );
+    assertCollectionQueries( flatQueries, tq( boost, "A" ), pqF( boost, "B", "C" ) );
   }
 
   public void testFlattenTermAndPhrase2gram() throws Exception {
@@ -926,6 +937,7 @@ public class FieldQueryTest extends AbstractTestCase {
   }
   
   public void testFlattenFilteredQuery() throws Exception {
+    initBoost();
     Query query = new FilteredQuery(pqF( "A" ), new Filter() {
       @Override
       public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs)
@@ -933,18 +945,21 @@ public class FieldQueryTest extends AbstractTestCase {
         return null;
       }
     });
+    query.setBoost(boost);
     FieldQuery fq = new FieldQuery( query, true, true );
     Set<Query> flatQueries = new HashSet<Query>();
     fq.flatten( query, reader, flatQueries );
-    assertCollectionQueries( flatQueries, tq( "A" ) );
+    assertCollectionQueries( flatQueries, tq( boost, "A" ) );
   }
   
   public void testFlattenConstantScoreQuery() throws Exception {
+    initBoost();
     Query query = new ConstantScoreQuery(pqF( "A" ));
+    query.setBoost(boost);
     FieldQuery fq = new FieldQuery( query, true, true );
     Set<Query> flatQueries = new HashSet<Query>();
     fq.flatten( query, reader, flatQueries );
-    assertCollectionQueries( flatQueries, tq( "A" ) );
+    assertCollectionQueries( flatQueries, tq( boost, "A" ) );
   }
   
 }

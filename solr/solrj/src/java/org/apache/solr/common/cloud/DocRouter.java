@@ -17,20 +17,22 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
-import org.noggit.JSONWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.StrUtils;
+import org.noggit.JSONWriter;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
 
 /**
  * Class to partition int range into n ranges.
@@ -40,10 +42,40 @@ public abstract class DocRouter {
   public static final String DEFAULT_NAME = CompositeIdRouter.NAME;
   public static final DocRouter DEFAULT = new CompositeIdRouter();
 
-  public static DocRouter getDocRouter(Object routerSpec) {
-    DocRouter router = routerMap.get(routerSpec);
+
+  public static DocRouter getDocRouter(Object routerName) {
+    DocRouter router = routerMap.get(routerName);
     if (router != null) return router;
-    throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown document router '"+ routerSpec + "'");
+    throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown document router '"+ routerName + "'");
+  }
+
+  protected String getRouteField(DocCollection coll){
+    if(coll == null) return null;
+    Object o = coll.get(DOC_ROUTER);
+    if (o instanceof String) {
+      return null;
+      //old format. cannot have a routefield. Ignore it
+    }
+    Map m = (Map) o;
+    if(m == null) return null;
+    return (String) m.get("field");
+
+  }
+
+  public static Map<String,Object> getRouterSpec(ZkNodeProps props){
+    Map<String,Object> map =  new LinkedHashMap<String, Object>();
+    for (String s : props.keySet()) {
+      if(s.startsWith("router.")){
+        map.put(s.substring(7), props.get(s));
+      }
+    }
+    Object o = props.get("router");
+    if (o instanceof String) {
+      map.put("name", o);
+    } else if (map.get("name") == null) {
+      map.put("name", DEFAULT_NAME);
+    }
+    return  map;
   }
 
   // currently just an implementation detail...
@@ -63,7 +95,7 @@ public abstract class DocRouter {
   // Hash ranges can't currently "wrap" - i.e. max must be greater or equal to min.
   // TODO: ranges may not be all contiguous in the future (either that or we will
   // need an extra class to model a collection of ranges)
-  public static class Range implements JSONWriter.Writable {
+  public static class Range implements JSONWriter.Writable, Comparable<Range> {
     public int min;  // inclusive
     public int max;  // inclusive
 
@@ -108,6 +140,12 @@ public abstract class DocRouter {
     @Override
     public void write(JSONWriter writer) {
       writer.write(toString());
+    }
+
+    @Override
+    public int compareTo(Range that) {
+      int mincomp = Integer.valueOf(this.min).compareTo(that.min);
+      return mincomp == 0 ? Integer.valueOf(this.max).compareTo(that.max) : mincomp;
     }
   }
 

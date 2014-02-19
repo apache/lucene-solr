@@ -16,12 +16,33 @@
  */
 package org.apache.solr.search;
 
-import org.apache.lucene.index.*;
-import org.apache.lucene.search.*;
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiDocsEnum;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.ComplexExplanation;
+import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.StringHelper;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -36,16 +57,9 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.util.RefCounted;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
-
 
 public class JoinQParserPlugin extends QParserPlugin {
-  public static String NAME = "join";
+  public static final String NAME = "join";
 
   @Override
   public void init(NamedList args) {
@@ -270,7 +284,7 @@ class JoinQuery extends Query {
 
 
     public DocSet getDocSet() throws IOException {
-      OpenBitSet resultBits = null;
+      FixedBitSet resultBits = null;
 
       // minimum docFreq to use the cache
       int minDocFreqFrom = Math.max(5, fromSearcher.maxDoc() >> 13);
@@ -309,7 +323,7 @@ class JoinQuery extends Query {
       if (prefix == null) {
         term = termsEnum.next();
       } else {
-        if (termsEnum.seekCeil(prefix, true) != TermsEnum.SeekStatus.END) {
+        if (termsEnum.seekCeil(prefix) != TermsEnum.SeekStatus.END) {
           term = termsEnum.term();
         }
       }
@@ -387,7 +401,7 @@ class JoinQuery extends Query {
             int df = toTermsEnum.docFreq();
             toTermHitsTotalDf += df;
             if (resultBits==null && df + resultListDocs > maxSortedIntSize && resultList.size() > 0) {
-              resultBits = new OpenBitSet(toSearcher.maxDoc());
+              resultBits = new FixedBitSet(toSearcher.maxDoc());
             }
 
             // if we don't have a bitset yet, or if the resulting set will be too large
@@ -397,10 +411,10 @@ class JoinQuery extends Query {
               DocSet toTermSet = toSearcher.getDocSet(toDeState);
               resultListDocs += toTermSet.size();
               if (resultBits != null) {
-                toTermSet.setBitsOn(resultBits);
+                toTermSet.addAllTo(new BitDocSet(resultBits));
               } else {
                 if (toTermSet instanceof BitDocSet) {
-                  resultBits = (OpenBitSet)((BitDocSet)toTermSet).bits.clone();
+                  resultBits = ((BitDocSet)toTermSet).bits.clone();
                 } else {
                   resultList.add(toTermSet);
                 }
@@ -422,14 +436,14 @@ class JoinQuery extends Query {
                   int docid;
                   while ((docid = sub.docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
                     resultListDocs++;
-                    resultBits.fastSet(docid + base);
+                    resultBits.set(docid + base);
                   }
                 }
               } else {
                 int docid;
                 while ((docid = docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
                   resultListDocs++;
-                  resultBits.fastSet(docid);
+                  resultBits.set(docid);
                 }
               }
             }
@@ -443,10 +457,11 @@ class JoinQuery extends Query {
       smallSetsDeferred = resultList.size();
 
       if (resultBits != null) {
+        BitDocSet bitSet = new BitDocSet(resultBits);
         for (DocSet set : resultList) {
-          set.setBitsOn(resultBits);
+          set.addAllTo(bitSet);
         }
-        return new BitDocSet(resultBits);
+        return bitSet;
       }
 
       if (resultList.size()==0) {

@@ -17,8 +17,13 @@
 
 package org.apache.solr.update;
 
+import com.google.common.base.Function;
+import com.google.common.base.Joiner;
+import com.google.common.collect.Iterables;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.solr.request.SolrQueryRequest;
+
+import java.util.List;
 
 /**
  * A merge indexes command encapsulated in an object.
@@ -27,9 +32,9 @@ import org.apache.solr.request.SolrQueryRequest;
  *
  */
 public class MergeIndexesCommand extends UpdateCommand {
-  public DirectoryReader[] readers;
+  public List<DirectoryReader> readers;
 
-  public MergeIndexesCommand(DirectoryReader[] readers, SolrQueryRequest req) {
+  public MergeIndexesCommand(List<DirectoryReader> readers, SolrQueryRequest req) {
     super(req);
     this.readers = readers;
   }
@@ -42,12 +47,13 @@ public class MergeIndexesCommand extends UpdateCommand {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder(super.toString());
-    if (readers != null && readers.length > 0) {
-      sb.append(readers[0].directory());
-      for (int i = 1; i < readers.length; i++) {
-        sb.append(",").append(readers[i].directory());
+    Joiner joiner = Joiner.on(",");
+    Iterable<String> directories = Iterables.transform(readers, new Function<DirectoryReader, String>() {
+      public String apply(DirectoryReader reader) {
+        return reader.directory().toString();
       }
-    }
+    });
+    joiner.skipNulls().join(sb, directories);
     sb.append('}');
     return sb.toString();
   }

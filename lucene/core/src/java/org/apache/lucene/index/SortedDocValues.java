@@ -37,12 +37,13 @@ public abstract class SortedDocValues extends BinaryDocValues {
    * Returns the ordinal for the specified docID.
    * @param  docID document ID to lookup
    * @return ordinal for the document: this is dense, starts at 0, then
-   *         increments by 1 for the next value in sorted order. 
+   *         increments by 1 for the next value in sorted order. Note that
+   *         missing values are indicated by -1.
    */
   public abstract int getOrd(int docID);
 
   /** Retrieves the value for the specified ordinal.
-   * @param ord ordinal to lookup
+   * @param ord ordinal to lookup (must be &gt;= 0 and &lt {@link #getValueCount()})
    * @param result will be populated with the ordinal's value
    * @see #getOrd(int) 
    */
@@ -59,7 +60,7 @@ public abstract class SortedDocValues extends BinaryDocValues {
   public void get(int docID, BytesRef result) {
     int ord = getOrd(docID);
     if (ord == -1) {
-      result.bytes = MISSING;
+      result.bytes = BytesRef.EMPTY_BYTES;
       result.length = 0;
       result.offset = 0;
     } else {
@@ -67,23 +68,23 @@ public abstract class SortedDocValues extends BinaryDocValues {
     }
   }
 
-  /** An empty SortedDocValues which returns {@link #MISSING} for every document */
+  /** An empty SortedDocValues which returns {@link BytesRef#EMPTY_BYTES} for every document */
   public static final SortedDocValues EMPTY = new SortedDocValues() {
     @Override
     public int getOrd(int docID) {
-      return 0;
+      return -1;
     }
 
     @Override
     public void lookupOrd(int ord, BytesRef result) {
-      result.bytes = MISSING;
+      result.bytes = BytesRef.EMPTY_BYTES;
       result.offset = 0;
       result.length = 0;
     }
 
     @Override
     public int getValueCount() {
-      return 1;
+      return 0;
     }
   };
 

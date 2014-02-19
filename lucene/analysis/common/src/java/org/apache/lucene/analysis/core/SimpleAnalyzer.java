@@ -48,8 +48,7 @@ public final class SimpleAnalyzer extends Analyzer {
   }
   
   @Override
-  protected TokenStreamComponents createComponents(final String fieldName,
-      final Reader reader) {
-    return new TokenStreamComponents(new LowerCaseTokenizer(matchVersion, reader));
+  protected TokenStreamComponents createComponents(final String fieldName) {
+    return new TokenStreamComponents(new LowerCaseTokenizer(matchVersion));
   }
 }

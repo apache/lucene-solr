@@ -34,7 +34,8 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.*;
 
 public class TestTermsEnum2 extends LuceneTestCase {
@@ -53,7 +54,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT,
             new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
-            .setMaxBufferedDocs(_TestUtil.nextInt(random(), 50, 1000)));
+            .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000)));
     Document doc = new Document();
     Field field = newStringField("field", "", Field.Store.YES);
     doc.add(field);
@@ -61,7 +62,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
  
     int num = atLeast(200);
     for (int i = 0; i < num; i++) {
-      String s = _TestUtil.randomUnicodeString(random());
+      String s = TestUtil.randomUnicodeString(random());
       field.setStringValue(s);
       terms.add(new BytesRef(s));
       writer.addDocument(doc);
@@ -117,10 +118,10 @@ public class TestTermsEnum2 extends LuceneTestCase {
           // term is accepted
           if (random().nextBoolean()) {
             // seek exact
-            assertTrue(te.seekExact(term, random().nextBoolean()));
+            assertTrue(te.seekExact(term));
           } else {
             // seek ceil
-            assertEquals(SeekStatus.FOUND, te.seekCeil(term, random().nextBoolean()));
+            assertEquals(SeekStatus.FOUND, te.seekCeil(term));
             assertEquals(term, te.term());
           }
         }
@@ -138,10 +139,10 @@ public class TestTermsEnum2 extends LuceneTestCase {
         if (c == 0) {
           assertEquals(term, te.next());
         } else if (c == 1) {
-          assertEquals(SeekStatus.FOUND, te.seekCeil(term, random().nextBoolean()));
+          assertEquals(SeekStatus.FOUND, te.seekCeil(term));
           assertEquals(term, te.term());
         } else {
-          assertTrue(te.seekExact(term, random().nextBoolean()));
+          assertTrue(te.seekExact(term));
         }
       }
     }

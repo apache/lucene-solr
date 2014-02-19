@@ -286,6 +286,13 @@ public class ParallelAtomicReader extends AtomicReader {
   }
 
   @Override
+  public Bits getDocsWithField(String field) throws IOException {
+    ensureOpen();
+    AtomicReader reader = fieldToReader.get(field);
+    return reader == null ? null : reader.getDocsWithField(field);
+  }
+
+  @Override
   public NumericDocValues getNormValues(String field) throws IOException {
     ensureOpen();
     AtomicReader reader = fieldToReader.get(field);

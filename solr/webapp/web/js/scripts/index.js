@@ -238,10 +238,6 @@ sammy.get
     
           var data = {
             'start_time' : app.dashboard_values['jvm']['jmx']['startTime'],
-            'host' : app.dashboard_values['core']['host'] || '-',
-            'dir_instance' : app.dashboard_values['core']['directory']['instance'],
-            'dir_data' : app.dashboard_values['core']['directory']['data'],
-            'dir_index' : app.dashboard_values['core']['directory']['index'],
             'jvm_version' : app.dashboard_values['jvm']['name'] + ' (' + app.dashboard_values['jvm']['version'] + ')',
             'processors' : app.dashboard_values['jvm']['processors'],
             'solr_spec_version' : app.dashboard_values['lucene']['solr-spec-version'] || '-',
@@ -249,11 +245,6 @@ sammy.get
             'lucene_spec_version' : app.dashboard_values['lucene']['lucene-spec-version'] || '-',
             'lucene_impl_version' : app.dashboard_values['lucene']['lucene-impl-version'] || '-'
           };
-
-          if( app.dashboard_values['core']['directory']['cwd'] )
-          {
-            data['dir_cwd'] = app.dashboard_values['core']['directory']['cwd'];
-          }
     
           for( var key in data )
           {                                                        
@@ -312,7 +303,7 @@ sammy.get
                 $.ajax
                 (
                   {
-                    url : environment_basepath + '/admin/system?wt=json',
+                    url : config.solr_path + '/admin/info/system?wt=json',
                     dataType : 'json',
                     context : this,
                     beforeSend : function( arr, form, options )

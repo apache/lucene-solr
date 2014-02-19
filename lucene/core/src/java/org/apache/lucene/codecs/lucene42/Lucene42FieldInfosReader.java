@@ -38,8 +38,10 @@ import org.apache.lucene.util.IOUtils;
  * Lucene 4.2 FieldInfos reader.
  * 
  * @lucene.experimental
+ * @deprecated Only for reading old 4.2-4.5 segments
  * @see Lucene42FieldInfosFormat
  */
+@Deprecated
 final class Lucene42FieldInfosReader extends FieldInfosReader {
 
   /** Sole constructor. */
@@ -47,7 +49,7 @@ final class Lucene42FieldInfosReader extends FieldInfosReader {
   }
 
   @Override
-  public FieldInfos read(Directory directory, String segmentName, IOContext iocontext) throws IOException {
+  public FieldInfos read(Directory directory, String segmentName, String segmentSuffix, IOContext iocontext) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(segmentName, "", Lucene42FieldInfosFormat.EXTENSION);
     IndexInput input = directory.openInput(fileName, iocontext);
     

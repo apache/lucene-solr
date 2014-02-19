@@ -37,13 +37,14 @@ public class TestMultiFields extends LuceneTestCase {
       Directory dir = newDirectory();
 
       IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.COMPOUND_FILES));
-      _TestUtil.keepFullyDeletedSegments(w);
+      // we can do this because we use NoMergePolicy (and dont merge to "nothing")
+      w.setKeepFullyDeletedSegments(true);
 
       Map<BytesRef,List<Integer>> docs = new HashMap<BytesRef,List<Integer>>();
       Set<Integer> deleted = new HashSet<Integer>();
       List<BytesRef> terms = new ArrayList<BytesRef>();
 
-      int numDocs = _TestUtil.nextInt(random(), 1, 100 * RANDOM_MULTIPLIER);
+      int numDocs = TestUtil.nextInt(random(), 1, 100 * RANDOM_MULTIPLIER);
       Document doc = new Document();
       Field f = newStringField("field", "", Field.Store.NO);
       doc.add(f);
@@ -63,7 +64,7 @@ public class TestMultiFields extends LuceneTestCase {
           docs.get(term).add(i);
           f.setStringValue(term.utf8ToString());
         } else {
-          String s = _TestUtil.randomUnicodeString(random(), 10);
+          String s = TestUtil.randomUnicodeString(random(), 10);
           BytesRef term = new BytesRef(s);
           if (!docs.containsKey(term)) {
             docs.put(term, new ArrayList<Integer>());
@@ -121,7 +122,7 @@ public class TestMultiFields extends LuceneTestCase {
           System.out.println("TEST: seek term="+ UnicodeUtil.toHexString(term.utf8ToString()) + " " + term);
         }
         
-        DocsEnum docsEnum = _TestUtil.docs(random(), reader, "field", term, liveDocs, null, DocsEnum.FLAG_NONE);
+        DocsEnum docsEnum = TestUtil.docs(random(), reader, "field", term, liveDocs, null, DocsEnum.FLAG_NONE);
         assertNotNull(docsEnum);
 
         for(int docID : docs.get(term)) {
@@ -162,8 +163,8 @@ public class TestMultiFields extends LuceneTestCase {
     w.addDocument(d);
     IndexReader r = w.getReader();
     w.close();
-    DocsEnum d1 = _TestUtil.docs(random(), r, "f", new BytesRef("j"), null, null, DocsEnum.FLAG_NONE);
-    DocsEnum d2 = _TestUtil.docs(random(), r, "f", new BytesRef("j"), null, null, DocsEnum.FLAG_NONE);
+    DocsEnum d1 = TestUtil.docs(random(), r, "f", new BytesRef("j"), null, null, DocsEnum.FLAG_NONE);
+    DocsEnum d2 = TestUtil.docs(random(), r, "f", new BytesRef("j"), null, null, DocsEnum.FLAG_NONE);
     assertEquals(0, d1.nextDoc());
     assertEquals(0, d2.nextDoc());
     r.close();

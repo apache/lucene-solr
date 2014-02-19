@@ -30,8 +30,8 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
-import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.junit.Ignore;
 
@@ -50,7 +50,7 @@ public class Test2BPostingsBytes extends LuceneTestCase {
   // with some codecs needs more heap space as well.
   @Ignore("Very slow. Enable manually by removing @Ignore.")
   public void test() throws Exception {
-    BaseDirectoryWrapper dir = newFSDirectory(_TestUtil.getTempDir("2BPostingsBytes1"));
+    BaseDirectoryWrapper dir = newFSDirectory(TestUtil.getTempDir("2BPostingsBytes1"));
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }
@@ -93,7 +93,7 @@ public class Test2BPostingsBytes extends LuceneTestCase {
     IndexReader subReaders[] = new IndexReader[1000];
     Arrays.fill(subReaders, oneThousand);
     MultiReader mr = new MultiReader(subReaders);
-    BaseDirectoryWrapper dir2 = newFSDirectory(_TestUtil.getTempDir("2BPostingsBytes2"));
+    BaseDirectoryWrapper dir2 = newFSDirectory(TestUtil.getTempDir("2BPostingsBytes2"));
     if (dir2 instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir2).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }
@@ -108,7 +108,7 @@ public class Test2BPostingsBytes extends LuceneTestCase {
     subReaders = new IndexReader[2000];
     Arrays.fill(subReaders, oneMillion);
     mr = new MultiReader(subReaders);
-    BaseDirectoryWrapper dir3 = newFSDirectory(_TestUtil.getTempDir("2BPostingsBytes3"));
+    BaseDirectoryWrapper dir3 = newFSDirectory(TestUtil.getTempDir("2BPostingsBytes3"));
     if (dir3 instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir3).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }
@@ -129,14 +129,12 @@ public class Test2BPostingsBytes extends LuceneTestCase {
     int index;
     int n;
 
-    public MyTokenStream() {
-      termAtt.setLength(1);
-      termAtt.buffer()[0] = 'a';
-    }
-    
     @Override
     public boolean incrementToken() {
       if (index < n) {
+        clearAttributes();
+        termAtt.buffer()[0] = 'a';
+        termAtt.setLength(1);
         index++;
         return true;
       }

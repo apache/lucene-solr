@@ -28,7 +28,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene42.Lucene42Codec;
+import org.apache.lucene.codecs.lucene46.Lucene46Codec;
 import org.apache.lucene.codecs.pulsing.Pulsing41PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -41,10 +41,12 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestAddIndexes extends LuceneTestCase {
   
@@ -64,7 +66,7 @@ public class TestAddIndexes extends LuceneTestCase {
     addDocs(writer, 100);
     assertEquals(100, writer.maxDoc());
     writer.close();
-    _TestUtil.checkIndex(dir);
+    TestUtil.checkIndex(dir);
 
     writer = newWriter(
         aux,
@@ -89,7 +91,7 @@ public class TestAddIndexes extends LuceneTestCase {
     writer.addIndexes(aux, aux2);
     assertEquals(190, writer.maxDoc());
     writer.close();
-    _TestUtil.checkIndex(dir);
+    TestUtil.checkIndex(dir);
 
     // make sure the old index is correct
     verifyNumDocs(aux, 40);
@@ -538,7 +540,7 @@ public class TestAddIndexes extends LuceneTestCase {
   private void verifyTermDocs(Directory dir, Term term, int numDocs)
       throws IOException {
     IndexReader reader = DirectoryReader.open(dir);
-    DocsEnum docsEnum = _TestUtil.docs(random(), reader, term.field, term.bytes, null, null, DocsEnum.FLAG_NONE);
+    DocsEnum docsEnum = TestUtil.docs(random(), reader, term.field, term.bytes, null, null, DocsEnum.FLAG_NONE);
     int count = 0;
     while (docsEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS)
       count++;
@@ -913,7 +915,7 @@ public class TestAddIndexes extends LuceneTestCase {
     CommitAndAddIndexes3 c = new CommitAndAddIndexes3(NUM_COPY);
     c.launchThreads(-1);
 
-    Thread.sleep(_TestUtil.nextInt(random(), 10, 500));
+    Thread.sleep(TestUtil.nextInt(random(), 10, 500));
 
     // Close w/o first stopping/joining the threads
     if (VERBOSE) {
@@ -938,7 +940,7 @@ public class TestAddIndexes extends LuceneTestCase {
     CommitAndAddIndexes3 c = new CommitAndAddIndexes3(NUM_COPY);
     c.launchThreads(-1);
 
-    Thread.sleep(_TestUtil.nextInt(random(), 10, 500));
+    Thread.sleep(TestUtil.nextInt(random(), 10, 500));
 
     // Close w/o first stopping/joining the threads
     if (VERBOSE) {
@@ -1014,7 +1016,7 @@ public class TestAddIndexes extends LuceneTestCase {
     assertEquals(100, writer.maxDoc());
     writer.commit();
     writer.close();
-    _TestUtil.checkIndex(dir);
+    TestUtil.checkIndex(dir);
 
     writer = newWriter(
         aux,
@@ -1059,7 +1061,7 @@ public class TestAddIndexes extends LuceneTestCase {
     aux2.close();
   }
 
-  private static final class CustomPerFieldCodec extends Lucene42Codec {
+  private static final class CustomPerFieldCodec extends Lucene46Codec {
     private final PostingsFormat simpleTextFormat = PostingsFormat.forName("SimpleText");
     private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene41");
     private final PostingsFormat mockSepFormat = PostingsFormat.forName("MockSep");
@@ -1110,7 +1112,7 @@ public class TestAddIndexes extends LuceneTestCase {
   
   private static final class UnRegisteredCodec extends FilterCodec {
     public UnRegisteredCodec() {
-      super("NotRegistered", new Lucene42Codec());
+      super("NotRegistered", new Lucene46Codec());
     }
   }
   
@@ -1139,7 +1141,7 @@ public class TestAddIndexes extends LuceneTestCase {
       Directory dir = newDirectory();
       IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
           new MockAnalyzer(random()));
-      conf.setCodec(_TestUtil.alwaysPostingsFormat(new Pulsing41PostingsFormat(1 + random().nextInt(20))));
+      conf.setCodec(TestUtil.alwaysPostingsFormat(new Pulsing41PostingsFormat(1 + random().nextInt(20))));
       IndexWriter w = new IndexWriter(dir, conf);
       try {
         w.addIndexes(toAdd);
@@ -1204,5 +1206,67 @@ public class TestAddIndexes extends LuceneTestCase {
     }
     r3.close();
     d3.close();
+  }
+  
+  public void testAddEmpty() throws Exception {
+    Directory d1 = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), d1);
+    MultiReader empty = new MultiReader();
+    w.addIndexes(empty);
+    w.close();
+    DirectoryReader dr = DirectoryReader.open(d1);
+    for (AtomicReaderContext ctx : dr.leaves()) {
+      assertTrue("empty segments should be dropped by addIndexes", ctx.reader().maxDoc() > 0);
+    }
+    dr.close();
+    d1.close();
+  }
+
+  // Currently it's impossible to end up with a segment with all documents
+  // deleted, as such segments are dropped. Still, to validate that addIndexes
+  // works with such segments, or readers that end up in such state, we fake an
+  // all deleted segment.
+  public void testFakeAllDeleted() throws Exception {
+    Directory src = newDirectory(), dest = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), src);
+    w.addDocument(new Document());
+    IndexReader allDeletedReader = new AllDeletedFilterReader(w.getReader().leaves().get(0).reader());
+    w.close();
+    
+    w = new RandomIndexWriter(random(), dest);
+    w.addIndexes(allDeletedReader);
+    w.close();
+    DirectoryReader dr = DirectoryReader.open(src);
+    for (AtomicReaderContext ctx : dr.leaves()) {
+      assertTrue("empty segments should be dropped by addIndexes", ctx.reader().maxDoc() > 0);
+    }
+    dr.close();
+    allDeletedReader.close();
+    src.close();
+    dest.close();
+  }
+
+  /** Make sure an open IndexWriter on an incoming Directory
+   *  causes a LockObtainFailedException */
+  public void testLocksBlock() throws Exception {
+    Directory src = newDirectory();
+    RandomIndexWriter w1 = new RandomIndexWriter(random(), src);
+    w1.addDocument(new Document());
+    w1.commit();
+
+    Directory dest = newDirectory();
+
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setWriteLockTimeout(1);
+    RandomIndexWriter w2 = new RandomIndexWriter(random(), dest, iwc);
+
+    try {
+      w2.addIndexes(src);
+      fail("did not hit expected exception");
+    } catch (LockObtainFailedException lofe) {
+      // expected
+    }
+
+    IOUtils.close(w1, w2, src, dest);
   }
 }

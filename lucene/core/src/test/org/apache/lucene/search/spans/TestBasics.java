@@ -18,7 +18,6 @@ package org.apache.lucene.search.spans;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -44,7 +43,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -102,8 +101,8 @@ public class TestBasics extends LuceneTestCase {
   public static void beforeClass() throws Exception {
     simplePayloadAnalyzer = new Analyzer() {
         @Override
-        public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-          Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+        public TokenStreamComponents createComponents(String fieldName) {
+          Tokenizer tokenizer = new MockTokenizer(MockTokenizer.SIMPLE, true);
           return new TokenStreamComponents(tokenizer, new SimplePayloadFilter(tokenizer));
         }
     };
@@ -111,7 +110,7 @@ public class TestBasics extends LuceneTestCase {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
         newIndexWriterConfig(TEST_VERSION_CURRENT, simplePayloadAnalyzer)
-                                                     .setMaxBufferedDocs(_TestUtil.nextInt(random(), 100, 1000)).setMergePolicy(newLogMergePolicy()));
+                                                     .setMaxBufferedDocs(TestUtil.nextInt(random(), 100, 1000)).setMergePolicy(newLogMergePolicy()));
     //writer.infoStream = System.out;
     for (int i = 0; i < 2000; i++) {
       Document doc = new Document();
@@ -361,6 +360,77 @@ public class TestBasics extends LuceneTestCase {
             1641, 1642, 1643, 1644, 1645, 1646, 1647,
             1648, 1649, 1740, 1741, 1742, 1743, 1744, 1745, 1746, 1747, 1748, 1749, 1840, 1841, 1842, 1843, 1844, 1845, 1846,
             1847, 1848, 1849, 1940, 1941, 1942, 1943, 1944, 1945, 1946, 1947, 1948, 1949});
+  }
+  
+  @Test
+  public void testSpanNotWindowOne() throws Exception {
+    SpanTermQuery term1 = new SpanTermQuery(new Term("field", "eight"));
+    SpanTermQuery term2 = new SpanTermQuery(new Term("field", "forty"));
+    SpanNearQuery near = new SpanNearQuery(new SpanQuery[] {term1, term2},
+                                           4, true);
+    SpanTermQuery term3 = new SpanTermQuery(new Term("field", "one"));
+    SpanNotQuery query = new SpanNotQuery(near, term3, 1, 1);
+
+    checkHits(query, new int[]
+      {840, 842, 843, 844, 845, 846, 847, 848, 849,
+          1840, 1842, 1843, 1844, 1845, 1846, 1847, 1848, 1849});
+
+    assertTrue(searcher.explain(query, 840).getValue() > 0.0f);
+    assertTrue(searcher.explain(query, 1842).getValue() > 0.0f);
+  }
+  
+  @Test
+  public void testSpanNotWindowTwoBefore() throws Exception {
+    SpanTermQuery term1 = new SpanTermQuery(new Term("field", "eight"));
+    SpanTermQuery term2 = new SpanTermQuery(new Term("field", "forty"));
+    SpanNearQuery near = new SpanNearQuery(new SpanQuery[] {term1, term2},
+                                           4, true);
+    SpanTermQuery term3 = new SpanTermQuery(new Term("field", "one"));
+    SpanNotQuery query = new SpanNotQuery(near, term3, 2, 0);
+
+    checkHits(query, new int[]
+      {840, 841, 842, 843, 844, 845, 846, 847, 848, 849});
+
+    assertTrue(searcher.explain(query, 840).getValue() > 0.0f);
+    assertTrue(searcher.explain(query, 849).getValue() > 0.0f);
+  }
+
+  @Test
+  public void testSpanNotWindowNeg() throws Exception {
+     //test handling of invalid window < 0
+     SpanTermQuery term1 = new SpanTermQuery(new Term("field", "eight"));
+     SpanTermQuery term2 = new SpanTermQuery(new Term("field", "one"));
+     SpanNearQuery near = new SpanNearQuery(new SpanQuery[] {term1, term2},
+                                            4, true);
+     SpanTermQuery term3 = new SpanTermQuery(new Term("field", "forty"));
+
+     SpanOrQuery or = new SpanOrQuery(term3);
+
+     SpanNotQuery query = new SpanNotQuery(near, or);
+
+     checkHits(query, new int[]
+       {801, 821, 831, 851, 861, 871, 881, 891,
+               1801, 1821, 1831, 1851, 1861, 1871, 1881, 1891});
+
+     assertTrue(searcher.explain(query, 801).getValue() > 0.0f);
+     assertTrue(searcher.explain(query, 891).getValue() > 0.0f);
+  }
+  
+  @Test
+  public void testSpanNotWindowDoubleExcludesBefore() throws Exception {
+     //test hitting two excludes before an include
+     SpanTermQuery term1 = new SpanTermQuery(new Term("field", "forty"));
+     SpanTermQuery term2 = new SpanTermQuery(new Term("field", "two"));
+     SpanNearQuery near = new SpanNearQuery(new SpanTermQuery[]{term1, term2}, 2, true);
+     SpanTermQuery exclude = new SpanTermQuery(new Term("field", "one"));
+
+     SpanNotQuery query = new SpanNotQuery(near, exclude, 4, 1);
+
+     checkHits(query, new int[]
+       {42, 242, 342, 442, 542, 642, 742, 842, 942});
+
+     assertTrue(searcher.explain(query, 242).getValue() > 0.0f);
+     assertTrue(searcher.explain(query, 942).getValue() > 0.0f);
   }
   
   @Test

@@ -92,12 +92,28 @@ public abstract class ReferenceManager<G> implements Closeable {
    */
   public final G acquire() throws IOException {
     G ref;
+
     do {
       if ((ref = current) == null) {
         throw new AlreadyClosedException(REFERENCE_MANAGER_IS_CLOSED_MSG);
       }
-    } while (!tryIncRef(ref));
-    return ref;
+      if (tryIncRef(ref)) {
+        return ref;
+      }
+      if (getRefCount(ref) == 0 && current == ref) {
+        assert ref != null;
+        /* if we can't increment the reader but we are
+           still the current reference the RM is in a
+           illegal states since we can't make any progress
+           anymore. The reference is closed but the RM still
+           holds on to it as the actual instance.
+           This can only happen if somebody outside of the RM
+           decrements the refcount without a corresponding increment
+           since the RM assigns the new reference before counting down
+           the reference. */
+        throw new IllegalStateException("The managed reference has already closed - this is likely a bug when the reference count is modified outside of the ReferenceManager");
+      }
+    } while (true);
   }
   
   /**
@@ -131,6 +147,11 @@ public abstract class ReferenceManager<G> implements Closeable {
       afterClose();
     }
   }
+
+  /**
+   * Returns the current reference count of the given reference.
+   */
+  protected abstract int getRefCount(G reference);
 
   /**
    *  Called after close(), so subclass can free any resources.

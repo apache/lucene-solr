@@ -18,10 +18,10 @@ package org.apache.lucene.spatial.prefix;
  */
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.context.SpatialContextFactory;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
+import com.spatial4j.core.shape.ShapeCollection;
 import com.spatial4j.core.shape.SpatialRelation;
 import com.spatial4j.core.shape.impl.RectangleImpl;
 import org.apache.lucene.document.Document;
@@ -40,6 +40,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -71,7 +72,10 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
   public void mySetup(int maxLevels) throws IOException {
     //non-geospatial makes this test a little easier (in gridSnap), and using boundary values 2^X raises
     // the prospect of edge conditions we want to test, plus makes for simpler numbers (no decimals).
-    this.ctx = new SpatialContext(false, null, new RectangleImpl(0, 256, -128, 128, null));
+    SpatialContextFactory factory = new SpatialContextFactory();
+    factory.geo = false;
+    factory.worldBounds = new RectangleImpl(0, 256, -128, 128, null);
+    this.ctx = factory.newSpatialContext();
     //A fairly shallow grid, and default 2.5% distErrPct
     if (maxLevels == -1)
       maxLevels = randomIntBetween(1, 8);
@@ -179,17 +183,24 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
           doc.add(f);
         }
       }
-      if (storeShape)
-        doc.add(new StoredField(strategy.getFieldName(), ctx.toString(shape)));
+      if (storeShape)//just for diagnostics
+        doc.add(new StoredField(strategy.getFieldName(), shape.toString()));
     }
     return doc;
   }
 
   private void doTest(final SpatialOperation operation) throws IOException {
+    //first show that when there's no data, a query will result in no results
+    {
+      Query query = strategy.makeQuery(new SpatialArgs(operation, randomRectangle()));
+      SearchResults searchResults = executeQuery(query, 1);
+      assertEquals(0, searchResults.numFound);
+    }
+
     final boolean biasContains = (operation == SpatialOperation.Contains);
 
     Map<String, Shape> indexedShapes = new LinkedHashMap<String, Shape>();
-    Map<String, Shape> indexedShapesGS = new LinkedHashMap<String, Shape>();
+    Map<String, Shape> indexedShapesGS = new LinkedHashMap<String, Shape>();//grid snapped
     final int numIndexedShapes = randomIntBetween(1, 6);
     for (int i = 0; i < numIndexedShapes; i++) {
       String id = "" + i;
@@ -199,7 +210,7 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
       if (R == 0) {//1 in 12
         indexedShape = null; //no shape for this doc
         indexedShapeGS = null;
-      } else if (R % 3 == 0) {//4-1 in 12
+      } else if (R % 3 == 0) {//4 in 12 (0,3,6,9)
         //comprised of more than one shape
         Rectangle shape1 = randomRectangle();
         Rectangle shape2 = randomRectangle();
@@ -210,6 +221,7 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
         indexedShape = randomRectangle();
         indexedShapeGS = gridSnap(indexedShape);
       }
+      //TODO sometimes index a point. Need to fix LUCENE-4978 first though.
       indexedShapes.put(id, indexedShape);
       indexedShapesGS.put(id, indexedShapeGS);
 
@@ -219,6 +231,7 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
         commit();//intermediate commit, produces extra segments
 
     }
+    //delete some documents randomly
     Iterator<String> idIter = indexedShapes.keySet().iterator();
     while (idIter.hasNext()) {
       String id = idIter.next();
@@ -235,39 +248,44 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
     for (int i = 0; i < numQueryShapes; i++) {
       int scanLevel = randomInt(grid.getMaxLevels());
       ((RecursivePrefixTreeStrategy) strategy).setPrefixGridScanLevel(scanLevel);
+
       final Shape queryShape = randomRectangle();
 
-      final boolean DISJOINT = operation.equals(SpatialOperation.IsDisjointTo);
+      final boolean opIsDisjoint = operation == SpatialOperation.IsDisjointTo;
 
       //Generate truth via brute force:
-      // We really try to ensure true-positive matches (if the predicate on the raw shapes match
+      // We ensure true-positive matches (if the predicate on the raw shapes match
       //  then the search should find those same matches).
       // approximations, false-positive matches
-      Set <String> expectedIds = new LinkedHashSet<String>();//true-positives
+      Set<String> expectedIds = new LinkedHashSet<String>();//true-positives
       Set<String> secondaryIds = new LinkedHashSet<String>();//false-positives (unless disjoint)
       for (Map.Entry<String, Shape> entry : indexedShapes.entrySet()) {
+        String id = entry.getKey();
         Shape indexedShapeCompare = entry.getValue();
         if (indexedShapeCompare == null)
           continue;
         Shape queryShapeCompare = queryShape;
-        String id = entry.getKey();
+
         if (operation.evaluate(indexedShapeCompare, queryShapeCompare)) {
           expectedIds.add(id);
-          if (DISJOINT) {
+          if (opIsDisjoint) {
             //if no longer intersect after buffering them, for disjoint, remember this
-            indexedShapeCompare = indexedShapesGS.get(entry.getKey());
+            indexedShapeCompare = indexedShapesGS.get(id);
             queryShapeCompare = gridSnap(queryShape);
             if (!operation.evaluate(indexedShapeCompare, queryShapeCompare))
               secondaryIds.add(id);
           }
-        } else if (!DISJOINT) {
+        } else if (!opIsDisjoint) {
           //buffer either the indexed or query shape (via gridSnap) and try again
-          if (operation.equals(SpatialOperation.Intersects)) {
-            indexedShapeCompare = indexedShapesGS.get(entry.getKey());
+          if (operation == SpatialOperation.Intersects) {
+            indexedShapeCompare = indexedShapesGS.get(id);
             queryShapeCompare = gridSnap(queryShape);
-          } else if (operation.equals(SpatialOperation.Contains)) {
-            indexedShapeCompare = indexedShapesGS.get(entry.getKey());
-          } else if (operation.equals(SpatialOperation.IsWithin)) {
+            //TODO Unfortunately, grid-snapping both can result in intersections that otherwise
+            // wouldn't happen when the grids are adjacent. Not a big deal but our test is just a
+            // bit more lenient.
+          } else if (operation == SpatialOperation.Contains) {
+            indexedShapeCompare = indexedShapesGS.get(id);
+          } else if (operation == SpatialOperation.IsWithin) {
             queryShapeCompare = gridSnap(queryShape);
           }
           if (operation.evaluate(indexedShapeCompare, queryShapeCompare))
@@ -283,11 +301,11 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
       for (SearchResult result : got.results) {
         String id = result.getId();
         boolean removed = remainingExpectedIds.remove(id);
-        if (!removed && (!DISJOINT && !secondaryIds.contains(id))) {
+        if (!removed && (!opIsDisjoint && !secondaryIds.contains(id))) {
           fail("Shouldn't match", id, indexedShapes, indexedShapesGS, queryShape);
         }
       }
-      if (DISJOINT)
+      if (opIsDisjoint)
         remainingExpectedIds.removeAll(secondaryIds);
       if (!remainingExpectedIds.isEmpty()) {
         String id = remainingExpectedIds.iterator().next();
@@ -316,30 +334,27 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
     List<Cell> cells = grid.getCells(snapMe, detailLevel, false, true);
 
     //calc bounding box of cells.
-    double minX = Double.POSITIVE_INFINITY, maxX = Double.NEGATIVE_INFINITY;
-    double minY = Double.POSITIVE_INFINITY, maxY = Double.NEGATIVE_INFINITY;
+    List<Shape> cellShapes = new ArrayList<Shape>(cells.size());
     for (Cell cell : cells) {
-      assert cell.getLevel() <= detailLevel;
-      Rectangle cellR = cell.getShape().getBoundingBox();
-
-      minX = Math.min(minX, cellR.getMinX());
-      maxX = Math.max(maxX, cellR.getMaxX());
-      minY = Math.min(minY, cellR.getMinY());
-      maxY = Math.max(maxY, cellR.getMaxY());
+      cellShapes.add(cell.getShape());
     }
-    return ctx.makeRectangle(minX, maxX, minY, maxY);
+    return new ShapeCollection<Shape>(cellShapes, ctx).getBoundingBox();
   }
 
   /**
-   * An aggregate of 2 shapes. Only implements what's necessary for the test
-   * here. TODO replace with Spatial4j trunk ShapeCollection.
+   * An aggregate of 2 shapes. Unfortunately we can't simply use a ShapeCollection because:
+   * (a) ambiguity between CONTAINS & WITHIN for equal shapes, and
+   * (b) adjacent pairs could as a whole contain the input shape.
+   * The tests here are sensitive to these matters, although in practice ShapeCollection
+   * is fine.
    */
-  private class ShapePair implements Shape {
+  private class ShapePair extends ShapeCollection<Rectangle> {
 
     final Rectangle shape1, shape2;
     final boolean biasContainsThenWithin;//a hack
 
     public ShapePair(Rectangle shape1, Rectangle shape2, boolean containsThenWithin) {
+      super(Arrays.asList(shape1, shape2), ctx);
       this.shape1 = shape1;
       this.shape2 = shape2;
       biasContainsThenWithin = containsThenWithin;
@@ -348,15 +363,20 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
     @Override
     public SpatialRelation relate(Shape other) {
       SpatialRelation r = relateApprox(other);
-      if (r != INTERSECTS && !(r == WITHIN && biasContainsThenWithin))
+      if (r == CONTAINS)
         return r;
+      if (r == DISJOINT)
+        return r;
+      if (r == WITHIN && !biasContainsThenWithin)
+        return r;
+
       //See if the correct answer is actually Contains, when the indexed shapes are adjacent,
       // creating a larger shape that contains the input shape.
-      Rectangle oRect = (Rectangle)other;
       boolean pairTouches = shape1.relate(shape2).intersects();
       if (!pairTouches)
         return r;
       //test all 4 corners
+      Rectangle oRect = (Rectangle)other;
       if (relate(ctx.makePoint(oRect.getMinX(), oRect.getMinY())) == CONTAINS
           && relate(ctx.makePoint(oRect.getMinX(), oRect.getMaxY())) == CONTAINS
           && relate(ctx.makePoint(oRect.getMaxX(), oRect.getMinY())) == CONTAINS
@@ -380,28 +400,8 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
       }
 
       if (shape1.relate(other).intersects() || shape2.relate(other).intersects())
-        return INTERSECTS;//might actually be 'CONTAINS' if these 2 are adjacent
+        return INTERSECTS;//might actually be 'CONTAINS' if the pair are adjacent but we handle that later
       return DISJOINT;
-    }
-
-    @Override
-    public Rectangle getBoundingBox() {
-      return ctx.getWorldBounds();//good enough
-    }
-
-    @Override
-    public boolean hasArea() {
-      return true;
-    }
-
-    @Override
-    public double getArea(SpatialContext ctx) {
-      throw new UnsupportedOperationException("TODO unimplemented");//TODO
-    }
-
-    @Override
-    public Point getCenter() {
-      throw new UnsupportedOperationException("TODO unimplemented");//TODO
     }
 
     @Override

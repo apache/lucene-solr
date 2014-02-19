@@ -53,11 +53,9 @@ public final class LowerCaseTokenizer extends LetterTokenizer {
    * @param matchVersion
    *          Lucene version to match See {@link <a href="#version">above</a>}
    * 
-   * @param in
-   *          the input to split up into tokens
    */
-  public LowerCaseTokenizer(Version matchVersion, Reader in) {
-    super(matchVersion, in);
+  public LowerCaseTokenizer(Version matchVersion) {
+    super(matchVersion);
   }
 
   /**
@@ -68,11 +66,9 @@ public final class LowerCaseTokenizer extends LetterTokenizer {
    *          Lucene version to match See {@link <a href="#version">above</a>}
    * @param factory
    *          the attribute factory to use for this {@link Tokenizer}
-   * @param in
-   *          the input to split up into tokens
    */
-  public LowerCaseTokenizer(Version matchVersion, AttributeFactory factory, Reader in) {
-    super(matchVersion, factory, in);
+  public LowerCaseTokenizer(Version matchVersion, AttributeFactory factory) {
+    super(matchVersion, factory);
   }
   
   /** Converts char to lower case

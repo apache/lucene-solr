@@ -54,7 +54,7 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
  * IndexWriter writer; // writer to which the sorted index will be added
  * DirectoryReader reader; // reader on the input index
  * Sorter sorter; // determines how the documents are sorted
- * AtomicReader sortingReader = new SortingAtomicReader(reader, sorter);
+ * AtomicReader sortingReader = SortingAtomicReader.wrap(SlowCompositeReaderWrapper.wrap(reader), sorter);
  * writer.addIndexes(reader);
  * writer.close();
  * reader.close();
@@ -218,6 +218,27 @@ public class SortingAtomicReader extends FilterAtomicReader {
     @Override
     public long get(int docID) {
       return in.get(docMap.newToOld(docID));
+    }
+  }
+  
+  private static class SortingBits implements Bits {
+
+    private final Bits in;
+    private final Sorter.DocMap docMap;
+
+    public SortingBits(final Bits in, Sorter.DocMap docMap) {
+      this.in = in;
+      this.docMap = docMap;
+    }
+
+    @Override
+    public boolean get(int index) {
+      return in.get(docMap.newToOld(index));
+    }
+
+    @Override
+    public int length() {
+      return in.length();
     }
   }
   
@@ -743,20 +764,9 @@ public class SortingAtomicReader extends FilterAtomicReader {
     final Bits inLiveDocs = in.getLiveDocs();
     if (inLiveDocs == null) {
       return null;
+    } else {
+      return new SortingBits(inLiveDocs, docMap);
     }
-    return new Bits() {
-
-      @Override
-      public boolean get(int index) {
-        return inLiveDocs.get(docMap.newToOld(index));
-      }
-
-      @Override
-      public int length() {
-        return inLiveDocs.length();
-      }
-
-    };
   }
   
   @Override
@@ -794,6 +804,16 @@ public class SortingAtomicReader extends FilterAtomicReader {
     } else {
       return new SortingSortedSetDocValues(sortedSetDV, docMap);
     }  
+  }
+
+  @Override
+  public Bits getDocsWithField(String field) throws IOException {
+    Bits bits = in.getDocsWithField(field);
+    if (bits == null || bits instanceof Bits.MatchAllBits || bits instanceof Bits.MatchNoBits) {
+      return bits;
+    } else {
+      return new SortingBits(bits, docMap);
+    }
   }
 
   @Override

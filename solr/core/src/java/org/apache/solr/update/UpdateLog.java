@@ -193,6 +193,19 @@ public class UpdateLog implements PluginInfoInitialized {
     }
   }
 
+  public long getTotalLogsSize() {
+    long size = 0;
+    synchronized (logs) {
+      for (TransactionLog log : logs) {
+        size += log.getLogSize();
+      }
+    }
+    return size;
+  }
+
+  public long getTotalLogsNumber() {
+    return logs.size();
+  }
 
   public VersionInfo getVersionInfo() {
     return versionInfo;
@@ -408,7 +421,7 @@ public class UpdateLog implements PluginInfoInitialized {
         try {
           RefCounted<SolrIndexSearcher> holder = uhandler.core.openNewSearcher(true, true);
           holder.decref();
-        } catch (Throwable e) {
+        } catch (Exception e) {
           SolrException.log(log, "Error opening realtime searcher for deleteByQuery", e);
         }
 
@@ -478,7 +491,7 @@ public class UpdateLog implements PluginInfoInitialized {
         try {
           RefCounted<SolrIndexSearcher> holder = uhandler.core.openNewSearcher(true, true);
           holder.decref();
-        } catch (Throwable e) {
+        } catch (Exception e) {
           SolrException.log(log, "Error opening realtime searcher for deleteByQuery", e);
         }
 
@@ -499,7 +512,7 @@ public class UpdateLog implements PluginInfoInitialized {
       try {
         RefCounted<SolrIndexSearcher> holder = uhandler.core.openNewSearcher(true, true);
         holder.decref();
-      } catch (Throwable e) {
+      } catch (Exception e) {
         SolrException.log(log, "Error opening realtime searcher for deleteByQuery", e);
       }
 
@@ -846,7 +859,7 @@ public class UpdateLog implements PluginInfoInitialized {
     synchronized (this) {
       try {
         ExecutorUtil.shutdownNowAndAwaitTermination(recoveryExecutor);
-      } catch (Throwable e) {
+      } catch (Exception e) {
         SolrException.log(log, e);
       }
 
@@ -1209,7 +1222,7 @@ public class UpdateLog implements PluginInfoInitialized {
           recoveryInfo.errors++;
           SolrException.log(log, e);
         }
-      } catch (Throwable e) {
+      } catch (Exception e) {
         recoveryInfo.errors++;
         SolrException.log(log, e);
       } finally {
@@ -1282,7 +1295,7 @@ public class UpdateLog implements PluginInfoInitialized {
             SolrException.log(log,e);
           } catch (IOException e) {
             SolrException.log(log,e);
-          } catch (Throwable e) {
+          } catch (Exception e) {
             SolrException.log(log,e);
           }
 
@@ -1368,7 +1381,7 @@ public class UpdateLog implements PluginInfoInitialized {
             recoveryInfo.errors++;
             loglog.warn("REYPLAY_ERR: IOException reading log", ex);
             // could be caused by an incomplete flush if recovering from log
-          } catch (Throwable ex) {
+          } catch (Exception ex) {
             recoveryInfo.errors++;
             loglog.warn("REPLAY_ERR: Exception replaying log", ex);
             // something wrong with the request?

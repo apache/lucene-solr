@@ -29,8 +29,9 @@ import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
@@ -44,7 +45,7 @@ public class Test2BPostings extends LuceneTestCase {
 
   @Nightly
   public void test() throws Exception {
-    BaseDirectoryWrapper dir = newFSDirectory(_TestUtil.getTempDir("2BPostings"));
+    BaseDirectoryWrapper dir = newFSDirectory(TestUtil.getTempDir("2BPostings"));
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }
@@ -85,18 +86,14 @@ public class Test2BPostings extends LuceneTestCase {
   
   public static final class MyTokenStream extends TokenStream {
     private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-    private final char buffer[];
     int index;
 
-    public MyTokenStream() {
-      termAtt.setLength(1);
-      buffer = termAtt.buffer();
-    }
-    
     @Override
     public boolean incrementToken() {
       if (index <= 'z') {
-        buffer[0] = (char) index++;
+        clearAttributes();
+        termAtt.setLength(1);
+        termAtt.buffer()[0] = (char) index++;
         return true;
       }
       return false;

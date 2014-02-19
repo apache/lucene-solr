@@ -17,7 +17,6 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.common.SolrException;
@@ -27,47 +26,77 @@ import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-class ConnectionManager implements Watcher {
+public class ConnectionManager implements Watcher {
   protected static final Logger log = LoggerFactory
       .getLogger(ConnectionManager.class);
 
   private final String name;
-  private CountDownLatch clientConnected;
-  private KeeperState state;
-  private boolean connected;
+  
+  private volatile boolean connected = false;
 
   private final ZkClientConnectionStrategy connectionStrategy;
-  
-  private Object connectionUpdateLock = new Object();
 
-  private String zkServerAddress;
+  private final String zkServerAddress;
 
-  private int zkClientTimeout;
+  private final SolrZkClient client;
 
-  private SolrZkClient client;
-
-  private OnReconnect onReconnect;
+  private final OnReconnect onReconnect;
+  private final BeforeReconnect beforeReconnect;
 
   private volatile boolean isClosed = false;
 
-  public ConnectionManager(String name, SolrZkClient client, String zkServerAddress, int zkClientTimeout, ZkClientConnectionStrategy strat, OnReconnect onConnect) {
+  // Track the likely expired state
+  private static class LikelyExpiredState {
+    private static LikelyExpiredState NOT_EXPIRED = new LikelyExpiredState(StateType.NOT_EXPIRED, 0);
+    private static LikelyExpiredState EXPIRED = new LikelyExpiredState(StateType.EXPIRED, 0);
+
+    public enum StateType {
+      NOT_EXPIRED,    // definitely not expired
+      EXPIRED,        // definitely expired
+      TRACKING_TIME   // not sure, tracking time of last disconnect
+    }
+
+    private StateType stateType;
+    private long lastDisconnectTime;
+    public LikelyExpiredState(StateType stateType, long lastDisconnectTime) {
+      this.stateType = stateType;
+      this.lastDisconnectTime = lastDisconnectTime;
+    }
+
+    public boolean isLikelyExpired(long timeToExpire) {
+      return stateType == StateType.EXPIRED
+        || ( stateType == StateType.TRACKING_TIME && (System.currentTimeMillis() - lastDisconnectTime >  timeToExpire));
+    }
+  }
+
+  private volatile LikelyExpiredState likelyExpiredState = LikelyExpiredState.EXPIRED;
+
+  public ConnectionManager(String name, SolrZkClient client, String zkServerAddress, ZkClientConnectionStrategy strat, OnReconnect onConnect, BeforeReconnect beforeReconnect) {
     this.name = name;
     this.client = client;
     this.connectionStrategy = strat;
     this.zkServerAddress = zkServerAddress;
-    this.zkClientTimeout = zkClientTimeout;
     this.onReconnect = onConnect;
-    reset();
+    this.beforeReconnect = beforeReconnect;
+  }
+  
+  private synchronized void connected() {
+    connected = true;
+    likelyExpiredState = LikelyExpiredState.NOT_EXPIRED;
+    notifyAll();
   }
 
-  private synchronized void reset() {
-    clientConnected = new CountDownLatch(1);
-    state = KeeperState.Disconnected;
+  private synchronized void disconnected() {
     connected = false;
+    // record the time we expired unless we are already likely expired
+    if (!likelyExpiredState.isLikelyExpired(0)) {
+      likelyExpiredState = new LikelyExpiredState(LikelyExpiredState.StateType.TRACKING_TIME, System.currentTimeMillis());
+    }
+    notifyAll();
   }
 
   @Override
-  public synchronized void process(WatchedEvent event) {
+  public void process(WatchedEvent event) {
     if (log.isInfoEnabled()) {
       log.info("Watcher " + this + " name:" + name + " got event " + event
           + " path:" + event.getPath() + " type:" + event.getType());
@@ -77,52 +106,72 @@ class ConnectionManager implements Watcher {
       log.info("Client->ZooKeeper status change trigger but we are already closed");
       return;
     }
-
-    state = event.getState();
+    
+    KeeperState state = event.getState();
+    
     if (state == KeeperState.SyncConnected) {
-      connected = true;
-      clientConnected.countDown();
+      connected();
       connectionStrategy.connected();
     } else if (state == KeeperState.Expired) {
+      // we don't call disconnected here, because we know we are expired
       connected = false;
+      likelyExpiredState = LikelyExpiredState.EXPIRED;
+      
       log.info("Our previous ZooKeeper session was expired. Attempting to reconnect to recover relationship with ZooKeeper...");
       
+      if (beforeReconnect != null) {
+        try {
+          beforeReconnect.command();
+        } catch (Exception e) {
+          log.warn("Exception running beforeReconnect command", e);
+        }
+      }
+      
       try {
-        connectionStrategy.reconnect(zkServerAddress, zkClientTimeout, this,
+        connectionStrategy.reconnect(zkServerAddress,
+            client.getZkClientTimeout(), this,
             new ZkClientConnectionStrategy.ZkUpdate() {
               @Override
               public void update(SolrZooKeeper keeper) {
-                // if keeper does not replace oldKeeper we must be sure to close it
-                synchronized (connectionUpdateLock) {
-                  try {
-                    waitForConnected(Long.MAX_VALUE);
-                  } catch (Exception e1) {
-                    closeKeeper(keeper);
-                    throw new RuntimeException(e1);
-                  }
-                  log.info("Connection with ZooKeeper reestablished.");
-                  try {
-                    client.updateKeeper(keeper);
-                  } catch (InterruptedException e) {
-                    closeKeeper(keeper);
-                    Thread.currentThread().interrupt();
-                    // we must have been asked to stop
-                    throw new RuntimeException(e);
-                  } catch(Throwable t) {
-                    closeKeeper(keeper);
-                    throw new RuntimeException(t);
-                  }
-      
-                  if (onReconnect != null) {
-                    onReconnect.command();
-                  }
-                  synchronized (ConnectionManager.this) {
-                    ConnectionManager.this.connected = true;
-                  }
+                try {
+                  waitForConnected(Long.MAX_VALUE);
+                } catch (Exception e1) {
+                  closeKeeper(keeper);
+                  throw new RuntimeException(e1);
+                }
+                
+                log.info("Connection with ZooKeeper reestablished.");
+                try {
+                  client.updateKeeper(keeper);
+                } catch (InterruptedException e) {
+                  closeKeeper(keeper);
+                  Thread.currentThread().interrupt();
+                  // we must have been asked to stop
+                  throw new RuntimeException(e);
+                } catch (Exception t) {
+                  closeKeeper(keeper);
+                  throw new RuntimeException(t);
+                }
+
+                // The new event thread will call connected
+                // we just start the reconnect thread and 
+                // do nothing else
+                
+                if (onReconnect != null) {
+                  Thread thread = new Thread() {
+                    @Override
+                    public void run() {
+                      try {
+                        onReconnect.command();
+                      } catch (Exception e) {
+                        log.warn("Exception running onReconnect command", e);
+                      }
+                    }
+                  };
+                  thread.start();
                 }
                 
               }
-
             });
       } catch (Exception e) {
         SolrException.log(log, "", e);
@@ -130,12 +179,11 @@ class ConnectionManager implements Watcher {
       log.info("Connected:" + connected);
     } else if (state == KeeperState.Disconnected) {
       log.info("zkClient has disconnected");
-      connected = false;
+      disconnected();
       connectionStrategy.disconnected();
-    } else {
-      connected = false;
+    } else if (state == KeeperState.AuthFailed) {
+      log.warn("zkClient received AuthFailed");
     }
-    notifyAll();
   }
 
   public synchronized boolean isConnected() {
@@ -143,13 +191,14 @@ class ConnectionManager implements Watcher {
   }
   
   // we use a volatile rather than sync
-  // to avoid deadlock on shutdown
+  // to avoid possible deadlock on shutdown
   public void close() {
     this.isClosed = true;
+    this.likelyExpiredState = LikelyExpiredState.EXPIRED;
   }
-
-  public synchronized KeeperState state() {
-    return state;
+  
+  public boolean isLikelyExpired() {
+    return isClosed || likelyExpiredState.isLikelyExpired((long) (client.getZkClientTimeout() * 0.90));
   }
 
   public synchronized void waitForConnected(long waitForConnection)
@@ -165,7 +214,7 @@ class ConnectionManager implements Watcher {
         wait(500);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
-        throw new RuntimeException(e);
+        break;
       }
       left = expire - System.currentTimeMillis();
     }

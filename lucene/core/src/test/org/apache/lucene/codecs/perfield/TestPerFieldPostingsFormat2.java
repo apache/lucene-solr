@@ -21,8 +21,8 @@ import java.io.IOException;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene42.Lucene42Codec;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
+import org.apache.lucene.codecs.lucene46.Lucene46Codec;
 import org.apache.lucene.codecs.mocksep.MockSepPostingsFormat;
 import org.apache.lucene.codecs.pulsing.Pulsing41PostingsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextPostingsFormat;
@@ -34,16 +34,17 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
 
 /**
@@ -107,7 +108,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     addDocs2(writer, 10);
     writer.commit();
     assertEquals(30, writer.maxDoc());
-    _TestUtil.checkIndex(dir);
+    TestUtil.checkIndex(dir);
     writer.forceMerge(1);
     assertEquals(30, writer.maxDoc());
     writer.close();
@@ -192,7 +193,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("\nTEST: assertQuery " + t);
     }
-    IndexReader reader = DirectoryReader.open(dir, 1);
+    IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = newSearcher(reader);
     TopDocs search = searcher.search(new TermQuery(t), num + 10);
     assertEquals(num, search.totalHits);
@@ -200,7 +201,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
 
   }
 
-  public static class MockCodec extends Lucene42Codec {
+  public static class MockCodec extends Lucene46Codec {
     final PostingsFormat lucene40 = new Lucene41PostingsFormat();
     final PostingsFormat simpleText = new SimpleTextPostingsFormat();
     final PostingsFormat mockSep = new MockSepPostingsFormat();
@@ -217,7 +218,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     }
   }
 
-  public static class MockCodec2 extends Lucene42Codec {
+  public static class MockCodec2 extends Lucene46Codec {
     final PostingsFormat lucene40 = new Lucene41PostingsFormat();
     final PostingsFormat simpleText = new SimpleTextPostingsFormat();
     
@@ -240,7 +241,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     final int docsPerRound = 97;
     int numRounds = atLeast(1);
     for (int i = 0; i < numRounds; i++) {
-      int num = _TestUtil.nextInt(random(), 30, 60);
+      int num = TestUtil.nextInt(random(), 30, 60);
       IndexWriterConfig config = newIndexWriterConfig(random(),
           TEST_VERSION_CURRENT, new MockAnalyzer(random()));
       config.setOpenMode(OpenMode.CREATE_OR_APPEND);
@@ -251,7 +252,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
           FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
           customType.setTokenized(random().nextBoolean());
           customType.setOmitNorms(random().nextBoolean());
-          Field field = newField("" + k, _TestUtil
+          Field field = newField("" + k, TestUtil
               .randomRealisticUnicodeString(random(), 128), customType);
           doc.add(field);
         }
@@ -268,7 +269,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
   }
   
   public void testSameCodecDifferentInstance() throws Exception {
-    Codec codec = new Lucene42Codec() {
+    Codec codec = new Lucene46Codec() {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
         if ("id".equals(field)) {
@@ -284,7 +285,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
   }
   
   public void testSameCodecDifferentParams() throws Exception {
-    Codec codec = new Lucene42Codec() {
+    Codec codec = new Lucene46Codec() {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
         if ("id".equals(field)) {

@@ -18,14 +18,14 @@ package org.apache.lucene.index;
  */
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.MergedIterator;
+import org.apache.lucene.util.TestUtil;
 
 public class TestPrefixCodedTerms extends LuceneTestCase {
   
@@ -49,7 +49,7 @@ public class TestPrefixCodedTerms extends LuceneTestCase {
     Set<Term> terms = new TreeSet<Term>();
     int nterms = atLeast(10000);
     for (int i = 0; i < nterms; i++) {
-      Term term = new Term(_TestUtil.randomUnicodeString(random(), 2), _TestUtil.randomUnicodeString(random()));
+      Term term = new Term(TestUtil.randomUnicodeString(random(), 2), TestUtil.randomUnicodeString(random()));
       terms.add(term);
     }    
     
@@ -65,15 +65,6 @@ public class TestPrefixCodedTerms extends LuceneTestCase {
       assertEquals(expected.next(), t);
     }
     assertFalse(expected.hasNext());
-  }
-  
-  @SuppressWarnings("unchecked")
-  public void testMergeEmpty() {
-    Iterator<Term> merged = new MergedIterator<Term>();
-    assertFalse(merged.hasNext());
-
-    merged = new MergedIterator<Term>(new PrefixCodedTerms.Builder().finish().iterator(), new PrefixCodedTerms.Builder().finish().iterator());
-    assertFalse(merged.hasNext());
   }
 
   @SuppressWarnings("unchecked")
@@ -97,14 +88,14 @@ public class TestPrefixCodedTerms extends LuceneTestCase {
 
   @SuppressWarnings({"unchecked","rawtypes"})
   public void testMergeRandom() {
-    PrefixCodedTerms pb[] = new PrefixCodedTerms[_TestUtil.nextInt(random(), 2, 10)];
+    PrefixCodedTerms pb[] = new PrefixCodedTerms[TestUtil.nextInt(random(), 2, 10)];
     Set<Term> superSet = new TreeSet<Term>();
     
     for (int i = 0; i < pb.length; i++) {
       Set<Term> terms = new TreeSet<Term>();
-      int nterms = _TestUtil.nextInt(random(), 0, 10000);
+      int nterms = TestUtil.nextInt(random(), 0, 10000);
       for (int j = 0; j < nterms; j++) {
-        Term term = new Term(_TestUtil.randomUnicodeString(random(), 2), _TestUtil.randomUnicodeString(random(), 4));
+        Term term = new Term(TestUtil.randomUnicodeString(random(), 2), TestUtil.randomUnicodeString(random(), 4));
         terms.add(term);
       }
       superSet.addAll(terms);

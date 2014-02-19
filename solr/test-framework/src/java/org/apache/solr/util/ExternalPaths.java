@@ -43,6 +43,8 @@ public class ExternalPaths {
   /* @see #SOURCE_HOME */
   public static String EXAMPLE_HOME = new File(SOURCE_HOME, "example/solr").getAbsolutePath();
   /* @see #SOURCE_HOME */
+  public static String EXAMPLE_SCHEMALESS_HOME = new File(SOURCE_HOME, "example/example-schemaless/solr").getAbsolutePath();
+  /* @see #SOURCE_HOME */
   public static String EXAMPLE_MULTICORE_HOME = new File(SOURCE_HOME, "example/multicore").getAbsolutePath();
   /* @see #SOURCE_HOME */
   public static String EXAMPLE_SCHEMA=EXAMPLE_HOME+"/collection1/conf/schema.xml";

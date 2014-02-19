@@ -176,7 +176,7 @@ public class CloneFieldUpdateProcessorFactory
     } else {
       // source better be one or more strings
       srcInclusions.fieldName = new HashSet<String>
-        (FieldMutatingUpdateProcessorFactory.oneOrMany(args, "source"));
+        (args.removeConfigArgs("source"));
     }
 
     

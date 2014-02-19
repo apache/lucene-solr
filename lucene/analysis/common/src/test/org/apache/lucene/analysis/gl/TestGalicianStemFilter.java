@@ -36,9 +36,8 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 public class TestGalicianStemFilter extends BaseTokenStreamTestCase {
   private Analyzer analyzer = new Analyzer() {
     @Override
-    protected TokenStreamComponents createComponents(String fieldName,
-        Reader reader) {
-      Tokenizer source = new StandardTokenizer(TEST_VERSION_CURRENT, reader);
+    protected TokenStreamComponents createComponents(String fieldName) {
+      Tokenizer source = new StandardTokenizer(TEST_VERSION_CURRENT);
       TokenStream result = new LowerCaseFilter(TEST_VERSION_CURRENT, source);
       return new TokenStreamComponents(source, new GalicianStemFilter(result));
     }
@@ -53,11 +52,11 @@ public class TestGalicianStemFilter extends BaseTokenStreamTestCase {
   public void testEmptyTerm() throws IOException {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new KeywordTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
         return new TokenStreamComponents(tokenizer, new GalicianStemFilter(tokenizer));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

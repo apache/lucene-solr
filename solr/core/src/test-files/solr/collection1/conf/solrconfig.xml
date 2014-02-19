@@ -45,24 +45,14 @@
     <double name="maxWriteMBPerSecFlush">2000000</double>
     <double name="maxWriteMBPerSecMerge">3000000</double>
     <double name="maxWriteMBPerSecRead">4000000</double>
+    <str name="solr.hdfs.home">${solr.hdfs.home:}</str>
+    <bool name="solr.hdfs.blockcache.enabled">${solr.hdfs.blockcache.enabled:true}</bool>
   </directoryFactory>
 
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
 
-  <indexConfig>
-    <mergeScheduler class="org.apache.lucene.index.ConcurrentMergeScheduler"/>
-    <writeLockTimeout>1000</writeLockTimeout>
-    <mergeFactor>8</mergeFactor>
-    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
-    <!-- for better multi-segment testing, we are using slower
-    indexing properties of maxBufferedDocs=10 and LogDocMergePolicy.
-    -->
-    <maxBufferedDocs>10</maxBufferedDocs>
-    <mergePolicy class="org.apache.lucene.index.LogDocMergePolicy"/>
-    <lockType>native</lockType>
-    <unlockOnStartup>true</unlockOnStartup>
-  </indexConfig>
-  
+  <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
   <updateHandler class="solr.DirectUpdateHandler2">
 
     <!-- autocommit pending docs if certain criteria are met
@@ -131,6 +121,12 @@
       size="512"
       initialSize="512"
       autowarmCount="0"/>
+
+    <cache name="perSegFilter"
+      class="solr.search.LRUCache"
+      size="10"
+      initialSize="0"
+      autowarmCount="10" />
 
     <!-- If true, stored fields that are not requested will be loaded lazily.
     -->
@@ -238,6 +234,18 @@
 
   <requestHandler name="/admin/" class="org.apache.solr.handler.admin.AdminHandlers" />
 
+  <requestHandler name="/admin/file" class="solr.admin.ShowFileRequestHandler" >
+    <lst name="invariants">
+      <str name="hidden">bogus.txt</str>
+    </lst>
+  </requestHandler>
+
+  <requestHandler name="/admin/fileedit" class="solr.admin.EditFileRequestHandler" >
+    <lst name="invariants">
+      <str name="hidden">bogus.txt</str>
+    </lst>
+  </requestHandler>
+
   <!-- test query parameter defaults -->
   <requestHandler name="defaults" class="solr.StandardRequestHandler">
     <lst name="defaults">
@@ -338,6 +346,8 @@
       <str>termsComp</str>
     </arr>
   </requestHandler>
+  
+  
   <!--
   The SpellingQueryConverter to convert raw (CommonParams.Q) queries into tokens.  Uses a simple regular expression
    to strip off field markup, boosts, ranges, etc. but it is not guaranteed to match an exact parse from the query parser.
@@ -524,11 +534,11 @@
   </updateRequestProcessorChain>
   <updateRequestProcessorChain name="uniq-fields">
     <processor class="org.apache.solr.update.processor.UniqFieldsUpdateProcessorFactory">
-      <lst name="fields">
+      <arr name="fieldName">
         <str>uniq</str>
         <str>uniq2</str>
         <str>uniq3</str>
-      </lst>      
+      </arr>      
     </processor>
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>  
@@ -565,3 +575,4 @@
   </updateRequestProcessorChain>  
 
 </config>
+

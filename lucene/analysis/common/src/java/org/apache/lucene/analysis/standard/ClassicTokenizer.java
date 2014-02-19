@@ -76,6 +76,8 @@ public final class ClassicTokenizer extends Tokenizer {
     "<CJ>",
     "<ACRONYM_DEP>"
   };
+  
+  private int skippedPositions;
 
   private int maxTokenLength = StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH;
 
@@ -94,25 +96,22 @@ public final class ClassicTokenizer extends Tokenizer {
    * Creates a new instance of the {@link ClassicTokenizer}.  Attaches
    * the <code>input</code> to the newly created JFlex scanner.
    *
-   * @param input The input reader
-   *
    * See http://issues.apache.org/jira/browse/LUCENE-1068
    */
-  public ClassicTokenizer(Version matchVersion, Reader input) {
-    super(input);
+  public ClassicTokenizer(Version matchVersion) {
     init(matchVersion);
   }
 
   /**
    * Creates a new ClassicTokenizer with a given {@link org.apache.lucene.util.AttributeSource.AttributeFactory} 
    */
-  public ClassicTokenizer(Version matchVersion, AttributeFactory factory, Reader input) {
-    super(factory, input);
+  public ClassicTokenizer(Version matchVersion, AttributeFactory factory) {
+    super(factory);
     init(matchVersion);
   }
 
   private void init(Version matchVersion) {
-    this.scanner = new ClassicTokenizerImpl(null); // best effort NPE if you dont call reset
+    this.scanner = new ClassicTokenizerImpl(input);
   }
 
   // this tokenizer generates three attributes:
@@ -130,7 +129,7 @@ public final class ClassicTokenizer extends Tokenizer {
   @Override
   public final boolean incrementToken() throws IOException {
     clearAttributes();
-    int posIncr = 1;
+    skippedPositions = 0;
 
     while(true) {
       int tokenType = scanner.getNextToken();
@@ -140,7 +139,7 @@ public final class ClassicTokenizer extends Tokenizer {
       }
 
       if (scanner.yylength() <= maxTokenLength) {
-        posIncrAtt.setPositionIncrement(posIncr);
+        posIncrAtt.setPositionIncrement(skippedPositions+1);
         scanner.getText(termAtt);
         final int start = scanner.yychar();
         offsetAtt.setOffset(correctOffset(start), correctOffset(start+termAtt.length()));
@@ -155,19 +154,30 @@ public final class ClassicTokenizer extends Tokenizer {
       } else
         // When we skip a too-long term, we still increment the
         // position increment
-        posIncr++;
+        skippedPositions++;
     }
   }
   
   @Override
-  public final void end() {
+  public final void end() throws IOException {
+    super.end();
     // set final offset
     int finalOffset = correctOffset(scanner.yychar() + scanner.yylength());
     offsetAtt.setOffset(finalOffset, finalOffset);
+    // adjust any skipped tokens
+    posIncrAtt.setPositionIncrement(posIncrAtt.getPositionIncrement()+skippedPositions);
+  }
+  
+  @Override
+  public void close() throws IOException {
+    super.close();
+    scanner.yyreset(input);
   }
 
   @Override
   public void reset() throws IOException {
+    super.reset();
     scanner.yyreset(input);
+    skippedPositions = 0;
   }
 }

@@ -6,7 +6,25 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 5.0.0 =======================
 
-Changes in backwards compatibility policy
+New Features
+
+* LUCENE-4747: Move to Java 7 as minimum Java version.
+  (Robert Muir, Uwe Schindler)
+
+* SOLR-3359: Added analyzer attribute/property to SynonymFilterFactory.
+  (Ryo Onodera via Koji Sekiguchi)
+
+* LUCENE-5123: Add a "push" option to the postings writing API, so
+  that a PostingsFormat now receives a Fields instance and it is
+  responsible for iterating through all fields, terms, documents and
+  positions.  (Robert Muir, Mike McCandless)
+
+* LUCENE-5268: Full cutover of all postings formats to the "pull"
+  FieldsConsumer API, removing PushFieldsConsumer.  Added new
+  PushPostingsWriterBase for single-pass push of docs/positions to the
+  postings format.  (Mike McCandless)
+
+API Changes
 
 * LUCENE-4535: oal.util.FilterIterator is now an internal API.
   (Adrien Grand)
@@ -23,18 +41,22 @@ Changes in backwards compatibility policy
   not positioned. This change affects all classes that inherit from
   DocIdSetIterator, including DocsEnum and DocsAndPositionsEnum. (Adrien Grand)
 
-* LUCENE-5089: Update to Morfologik 1.6.0. MorfologikAnalyzer and MorfologikFilter 
-  no longer support multiple "dictionaries" as there is only one dictionary available.
-  (Dawid Weiss)
+* LUCENE-5127: Reduce RAM usage of FixedGapTermsIndex. Remove 
+  IndexWriterConfig.setTermIndexInterval, IndexWriterConfig.setReaderTermsIndexDivisor,
+  and termsIndexDivisor from StandardDirectoryReader. These options have been no-ops
+  with the default codec since Lucene 4.0. If you want to configure the interval for
+  this term index, pass it directly in your codec, where it can also be configured
+  per-field. (Robert Muir)
 
-New Features
+* LUCENE-5388: Remove Reader from Tokenizer's constructor and from
+  Analyzer's createComponents. TokenStreams now always get their input
+  via setReader.  
+  (Benson Margulies via Robert Muir - pull request #16)
 
-* LUCENE-4747: Move to Java 7 as minimum Java version.
-  (Robert Muir, Uwe Schindler)
+Documentation
 
-* LUCENE-5089: Update to Morfologik 1.6.0. MorfologikAnalyzer and MorfologikFilter 
-  no longer support multiple "dictionaries" as there is only one dictionary available.
-  (Dawid Weiss)
+* LUCENE-5392: Add/improve analysis package documentation to reflect
+  analysis API changes.  (Benson Margulies via Robert Muir - pull request #17)
 
 Optimizations
 
@@ -42,6 +64,812 @@ Optimizations
   for NIOFSDirectory and MMapDirectory. This allows to delete open files
   on Windows if NIOFSDirectory is used, mmapped files are still locked.
   (Michael Poindexter, Robert Muir, Uwe Schindler)
+
+Test Framework
+
+* LUCENE-5449: Rename _TestUtil and _TestHelper to remove the leading _.
+
+======================= Lucene 4.8.0 =======================
+
+Bug fixes
+
+* LUCENE-5450: Fix getField() NPE issues with SpanOr/SpanNear when they have an 
+  empty list of clauses. This can happen for example,  when a wildcard matches 
+  no terms.  (Tim Allison via Robert Muir)
+
+======================= Lucene 4.7.0 =======================
+
+New Features
+
+* LUCENE-5336: Add SimpleQueryParser: parser for human-entered queries.
+  (Jack Conradson via Robert Muir)
+
+* LUCENE-5329: suggest: DocumentDictionary and
+  DocumentExpressionDictionary are now lenient for dirty documents
+  (missing the term, weight or payload).  (Areek Zillur via
+  Mike McCandless)
+
+* LUCENE-5404: Add .getCount method to all suggesters (Lookup); persist count 
+  metadata on .store(); Dictionary returns InputIterator; Dictionary.getWordIterator
+  renamed to .getEntryIterator. (Areek Zillur)
+
+* SOLR-1871: The RangeMapFloatFunction accepts an arbitrary ValueSource
+  as target and default values. (Chris Harris, shalin)
+
+* LUCENE-5371: Speed up Lucene range faceting from O(N) per hit to
+  O(log(N)) per hit using segment trees; this only really starts to
+  matter in practice if the number of ranges is over 10 or so.  (Mike
+  McCandless)
+
+* LUCENE-5379: Add Analyzer for Kurdish.  (Robert Muir)
+
+* LUCENE-5369: Added an UpperCaseFilter to make UPPERCASE tokens. (ryan)
+
+* LUCENE-5345: Add a new BlendedInfixSuggester, which is like
+  AnalyzingInfixSuggester but boosts suggestions that matched tokens
+  with lower positions.  (Remi Melisson via Mike McCandless)
+
+* LUCENE-4399: When sorting by String (SortField.STRING), you can now
+  specify whether missing values should be sorted first (the default),
+  using SortField.setMissingValue(SortField.STRING_FIRST), or last,
+  using SortField.setMissingValue(SortField.STRING_LAST). (Rob Muir,
+  Mike McCandless)
+  
+* LUCENE-5099: QueryNode should have the ability to detach from its node
+  parent. Added QueryNode.removeFromParent() that allows nodes to be 
+  detached from its parent node. (Adriano Crestani)
+
+* LUCENE-5395 LUCENE-5451: Upgrade to Spatial4j 0.4.1: Parses WKT (including
+  ENVELOPE) with extension "BUFFER"; buffering a point results in a Circle.
+  JTS isn't needed for WKT any more but remains required for Polygons. New
+  Shapes: ShapeCollection and BufferedLineString. Various other improvements and
+  bug fixes too. More info:
+  https://github.com/spatial4j/spatial4j/blob/master/CHANGES.md  (David Smiley)
+
+* LUCENE-5405: If an analysis component throws an exception, Lucene
+  logs the field name to the info stream to assist in
+  diagnosis. (Benson Margulies)
+
+* LUCENE-5406: Make ShingleAnalzyerWrapper.getWrappedAnalyzer() public
+  final (gsingers)
+
+* LUCENE-5415: Add multitermquery (wildcards,prefix,etc) to PostingsHighlighter.
+  (Mike McCandless, Robert Muir)
+
+* LUCENE-3069: Add two memory resident dictionaries (FST terms dictionary and 
+  FSTOrd terms dictionary) to improve primary key lookups. The PostingsBaseFormat 
+  API is also changed so that term dictionaries get the ability to block 
+  encode term metadata, and all dictionary implementations can now plug in any 
+  PostingsBaseFormat. (Han Jiang, Mike McCandless)
+
+* LUCENE-5353: ShingleFilter's filler token should be configurable.
+  (Ahmet Arslan, Simon Willnauer, Steve Rowe)
+
+* LUCENE-5320: Add SearcherTaxonomyManager over search and taxonomy index
+  directories (i.e. not only NRT). (Shai Erera)
+
+* LUCENE-5410: Add fuzzy and near support via '~' operator to SimpleQueryParser.
+  (Lee Hinman via Robert Muir)
+
+* LUCENE-5426: Make SortedSetDocValuesReaderState abstract to allow
+  custom implementations for Lucene doc values faceting (John Wang via
+  Mike McCandless)
+
+* LUCENE-5434: NRT support for file systems that do no have delete on last
+  close or cannot delete while referenced semantics. 
+  (Mark Miller, Mike McCandless)
+
+* LUCENE-5418: Drilling down or sideways on a Lucene facet range
+  (using Range.getFilter()) is now faster for costly filters (uses
+  random access, not iteration); range facet counts now accept a
+  fast-match filter to avoid computing the value for documents that
+  are out of bounds, e.g. using a bounding box filter with distance
+  range faceting.  (Mike McCandless)
+
+* LUCENE-5440: Add LongBitSet for managing more than 2.1B bits (otherwise use
+  FixedBitSet). (Shai Erera)
+
+* LUCENE-5437: ASCIIFoldingFilter now has an option to preserve the original token
+  and emit it on the same position as the folded token only if the actual token was
+  folded. (Simon Willnauer, Nik Everett)
+
+* LUCENE-5408: Add spatial SerializedDVStrategy that serializes a binary
+  representations of a shape into BinaryDocValues. It supports exact geometry
+  relationship calculations. (David Smiley)
+
+Build
+
+* LUCENE-5217,LUCENE-5420: Maven config: get dependencies from Ant+Ivy config;
+  disable transitive dependency resolution for all depended-on artifacts by
+  putting an exclusion for each transitive dependency in the
+  <dependencyManagement> section of the grandparent POM. (Steve Rowe)
+
+* LUCENE-5322: Clean up / simplify Maven-related Ant targets.
+  (Steve Rowe)
+
+* LUCENE-5347: Upgrade forbidden-apis checker to version 1.4.
+  (Uwe Schindler)
+
+* LUCENE-4381: Upgrade analysis/icu to 52.1. (Robert Muir)
+
+* LUCENE-5357: Upgrade StandardTokenizer and UAX29URLEmailTokenizer to
+  Unicode 6.3; update UAX29URLEmailTokenizer's recognized top level
+  domains in URLs and Emails from the IANA Root Zone Database.
+  (Steve Rowe)
+  
+* LUCENE-5360: Add support for developing in Netbeans IDE.
+  (Michal Hlavac, Uwe Schindler, Steve Rowe)
+
+* SOLR-5590: Upgrade HttpClient/HttpComponents to 4.3.x.
+  (Karl Wright via Shawn Heisey)
+
+* LUCENE-5385: "ant precommit" / "ant check-svn-working-copy" now work
+  for SVN 1.8 or GIT checkouts. The ANT target prints a warning instead
+  of failing. It also instructs the user, how to run on SVN 1.8 working
+  copies.  (Robert Muir, Uwe Schindler)
+
+* LUCENE-5383: fix changes2html to link pull requests (Steve Rowe)
+
+* LUCENE-5411: Upgrade to released JFlex 1.5.0; stop requiring
+  a locally built JFlex snapshot jar. (Steve Rowe)
+
+Bug fixes
+
+* LUCENE-5285: Improved highlighting of multi-valued fields with
+  FastVectorHighlighter. (Nik Everett via Adrien Grand)
+
+* LUCENE-5391: UAX29URLEmailTokenizer should not tokenize no-scheme
+  domain-only URLs that are followed by an alphanumeric character.
+  (Chris Geeringh, Steve Rowe)
+
+* SOLR-5661: PriorityQueue now refuses to allocate itself if the
+  incoming maxSize is too large (Raintung Li via Mike McCandless)
+
+* LUCENE-5228: IndexWriter.addIndexes(Directory[]) now acquires a
+  write lock in each Directory, to ensure that no open IndexWriter is
+  changing the incoming indices.  This also means that you cannot pass
+  the same Directory to multiple concurrent addIndexes calls (which is
+  anyways unusual).  (Robert Muir, Mike McCandless)
+
+* LUCENE-5415: SpanMultiTermQueryWrapper didn't handle its boost in
+  hashcode/equals/tostring/rewrite.  (Robert Muir)
+
+* LUCENE-5409: ToParentBlockJoinCollector.getTopGroups would fail to
+  return any groups when the joined query required more than one
+  rewrite step (Peng Cheng via Mike McCandless)
+
+* LUCENE-5398: NormValueSource was incorrectly casting the long value
+  to byte, before calling Similarity.decodeNormValue.  (Peng Cheng via
+  Mike McCandless)
+
+* LUCENE-5436: RefrenceManager#accquire can result in infinite loop if
+  managed resource is abused outside of the RefrenceManager. Decrementing
+  the reference without a corresponding incRef() call can cause an infinite
+  loop. ReferenceManager now throws IllegalStateException if currently managed
+  resources ref count is 0. (Simon Willnauer)
+
+* LUCENE-5443: Lucene45DocValuesProducer.ramBytesUsed() may throw
+  ConcurrentModificationException. (Shai Erera, Simon Willnauer)
+
+* LUCENE-5444: MemoryIndex did't respect the analyzers offset gap and
+  offsets were corrupted if multiple fields with the same name were
+  added to the memory index. (Britta Weber, Simon Willnauer)
+
+* LUCENE-5447: StandardTokenizer should break at consecutive chars matching
+  Word_Break = MidLetter, MidNum and/or MidNumLet (Steve Rowe)
+  
+API Changes
+
+* LUCENE-5339: The facet module was simplified/reworked to make the
+  APIs more approachable to new users. Note: when migrating to the new 
+  API, you must pass the Document that is returned from FacetConfig.build() 
+  to IndexWriter.addDocument(). (Shai Erera, Gilad Barkai, Rob
+  Muir, Mike McCandless)
+
+* LUCENE-5395: The SpatialArgsParser now only reads WKT, no more "lat, lon"
+  etc. but it's easy to override the parseShape method if you wish. (David
+  Smiley)
+
+* LUCENE-5414: DocumentExpressionDictionary was renamed to 
+  DocumentValueSourceDictionary and all dependencies to the lucene-expression
+  module were removed from lucene-suggest. DocumentValueSourceDictionary now
+  only accepts a ValueSource instead of a convenience ctor for an expression
+  string. (Simon Willnauer)
+
+* LUCENE-3069: PostingsWriterBase and PostingsReaderBase are no longer
+  responsible for encoding/decoding a block of terms.  Instead, they
+  should encode/decode each term to/from a long[] and byte[].  (Han
+  Jiang, Mike McCandless)
+  
+* LUCENE-5425: FacetsCollector and MatchingDocs use a general DocIdSet, 
+  allowing for custom implementations to be used when faceting.
+  (John Wang, Lei Wang, Shai Erera) 
+
+Optimizations
+
+* LUCENE-5372: Replace StringBuffer by StringBuilder, where possible.
+  (Joshua Hartman via Uwe Schindler, Dawid Weiss, Mike McCandless)
+
+* LUCENE-5271: A slightly more accurate SloppyMath distance.
+  (Gilad Barkai via Ryan Ernst)
+
+Changes in Runtime Behavior
+
+* LUCENE-5362: IndexReader and SegmentCoreReaders now throw 
+  AlreadyClosedException if the refCount in incremented but
+  is less that 1. (Simon Willnauer) 
+
+* LUCENE-4399: Deep paging using IndexSearcher.searchAfter when
+  sorting by fields is faster (Rob Muir, Mike McCandless)
+
+Documentation
+
+* LUCENE-5384: Add some tips for making tokenfilters and tokenizers 
+  to the analysis package overview.  
+  (Benson Margulies via Robert Muir - pull request #12)
+
+* LUCENE-5389: Add more guidance in the analyis documentation 
+  package overview.
+  (Benson Margulies via Robert Muir - pull request #14)
+
+======================= Lucene 4.6.1 =======================
+
+Bug fixes
+
+* LUCENE-5373: Memory usage of
+  [Lucene40/Lucene42/Memory/Direct]DocValuesFormat was over-estimated.
+  (Shay Banon, Adrien Grand, Robert Muir)
+
+* LUCENE-5361: Fixed handling of query boosts in FastVectorHighlighter.
+  (Nik Everett via Adrien Grand)
+
+* LUCENE-5374: IndexWriter processes internal events after the it
+  closed itself internally. This rare condition can happen if an
+  IndexWriter has internal changes that were not fully applied yet
+  like when index / flush requests happen concurrently to the close or
+  rollback call. (Simon Willnauer)
+
+* LUCENE-5394: Fix TokenSources.getTokenStream to return payloads if
+  they were indexed with the term vectors. (Mike McCandless)
+
+* LUCENE-5344: Flexible StandardQueryParser behaves differently than
+  ClassicQueryParser. (Adriano Crestani)
+
+* LUCENE-5375: ToChildBlockJoinQuery works harder to detect mis-use,
+  when the parent query incorrectly returns child documents, and throw
+  a clear exception saying so. (Dr. Oleg Savrasov via Mike McCandless)
+
+* LUCENE-5401: Field.StringTokenStream#end() calls super.end() now,
+  preventing wrong term positions for fields that use
+  StringTokenStream. (Michael Busch)
+
+* LUCENE-5377: IndexWriter.addIndexes(Directory[]) would cause corruption
+  on Lucene 4.6 if any index segments were Lucene 4.0-4.5.
+  (Littlestar, Mike McCandless, Shai Erera, Robert Muir)
+
+======================= Lucene 4.6.0 =======================
+
+New Features
+
+* LUCENE-4906: PostingsHighlighter can now render to custom Object,
+  for advanced use cases where String is too restrictive (Luca
+  Cavanna, Robert Muir, Mike McCandless)
+
+* LUCENE-5133: Changed AnalyzingInfixSuggester.highlight to return
+  Object instead of String, to allow for advanced use cases where
+  String is too restrictive (Robert Muir, Shai Erera, Mike
+  McCandless)
+
+* LUCENE-5207, LUCENE-5334: Added expressions module for customizing ranking
+  with script-like syntax. 
+  (Jack Conradson, Ryan Ernst, Uwe Schindler via Robert Muir)
+
+* LUCENE-5180: ShingleFilter now creates shingles with trailing holes,
+  for example if a StopFilter had removed the last token.  (Mike
+  McCandless)
+
+* LUCENE-5219: Add support to SynonymFilterFactory for custom
+  parsers.  (Ryan Ernst via Robert Muir)
+
+* LUCENE-5235: Tokenizers now throw an IllegalStateException if the
+  consumer does not call reset() before consuming the stream. Previous
+  versions throwed NullPointerException or ArrayIndexOutOfBoundsException
+  on best effort which was not user-friendly.
+  (Uwe Schindler, Robert Muir)
+
+* LUCENE-5240: Tokenizers now throw an IllegalStateException if the
+  consumer neglects to call close() on the previous stream before consuming
+  the next one. (Uwe Schindler, Robert Muir)
+
+* LUCENE-5214: Add new FreeTextSuggester, to predict the next word
+  using a simple ngram language model.  This is useful for the "long
+  tail" suggestions, when a primary suggester fails to find a
+  suggestion.  (Mike McCandless)
+
+* LUCENE-5251: New DocumentDictionary allows building suggesters via
+  contents of existing field, weight and optionally payload stored
+  fields in an index (Areek Zillur via Mike McCandless)
+
+* LUCENE-5261: Add QueryBuilder, a simple API to build queries from
+  the analysis chain directly, or to make it easier to implement
+  query parsers.  (Robert Muir, Uwe Schindler)
+
+* LUCENE-5270: Add Terms.hasFreqs, to determine whether a given field
+  indexed per-doc term frequencies.  (Mike McCandless)
+
+* LUCENE-5269: Add CodepointCountFilter. (Robert Muir)
+
+* LUCENE-5294: Suggest module: add DocumentExpressionDictionary to
+  compute each suggestion's weight using a javascript expression.
+  (Areek Zillur via Mike McCandless)
+
+* LUCENE-5274: FastVectorHighlighter now supports highlighting against several
+  indexed fields. (Nik Everett via Adrien Grand)
+
+* LUCENE-5304: SingletonSortedSetDocValues can now return the wrapped
+  SortedDocValues (Robert Muir, Adrien Grand)
+
+* LUCENE-2844: The benchmark module can now test the spatial module. See
+  spatial.alg  (David Smiley, Liviy Ambrose)
+
+* LUCENE-5302: Make StemmerOverrideMap's methods public (Alan Woodward)
+
+* LUCENE-5296: Add DirectDocValuesFormat, which holds all doc values
+  in heap as uncompressed java native arrays.  (Mike McCandless)
+
+* LUCENE-5189: Add IndexWriter.updateNumericDocValues, to update
+  numeric DocValues fields of documents, without re-indexing them.
+  (Shai Erera, Mike McCandless, Robert Muir)
+  
+* LUCENE-5298: Add SumValueSourceFacetRequest for aggregating facets by
+  a ValueSource, such as a NumericDocValuesField or an expression.
+  (Shai Erera)
+
+* LUCENE-5323: Add .sizeInBytes method to all suggesters (Lookup).
+  (Areek Zillur via Mike McCandless)
+  
+* LUCENE-5312: Add BlockJoinSorter, a new Sorter implementation that makes sure
+  to never split up blocks of documents indexed with IndexWriter.addDocuments.
+  (Adrien Grand)
+  
+* LUCENE-5297: Allow to range-facet on any ValueSource, not just
+  NumericDocValues fields. (Shai Erera)
+  
+* LUCENE-5337: Add Payload support to FileDictionary (Suggest) and make it more
+  configurable (Areek Zilluer via Erick Erickson)
+
+Bug Fixes
+
+* LUCENE-5272: OpenBitSet.ensureCapacity did not modify numBits, causing 
+  false assertion errors in fastSet. (Shai Erera)
+
+* LUCENE-5303: OrdinalsCache did not use coreCacheKey, resulting in
+  over caching across multiple threads. (Mike McCandless, Shai Erera)
+
+* LUCENE-5307: Fix topScorer inconsistency in handling QueryWrapperFilter
+  inside ConstantScoreQuery, which now rewrites to a query removing the
+  obsolete QueryWrapperFilter.  (Adrien Grand, Uwe Schindler)
+
+* LUCENE-5330: IndexWriter didn't process all internal events on 
+  #getReader(), #close() and #rollback() which causes files to be
+  deleted at a later point in time. This could cause short-term disk
+  pollution or OOM if in-memory directories are used. (Simon Willnauer)
+
+* LUCENE-5342: Fixed bulk-merge issue in CompressingStoredFieldsFormat which
+  created corrupted segments when mixing chunk sizes.
+  Lucene41StoredFieldsFormat is not impacted. (Adrien Grand, Robert Muir)
+
+API Changes
+
+* LUCENE-5222: Add SortField.needsScores(). Previously it was not possible
+  for a custom Sort that makes use of the relevance score to work correctly
+  with IndexSearcher when an ExecutorService is specified.
+  (Ryan Ernst, Mike McCandless, Robert Muir)
+
+* LUCENE-5275: Change AttributeSource.toString() to display the current
+  state of attributes. (Robert Muir)
+
+* LUCENE-5277: Modify FixedBitSet copy constructor to take an additional
+  numBits parameter to allow growing/shrinking the copied bitset. You can
+  use FixedBitSet.clone() if you only need to clone the bitset. (Shai Erera)
+
+* LUCENE-5260: Use TermFreqPayloadIterator for all suggesters; those
+  suggesters that can't support payloads will throw an exception if
+  hasPayloads() is true.  (Areek Zillur via Mike McCandless)
+
+* LUCENE-5280: Rename TermFreqPayloadIterator -> InputIterator, along
+  with associated suggest/spell classes.  (Areek Zillur via Mike
+  McCandless)
+
+* LUCENE-5157: Rename OrdinalMap methods to clarify API and internal structure.
+  (Boaz Leskes via Adrien Grand)
+
+* LUCENE-5313: Move preservePositionIncrements from setter to ctor in
+  Analyzing/FuzzySuggester.  (Areek Zillur via Mike McCandless)
+
+* LUCENE-5321: Remove Facet42DocValuesFormat. Use DirectDocValuesFormat if you
+  want to load the category list into memory. (Shai Erera, Mike McCandless)
+
+* LUCENE-5324: AnalyzerWrapper.getPositionIncrementGap and getOffsetGap can now
+  be overridden. (Adrien Grand)
+
+Optimizations
+
+* LUCENE-5225: The ToParentBlockJoinQuery only keeps tracks of the the child
+  doc ids and child scores if the ToParentBlockJoinCollector is used.
+  (Martijn van Groningen)
+
+* LUCENE-5236: EliasFanoDocIdSet now has an index and uses broadword bit
+  selection to speed-up advance(). (Paul Elschot via Adrien Grand)
+
+* LUCENE-5266: Improved number of read calls and branches in DirectPackedReader. (Ryan Ernst)
+
+* LUCENE-5300: Optimized SORTED_SET storage for fields which are single-valued.
+  (Adrien Grand)
+
+Documentation
+
+* LUCENE-5211: Better javadocs and error checking of 'format' option in 
+  StopFilterFactory, as well as comments in all snowball formated files
+  about specifying format option.  (hossman)
+
+Changes in backwards compatibility policy
+
+* LUCENE-5235: Sub classes of Tokenizer have to call super.reset()
+  when implementing reset(). Otherwise the consumer will get an
+  IllegalStateException because the Reader is not correctly assigned.
+  It is important to never change the "input" field on Tokenizer
+  without using setReader(). The "input" field must not be used
+  outside reset(), incrementToken(), or end() - especially not in
+  the constructor.  (Uwe Schindler, Robert Muir)
+
+* LUCENE-5204: Directory doesn't have default implementations for
+  LockFactory-related methods, which have been moved to BaseDirectory. If you
+  had a custom Directory implementation that extended Directory, you need to
+  extend BaseDirectory instead. (Adrien Grand)
+
+Build
+
+* LUCENE-5283: Fail the build if ant test didn't execute any tests 
+  (everything filtered out). (Dawid Weiss, Uwe Schindler)
+
+* LUCENE-5249, LUCENE-5257: All Lucene/Solr modules should use the same
+  dependency versions. (Steve Rowe)
+  
+* LUCENE-5273: Binary artifacts in Lucene and Solr convenience binary
+  distributions accompanying a release, including on Maven Central,
+  should be identical across all distributions. (Steve Rowe, Uwe Schindler,
+  Shalin Shekhar Mangar)
+
+* LUCENE-4753: Run forbidden-apis Ant task per module. This allows more
+  improvements and prevents OOMs after the number of class files
+  raised recently.  (Uwe Schindler)
+
+Tests
+
+* LUCENE-5278: Fix MockTokenizer to work better with more regular expression
+  patterns. Previously it could only behave like CharTokenizer (where a character
+  is either a "word" character or not), but now it gives a general longest-match
+  behavior.  (Nik Everett via Robert Muir)
+
+======================= Lucene 4.5.1 =======================
+
+Bug Fixes
+
+* LUCENE-4998: Fixed a few places to pass IOContext.READONCE instead
+  of IOContext.READ (Shikhar Bhushan via Mike McCandless)
+
+* LUCENE-5242: DirectoryTaxonomyWriter.replaceTaxonomy did not fully reset
+  its state, which could result in exceptions being thrown, as well as
+  incorrect ordinals returned from getParent. (Shai Erera)
+
+* LUCENE-5254: Fixed bounded memory leak, where objects like live
+  docs bitset were not freed from an starting reader after reopening
+  to a new reader and closing the original one.  (Shai Erera, Mike
+  McCandless)
+
+* LUCENE-5262: Fixed file handle leaks when multiple attempts to open an
+  NRT reader hit exceptions. (Shai Erera)
+
+* LUCENE-5263: Transient IOExceptions, e.g. due to disk full or file
+  descriptor exhaustion, hit at unlucky times inside IndexWriter could
+  lead to silently losing deletions. (Shai Erera, Mike McCandless)
+
+* LUCENE-5264: CommonTermsQuery ignored minMustMatch if only high-frequent
+  terms were present in the query and the high-frequent operator was set
+  to SHOULD. (Simon Willnauer)
+
+* LUCENE-5269: Fix bug in NGramTokenFilter where it would sometimes count
+  unicode characters incorrectly. (Mike McCandless, Robert Muir)
+
+* LUCENE-5289: IndexWriter.hasUncommittedChanges was returning false
+  when there were buffered delete-by-Term.  (Shalin Shekhar Mangar,
+  Mike McCandless)
+
+======================= Lucene 4.5.0 =======================
+
+New features
+
+* LUCENE-5084: Added new Elias-Fano encoder, decoder and DocIdSet
+  implementations. (Paul Elschot via Adrien Grand)
+
+* LUCENE-5081: Added WAH8DocIdSet, an in-memory doc id set implementation based
+  on word-aligned hybrid encoding. (Adrien Grand)
+
+* LUCENE-5098: New broadword utility methods in oal.util.BroadWord.
+  (Paul Elschot via Adrien Grand, Dawid Weiss)
+
+* LUCENE-5030: FuzzySuggester now supports optional unicodeAware
+  (default is false).  If true then edits are measured in Unicode code
+  points instead of UTF8 bytes.  (Artem Lukanin via Mike McCandless)
+
+* LUCENE-5118: SpatialStrategy.makeDistanceValueSource() now has an optional
+  multiplier for scaling degrees to another unit. (David Smiley)
+
+* LUCENE-5091: SpanNotQuery can now be configured with pre and post slop to act
+  as a hypothetical SpanNotNearQuery. (Tim Allison via David Smiley)
+
+* LUCENE-4985: FacetsAccumulator.create() is now able to create a 
+  MultiFacetsAccumulator over a mixed set of facet requests. MultiFacetsAccumulator
+  allows wrapping multiple FacetsAccumulators, allowing to easily mix
+  existing and custom ones. TaxonomyFacetsAccumulator supports any
+  FacetRequest which implements createFacetsAggregator and was indexed
+  using the taxonomy index. (Shai Erera)
+
+* LUCENE-5153: AnalyzerWrapper.wrapReader allows wrapping the Reader given to 
+  inputReader. (Shai Erera)
+
+* LUCENE-5155: FacetRequest.getValueOf and .getFacetArraysSource replaced by
+  FacetsAggregator.createOrdinalValueResolver. This gives better options for
+  resolving an ordinal's value by FacetAggregators. (Shai Erera)
+
+* LUCENE-5165: Add SuggestStopFilter, to be used with analyzing
+  suggesters, so that a stop word at the very end of the lookup query,
+  and without any trailing token characters, will be preserved.  This
+  enables query "a" to suggest apple; see 
+  http://blog.mikemccandless.com/2013/08/suggeststopfilter-carefully-removes.html
+  for details.
+
+* LUCENE-5178: Added support for missing values to DocValues fields.
+  AtomicReader.getDocsWithField returns a Bits of documents with a value,
+  and FieldCache.getDocsWithField forwards to that for DocValues fields. Things like 
+  SortField.setMissingValue, FunctionValues.exists, and FieldValueFilter now
+  work with DocValues fields.  (Robert Muir)
+
+* LUCENE-5124: Lucene 4.5 has a new Lucene45Codec with Lucene45DocValues,
+  supporting missing values and with most datastructures residing off-heap.
+  Added "Memory" docvalues format that works entirely in heap, and "Disk"
+  loads no datastructures into RAM. Both of these also support missing values.
+  Added DiskNormsFormat (in case you want norms entirely on disk).  (Robert Muir)
+
+* LUCENE-2750: Added PForDeltaDocIdSet, an in-memory doc id set implementation
+  based on the PFOR encoding. (Adrien Grand)
+
+* LUCENE-5186: Added CachingWrapperFilter.getFilter in order to be able to get
+  the wrapped filter. (Trejkaz via Adrien Grand)
+
+* LUCENE-5197: Added SegmentReader.ramBytesUsed to return approximate heap RAM
+  used by index datastructures. (Areek Zillur via Robert Muir)
+
+Bug Fixes
+
+* LUCENE-5116: IndexWriter.addIndexes(IndexReader...) should drop empty (or all
+  deleted) segments. (Robert Muir, Shai Erera)
+
+* LUCENE-5132: Spatial RecursivePrefixTree Contains predicate will throw an NPE
+  when there's no indexed data and maybe in other circumstances too. (David Smiley)
+
+* LUCENE-5146: AnalyzingSuggester sort comparator read part of the input key as the
+  weight that caused the sorter to never sort by weight first since the weight is only
+  considered if the input is equal causing the malformed weight to be identical as well.
+  (Simon Willnauer)
+
+* LUCENE-5151: Associations FacetsAggregators could enter an infinite loop when
+  some result documents were missing category associations. (Shai Erera)
+
+* LUCENE-5152: Fix MemoryPostingsFormat to not modify borrowed BytesRef from FSTEnum
+  seek/lookup which can cause sideeffects if done on a cached FST root arc.
+  (Simon Willnauer)
+
+* LUCENE-5160: Handle the case where reading from a file or FileChannel returns -1,
+  which could happen in rare cases where something happens to the file between the
+  time we start the read loop (where we check the length) and when we actually do
+  the read. (gsingers, yonik, Robert Muir, Uwe Schindler)
+
+* LUCENE-5166: PostingsHighlighter would throw IOOBE if a term spanned the maxLength
+  boundary, made it into the top-N and went to the formatter.
+  (Manuel Amoabeng, Michael McCandless, Robert Muir)
+
+* LUCENE-4583: Indexing core no longer enforces a limit on maximum
+  length binary doc values fields, but individual codecs (including
+  the default one) have their own limits (David Smiley, Robert Muir,
+  Mike McCandless)
+
+* LUCENE-3849: TokenStreams now set the position increment in end(),
+  so we can handle trailing holes.  If you have a custom TokenStream
+  implementing end() then be sure it calls super.end().  (Robert Muir,
+  Mike McCandless)
+
+* LUCENE-5192: IndexWriter could allow adding same field name with different
+  DocValueTypes under some circumstances. (Shai Erera)
+
+* LUCENE-5191: SimpleHTMLEncoder in Highlighter module broke Unicode
+  outside BMP because it encoded UTF-16 chars instead of codepoints.
+  The escaping of codepoints > 127 was removed (not needed for valid HTML)
+  and missing escaping for ' and / was added.  (Uwe Schindler)
+
+* LUCENE-5201: Fixed compression bug in LZ4.compressHC when the input is highly
+  compressible and the start offset of the array to compress is > 0.
+  (Adrien Grand)
+
+* LUCENE-5221: SimilarityBase did not write norms the same way as DefaultSimilarity
+  if discountOverlaps == false and index-time boosts are present for the field.
+  (Yubin Kim via Robert Muir)
+
+* LUCENE-5223: Fixed IndexUpgrader command line parsing: -verbose is not required
+  and -dir-impl option now works correctly.  (hossman)
+
+* LUCENE-5245: Fix MultiTermQuery's constant score rewrites to always
+  return a ConstantScoreQuery to make scoring consistent. Previously it
+  returned an empty unwrapped BooleanQuery, if no terms were available,
+  which has a different query norm.  (Nik Everett, Uwe Schindler)
+
+* LUCENE-5218: In some cases, trying to retrieve or merge a 0-length
+  binary doc value would hit an ArrayIndexOutOfBoundsException.
+  (Littlestar via Mike McCandless)
+  
+API Changes
+
+* LUCENE-5094: Add ramBytesUsed() to MultiDocValues.OrdinalMap.
+  (Robert Muir)
+
+* LUCENE-5114: Remove unused boolean useCache parameter from
+  TermsEnum.seekCeil and .seekExact (Mike McCandless)
+
+* LUCENE-5128: IndexSearcher.searchAfter throws IllegalArgumentException if 
+  searchAfter exceeds the number of documents in the reader. 
+  (Crocket via Shai Erera)
+
+* LUCENE-5129: CategoryAssociationsContainer no longer supports null
+  association values for categories. If you want to index categories without
+  associations, you should add them using FacetFields. (Shai Erera)
+
+* LUCENE-4876: IndexWriter no longer clones the given IndexWriterConfig. If you
+  need to use the same config more than once, e.g. when sharing between multiple 
+  writers, make sure to clone it before passing to each writer.
+  (Shai Erera, Mike McCandless)
+
+* LUCENE-5144: StandardFacetsAccumulator renamed to OldFacetsAccumulator, and all
+  associated classes were moved under o.a.l.facet.old. The intention to remove it
+  one day, when the features it covers (complements, partitiona, sampling) will be
+  migrated to the new FacetsAggregator and FacetsAccumulator API. Also,
+  FacetRequest.createAggregator was replaced by OldFacetsAccumulator.createAggregator.
+  (Shai Erera)
+
+* LUCENE-5149: CommonTermsQuery now allows to set the minimum number of terms that 
+  should match for its high and low frequent sub-queries. Previously this was only
+  supported on the low frequent terms query. (Simon Willnauer)  
+
+* LUCENE-5156: CompressingTermVectors TermsEnum no longer supports ord().
+  (Robert Muir)
+
+* LUCENE-5161, LUCENE-5164: Fix default chunk sizes in FSDirectory to not be
+  unnecessarily large (now 8192 bytes); also use chunking when writing to index
+  files. FSDirectory#setReadChunkSize() is now deprecated and will be removed
+  in Lucene 5.0.  (Uwe Schindler, Robert Muir, gsingers)
+
+* LUCENE-5170: Analyzer.ReuseStrategy instances are now stateless and can
+  be reused in other Analyzer instances, which was not possible before.
+  Lucene ships now with stateless singletons for per field and global reuse.
+  Legacy code can still instantiate the deprecated implementation classes,
+  but new code should use the constants. Implementors of custom strategies
+  have to take care of new method signatures. AnalyzerWrapper can now be
+  configured to use a custom strategy, too, ideally the one from the wrapped
+  Analyzer. Analyzer adds a getter to retrieve the strategy for this use-case.
+  (Uwe Schindler, Robert Muir, Shay Banon)
+
+* LUCENE-5173: Lucene never writes segments with 0 documents anymore.
+  (Shai Erera, Uwe Schindler, Robert Muir)
+
+* LUCENE-5178: SortedDocValues always returns -1 ord when a document is missing
+  a value for the field. Previously it only did this if the SortedDocValues
+  was produced by uninversion on the FieldCache.  (Robert Muir)
+
+* LUCENE-5183: remove BinaryDocValues.MISSING. In order to determine a document
+  is missing a field, use getDocsWithField instead.  (Robert Muir)
+
+Changes in Runtime Behavior
+
+* LUCENE-5178: DocValues codec consumer APIs (iterables) return null values 
+  when the document has no value for the field. (Robert Muir)
+
+* LUCENE-5200: The HighFreqTerms command-line tool returns the true top-N
+  by totalTermFreq when using the -t option, it uses the term statistics (faster)
+  and now always shows totalTermFreq in the output.  (Robert Muir)
+
+Optimizations
+
+* LUCENE-5088: Added TermFilter to filter docs by a specific term.
+  (Martijn van Groningen)
+
+* LUCENE-5119: DiskDV keeps the document-to-ordinal mapping on disk for 
+  SortedDocValues.  (Robert Muir)
+
+* LUCENE-5145: New AppendingPackedLongBuffer, a new variant of the former
+  AppendingLongBuffer which assumes values are 0-based.
+  (Boaz Leskes via Adrien Grand)
+
+* LUCENE-5145: All Appending*Buffer now support bulk get.
+  (Boaz Leskes via Adrien Grand)
+
+* LUCENE-5140: Fixed a performance regression of span queries caused by
+  LUCENE-4946. (Alan Woodward, Adrien Grand)
+
+* LUCENE-5150: Make WAH8DocIdSet able to inverse its encoding in order to
+  compress dense sets efficiently as well. (Adrien Grand)
+
+* LUCENE-5159: Prefix-code the sorted/sortedset value dictionaries in DiskDV.
+  (Robert Muir)
+
+* LUCENE-5170: Fixed several wrapper analyzers to inherit the reuse strategy
+  of the wrapped Analyzer.  (Uwe Schindler, Robert Muir, Shay Banon)
+
+* LUCENE-5006: Simplified DocumentsWriter and DocumentsWriterPerThread
+  synchronization and concurrent interaction with IndexWriter. DWPT is now
+  only setup once and has no reset logic. All segment publishing and state
+  transition from DWPT into IndexWriter is now done via an Event-Queue
+  processed from within the IndexWriter in order to prevent suituations
+  where DWPT or DW calling int IW causing deadlocks. (Simon Willnauer)
+
+* LUCENE-5182: Terminate phrase searches early if max phrase window is 
+  exceeded in FastVectorHighlighter to prevent very long running phrase
+  extraction if phrase terms are high frequent. (Simon Willnauer)
+
+* LUCENE-5188: CompressingStoredFieldsFormat now slices chunks containing big
+  documents into fixed-size blocks so that requesting a single field does not
+  necessarily force to decompress the whole chunk. (Adrien Grand)
+
+* LUCENE-5101: CachingWrapper makes it easier to plug-in a custom cacheable
+  DocIdSet implementation and uses WAH8DocIdSet by default, which should be
+  more memory efficient than FixedBitSet on average as well as faster on small
+  sets. (Robert Muir)
+  
+Documentation
+
+* LUCENE-4894: remove facet userguide as it was outdated. Partially absorbed into
+  package's documentation and classes javadocs. (Shai Erera)
+
+* LUCENE-5206: Clarify FuzzyQuery's unexpected behavior on short
+  terms. (Tim Allison via Mike McCandless)
+
+Changes in backwards compatibility policy
+
+* LUCENE-5141: CheckIndex.fixIndex(Status,Codec) is now
+  CheckIndex.fixIndex(Status). If you used to pass a codec to this method, just
+  remove it from the arguments. (Adrien Grand)
+
+* LUCENE-5089, SOLR-5126: Update to Morfologik 1.7.1. MorfologikAnalyzer and MorfologikFilter 
+  no longer support multiple "dictionaries" as there is only one dictionary available.
+  (Dawid Weiss)
+
+* LUCENE-5170: Changed method signatures of Analyzer.ReuseStrategy to take
+  Analyzer. Closeable interface was removed because the class was changed to
+  be stateless.  (Uwe Schindler, Robert Muir, Shay Banon)
+
+* LUCENE-5187: SlowCompositeReaderWrapper constructor is now private,
+  SlowCompositeReaderWrapper.wrap should be used instead. (Adrien Grand)
+
+* LUCENE-5101: CachingWrapperFilter doesn't always return FixedBitSet instances
+  anymore. Users of the join module can use
+  oal.search.join.FixedBitSetCachingWrapperFilter instead. (Adrien Grand)
+
+Build
+
+* SOLR-5159: Manifest includes non-parsed maven variables. 
+  (Artem Karpenko via Steve Rowe)
+
+* LUCENE-5193: Add jar-src as top-level target to generate all Lucene and Solr
+  *-src.jar. (Steve Rowe, Shai Erera)
 
 ======================= Lucene 4.4.0 =======================
 
@@ -203,6 +1031,17 @@ Bug Fixes
 * LUCENE-5068: QueryParserUtil.escape() does not escape forward slash.
   (Matias Holte via Steve Rowe)
 
+* LUCENE-5103: A join on A single-valued field with deleted docs scored too few
+  docs. (David Smiley)
+
+* LUCENE-5090: Detect mismatched readers passed to
+  SortedSetDocValuesReaderState and SortedSetDocValuesAccumulator.
+  (Robert Muir, Mike McCandless)
+
+* LUCENE-5120: AnalyzingSuggester modifed it's FST's cached root arc if payloads
+  are used and the entire output resided on the root arc on the first access. This
+  caused subsequent suggest calls to fail. (Simon Willnauer)
+
 Optimizations
 
 * LUCENE-4936: Improve numeric doc values compression in case all values share
@@ -225,6 +1064,10 @@ Optimizations
 
 * LUCENE-5050: Close the stored fields and term vectors index files as soon as
   the index has been loaded into memory to save file descriptors. (Adrien Grand)
+
+* LUCENE-5086: RamUsageEstimator now uses official Java 7 API or a proprietary
+  Oracle Java 6 API to get Hotspot MX bean, preventing AWT classes to be
+  loaded on MacOSX.  (Shay Banon, Dawid Weiss, Uwe Schindler)
 
 New Features
 
@@ -290,11 +1133,23 @@ New Features
 * LUCENE-5013: Added ScandinavianFoldingFilterFactory and
   ScandinavianNormalizationFilterFactory (Karl Wettin via janhoy)
 
+* LUCENE-4845: AnalyzingInfixSuggester finds suggestions based on
+  matches to any tokens in the suggestion, not just based on pure
+  prefix matching.  (Mike McCandless, Robert Muir)
+
 API Changes
 
 * LUCENE-5077: Make it easier to use compressed norms. Lucene42NormsFormat takes
   an overhead parameter, so you can easily pass a different value other than
   PackedInts.FASTEST from your own codec.  (Robert Muir)
+  
+* LUCENE-5097: Analyzer now has an additional tokenStream(String fieldName,
+  String text) method, so wrapping by StringReader for common use is no
+  longer needed. This method uses an internal reuseable reader, which was
+  previously only used by the Field class.  (Uwe Schindler, Robert Muir)
+  
+* LUCENE-4542: HunspellStemFilter's maximum recursion level is now configurable.
+  (Piotr, Rafał Kuć via Adrien Grand)
   
 Build
 
@@ -326,6 +1181,10 @@ Changes in runtime behavior
   by default. DocumentsWriterPerThread doesn't consult MergePolicy anymore 
   to decide if a CFS must be written, instead IndexWriterConfig now has a
   property to enable / disable CFS for newly created segments. (Simon Willnauer)
+
+* LUCENE-5107: Properties files by Lucene are now written in UTF-8 encoding,
+  Unicode is no longer escaped. Reading of legacy properties files with
+  \u escapes is still possible.  (Uwe Schindler, Robert Muir)
 
 ======================= Lucene 4.3.1 =======================
 

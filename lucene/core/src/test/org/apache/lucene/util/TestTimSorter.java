@@ -25,7 +25,7 @@ public class TestTimSorter extends BaseSortTestCase {
 
   @Override
   public Sorter newSorter(Entry[] arr) {
-    return new ArrayTimSorter<Entry>(arr, ArrayUtil.<Entry>naturalComparator(), _TestUtil.nextInt(random(), 0, arr.length));
+    return new ArrayTimSorter<Entry>(arr, ArrayUtil.<Entry>naturalComparator(), TestUtil.nextInt(random(), 0, arr.length));
   }
 
 }

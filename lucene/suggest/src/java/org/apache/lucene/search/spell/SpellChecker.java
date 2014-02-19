@@ -512,7 +512,7 @@ public class SpellChecker implements java.io.Closeable {
       boolean isEmpty = termsEnums.isEmpty();
 
       try { 
-        BytesRefIterator iter = dict.getWordsIterator();
+        BytesRefIterator iter = dict.getEntryIterator();
         BytesRef currentTerm;
         
         terms: while ((currentTerm = iter.next()) != null) {
@@ -525,7 +525,7 @@ public class SpellChecker implements java.io.Closeable {
   
           if (!isEmpty) {
             for (TermsEnum te : termsEnums) {
-              if (te.seekExact(currentTerm, false)) {
+              if (te.seekExact(currentTerm)) {
                 continue terms;
               }
             }

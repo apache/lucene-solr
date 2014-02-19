@@ -17,7 +17,11 @@ package org.apache.lucene.analysis.util;
  * limitations under the License.
  */
 
-/** Some commonly-used stemming functions */
+/**
+ * Some commonly-used stemming functions
+ * 
+ * @lucene.internal
+ */
 public class StemmerUtil {
   /** no instance */
   private StemmerUtil() {}
@@ -87,9 +91,10 @@ public class StemmerUtil {
    * @return length of input buffer after deletion
    */
   public static int delete(char s[], int pos, int len) {
-    if (pos < len) 
+    assert pos < len;
+    if (pos < len - 1) { // don't arraycopy if asked to delete last character
       System.arraycopy(s, pos + 1, s, pos, len - pos - 1);
-    
+    }
     return len - 1;
   }
   
@@ -103,9 +108,10 @@ public class StemmerUtil {
    * @return length of input buffer after deletion
    */
   public static int deleteN(char s[], int pos, int len, int nChars) {
-    // TODO: speed up, this is silly
-    for (int i = 0; i < nChars; i++)
-      len = delete(s, pos, len);
-    return len;
+    assert pos + nChars <= len;
+    if (pos + nChars < len) { // don't arraycopy if asked to delete the last characters
+      System.arraycopy(s, pos + nChars, s, pos, len - pos - nChars);
+    }
+    return len - nChars;
   }
 }

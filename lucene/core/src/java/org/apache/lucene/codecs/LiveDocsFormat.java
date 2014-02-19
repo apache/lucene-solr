@@ -20,7 +20,7 @@ package org.apache.lucene.codecs;
 import java.io.IOException;
 import java.util.Collection;
 
-import org.apache.lucene.index.SegmentInfoPerCommit;
+import org.apache.lucene.index.SegmentCommitInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Bits;
@@ -42,13 +42,13 @@ public abstract class LiveDocsFormat {
   public abstract MutableBits newLiveDocs(Bits existing) throws IOException;
 
   /** Read live docs bits. */
-  public abstract Bits readLiveDocs(Directory dir, SegmentInfoPerCommit info, IOContext context) throws IOException;
+  public abstract Bits readLiveDocs(Directory dir, SegmentCommitInfo info, IOContext context) throws IOException;
 
   /** Persist live docs bits.  Use {@link
-   *  SegmentInfoPerCommit#getNextDelGen} to determine the
+   *  SegmentCommitInfo#getNextDelGen} to determine the
    *  generation of the deletes file you should write to. */
-  public abstract void writeLiveDocs(MutableBits bits, Directory dir, SegmentInfoPerCommit info, int newDelCount, IOContext context) throws IOException;
+  public abstract void writeLiveDocs(MutableBits bits, Directory dir, SegmentCommitInfo info, int newDelCount, IOContext context) throws IOException;
 
-  /** Records all files in use by this {@link SegmentInfoPerCommit} into the files argument. */
-  public abstract void files(SegmentInfoPerCommit info, Collection<String> files) throws IOException;
+  /** Records all files in use by this {@link SegmentCommitInfo} into the files argument. */
+  public abstract void files(SegmentCommitInfo info, Collection<String> files) throws IOException;
 }

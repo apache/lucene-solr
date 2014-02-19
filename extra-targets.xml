@@ -25,6 +25,27 @@
   
   <import file="lucene/common-build.xml"/>
 
+  <target name="-run-test">
+    <mkdir dir="lucene/build" />
+    <tempfile property="tests.totals.tmpfile"
+          destdir="lucene/build"
+          prefix=".test-totals-"
+          suffix=".tmp"
+          deleteonexit="true"
+          createfile="true" />
+
+    <subant target="test" inheritall="false" failonerror="true">
+      <fileset dir="lucene" includes="build.xml" />
+      <fileset dir="solr" includes="build.xml" />
+      <propertyset>
+        <propertyref name="tests.totals.tmpfile" />
+      </propertyset>      
+    </subant>
+
+    <property name="tests.totals.toplevel" value="true" />
+    <antcall target="-check-totals" />
+  </target>
+
   <!--
    Run after Junit tests.
    
@@ -62,16 +83,31 @@
     </mvn>
   </target>
 
-  <target xmlns:ivy="antlib:org.apache.ivy.ant" name="-check-svn-working-copy" depends="ivy-availability-check,ivy-fail,ivy-configure,resolve-groovy">
-    <ivy:cachepath organisation="org.tmatesoft.svnkit" module="svnkit" revision="1.7.6"
-      inline="true" conf="default" type="jar" transitive="true" pathid="svnkit.classpath"/>
-    <script language="groovy" taskname="svn">
-      <classpath>
-        <path refid="groovy.classpath"/>
-        <path refid="svnkit.classpath"/>
-      </classpath><![CDATA[
+  <target name="-check-svn-working-copy" depends="ivy-availability-check,ivy-fail,ivy-configure,resolve-groovy">
+    <svn-checker failonmodifications="false"/>
+  </target>
+
+  <!-- should only be called by jenkins, not precommit! -->
+  <target name="-check-after-regeneration" depends="ivy-availability-check,ivy-fail,ivy-configure,resolve-groovy">
+    <svn-checker failonmodifications="true"/>
+  </target>
+  
+  <property name="svnkit.version" value="1.7.8"/>
+
+  <macrodef xmlns:ivy="antlib:org.apache.ivy.ant" name="svn-checker">
+    <attribute name="failonmodifications" default="true"/> <!-- false if file modifications are allowed -->
+    <sequential>
+    <ivy:cachepath organisation="org.tmatesoft.svnkit" module="svnkit" revision="${svnkit.version}"
+      inline="true" conf="default" transitive="true" pathid="svnkit.classpath"/>
+    <local name="svn.checkprops.failed"/>
+    <local name="svn.unversioned.failed"/>
+    <local name="svn.changed.failed"/>
+    <groovy taskname="svn" classpathref="svnkit.classpath"><![CDATA[
       import org.tmatesoft.svn.core.*;
       import org.tmatesoft.svn.core.wc.*;
+      import org.apache.tools.ant.Project;
+      
+      def RECOMMENDED_SVNKIT_18 = '1.8.2';
       
       SVNClientManager manager = SVNClientManager.newInstance();
       SVNStatusClient statusClient = manager.getStatusClient();
@@ -79,13 +115,37 @@
       
       File basedir = new File(project.getProperty('basedir')).getAbsoluteFile();
       int baseLen = basedir.toString().length();
-      def convertRelative = {
-        file -> file.getAbsolutePath().substring(baseLen + 1).replace(File.separatorChar, (char)'/');
+
+      // do some fake check, to verify if this is valid SVN working copy. If this fails ignore checks but log some useful message.
+      task.log('Initializing working copy...');
+      try {
+        wcClient.doInfo(basedir, SVNRevision.WORKING);
+      } catch (SVNException ex) {
+        def ec = ex.getErrorMessage().getErrorCode();
+        int code = ec.getCode();
+        int category = ec.getCategory();
+        if (code == SVNErrorCode.WC_UNSUPPORTED_FORMAT.getCode()) {
+          task.log('WARNING: Unsupported SVN working copy version! Disabling checks...', Project.MSG_WARN);
+          task.log('If your working copy is on version 1.8 already, please pass -Dsvnkit.version=' + RECOMMENDED_SVNKIT_18 + ' to successfully run checks.', Project.MSG_INFO);
+          return;
+        } else if (code == SVNErrorCode.WC_NOT_DIRECTORY.getCode() || code == SVNErrorCode.WC_NOT_FILE.getCode()) {
+          task.log('WARNING: Development directory is not an SVN checkout! Disabling checks...', Project.MSG_WARN);
+          return;
+        } else if (category == SVNErrorCode.WC_CATEGORY) {
+          task.log('WARNING: Development directory is not a valid SVN checkout (' + ex.getErrorMessage() + '). Disabling checks...', Project.MSG_WARN);
+          return;
+        } else {
+          throw ex;
+        }
       }
       
-      Set missingProps = new TreeSet(), unversioned = new TreeSet();
+      def convertRelative = {
+        file -> '.' + file.getAbsolutePath().substring(baseLen).replace(File.separatorChar, (char)'/');
+      }
 
-      self.log('Getting all versioned and unversioned files...');
+      Set missingProps = new TreeSet(), unversioned = new TreeSet(), changed = new TreeSet();
+
+      task.log('Getting all versioned and unversioned files...');
       statusClient.doStatus(basedir, SVNRevision.WORKING, SVNDepth.fromRecurse(true), false, true, false, false, {
         status ->
         SVNStatusType nodeStatus = status.getNodeStatus();
@@ -94,14 +154,18 @@
         } else if (status.getKind() == SVNNodeKind.FILE && nodeStatus != SVNStatusType.STATUS_DELETED) {
           missingProps.add(convertRelative(status.getFile()));
         }
+        if (nodeStatus == SVNStatusType.STATUS_MODIFIED || nodeStatus == SVNStatusType.STATUS_REPLACED ||
+            nodeStatus == SVNStatusType.STATUS_DELETED  || nodeStatus == SVNStatusType.STATUS_ADDED) {
+          changed.add(convertRelative(status.getFile()));
+        }
       } as ISVNStatusHandler, null);
 
-      self.log('Filtering files with existing svn:eol-style...');
+      task.log('Filtering files with existing svn:eol-style...');
       wcClient.doGetProperty(basedir, 'svn:eol-style', SVNRevision.WORKING, SVNRevision.WORKING, true, {
         file, prop -> missingProps.remove(convertRelative(file));
       } as ISVNPropertyHandler);
       
-      self.log('Filtering files with binary svn:mime-type...');
+      task.log('Filtering files with binary svn:mime-type...');
       wcClient.doGetProperty(basedir, 'svn:mime-type', SVNRevision.WORKING, SVNRevision.WORKING, true, {
         file, prop ->
         prop = SVNPropertyValue.getPropertyAsString(prop.getValue());
@@ -115,10 +179,20 @@
       };
       project.setProperty('svn.checkprops.failed', convertSet2String(missingProps));
       project.setProperty('svn.unversioned.failed', convertSet2String(unversioned));
-    ]]></script>
+      project.setProperty('svn.changed.failed', convertSet2String(changed));
+    ]]></groovy>
     <fail if="svn.checkprops.failed"
       message="The following files are missing svn:eol-style (or binary svn:mime-type):${line.separator}${svn.checkprops.failed}"/>
     <fail if="svn.unversioned.failed"
       message="Source checkout is dirty after running tests!!! Offending files:${line.separator}${svn.unversioned.failed}"/>
-  </target>
+    <fail message="Source checkout is modified !!! Offending files:${line.separator}${svn.changed.failed}">
+      <condition>
+        <and>
+           <istrue value="@{failonmodifications}"/>
+           <isset property="svn.changed.failed"/>
+        </and>
+      </condition>
+    </fail>
+    </sequential>
+  </macrodef>
 </project>

@@ -18,26 +18,22 @@ package org.apache.lucene.search.suggest.fst;
  */
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import org.apache.lucene.search.spell.TermFreqIterator;
-import org.apache.lucene.search.spell.TermFreqPayloadIterator;
+import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.Sort.ByteSequencesWriter;
-import org.apache.lucene.search.suggest.SortedTermFreqIteratorWrapper;
+import org.apache.lucene.search.suggest.SortedInputIterator;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
-import org.apache.lucene.store.InputStreamDataInput;
-import org.apache.lucene.store.OutputStreamDataOutput;
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.fst.Builder;
@@ -73,6 +69,9 @@ public class WFSTCompletionLookup extends Lookup {
    */
   private final boolean exactFirst;
   
+  /** Number of entries the lookup was built with */
+  private long count = 0;
+
   /**
    * Calls {@link #WFSTCompletionLookup(boolean) WFSTCompletionLookup(true)}
    */
@@ -93,12 +92,13 @@ public class WFSTCompletionLookup extends Lookup {
   }
   
   @Override
-  public void build(TermFreqIterator iterator) throws IOException {
-    if (iterator instanceof TermFreqPayloadIterator) {
+  public void build(InputIterator iterator) throws IOException {
+    if (iterator.hasPayloads()) {
       throw new IllegalArgumentException("this suggester doesn't support payloads");
     }
+    count = 0;
     BytesRef scratch = new BytesRef();
-    TermFreqIterator iter = new WFSTTermFreqIteratorWrapper(iterator);
+    InputIterator iter = new WFSTInputIterator(iterator);
     IntsRef scratchInts = new IntsRef();
     BytesRef previous = null;
     PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
@@ -115,31 +115,26 @@ public class WFSTCompletionLookup extends Lookup {
       Util.toIntsRef(scratch, scratchInts);
       builder.add(scratchInts, cost);
       previous.copyBytes(scratch);
+      count++;
     }
     fst = builder.finish();
   }
 
   
   @Override
-  public boolean store(OutputStream output) throws IOException {
-    try {
-      if (fst == null) {
-        return false;
-      }
-      fst.save(new OutputStreamDataOutput(output));
-    } finally {
-      IOUtils.close(output);
+  public boolean store(DataOutput output) throws IOException {
+    output.writeVLong(count);
+    if (fst == null) {
+      return false;
     }
+    fst.save(output);
     return true;
   }
 
   @Override
-  public boolean load(InputStream input) throws IOException {
-    try {
-      this.fst = new FST<Long>(new InputStreamDataInput(input), PositiveIntOutputs.getSingleton());
-    } finally {
-      IOUtils.close(input);
-    }
+  public boolean load(DataInput input) throws IOException {
+    count = input.readVLong();
+    this.fst = new FST<Long>(input, PositiveIntOutputs.getSingleton());
     return true;
   }
 
@@ -255,14 +250,15 @@ public class WFSTCompletionLookup extends Lookup {
     return Integer.MAX_VALUE - (int)value;
   }
   
-  private final class WFSTTermFreqIteratorWrapper extends SortedTermFreqIteratorWrapper {
+  private final class WFSTInputIterator extends SortedInputIterator {
 
-    WFSTTermFreqIteratorWrapper(TermFreqIterator source) throws IOException {
+    WFSTInputIterator(InputIterator source) throws IOException {
       super(source);
+      assert source.hasPayloads() == false;
     }
 
     @Override
-    protected void encode(ByteSequencesWriter writer, ByteArrayDataOutput output, byte[] buffer, BytesRef spare, long weight) throws IOException {
+    protected void encode(ByteSequencesWriter writer, ByteArrayDataOutput output, byte[] buffer, BytesRef spare, BytesRef payload, long weight) throws IOException {
       if (spare.length + 4 >= buffer.length) {
         buffer = ArrayUtil.grow(buffer, spare.length + 4);
       }
@@ -287,4 +283,15 @@ public class WFSTCompletionLookup extends Lookup {
       return left.compareTo(right);
     }  
   };
+
+  /** Returns byte size of the underlying FST. */
+  @Override
+  public long sizeInBytes() {
+    return (fst == null) ? 0 : fst.sizeInBytes();
+  }
+  
+  @Override
+  public long getCount() {
+    return count;
+  }
 }

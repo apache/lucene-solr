@@ -88,6 +88,10 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     assertU(commit());
     assertQ(req("title:Welcome"), "//*[@numFound='1']");
 
+    assertQ(req("extractedContent:distinctwords"),      "//*[@numFound='0']");
+    assertQ(req("extractedContent:distinct"),           "//*[@numFound='1']");
+    assertQ(req("extractedContent:words"),              "//*[@numFound='2']");
+    assertQ(req("extractedContent:\"distinct words\""), "//*[@numFound='1']");
 
     loadLocal("extraction/simple.html",
       "literal.id","simple2",
@@ -161,6 +165,25 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     assertQ(req("title:\"Word 2003 Title\""), "//*[@numFound='1']");
     // now 2 of them:
     assertQ(req("extractedContent:\"This is a test of PDF and Word extraction in Solr, it is only a test\""), "//*[@numFound='2']");
+
+    // compressed file
+    loadLocal("extraction/tiny.txt.gz", 
+              "fmap.created", "extractedDate", 
+              "fmap.producer", "extractedProducer",
+              "fmap.creator", "extractedCreator", 
+              "fmap.Keywords", "extractedKeywords",
+              "fmap.Author", "extractedAuthor",
+              "uprefix", "ignored_",
+              "fmap.content", "extractedContent",
+              "fmap.language", "extractedLanguage",
+              "fmap.Last-Modified", "extractedDate",
+              "literal.id", "tiny.txt.gz");
+    assertU(commit());
+    assertQ(req("id:tiny.txt.gz")
+            , "//*[@numFound='1']"
+            , "//*/arr[@name='stream_name']/str[.='tiny.txt.gz']"
+            );
+
   }
 
 

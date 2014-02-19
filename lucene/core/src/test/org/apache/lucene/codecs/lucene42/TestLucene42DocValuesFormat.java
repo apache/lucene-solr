@@ -19,15 +19,26 @@ package org.apache.lucene.codecs.lucene42;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BaseCompressingDocValuesFormatTestCase;
+import org.junit.BeforeClass;
 
 /**
  * Tests Lucene42DocValuesFormat
  */
 public class TestLucene42DocValuesFormat extends BaseCompressingDocValuesFormatTestCase {
-  private final Codec codec = new Lucene42Codec();
+  private final Codec codec = new Lucene42RWCodec();
 
+  @BeforeClass
+  public static void beforeClass() {
+    OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true; // explicitly instantiates ancient codec
+  }
+  
   @Override
   protected Codec getCodec() {
     return codec;
+  }
+
+  @Override
+  protected boolean codecAcceptsHugeBinaryValues(String field) {
+    return false;
   }
 }

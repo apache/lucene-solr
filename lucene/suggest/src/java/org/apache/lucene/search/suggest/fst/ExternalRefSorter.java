@@ -66,8 +66,7 @@ public class ExternalRefSorter implements BytesRefSorter, Closeable {
       input = null;
     }
     
-    return new ByteSequenceIterator(new Sort.ByteSequencesReader(sorted),
-        sort.getComparator());
+    return new ByteSequenceIterator(new Sort.ByteSequencesReader(sorted));
   }
   
   private void closeWriter() throws IOException {
@@ -96,12 +95,9 @@ public class ExternalRefSorter implements BytesRefSorter, Closeable {
   class ByteSequenceIterator implements BytesRefIterator {
     private final ByteSequencesReader reader;
     private BytesRef scratch = new BytesRef();
-    private final Comparator<BytesRef> comparator;
     
-    public ByteSequenceIterator(ByteSequencesReader reader,
-        Comparator<BytesRef> comparator) {
+    public ByteSequenceIterator(ByteSequencesReader reader) {
       this.reader = reader;
-      this.comparator = comparator;
     }
     
     @Override
@@ -127,11 +123,6 @@ public class ExternalRefSorter implements BytesRefSorter, Closeable {
           IOUtils.closeWhileHandlingException(reader);
         }
       }
-    }
-    
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return comparator;
     }
   }
 

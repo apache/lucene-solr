@@ -43,7 +43,7 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
     //explicitly creates the temp dataDir so we know where the index will be located
     createTempDir();
 
-    IndexWriterConfig indexWriterConfig = new IndexWriterConfig(Version.LUCENE_40, null);
+    IndexWriterConfig indexWriterConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, null);
     Directory directory = newFSDirectory(new File(dataDir, "index"));
     //creates a new index on the known location
     new IndexWriter(
@@ -58,15 +58,19 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
 
     Directory directory = newFSDirectory(new File(dataDir, "index"), new SimpleFSLockFactory());
     //creates a new IndexWriter without releasing the lock yet
-    IndexWriter indexWriter = new IndexWriter(directory, new IndexWriterConfig(Version.LUCENE_40, null));
+    IndexWriter indexWriter = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
 
+    ignoreException("locked");
     try {
+      System.setProperty("solr.tests.lockType","simple");
       //opening a new core on the same index
-      initCore("solrconfig-simplelock.xml", "schema.xml");
+      initCore("solrconfig-basic.xml", "schema.xml");
       if (checkForCoreInitException(LockObtainFailedException.class))
         return;
       fail("Expected " + LockObtainFailedException.class.getSimpleName());
     } finally {
+      System.clearProperty("solr.tests.lockType");
+      unIgnoreException("locked");
       indexWriter.close();
       directory.close();
       deleteCore();
@@ -80,16 +84,20 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
     log.info("Acquiring lock on {}", indexDir.getAbsolutePath());
     Directory directory = newFSDirectory(indexDir, new NativeFSLockFactory());
     //creates a new IndexWriter without releasing the lock yet
-    IndexWriter indexWriter = new IndexWriter(directory, new IndexWriterConfig(Version.LUCENE_40, null));
+    IndexWriter indexWriter = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
 
+    ignoreException("locked");
     try {
+      System.setProperty("solr.tests.lockType","native");
       //opening a new core on the same index
-      initCore("solrconfig-nativelock.xml", "schema.xml");
+      initCore("solrconfig-basic.xml", "schema.xml");
       CoreContainer cc = h.getCoreContainer();
       if (checkForCoreInitException(LockObtainFailedException.class))
         return;
       fail("Expected " + LockObtainFailedException.class.getSimpleName());
     } finally {
+      System.clearProperty("solr.tests.lockType");
+      unIgnoreException("locked");
       indexWriter.close();
       directory.close();
       deleteCore();

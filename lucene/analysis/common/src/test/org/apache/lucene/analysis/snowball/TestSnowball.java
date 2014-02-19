@@ -18,16 +18,14 @@ package org.apache.lucene.analysis.snowball;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Analyzer.TokenStreamComponents;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -35,15 +33,15 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.Version;
+
 
 public class TestSnowball extends BaseTokenStreamTestCase {
 
   public void testEnglish() throws Exception {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer();
         return new TokenStreamComponents(tokenizer, new SnowballFilter(tokenizer, "English"));
       }
     };
@@ -109,12 +107,12 @@ public class TestSnowball extends BaseTokenStreamTestCase {
     for (final String lang : SNOWBALL_LANGS) {
       Analyzer a = new Analyzer() {
         @Override
-        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-          Tokenizer tokenizer = new KeywordTokenizer(reader);
+        protected TokenStreamComponents createComponents(String fieldName) {
+          Tokenizer tokenizer = new KeywordTokenizer();
           return new TokenStreamComponents(tokenizer, new SnowballFilter(tokenizer, lang));
         }
       };
-      checkOneTermReuse(a, "", "");
+      checkOneTerm(a, "", "");
     }
   }
   
@@ -127,8 +125,8 @@ public class TestSnowball extends BaseTokenStreamTestCase {
   public void checkRandomStrings(final String snowballLanguage) throws IOException {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer t = new MockTokenizer(reader);
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer t = new MockTokenizer();
         return new TokenStreamComponents(t, new SnowballFilter(t, snowballLanguage));
       }  
     };

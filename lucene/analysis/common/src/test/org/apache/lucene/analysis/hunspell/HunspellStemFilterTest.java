@@ -18,8 +18,6 @@ package org.apache.lucene.analysis.hunspell;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Reader;
-import java.io.StringReader;
 import java.text.ParseException;
 import java.util.Arrays;
 
@@ -30,6 +28,7 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -55,15 +54,15 @@ public class HunspellStemFilterTest  extends BaseTokenStreamTestCase {
    * Simple test for KeywordAttribute
    */
   public void testKeywordAttribute() throws IOException {
-    MockTokenizer tokenizer = new MockTokenizer(new StringReader("lucene is awesome"), MockTokenizer.WHITESPACE, true);
+    MockTokenizer tokenizer = whitespaceMockTokenizer("lucene is awesome");
     tokenizer.setEnableChecks(true);
-    HunspellStemFilter filter = new HunspellStemFilter(tokenizer, DICTIONARY);
+    HunspellStemFilter filter = new HunspellStemFilter(tokenizer, DICTIONARY, TestUtil.nextInt(random(), 1, 3));
     assertTokenStreamContents(filter, new String[]{"lucene", "lucen", "is", "awesome"}, new int[] {1, 0, 1, 1});
     
     // assert with keywork marker
-    tokenizer = new MockTokenizer(new StringReader("lucene is awesome"), MockTokenizer.WHITESPACE, true);
+    tokenizer = whitespaceMockTokenizer("lucene is awesome");
     CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, Arrays.asList("Lucene"), true);
-    filter = new HunspellStemFilter(new SetKeywordMarkerFilter(tokenizer, set), DICTIONARY);
+    filter = new HunspellStemFilter(new SetKeywordMarkerFilter(tokenizer, set), DICTIONARY, TestUtil.nextInt(random(), 1, 3));
     assertTokenStreamContents(filter, new String[]{"lucene", "is", "awesome"}, new int[] {1, 1, 1});
   }
   
@@ -72,9 +71,9 @@ public class HunspellStemFilterTest  extends BaseTokenStreamTestCase {
     Analyzer analyzer = new Analyzer() {
 
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-        return new TokenStreamComponents(tokenizer, new HunspellStemFilter(tokenizer, DICTIONARY));
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, new HunspellStemFilter(tokenizer, DICTIONARY, TestUtil.nextInt(random(), 1, 3)));
       }  
     };
     checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
@@ -83,11 +82,11 @@ public class HunspellStemFilterTest  extends BaseTokenStreamTestCase {
   public void testEmptyTerm() throws IOException {
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new KeywordTokenizer(reader);
-        return new TokenStreamComponents(tokenizer, new HunspellStemFilter(tokenizer, DICTIONARY));
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
+        return new TokenStreamComponents(tokenizer, new HunspellStemFilter(tokenizer, DICTIONARY, TestUtil.nextInt(random(), 1, 3)));
       }
     };
-    checkOneTermReuse(a, "", "");
+    checkOneTerm(a, "", "");
   }
 }

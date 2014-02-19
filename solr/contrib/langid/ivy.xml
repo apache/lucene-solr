@@ -19,8 +19,8 @@
 <ivy-module version="2.0">
     <info organisation="org.apache.solr" module="langid"/>
     <dependencies>
-      <dependency org="com.cybozu.labs" name="langdetect" rev="1.1-20120112" transitive="false"/>
-      <dependency org="net.arnx" name="jsonic" rev="1.2.7" transitive="false"/>
+      <dependency org="com.cybozu.labs" name="langdetect" rev="${/com.cybozu.labs/langdetect}" transitive="false"/>
+      <dependency org="net.arnx" name="jsonic" rev="${/net.arnx/jsonic}" transitive="false"/>
       <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
     </dependencies>
 </ivy-module>

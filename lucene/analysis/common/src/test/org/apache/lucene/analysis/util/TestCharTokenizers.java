@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.util;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.io.StringReader;
 import java.util.Locale;
 
@@ -29,7 +28,7 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.LetterTokenizer;
 import org.apache.lucene.analysis.core.LowerCaseTokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 
 /**
@@ -53,7 +52,8 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
     }
     // internal buffer size is 1024 make sure we have a surrogate pair right at the border
     builder.insert(1023, "\ud801\udc1c");
-    Tokenizer tokenizer = new LowerCaseTokenizer(TEST_VERSION_CURRENT, new StringReader(builder.toString()));
+    Tokenizer tokenizer = new LowerCaseTokenizer(TEST_VERSION_CURRENT);
+    tokenizer.setReader(new StringReader(builder.toString()));
     assertTokenStreamContents(tokenizer, builder.toString().toLowerCase(Locale.ROOT).split(" "));
   }
   
@@ -70,7 +70,8 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
         builder.append("a");
       }
       builder.append("\ud801\udc1cabc");
-      Tokenizer tokenizer = new LowerCaseTokenizer(TEST_VERSION_CURRENT, new StringReader(builder.toString()));
+      Tokenizer tokenizer = new LowerCaseTokenizer(TEST_VERSION_CURRENT);
+      tokenizer.setReader(new StringReader(builder.toString()));
       assertTokenStreamContents(tokenizer, new String[] {builder.toString().toLowerCase(Locale.ROOT)});
     }
   }
@@ -84,7 +85,8 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
     for (int i = 0; i < 255; i++) {
       builder.append("A");
     }
-    Tokenizer tokenizer = new LowerCaseTokenizer(TEST_VERSION_CURRENT, new StringReader(builder.toString() + builder.toString()));
+    Tokenizer tokenizer = new LowerCaseTokenizer(TEST_VERSION_CURRENT);
+    tokenizer.setReader(new StringReader(builder.toString() + builder.toString()));
     assertTokenStreamContents(tokenizer, new String[] {builder.toString().toLowerCase(Locale.ROOT), builder.toString().toLowerCase(Locale.ROOT)});
   }
   
@@ -98,7 +100,8 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
       builder.append("A");
     }
     builder.append("\ud801\udc1c");
-    Tokenizer tokenizer = new LowerCaseTokenizer(TEST_VERSION_CURRENT, new StringReader(builder.toString() + builder.toString()));
+    Tokenizer tokenizer = new LowerCaseTokenizer(TEST_VERSION_CURRENT);
+    tokenizer.setReader(new StringReader(builder.toString() + builder.toString()));
     assertTokenStreamContents(tokenizer, new String[] {builder.toString().toLowerCase(Locale.ROOT), builder.toString().toLowerCase(Locale.ROOT)});
   }
   
@@ -106,8 +109,8 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
   public void testCrossPlaneNormalization() throws IOException {
     Analyzer analyzer = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT, reader) {
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT) {
           @Override
           protected int normalize(int c) {
             if (c > 0xffff) {
@@ -122,19 +125,19 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
     };
     int num = 1000 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
-      String s = _TestUtil.randomUnicodeString(random());
-      TokenStream ts = analyzer.tokenStream("foo", new StringReader(s));
-      ts.reset();
-      OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
-      while (ts.incrementToken()) {
-        String highlightedText = s.substring(offsetAtt.startOffset(), offsetAtt.endOffset());
-        for (int j = 0, cp = 0; j < highlightedText.length(); j += Character.charCount(cp)) {
-          cp = highlightedText.codePointAt(j);
-          assertTrue("non-letter:" + Integer.toHexString(cp), Character.isLetter(cp));
+      String s = TestUtil.randomUnicodeString(random());
+      try (TokenStream ts = analyzer.tokenStream("foo", s)) {
+        ts.reset();
+        OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
+        while (ts.incrementToken()) {
+          String highlightedText = s.substring(offsetAtt.startOffset(), offsetAtt.endOffset());
+          for (int j = 0, cp = 0; j < highlightedText.length(); j += Character.charCount(cp)) {
+            cp = highlightedText.codePointAt(j);
+            assertTrue("non-letter:" + Integer.toHexString(cp), Character.isLetter(cp));
+          }
         }
+        ts.end();
       }
-      ts.end();
-      ts.close();
     }
     // just for fun
     checkRandomData(random(), analyzer, num);
@@ -144,8 +147,8 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
   public void testCrossPlaneNormalization2() throws IOException {
     Analyzer analyzer = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT, reader) {
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT) {
           @Override
           protected int normalize(int c) {
             if (c <= 0xffff) {
@@ -160,19 +163,19 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
     };
     int num = 1000 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
-      String s = _TestUtil.randomUnicodeString(random());
-      TokenStream ts = analyzer.tokenStream("foo", new StringReader(s));
-      ts.reset();
-      OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
-      while (ts.incrementToken()) {
-        String highlightedText = s.substring(offsetAtt.startOffset(), offsetAtt.endOffset());
-        for (int j = 0, cp = 0; j < highlightedText.length(); j += Character.charCount(cp)) {
-          cp = highlightedText.codePointAt(j);
-          assertTrue("non-letter:" + Integer.toHexString(cp), Character.isLetter(cp));
+      String s = TestUtil.randomUnicodeString(random());
+      try (TokenStream ts = analyzer.tokenStream("foo", s)) {
+        ts.reset();
+        OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
+        while (ts.incrementToken()) {
+          String highlightedText = s.substring(offsetAtt.startOffset(), offsetAtt.endOffset());
+          for (int j = 0, cp = 0; j < highlightedText.length(); j += Character.charCount(cp)) {
+            cp = highlightedText.codePointAt(j);
+            assertTrue("non-letter:" + Integer.toHexString(cp), Character.isLetter(cp));
+          }
         }
+        ts.end();
       }
-      ts.end();
-      ts.close();
     }
     // just for fun
     checkRandomData(random(), analyzer, num);

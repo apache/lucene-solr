@@ -56,7 +56,7 @@ public class JoinDocFreqValueSource extends FieldCacheSource {
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException
   {
-    final BinaryDocValues terms = cache.getTerms(readerContext.reader(), field, PackedInts.FAST);
+    final BinaryDocValues terms = cache.getTerms(readerContext.reader(), field, false, PackedInts.FAST);
     final IndexReader top = ReaderUtil.getTopLevelContext(readerContext).reader();
     Terms t = MultiFields.getTerms(top, qfield);
     final TermsEnum termsEnum = t == null ? TermsEnum.EMPTY : t.iterator(null);
@@ -69,7 +69,7 @@ public class JoinDocFreqValueSource extends FieldCacheSource {
       {
         try {
           terms.get(doc, ref);
-          if (termsEnum.seekExact(ref, true)) {
+          if (termsEnum.seekExact(ref)) {
             return termsEnum.docFreq();
           } else {
             return 0;

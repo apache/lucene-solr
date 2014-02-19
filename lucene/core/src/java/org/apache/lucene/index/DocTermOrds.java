@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.codecs.PostingsFormat; // javadocs
@@ -611,11 +610,6 @@ public class DocTermOrds {
       termsEnum = reader.fields().terms(field).iterator(null);
     }
 
-    @Override
-    public Comparator<BytesRef> getComparator() {
-      return termsEnum.getComparator();
-    }
-
     @Override    
     public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
       return termsEnum.docs(liveDocs, reuse, flags);
@@ -659,7 +653,7 @@ public class DocTermOrds {
     }
 
     @Override
-    public SeekStatus seekCeil(BytesRef target, boolean useCache) throws IOException {
+    public SeekStatus seekCeil(BytesRef target) throws IOException {
 
       // already here
       if (term != null && term.equals(target)) {
@@ -729,7 +723,7 @@ public class DocTermOrds {
         //System.out.println("  do seek term=" + base.utf8ToString());
         ord = idx << indexIntervalBits;
         delta = (int) (targetOrd - ord);
-        final TermsEnum.SeekStatus seekStatus = termsEnum.seekCeil(base, true);
+        final TermsEnum.SeekStatus seekStatus = termsEnum.seekCeil(base);
         assert seekStatus == TermsEnum.SeekStatus.FOUND;
       } else {
         //System.out.println("seek w/in block");

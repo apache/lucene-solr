@@ -18,14 +18,9 @@
 package org.apache.solr.util;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 import org.apache.solr.update.MemOutputStream;
 
-import java.util.HashSet;
-import java.util.Locale;
 import java.util.Random;
-import java.util.Set;
-import java.util.TimeZone;
 
 public class TestFastOutputStream extends LuceneTestCase {
 

@@ -555,6 +555,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     indexInfo.add("numDocs", reader.numDocs());
     indexInfo.add("maxDoc", reader.maxDoc());
     indexInfo.add("deletedDocs", reader.maxDoc() - reader.numDocs());
+    indexInfo.add("indexHeapUsageBytes", getIndexHeapUsed(reader));
 
     indexInfo.add("version", reader.getVersion());  // TODO? Is this different then: IndexReader.getCurrentVersion( dir )?
     indexInfo.add("segmentCount", reader.leaves().size());
@@ -569,6 +570,21 @@ public class LukeRequestHandler extends RequestHandlerBase
     return indexInfo;
   }
 
+  /** Returns the sum of RAM bytes used by each segment */
+  private static long getIndexHeapUsed(DirectoryReader reader) {
+    long indexHeapRamBytesUsed = 0;
+    for(AtomicReaderContext atomicReaderContext : reader.leaves()) {
+      AtomicReader atomicReader = atomicReaderContext.reader();
+      if (atomicReader instanceof SegmentReader) {
+        indexHeapRamBytesUsed += ((SegmentReader) atomicReader).ramBytesUsed();
+      } else {
+        // Not supported for any reader that is not a SegmentReader
+        return -1;
+      }
+    }
+    return indexHeapRamBytesUsed;
+  }
+
   // Get terribly detailed information about a particular field. This is a very expensive call, use it with caution
   // especially on large indexes!
   @SuppressWarnings("unchecked")
@@ -576,7 +592,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       throws IOException {
 
     SolrParams params = req.getParams();
-    int numTerms = params.getInt( NUMTERMS, DEFAULT_COUNT );
+    final int numTerms = params.getInt( NUMTERMS, DEFAULT_COUNT );
 
     TopTermQueue tiq = new TopTermQueue(numTerms + 1);  // Something to collect the top N terms in.
 
@@ -596,13 +612,13 @@ public class LukeRequestHandler extends RequestHandlerBase
     BytesRef text;
     int[] buckets = new int[HIST_ARRAY_SIZE];
     while ((text = termsEnum.next()) != null) {
+      ++tiq.distinctTerms;
       int freq = termsEnum.docFreq();  // This calculation seems odd, but it gives the same results as it used to.
       int slot = 32 - Integer.numberOfLeadingZeros(Math.max(0, freq - 1));
       buckets[slot] = buckets[slot] + 1;
-      if (freq > tiq.minFreq) {
+      if (numTerms > 0 && freq > tiq.minFreq) {
         UnicodeUtil.UTF8toUTF16(text, spare);
         String t = spare.toString();
-        tiq.distinctTerms = new Long(terms.size()).intValue();
 
         tiq.add(new TopTermQueue.TermInfo(new Term(field, t), termsEnum.docFreq()));
         if (tiq.size() > numTerms) { // if tiq full

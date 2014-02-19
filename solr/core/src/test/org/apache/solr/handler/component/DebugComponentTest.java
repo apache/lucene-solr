@@ -16,8 +16,18 @@ package org.apache.solr.handler.component;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.regex.Pattern;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -30,9 +40,9 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
-    assertU(adoc("id", "1", "title", "this is a title."));
-    assertU(adoc("id", "2", "title", "this is another title."));
-    assertU(adoc("id", "3", "title", "Mary had a little lamb."));
+    assertU(adoc("id", "1", "title", "this is a title.", "inStock_b1", "true"));
+    assertU(adoc("id", "2", "title", "this is another title.", "inStock_b1", "true"));
+    assertU(adoc("id", "3", "title", "Mary had a little lamb.", "inStock_b1", "false"));
     assertU(commit());
 
   }
@@ -137,6 +147,100 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
 
             "count(//lst[@name='timing']/*)=0"
     );
-
+    
+    //Grouping
+    assertQ(req("q", "*:*", "debug", CommonParams.RESULTS,
+        "group", CommonParams.TRUE,
+        "group.field", "inStock_b1",
+        "debug", CommonParams.TRUE), 
+        "//str[@name='rawquerystring']='*:*'",
+        "count(//lst[@name='explain']/*)=2"
+    );
+  }
+  
+  @Test
+  public void testModifyRequestTrack() {
+    DebugComponent component = new DebugComponent();
+    List<SearchComponent> components = new ArrayList<SearchComponent>(1);
+    components.add(component);
+    for(int i = 0; i < 10; i++) {
+      SolrQueryRequest req = req("q", "test query", "distrib", "true", CommonParams.REQUEST_ID, "123456-my_rid");
+      SolrQueryResponse resp = new SolrQueryResponse();
+      ResponseBuilder rb = new ResponseBuilder(req, resp, components);
+      ShardRequest sreq = new ShardRequest();
+      sreq.params = new ModifiableSolrParams();
+      sreq.purpose = ShardRequest.PURPOSE_GET_FIELDS;
+      sreq.purpose |= ShardRequest.PURPOSE_GET_DEBUG;
+      //expecting the same results with debugQuery=true or debug=track
+      if(random().nextBoolean()) {
+        rb.setDebug(true);
+      } else {
+        rb.setDebug(false);
+        rb.setDebugTrack(true);
+        //should not depend on other debug options
+        rb.setDebugQuery(random().nextBoolean());
+        rb.setDebugTimings(random().nextBoolean());
+        rb.setDebugResults(random().nextBoolean());
+      }
+      component.modifyRequest(rb, null, sreq);
+      //if the request has debugQuery=true or debug=track, the sreq should get debug=track always
+      assertTrue(Arrays.asList(sreq.params.getParams(CommonParams.DEBUG)).contains(CommonParams.TRACK));
+      //the purpose must be added as readable param to be included in the shard logs
+      assertEquals("GET_FIELDS,GET_DEBUG", sreq.params.get(CommonParams.REQUEST_PURPOSE));
+      //the rid must be added to be included in the shard logs
+      assertEquals("123456-my_rid", sreq.params.get(CommonParams.REQUEST_ID));
+    }
+    
+  }
+  
+  @Test
+  public void testPrepare() throws IOException {
+    DebugComponent component = new DebugComponent();
+    List<SearchComponent> components = new ArrayList<SearchComponent>(1);
+    components.add(component);
+    SolrQueryRequest req;
+    ResponseBuilder rb;
+    for(int i = 0; i < 10; i++) {
+      req = req("q", "test query", "distrib", "true");
+      rb = new ResponseBuilder(req, new SolrQueryResponse(), components);
+      rb.isDistrib = true;
+      //expecting the same results with debugQuery=true or debug=track
+      if(random().nextBoolean()) {
+        rb.setDebug(true);
+      } else {
+        rb.setDebug(false);
+        rb.setDebugTrack(true);
+        //should not depend on other debug options
+        rb.setDebugQuery(random().nextBoolean());
+        rb.setDebugTimings(random().nextBoolean());
+        rb.setDebugResults(random().nextBoolean());
+      }
+      component.prepare(rb);
+      ensureRidPresent(rb, null);
+    }
+   
+    req = req("q", "test query", "distrib", "true", CommonParams.REQUEST_ID, "123");
+    rb = new ResponseBuilder(req, new SolrQueryResponse(), components);
+    rb.isDistrib = true;
+    rb.setDebug(true);
+    component.prepare(rb);
+    ensureRidPresent(rb, "123");
+  }
+  
+  @SuppressWarnings("unchecked")
+  private void ensureRidPresent(ResponseBuilder rb, String expectedRid) {
+    SolrQueryRequest req = rb.req;
+    SolrQueryResponse resp = rb.rsp;
+    //a generated request ID should be added to the request
+    String rid = req.getParams().get(CommonParams.REQUEST_ID);
+    if(expectedRid == null) {
+      assertTrue(rid + " Doesn't match expected pattern.", Pattern.matches(".*-collection1-[0-9]*-[0-9]+", rid));
+    } else {
+      assertEquals("Expecting " + expectedRid + " but found " + rid, expectedRid, rid);
+    }
+    //The request ID is added to the debug/track section
+    assertEquals(rid, ((NamedList<Object>)rb.getDebugInfo().get("track")).get(CommonParams.REQUEST_ID));
+    //RID must be added to the toLog, so that it's included in the main request log
+    assertEquals(rid, resp.getToLog().get(CommonParams.REQUEST_ID));
   }
 }

@@ -33,7 +33,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.TestIndexWriterReader;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestFileSwitchDirectory extends LuceneTestCase {
   /**
@@ -51,6 +51,8 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
     
     FileSwitchDirectory fsd = new FileSwitchDirectory(fileExtensions, primaryDir, secondaryDir, true);
     // for now we wire Lucene40Codec because we rely upon its specific impl
+    boolean oldValue = OLD_FORMAT_IMPERSONATION_IS_ACTIVE;
+    OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true;
     IndexWriter writer = new IndexWriter(
         fsd,
         new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
@@ -82,11 +84,12 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
       assertNotNull(files[i]);
     }
     fsd.close();
+    OLD_FORMAT_IMPERSONATION_IS_ACTIVE = oldValue;
   }
   
   private Directory newFSSwitchDirectory(Set<String> primaryExtensions) throws IOException {
-    File primDir = _TestUtil.getTempDir("foo");
-    File secondDir = _TestUtil.getTempDir("bar");
+    File primDir = TestUtil.getTempDir("foo");
+    File secondDir = TestUtil.getTempDir("bar");
     return newFSSwitchDirectory(primDir, secondDir, primaryExtensions);
   }
 
@@ -99,10 +102,10 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
   
   // LUCENE-3380 -- make sure we get exception if the directory really does not exist.
   public void testNoDir() throws Throwable {
-    File primDir = _TestUtil.getTempDir("foo");
-    File secondDir = _TestUtil.getTempDir("bar");
-    _TestUtil.rmDir(primDir);
-    _TestUtil.rmDir(secondDir);
+    File primDir = TestUtil.getTempDir("foo");
+    File secondDir = TestUtil.getTempDir("bar");
+    TestUtil.rmDir(primDir);
+    TestUtil.rmDir(secondDir);
     Directory dir = newFSSwitchDirectory(primDir, secondDir, Collections.<String>emptySet());
     try {
       DirectoryReader.open(dir);

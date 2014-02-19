@@ -402,7 +402,7 @@ public class DataImporter {
   public void doFullImport(SolrWriter writer, RequestInfo requestParams) {
     LOG.info("Starting Full Import");
     setStatus(Status.RUNNING_FULL_DUMP);
-
+    boolean success = false;
     try {
       DIHProperties dihPropWriter = createPropertyWriter();
       setIndexStartTime(dihPropWriter.getCurrentTimestamp());
@@ -411,10 +411,14 @@ public class DataImporter {
       docBuilder.execute();
       if (!requestParams.isDebug())
         cumulativeStatistics.add(docBuilder.importStatistics);
-    } catch (Throwable t) {
-      SolrException.log(LOG, "Full Import failed", t);
-      docBuilder.rollback();
+      success = true;
+    } catch (Exception e) {
+      SolrException.log(LOG, "Full Import failed", e);
     } finally {
+      if (!success) {
+        docBuilder.rollback();
+      }
+      
       setStatus(Status.IDLE);
       DocBuilder.INSTANCE.set(null);
     }
@@ -431,7 +435,7 @@ public class DataImporter {
   public void doDeltaImport(SolrWriter writer, RequestInfo requestParams) {
     LOG.info("Starting Delta Import");
     setStatus(Status.RUNNING_DELTA_DUMP);
-
+    boolean success = false;
     try {
       DIHProperties dihPropWriter = createPropertyWriter();
       setIndexStartTime(dihPropWriter.getCurrentTimestamp());
@@ -440,10 +444,13 @@ public class DataImporter {
       docBuilder.execute();
       if (!requestParams.isDebug())
         cumulativeStatistics.add(docBuilder.importStatistics);
-    } catch (Throwable t) {
-      LOG.error("Delta Import Failed", t);
-      docBuilder.rollback();
+      success = true;
+    } catch (Exception e) {
+      LOG.error("Delta Import Failed", e);
     } finally {
+      if (!success) {
+        docBuilder.rollback();
+      }
       setStatus(Status.IDLE);
       DocBuilder.INSTANCE.set(null);
     }

@@ -22,7 +22,16 @@ import java.util.BitSet;
 
 import org.apache.lucene.search.DocIdSetIterator;
 
-public class TestFixedBitSet extends LuceneTestCase {
+public class TestFixedBitSet extends BaseDocIdSetTestCase<FixedBitSet> {
+
+  @Override
+  public FixedBitSet copyOf(BitSet bs, int length) throws IOException {
+    final FixedBitSet set = new FixedBitSet(length);
+    for (int doc = bs.nextSetBit(0); doc != -1; doc = bs.nextSetBit(doc + 1)) {
+      set.set(doc);
+    }
+    return set;
+  }
 
   void doGet(BitSet a, FixedBitSet b) {
     int max = b.length();
@@ -95,7 +104,7 @@ public class TestFixedBitSet extends LuceneTestCase {
     FixedBitSet b0=null;
 
     for (int i=0; i<iter; i++) {
-      int sz = _TestUtil.nextInt(random(), 2, maxSize);
+      int sz = TestUtil.nextInt(random(), 2, maxSize);
       BitSet a = new BitSet(sz);
       FixedBitSet b = new FixedBitSet(sz);
 
@@ -166,10 +175,12 @@ public class TestFixedBitSet extends LuceneTestCase {
 
         BitSet a_and = (BitSet)a.clone(); a_and.and(a0);
         BitSet a_or = (BitSet)a.clone(); a_or.or(a0);
+        BitSet a_xor = (BitSet)a.clone(); a_xor.xor(a0);
         BitSet a_andn = (BitSet)a.clone(); a_andn.andNot(a0);
 
         FixedBitSet b_and = b.clone(); assertEquals(b,b_and); b_and.and(b0);
         FixedBitSet b_or = b.clone(); b_or.or(b0);
+        FixedBitSet b_xor = b.clone(); b_xor.xor(b0);
         FixedBitSet b_andn = b.clone(); b_andn.andNot(b0);
 
         assertEquals(a0.cardinality(), b0.cardinality());
@@ -178,9 +189,11 @@ public class TestFixedBitSet extends LuceneTestCase {
         doIterate(a_and,b_and, mode);
         doIterate(a_or,b_or, mode);
         doIterate(a_andn,b_andn, mode);
-
+        doIterate(a_xor,b_xor, mode);
+        
         assertEquals(a_and.cardinality(), b_and.cardinality());
         assertEquals(a_or.cardinality(), b_or.cardinality());
+        assertEquals(a_xor.cardinality(), b_xor.cardinality());
         assertEquals(a_andn.cardinality(), b_andn.cardinality());
       }
 
@@ -319,7 +332,32 @@ public class TestFixedBitSet extends LuceneTestCase {
     
     checkNextSetBitArray(new int[0], setBits.length + random().nextInt(10));
   }
+  
+  public void testEnsureCapacity() {
+    FixedBitSet bits = new FixedBitSet(5);
+    bits.set(1);
+    bits.set(4);
+    
+    FixedBitSet newBits = FixedBitSet.ensureCapacity(bits, 8); // grow within the word
+    assertTrue(newBits.get(1));
+    assertTrue(newBits.get(4));
+    newBits.clear(1);
+    // we align to 64-bits, so even though it shouldn't have, it re-allocated a long[1]
+    assertTrue(bits.get(1));
+    assertFalse(newBits.get(1));
+
+    newBits.set(1);
+    newBits = FixedBitSet.ensureCapacity(newBits, newBits.length() - 2); // reuse
+    assertTrue(newBits.get(1));
+
+    bits.set(1);
+    newBits = FixedBitSet.ensureCapacity(bits, 72); // grow beyond one word
+    assertTrue(newBits.get(1));
+    assertTrue(newBits.get(4));
+    newBits.clear(1);
+    // we grew the long[], so it's not shared
+    assertTrue(bits.get(1));
+    assertFalse(newBits.get(1));
+  }
+  
 }
-
-
-

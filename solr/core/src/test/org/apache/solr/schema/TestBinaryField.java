@@ -17,76 +17,51 @@
 package org.apache.solr.schema;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.commons.io.FileUtils;
+
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.beans.Field;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.*;
-import org.apache.solr.core.SolrResourceLoader;
-import org.junit.Rule;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
+import org.apache.solr.SolrJettyTestBase;
+import org.junit.BeforeClass;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+public class TestBinaryField extends SolrJettyTestBase {
 
-public class TestBinaryField extends LuceneTestCase {
-  HttpSolrServer server;
-  JettySolrRunner jetty;
-
-  int port = 0;
-  static final String context = "/example";
-
-  @Rule
-  public TestRule solrTestRules = 
-    RuleChain.outerRule(new SystemPropertiesRestoreRule());
-
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-
-    File home = new File(TEMP_DIR,
-        "solrtest-TestBinaryField-" + System.currentTimeMillis());
-
-    File homeDir = new File(home, "example");
-    File dataDir = new File(homeDir + "/collection1", "data");
-    File confDir = new File(homeDir + "/collection1", "conf");
+  @BeforeClass
+  public static void beforeTest() throws Exception {
+    File homeDir = new File(TEMP_DIR,
+                            "solrtest-TestBinaryField-" + System.currentTimeMillis());
+    File collDir = new File(homeDir, "collection1");
+    File dataDir = new File(collDir, "data");
+    File confDir = new File(collDir, "conf");
 
     homeDir.mkdirs();
+    collDir.mkdirs();
     dataDir.mkdirs();
     confDir.mkdirs();
 
-    SolrResourceLoader loader = new SolrResourceLoader("solr/collection1");
-    File f = new File(confDir, "solrconfig.xml");
-    String fname = "solr/collection1/conf/solrconfig-slave1.xml";
-    FileOutputStream out = new FileOutputStream(f);
-    IOUtils.copy(loader.openResource(fname), out);
-    out.close();
-    f = new File(confDir, "schema.xml");
-    fname = "solr/collection1/conf/schema-binaryfield.xml";
-    out = new FileOutputStream(f);
-    IOUtils.copy(loader.openResource(fname), out);
-    out.close();
-    System.setProperty("solr.data.dir", dataDir.getAbsolutePath());
-    System.setProperty("solr.test.sys.prop1", "propone");
-    System.setProperty("solr.test.sys.prop2", "proptwo");
-    System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
+    FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(homeDir, "solr.xml"));
 
-    jetty = new JettySolrRunner(homeDir.getAbsolutePath(), context, 0);
-    jetty.start();
-    port = jetty.getLocalPort();
+    String src_dir = TEST_HOME() + "/collection1/conf";
+    FileUtils.copyFile(new File(src_dir, "schema-binaryfield.xml"), 
+                       new File(confDir, "schema.xml"));
+    FileUtils.copyFile(new File(src_dir, "solrconfig-basic.xml"), 
+                       new File(confDir, "solrconfig.xml"));
+    FileUtils.copyFile(new File(src_dir, "solrconfig.snippet.randomindexconfig.xml"), 
+                       new File(confDir, "solrconfig.snippet.randomindexconfig.xml"));
 
-    String url = "http://127.0.0.1:" + jetty.getLocalPort() + context;
-    server = new HttpSolrServer(url);
+    createJetty(homeDir.getAbsolutePath(), null, null);
   }
 
+
   public void testSimple() throws Exception {
+    SolrServer server = getSolrServer();
     byte[] buf = new byte[10];
     for (int i = 0; i < 10; i++) {
       buf[i] = (byte) i;
@@ -179,11 +154,4 @@ public class TestBinaryField extends LuceneTestCase {
     byte [] data;
   }
 
-
-  @Override
-  public void tearDown() throws Exception {
-    jetty.stop();
-    System.clearProperty("tests.shardhandler.randomSeed");
-    super.tearDown();
-  }
 }

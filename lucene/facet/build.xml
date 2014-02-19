@@ -23,10 +23,26 @@
     Faceted indexing and search capabilities
   </description>
 
-  <!-- prettify.css/js -->
-  <property name="rat.excludes" value="**/prettify.css,**/prettify.js"/>
-  
+  <property name="forbidden-sysout-excludes" value="
+    org/apache/lucene/facet/taxonomy/PrintTaxonomyStats.class
+  "/>
+
   <import file="../module-build.xml"/>
+
+  <path id="classpath">
+    <path refid="base.classpath"/>
+    <pathelement path="${queries.jar}"/>
+  </path>
+
+  <target name="compile-core" depends="jar-queries,common.compile-core" />
+
+  <target name="javadocs" depends="javadocs-queries,compile-core">
+    <invoke-module-javadoc>
+      <links>
+        <link href="../queries"/>
+      </links>
+    </invoke-module-javadoc>
+  </target>
 
   <target name="run-encoding-benchmark" depends="compile-test">
     <java classname="org.apache.lucene.util.encoding.EncodingSpeed" fork="true" failonerror="true">
@@ -34,5 +50,5 @@
       <classpath path="${build.dir}/classes/test" />
     </java>
   </target>
-	
+
 </project>

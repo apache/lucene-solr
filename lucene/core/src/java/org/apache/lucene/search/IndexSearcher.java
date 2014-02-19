@@ -430,6 +430,10 @@ public class IndexSearcher {
     if (limit == 0) {
       limit = 1;
     }
+    if (after != null && after.doc >= limit) {
+      throw new IllegalArgumentException("after.doc exceeds the number of documents in the reader: after.doc="
+          + after.doc + " limit=" + limit);
+    }
     nDocs = Math.min(nDocs, limit);
     
     if (executor == null) {
@@ -440,8 +444,7 @@ public class IndexSearcher {
       final ExecutionHelper<TopDocs> runner = new ExecutionHelper<TopDocs>(executor);
     
       for (int i = 0; i < leafSlices.length; i++) { // search each sub
-        runner.submit(
-                      new SearcherCallableNoSort(lock, this, leafSlices[i], weight, after, nDocs, hq));
+        runner.submit(new SearcherCallableNoSort(lock, this, leafSlices[i], weight, after, nDocs, hq));
       }
 
       int totalHits = 0;
@@ -503,12 +506,6 @@ public class IndexSearcher {
    * Just like {@link #search(Weight, int, Sort, boolean, boolean)}, but you choose
    * whether or not the fields in the returned {@link FieldDoc} instances should
    * be set by specifying fillFields.
-   *
-   * <p>NOTE: this does not compute scores by default.  If you
-   * need scores, create a {@link TopFieldCollector}
-   * instance by calling {@link TopFieldCollector#create} and
-   * then pass that to {@link #search(List, Weight,
-   * Collector)}.</p>
    */
   protected TopFieldDocs search(Weight weight, FieldDoc after, int nDocs,
                                 Sort sort, boolean fillFields,
@@ -920,7 +917,7 @@ public class IndexSearcher {
    */
   public TermStatistics termStatistics(Term term, TermContext context) throws IOException {
     return new TermStatistics(term.bytes(), context.docFreq(), context.totalTermFreq());
-  };
+  }
   
   /**
    * Returns {@link CollectionStatistics} for a field.

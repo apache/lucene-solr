@@ -345,4 +345,24 @@ public class CompiledAutomaton {
       }
     }
   }
+  
+  public String toDot() {
+    StringBuilder b = new StringBuilder("digraph CompiledAutomaton {\n");
+    b.append("  rankdir = LR;\n");
+    int initial = runAutomaton.getInitialState();
+    for (int i = 0; i < sortedTransitions.length; i++) {
+      b.append("  ").append(i);
+      if (runAutomaton.isAccept(i)) b.append(" [shape=doublecircle,label=\"\"];\n");
+      else b.append(" [shape=circle,label=\"\"];\n");
+      if (i == initial) {
+        b.append("  initial [shape=plaintext,label=\"\"];\n");
+        b.append("  initial -> ").append(i).append("\n");
+      }
+      for (int j = 0; j < sortedTransitions[i].length; j++) {
+        b.append("  ").append(i);
+        sortedTransitions[i][j].appendDot(b);
+      }
+    }
+    return b.append("}\n").toString();
+  }
 }

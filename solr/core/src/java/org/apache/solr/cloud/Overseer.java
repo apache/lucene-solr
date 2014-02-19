@@ -34,6 +34,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.RoutingRule;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -45,6 +46,8 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.util.Collections.singletonMap;
+
 /**
  * Cluster leader. Responsible node assignments, cluster state file?
  */
@@ -52,11 +55,17 @@ public class Overseer {
   public static final String QUEUE_OPERATION = "operation";
   public static final String DELETECORE = "deletecore";
   public static final String REMOVECOLLECTION = "removecollection";
-  
-  private static final int STATE_UPDATE_DELAY = 1500;  // delay between cloud state updates
+  public static final String REMOVESHARD = "removeshard";
+  public static final String ADD_ROUTING_RULE = "addroutingrule";
+  public static final String REMOVE_ROUTING_RULE = "removeroutingrule";
 
+  public static final int STATE_UPDATE_DELAY = 1500;  // delay between cloud state updates
 
   private static Logger log = LoggerFactory.getLogger(Overseer.class);
+
+  static enum LeaderStatus { DONT_KNOW, NO, YES };
+
+  private long lastUpdatedTime = 0;
   
   private class ClusterStateUpdater implements Runnable, ClosableThread {
     
@@ -80,8 +89,13 @@ public class Overseer {
     
     @Override
     public void run() {
-        
-      if (!this.isClosed && amILeader()) {
+
+      LeaderStatus isLeader = amILeader();
+      while (isLeader == LeaderStatus.DONT_KNOW) {
+        log.debug("am_i_leader unclear {}", isLeader);
+        isLeader = amILeader();  // not a no, not a yes, try ask again
+      }
+      if (!this.isClosed && LeaderStatus.YES == isLeader) {
         // see if there's something left from the previous Overseer and re
         // process all events that were not persisted into cloud state
         synchronized (reader.getUpdateLock()) { // XXX this only protects
@@ -95,14 +109,24 @@ public class Overseer {
               ClusterState clusterState = reader.getClusterState();
               log.info("Replaying operations from work queue.");
               
-              while (head != null && amILeader()) {
-                final ZkNodeProps message = ZkNodeProps.load(head);
-                final String operation = message.getStr(QUEUE_OPERATION);
-                clusterState = processMessage(clusterState, message, operation);
-                zkClient.setData(ZkStateReader.CLUSTER_STATE,
-                    ZkStateReader.toJSON(clusterState), true);
-                
-                workQueue.poll();
+              while (head != null) {
+                isLeader = amILeader();
+                if (LeaderStatus.NO == isLeader) {
+                  break;
+                }
+                else if (LeaderStatus.YES == isLeader) {
+                  final ZkNodeProps message = ZkNodeProps.load(head);
+                  final String operation = message.getStr(QUEUE_OPERATION);
+                  clusterState = processMessage(clusterState, message, operation);
+                  zkClient.setData(ZkStateReader.CLUSTER_STATE,
+                      ZkStateReader.toJSON(clusterState), true);
+                  
+                  workQueue.poll(); // poll-ing removes the element we got by peek-ing
+                }
+                else {
+                  log.info("am_i_leader unclear {}", isLeader);                  
+                  // re-peek below in case our 'head' value is out-of-date by now
+                }
                 
                 head = workQueue.peek();
               }
@@ -125,31 +149,57 @@ public class Overseer {
       }
       
       log.info("Starting to work on the main queue");
-      while (!this.isClosed && amILeader()) {
+      while (!this.isClosed) {
+        isLeader = amILeader();
+        if (LeaderStatus.NO == isLeader) {
+          break;
+        }
+        else if (LeaderStatus.YES != isLeader) {
+          log.debug("am_i_leader unclear {}", isLeader);
+          continue; // not a no, not a yes, try ask again
+        }
+        DistributedQueue.QueueEvent head = null;
+        try {
+          head = stateUpdateQueue.peek(true);
+        } catch (KeeperException e) {
+          if (e.code() == KeeperException.Code.SESSIONEXPIRED) {
+            log.warn(
+                "Solr cannot talk to ZK, exiting Overseer main queue loop", e);
+            return;
+          }
+          log.error("Exception in Overseer main queue loop", e);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          return;
+          
+        } catch (Exception e) {
+          log.error("Exception in Overseer main queue loop", e);
+        }
         synchronized (reader.getUpdateLock()) {
           try {
-            byte[] head = stateUpdateQueue.peek();
-            
-            if (head != null) {
-              reader.updateClusterState(true);
-              ClusterState clusterState = reader.getClusterState();
+            reader.updateClusterState(true);
+            ClusterState clusterState = reader.getClusterState();
+
+            while (head != null) {
+              final ZkNodeProps message = ZkNodeProps.load(head.getBytes());
+              final String operation = message.getStr(QUEUE_OPERATION);
+
+              clusterState = processMessage(clusterState, message, operation);
+              workQueue.offer(head.getBytes());
+
+              stateUpdateQueue.poll();
+
+              if (System.currentTimeMillis() - lastUpdatedTime > STATE_UPDATE_DELAY) break;
               
-              while (head != null) {
-                final ZkNodeProps message = ZkNodeProps.load(head);
-                final String operation = message.getStr(QUEUE_OPERATION);
-                
-                clusterState = processMessage(clusterState, message, operation);
-                workQueue.offer(head);
-                
-                stateUpdateQueue.poll();
-                head = stateUpdateQueue.peek();
-              }
-              zkClient.setData(ZkStateReader.CLUSTER_STATE,
-                  ZkStateReader.toJSON(clusterState), true);
+              // if an event comes in the next 100ms batch it together
+              head = stateUpdateQueue.peek(100); 
             }
+            lastUpdatedTime = System.currentTimeMillis();
+            zkClient.setData(ZkStateReader.CLUSTER_STATE,
+                ZkStateReader.toJSON(clusterState), true);
             // clean work queue
-            while (workQueue.poll() != null);
-            
+            while (workQueue.poll() != null) ;
+
           } catch (KeeperException e) {
             if (e.code() == KeeperException.Code.SESSIONEXPIRED) {
               log.warn("Solr cannot talk to ZK, exiting Overseer main queue loop", e);
@@ -165,11 +215,6 @@ public class Overseer {
           }
         }
         
-        try {
-          Thread.sleep(STATE_UPDATE_DELAY);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-        }
       }
     }
 
@@ -181,6 +226,8 @@ public class Overseer {
         clusterState = removeCore(clusterState, message);
       } else if (REMOVECOLLECTION.equals(operation)) {
         clusterState = removeCollection(clusterState, message);
+      } else if (REMOVESHARD.equals(operation)) {
+        clusterState = removeShard(clusterState, message);
       } else if (ZkStateReader.LEADER_PROP.equals(operation)) {
 
         StringBuilder sb = new StringBuilder();
@@ -199,16 +246,43 @@ public class Overseer {
         clusterState = createShard(clusterState, message);
       } else if ("updateshardstate".equals(operation))  {
         clusterState = updateShardState(clusterState, message);
+      } else if (OverseerCollectionProcessor.CREATECOLLECTION.equals(operation)) {
+         clusterState = buildCollection(clusterState, message);
+      } else if (Overseer.ADD_ROUTING_RULE.equals(operation)) {
+        clusterState = addRoutingRule(clusterState, message);
+      } else if (Overseer.REMOVE_ROUTING_RULE.equals(operation))  {
+        clusterState = removeRoutingRule(clusterState, message);
       } else {
         throw new RuntimeException("unknown operation:" + operation
             + " contents:" + message.getProperties());
       }
       return clusterState;
     }
-      
+
+    private ClusterState buildCollection(ClusterState clusterState, ZkNodeProps message) {
+      String collection = message.getStr("name");
+      log.info("building a new collection: " + collection);
+      if(clusterState.hasCollection(collection) ){
+        log.warn("Collection {} already exists. exit" ,collection);
+        return clusterState;
+      }
+
+      ArrayList<String> shardNames = new ArrayList<String>();
+
+      if(ImplicitDocRouter.NAME.equals( message.getStr("router.name",DocRouter.DEFAULT_NAME))){
+        getShardNames(shardNames,message.getStr("shards",DocRouter.DEFAULT_NAME));
+      } else {
+        int numShards = message.getInt(ZkStateReader.NUM_SHARDS_PROP, -1);
+        if(numShards<1) throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"numShards is a required parameter for 'compositeId' router");
+        getShardNames(numShards, shardNames);
+      }
+
+      return createCollection(clusterState,collection,shardNames,message);
+    }
+
     private ClusterState updateShardState(ClusterState clusterState, ZkNodeProps message) {
       String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
-      log.info("Update shard state invoked for collection: " + collection);
+      log.info("Update shard state invoked for collection: " + collection + " with message: " + message);
       for (String key : message.keySet()) {
         if (ZkStateReader.COLLECTION_PROP.equals(key)) continue;
         if (QUEUE_OPERATION.equals(key)) continue;
@@ -219,7 +293,76 @@ public class Overseer {
         }
         log.info("Update shard state " + key + " to " + message.getStr(key));
         Map<String, Object> props = slice.shallowCopy();
+        if (Slice.RECOVERY.equals(props.get(Slice.STATE)) && Slice.ACTIVE.equals(message.getStr(key))) {
+          props.remove(Slice.PARENT);
+        }
         props.put(Slice.STATE, message.getStr(key));
+        Slice newSlice = new Slice(slice.getName(), slice.getReplicasCopy(), props);
+        clusterState = updateSlice(clusterState, collection, newSlice);
+      }
+
+      return clusterState;
+    }
+
+    private ClusterState addRoutingRule(ClusterState clusterState, ZkNodeProps message) {
+      String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
+      String shard = message.getStr(ZkStateReader.SHARD_ID_PROP);
+      String routeKey = message.getStr("routeKey");
+      String range = message.getStr("range");
+      String targetCollection = message.getStr("targetCollection");
+      String targetShard = message.getStr("targetShard");
+      String expireAt = message.getStr("expireAt");
+
+      Slice slice = clusterState.getSlice(collection, shard);
+      if (slice == null)  {
+        throw new RuntimeException("Overseer.addRoutingRule unknown collection: " + collection + " slice:" + shard);
+      }
+
+      Map<String, RoutingRule> routingRules = slice.getRoutingRules();
+      if (routingRules == null)
+        routingRules = new HashMap<String, RoutingRule>();
+      RoutingRule r = routingRules.get(routeKey);
+      if (r == null) {
+        Map<String, Object> map = new HashMap<String, Object>();
+        map.put("routeRanges", range);
+        map.put("targetCollection", targetCollection);
+        map.put("expireAt", expireAt);
+        RoutingRule rule = new RoutingRule(routeKey, map);
+        routingRules.put(routeKey, rule);
+      } else  {
+        // add this range
+        Map<String, Object> map = r.shallowCopy();
+        map.put("routeRanges", map.get("routeRanges") + "," + range);
+        map.put("expireAt", expireAt);
+        routingRules.put(routeKey, new RoutingRule(routeKey, map));
+      }
+
+      Map<String, Object> props = slice.shallowCopy();
+      props.put("routingRules", routingRules);
+
+      Slice newSlice = new Slice(slice.getName(), slice.getReplicasCopy(), props);
+      clusterState = updateSlice(clusterState, collection, newSlice);
+      return clusterState;
+    }
+
+    private ClusterState removeRoutingRule(ClusterState clusterState, ZkNodeProps message) {
+      String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
+      String shard = message.getStr(ZkStateReader.SHARD_ID_PROP);
+      String routeKeyStr = message.getStr("routeKey");
+
+      log.info("Overseer.removeRoutingRule invoked for collection: " + collection
+          + " shard: " + shard + " routeKey: " + routeKeyStr);
+
+      Slice slice = clusterState.getSlice(collection, shard);
+      if (slice == null)  {
+        log.warn("Unknown collection: " + collection + " shard: " + shard);
+        return clusterState;
+      }
+      Map<String, RoutingRule> routingRules = slice.getRoutingRules();
+      if (routingRules != null) {
+        routingRules.remove(routeKeyStr); // no rules left
+        Map<String, Object> props = slice.shallowCopy();
+        props.put("routingRules", routingRules);
         Slice newSlice = new Slice(slice.getName(), slice.getReplicasCopy(), props);
         clusterState = updateSlice(clusterState, collection, newSlice);
       }
@@ -236,8 +379,12 @@ public class Overseer {
         Map<String, Object> sliceProps = new HashMap<String, Object>();
         String shardRange = message.getStr(ZkStateReader.SHARD_RANGE_PROP);
         String shardState = message.getStr(ZkStateReader.SHARD_STATE_PROP);
+        String shardParent = message.getStr(ZkStateReader.SHARD_PARENT_PROP);
         sliceProps.put(Slice.RANGE, shardRange);
         sliceProps.put(Slice.STATE, shardState);
+        if (shardParent != null)  {
+          sliceProps.put(Slice.PARENT, shardParent);
+        }
         slice = new Slice(shardId, replicas, sliceProps);
         clusterState = updateSlice(clusterState, collection, slice);
       } else  {
@@ -246,26 +393,50 @@ public class Overseer {
       return clusterState;
     }
 
-      private boolean amILeader() {
-        try {
-          ZkNodeProps props = ZkNodeProps.load(zkClient.getData("/overseer_elect/leader", null, null, true));
-          if(myId.equals(props.getStr("id"))) {
-            return true;
-          }
-        } catch (KeeperException e) {
-          log.warn("", e);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
+    private LeaderStatus amILeader() {
+      try {
+        ZkNodeProps props = ZkNodeProps.load(zkClient.getData(
+            "/overseer_elect/leader", null, null, true));
+        if (myId.equals(props.getStr("id"))) {
+          return LeaderStatus.YES;
         }
-        log.info("According to ZK I (id=" + myId + ") am no longer a leader.");
-        return false;
+      } catch (KeeperException e) {
+        if (e.code() == KeeperException.Code.CONNECTIONLOSS) {
+          log.error("", e);
+          return LeaderStatus.DONT_KNOW;
+        } else if (e.code() == KeeperException.Code.SESSIONEXPIRED) {
+          log.info("", e);
+        } else {
+          log.warn("", e);
+        }
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
       }
+      log.info("According to ZK I (id=" + myId + ") am no longer a leader.");
+      return LeaderStatus.NO;
+    }
     
       /**
        * Try to assign core to the cluster. 
        */
       private ClusterState updateState(ClusterState state, final ZkNodeProps message) {
         final String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
+        assert collection.length() > 0 : message;
+        
+
+        Integer numShards = message.getInt(ZkStateReader.NUM_SHARDS_PROP, null);
+        log.info("Update state numShards={} message={}", numShards, message);
+
+        List<String> shardNames  = new ArrayList<String>();
+
+        //collection does not yet exist, create placeholders if num shards is specified
+        boolean collectionExists = state.hasCollection(collection);
+        if (!collectionExists && numShards!=null) {
+          getShardNames(numShards, shardNames);
+          state = createCollection(state, collection, shardNames, message);
+        }
+        String sliceName = message.getStr(ZkStateReader.SHARD_ID_PROP);
+
         String coreNodeName = message.getStr(ZkStateReader.CORE_NODE_NAME_PROP);
         if (coreNodeName == null) {
           coreNodeName = getAssignedCoreNodeName(state, message);
@@ -275,18 +446,11 @@ public class Overseer {
             // if coreNodeName is null, auto assign one
             coreNodeName = Assign.assignNode(collection, state);
           }
-          message.getProperties().put(ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
+          message.getProperties().put(ZkStateReader.CORE_NODE_NAME_PROP,
+              coreNodeName);
         }
-        Integer numShards = message.getStr(ZkStateReader.NUM_SHARDS_PROP)!=null?Integer.parseInt(message.getStr(ZkStateReader.NUM_SHARDS_PROP)):null;
-        log.info("Update state numShards={} message={}", numShards, message);
-        //collection does not yet exist, create placeholders if num shards is specified
-        boolean collectionExists = state.getCollections().contains(collection);
-        if (!collectionExists && numShards!=null) {
-          state = createCollection(state, collection, numShards);
-        }
-        
+
         // use the provided non null shardId
-        String sliceName = message.getStr(ZkStateReader.SHARD_ID_PROP);
         if (sliceName == null) {
           //get shardId from ClusterState
           sliceName = getAssignedId(state, coreNodeName, message);
@@ -298,7 +462,7 @@ public class Overseer {
           //request new shardId 
           if (collectionExists) {
             // use existing numShards
-            numShards = state.getCollectionStates().get(collection).getSlices().size();
+            numShards = state.getCollection(collection).getSlices().size();
             log.info("Collection already exists with " + ZkStateReader.NUM_SHARDS_PROP + "=" + numShards);
           }
           sliceName = Assign.assignShard(collection, state, numShards);
@@ -312,14 +476,6 @@ public class Overseer {
         replicaProps.putAll(message.getProperties());
         // System.out.println("########## UPDATE MESSAGE: " + JSONUtil.toJSON(message));
         if (slice != null) {
-          String sliceState = slice.getState();
-          
-          // throw an exception if the slice is not yet active.
-
-          //if(!sliceState.equals(Slice.ACTIVE)) {
-          //  throw new SolrException(ErrorCode.BAD_REQUEST, "Can not assign core to a non-active slice [" + slice.getName() + "]");
-          //}
-          
           Replica oldReplica = slice.getReplicasMap().get(coreNodeName);
           if (oldReplica != null && oldReplica.containsKey(ZkStateReader.LEADER_PROP)) {
             replicaProps.put(ZkStateReader.LEADER_PROP, oldReplica.get(ZkStateReader.LEADER_PROP));
@@ -348,6 +504,7 @@ public class Overseer {
           // remove shard specific properties
           String shardRange = (String) replicaProps.remove(ZkStateReader.SHARD_RANGE_PROP);
           String shardState = (String) replicaProps.remove(ZkStateReader.SHARD_STATE_PROP);
+          String shardParent = (String) replicaProps.remove(ZkStateReader.SHARD_PARENT_PROP);
 
 
           Replica replica = new Replica(coreNodeName, replicaProps);
@@ -358,6 +515,9 @@ public class Overseer {
           Map<String,Replica> replicas;
 
           if (slice != null) {
+            state = checkAndCompleteShardSplit(state, collection, coreNodeName, sliceName, replicaProps);
+            // get the current slice again because it may have been updated due to checkAndCompleteShardSplit method
+            slice = state.getSlice(collection, sliceName);
             sliceProps = slice.getProperties();
             replicas = slice.getReplicasCopy();
           } else {
@@ -365,6 +525,7 @@ public class Overseer {
             sliceProps = new HashMap<String, Object>();
             sliceProps.put(Slice.RANGE, shardRange);
             sliceProps.put(Slice.STATE, shardState);
+            sliceProps.put(Slice.PARENT, shardParent);
           }
 
           replicas.put(replica.getName(), replica);
@@ -374,40 +535,116 @@ public class Overseer {
           return newClusterState;
       }
 
-    private  Map<String,Object> defaultCollectionProps() {
-      HashMap<String,Object> props = new HashMap<String, Object>(2);
-      props.put(DocCollection.DOC_ROUTER, DocRouter.DEFAULT_NAME);
-      return props;
+    private ClusterState checkAndCompleteShardSplit(ClusterState state, String collection, String coreNodeName, String sliceName, Map<String,Object> replicaProps) {
+      Slice slice = state.getSlice(collection, sliceName);
+      Map<String, Object> sliceProps = slice.getProperties();
+      String sliceState = slice.getState();
+      if (Slice.RECOVERY.equals(sliceState))  {
+        log.info("Shard: {} is in recovery state", sliceName);
+        // is this replica active?
+        if (ZkStateReader.ACTIVE.equals(replicaProps.get(ZkStateReader.STATE_PROP))) {
+          log.info("Shard: {} is in recovery state and coreNodeName: {} is active", sliceName, coreNodeName);
+          // are all other replicas also active?
+          boolean allActive = true;
+          for (Entry<String, Replica> entry : slice.getReplicasMap().entrySet()) {
+            if (coreNodeName.equals(entry.getKey()))  continue;
+            if (!Slice.ACTIVE.equals(entry.getValue().getStr(Slice.STATE))) {
+              allActive = false;
+              break;
+            }
+          }
+          if (allActive)  {
+            log.info("Shard: {} - all replicas are active. Finding status of fellow sub-shards", sliceName);
+            // find out about other sub shards
+            Map<String, Slice> allSlicesCopy = new HashMap<String, Slice>(state.getSlicesMap(collection));
+            List<Slice> subShardSlices = new ArrayList<Slice>();
+            outer:
+            for (Entry<String, Slice> entry : allSlicesCopy.entrySet()) {
+              if (sliceName.equals(entry.getKey()))
+                continue;
+              Slice otherSlice = entry.getValue();
+              if (Slice.RECOVERY.equals(otherSlice.getState())) {
+                if (slice.getParent() != null && slice.getParent().equals(otherSlice.getParent()))  {
+                  log.info("Shard: {} - Fellow sub-shard: {} found", sliceName, otherSlice.getName());
+                  // this is a fellow sub shard so check if all replicas are active
+                  for (Entry<String, Replica> sliceEntry : otherSlice.getReplicasMap().entrySet()) {
+                    if (!ZkStateReader.ACTIVE.equals(sliceEntry.getValue().getStr(ZkStateReader.STATE_PROP)))  {
+                      allActive = false;
+                      break outer;
+                    }
+                  }
+                  log.info("Shard: {} - Fellow sub-shard: {} has all replicas active", sliceName, otherSlice.getName());
+                  subShardSlices.add(otherSlice);
+                }
+              }
+            }
+            if (allActive)  {
+              // hurray, all sub shard replicas are active
+              log.info("Shard: {} - All replicas across all fellow sub-shards are now ACTIVE. Preparing to switch shard states.", sliceName);
+              String parentSliceName = (String) sliceProps.remove(Slice.PARENT);
+
+              Map<String, Object> propMap = new HashMap<String, Object>();
+              propMap.put(Overseer.QUEUE_OPERATION, "updateshardstate");
+              propMap.put(parentSliceName, Slice.INACTIVE);
+              propMap.put(sliceName, Slice.ACTIVE);
+              for (Slice subShardSlice : subShardSlices) {
+                propMap.put(subShardSlice.getName(), Slice.ACTIVE);
+              }
+              propMap.put(ZkStateReader.COLLECTION_PROP, collection);
+              ZkNodeProps m = new ZkNodeProps(propMap);
+              state = updateShardState(state, m);
+            }
+          }
+        }
+      }
+      return state;
     }
 
-      private ClusterState createCollection(ClusterState state, String collectionName, int numShards) {
-        log.info("Create collection {} with numShards {}", collectionName, numShards);
+    private ClusterState createCollection(ClusterState state, String collectionName, List<String> shards , ZkNodeProps message) {
+        log.info("Create collection {} with shards {}", collectionName, shards);
 
-        DocRouter router = DocRouter.DEFAULT;
-        List<DocRouter.Range> ranges = router.partitionRange(numShards, router.fullRange());
+        Map<String, Object> routerSpec = DocRouter.getRouterSpec(message);
+        String routerName = routerSpec.get("name") == null ? DocRouter.DEFAULT_NAME : (String) routerSpec.get("name");
+        DocRouter router = DocRouter.getDocRouter(routerName);
 
-        Map<String, DocCollection> newCollections = new LinkedHashMap<String,DocCollection>();
+        List<DocRouter.Range> ranges = router.partitionRange(shards.size(), router.fullRange());
+
+//        Map<String, DocCollection> newCollections = new LinkedHashMap<String,DocCollection>();
 
 
         Map<String, Slice> newSlices = new LinkedHashMap<String,Slice>();
-        newCollections.putAll(state.getCollectionStates());
+//        newCollections.putAll(state.getCollectionStates());
+        for (int i = 0; i < shards.size(); i++) {
+          String sliceName = shards.get(i);
+        /*}
         for (int i = 0; i < numShards; i++) {
-          final String sliceName = "shard" + (i+1);
+          final String sliceName = "shard" + (i+1);*/
 
-          Map<String,Object> sliceProps = new LinkedHashMap<String,Object>(1);
-          sliceProps.put(Slice.RANGE, ranges.get(i));
+          Map<String, Object> sliceProps = new LinkedHashMap<String, Object>(1);
+          sliceProps.put(Slice.RANGE, ranges == null? null: ranges.get(i));
 
           newSlices.put(sliceName, new Slice(sliceName, null, sliceProps));
         }
 
         // TODO: fill in with collection properties read from the /collections/<collectionName> node
-        Map<String,Object> collectionProps = defaultCollectionProps();
+        Map<String,Object> collectionProps = new HashMap<String,Object>();
 
+        for (Entry<String, Object> e : OverseerCollectionProcessor.COLL_PROPS.entrySet()) {
+          Object val = message.get(e.getKey());
+          if(val == null){
+            val = OverseerCollectionProcessor.COLL_PROPS.get(e.getKey());
+          }
+          if(val != null) collectionProps.put(e.getKey(),val);
+        }
+        collectionProps.put(DocCollection.DOC_ROUTER, routerSpec);
+
+        if(message.getStr("fromApi") == null) collectionProps.put("autoCreated","true");
         DocCollection newCollection = new DocCollection(collectionName, newSlices, collectionProps, router);
 
-        newCollections.put(collectionName, newCollection);
-        ClusterState newClusterState = new ClusterState(state.getLiveNodes(), newCollections);
-        return newClusterState;
+//        newCollections.put(collectionName, newCollection);
+          return state.copyWith(singletonMap(newCollection.getName(), newCollection));
+//        ClusterState newClusterState = new ClusterState(state.getLiveNodes(), newCollections);
+//        return newClusterState;
       }
 
       /*
@@ -449,7 +686,6 @@ public class Overseer {
       private ClusterState updateSlice(ClusterState state, String collectionName, Slice slice) {
         // System.out.println("###!!!### OLD CLUSTERSTATE: " + JSONUtil.toJSON(state.getCollectionStates()));
         // System.out.println("Updating slice:" + slice);
-
         Map<String, DocCollection> newCollections = new LinkedHashMap<String,DocCollection>(state.getCollectionStates());  // make a shallow copy
         DocCollection coll = newCollections.get(collectionName);
         Map<String,Slice> slices;
@@ -461,7 +697,7 @@ public class Overseer {
           // without explicitly creating a collection.  In this current case, we assume custom sharding with an "implicit" router.
           slices = new HashMap<String, Slice>(1);
           props = new HashMap<String,Object>(1);
-          props.put(DocCollection.DOC_ROUTER, ImplicitDocRouter.NAME);
+          props.put(DocCollection.DOC_ROUTER, ZkNodeProps.makeMap("name",ImplicitDocRouter.NAME));
           router = new ImplicitDocRouter();
         } else {
           props = coll.getProperties();
@@ -534,6 +770,9 @@ public class Overseer {
         newCollections.put(collectionName, newCollection);
         return new ClusterState(state.getLiveNodes(), newCollections);
       }
+    private ClusterState newState(ClusterState state, Map<String, DocCollection> colls) {
+      return state.copyWith(colls);
+    }
 
       /*
        * Remove collection from cloudstate
@@ -542,14 +781,36 @@ public class Overseer {
 
         final String collection = message.getStr("name");
 
-        final Map<String, DocCollection> newCollections = new LinkedHashMap<String,DocCollection>(clusterState.getCollectionStates()); // shallow copy
-        newCollections.remove(collection);
+//        final Map<String, DocCollection> newCollections = new LinkedHashMap<String,DocCollection>(clusterState.getCollectionStates()); // shallow copy
+//        newCollections.remove(collection);
 
-        ClusterState newState = new ClusterState(clusterState.getLiveNodes(), newCollections);
-        return newState;
+//        ClusterState newState = new ClusterState(clusterState.getLiveNodes(), newCollections);
+        return clusterState.copyWith(singletonMap(collection, (DocCollection)null));
       }
-      
-      /*
+
+    /*
+     * Remove collection slice from cloudstate
+     */
+    private ClusterState removeShard(final ClusterState clusterState, ZkNodeProps message) {
+      final String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
+      final String sliceId = message.getStr(ZkStateReader.SHARD_ID_PROP);
+
+      log.info("Removing collection: " + collection + " shard: " + sliceId + " from clusterstate");
+
+//      final Map<String, DocCollection> newCollections = new LinkedHashMap<String,DocCollection>(clusterState.getCollectionStates()); // shallow copy
+      DocCollection coll = clusterState.getCollection(collection);
+
+      Map<String, Slice> newSlices = new LinkedHashMap<String, Slice>(coll.getSlicesMap());
+      newSlices.remove(sliceId);
+
+      DocCollection newCollection = new DocCollection(coll.getName(), newSlices, coll.getProperties(), coll.getRouter());
+//      newCollections.put(newCollection.getName(), newCollection);
+      return newState(clusterState, singletonMap(collection,newCollection));
+
+//     return new ClusterState(clusterState.getLiveNodes(), newCollections);
+    }
+
+    /*
        * Remove core from cloudstate
        */
       private ClusterState removeCore(final ClusterState clusterState, ZkNodeProps message) {
@@ -558,8 +819,9 @@ public class Overseer {
 
         final String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
 
-        final Map<String, DocCollection> newCollections = new LinkedHashMap<String,DocCollection>(clusterState.getCollectionStates()); // shallow copy
-        DocCollection coll = newCollections.get(collection);
+//        final Map<String, DocCollection> newCollections = new LinkedHashMap<String,DocCollection>(clusterState.getCollectionStates()); // shallow copy
+//        DocCollection coll = newCollections.get(collection);
+        DocCollection coll = clusterState.getCollectionOrNull(collection) ;
         if (coll == null) {
           // TODO: log/error that we didn't find it?
           // just in case, remove the zk collection node
@@ -608,7 +870,7 @@ public class Overseer {
 
         // if there are no slices left in the collection, remove it?
         if (newSlices.size() == 0) {
-          newCollections.remove(coll.getName());
+//          newCollections.remove(coll.getName());
 
           // TODO: it might be better logically to have this in ZkController
           // but for tests (it's easier) it seems better for the moment to leave CoreContainer and/or
@@ -621,15 +883,18 @@ public class Overseer {
           } catch (KeeperException e) {
             SolrException.log(log, "Problem cleaning up collection in zk:" + collection, e);
           }
+          return newState(clusterState,singletonMap(collection, (DocCollection) null));
+
 
 
         } else {
           DocCollection newCollection = new DocCollection(coll.getName(), newSlices, coll.getProperties(), coll.getRouter());
-          newCollections.put(newCollection.getName(), newCollection);
+           return newState(clusterState,singletonMap(collection,newCollection));
+//          newCollections.put(newCollection.getName(), newCollection);
         }
 
-        ClusterState newState = new ClusterState(clusterState.getLiveNodes(), newCollections);
-        return newState;
+//        ClusterState newState = new ClusterState(clusterState.getLiveNodes(), newCollections);
+//        return newState;
      }
 
       @Override
@@ -642,6 +907,28 @@ public class Overseer {
         return this.isClosed;
       }
     
+  }
+
+  static void getShardNames(Integer numShards, List<String> shardNames) {
+    if(numShards == null)
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "numShards" + " is a required param");
+    for (int i = 0; i < numShards; i++) {
+      final String sliceName = "shard" + (i + 1);
+      shardNames.add(sliceName);
+    }
+
+  }
+
+  static void getShardNames(List<String> shardNames, String shards) {
+    if(shards ==null)
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "shards" + " is a required param");
+    for (String s : shards.split(",")) {
+      if(s ==null || s.trim().isEmpty()) continue;
+      shardNames.add(s.trim());
+    }
+    if(shardNames.isEmpty())
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "shards" + " is a required param");
+
   }
 
   class OverseerThread extends Thread implements ClosableThread {
@@ -670,11 +957,9 @@ public class Overseer {
     
   }
   
-  private OverseerThread ccThread;
+  private volatile OverseerThread ccThread;
 
-  private OverseerThread updaterThread;
-
-  private volatile boolean isClosed;
+  private volatile OverseerThread updaterThread;
 
   private ZkStateReader reader;
 
@@ -682,6 +967,7 @@ public class Overseer {
 
   private String adminPath;
   
+  // overseer not responsible for closing reader
   public Overseer(ShardHandler shardHandler, String adminPath, final ZkStateReader reader) throws KeeperException, InterruptedException {
     this.reader = reader;
     this.shardHandler = shardHandler;
@@ -689,6 +975,7 @@ public class Overseer {
   }
   
   public void start(String id) {
+    close();
     log.info("Overseer (id=" + id + ") starting");
     createOverseerNode(reader.getZkClient());
     //launch cluster state updater thread
@@ -705,30 +992,33 @@ public class Overseer {
     ccThread.start();
   }
   
+  public OverseerThread getUpdaterThread() {
+    return updaterThread;
+  }
+  
   public void close() {
-    isClosed = true;
-    if (updaterThread != null) {
-      try {
-        updaterThread.close();
-        updaterThread.interrupt();
-      } catch (Throwable t) {
-        log.error("Error closing updaterThread", t);
-      }
-    }
-    if (ccThread != null) {
-      try {
-        ccThread.close();
-        ccThread.interrupt();
-      } catch (Throwable t) {
-        log.error("Error closing ccThread", t);
-      }
-    }
-    
     try {
-      reader.close();
-    } catch (Throwable t) {
-      log.error("Error closing zkStateReader", t);
+      if (updaterThread != null) {
+        try {
+          updaterThread.close();
+          updaterThread.interrupt();
+        } catch (Exception e) {
+          log.error("Error closing updaterThread", e);
+        }
+      }
+    } finally {
+      
+      if (ccThread != null) {
+        try {
+          ccThread.close();
+          ccThread.interrupt();
+        } catch (Exception e) {
+          log.error("Error closing ccThread", e);
+        }
+      }
     }
+    updaterThread = null;
+    ccThread = null;
   }
 
   /**

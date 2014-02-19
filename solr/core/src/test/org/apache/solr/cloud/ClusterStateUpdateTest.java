@@ -17,6 +17,7 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ClusterState;
@@ -36,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -64,18 +66,30 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
   private File dataDir3;
   
   private File dataDir4;
-  
+
+
+  private static final File solrHomeDirectory = new File(TEMP_DIR, "ZkControllerTest");
+
   @BeforeClass
-  public static void beforeClass() {
+  public static void beforeClass() throws IOException {
     System.setProperty("solrcloud.skip.autorecovery", "true");
     System.setProperty("genericCoreNodeNames", "false");
+    if (solrHomeDirectory.exists()) {
+      FileUtils.deleteDirectory(solrHomeDirectory);
+    }
+    copyMinFullSetup(solrHomeDirectory);
+
   }
-  
+
   @AfterClass
-  public static void afterClass() throws InterruptedException {
+  public static void afterClass() throws InterruptedException, IOException {
     System.clearProperty("solrcloud.skip.autorecovery");
     System.clearProperty("genericCoreNodeNames");
+    if (solrHomeDirectory.exists()) {
+      FileUtils.deleteDirectory(solrHomeDirectory);
+    }
   }
+
 
   @Override
   public void setUp() throws Exception {
@@ -111,19 +125,19 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
     System.setProperty("solr.solr.home", TEST_HOME());
     System.setProperty("hostPort", "1661");
     System.setProperty("solr.data.dir", ClusterStateUpdateTest.this.dataDir1.getAbsolutePath());
-    container1 = new CoreContainer();
+    container1 = new CoreContainer(solrHomeDirectory.getAbsolutePath());
     container1.load();
     System.clearProperty("hostPort");
     
     System.setProperty("hostPort", "1662");
     System.setProperty("solr.data.dir", ClusterStateUpdateTest.this.dataDir2.getAbsolutePath());
-    container2 = new CoreContainer();
+    container2 = new CoreContainer(solrHomeDirectory.getAbsolutePath());
     container2.load();
     System.clearProperty("hostPort");
     
     System.setProperty("hostPort", "1663");
     System.setProperty("solr.data.dir", ClusterStateUpdateTest.this.dataDir3.getAbsolutePath());
-    container3 = new CoreContainer();
+    container3 = new CoreContainer(solrHomeDirectory.getAbsolutePath());
     container3.load();
     System.clearProperty("hostPort");
     System.clearProperty("solr.solr.home");
@@ -150,10 +164,8 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
         CreateMode.PERSISTENT, true);
     zkClient.close();
 
-    CoreDescriptor dcore = new CoreDescriptor(container1, "testcore",
-        "testcore");
-    
-    dcore.setDataDir(dataDir4.getAbsolutePath());
+    CoreDescriptor dcore = buildCoreDescriptor(container1, "testcore", "testcore")
+                              .withDataDir(dataDir4.getAbsolutePath()).build();
 
     if (container1.getZkController() != null) {
       container1.preRegisterInZk(dcore);
@@ -224,7 +236,7 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
 
     System.setProperty("hostPort", "1662");
     System.setProperty("solr.data.dir", ClusterStateUpdateTest.this.dataDir2.getAbsolutePath());
-    container2 = new CoreContainer();
+    container2 = new CoreContainer(solrHomeDirectory.getAbsolutePath());
     container2.load();
     System.clearProperty("hostPort");
     
