@@ -157,10 +157,10 @@ RegionalIndicatorEx = {RegionalIndicator}                                       
 //        WB13a. (ALetter | Hebrew_Letter | Numeric | Katakana | ExtendNumLet) × ExtendNumLet
 //        WB13b. ExtendNumLet × (ALetter | Hebrew_Letter | Numeric | Katakana) 
 //
-{ExtendNumLetEx}*  ( {KatakanaEx}          ( {ExtendNumLetEx}*   {KatakanaEx}                            )*
-                   | ( {HebrewLetterEx}    ( {SingleQuoteEx}     | {DoubleQuoteEx} {HebrewLetterEx}      )
-                     | {NumericEx}         ( ( {ExtendNumLetEx}* | {MidNumericEx} )* {NumericEx}         )*
-                     | {HebrewOrALetterEx} ( ( {ExtendNumLetEx}* | {MidLetterEx}  )* {HebrewOrALetterEx} )*
+{ExtendNumLetEx}*  ( {KatakanaEx}          ( {ExtendNumLetEx}*   {KatakanaEx}                           )*
+                   | ( {HebrewLetterEx}    ( {SingleQuoteEx}     | {DoubleQuoteEx}  {HebrewLetterEx}    )
+                     | {NumericEx}         ( ( {ExtendNumLetEx}* | {MidNumericEx} ) {NumericEx}         )*
+                     | {HebrewOrALetterEx} ( ( {ExtendNumLetEx}* | {MidLetterEx}  ) {HebrewOrALetterEx} )*
                      )+
                    )
 ({ExtendNumLetEx}+ ( {KatakanaEx}          ( {ExtendNumLetEx}*   {KatakanaEx}                            )*
