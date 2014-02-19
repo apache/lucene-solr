@@ -54,6 +54,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.base.Joiner;
 import com.google.common.io.Files;
 import com.typesafe.config.Config;
 
@@ -85,10 +86,11 @@ public class AbstractSolrMorphlineTestBase extends SolrTestCaseJ4 {
   }
 
   protected static void myInitCore(String baseDirName) throws Exception {
+    Joiner joiner = Joiner.on(File.separator);
     initCore(
-        RESOURCES_DIR + "/" + baseDirName + "/collection1/conf/solrconfig.xml",
-        RESOURCES_DIR + "/" + baseDirName + "/collection1/conf/schema.xml",
-        RESOURCES_DIR + "/" + baseDirName
+        joiner.join(RESOURCES_DIR, baseDirName, "collection1", "conf", "solrconfig.xml"),
+        joiner.join(RESOURCES_DIR, baseDirName, "collection1", "conf", "schema.xml"),
+        joiner.join(RESOURCES_DIR, baseDirName)
         );    
   }
   
