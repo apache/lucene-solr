@@ -68,7 +68,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -172,7 +172,7 @@ public abstract class SorterTestBase extends LuceneTestCase {
     doc.add(new StringField(ID_FIELD, Integer.toString(id), Store.YES));
     doc.add(new StringField(DOCS_ENUM_FIELD, DOCS_ENUM_TERM, Store.NO));
     positions.setId(id);
-    if (doesntSupportOffsets.contains(_TestUtil.getPostingsFormat(DOC_POSITIONS_FIELD))) {
+    if (doesntSupportOffsets.contains(TestUtil.getPostingsFormat(DOC_POSITIONS_FIELD))) {
       // codec doesnt support offsets: just index positions for the field
       doc.add(new Field(DOC_POSITIONS_FIELD, positions, TextField.TYPE_NOT_STORED));
     } else {
@@ -264,7 +264,7 @@ public abstract class SorterTestBase extends LuceneTestCase {
       assertEquals("incorrect freq for doc=" + doc, sortedValues[doc].intValue() / 10 + 1, freq);
       for (int i = 0; i < freq; i++) {
         assertEquals("incorrect position for doc=" + doc, i, sortedPositions.nextPosition());
-        if (!doesntSupportOffsets.contains(_TestUtil.getPostingsFormat(DOC_POSITIONS_FIELD))) {
+        if (!doesntSupportOffsets.contains(TestUtil.getPostingsFormat(DOC_POSITIONS_FIELD))) {
           assertEquals("incorrect startOffset for doc=" + doc, i, sortedPositions.startOffset());
           assertEquals("incorrect endOffset for doc=" + doc, i, sortedPositions.endOffset());
         }
@@ -279,12 +279,12 @@ public abstract class SorterTestBase extends LuceneTestCase {
       assertTrue(((SortingDocsAndPositionsEnum) sortedPositions).reused(reuse)); // make sure reuse worked
     }
     doc = 0;
-    while ((doc = sortedPositions.advance(doc + _TestUtil.nextInt(random(), 1, 5))) != DocIdSetIterator.NO_MORE_DOCS) {
+    while ((doc = sortedPositions.advance(doc + TestUtil.nextInt(random(), 1, 5))) != DocIdSetIterator.NO_MORE_DOCS) {
       int freq = sortedPositions.freq();
       assertEquals("incorrect freq for doc=" + doc, sortedValues[doc].intValue() / 10 + 1, freq);
       for (int i = 0; i < freq; i++) {
         assertEquals("incorrect position for doc=" + doc, i, sortedPositions.nextPosition());
-        if (!doesntSupportOffsets.contains(_TestUtil.getPostingsFormat(DOC_POSITIONS_FIELD))) {
+        if (!doesntSupportOffsets.contains(TestUtil.getPostingsFormat(DOC_POSITIONS_FIELD))) {
           assertEquals("incorrect startOffset for doc=" + doc, i, sortedPositions.startOffset());
           assertEquals("incorrect endOffset for doc=" + doc, i, sortedPositions.endOffset());
         }
@@ -302,7 +302,7 @@ public abstract class SorterTestBase extends LuceneTestCase {
       }
     }
     final FixedBitSet bits = new FixedBitSet(maxDoc);
-    final int bitsSet = _TestUtil.nextInt(random(), 1, maxDoc - 1);
+    final int bitsSet = TestUtil.nextInt(random(), 1, maxDoc - 1);
     for (int i = 0; i < bitsSet; ++i) {
       while (true) {
         final int index = random().nextInt(maxDoc);

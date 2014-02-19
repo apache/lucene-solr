@@ -27,7 +27,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 // Make sure if you use NoDeletionPolicy that no file
 // referenced by a commit point is ever deleted
@@ -35,7 +35,7 @@ import org.apache.lucene.util._TestUtil;
 public class TestNeverDelete extends LuceneTestCase {
 
   public void testIndexing() throws Exception {
-    final File tmpDir = _TestUtil.getTempDir("TestNeverDelete");
+    final File tmpDir = TestUtil.getTempDir("TestNeverDelete");
     final BaseDirectoryWrapper d = newFSDirectory(tmpDir);
 
     // We want to "see" files removed if Lucene removed
@@ -49,7 +49,7 @@ public class TestNeverDelete extends LuceneTestCase {
                                                       newIndexWriterConfig(TEST_VERSION_CURRENT,
                                                                            new MockAnalyzer(random()))
                                                       .setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE));
-    w.w.getConfig().setMaxBufferedDocs(_TestUtil.nextInt(random(), 5, 30));
+    w.w.getConfig().setMaxBufferedDocs(TestUtil.nextInt(random(), 5, 30));
 
     w.commit();
     Thread[] indexThreads = new Thread[random().nextInt(4)];
@@ -108,6 +108,6 @@ public class TestNeverDelete extends LuceneTestCase {
     w.close();
     d.close();
 
-    _TestUtil.rmDir(tmpDir);
+    TestUtil.rmDir(tmpDir);
   }
 }

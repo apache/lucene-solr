@@ -26,8 +26,8 @@ import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
-import org.apache.lucene.util._TestUtil;
 import org.junit.Ignore;
 
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
@@ -38,7 +38,7 @@ public class Test2BBinaryDocValues extends LuceneTestCase {
   
   // indexes Integer.MAX_VALUE docs with a fixed binary field
   public void testFixedBinary() throws Exception {
-    BaseDirectoryWrapper dir = newFSDirectory(_TestUtil.getTempDir("2BFixedBinary"));
+    BaseDirectoryWrapper dir = newFSDirectory(TestUtil.getTempDir("2BFixedBinary"));
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }
@@ -98,7 +98,7 @@ public class Test2BBinaryDocValues extends LuceneTestCase {
   
   // indexes Integer.MAX_VALUE docs with a variable binary field
   public void testVariableBinary() throws Exception {
-    BaseDirectoryWrapper dir = newFSDirectory(_TestUtil.getTempDir("2BVariableBinary"));
+    BaseDirectoryWrapper dir = newFSDirectory(TestUtil.getTempDir("2BVariableBinary"));
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }

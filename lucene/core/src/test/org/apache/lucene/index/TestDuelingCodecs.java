@@ -30,7 +30,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Compares one codec against another
@@ -92,8 +92,8 @@ public class TestDuelingCodecs extends LuceneTestCase {
     rightWriter.close();
     
     // check that our readers are valid
-    _TestUtil.checkReader(leftReader);
-    _TestUtil.checkReader(rightReader);
+    TestUtil.checkReader(leftReader);
+    TestUtil.checkReader(rightReader);
     
     info = "left: " + leftCodec.toString() + " / right: " + rightCodec.toString();
   }

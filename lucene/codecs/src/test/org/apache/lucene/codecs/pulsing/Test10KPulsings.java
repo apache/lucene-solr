@@ -37,9 +37,8 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.BaseDirectoryWrapper;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Pulses 10k terms/docs, 
@@ -51,9 +50,9 @@ import org.apache.lucene.util._TestUtil;
 public class Test10KPulsings extends LuceneTestCase {
   public void test10kPulsed() throws Exception {
     // we always run this test with pulsing codec.
-    Codec cp = _TestUtil.alwaysPostingsFormat(new Pulsing41PostingsFormat(1));
+    Codec cp = TestUtil.alwaysPostingsFormat(new Pulsing41PostingsFormat(1));
     
-    File f = _TestUtil.getTempDir("10kpulsed");
+    File f = TestUtil.getTempDir("10kpulsed");
     BaseDirectoryWrapper dir = newFSDirectory(f);
     dir.setCheckIndexOnClose(false); // we do this ourselves explicitly
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, 
@@ -62,7 +61,7 @@ public class Test10KPulsings extends LuceneTestCase {
     Document document = new Document();
     FieldType ft = new FieldType(TextField.TYPE_STORED);
     
-    switch(_TestUtil.nextInt(random(), 0, 2)) {
+    switch(TestUtil.nextInt(random(), 0, 2)) {
       case 0: ft.setIndexOptions(IndexOptions.DOCS_ONLY); break;
       case 1: ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS); break;
       default: ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS); break; 
@@ -87,13 +86,13 @@ public class Test10KPulsings extends LuceneTestCase {
     for (int i = 0; i < 10050; i++) {
       String expected = df.format(i);
       assertEquals(expected, te.next().utf8ToString());
-      de = _TestUtil.docs(random(), te, null, de, DocsEnum.FLAG_NONE);
+      de = TestUtil.docs(random(), te, null, de, DocsEnum.FLAG_NONE);
       assertTrue(de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
       assertEquals(DocIdSetIterator.NO_MORE_DOCS, de.nextDoc());
     }
     ir.close();
 
-    _TestUtil.checkIndex(dir);
+    TestUtil.checkIndex(dir);
     dir.close();
   }
   
@@ -101,10 +100,10 @@ public class Test10KPulsings extends LuceneTestCase {
    */
   public void test10kNotPulsed() throws Exception {
     // we always run this test with pulsing codec.
-    int freqCutoff = _TestUtil.nextInt(random(), 1, 10);
-    Codec cp = _TestUtil.alwaysPostingsFormat(new Pulsing41PostingsFormat(freqCutoff));
+    int freqCutoff = TestUtil.nextInt(random(), 1, 10);
+    Codec cp = TestUtil.alwaysPostingsFormat(new Pulsing41PostingsFormat(freqCutoff));
     
-    File f = _TestUtil.getTempDir("10knotpulsed");
+    File f = TestUtil.getTempDir("10knotpulsed");
     BaseDirectoryWrapper dir = newFSDirectory(f);
     dir.setCheckIndexOnClose(false); // we do this ourselves explicitly
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, 
@@ -113,7 +112,7 @@ public class Test10KPulsings extends LuceneTestCase {
     Document document = new Document();
     FieldType ft = new FieldType(TextField.TYPE_STORED);
     
-    switch(_TestUtil.nextInt(random(), 0, 2)) {
+    switch(TestUtil.nextInt(random(), 0, 2)) {
       case 0: ft.setIndexOptions(IndexOptions.DOCS_ONLY); break;
       case 1: ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS); break;
       default: ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS); break; 
@@ -145,13 +144,13 @@ public class Test10KPulsings extends LuceneTestCase {
     for (int i = 0; i < 10050; i++) {
       String expected = df.format(i);
       assertEquals(expected, te.next().utf8ToString());
-      de = _TestUtil.docs(random(), te, null, de, DocsEnum.FLAG_NONE);
+      de = TestUtil.docs(random(), te, null, de, DocsEnum.FLAG_NONE);
       assertTrue(de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
       assertEquals(DocIdSetIterator.NO_MORE_DOCS, de.nextDoc());
     }
     ir.close();
 
-    _TestUtil.checkIndex(dir);
+    TestUtil.checkIndex(dir);
     dir.close();
   }
 }

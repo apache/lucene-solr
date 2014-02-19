@@ -64,7 +64,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Randomly combines terms index impl w/ postings impls.
@@ -101,9 +101,9 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
     public MockIntStreamFactory(Random random) {
       salt = random.nextInt();
       delegates.add(new MockSingleIntFactory());
-      final int blockSize = _TestUtil.nextInt(random, 1, 2000);
+      final int blockSize = TestUtil.nextInt(random, 1, 2000);
       delegates.add(new MockFixedIntBlockPostingsFormat.MockIntFactory(blockSize));
-      final int baseBlockSize = _TestUtil.nextInt(random, 1, 127);
+      final int baseBlockSize = TestUtil.nextInt(random, 1, 127);
       delegates.add(new MockVariableIntBlockPostingsFormat.MockIntFactory(baseBlockSize));
       // TODO: others
     }
@@ -147,7 +147,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
 
     // we pull this before the seed intentionally: because its not consumed at runtime
     // (the skipInterval is written into postings header)
-    int skipInterval = _TestUtil.nextInt(seedRandom, minSkipInterval, 10);
+    int skipInterval = TestUtil.nextInt(seedRandom, minSkipInterval, 10);
     
     if (LuceneTestCase.VERBOSE) {
       System.out.println("MockRandomCodec: skipInterval=" + skipInterval);
@@ -183,7 +183,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
     }
 
     if (random.nextBoolean()) {
-      final int totTFCutoff = _TestUtil.nextInt(random, 1, 20);
+      final int totTFCutoff = TestUtil.nextInt(random, 1, 20);
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockRandomCodec: writing pulsing postings with totTFCutoff=" + totTFCutoff);
       }
@@ -222,7 +222,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
 
       // TODO: would be nice to allow 1 but this is very
       // slow to write
-      final int minTermsInBlock = _TestUtil.nextInt(random, 2, 100);
+      final int minTermsInBlock = TestUtil.nextInt(random, 2, 100);
       final int maxTermsInBlock = Math.max(2, (minTermsInBlock-1)*2 + random.nextInt(100));
 
       boolean success = false;
@@ -245,7 +245,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
       final TermsIndexWriterBase indexWriter;
       try {
         if (random.nextBoolean()) {
-          int termIndexInterval = _TestUtil.nextInt(random, 1, 100);
+          int termIndexInterval = TestUtil.nextInt(random, 1, 100);
           if (LuceneTestCase.VERBOSE) {
             System.out.println("MockRandomCodec: fixed-gap terms index (tii=" + termIndexInterval + ")");
           }
@@ -254,18 +254,18 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
           final VariableGapTermsIndexWriter.IndexTermSelector selector;
           final int n2 = random.nextInt(3);
           if (n2 == 0) {
-            final int tii = _TestUtil.nextInt(random, 1, 100);
+            final int tii = TestUtil.nextInt(random, 1, 100);
             selector = new VariableGapTermsIndexWriter.EveryNTermSelector(tii);
            if (LuceneTestCase.VERBOSE) {
               System.out.println("MockRandomCodec: variable-gap terms index (tii=" + tii + ")");
             }
           } else if (n2 == 1) {
-            final int docFreqThresh = _TestUtil.nextInt(random, 2, 100);
-            final int tii = _TestUtil.nextInt(random, 1, 100);
+            final int docFreqThresh = TestUtil.nextInt(random, 2, 100);
+            final int tii = TestUtil.nextInt(random, 1, 100);
             selector = new VariableGapTermsIndexWriter.EveryNOrDocFreqTermSelector(docFreqThresh, tii);
           } else {
             final long seed2 = random.nextLong();
-            final int gap = _TestUtil.nextInt(random, 2, 40);
+            final int gap = TestUtil.nextInt(random, 2, 40);
             if (LuceneTestCase.VERBOSE) {
              System.out.println("MockRandomCodec: random-gap terms index (max gap=" + gap + ")");
             }
@@ -322,7 +322,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
 
     final Random random = new Random(seed);
     
-    int readBufferSize = _TestUtil.nextInt(random, 1, 4096);
+    int readBufferSize = TestUtil.nextInt(random, 1, 4096);
     if (LuceneTestCase.VERBOSE) {
       System.out.println("MockRandomCodec: readBufferSize=" + readBufferSize);
     }
@@ -343,7 +343,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
     }
 
     if (random.nextBoolean()) {
-      final int totTFCutoff = _TestUtil.nextInt(random, 1, 20);
+      final int totTFCutoff = TestUtil.nextInt(random, 1, 20);
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockRandomCodec: reading pulsing postings with totTFCutoff=" + totTFCutoff);
       }

@@ -21,7 +21,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Tests {@link Terms#getSumDocFreq()}
@@ -44,11 +44,11 @@ public class TestSumDocFreq extends LuceneTestCase {
     doc.add(field2);
     for (int i = 0; i < numDocs; i++) {
       id.setStringValue("" + i);
-      char ch1 = (char) _TestUtil.nextInt(random(), 'a', 'z');
-      char ch2 = (char) _TestUtil.nextInt(random(), 'a', 'z');
+      char ch1 = (char) TestUtil.nextInt(random(), 'a', 'z');
+      char ch2 = (char) TestUtil.nextInt(random(), 'a', 'z');
       field1.setStringValue("" + ch1 + " " + ch2);
-      ch1 = (char) _TestUtil.nextInt(random(), 'a', 'z');
-      ch2 = (char) _TestUtil.nextInt(random(), 'a', 'z');
+      ch1 = (char) TestUtil.nextInt(random(), 'a', 'z');
+      ch2 = (char) TestUtil.nextInt(random(), 'a', 'z');
       field2.setStringValue("" + ch1 + " " + ch2);
       writer.addDocument(doc);
     }

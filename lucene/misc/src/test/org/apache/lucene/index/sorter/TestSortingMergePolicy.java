@@ -42,7 +42,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
@@ -73,13 +73,13 @@ public class TestSortingMergePolicy extends LuceneTestCase {
     MergePolicy mp;
     if (random().nextBoolean()) {
       TieredMergePolicy tmp = newTieredMergePolicy(random());
-      final int numSegs = _TestUtil.nextInt(random(), 3, 5);
+      final int numSegs = TestUtil.nextInt(random(), 3, 5);
       tmp.setSegmentsPerTier(numSegs);
-      tmp.setMaxMergeAtOnce(_TestUtil.nextInt(random(), 2, numSegs));
+      tmp.setMaxMergeAtOnce(TestUtil.nextInt(random(), 2, numSegs));
       mp = tmp;
     } else {
       LogMergePolicy lmp = newLogMergePolicy(random());
-      lmp.setMergeFactor(_TestUtil.nextInt(random(), 3, 5));
+      lmp.setMergeFactor(TestUtil.nextInt(random(), 3, 5));
       mp = lmp;
     }
     // wrap it with a sorting mp
@@ -90,10 +90,10 @@ public class TestSortingMergePolicy extends LuceneTestCase {
     dir1 = newDirectory();
     dir2 = newDirectory();
     final int numDocs = atLeast(150);
-    final int numTerms = _TestUtil.nextInt(random(), 1, numDocs / 5);
+    final int numTerms = TestUtil.nextInt(random(), 1, numDocs / 5);
     Set<String> randomTerms = new HashSet<String>();
     while (randomTerms.size() < numTerms) {
-      randomTerms.add(_TestUtil.randomSimpleString(random()));
+      randomTerms.add(TestUtil.randomSimpleString(random()));
     }
     terms = new ArrayList<String>(randomTerms);
     final long seed = random().nextLong();

@@ -46,7 +46,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -178,14 +178,14 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
   }
 
   public void testRandom() throws Exception {
-    int numberOfRuns = _TestUtil.nextInt(random(), 3, 6);
+    int numberOfRuns = TestUtil.nextInt(random(), 3, 6);
     for (int iter = 0; iter < numberOfRuns; iter++) {
       if (VERBOSE) {
         System.out.println(String.format(Locale.ROOT, "TEST: iter=%d total=%d", iter, numberOfRuns));
       }
 
-      final int numDocs = _TestUtil.nextInt(random(), 100, 1000) * RANDOM_MULTIPLIER;
-      final int numGroups = _TestUtil.nextInt(random(), 1, numDocs);
+      final int numDocs = TestUtil.nextInt(random(), 100, 1000) * RANDOM_MULTIPLIER;
+      final int numGroups = TestUtil.nextInt(random(), 1, numDocs);
 
       if (VERBOSE) {
         System.out.println("TEST: numDocs=" + numDocs + " numGroups=" + numGroups);
@@ -197,11 +197,11 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
         do {
           // B/c of DV based impl we can't see the difference between an empty string and a null value.
           // For that reason we don't generate empty string groups.
-          randomValue = _TestUtil.randomRealisticUnicodeString(random());
+          randomValue = TestUtil.randomRealisticUnicodeString(random());
         } while ("".equals(randomValue));
         groups.add(new BytesRef(randomValue));
       }
-      final String[] contentStrings = new String[_TestUtil.nextInt(random(), 2, 20)];
+      final String[] contentStrings = new String[TestUtil.nextInt(random(), 2, 20)];
       if (VERBOSE) {
         System.out.println("TEST: create fake content");
       }

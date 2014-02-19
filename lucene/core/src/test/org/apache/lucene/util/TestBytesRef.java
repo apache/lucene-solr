@@ -40,7 +40,7 @@ public class TestBytesRef extends LuceneTestCase {
   
   public void testFromChars() {
     for (int i = 0; i < 100; i++) {
-      String s = _TestUtil.randomUnicodeString(random());
+      String s = TestUtil.randomUnicodeString(random());
       String s2 = new BytesRef(s).utf8ToString();
       assertEquals(s, s2);
     }

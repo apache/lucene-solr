@@ -67,7 +67,7 @@ import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 
 public class TestRangeFacetCounts extends FacetTestCase {
@@ -401,7 +401,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
       if (VERBOSE) {
         System.out.println("TEST: iter=" + iter);
       }
-      int numRange = _TestUtil.nextInt(random(), 1, 100);
+      int numRange = TestUtil.nextInt(random(), 1, 100);
       LongRange[] ranges = new LongRange[numRange];
       int[] expectedCounts = new int[numRange];
       long minAcceptedValue = Long.MAX_VALUE;
@@ -545,7 +545,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
       if (VERBOSE) {
         System.out.println("TEST: iter=" + iter);
       }
-      int numRange = _TestUtil.nextInt(random(), 1, 5);
+      int numRange = TestUtil.nextInt(random(), 1, 5);
       DoubleRange[] ranges = new DoubleRange[numRange];
       int[] expectedCounts = new int[numRange];
       float minAcceptedValue = Float.POSITIVE_INFINITY;
@@ -703,7 +703,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
       if (VERBOSE) {
         System.out.println("TEST: iter=" + iter);
       }
-      int numRange = _TestUtil.nextInt(random(), 1, 5);
+      int numRange = TestUtil.nextInt(random(), 1, 5);
       DoubleRange[] ranges = new DoubleRange[numRange];
       int[] expectedCounts = new int[numRange];
       double minAcceptedValue = Double.POSITIVE_INFINITY;

@@ -44,7 +44,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 @SuppressCodecs({"MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom"})
 public class TestPostingsHighlighterRanking extends LuceneTestCase {
@@ -75,7 +75,7 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
     
     for (int i = 0; i < numDocs; i++) {
       StringBuilder bodyText = new StringBuilder();
-      int numSentences = _TestUtil.nextInt(random(), 1, maxNumSentences);
+      int numSentences = TestUtil.nextInt(random(), 1, maxNumSentences);
       for (int j = 0; j < numSentences; j++) {
         bodyText.append(newSentence(random(), maxSentenceLength));
       }
@@ -144,14 +144,14 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
    */
   private String newSentence(Random r, int maxSentenceLength) {
     StringBuilder sb = new StringBuilder();
-    int numElements = _TestUtil.nextInt(r, 1, maxSentenceLength);
+    int numElements = TestUtil.nextInt(r, 1, maxSentenceLength);
     for (int i = 0; i < numElements; i++) {
       if (sb.length() > 0) {
         sb.append(' ');
-        sb.append((char)_TestUtil.nextInt(r, 'a', 'z'));
+        sb.append((char) TestUtil.nextInt(r, 'a', 'z'));
       } else {
         // capitalize the first word to help breakiterator
-        sb.append((char)_TestUtil.nextInt(r, 'A', 'Z'));
+        sb.append((char) TestUtil.nextInt(r, 'A', 'Z'));
       }
     }
     sb.append(". "); // finalize sentence

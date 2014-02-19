@@ -20,13 +20,14 @@ package org.apache.lucene.codecs.blockterms;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.lucene41ords.Lucene41WithOrds;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Basic tests of a PF using FixedGap terms dictionary
  */
 public class TestFixedGapPostingsFormat extends BasePostingsFormatTestCase {
-  private final Codec codec = _TestUtil.alwaysPostingsFormat(new Lucene41WithOrds(_TestUtil.nextInt(random(), 1, 1000)));
+  private final Codec codec = TestUtil.alwaysPostingsFormat(new Lucene41WithOrds(TestUtil.nextInt(random(), 1, 1000)));
 
   @Override
   protected Codec getCodec() {

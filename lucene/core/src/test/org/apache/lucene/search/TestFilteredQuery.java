@@ -37,7 +37,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.DocIdBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * FilteredQuery JUnit tests.
@@ -392,7 +392,7 @@ public class TestFilteredQuery extends LuceneTestCase {
         }
       };
     }
-    return _TestUtil.randomFilterStrategy(random);
+    return TestUtil.randomFilterStrategy(random);
   }
   
   /*

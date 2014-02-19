@@ -49,7 +49,7 @@ import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.util.ClientUtils;
@@ -278,8 +278,8 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     // don't ask iwc.getMaxThreadStates(), sometimes newIWC uses 
     // RandomDocumentsWriterPerThreadPool and all hell breaks loose
     int maxIndexingThreads = rarely(random())
-      ? _TestUtil.nextInt(random(), 5, 20) // crazy value
-      : _TestUtil.nextInt(random(), 1, 4); // reasonable value
+      ? TestUtil.nextInt(random(), 5, 20) // crazy value
+      : TestUtil.nextInt(random(), 1, 4); // reasonable value
     System.setProperty("solr.tests.maxIndexingThreads", String.valueOf(maxIndexingThreads));
   }
 

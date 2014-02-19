@@ -11,7 +11,8 @@ import java.util.Random;
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
 
 /*
@@ -67,7 +68,7 @@ public class TestCompactLabelToOrdinal extends FacetTestCase {
       }
     }
 
-    File tmpDir = _TestUtil.getTempDir("testLableToOrdinal");
+    File tmpDir = TestUtil.getTempDir("testLableToOrdinal");
     File f = new File(tmpDir, "CompactLabelToOrdinalTest.tmp");
     int flushInterval = 10;
 

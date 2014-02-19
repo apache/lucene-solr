@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.util;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.io.StringReader;
 import java.util.Locale;
 
@@ -29,7 +28,7 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.LetterTokenizer;
 import org.apache.lucene.analysis.core.LowerCaseTokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 
 /**
@@ -126,7 +125,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
     };
     int num = 1000 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
-      String s = _TestUtil.randomUnicodeString(random());
+      String s = TestUtil.randomUnicodeString(random());
       try (TokenStream ts = analyzer.tokenStream("foo", s)) {
         ts.reset();
         OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
@@ -164,7 +163,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
     };
     int num = 1000 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
-      String s = _TestUtil.randomUnicodeString(random());
+      String s = TestUtil.randomUnicodeString(random());
       try (TokenStream ts = analyzer.tokenStream("foo", s)) {
         ts.reset();
         OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);

@@ -37,7 +37,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestStressNRT extends LuceneTestCase {
   volatile DirectoryReader reader;
@@ -71,15 +71,15 @@ public class TestStressNRT extends LuceneTestCase {
     final int deletePercent = random().nextInt(50);
     final int deleteByQueryPercent = random().nextInt(25);
     final int ndocs = atLeast(50);
-    final int nWriteThreads = _TestUtil.nextInt(random(), 1, TEST_NIGHTLY ? 10 : 5);
-    final int maxConcurrentCommits = _TestUtil.nextInt(random(), 1, TEST_NIGHTLY ? 10 : 5);   // number of committers at a time... needed if we want to avoid commit errors due to exceeding the max
+    final int nWriteThreads = TestUtil.nextInt(random(), 1, TEST_NIGHTLY ? 10 : 5);
+    final int maxConcurrentCommits = TestUtil.nextInt(random(), 1, TEST_NIGHTLY ? 10 : 5);   // number of committers at a time... needed if we want to avoid commit errors due to exceeding the max
     
     final boolean tombstones = random().nextBoolean();
 
     // query variables
     final AtomicLong operations = new AtomicLong(atLeast(10000));  // number of query operations to perform in total
 
-    final int nReadThreads = _TestUtil.nextInt(random(), 1, TEST_NIGHTLY ? 10 : 5);
+    final int nReadThreads = TestUtil.nextInt(random(), 1, TEST_NIGHTLY ? 10 : 5);
     initModel(ndocs);
 
     final FieldType storedOnlyType = new FieldType();

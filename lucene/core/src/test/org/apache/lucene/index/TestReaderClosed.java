@@ -26,7 +26,7 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestReaderClosed extends LuceneTestCase {
   private IndexReader reader;
@@ -38,7 +38,7 @@ public class TestReaderClosed extends LuceneTestCase {
     dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
-        .setMaxBufferedDocs(_TestUtil.nextInt(random(), 50, 1000)));
+        .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000)));
     
     Document doc = new Document();
     Field field = newStringField("field", "", Field.Store.NO);
@@ -48,7 +48,7 @@ public class TestReaderClosed extends LuceneTestCase {
     // but for preflex codec, the test can be very slow, so use less iterations.
     int num = atLeast(10);
     for (int i = 0; i < num; i++) {
-      field.setStringValue(_TestUtil.randomUnicodeString(random(), 10));
+      field.setStringValue(TestUtil.randomUnicodeString(random(), 10));
       writer.addDocument(doc);
     }
     reader = writer.getReader();

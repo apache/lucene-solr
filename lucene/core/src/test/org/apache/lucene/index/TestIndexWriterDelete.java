@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -45,7 +44,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestIndexWriterDelete extends LuceneTestCase {
 
@@ -631,7 +631,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         // If the close() succeeded, make sure there are
         // no unreferenced files.
         if (success) {
-          _TestUtil.checkIndex(dir);
+          TestUtil.checkIndex(dir);
           TestIndexWriter.assertNoUnreferencedFiles(dir, "after writer.close");
         }
         dir.setRandomIOExceptionRate(randomIOExceptionRate);
@@ -953,7 +953,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     int upto = 0;
     while(upto < ids.size()) {
       final int left = ids.size() - upto;
-      final int inc = Math.min(left, _TestUtil.nextInt(random(), 1, 20));
+      final int inc = Math.min(left, TestUtil.nextInt(random(), 1, 20));
       final int limit = upto + inc;
       while(upto < limit) {
         w.deleteDocuments(new Term("id", ""+ids.get(upto++)));
@@ -970,7 +970,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
   public void testIndexingThenDeleting() throws Exception {
     // TODO: move this test to its own class and just @SuppressCodecs?
     // TODO: is it enough to just use newFSDirectory?
-    final String fieldFormat = _TestUtil.getPostingsFormat("field");
+    final String fieldFormat = TestUtil.getPostingsFormat("field");
     assumeFalse("This test cannot run with Memory codec", fieldFormat.equals("Memory"));
     assumeFalse("This test cannot run with SimpleText codec", fieldFormat.equals("SimpleText"));
     assumeFalse("This test cannot run with Direct codec", fieldFormat.equals("Direct"));
@@ -1124,7 +1124,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     while(true) {
       StringBuilder sb = new StringBuilder();
       for(int termIDX=0;termIDX<100;termIDX++) {
-        sb.append(' ').append(_TestUtil.randomRealisticUnicodeString(random()));
+        sb.append(' ').append(TestUtil.randomRealisticUnicodeString(random()));
       }
       if (id == 500) {
         w.deleteDocuments(new Term("id", "0"));

@@ -26,7 +26,7 @@ import java.io.StringReader;
 
 import org.apache.lucene.benchmark.byTask.Benchmark;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -36,7 +36,7 @@ public abstract class BenchmarkTestCase extends LuceneTestCase {
   
   @BeforeClass
   public static void beforeClassBenchmarkTestCase() {
-    WORKDIR = _TestUtil.getTempDir("benchmark");
+    WORKDIR = TestUtil.getTempDir("benchmark");
     WORKDIR.delete();
     WORKDIR.mkdirs();
   }

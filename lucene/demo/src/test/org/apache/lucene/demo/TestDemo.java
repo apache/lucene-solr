@@ -23,7 +23,7 @@ import java.io.PrintStream;
 import java.nio.charset.Charset;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestDemo extends LuceneTestCase {
 
@@ -44,7 +44,7 @@ public class TestDemo extends LuceneTestCase {
 
   public void testIndexSearch() throws Exception {
     File dir = getDataFile("test-files/docs");
-    File indexDir = _TestUtil.getTempDir("ContribDemoTest");
+    File indexDir = TestUtil.getTempDir("ContribDemoTest");
     IndexFiles.main(new String[] { "-create", "-docs", dir.getPath(), "-index", indexDir.getPath()});
     testOneSearch(indexDir, "apache", 3);
     testOneSearch(indexDir, "patent", 8);

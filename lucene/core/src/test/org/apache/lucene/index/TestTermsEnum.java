@@ -31,7 +31,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
@@ -93,9 +93,9 @@ public class TestTermsEnum extends LuceneTestCase {
         if (random().nextBoolean()) {
           // likely fake term
           if (random().nextBoolean()) {
-            target = new BytesRef(_TestUtil.randomSimpleString(random()));
+            target = new BytesRef(TestUtil.randomSimpleString(random()));
           } else {
-            target = new BytesRef(_TestUtil.randomRealisticUnicodeString(random()));
+            target = new BytesRef(TestUtil.randomRealisticUnicodeString(random()));
           }
           exists = "likely not";
         } else {
@@ -332,7 +332,7 @@ public class TestTermsEnum extends LuceneTestCase {
           }
           assertEquals(expected, actual);
           assertEquals(1, te.docFreq());
-          docsEnum = _TestUtil.docs(random(), te, null, docsEnum, DocsEnum.FLAG_NONE);
+          docsEnum = TestUtil.docs(random(), te, null, docsEnum, DocsEnum.FLAG_NONE);
           final int docID = docsEnum.nextDoc();
           assertTrue(docID != DocIdSetIterator.NO_MORE_DOCS);
           assertEquals(docIDToID.get(docID), termToID.get(expected).intValue());
@@ -524,11 +524,11 @@ public class TestTermsEnum extends LuceneTestCase {
 
   private String getRandomString() {
     //return _TestUtil.randomSimpleString(random());
-    return _TestUtil.randomRealisticUnicodeString(random());
+    return TestUtil.randomRealisticUnicodeString(random());
   }
 
   public void testRandomTerms() throws Exception {
-    final String[] terms = new String[_TestUtil.nextInt(random(), 1, atLeast(1000))];
+    final String[] terms = new String[TestUtil.nextInt(random(), 1, atLeast(1000))];
     final Set<String> seen = new HashSet<String>();
 
     final boolean allowEmptyString = random().nextBoolean();

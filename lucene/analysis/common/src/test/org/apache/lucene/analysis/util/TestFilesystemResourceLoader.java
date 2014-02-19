@@ -26,7 +26,8 @@ import java.io.Writer;
 
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestFilesystemResourceLoader extends LuceneTestCase {
   
@@ -60,7 +61,7 @@ public class TestFilesystemResourceLoader extends LuceneTestCase {
   }
   
   public void testBaseDir() throws Exception {
-    final File base = _TestUtil.getTempDir("fsResourceLoaderBase").getAbsoluteFile();
+    final File base = TestUtil.getTempDir("fsResourceLoaderBase").getAbsoluteFile();
     try {
       base.mkdirs();
       Writer os = new OutputStreamWriter(new FileOutputStream(new File(base, "template.txt")), IOUtils.CHARSET_UTF_8);
@@ -86,7 +87,7 @@ public class TestFilesystemResourceLoader extends LuceneTestCase {
       assertClasspathDelegation(rl);
       assertNotFound(rl);
     } finally {
-      _TestUtil.rmDir(base);
+      TestUtil.rmDir(base);
     }
   }
   

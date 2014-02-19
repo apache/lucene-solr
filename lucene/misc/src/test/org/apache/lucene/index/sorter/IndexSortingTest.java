@@ -26,7 +26,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.BeforeClass;
 
 public class IndexSortingTest extends SorterTestBase {
@@ -73,7 +73,7 @@ public class IndexSortingTest extends SorterTestBase {
     
     // CheckIndex the target directory
     dir = target;
-    _TestUtil.checkIndex(dir);
+    TestUtil.checkIndex(dir);
     
     // set reader for tests
     reader = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));

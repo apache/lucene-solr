@@ -30,10 +30,9 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.Iterator;
 import java.util.Arrays;
 
@@ -129,7 +128,7 @@ public class TestRemoveDuplicatesTokenFilter extends BaseTokenStreamTestCase {
   // some helper methods for the below test with synonyms
   private String randomNonEmptyString() {
     while(true) {
-      final String s = _TestUtil.randomUnicodeString(random()).trim();
+      final String s = TestUtil.randomUnicodeString(random()).trim();
       if (s.length() != 0 && s.indexOf('\u0000') == -1) {
         return s;
       }

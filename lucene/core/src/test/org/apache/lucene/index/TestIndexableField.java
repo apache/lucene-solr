@@ -35,7 +35,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestIndexableField extends LuceneTestCase {
 
@@ -172,7 +172,7 @@ public class TestIndexableField extends LuceneTestCase {
     int baseCount = 0;
 
     for(int docCount=0;docCount<NUM_DOCS;docCount++) {
-      final int fieldCount = _TestUtil.nextInt(random(), 1, 17);
+      final int fieldCount = TestUtil.nextInt(random(), 1, 17);
       fieldsPerDoc[docCount] = fieldCount-1;
 
       final int finalDocCount = docCount;

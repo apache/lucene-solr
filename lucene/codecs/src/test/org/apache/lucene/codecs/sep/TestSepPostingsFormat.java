@@ -20,14 +20,14 @@ package org.apache.lucene.codecs.sep;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.mocksep.MockSepPostingsFormat;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Tests sep layout
  */
 public class TestSepPostingsFormat extends BasePostingsFormatTestCase {
   // TODO: randomize cutoff
-  private final Codec codec = _TestUtil.alwaysPostingsFormat(new MockSepPostingsFormat());
+  private final Codec codec = TestUtil.alwaysPostingsFormat(new MockSepPostingsFormat());
 
   @Override
   protected Codec getCodec() {

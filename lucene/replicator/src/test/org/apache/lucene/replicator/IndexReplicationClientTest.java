@@ -33,8 +33,8 @@ import org.apache.lucene.replicator.ReplicationClient.SourceDirectoryFactory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.ThreadInterruptedException;
-import org.apache.lucene.util._TestUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -68,7 +68,7 @@ public class IndexReplicationClientTest extends ReplicatorTestCase {
         reader.close();
         reader = newReader;
         lastGeneration = newGeneration;
-        _TestUtil.checkIndex(indexDir);
+        TestUtil.checkIndex(indexDir);
       }
       return null;
     }
@@ -136,7 +136,7 @@ public class IndexReplicationClientTest extends ReplicatorTestCase {
     super.setUp();
     publishDir = newMockDirectory();
     handlerDir = newMockDirectory();
-    sourceDirFactory = new PerSessionDirectoryFactory(_TestUtil.getTempDir("replicationClientTest"));
+    sourceDirFactory = new PerSessionDirectoryFactory(TestUtil.getTempDir("replicationClientTest"));
     replicator = new LocalReplicator();
     callback = new IndexReadyCallback(handlerDir);
     handler = new IndexReplicationHandler(handlerDir, callback);
@@ -305,7 +305,7 @@ public class IndexReplicationClientTest extends ReplicatorTestCase {
               reader.close();
             }
             // verify index consistency
-            _TestUtil.checkIndex(handlerDir.getDelegate());
+            TestUtil.checkIndex(handlerDir.getDelegate());
           } catch (IOException e) {
             // exceptions here are bad, don't ignore them
             throw new RuntimeException(e);

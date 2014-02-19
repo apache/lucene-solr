@@ -19,13 +19,13 @@ package org.apache.lucene.codecs.lucene45;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BaseCompressingDocValuesFormatTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Tests Lucene45DocValuesFormat
  */
 public class TestLucene45DocValuesFormat extends BaseCompressingDocValuesFormatTestCase {
-  private final Codec codec = _TestUtil.alwaysDocValuesFormat(new Lucene45DocValuesFormat());
+  private final Codec codec = TestUtil.alwaysDocValuesFormat(new Lucene45DocValuesFormat());
 
   @Override
   protected Codec getCodec() {

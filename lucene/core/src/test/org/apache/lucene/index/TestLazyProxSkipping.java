@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.Document;
@@ -33,7 +32,7 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Tests lazy skipping on the proximity file.
@@ -132,7 +131,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
     }
  
     public void testLazySkipping() throws IOException {
-      final String fieldFormat = _TestUtil.getPostingsFormat(this.field);
+      final String fieldFormat = TestUtil.getPostingsFormat(this.field);
       assumeFalse("This test cannot run with Memory postings format", fieldFormat.equals("Memory"));
       assumeFalse("This test cannot run with Direct postings format", fieldFormat.equals("Direct"));
       assumeFalse("This test cannot run with SimpleText postings format", fieldFormat.equals("SimpleText"));

@@ -32,7 +32,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
@@ -981,7 +982,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     final IndexWriter writer = new IndexWriter(dir, conf);
     
     // create index
-    final int numThreads = _TestUtil.nextInt(random(), 3, 6);
+    final int numThreads = TestUtil.nextInt(random(), 3, 6);
     final int numDocs = atLeast(2000);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
@@ -1200,10 +1201,10 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir1, conf);
     
     final int numDocs = atLeast(50);
-    final int numTerms = _TestUtil.nextInt(random(), 1, numDocs / 5);
+    final int numTerms = TestUtil.nextInt(random(), 1, numDocs / 5);
     Set<String> randomTerms = new HashSet<String>();
     while (randomTerms.size() < numTerms) {
-      randomTerms.add(_TestUtil.randomSimpleString(random()));
+      randomTerms.add(TestUtil.randomSimpleString(random()));
     }
 
     // create first index
@@ -1298,10 +1299,10 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     // test data: lots of documents (few 10Ks) and lots of update terms (few hundreds)
     final int numDocs = atLeast(20000);
     final int numNumericFields = atLeast(5);
-    final int numTerms = _TestUtil.nextInt(random, 10, 100); // terms should affect many docs
+    final int numTerms = TestUtil.nextInt(random, 10, 100); // terms should affect many docs
     Set<String> updateTerms = new HashSet<String>();
     while (updateTerms.size() < numTerms) {
-      updateTerms.add(_TestUtil.randomSimpleString(random));
+      updateTerms.add(TestUtil.randomSimpleString(random));
     }
 
 //    System.out.println("numDocs=" + numDocs + " numNumericFields=" + numNumericFields + " numTerms=" + numTerms);
@@ -1309,7 +1310,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     // build a large index with many NDV fields and update terms
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
-      int numUpdateTerms = _TestUtil.nextInt(random, 1, numTerms / 10);
+      int numUpdateTerms = TestUtil.nextInt(random, 1, numTerms / 10);
       for (int j = 0; j < numUpdateTerms; j++) {
         doc.add(new StringField("upd", RandomPicks.randomFrom(random, updateTerms), Store.NO));
       }

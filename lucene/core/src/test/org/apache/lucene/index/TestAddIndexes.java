@@ -46,7 +46,7 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestAddIndexes extends LuceneTestCase {
   
@@ -66,7 +66,7 @@ public class TestAddIndexes extends LuceneTestCase {
     addDocs(writer, 100);
     assertEquals(100, writer.maxDoc());
     writer.close();
-    _TestUtil.checkIndex(dir);
+    TestUtil.checkIndex(dir);
 
     writer = newWriter(
         aux,
@@ -91,7 +91,7 @@ public class TestAddIndexes extends LuceneTestCase {
     writer.addIndexes(aux, aux2);
     assertEquals(190, writer.maxDoc());
     writer.close();
-    _TestUtil.checkIndex(dir);
+    TestUtil.checkIndex(dir);
 
     // make sure the old index is correct
     verifyNumDocs(aux, 40);
@@ -540,7 +540,7 @@ public class TestAddIndexes extends LuceneTestCase {
   private void verifyTermDocs(Directory dir, Term term, int numDocs)
       throws IOException {
     IndexReader reader = DirectoryReader.open(dir);
-    DocsEnum docsEnum = _TestUtil.docs(random(), reader, term.field, term.bytes, null, null, DocsEnum.FLAG_NONE);
+    DocsEnum docsEnum = TestUtil.docs(random(), reader, term.field, term.bytes, null, null, DocsEnum.FLAG_NONE);
     int count = 0;
     while (docsEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS)
       count++;
@@ -915,7 +915,7 @@ public class TestAddIndexes extends LuceneTestCase {
     CommitAndAddIndexes3 c = new CommitAndAddIndexes3(NUM_COPY);
     c.launchThreads(-1);
 
-    Thread.sleep(_TestUtil.nextInt(random(), 10, 500));
+    Thread.sleep(TestUtil.nextInt(random(), 10, 500));
 
     // Close w/o first stopping/joining the threads
     if (VERBOSE) {
@@ -940,7 +940,7 @@ public class TestAddIndexes extends LuceneTestCase {
     CommitAndAddIndexes3 c = new CommitAndAddIndexes3(NUM_COPY);
     c.launchThreads(-1);
 
-    Thread.sleep(_TestUtil.nextInt(random(), 10, 500));
+    Thread.sleep(TestUtil.nextInt(random(), 10, 500));
 
     // Close w/o first stopping/joining the threads
     if (VERBOSE) {
@@ -1016,7 +1016,7 @@ public class TestAddIndexes extends LuceneTestCase {
     assertEquals(100, writer.maxDoc());
     writer.commit();
     writer.close();
-    _TestUtil.checkIndex(dir);
+    TestUtil.checkIndex(dir);
 
     writer = newWriter(
         aux,
@@ -1141,7 +1141,7 @@ public class TestAddIndexes extends LuceneTestCase {
       Directory dir = newDirectory();
       IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
           new MockAnalyzer(random()));
-      conf.setCodec(_TestUtil.alwaysPostingsFormat(new Pulsing41PostingsFormat(1 + random().nextInt(20))));
+      conf.setCodec(TestUtil.alwaysPostingsFormat(new Pulsing41PostingsFormat(1 + random().nextInt(20))));
       IndexWriter w = new IndexWriter(dir, conf);
       try {
         w.addIndexes(toAdd);

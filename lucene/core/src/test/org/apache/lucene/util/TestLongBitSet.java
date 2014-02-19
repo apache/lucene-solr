@@ -68,7 +68,7 @@ public class TestLongBitSet extends LuceneTestCase {
     LongBitSet b0=null;
 
     for (int i=0; i<iter; i++) {
-      int sz = _TestUtil.nextInt(random(), 2, maxSize);
+      int sz = TestUtil.nextInt(random(), 2, maxSize);
       BitSet a = new BitSet(sz);
       LongBitSet b = new LongBitSet(sz);
 

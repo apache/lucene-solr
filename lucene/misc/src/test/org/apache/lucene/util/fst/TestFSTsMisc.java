@@ -29,7 +29,8 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.fst.UpToTwoPositiveIntOutputs.TwoLongs;
 
 import static org.apache.lucene.util.fst.FSTTester.getRandomString;
@@ -91,15 +92,15 @@ public class TestFSTsMisc extends LuceneTestCase {
       long lastOutput = 0;
       for(int idx=0;idx<terms.length;idx++) {
         // Sometimes go backwards
-        long value = lastOutput + _TestUtil.nextInt(random(), -100, 1000);
+        long value = lastOutput + TestUtil.nextInt(random(), -100, 1000);
         while(value < 0) {
-          value = lastOutput + _TestUtil.nextInt(random(), -100, 1000);
+          value = lastOutput + TestUtil.nextInt(random(), -100, 1000);
         }
         final Object output;
         if (random().nextInt(5) == 3) {
-          long value2 = lastOutput + _TestUtil.nextInt(random(), -100, 1000);
+          long value2 = lastOutput + TestUtil.nextInt(random(), -100, 1000);
           while(value2 < 0) {
-            value2 = lastOutput + _TestUtil.nextInt(random(), -100, 1000);
+            value2 = lastOutput + TestUtil.nextInt(random(), -100, 1000);
           }
           List<Long> values = new ArrayList<Long>();
           values.add(value);
@@ -137,13 +138,13 @@ public class TestFSTsMisc extends LuceneTestCase {
       long lastOutput = 0;
       for(int idx=0;idx<terms.length;idx++) {
         
-        int outputCount = _TestUtil.nextInt(random(), 1, 7);
+        int outputCount = TestUtil.nextInt(random(), 1, 7);
         List<Long> values = new ArrayList<Long>();
         for(int i=0;i<outputCount;i++) {
           // Sometimes go backwards
-          long value = lastOutput + _TestUtil.nextInt(random(), -100, 1000);
+          long value = lastOutput + TestUtil.nextInt(random(), -100, 1000);
           while(value < 0) {
-            value = lastOutput + _TestUtil.nextInt(random(), -100, 1000);
+            value = lastOutput + TestUtil.nextInt(random(), -100, 1000);
           }
           values.add(value);
           lastOutput = value;

@@ -17,7 +17,6 @@
 package org.apache.lucene.analysis.phonetic;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.io.StringReader;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -27,7 +26,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class DoubleMetaphoneFilterTest extends BaseTokenStreamTestCase {
   
@@ -79,7 +78,7 @@ public class DoubleMetaphoneFilterTest extends BaseTokenStreamTestCase {
   }
 
   public void testRandom() throws Exception {
-    final int codeLen = _TestUtil.nextInt(random(), 1, 8);
+    final int codeLen = TestUtil.nextInt(random(), 1, 8);
     Analyzer a = new Analyzer() {
 
       @Override

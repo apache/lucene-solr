@@ -69,7 +69,6 @@ import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
-import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableField;
@@ -77,8 +76,6 @@ import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.SegmentCommitInfo;
-import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
@@ -97,7 +94,10 @@ import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 /**
  * General utility methods for Lucene unit tests. 
  */
-public class _TestUtil {
+public final class TestUtil {
+  private TestUtil() {
+    //
+  }
 
   // the max number of retries we're going to do in getTempDir
   private static final int GET_TEMP_DIR_RETRY_THRESHOLD = 1000;
@@ -297,7 +297,7 @@ public class _TestUtil {
     }
     final char[] buffer = new char[end];
     for (int i = 0; i < end; i++) {
-      buffer[i] = (char) _TestUtil.nextInt(r, 'a', 'z');
+      buffer[i] = (char) TestUtil.nextInt(r, 'a', 'z');
     }
     return new String(buffer, 0, end);
   }
@@ -310,7 +310,7 @@ public class _TestUtil {
     }
     final char[] buffer = new char[end];
     for (int i = 0; i < end; i++) {
-      buffer[i] = (char) _TestUtil.nextInt(r, minChar, maxChar);
+      buffer[i] = (char) TestUtil.nextInt(r, minChar, maxChar);
     }
     return new String(buffer, 0, end);
   }
@@ -1006,7 +1006,7 @@ public class _TestUtil {
     final String nonBmpString = "AB\uD840\uDC00C";
     while (true) {
       try {
-        Pattern p = Pattern.compile(_TestUtil.randomRegexpishString(random));
+        Pattern p = Pattern.compile(TestUtil.randomRegexpishString(random));
         String replacement = null;
         // ignore bugs in Sun's regex impl
         try {
@@ -1080,7 +1080,7 @@ public class _TestUtil {
     // otherwise, try to make it more realistic with 'words' since most tests use MockTokenizer
     // first decide how big the string will really be: 0..n
     maxLength = random.nextInt(maxLength);
-    int avgWordLength = _TestUtil.nextInt(random, 3, 8);
+    int avgWordLength = TestUtil.nextInt(random, 3, 8);
     StringBuilder sb = new StringBuilder();
     while (sb.length() < maxLength) {
       if (sb.length() > 0) {
@@ -1101,25 +1101,25 @@ public class _TestUtil {
       return "";
     }
 
-    int evilness = _TestUtil.nextInt(random, 0, 20);
+    int evilness = TestUtil.nextInt(random, 0, 20);
 
     StringBuilder sb = new StringBuilder();
     while (sb.length() < wordLength) {;
       if (simple) {
-        sb.append(random.nextBoolean() ? _TestUtil.randomSimpleString(random, wordLength) : _TestUtil.randomHtmlishString(random, wordLength));
+        sb.append(random.nextBoolean() ? TestUtil.randomSimpleString(random, wordLength) : TestUtil.randomHtmlishString(random, wordLength));
       } else {
         if (evilness < 10) {
-          sb.append(_TestUtil.randomSimpleString(random, wordLength));
+          sb.append(TestUtil.randomSimpleString(random, wordLength));
         } else if (evilness < 15) {
           assert sb.length() == 0; // we should always get wordLength back!
-          sb.append(_TestUtil.randomRealisticUnicodeString(random, wordLength, wordLength));
+          sb.append(TestUtil.randomRealisticUnicodeString(random, wordLength, wordLength));
         } else if (evilness == 16) {
-          sb.append(_TestUtil.randomHtmlishString(random, wordLength));
+          sb.append(TestUtil.randomHtmlishString(random, wordLength));
         } else if (evilness == 17) {
           // gives a lot of punctuation
-          sb.append(_TestUtil.randomRegexpishString(random, wordLength));
+          sb.append(TestUtil.randomRegexpishString(random, wordLength));
         } else {
-          sb.append(_TestUtil.randomUnicodeString(random, wordLength));
+          sb.append(TestUtil.randomUnicodeString(random, wordLength));
         }
       }
     }
@@ -1132,7 +1132,7 @@ public class _TestUtil {
 
     if (random.nextInt(17) == 0) {
       // mix up case
-      String mixedUp = _TestUtil.randomlyRecaseCodePoints(random, sb.toString());
+      String mixedUp = TestUtil.randomlyRecaseCodePoints(random, sb.toString());
       assert mixedUp.length() == sb.length();
       return mixedUp;
     } else {

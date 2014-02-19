@@ -54,7 +54,7 @@ import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
@@ -185,7 +185,7 @@ public class TestFSTs extends LuceneTestCase {
       final List<FSTTester.InputOutput<Long>> pairs = new ArrayList<FSTTester.InputOutput<Long>>(terms.length);
       long lastOutput = 0;
       for(int idx=0;idx<terms.length;idx++) {
-        final long value = lastOutput + _TestUtil.nextInt(random(), 1, 1000);
+        final long value = lastOutput + TestUtil.nextInt(random(), 1, 1000);
         lastOutput = value;
         pairs.add(new FSTTester.InputOutput<Long>(terms[idx], value));
       }
@@ -197,7 +197,7 @@ public class TestFSTs extends LuceneTestCase {
       final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
       final List<FSTTester.InputOutput<Long>> pairs = new ArrayList<FSTTester.InputOutput<Long>>(terms.length);
       for(int idx=0;idx<terms.length;idx++) {
-        pairs.add(new FSTTester.InputOutput<Long>(terms[idx], _TestUtil.nextLong(random(), 0, Long.MAX_VALUE)));
+        pairs.add(new FSTTester.InputOutput<Long>(terms[idx], TestUtil.nextLong(random(), 0, Long.MAX_VALUE)));
       }
       new FSTTester<Long>(random(), dir, inputMode, pairs, outputs, false).doTest(true);
     }
@@ -210,7 +210,7 @@ public class TestFSTs extends LuceneTestCase {
       final List<FSTTester.InputOutput<PairOutputs.Pair<Long,Long>>> pairs = new ArrayList<FSTTester.InputOutput<PairOutputs.Pair<Long,Long>>>(terms.length);
       long lastOutput = 0;
       for(int idx=0;idx<terms.length;idx++) {
-        final long value = lastOutput + _TestUtil.nextInt(random(), 1, 1000);
+        final long value = lastOutput + TestUtil.nextInt(random(), 1, 1000);
         lastOutput = value;
         pairs.add(new FSTTester.InputOutput<PairOutputs.Pair<Long,Long>>(terms[idx],
                                                                          outputs.newPair((long) idx, value)));
@@ -283,7 +283,7 @@ public class TestFSTs extends LuceneTestCase {
 
   @Nightly
   public void testBigSet() throws IOException {
-    testRandomWords(_TestUtil.nextInt(random(), 50000, 60000), 1);
+    testRandomWords(TestUtil.nextInt(random(), 50000, 60000), 1);
   }
   
   // Build FST for all unique terms in the test line docs
@@ -293,7 +293,7 @@ public class TestFSTs extends LuceneTestCase {
     final LineFileDocs docs = new LineFileDocs(random(), true);
     final int RUN_TIME_MSEC = atLeast(500);
     final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(-1).setRAMBufferSizeMB(64);
-    final File tempDir = _TestUtil.getTempDir("fstlines");
+    final File tempDir = TestUtil.getTempDir("fstlines");
     final Directory dir = newFSDirectory(tempDir);
     final IndexWriter writer = new IndexWriter(dir, conf);
     final long stopTime = System.currentTimeMillis() + RUN_TIME_MSEC;
@@ -663,7 +663,7 @@ public class TestFSTs extends LuceneTestCase {
             rand = new Random(17);
           }
           return outputs.newPair((long) ord,
-                                 (long) _TestUtil.nextInt(rand, 1, 5000));
+                                 (long) TestUtil.nextInt(rand, 1, 5000));
         }
       }.run(limit, verify, false);
     } else if (storeOrds) {
@@ -685,7 +685,7 @@ public class TestFSTs extends LuceneTestCase {
           if (ord == 0) {
             rand = new Random(17);
           }
-          return (long) _TestUtil.nextInt(rand, 1, 5000);
+          return (long) TestUtil.nextInt(rand, 1, 5000);
         }
       }.run(limit, verify, false);
     } else {
@@ -1302,7 +1302,7 @@ public class TestFSTs extends LuceneTestCase {
     for (int i = 0; i < numWords; i++) {
       String s;
       while (true) {
-        s = _TestUtil.randomSimpleString(random);
+        s = TestUtil.randomSimpleString(random);
         if (!slowCompletor.containsKey(s)) {
           break;
         }
@@ -1311,7 +1311,7 @@ public class TestFSTs extends LuceneTestCase {
       for (int j = 1; j < s.length(); j++) {
         allPrefixes.add(s.substring(0, j));
       }
-      int weight = _TestUtil.nextInt(random, 1, 100); // weights 1..100
+      int weight = TestUtil.nextInt(random, 1, 100); // weights 1..100
       slowCompletor.put(s, (long)weight);
     }
     
@@ -1342,7 +1342,7 @@ public class TestFSTs extends LuceneTestCase {
         prefixOutput += arc.output;
       }
 
-      final int topN = _TestUtil.nextInt(random, 1, 10);
+      final int topN = TestUtil.nextInt(random, 1, 10);
 
       Util.MinResult<Long>[] r = Util.shortestPaths(fst, arc, fst.outputs.getNoOutput(), minLongComparator, topN, true);
 
@@ -1420,7 +1420,7 @@ public class TestFSTs extends LuceneTestCase {
     for (int i = 0; i < numWords; i++) {
       String s;
       while (true) {
-        s = _TestUtil.randomSimpleString(random);
+        s = TestUtil.randomSimpleString(random);
         if (!slowCompletor.containsKey(s)) {
           break;
         }
@@ -1429,8 +1429,8 @@ public class TestFSTs extends LuceneTestCase {
       for (int j = 1; j < s.length(); j++) {
         allPrefixes.add(s.substring(0, j));
       }
-      int weight = _TestUtil.nextInt(random, 1, 100); // weights 1..100
-      int output = _TestUtil.nextInt(random, 0, 500); // outputs 0..500 
+      int weight = TestUtil.nextInt(random, 1, 100); // weights 1..100
+      int output = TestUtil.nextInt(random, 0, 500); // outputs 0..500
       slowCompletor.put(s, new TwoLongs(weight, output));
     }
     
@@ -1463,7 +1463,7 @@ public class TestFSTs extends LuceneTestCase {
         prefixOutput = outputs.add(prefixOutput, arc.output);
       }
 
-      final int topN = _TestUtil.nextInt(random, 1, 10);
+      final int topN = TestUtil.nextInt(random, 1, 10);
 
       Util.MinResult<Pair<Long,Long>>[] r = Util.shortestPaths(fst, arc, fst.outputs.getNoOutput(), minPairWeightComparator, topN, true);
 

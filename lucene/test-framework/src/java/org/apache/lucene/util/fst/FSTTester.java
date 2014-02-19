@@ -38,8 +38,8 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.packed.PackedInts;
 
 import static org.junit.Assert.assertEquals;
@@ -97,7 +97,7 @@ public class FSTTester<T> {
   static String getRandomString(Random random) {
     final String term;
     if (random.nextBoolean()) {
-      term = _TestUtil.randomRealisticUnicodeString(random);
+      term = TestUtil.randomRealisticUnicodeString(random);
     } else {
       // we want to mix in limited-alphabet symbols so
       // we get more sharing of the nodes given how few
@@ -115,7 +115,7 @@ public class FSTTester<T> {
     }
     final char[] buffer = new char[end];
     for (int i = 0; i < end; i++) {
-      buffer[i] = (char) _TestUtil.nextInt(r, 97, 102);
+      buffer[i] = (char) TestUtil.nextInt(r, 97, 102);
     }
     return new String(buffer, 0, end);
   }
@@ -188,10 +188,10 @@ public class FSTTester<T> {
 
     if (testPruning) {
       // simple pruning
-      doTest(_TestUtil.nextInt(random, 1, 1+pairs.size()), 0, true);
+      doTest(TestUtil.nextInt(random, 1, 1 + pairs.size()), 0, true);
         
       // leafy pruning
-      doTest(0, _TestUtil.nextInt(random, 1, 1+pairs.size()), true);
+      doTest(0, TestUtil.nextInt(random, 1, 1 + pairs.size()), true);
     }
   }
 
@@ -285,7 +285,7 @@ public class FSTTester<T> {
                                               prune1, prune2,
                                               prune1==0 && prune2==0,
                                               allowRandomSuffixSharing ? random.nextBoolean() : true,
-                                              allowRandomSuffixSharing ? _TestUtil.nextInt(random, 1, 10) : Integer.MAX_VALUE,
+                                              allowRandomSuffixSharing ? TestUtil.nextInt(random, 1, 10) : Integer.MAX_VALUE,
                                               outputs,
                                               null,
                                               willRewrite,
@@ -434,7 +434,7 @@ public class FSTTester<T> {
 
       final int num = LuceneTestCase.atLeast(random, 100);
       for(int iter=0;iter<num;iter++) {
-        Long v = _TestUtil.nextLong(random, minLong, maxLong);
+        Long v = TestUtil.nextLong(random, minLong, maxLong);
         IntsRef input = Util.getByOutput(fstLong, v);
         assertTrue(validOutputs.contains(v) || input == null);
       }

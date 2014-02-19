@@ -41,7 +41,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Rethrow;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /** 
  * Base class for all Lucene unit tests that use TokenStreams. 
@@ -493,12 +493,12 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     boolean useCharFilter = random.nextBoolean();
     Directory dir = null;
     RandomIndexWriter iw = null;
-    final String postingsFormat =  _TestUtil.getPostingsFormat("dummy");
+    final String postingsFormat =  TestUtil.getPostingsFormat("dummy");
     boolean codecOk = iterations * maxWordLength < 100000 ||
         !(postingsFormat.equals("Memory") ||
             postingsFormat.equals("SimpleText"));
     if (rarely(random) && codecOk) {
-      dir = newFSDirectory(_TestUtil.getTempDir("bttc"));
+      dir = newFSDirectory(TestUtil.getTempDir("bttc"));
       iw = new RandomIndexWriter(new Random(seed), dir, a);
     }
     boolean success = false;
@@ -506,7 +506,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       checkRandomData(new Random(seed), a, iterations, maxWordLength, useCharFilter, simple, offsetsAreCorrect, iw);
       // now test with multiple threads: note we do the EXACT same thing we did before in each thread,
       // so this should only really fail from another thread if its an actual thread problem
-      int numThreads = _TestUtil.nextInt(random, 2, 4);
+      int numThreads = TestUtil.nextInt(random, 2, 4);
       AnalysisThread threads[] = new AnalysisThread[numThreads];
       for (int i = 0; i < threads.length; i++) {
         threads[i] = new AnalysisThread(seed, a, iterations, maxWordLength, useCharFilter, simple, offsetsAreCorrect, iw);
@@ -556,7 +556,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       if (random.nextBoolean()) {
         ft.setOmitNorms(true);
       }
-      String pf = _TestUtil.getPostingsFormat("dummy");
+      String pf = TestUtil.getPostingsFormat("dummy");
       boolean supportsOffsets = !doesntSupportOffsets.contains(pf);
       switch(random.nextInt(4)) {
         case 0: ft.setIndexOptions(IndexOptions.DOCS_ONLY); break;
@@ -598,7 +598,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
           }
         } else {
           // synthetic
-          text = _TestUtil.randomAnalysisString(random, maxWordLength, simple);
+          text = TestUtil.randomAnalysisString(random, maxWordLength, simple);
         }
         
         try {

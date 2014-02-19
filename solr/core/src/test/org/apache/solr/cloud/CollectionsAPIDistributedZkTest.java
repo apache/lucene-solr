@@ -46,7 +46,7 @@ import javax.management.MBeanServerFactory;
 import javax.management.ObjectName;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -634,8 +634,8 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     int cnt = random().nextInt(TEST_NIGHTLY ? 6 : 3) + 1;
     
     for (int i = 0; i < cnt; i++) {
-      int numShards = _TestUtil.nextInt(random(), 0, shardCount) + 1;
-      int replicationFactor = _TestUtil.nextInt(random(), 0, 3) + 1;
+      int numShards = TestUtil.nextInt(random(), 0, shardCount) + 1;
+      int replicationFactor = TestUtil.nextInt(random(), 0, 3) + 1;
       int maxShardsPerNode = (((numShards * replicationFactor) / getCommonCloudSolrServer()
           .getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
 
@@ -919,8 +919,8 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
         
         for (int i = 0; i < cnt; i++) {
           String collectionName = "awholynewstresscollection_" + name + "_" + i;
-          int numShards = _TestUtil.nextInt(random(), 0, shardCount * 2) + 1;
-          int replicationFactor = _TestUtil.nextInt(random(), 0, 3) + 1;
+          int numShards = TestUtil.nextInt(random(), 0, shardCount * 2) + 1;
+          int replicationFactor = TestUtil.nextInt(random(), 0, 3) + 1;
           int maxShardsPerNode = (((numShards * 2 * replicationFactor) / getCommonCloudSolrServer()
               .getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
           

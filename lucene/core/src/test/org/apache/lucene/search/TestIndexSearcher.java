@@ -32,7 +32,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NamedThreadFactory;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
 
 public class TestIndexSearcher extends LuceneTestCase {
@@ -116,7 +116,7 @@ public class TestIndexSearcher extends LuceneTestCase {
       }
     }
     
-    _TestUtil.shutdownExecutorService(service);
+    TestUtil.shutdownExecutorService(service);
   }
   
   @Test

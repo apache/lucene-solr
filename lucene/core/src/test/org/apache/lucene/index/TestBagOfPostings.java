@@ -32,7 +32,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Simple test that adds numeric terms, where each term has the 
@@ -43,9 +44,9 @@ public class TestBagOfPostings extends LuceneTestCase {
   public void test() throws Exception {
     List<String> postingsList = new ArrayList<String>();
     int numTerms = atLeast(300);
-    final int maxTermsPerDoc = _TestUtil.nextInt(random(), 10, 20);
+    final int maxTermsPerDoc = TestUtil.nextInt(random(), 10, 20);
 
-    boolean isSimpleText = "SimpleText".equals(_TestUtil.getPostingsFormat("field"));
+    boolean isSimpleText = "SimpleText".equals(TestUtil.getPostingsFormat("field"));
 
     IndexWriterConfig iwc = newIndexWriterConfig(random(), TEST_VERSION_CURRENT, new MockAnalyzer(random()));
 
@@ -69,10 +70,10 @@ public class TestBagOfPostings extends LuceneTestCase {
 
     final ConcurrentLinkedQueue<String> postings = new ConcurrentLinkedQueue<String>(postingsList);
 
-    Directory dir = newFSDirectory(_TestUtil.getTempDir("bagofpostings"));
+    Directory dir = newFSDirectory(TestUtil.getTempDir("bagofpostings"));
     final RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 
-    int threadCount = _TestUtil.nextInt(random(), 1, 5);
+    int threadCount = TestUtil.nextInt(random(), 1, 5);
     if (VERBOSE) {
       System.out.println("config: " + iw.w.getConfig());
       System.out.println("threadCount=" + threadCount);

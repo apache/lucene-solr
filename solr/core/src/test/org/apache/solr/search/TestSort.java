@@ -49,7 +49,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
@@ -96,12 +96,12 @@ public class TestSort extends SolrTestCaseJ4 {
 
     for (int i = 0; i < iters; i++) {
       final StringBuilder input = new StringBuilder();
-      final String[] names = new String[_TestUtil.nextInt(r,1,10)];
+      final String[] names = new String[TestUtil.nextInt(r, 1, 10)];
       final boolean[] reverse = new boolean[names.length];
       for (int j = 0; j < names.length; j++) {
         names[j] = null;
         for (int k = 0; k < nonBlankAttempts && null == names[j]; k++) {
-          names[j] = _TestUtil.randomRealisticUnicodeString(r, 1, 100);
+          names[j] = TestUtil.randomRealisticUnicodeString(r, 1, 100);
 
           // munge anything that might make this a function
           names[j] = names[j].replaceFirst("\\{","\\{\\{");

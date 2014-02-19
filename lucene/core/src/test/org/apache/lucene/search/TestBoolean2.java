@@ -34,7 +34,8 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -92,7 +93,7 @@ public class TestBoolean2 extends LuceneTestCase {
 
     RandomIndexWriter w = new RandomIndexWriter(random(), dir2, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
-        .setMaxBufferedDocs(_TestUtil.nextInt(random(), 50, 1000)));
+        .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000)));
     Document doc = new Document();
     doc.add(newTextField("field2", "xxx", Field.Store.NO));
     for(int i=0;i<NUM_EXTRA_DOCS/2;i++) {

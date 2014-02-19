@@ -62,7 +62,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -321,10 +321,10 @@ public class TestFieldCache extends LuceneTestCase {
         s = unicodeStrings[random().nextInt(i)];
       }
       if (s == null) {
-        s = _TestUtil.randomUnicodeString(random());
+        s = TestUtil.randomUnicodeString(random());
       }
     } else {
-      s = _TestUtil.randomUnicodeString(random());
+      s = TestUtil.randomUnicodeString(random());
     }
     return s;
   }
@@ -694,7 +694,7 @@ public class TestFieldCache extends LuceneTestCase {
     Document doc = new Document();
     LongField field = new LongField("f", 0L, Store.YES);
     doc.add(field);
-    final long[] values = new long[_TestUtil.nextInt(random(), 1, 10)];
+    final long[] values = new long[TestUtil.nextInt(random(), 1, 10)];
     for (int i = 0; i < values.length; ++i) {
       final long v;
       switch (random().nextInt(10)) {
@@ -708,7 +708,7 @@ public class TestFieldCache extends LuceneTestCase {
           v = Long.MAX_VALUE;
           break;
         default:
-          v = _TestUtil.nextLong(random(), -10, 10);
+          v = TestUtil.nextLong(random(), -10, 10);
           break;
       }
       values[i] = v;
@@ -740,7 +740,7 @@ public class TestFieldCache extends LuceneTestCase {
     Document doc = new Document();
     IntField field = new IntField("f", 0, Store.YES);
     doc.add(field);
-    final int[] values = new int[_TestUtil.nextInt(random(), 1, 10)];
+    final int[] values = new int[TestUtil.nextInt(random(), 1, 10)];
     for (int i = 0; i < values.length; ++i) {
       final int v;
       switch (random().nextInt(10)) {
@@ -754,7 +754,7 @@ public class TestFieldCache extends LuceneTestCase {
           v = Integer.MAX_VALUE;
           break;
         default:
-          v = _TestUtil.nextInt(random(), -10, 10);
+          v = TestUtil.nextInt(random(), -10, 10);
           break;
       }
       values[i] = v;

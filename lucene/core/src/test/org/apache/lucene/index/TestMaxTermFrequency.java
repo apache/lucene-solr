@@ -30,7 +30,7 @@ import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Tests the maxTermFrequency statistic in FieldInvertState
@@ -82,10 +82,10 @@ public class TestMaxTermFrequency extends LuceneTestCase {
    */
   private String addValue() {
     List<String> terms = new ArrayList<String>();
-    int maxCeiling = _TestUtil.nextInt(random(), 0, 255);
+    int maxCeiling = TestUtil.nextInt(random(), 0, 255);
     int max = 0;
     for (char ch = 'a'; ch <= 'z'; ch++) {
-      int num = _TestUtil.nextInt(random(), 0, maxCeiling);
+      int num = TestUtil.nextInt(random(), 0, maxCeiling);
       for (int i = 0; i < num; i++)
         terms.add(Character.toString(ch));
       max = Math.max(max, num);

@@ -29,7 +29,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Test that a plain default puts codec headers in all files.
@@ -49,7 +49,7 @@ public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
     doc.add(bodyField);
     for (int i = 0; i < 100; i++) {
       idField.setStringValue(Integer.toString(i));
-      bodyField.setStringValue(_TestUtil.randomUnicodeString(random()));
+      bodyField.setStringValue(TestUtil.randomUnicodeString(random()));
       riw.addDocument(doc);
       if (random().nextInt(7) == 0) {
         riw.commit();

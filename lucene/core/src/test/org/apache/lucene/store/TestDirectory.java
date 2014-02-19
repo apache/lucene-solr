@@ -25,7 +25,7 @@ import java.util.Arrays;
 
 import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestDirectory extends LuceneTestCase {
   public void testDetectClose() throws Throwable {
@@ -134,7 +134,7 @@ public class TestDirectory extends LuceneTestCase {
   // Test that different instances of FSDirectory can coexist on the same
   // path, can read, write, and lock files.
   public void testDirectInstantiation() throws Exception {
-    final File path = _TestUtil.getTempDir("testDirectInstantiation");
+    final File path = TestUtil.getTempDir("testDirectInstantiation");
     
     final byte[] largeBuffer = new byte[random().nextInt(256*1024)], largeReadBuffer = new byte[largeBuffer.length];
     for (int i = 0; i < largeBuffer.length; i++) {
@@ -217,7 +217,7 @@ public class TestDirectory extends LuceneTestCase {
       assertFalse(dir.isOpen);
     }
     
-    _TestUtil.rmDir(path);
+    TestUtil.rmDir(path);
   }
 
   // LUCENE-1464
@@ -229,7 +229,7 @@ public class TestDirectory extends LuceneTestCase {
       assertTrue(!path.exists());
       dir.close();
     } finally {
-      _TestUtil.rmDir(path);
+      TestUtil.rmDir(path);
     }
   }
 
@@ -240,7 +240,7 @@ public class TestDirectory extends LuceneTestCase {
 
   // LUCENE-1468
   public void testFSDirectoryFilter() throws IOException {
-    checkDirectoryFilter(newFSDirectory(_TestUtil.getTempDir("test")));
+    checkDirectoryFilter(newFSDirectory(TestUtil.getTempDir("test")));
   }
 
   // LUCENE-1468
@@ -257,20 +257,20 @@ public class TestDirectory extends LuceneTestCase {
 
   // LUCENE-1468
   public void testCopySubdir() throws Throwable {
-    File path = _TestUtil.getTempDir("testsubdir");
+    File path = TestUtil.getTempDir("testsubdir");
     try {
       path.mkdirs();
       new File(path, "subdir").mkdirs();
       Directory fsDir = new SimpleFSDirectory(path, null);
       assertEquals(0, new RAMDirectory(fsDir, newIOContext(random())).listAll().length);
     } finally {
-      _TestUtil.rmDir(path);
+      TestUtil.rmDir(path);
     }
   }
 
   // LUCENE-1468
   public void testNotDirectory() throws Throwable {
-    File path = _TestUtil.getTempDir("testnotdir");
+    File path = TestUtil.getTempDir("testnotdir");
     Directory fsDir = new SimpleFSDirectory(path, null);
     try {
       IndexOutput out = fsDir.createOutput("afile", newIOContext(random()));
@@ -284,7 +284,7 @@ public class TestDirectory extends LuceneTestCase {
       }
     } finally {
       fsDir.close();
-      _TestUtil.rmDir(path);
+      TestUtil.rmDir(path);
     }
   }
 }

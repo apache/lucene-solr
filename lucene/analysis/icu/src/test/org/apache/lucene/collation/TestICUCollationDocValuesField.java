@@ -37,7 +37,7 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 import com.ibm.icu.text.Collator;
@@ -95,7 +95,7 @@ public class TestICUCollationDocValuesField extends LuceneTestCase {
     
     int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; i++) {
-      String value = _TestUtil.randomSimpleString(random());
+      String value = TestUtil.randomSimpleString(random());
       field.setStringValue(value);
       collationField.setStringValue(value);
       iw.addDocument(doc);
@@ -107,8 +107,8 @@ public class TestICUCollationDocValuesField extends LuceneTestCase {
     
     int numChecks = atLeast(100);
     for (int i = 0; i < numChecks; i++) {
-      String start = _TestUtil.randomSimpleString(random());
-      String end = _TestUtil.randomSimpleString(random());
+      String start = TestUtil.randomSimpleString(random());
+      String end = TestUtil.randomSimpleString(random());
       BytesRef lowerVal = new BytesRef(collator.getCollationKey(start).toByteArray());
       BytesRef upperVal = new BytesRef(collator.getCollationKey(end).toByteArray());
       Query query = new ConstantScoreQuery(FieldCacheRangeFilter.newBytesRefRange("collated", lowerVal, upperVal, true, true));

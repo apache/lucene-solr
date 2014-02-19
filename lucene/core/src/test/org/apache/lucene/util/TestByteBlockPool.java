@@ -34,7 +34,7 @@ public class TestByteBlockPool extends LuceneTestCase {
       final int numValues = atLeast(100);
       BytesRef ref = new BytesRef();
       for (int i = 0; i < numValues; i++) {
-        final String value = _TestUtil.randomRealisticUnicodeString(random(),
+        final String value = TestUtil.randomRealisticUnicodeString(random(),
             maxLength);
         list.add(new BytesRef(value));
         ref.copyChars(value);

@@ -30,7 +30,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -71,8 +71,8 @@ public class DataSplitterTest extends LuceneTestCase {
     for (int i = 0; i < 100; i++) {
       doc = new Document();
       doc.add(new Field(idFieldName, Integer.toString(i), ft));
-      doc.add(new Field(textFieldName, _TestUtil.randomUnicodeString(rnd, 1024), ft));
-      doc.add(new Field(classFieldName, _TestUtil.randomUnicodeString(rnd, 10), ft));
+      doc.add(new Field(textFieldName, TestUtil.randomUnicodeString(rnd, 1024), ft));
+      doc.add(new Field(classFieldName, TestUtil.randomUnicodeString(rnd, 10), ft));
       indexWriter.addDocument(doc, analyzer);
     }
 

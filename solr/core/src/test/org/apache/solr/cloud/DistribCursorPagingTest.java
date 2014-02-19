@@ -17,7 +17,8 @@
 package org.apache.solr.cloud;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.SentinelIntSet;
 import org.apache.solr.CursorPagingTest;
 import org.apache.solr.client.solrj.SolrServer;
@@ -29,7 +30,6 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.CommonParams;
@@ -46,7 +46,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -518,7 +517,7 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
   public void doRandomSortsOnLargeIndex() throws Exception {
     final Collection<String> allFieldNames = getAllSortFieldNames();
 
-    final int numInitialDocs = _TestUtil.nextInt(random(),100,200);
+    final int numInitialDocs = TestUtil.nextInt(random(), 100, 200);
     final int totalDocs = atLeast(5000);
 
     // start with a smallish number of documents, and test that we can do a full walk using a 
@@ -535,7 +534,7 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
     for (String f : allFieldNames) {
       for (String order : new String[] {" asc", " desc"}) {
         String sort = f + order + ("id".equals(f) ? "" : ", id" + order);
-        String rows = "" + _TestUtil.nextInt(random(),13,50);
+        String rows = "" + TestUtil.nextInt(random(), 13, 50);
         SentinelIntSet ids = assertFullWalkNoDups(numInitialDocs,
                                                   params("q", "*:*",
                                                          "fl","id,"+f,
@@ -579,7 +578,7 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
     final int numRandomSorts = atLeast(5);
     for (int i = 0; i < numRandomSorts; i++) {
       final String sort = CursorPagingTest.buildRandomSort(allFieldNames);
-      final String rows = "" + _TestUtil.nextInt(random(),63,113);
+      final String rows = "" + TestUtil.nextInt(random(), 63, 113);
       final String fl = random().nextBoolean() ? "id" : "id,score";
       final boolean matchAll = random().nextBoolean();
       final String q = matchAll ? "*:*" : CursorPagingTest.buildRandomQuery();

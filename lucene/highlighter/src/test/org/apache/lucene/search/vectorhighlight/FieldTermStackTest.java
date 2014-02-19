@@ -21,7 +21,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.search.vectorhighlight.FieldTermStack.TermInfo;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class FieldTermStackTest extends AbstractTestCase {
   
@@ -176,10 +176,10 @@ public class FieldTermStackTest extends AbstractTestCase {
   }
 
   public void testTermInfoComparisonConsistency() {
-    TermInfo a = new TermInfo( _TestUtil.randomUnicodeString( random() ), 0, 0, 0, 1 );
-    TermInfo b = new TermInfo( _TestUtil.randomUnicodeString( random() ), 0, 0, 1, 1 );
-    TermInfo c = new TermInfo( _TestUtil.randomUnicodeString( random() ), 0, 0, 2, 1 );
-    TermInfo d = new TermInfo( _TestUtil.randomUnicodeString( random() ), 0, 0, 0, 1 );
+    TermInfo a = new TermInfo( TestUtil.randomUnicodeString(random()), 0, 0, 0, 1 );
+    TermInfo b = new TermInfo( TestUtil.randomUnicodeString(random()), 0, 0, 1, 1 );
+    TermInfo c = new TermInfo( TestUtil.randomUnicodeString(random()), 0, 0, 2, 1 );
+    TermInfo d = new TermInfo( TestUtil.randomUnicodeString(random()), 0, 0, 0, 1 );
 
     assertConsistentEquals( a, a );
     assertConsistentEquals( b, b );

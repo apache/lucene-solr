@@ -26,7 +26,7 @@ import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -46,7 +46,7 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
         new Input("star wars: episode v - the empire strikes back", 8, payload)
     };
 
-    File tempDir = _TestUtil.getTempDir("BlendedInfixSuggesterTest");
+    File tempDir = TestUtil.getTempDir("BlendedInfixSuggesterTest");
 
     Analyzer a = new StandardAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET);
     BlendedInfixSuggester suggester = new BlendedInfixSuggester(TEST_VERSION_CURRENT, tempDir, a, a,
@@ -90,7 +90,7 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
         new Input("top of the lake", w, pl)
     };
 
-    File tempDir = _TestUtil.getTempDir("BlendedInfixSuggesterTest");
+    File tempDir = TestUtil.getTempDir("BlendedInfixSuggesterTest");
     Analyzer a = new StandardAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET);
 
     // BlenderType.LINEAR is used by default (remove position*10%)
@@ -141,7 +141,7 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
         new Input("the returned", 10, ret),
     };
 
-    File tempDir = _TestUtil.getTempDir("BlendedInfixSuggesterTest");
+    File tempDir = TestUtil.getTempDir("BlendedInfixSuggesterTest");
     Analyzer a = new StandardAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET);
 
     // if factor is small, we don't get the expected element
@@ -201,7 +201,7 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
         new Input("the returned", 10, ret),
     };
 
-    File tempDir = _TestUtil.getTempDir("BlendedInfixSuggesterTest");
+    File tempDir = TestUtil.getTempDir("BlendedInfixSuggesterTest");
     Analyzer a = new StandardAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET);
 
     // if factor is small, we don't get the expected element
