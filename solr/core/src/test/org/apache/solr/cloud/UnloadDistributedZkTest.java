@@ -268,8 +268,8 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     zkStateReader.getLeaderRetry("unloadcollection", "shard1", 15000);
     
     addClient = new HttpSolrServer(url2 + "/unloadcollection2");
-    addClient.setConnectionTimeout(15000);
-    addClient.setSoTimeout(30000);
+    addClient.setConnectionTimeout(30000);
+    addClient.setSoTimeout(90000);
     
     // add a few docs while the leader is down
     for (int x = 101; x < 200; x++) {
