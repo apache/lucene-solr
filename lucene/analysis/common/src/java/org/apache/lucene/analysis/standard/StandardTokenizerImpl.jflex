@@ -163,10 +163,10 @@ RegionalIndicatorEx = {RegionalIndicator}                                       
                      | {HebrewOrALetterEx} ( ( {ExtendNumLetEx}* | {MidLetterEx}  ) {HebrewOrALetterEx} )*
                      )+
                    )
-({ExtendNumLetEx}+ ( {KatakanaEx}          ( {ExtendNumLetEx}*   {KatakanaEx}                            )*
-                   | ( {HebrewLetterEx}    ( {SingleQuoteEx}     | {DoubleQuoteEx}   {HebrewLetterEx}    )
-                     | {NumericEx}         ( ( {ExtendNumLetEx}* | {MidNumericEx} )* {NumericEx}         )*
-                     | {HebrewOrALetterEx} ( ( {ExtendNumLetEx}* | {MidLetterEx}  )* {HebrewOrALetterEx} )*
+({ExtendNumLetEx}+ ( {KatakanaEx}          ( {ExtendNumLetEx}*   {KatakanaEx}                           )*
+                   | ( {HebrewLetterEx}    ( {SingleQuoteEx}     | {DoubleQuoteEx}  {HebrewLetterEx}    )
+                     | {NumericEx}         ( ( {ExtendNumLetEx}* | {MidNumericEx} ) {NumericEx}         )*
+                     | {HebrewOrALetterEx} ( ( {ExtendNumLetEx}* | {MidLetterEx}  ) {HebrewOrALetterEx} )*
                      )+
                    )
 )*
