@@ -112,7 +112,7 @@ import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 })
 public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   private static String coreName = ConfigSolrXmlOld.DEFAULT_DEFAULT_CORE_NAME;
-  public static int DEFAULT_CONNECTION_TIMEOUT = 45000;  // default socket connection timeout in ms
+  public static int DEFAULT_CONNECTION_TIMEOUT = 60000;  // default socket connection timeout in ms
 
   // these are meant to be accessed sequentially, but are volatile just to ensure any test
   // thread will read the latest value
