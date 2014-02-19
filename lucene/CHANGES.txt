@@ -65,9 +65,6 @@ Optimizations
   on Windows if NIOFSDirectory is used, mmapped files are still locked.
   (Michael Poindexter, Robert Muir, Uwe Schindler)
 
-Test Framework
-
-* LUCENE-5449: Rename _TestUtil and _TestHelper to remove the leading _.
 
 ======================= Lucene 4.8.0 =======================
 
@@ -76,6 +73,10 @@ Bug fixes
 * LUCENE-5450: Fix getField() NPE issues with SpanOr/SpanNear when they have an 
   empty list of clauses. This can happen for example,  when a wildcard matches 
   no terms.  (Tim Allison via Robert Muir)
+
+Test Framework
+
+* LUCENE-5449: Rename _TestUtil and _TestHelper to remove the leading _.
 
 ======================= Lucene 4.7.0 =======================
 
