@@ -48,11 +48,11 @@ New Features
   parent. Added QueryNode.removeFromParent() that allows nodes to be 
   detached from its parent node. (Adriano Crestani)
 
-* LUCENE-5395: Upgrade Spatial4j 0.4: Parses WKT (including ENVELOPE) with
-  extension "BUFFER"; buffering a point results in a Circle. JTS isn't needed
-  for WKT any more but remains required for Polygons. New Shapes:
-  ShapeCollection and BufferedLineString. Various other improvements and bug
-  fixes too. More info:
+* LUCENE-5395 LUCENE-5451: Upgrade to Spatial4j 0.4.1: Parses WKT (including
+  ENVELOPE) with extension "BUFFER"; buffering a point results in a Circle.
+  JTS isn't needed for WKT any more but remains required for Polygons. New
+  Shapes: ShapeCollection and BufferedLineString. Various other improvements and
+  bug fixes too. More info:
   https://github.com/spatial4j/spatial4j/blob/master/CHANGES.md  (David Smiley)
 
 * LUCENE-5415: Add multitermquery (wildcards,prefix,etc) to PostingsHighlighter.
