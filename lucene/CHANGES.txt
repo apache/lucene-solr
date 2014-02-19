@@ -99,6 +99,10 @@ New Features
   representations of a shape into BinaryDocValues. It supports exact geometry
   relationship calculations. (David Smiley)
 
+* LUCENE-5457: Add SloppyMath.earthDiameter(double latitude) that returns an
+  approximate value of the diameter of the earth at the given latitude.
+  (Adrien Grand)
+
 Build
 
 * LUCENE-5217,LUCENE-5420: Maven config: get dependencies from Ant+Ivy config;
