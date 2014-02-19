@@ -999,7 +999,7 @@ public class TestPackedInts extends LuceneTestCase {
         } else {
           final long minValue = TestUtil.nextLong(random(), Long.MIN_VALUE, Long.MAX_VALUE - PackedInts.maxValue(bpv));
           for (int i = 0; i < arr.length; ++i) {
-            arr[i] = minValue + inc * i + random().nextLong() & PackedInts.maxValue(bpv); // _TestUtil.nextLong is too slow
+            arr[i] = minValue + inc * i + random().nextLong() & PackedInts.maxValue(bpv); // TestUtil.nextLong is too slow
           }
         }
 

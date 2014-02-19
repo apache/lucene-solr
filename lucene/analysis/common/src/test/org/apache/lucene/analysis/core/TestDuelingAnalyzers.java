@@ -204,7 +204,7 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
     right.close();
   }
   
-  // TODO: maybe push this out to _TestUtil or LuceneTestCase and always use it instead?
+  // TODO: maybe push this out to TestUtil or LuceneTestCase and always use it instead?
   private static Reader newStringReader(String s) {
     Random random = random();
     Reader r = new StringReader(s);

@@ -523,7 +523,7 @@ public class TestTermsEnum extends LuceneTestCase {
   }
 
   private String getRandomString() {
-    //return _TestUtil.randomSimpleString(random());
+    //return TestUtil.randomSimpleString(random());
     return TestUtil.randomRealisticUnicodeString(random());
   }
 

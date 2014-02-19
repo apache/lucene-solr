@@ -306,7 +306,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
   }
   
   private String randomTestString(int maxLength) {
-    // we can't just use _TestUtil.randomUnicodeString() or we might get 0xfffe etc
+    // we can't just use TestUtil.randomUnicodeString() or we might get 0xfffe etc
     // (considered invalid by XML)
     
     int size = random().nextInt(maxLength);

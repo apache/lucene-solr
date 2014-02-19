@@ -29,7 +29,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -48,7 +48,7 @@ public class TestHighFreqTerms extends LuceneTestCase {
        .setMaxBufferedDocs(2));
     indexDocs(writer);
     reader = DirectoryReader.open(dir);
-    _TestUtil.checkIndex(dir);
+    TestUtil.checkIndex(dir);
   }
   
   @AfterClass

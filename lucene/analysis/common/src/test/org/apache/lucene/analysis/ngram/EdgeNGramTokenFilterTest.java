@@ -37,7 +37,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.util.Version;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Tests {@link EdgeNGramTokenFilter} for correctness.
@@ -210,8 +210,8 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     for (int i = 0; i < 10; i++) {
-      final int min = _TestUtil.nextInt(random(), 2, 10);
-      final int max = _TestUtil.nextInt(random(), min, 20);
+      final int min = TestUtil.nextInt(random(), 2, 10);
+      final int max = TestUtil.nextInt(random(), min, 20);
     
       Analyzer a = new Analyzer() {
         @Override
@@ -273,10 +273,10 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
   }
 
   public void testSupplementaryCharacters() throws IOException {
-    final String s = _TestUtil.randomUnicodeString(random(), 10);
+    final String s = TestUtil.randomUnicodeString(random(), 10);
     final int codePointCount = s.codePointCount(0, s.length());
-    final int minGram = _TestUtil.nextInt(random(), 1, 3);
-    final int maxGram = _TestUtil.nextInt(random(), minGram, 10);
+    final int minGram = TestUtil.nextInt(random(), 1, 3);
+    final int maxGram = TestUtil.nextInt(random(), minGram, 10);
     TokenStream tk = new KeywordTokenizer(new StringReader(s));
     tk = new EdgeNGramTokenFilter(TEST_VERSION_CURRENT, tk, minGram, maxGram);
     final CharTermAttribute termAtt = tk.addAttribute(CharTermAttribute.class);

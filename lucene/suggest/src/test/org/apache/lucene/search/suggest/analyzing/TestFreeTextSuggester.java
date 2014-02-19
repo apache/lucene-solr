@@ -49,7 +49,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.Ignore;
 
 @SuppressCodecs("Lucene3x")
@@ -85,7 +85,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
                    toString(sug.lookup("b", 10)));
 
       // Try again after save/load:
-      File tmpDir = _TestUtil.getTempDir("FreeTextSuggesterTest");
+      File tmpDir = TestUtil.getTempDir("FreeTextSuggesterTest");
       tmpDir.mkdir();
 
       File path = new File(tmpDir, "suggester");
@@ -300,10 +300,10 @@ public class TestFreeTextSuggester extends LuceneTestCase {
   };
 
   public void testRandom() throws IOException {
-    String[] terms = new String[_TestUtil.nextInt(random(), 2, 10)];
+    String[] terms = new String[TestUtil.nextInt(random(), 2, 10)];
     Set<String> seen = new HashSet<String>();
     while (seen.size() < terms.length) {
-      String token = _TestUtil.randomSimpleString(random(), 1, 5);
+      String token = TestUtil.randomSimpleString(random(), 1, 5);
       if (!seen.contains(token)) {
         terms[seen.size()] = token;
         seen.add(token);
@@ -332,7 +332,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
       totTokens += docs[i].length;
     }
 
-    int grams = _TestUtil.nextInt(random(), 1, 4);
+    int grams = TestUtil.nextInt(random(), 1, 4);
 
     if (VERBOSE) {
       System.out.println("TEST: " + terms.length + " terms; " + numDocs + " docs; " + grams + " grams");
@@ -412,7 +412,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
 
     int lookups = atLeast(100);
     for(int iter=0;iter<lookups;iter++) {
-      String[] tokens = new String[_TestUtil.nextInt(random(), 1, 5)];
+      String[] tokens = new String[TestUtil.nextInt(random(), 1, 5)];
       for(int i=0;i<tokens.length;i++) {
         tokens[i] = getZipfToken(terms);
       }
@@ -425,10 +425,10 @@ public class TestFreeTextSuggester extends LuceneTestCase {
       } else {
         trimStart = 0;
       }
-      int trimAt = _TestUtil.nextInt(random(), trimStart, tokens[tokens.length-1].length());
+      int trimAt = TestUtil.nextInt(random(), trimStart, tokens[tokens.length-1].length());
       tokens[tokens.length-1] = tokens[tokens.length-1].substring(0, trimAt);
 
-      int num = _TestUtil.nextInt(random(), 1, 100);
+      int num = TestUtil.nextInt(random(), 1, 100);
       StringBuilder b = new StringBuilder();
       for(String token : tokens) {
         b.append(' ');

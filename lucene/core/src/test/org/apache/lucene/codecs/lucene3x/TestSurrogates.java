@@ -72,10 +72,10 @@ public class TestSurrogates extends LuceneTestCase {
       if (r.nextInt(3) == 1) {
         s = makeDifficultRandomUnicodeString(r);
       } else {
-        s = _TestUtil.randomUnicodeString(r);
+        s = TestUtil.randomUnicodeString(r);
       }
     } else {
-      s = _TestUtil.randomRealisticUnicodeString(r);
+      s = TestUtil.randomRealisticUnicodeString(r);
     }
     return s;
   }
@@ -176,7 +176,7 @@ public class TestSurrogates extends LuceneTestCase {
                    te.seekCeil(term.bytes()));
       
       // now .next() this many times:
-      int ct = _TestUtil.nextInt(r, 5, 100);
+      int ct = TestUtil.nextInt(r, 5, 100);
       for(int i=0;i<ct;i++) {
         if (VERBOSE) {
           System.out.println("TEST: now next()");
@@ -252,7 +252,7 @@ public class TestSurrogates extends LuceneTestCase {
                          te.term());
 
             // now .next() this many times:
-            int ct = _TestUtil.nextInt(r, 5, 100);
+            int ct = TestUtil.nextInt(r, 5, 100);
             for(int i=0;i<ct;i++) {
               if (VERBOSE) {
                 System.out.println("TEST: now next()");
@@ -291,7 +291,7 @@ public class TestSurrogates extends LuceneTestCase {
                                                 newIndexWriterConfig( TEST_VERSION_CURRENT,
                                                                       new MockAnalyzer(random())).setCodec(new PreFlexRWCodec()));
 
-    final int numField = _TestUtil.nextInt(random(), 2, 5);
+    final int numField = TestUtil.nextInt(random(), 2, 5);
 
     int uniqueTermCount = 0;
 

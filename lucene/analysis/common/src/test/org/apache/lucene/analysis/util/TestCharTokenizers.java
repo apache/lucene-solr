@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.core.LetterTokenizer;
 import org.apache.lucene.analysis.core.LowerCaseTokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 
 /**
@@ -123,7 +123,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
     };
     int num = 1000 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
-      String s = _TestUtil.randomUnicodeString(random());
+      String s = TestUtil.randomUnicodeString(random());
       TokenStream ts = analyzer.tokenStream("foo", s);
       try {
         ts.reset();
@@ -164,7 +164,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
     };
     int num = 1000 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
-      String s = _TestUtil.randomUnicodeString(random());
+      String s = TestUtil.randomUnicodeString(random());
       TokenStream ts = analyzer.tokenStream("foo", s);
       try {
         ts.reset();

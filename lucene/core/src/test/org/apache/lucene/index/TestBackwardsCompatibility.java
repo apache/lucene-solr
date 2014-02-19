@@ -132,7 +132,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     // because this method is only used to create backwards
     // indexes:
     File indexDir = new File("moreterms");
-    _TestUtil.rmDir(indexDir);
+    TestUtil.rmDir(indexDir);
     Directory dir = newFSDirectory(indexDir);
 
     LogByteSizeMergePolicy mp = new LogByteSizeMergePolicy();

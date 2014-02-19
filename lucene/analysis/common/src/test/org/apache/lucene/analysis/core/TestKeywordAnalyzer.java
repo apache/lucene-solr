@@ -38,7 +38,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
   
@@ -98,7 +98,7 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
     writer.close();
 
     IndexReader reader = DirectoryReader.open(dir);
-    DocsEnum td = _TestUtil.docs(random(),
+    DocsEnum td = TestUtil.docs(random(),
                                  reader,
                                  "partnum",
                                  new BytesRef("Q36"),
@@ -106,7 +106,7 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
                                  null,
                                  0);
     assertTrue(td.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    td = _TestUtil.docs(random(),
+    td = TestUtil.docs(random(),
                         reader,
                         "partnum",
                         new BytesRef("Q37"),

@@ -629,7 +629,7 @@ public class TestGrouping extends LuceneTestCase {
       }
 
       final int numDocs = TestUtil.nextInt(random(), 100, 1000) * RANDOM_MULTIPLIER;
-      //final int numDocs = _TestUtil.nextInt(random, 5, 20);
+      //final int numDocs = TestUtil.nextInt(random, 5, 20);
 
       final int numGroups = TestUtil.nextInt(random(), 1, numDocs);
 
@@ -645,7 +645,7 @@ public class TestGrouping extends LuceneTestCase {
           // For that reason we don't generate empty string
           // groups.
           randomValue = TestUtil.randomRealisticUnicodeString(random());
-          //randomValue = _TestUtil.randomSimpleString(random());
+          //randomValue = TestUtil.randomSimpleString(random());
         } while ("".equals(randomValue));
 
         groups.add(new BytesRef(randomValue));

@@ -425,7 +425,7 @@ public class TestDrillSideways extends FacetTestCase {
       Set<String> values = new HashSet<String>();
       while (values.size() < valueCount) {
         String s = TestUtil.randomRealisticUnicodeString(random());
-        //String s = _TestUtil.randomString(random());
+        //String s = TestUtil.randomString(random());
         if (s.length() > 0) {
           values.add(s);
         }

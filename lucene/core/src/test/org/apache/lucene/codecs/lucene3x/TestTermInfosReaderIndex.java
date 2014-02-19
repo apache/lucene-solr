@@ -51,7 +51,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -76,7 +76,7 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
         new MockAnalyzer(random(), MockTokenizer.KEYWORD, false)).setUseCompoundFile(false);
     
     termIndexInterval = config.getTermIndexInterval();
-    indexDivisor = _TestUtil.nextInt(random(), 1, 10);
+    indexDivisor = TestUtil.nextInt(random(), 1, 10);
     NUMBER_OF_DOCUMENTS = atLeast(100);
     NUMBER_OF_FIELDS = atLeast(Math.max(10, 3*termIndexInterval*indexDivisor/NUMBER_OF_DOCUMENTS));
     

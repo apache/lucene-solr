@@ -25,7 +25,7 @@ import java.util.Arrays;
 import org.apache.lucene.analysis.util.CharacterUtils.CharacterBuffer;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Version;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
 
 /**
@@ -80,7 +80,7 @@ public class TestCharacterUtils extends LuceneTestCase {
   public void testCodePointCount() {
     CharacterUtils java4 = CharacterUtils.getJava4Instance();
     CharacterUtils java5 = CharacterUtils.getInstance(TEST_VERSION_CURRENT);
-    final String s = _TestUtil.randomUnicodeString(random());
+    final String s = TestUtil.randomUnicodeString(random());
     assertEquals(s.length(), java4.codePointCount(s));
     assertEquals(Character.codePointCount(s, 0, s.length()), java5.codePointCount(s));
   }
@@ -90,8 +90,8 @@ public class TestCharacterUtils extends LuceneTestCase {
     CharacterUtils java4 = CharacterUtils.getJava4Instance();
     CharacterUtils java5 = CharacterUtils.getInstance(TEST_VERSION_CURRENT);
     for (int i = 0; i < 10; ++i) {
-      final char[] s = _TestUtil.randomUnicodeString(random()).toCharArray();
-      final int index = _TestUtil.nextInt(random(), 0, s.length);
+      final char[] s = TestUtil.randomUnicodeString(random()).toCharArray();
+      final int index = TestUtil.nextInt(random(), 0, s.length);
       final int offset = random().nextInt(7) - 3;
       try {
         final int o = java4.offsetByCodePoints(s, 0, s.length, index, offset);
@@ -126,12 +126,12 @@ public class TestCharacterUtils extends LuceneTestCase {
   }
 
   private void testConversions(CharacterUtils charUtils) {
-    final char[] orig = _TestUtil.randomUnicodeString(random(), 100).toCharArray();
+    final char[] orig = TestUtil.randomUnicodeString(random(), 100).toCharArray();
     final int[] buf = new int[orig.length];
     final char[] restored = new char[buf.length];
-    final int o1 = _TestUtil.nextInt(random(), 0, Math.min(5, orig.length));
-    final int o2 = _TestUtil.nextInt(random(), 0, o1);
-    final int o3 = _TestUtil.nextInt(random(), 0, o1);
+    final int o1 = TestUtil.nextInt(random(), 0, Math.min(5, orig.length));
+    final int o2 = TestUtil.nextInt(random(), 0, o1);
+    final int o3 = TestUtil.nextInt(random(), 0, o1);
     final int codePointCount = charUtils.toCodePoints(orig, o1, orig.length - o1, buf, o2);
     final int charCount = charUtils.toChars(buf, o2, codePointCount, restored, o3);
     assertEquals(orig.length - o1, charCount);

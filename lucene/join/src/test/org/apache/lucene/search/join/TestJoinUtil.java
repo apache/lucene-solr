@@ -381,7 +381,7 @@ public class TestJoinUtil extends LuceneTestCase {
       String uniqueRandomValue;
       do {
         uniqueRandomValue = TestUtil.randomRealisticUnicodeString(random());
-//        uniqueRandomValue = _TestUtil.randomSimpleString(random);
+//        uniqueRandomValue = TestUtil.randomSimpleString(random);
       } while ("".equals(uniqueRandomValue) || trackSet.contains(uniqueRandomValue));
       // Generate unique values and empty strings aren't allowed.
       trackSet.add(uniqueRandomValue);

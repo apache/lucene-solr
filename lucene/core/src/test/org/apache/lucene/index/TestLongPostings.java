@@ -83,7 +83,7 @@ public class TestLongPostings extends LuceneTestCase {
   }
 
   public void testLongPostings() throws Exception {
-    // Don't use _TestUtil.getTempDir so that we own the
+    // Don't use TestUtil.getTempDir so that we own the
     // randomness (ie same seed will point to same dir):
     Directory dir = newFSDirectory(TestUtil.getTempDir("longpostings" + "." + random().nextLong()));
 
@@ -277,7 +277,7 @@ public class TestLongPostings extends LuceneTestCase {
   }
   
   public void doTestLongPostingsNoPositions(IndexOptions options) throws Exception {
-    // Don't use _TestUtil.getTempDir so that we own the
+    // Don't use TestUtil.getTempDir so that we own the
     // randomness (ie same seed will point to same dir):
     Directory dir = newFSDirectory(TestUtil.getTempDir("longpostings" + "." + random().nextLong()));
 

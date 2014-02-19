@@ -451,7 +451,7 @@ public class TestBlockJoin extends LuceneTestCase {
       final String[] values = fields[fieldID] = new String[valueCount];
       for(int i=0;i<valueCount;i++) {
         values[i] = TestUtil.randomRealisticUnicodeString(random());
-        //values[i] = _TestUtil.randomSimpleString(random);
+        //values[i] = TestUtil.randomSimpleString(random);
       }
     }
 

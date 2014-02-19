@@ -86,7 +86,7 @@ public class TestIndexWriterOutOfFileDescriptors extends LuceneTestCase {
 
         // NOTE: This is O(N^2)!  Only enable for temporary debugging:
         //dir.setRandomIOExceptionRateOnOpen(0.0);
-        //_TestUtil.checkIndex(dir);
+        //TestUtil.checkIndex(dir);
         //dir.setRandomIOExceptionRateOnOpen(rate);
 
         // Verify numDocs only increases, to catch IndexWriter

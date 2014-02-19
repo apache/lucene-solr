@@ -98,7 +98,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     final Set<BytesRef> terms = new HashSet<BytesRef>();
     while(terms.size() < NUM_TERMS) {
       final String s = TestUtil.randomRealisticUnicodeString(random());
-      //final String s = _TestUtil.randomSimpleString(random);
+      //final String s = TestUtil.randomSimpleString(random);
       if (s.length() > 0) {
         terms.add(new BytesRef(s));
       }
@@ -188,7 +188,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     }
     while(prefixes.size() < numPrefix) {
       prefixes.add(TestUtil.randomRealisticUnicodeString(random()));
-      //prefixes.add(_TestUtil.randomSimpleString(random));
+      //prefixes.add(TestUtil.randomSimpleString(random));
     }
     final String[] prefixesArray = prefixes.toArray(new String[prefixes.size()]);
 
@@ -196,7 +196,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     final Set<BytesRef> terms = new HashSet<BytesRef>();
     while(terms.size() < NUM_TERMS) {
       final String s = prefixesArray[random().nextInt(prefixesArray.length)] + TestUtil.randomRealisticUnicodeString(random());
-      //final String s = prefixesArray[random.nextInt(prefixesArray.length)] + _TestUtil.randomSimpleString(random);
+      //final String s = prefixesArray[random.nextInt(prefixesArray.length)] + TestUtil.randomSimpleString(random);
       if (s.length() > 0) {
         terms.add(new BytesRef(s));
       }

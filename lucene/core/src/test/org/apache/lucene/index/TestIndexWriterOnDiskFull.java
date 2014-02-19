@@ -110,7 +110,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
             }
           }
 
-          //_TestUtil.syncConcurrentMerges(ms);
+          //TestUtil.syncConcurrentMerges(ms);
 
           if (TestUtil.anyFilesExceptWriteLock(dir)) {
             assertNoUnreferencedFiles(dir, "after disk full during addDocument");
@@ -124,7 +124,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
 
           diskFree += TEST_NIGHTLY ? TestUtil.nextInt(random(), 400, 600) : TestUtil.nextInt(random(), 3000, 5000);
         } else {
-          //_TestUtil.syncConcurrentMerges(writer);
+          //TestUtil.syncConcurrentMerges(writer);
           dir.setMaxSizeInBytes(0);
           writer.close();
           dir.close();

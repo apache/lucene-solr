@@ -43,7 +43,7 @@ import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
@@ -74,10 +74,10 @@ public class TestEarlyTermination extends LuceneTestCase {
   private void createRandomIndexes(int maxSegments) throws IOException {
     dir = newDirectory();
     numDocs = atLeast(150);
-    final int numTerms = _TestUtil.nextInt(random(), 1, numDocs / 5);
+    final int numTerms = TestUtil.nextInt(random(), 1, numDocs / 5);
     Set<String> randomTerms = new HashSet<String>();
     while (randomTerms.size() < numTerms) {
-      randomTerms.add(_TestUtil.randomSimpleString(random()));
+      randomTerms.add(TestUtil.randomSimpleString(random()));
     }
     terms = new ArrayList<String>(randomTerms);
     final long seed = random().nextLong();
@@ -108,7 +108,7 @@ public class TestEarlyTermination extends LuceneTestCase {
 
   public void testEarlyTermination() throws IOException {
     createRandomIndexes(5);
-    final int numHits = _TestUtil.nextInt(random(), 1, numDocs / 10);
+    final int numHits = TestUtil.nextInt(random(), 1, numDocs / 10);
     final Sort sort = new Sort(new SortField("ndv1", SortField.Type.LONG, false));
     final boolean fillFields = random().nextBoolean();
     final boolean trackDocScores = random().nextBoolean();
@@ -132,7 +132,7 @@ public class TestEarlyTermination extends LuceneTestCase {
     // test that the collector works correctly when the index was sorted by a
     // different sorter than the one specified in the ctor.
     createRandomIndexes(5);
-    final int numHits = _TestUtil.nextInt(random(), 1, numDocs / 10);
+    final int numHits = TestUtil.nextInt(random(), 1, numDocs / 10);
     final Sort sort = new Sort(new SortField("ndv2", SortField.Type.LONG, false));
     final boolean fillFields = random().nextBoolean();
     final boolean trackDocScores = random().nextBoolean();

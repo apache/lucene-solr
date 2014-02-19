@@ -63,7 +63,7 @@ public abstract class FacetTestCase extends LuceneTestCase {
     String[] tokens = new String[count];
     for(int i=0;i<tokens.length;i++) {
       tokens[i] = TestUtil.randomRealisticUnicodeString(random(), 1, 10);
-      //tokens[i] = _TestUtil.randomSimpleString(random(), 1, 10);
+      //tokens[i] = TestUtil.randomSimpleString(random(), 1, 10);
     }
     return tokens;
   }
