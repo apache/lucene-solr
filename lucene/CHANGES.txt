@@ -180,6 +180,9 @@ Bug fixes
 * LUCENE-5444: MemoryIndex did't respect the analyzers offset gap and
   offsets were corrupted if multiple fields with the same name were
   added to the memory index. (Britta Weber, Simon Willnauer)
+
+* LUCENE-5447: StandardTokenizer should break at consecutive chars matching
+  Word_Break = MidLetter, MidNum and/or MidNumLet (Steve Rowe)
   
 API Changes
 
