@@ -24,7 +24,10 @@ import org.apache.lucene.store.SimpleFSDirectory.SimpleFSIndexInput;
 /** This class provides access to package-level features defined in the
  *  store package. It is used for testing only.
  */
-public class _TestHelper {
+public final class TestHelper {
+  private TestHelper() {
+    //
+  }
 
     /** Returns true if the instance of the provided input stream is actually
      *  an SimpleFSIndexInput.
