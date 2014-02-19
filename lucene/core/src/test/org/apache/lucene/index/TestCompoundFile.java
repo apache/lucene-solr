@@ -17,24 +17,23 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.io.File;
-
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.CompoundFileDirectory;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.SimpleFSDirectory;
-import org.apache.lucene.store._TestHelper;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
+import java.io.File;
+import java.io.IOException;
+
+import static org.apache.lucene.store.TestHelper.isSimpleFSIndexInput;
+import static org.apache.lucene.store.TestHelper.isSimpleFSIndexInputOpen;
 
 public class TestCompoundFile extends LuceneTestCase
 {
@@ -346,8 +345,8 @@ public class TestCompoundFile extends LuceneTestCase
         IndexInput expected = dir.openInput("f11", newIOContext(random()));
 
         // this test only works for FSIndexInput
-        assertTrue(_TestHelper.isSimpleFSIndexInput(expected));
-        assertTrue(_TestHelper.isSimpleFSIndexInputOpen(expected));
+        assertTrue(isSimpleFSIndexInput(expected));
+        assertTrue(isSimpleFSIndexInputOpen(expected));
 
         IndexInput one = cr.openInput("f11", newIOContext(random()));
 
