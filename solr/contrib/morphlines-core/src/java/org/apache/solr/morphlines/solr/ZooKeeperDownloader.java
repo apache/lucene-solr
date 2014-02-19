@@ -31,6 +31,7 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Preconditions;
 import com.google.common.io.Files;
 
 /**
@@ -100,10 +101,10 @@ final class ZooKeeperDownloader {
   /**
    * Download and return the config directory from ZK
    */
-  public File downloadConfigDir(SolrZkClient zkClient, String configName)
+  public File downloadConfigDir(SolrZkClient zkClient, String configName, File dir)
   throws IOException, InterruptedException, KeeperException {
-    File dir = Files.createTempDir();
-    dir.deleteOnExit();
+    Preconditions.checkArgument(dir.exists());
+    Preconditions.checkArgument(dir.isDirectory());
     ZkController.downloadConfigDir(zkClient, configName, dir);
     File confDir = new File(dir, "conf");
     if (!confDir.isDirectory()) {
@@ -116,7 +117,23 @@ final class ZooKeeperDownloader {
       Files.move(dir, confDir);
       dir = confDir.getParentFile();
     }
+    verifyConfigDir(confDir);
     return dir;
+  }
+  
+  private void verifyConfigDir(File confDir) throws IOException {
+    File solrConfigFile = new File(confDir, "solrconfig.xml");
+    if (!solrConfigFile.exists()) {
+      throw new IOException("Detected invalid Solr config dir in ZooKeeper - Reason: File not found: "
+          + solrConfigFile.getName());
+    }
+    if (!solrConfigFile.isFile()) {
+      throw new IOException("Detected invalid Solr config dir in ZooKeeper - Reason: Not a file: "
+          + solrConfigFile.getName());
+    }
+    if (!solrConfigFile.canRead()) {
+      throw new IOException("Insufficient permissions to read file: " + solrConfigFile);
+    }    
   }
 
 }

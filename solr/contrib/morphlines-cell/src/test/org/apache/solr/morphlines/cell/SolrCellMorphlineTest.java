@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -50,23 +50,23 @@ public class SolrCellMorphlineTest extends AbstractSolrMorphlineTestBase {
   public void setUp() throws Exception {
     super.setUp();
     
-    String path = RESOURCES_DIR + "/test-documents";
-    expectedRecords.put(path + "/sample-statuses-20120906-141433.avro", 2);
-    expectedRecords.put(path + "/sample-statuses-20120906-141433", 2);
-    expectedRecords.put(path + "/sample-statuses-20120906-141433.gz", 2);
-    expectedRecords.put(path + "/sample-statuses-20120906-141433.bz2", 2);
-    expectedRecords.put(path + "/cars.csv", 6);
-    expectedRecords.put(path + "/cars.csv.gz", 6);
-    expectedRecords.put(path + "/cars.tar.gz", 4);
-    expectedRecords.put(path + "/cars.tsv", 6);
-    expectedRecords.put(path + "/cars.ssv", 6);
-    expectedRecords.put(path + "/test-documents.7z", 9);
-    expectedRecords.put(path + "/test-documents.cpio", 9);
-    expectedRecords.put(path + "/test-documents.tar", 9);
-    expectedRecords.put(path + "/test-documents.tbz2", 9);
-    expectedRecords.put(path + "/test-documents.tgz", 9);
-    expectedRecords.put(path + "/test-documents.zip", 9);
-    expectedRecords.put(path + "/multiline-stacktrace.log", 4);
+    String path = RESOURCES_DIR + File.separator + "test-documents" + File.separator;
+    expectedRecords.put(path + "sample-statuses-20120906-141433.avro", 2);
+    expectedRecords.put(path + "sample-statuses-20120906-141433", 2);
+    expectedRecords.put(path + "sample-statuses-20120906-141433.gz", 2);
+    expectedRecords.put(path + "sample-statuses-20120906-141433.bz2", 2);
+    expectedRecords.put(path + "cars.csv", 6);
+    expectedRecords.put(path + "cars.csv.gz", 6);
+    expectedRecords.put(path + "cars.tar.gz", 4);
+    expectedRecords.put(path + "cars.tsv", 6);
+    expectedRecords.put(path + "cars.ssv", 6);
+    expectedRecords.put(path + "test-documents.7z", 9);
+    expectedRecords.put(path + "test-documents.cpio", 9);
+    expectedRecords.put(path + "test-documents.tar", 9);
+    expectedRecords.put(path + "test-documents.tbz2", 9);
+    expectedRecords.put(path + "test-documents.tgz", 9);
+    expectedRecords.put(path + "test-documents.zip", 9);
+    expectedRecords.put(path + "multiline-stacktrace.log", 4);
     
     {
       Map<String, Object> record = new LinkedHashMap();
@@ -81,7 +81,7 @@ public class SolrCellMorphlineTest extends AbstractSolrMorphlineTestBase {
     }
     
     {
-      String file = path + "/testWORD_various.doc";
+      String file = path + "testWORD_various.doc";
       Map<String, Object> record = new LinkedHashMap();
       record.put("ignored__attachment_mimetype", "application/msword");
       record.put("ignored_author", "Michael McCandless");
@@ -94,7 +94,7 @@ public class SolrCellMorphlineTest extends AbstractSolrMorphlineTestBase {
     }
     
     {
-      String file = path + "/testPDF.pdf";
+      String file = path + "testPDF.pdf";
       Map<String, Object> record = new LinkedHashMap();
       record.put("ignored__attachment_mimetype", "application/pdf");
       record.put("ignored_author", "Bertrand Delacrétaz");
@@ -106,7 +106,7 @@ public class SolrCellMorphlineTest extends AbstractSolrMorphlineTestBase {
     }
     
     {
-      String file = path + "/email.eml";
+      String file = path + "email.eml";
       Map<String, Object> record = new LinkedHashMap();
       String name = "Patrick Foo <foo@cloudera.com>";
       record.put("ignored__attachment_mimetype", "message/rfc822");
@@ -127,7 +127,7 @@ public class SolrCellMorphlineTest extends AbstractSolrMorphlineTestBase {
     }
 
     {
-      String file = path + "/testEXCEL.xlsx";
+      String file = path + "testEXCEL.xlsx";
       Map<String, Object> record = new LinkedHashMap();
       record.put("ignored__attachment_mimetype", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
       record.put("ignored_author", "Keith Bennett");
@@ -142,23 +142,23 @@ public class SolrCellMorphlineTest extends AbstractSolrMorphlineTestBase {
   
   @Test
   public void testSolrCellJPGCompressed() throws Exception {
-    morphline = createMorphline("test-morphlines/solrCellJPGCompressed");    
-    String path = RESOURCES_DIR + "/test-documents";
+    morphline = createMorphline("test-morphlines" + File.separator + "solrCellJPGCompressed");    
+    String path = RESOURCES_DIR + File.separator + "test-documents" + File.separator;
     String[] files = new String[] {
-        path + "/testJPEG_EXIF.jpg",
-        path + "/testJPEG_EXIF.jpg.gz",
-        path + "/testJPEG_EXIF.jpg.tar.gz",
-        //path + "/jpeg2000.jp2",
+        path + "testJPEG_EXIF.jpg",
+        path + "testJPEG_EXIF.jpg.gz",
+        path + "testJPEG_EXIF.jpg.tar.gz",
+        //path + "jpeg2000.jp2",
     };
     testDocumentTypesInternal(files, expectedRecords, expectedRecordContents);
   }  
 
   @Test
   public void testSolrCellXML() throws Exception {
-    morphline = createMorphline("test-morphlines/solrCellXML");    
-    String path = RESOURCES_DIR + "/test-documents";
+    morphline = createMorphline("test-morphlines" + File.separator + "solrCellXML");    
+    String path = RESOURCES_DIR + File.separator + "test-documents" + File.separator;
     String[] files = new String[] {
-        path + "/testXML2.xml",
+        path + "testXML2.xml",
     };
     testDocumentTypesInternal(files, expectedRecords, expectedRecordContents);
   }  
@@ -168,27 +168,27 @@ public class SolrCellMorphlineTest extends AbstractSolrMorphlineTestBase {
     AbstractSolrMorphlineTestBase.setupMorphline(tempDir, "test-morphlines/solrCellDocumentTypes", false);
     
     morphline = createMorphline(new File(tempDir).getAbsolutePath() +  "/test-morphlines/solrCellDocumentTypes");    
-    String path = RESOURCES_DIR + "/test-documents";
+    String path = RESOURCES_DIR + File.separator + "test-documents" + File.separator;
     String[] files = new String[] {
-        path + "/testBMPfp.txt",
-        path + "/boilerplate.html",
-        path + "/NullHeader.docx",
-        path + "/testWORD_various.doc",          
-        path + "/testPDF.pdf",
-        path + "/testJPEG_EXIF.jpg",
-        path + "/testJPEG_EXIF.jpg.gz",
-        path + "/testJPEG_EXIF.jpg.tar.gz",
-        path + "/testXML.xml",          
-        path + "/cars.csv",
-//        path + "/cars.tsv",
-//        path + "/cars.ssv",
-        path + "/cars.csv.gz",
-        path + "/cars.tar.gz",
-        path + "/sample-statuses-20120906-141433.avro",
-        path + "/sample-statuses-20120906-141433",
-        path + "/sample-statuses-20120906-141433.gz",
-        path + "/sample-statuses-20120906-141433.bz2",
-        path + "/email.eml",
+        path + "testBMPfp.txt",
+        path + "boilerplate.html",
+        path + "NullHeader.docx",
+        path + "testWORD_various.doc",          
+        path + "testPDF.pdf",
+        path + "testJPEG_EXIF.jpg",
+        path + "testJPEG_EXIF.jpg.gz",
+        path + "testJPEG_EXIF.jpg.tar.gz",
+        path + "testXML.xml",          
+        path + "cars.csv",
+//        path + "cars.tsv",
+//        path + "cars.ssv",
+        path + "cars.csv.gz",
+        path + "cars.tar.gz",
+        path + "sample-statuses-20120906-141433.avro",
+        path + "sample-statuses-20120906-141433",
+        path + "sample-statuses-20120906-141433.gz",
+        path + "sample-statuses-20120906-141433.bz2",
+        path + "email.eml",
     };
     testDocumentTypesInternal(files, expectedRecords, expectedRecordContents);
   }
@@ -199,58 +199,58 @@ public class SolrCellMorphlineTest extends AbstractSolrMorphlineTestBase {
     AbstractSolrMorphlineTestBase.setupMorphline(tempDir, "test-morphlines/solrCellDocumentTypes", false);
     
     morphline = createMorphline(new File(tempDir).getAbsolutePath() + "/test-morphlines/solrCellDocumentTypes");    
-    String path = RESOURCES_DIR + "/test-documents";
+    String path = RESOURCES_DIR + File.separator + "test-documents" + File.separator;
     String[] files = new String[] {
-        path + "/testPPT_various.ppt",
-        path + "/testPPT_various.pptx",        
-        path + "/testEXCEL.xlsx",
-        path + "/testEXCEL.xls", 
-        path + "/testPages.pages", 
-        //path + "/testNumbers.numbers", 
-        //path + "/testKeynote.key",
+        path + "testPPT_various.ppt",
+        path + "testPPT_various.pptx",        
+        path + "testEXCEL.xlsx",
+        path + "testEXCEL.xls", 
+        path + "testPages.pages", 
+        //path + "testNumbers.numbers", 
+        //path + "testKeynote.key",
         
-        path + "/testRTFVarious.rtf", 
-        path + "/complex.mbox", 
-        path + "/test-outlook.msg", 
-        path + "/testEMLX.emlx",
-        path + "/testRFC822",  
-        path + "/rsstest.rss", 
-//        path + "/testDITA.dita", 
+        path + "testRTFVarious.rtf", 
+        path + "complex.mbox", 
+        path + "test-outlook.msg", 
+        path + "testEMLX.emlx",
+        path + "testRFC822",  
+        path + "rsstest.rss", 
+//        path + "testDITA.dita", 
         
-        path + "/testMP3i18n.mp3", 
-        path + "/testAIFF.aif", 
-        path + "/testFLAC.flac", 
-//        path + "/testFLAC.oga", 
-//        path + "/testVORBIS.ogg",  
-        path + "/testMP4.m4a", 
-        path + "/testWAV.wav", 
-//        path + "/testWMA.wma", 
+        path + "testMP3i18n.mp3", 
+        path + "testAIFF.aif", 
+        path + "testFLAC.flac", 
+//        path + "testFLAC.oga", 
+//        path + "testVORBIS.ogg",  
+        path + "testMP4.m4a", 
+        path + "testWAV.wav", 
+//        path + "testWMA.wma", 
         
-        path + "/testFLV.flv", 
-//        path + "/testWMV.wmv", 
+        path + "testFLV.flv", 
+//        path + "testWMV.wmv", 
         
-        path + "/testBMP.bmp", 
-        path + "/testPNG.png", 
-        path + "/testPSD.psd",        
-        path + "/testSVG.svg",  
-        path + "/testTIFF.tif",     
+        path + "testBMP.bmp", 
+        path + "testPNG.png", 
+        path + "testPSD.psd",        
+        path + "testSVG.svg",  
+        path + "testTIFF.tif",     
 
-//        path + "/test-documents.7z", 
-//        path + "/test-documents.cpio",
-//        path + "/test-documents.tar", 
-//        path + "/test-documents.tbz2", 
-//        path + "/test-documents.tgz",
-//        path + "/test-documents.zip",
-//        path + "/test-zip-of-zip.zip",
-//        path + "/testJAR.jar",
+//        path + "test-documents.7z", 
+//        path + "test-documents.cpio",
+//        path + "test-documents.tar", 
+//        path + "test-documents.tbz2", 
+//        path + "test-documents.tgz",
+//        path + "test-documents.zip",
+//        path + "test-zip-of-zip.zip",
+//        path + "testJAR.jar",
         
-//        path + "/testKML.kml", 
-//        path + "/testRDF.rdf", 
-        path + "/testVISIO.vsd",
-//        path + "/testWAR.war", 
-//        path + "/testWindows-x86-32.exe",
-//        path + "/testWINMAIL.dat", 
-//        path + "/testWMF.wmf", 
+//        path + "testKML.kml", 
+//        path + "testRDF.rdf", 
+        path + "testVISIO.vsd",
+//        path + "testWAR.war", 
+//        path + "testWindows-x86-32.exe",
+//        path + "testWINMAIL.dat", 
+//        path + "testWMF.wmf", 
     };   
     testDocumentTypesInternal(files, expectedRecords, expectedRecordContents);
   }
