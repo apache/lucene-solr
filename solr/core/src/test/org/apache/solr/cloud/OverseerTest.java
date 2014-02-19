@@ -355,7 +355,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
         if (coreCount == assignedCount) {
           break;
         }
-        Thread.sleep(500);
+        Thread.sleep(1000);
       }
       assertEquals("Unable to verify all cores have been returned an id", 
                    coreCount, assignedCount);
