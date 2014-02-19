@@ -16,6 +16,7 @@
  */
 package org.apache.solr.morphlines.solr;
 
+import java.io.File;
 import java.util.Arrays;
 
 import org.apache.lucene.util.Constants;
@@ -57,7 +58,7 @@ public class SolrMorphlineTest extends AbstractSolrMorphlineTestBase {
     
   @Test
   public void testTokenizeText() throws Exception {
-    morphline = createMorphline("test-morphlines/tokenizeText");
+    morphline = createMorphline("test-morphlines" + File.separator + "tokenizeText");
     for (int i = 0; i < 3; i++) {
       Record record = new Record();
       record.put(Fields.MESSAGE, "Hello World!");

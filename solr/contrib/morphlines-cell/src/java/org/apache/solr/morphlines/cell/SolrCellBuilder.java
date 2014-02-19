@@ -18,7 +18,6 @@ package org.apache.solr.morphlines.cell;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -45,15 +44,12 @@ import org.apache.tika.metadata.Metadata;
 import org.apache.tika.mime.MediaType;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
-import org.apache.tika.sax.TeeContentHandler;
 import org.apache.tika.sax.XHTMLContentHandler;
 import org.apache.tika.sax.xpath.Matcher;
 import org.apache.tika.sax.xpath.MatchingContentHandler;
 import org.apache.tika.sax.xpath.XPathParser;
 import org.apache.xml.serialize.OutputFormat;
 import org.apache.xml.serialize.XMLSerializer;
-import org.xml.sax.ContentHandler;
-import org.xml.sax.SAXException;
 
 import org.kitesdk.morphline.api.Command;
 import org.kitesdk.morphline.api.CommandBuilder;
@@ -64,6 +60,9 @@ import org.kitesdk.morphline.api.Record;
 import org.kitesdk.morphline.base.Configs;
 import org.kitesdk.morphline.base.Fields;
 import org.kitesdk.morphline.stdio.AbstractParser;
+import org.xml.sax.ContentHandler;
+import org.xml.sax.SAXException;
+
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
@@ -102,6 +101,7 @@ public final class SolrCellBuilder implements CommandBuilder {
     private final String xpathExpr;
     private final List<Parser> parsers = new ArrayList();
     private final SolrContentHandlerFactory solrContentHandlerFactory;
+    private final Locale locale;
     
     private final SolrParams solrParams;
     private final Map<MediaType, Parser> mediaTypeToParserMap;
@@ -163,6 +163,8 @@ public final class SolrCellBuilder implements CommandBuilder {
       }
       this.solrContentHandlerFactory = getSolrContentHandlerFactory(factoryClass, dateFormats, config);
 
+      this.locale = getLocale(getConfigs().getString(config, "locale", ""));
+      
       this.mediaTypeToParserMap = new HashMap<MediaType, Parser>();
       //MimeTypes mimeTypes = MimeTypes.getDefaultMimeTypes(); // FIXME getMediaTypeRegistry.normalize() 
 
@@ -222,6 +224,7 @@ public final class SolrCellBuilder implements CommandBuilder {
       }
       
       ParseContext parseContext = new ParseContext();
+      parseContext.set(Locale.class, locale);
       
       Metadata metadata = new Metadata();
       for (Entry<String, Object> entry : record.getFields().entries()) {
@@ -233,12 +236,6 @@ public final class SolrCellBuilder implements CommandBuilder {
         inputStream = TikaInputStream.get(inputStream);
 
         ContentHandler parsingHandler = handler;
-        StringWriter debugWriter = null;
-        if (LOG.isTraceEnabled()) {
-          debugWriter = new StringWriter();
-          ContentHandler serializer = new XMLSerializer(debugWriter, new OutputFormat("XML", "UTF-8", true));
-          parsingHandler = new TeeContentHandler(parsingHandler, serializer);
-        }
 
         // String xpathExpr = "/xhtml:html/xhtml:body/xhtml:div/descendant:node()";
         if (xpathExpr != null) {
@@ -255,8 +252,6 @@ public final class SolrCellBuilder implements CommandBuilder {
         } catch (TikaException e) {
           throw new MorphlineRuntimeException("Cannot parse", e);
         }
-        
-        LOG.trace("debug XML doc: {}", debugWriter);
       } finally {
         if (inputStream != null) {
           Closeables.closeQuietly(inputStream);
@@ -336,6 +331,18 @@ public final class SolrCellBuilder implements CommandBuilder {
       return record;
     }
     
+    private Locale getLocale(String name) {
+      for (Locale locale : Locale.getAvailableLocales()) {
+        if (locale.toString().equals(name)) {
+          return locale;
+        }
+      }
+      assert Locale.ROOT.toString().equals("");
+      if (name.equals(Locale.ROOT.toString())) {
+        return Locale.ROOT;
+      }
+      throw new MorphlineCompilationException("Unknown locale: " + name, getConfig());
+    }
   }
 
 }
