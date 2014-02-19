@@ -314,6 +314,9 @@ Bug Fixes
 * SOLR-5741: UpdateShardHandler was not correctly setting max total connections
   on the HttpClient. (Shawn Heisey)
 
+* SOLR-5620: ZKStateReader.aliases should be volatile to ensure all threads see
+  the latest aliases. (Ramkumar Aiyengar via Mark Miller)
+
 Optimizations
 ----------------------
 
