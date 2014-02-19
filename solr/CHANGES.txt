@@ -51,9 +51,6 @@ New Features
 Bug Fixes
 ----------------------
 
-* SOLR-5729: Merge in bug fixes and minor improvements for mapreduce and 
-  morphlines contribs. (Patrick Hunt via Mark Miller)
-
 
 ==================  4.7.0 ==================
 
