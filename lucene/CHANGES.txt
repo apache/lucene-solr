@@ -132,6 +132,9 @@ Build
 
 * LUCENE-5383: fix changes2html to link pull requests (Steve Rowe)
 
+* LUCENE-5411: Upgrade to released JFlex 1.5.0; stop requiring
+  a locally built JFlex snapshot jar. (Steve Rowe)
+
 Bug fixes
 
 * LUCENE-5285: Improved highlighting of multi-valued fields with
