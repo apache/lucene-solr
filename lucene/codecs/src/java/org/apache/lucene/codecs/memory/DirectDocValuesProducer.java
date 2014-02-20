@@ -29,6 +29,7 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.RandomAccessOrds;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
@@ -350,7 +351,8 @@ class DirectDocValuesProducer extends DocValuesProducer {
     final BinaryDocValues values = instance.values;
 
     // Must make a new instance since the iterator has state:
-    return new SortedSetDocValues() {
+    return new RandomAccessOrds() {
+      int ordStart;
       int ordUpto;
       int ordLimit;
 
@@ -365,7 +367,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
       
       @Override
       public void setDocument(int docID) {
-        ordUpto = (int) docToOrdAddress.get(docID);
+        ordStart = ordUpto = (int) docToOrdAddress.get(docID);
         ordLimit = (int) docToOrdAddress.get(docID+1);
       }
 
@@ -377,6 +379,16 @@ class DirectDocValuesProducer extends DocValuesProducer {
       @Override
       public long getValueCount() {
         return entry.values.count;
+      }
+
+      @Override
+      public long ordAt(int index) {
+        return ords.get(ordStart + index);
+      }
+
+      @Override
+      public int cardinality() {
+        return ordLimit - ordStart;
       }
 
       // Leave lookupTerm to super's binary search

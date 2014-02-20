@@ -717,7 +717,7 @@ public abstract class FieldComparator<T> {
    *  to large results, this comparator will be much faster
    *  than {@link org.apache.lucene.search.FieldComparator.TermValComparator}.  For very small
    *  result sets it may be slower. */
-  public static final class TermOrdValComparator extends FieldComparator<BytesRef> {
+  public static class TermOrdValComparator extends FieldComparator<BytesRef> {
     /* Ords for each slot.
        @lucene.internal */
     final int[] ords;
@@ -766,8 +766,6 @@ public abstract class FieldComparator<T> {
     BytesRef topValue;
     boolean topSameReader;
     int topOrd;
-
-    private int docBase;
 
     final BytesRef tempBR = new BytesRef();
 
@@ -856,10 +854,14 @@ public abstract class FieldComparator<T> {
       readerGen[slot] = currentReaderGen;
     }
     
+    /** Retrieves the SortedDocValues for the field in this segment */
+    protected SortedDocValues getSortedDocValues(AtomicReaderContext context, String field) throws IOException {
+      return FieldCache.DEFAULT.getTermsIndex(context.reader(), field);
+    }
+    
     @Override
     public FieldComparator<BytesRef> setNextReader(AtomicReaderContext context) throws IOException {
-      docBase = context.docBase;
-      termsIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), field);
+      termsIndex = getSortedDocValues(context, field);
       currentReaderGen++;
 
       if (topValue != null) {

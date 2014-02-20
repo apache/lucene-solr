@@ -65,17 +65,28 @@ Optimizations
   on Windows if NIOFSDirectory is used, mmapped files are still locked.
   (Michael Poindexter, Robert Muir, Uwe Schindler)
 
-Test Framework
-
-* LUCENE-5449: Rename _TestUtil and _TestHelper to remove the leading _.
 
 ======================= Lucene 4.8.0 =======================
+
+New Features
+
+* LUCENE-5454: Add SortedSetSortField to lucene/sandbox, to allow sorting
+  on multi-valued field. (Robert Muir)
+
+API Changes
+
+* LUCENE-5454: Add RandomAccessOrds, an optional extension of SortedSetDocValues
+  that supports random access to the ordinals in a document. (Robert Muir)
 
 Bug fixes
 
 * LUCENE-5450: Fix getField() NPE issues with SpanOr/SpanNear when they have an 
   empty list of clauses. This can happen for example,  when a wildcard matches 
   no terms.  (Tim Allison via Robert Muir)
+
+Test Framework
+
+* LUCENE-5449: Rename _TestUtil and _TestHelper to remove the leading _.
 
 ======================= Lucene 4.7.0 =======================
 
@@ -176,6 +187,10 @@ New Features
 * LUCENE-5408: Add spatial SerializedDVStrategy that serializes a binary
   representations of a shape into BinaryDocValues. It supports exact geometry
   relationship calculations. (David Smiley)
+
+* LUCENE-5457: Add SloppyMath.earthDiameter(double latitude) that returns an
+  approximate value of the diameter of the earth at the given latitude.
+  (Adrien Grand)
 
 Build
 

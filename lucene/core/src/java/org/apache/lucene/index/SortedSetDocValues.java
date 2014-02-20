@@ -69,7 +69,7 @@ public abstract class SortedSetDocValues {
 
 
   /** An empty SortedDocValues which returns {@link #NO_MORE_ORDS} for every document */
-  public static final SortedSetDocValues EMPTY = new SortedSetDocValues() {
+  public static final SortedSetDocValues EMPTY = new RandomAccessOrds() {
 
     @Override
     public long nextOrd() {
@@ -86,6 +86,16 @@ public abstract class SortedSetDocValues {
 
     @Override
     public long getValueCount() {
+      return 0;
+    }
+
+    @Override
+    public long ordAt(int index) {
+      throw new IndexOutOfBoundsException();
+    }
+
+    @Override
+    public int cardinality() {
       return 0;
     }
   };

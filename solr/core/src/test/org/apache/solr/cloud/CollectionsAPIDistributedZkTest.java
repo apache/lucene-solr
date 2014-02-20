@@ -383,7 +383,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     
     // wait for leaders to settle out
     for (int i = 1; i < 4; i++) {
-      cloudClient.getZkStateReader().getLeaderRetry("halfdeletedcollection2", "shard" + i, 15000);
+      cloudClient.getZkStateReader().getLeaderRetry("halfdeletedcollection2", "shard" + i, 30000);
     }
     
     baseUrl = getBaseUrl((HttpSolrServer) clients.get(2));
