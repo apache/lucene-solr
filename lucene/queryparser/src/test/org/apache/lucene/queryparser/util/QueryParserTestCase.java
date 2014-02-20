@@ -302,28 +302,16 @@ public abstract class QueryParserTestCase extends LuceneTestCase {
 
   public void assertQueryEquals(String query, Analyzer a, String result) throws Exception {
     Query q = getQuery(query, a);
-    String s = q.toString("field");
-    if (!s.equals(result)) {
-      fail("Query /" + query + "/ yielded /" + s
-           + "/, expecting /" + result + "/");
-    }
+    assertEquals(result, q.toString("field"));
   }
 
   public void assertQueryEquals(CommonQueryParserConfiguration cqpC, String field, String query, String result) throws Exception {
     Query q = getQuery(query, cqpC);
-    String s = q.toString(field);
-    if (!s.equals(result)) {
-      fail("Query /" + query + "/ yielded /" + s
-           + "/, expecting /" + result + "/");
-    }
+    assertEquals(result, q.toString(field));
   }
   
   public void assertEscapedQueryEquals(String query, Analyzer a, String result) throws Exception {
-    String escapedQuery = QueryParserBase.escape(query);
-    if (!escapedQuery.equals(result)) {
-      fail("Query /" + query + "/ yielded /" + escapedQuery
-          + "/, expecting /" + result + "/");
-    }
+    assertEquals(result, QueryParserBase.escape(query));
   }
 
   public void assertWildcardQueryEquals(String query, boolean lowercase, String result, boolean allowLeadingWildcard) throws Exception {
@@ -331,11 +319,7 @@ public abstract class QueryParserTestCase extends LuceneTestCase {
     cqpC.setLowercaseExpandedTerms(lowercase);
     cqpC.setAllowLeadingWildcard(allowLeadingWildcard);
     Query q = getQuery(query, cqpC);
-    String s = q.toString("field");
-    if (!s.equals(result)) {
-      fail("WildcardQuery /" + query + "/ yielded /" + s
-           + "/, expecting /" + result + "/");
-    }
+    assertEquals(result, q.toString("field"));
   }
 
   public void assertWildcardQueryEquals(String query, boolean lowercase, String result) throws Exception {
@@ -344,16 +328,13 @@ public abstract class QueryParserTestCase extends LuceneTestCase {
 
   public void assertWildcardQueryEquals(String query, String result) throws Exception {
     Query q = getQuery(query);
-    String s = q.toString("field");
-    if (!s.equals(result)) {
-      fail("WildcardQuery /" + query + "/ yielded /" + s + "/, expecting /"
-          + result + "/");
-    }
+    assertEquals(result, q.toString("field"));
   }
 
   public Query getQueryDOA(String query, Analyzer a) throws Exception {
-    if (a == null)
+    if (a == null) {
       a = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
+    }
     CommonQueryParserConfiguration qp = getParserConfig(a);
     setDefaultOperatorAND(qp);
     return getQuery(query, qp);
@@ -361,32 +342,24 @@ public abstract class QueryParserTestCase extends LuceneTestCase {
 
   public void assertQueryEqualsDOA(String query, Analyzer a, String result) throws Exception {
     Query q = getQueryDOA(query, a);
-    String s = q.toString("field");
-    if (!s.equals(result)) {
-      fail("Query /" + query + "/ yielded /" + s
-           + "/, expecting /" + result + "/");
-    }
+    assertEquals(result, q.toString("field"));
   }
   
   public void assertParseException(String queryString) throws Exception {
     try {
       getQuery(queryString);
+      fail("ParseException expected, not thrown");
     } catch (Exception expected) {
-      if (isQueryParserException(expected)) {
-        return;
-      }
+      assertTrue(isQueryParserException(expected));
     }
-    fail("ParseException expected, not thrown");
   }
 
   public void assertParseException(String queryString, Analyzer a) throws Exception {
     try {
       getQuery(queryString, a);
+      fail("ParseException expected, not thrown");
     } catch (Exception expected) {
-      if (isQueryParserException(expected)) {
-        return;
-      }
+      assertTrue(isQueryParserException(expected));
     }
-    fail("ParseException expected, not thrown");
   }
 }
