@@ -43,6 +43,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.RandomAccessOrds;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SingletonSortedSetDocValues;
 import org.apache.lucene.index.SortedDocValues;
@@ -523,7 +524,8 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
     // but the addresses to the ord stream are in RAM
     final MonotonicBlockPackedReader ordIndex = getOrdIndexInstance(data, field, ordIndexes.get(field.number));
     
-    return new SortedSetDocValues() {
+    return new RandomAccessOrds() {
+      long startOffset;
       long offset;
       long endOffset;
       
@@ -540,7 +542,7 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
 
       @Override
       public void setDocument(int docID) {
-        offset = (docID == 0 ? 0 : ordIndex.get(docID-1));
+        startOffset = offset = (docID == 0 ? 0 : ordIndex.get(docID-1));
         endOffset = ordIndex.get(docID);
       }
 
@@ -570,6 +572,16 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
         } else {
           return super.termsEnum();
         }
+      }
+
+      @Override
+      public long ordAt(int index) {
+        return ordinals.get(startOffset + index);
+      }
+
+      @Override
+      public int cardinality() {
+        return (int) (endOffset - startOffset);
       }
     };
   }
