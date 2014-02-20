@@ -108,12 +108,8 @@ public class TestSpanQPBasedOnQPTestBase extends QueryParserTestCase {
   }
 
   public void assertBoostEquals(String query, float b) throws Exception {
-    double precision = 0.00001;
     Query q = getQuery(query);
-    if (Math.abs(q.getBoost() - b) > precision) {
-      fail("Query /" + query + "/ yielded boost:" + q.getBoost()
-          + "/, expecting /" + b + "/");
-    }
+    assertEquals(b, q.getBoost(), 0.00001);
   }
 
   private void assertEqualsWrappedRegexp(RegexpQuery q, Query query) {
@@ -128,8 +124,7 @@ public class TestSpanQPBasedOnQPTestBase extends QueryParserTestCase {
     assertMultitermEquals("field", query, expected);
   }
   
-  private void assertMultitermEquals(String field, Query query,
-      String expected) throws Exception {
+  private void assertMultitermEquals(String field, Query query, String expected) throws Exception {
     expected = "SpanMultiTermQueryWrapper("+field+":"+ expected+")";
 
     //need to trim final .0 for fuzzy queries because
@@ -146,8 +141,7 @@ public class TestSpanQPBasedOnQPTestBase extends QueryParserTestCase {
     assertMultitermEquals(s, qpAnalyzer, expected);
   }
 
-  private void assertMultitermEquals(String s,
-      String expected, float boost) throws Exception {
+  private void assertMultitermEquals(String s, String expected, float boost) throws Exception {
     Analyzer a = qpAnalyzer;
     SpanQueryParser p = new SpanQueryParser(TEST_VERSION_CURRENT, "field", a);
     Query q = p.parse(s);
@@ -155,8 +149,7 @@ public class TestSpanQPBasedOnQPTestBase extends QueryParserTestCase {
     assertEquals(q.getBoost(), boost, 0.000001f);
   }
 
-  private void assertMultitermEquals(String query, boolean b,
-      String expected) throws Exception {
+  private void assertMultitermEquals(String query, boolean b, String expected) throws Exception {
     Analyzer a = qpAnalyzer;
     SpanQueryParser p = new SpanQueryParser(TEST_VERSION_CURRENT, "field", a);
     p.setLowercaseExpandedTerms(b);
@@ -164,8 +157,7 @@ public class TestSpanQPBasedOnQPTestBase extends QueryParserTestCase {
     assertMultitermEquals(q, expected);
   }
 
-  private void assertMultitermEquals(String field,
-      String query, Analyzer a, String expected) throws Exception {
+  private void assertMultitermEquals(String field, String query, Analyzer a, String expected) throws Exception {
     SpanQueryParser p = new SpanQueryParser(TEST_VERSION_CURRENT, "field", a);
     Query q = p.parse(query);
     assertMultitermEquals(field, q, expected);
@@ -277,11 +269,6 @@ public class TestSpanQPBasedOnQPTestBase extends QueryParserTestCase {
     assertQueryEquals("türm term term", new MockAnalyzer(random()), "türm term term");
     assertQueryEquals("ümlaut", new MockAnalyzer(random()), "ümlaut");
 
-    // FIXME: enhance MockAnalyzer to be able to support this
-    // it must no longer extend CharTokenizer
-    //assertQueryEquals("\"\"", new KeywordAnalyzer(), "");
-    //assertQueryEquals("foo:\"\"", new KeywordAnalyzer(), "foo:");
-
     assertQueryEquals("a AND b", null, "+a +b");
     assertQueryEquals("(a AND b)", null, "+a +b");
     assertQueryEquals("c (a AND b)", null, "c (+a +b)");
@@ -368,8 +355,8 @@ public class TestSpanQPBasedOnQPTestBase extends QueryParserTestCase {
     assertMultitermEquals("term~1", "term~1.0");
     assertMultitermEquals("term~0.7","term~1.0");
     assertMultitermEquals("term~^3", "term~2.0", 3.0f);
-    //not currently supported in SpanQueryParser
-    //     assertWildcardQueryEquals("term^3~", "term~2.0", 3.0f);
+    // not currently supported in SpanQueryParser
+    //  assertWildcardQueryEquals("term^3~", "term~2.0", 3.0f);
     assertMultitermEquals("term*germ", "term*germ");
     assertMultitermEquals("term*germ^3", "term*germ", 3.0f);
 
@@ -441,25 +428,21 @@ public class TestSpanQPBasedOnQPTestBase extends QueryParserTestCase {
     assertMultitermEquals("[A TO C]", true, "[a TO c]");
     assertMultitermEquals("[A TO C]", false, "[A TO C]");
 
-
     // Test suffix queries: first disallow
     try {
       assertMultitermEquals("*Term", true, "*term");
-    } catch(Exception pe) {
-      // expected exception
-      if(!isQueryParserException(pe)) {
-        fail();
-      }
+      fail("didn't get expected exception");
+    } catch (Exception pe) {
+      assertTrue(isQueryParserException(pe));
     }
+    
     try {
       assertMultitermEquals("?Term", true, "?term");
-      fail();
-    } catch(Exception pe) {
-      // expected exception
-      if(!isQueryParserException(pe)) {
-        fail();
-      }
+      fail("didn't get expected exception");
+    } catch (Exception pe) {
+      assertTrue(isQueryParserException(pe));
     }
+    
     // Test suffix queries: then allow
     assertMultitermEquals("*Term", true, "*term", true);
     assertMultitermEquals("?Term", true, "?term", true);
@@ -589,30 +572,31 @@ public class TestSpanQPBasedOnQPTestBase extends QueryParserTestCase {
 
   public void testEscaped() throws Exception {
     Analyzer a = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
-    //commented out in QueryParserTestBase
-    /* assertQueryEquals("\\[brackets", a, "\\[brackets");
-     assertQueryEquals("\\[brackets", null, "brackets");
-     assertQueryEquals("\\\\", a, "\\\\");
-     assertQueryEquals("\\+blah", a, "\\+blah");
-     assertQueryEquals("\\(blah", a, "\\(blah");
+    
+    assertQueryEquals("\\[brackets", a, "[brackets");
+    assertQueryEquals("\\[brackets", null, "brackets");
+    assertQueryEquals("\\\\", a, "\\");
+    assertQueryEquals("\\+blah", a, "+blah");
+    assertQueryEquals("\\(blah", a, "(blah");
 
-     assertQueryEquals("\\-blah", a, "\\-blah");
-     assertQueryEquals("\\!blah", a, "\\!blah");
-     assertQueryEquals("\\{blah", a, "\\{blah");
-     assertQueryEquals("\\}blah", a, "\\}blah");
-     assertQueryEquals("\\:blah", a, "\\:blah");
-     assertQueryEquals("\\^blah", a, "\\^blah");
-     assertQueryEquals("\\[blah", a, "\\[blah");
-     assertQueryEquals("\\]blah", a, "\\]blah");
-     assertQueryEquals("\\\"blah", a, "\\\"blah");
-     assertQueryEquals("\\(blah", a, "\\(blah");
-     assertQueryEquals("\\)blah", a, "\\)blah");
-     assertQueryEquals("\\~blah", a, "\\~blah");
-     assertQueryEquals("\\*blah", a, "\\*blah");
-     assertQueryEquals("\\?blah", a, "\\?blah");*/
-    //assertQueryEquals("foo \\&\\& bar", a, "foo \\&\\& bar");
-    //assertQueryEquals("foo \\|| bar", a, "foo \\|| bar");
-    //assertQueryEquals("foo \\AND bar", a, "foo \\AND bar");
+    assertQueryEquals("\\-blah", a, "-blah");
+    assertQueryEquals("\\!blah", a, "!blah");
+    assertQueryEquals("\\{blah", a, "{blah");
+    assertQueryEquals("\\}blah", a, "}blah");
+    assertQueryEquals("\\:blah", a, ":blah");
+    assertQueryEquals("\\^blah", a, "^blah");
+    assertQueryEquals("\\[blah", a, "[blah");
+    assertQueryEquals("\\]blah", a, "]blah");
+    assertQueryEquals("\\\"blah", a, "\"blah");
+    assertQueryEquals("\\(blah", a, "(blah");
+    assertQueryEquals("\\)blah", a, ")blah");
+    assertQueryEquals("\\~blah", a, "~blah");
+    assertQueryEquals("\\*blah", a, "*blah");
+    assertQueryEquals("\\?blah", a, "?blah");
+    assertQueryEquals("foo \\&\\& bar", a, "foo && bar");
+    assertQueryEquals("foo \\|| bar", a, "foo || bar");
+    assertQueryEquals("foo \\AND bar", a, "foo AND bar");
+
 
     assertQueryEquals("\\a", a, "a");
 
@@ -729,53 +713,32 @@ public class TestSpanQPBasedOnQPTestBase extends QueryParserTestCase {
     assertEscapedQueryEquals("&& abc &&", a, "\\&\\& abc \\&\\&");
   }
 
-  public void testTabNewlineCarriageReturn()
-      throws Exception {
-    assertQueryEqualsDOA("+weltbank +worlbank", null,
-        "+weltbank +worlbank");
-
-    assertQueryEqualsDOA("+weltbank\n+worlbank", null,
-        "+weltbank +worlbank");
-    assertQueryEqualsDOA("weltbank \n+worlbank", null,
-        "+weltbank +worlbank");
-    assertQueryEqualsDOA("weltbank \n +worlbank", null,
-        "+weltbank +worlbank");
-
-    assertQueryEqualsDOA("+weltbank\r+worlbank", null,
-        "+weltbank +worlbank");
-    assertQueryEqualsDOA("weltbank \r+worlbank", null,
-        "+weltbank +worlbank");
-    assertQueryEqualsDOA("weltbank \r +worlbank", null,
-        "+weltbank +worlbank");
-
-    assertQueryEqualsDOA("+weltbank\r\n+worlbank", null,
-        "+weltbank +worlbank");
-    assertQueryEqualsDOA("weltbank \r\n+worlbank", null,
-        "+weltbank +worlbank");
-    assertQueryEqualsDOA("weltbank \r\n +worlbank", null,
-        "+weltbank +worlbank");
-    assertQueryEqualsDOA("weltbank \r \n +worlbank", null,
-        "+weltbank +worlbank");
-
-    assertQueryEqualsDOA("+weltbank\t+worlbank", null,
-        "+weltbank +worlbank");
-    assertQueryEqualsDOA("weltbank \t+worlbank", null,
-        "+weltbank +worlbank");
-    assertQueryEqualsDOA("weltbank \t +worlbank", null,
-        "+weltbank +worlbank");
+  public void testTabNewlineCarriageReturn() throws Exception {
+    assertQueryEqualsDOA("+weltbank +worlbank",      null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("+weltbank\n+worlbank",     null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \n+worlbank",     null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \n +worlbank",    null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("+weltbank\r+worlbank",     null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \r+worlbank",     null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \r +worlbank",    null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("+weltbank\r\n+worlbank",   null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \r\n+worlbank",   null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \r\n +worlbank",  null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \r \n +worlbank", null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("+weltbank\t+worlbank",     null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \t+worlbank",     null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \t +worlbank",    null, "+weltbank +worlbank");
   }
 
-  public void testSimpleDAO()
-      throws Exception {
-    assertQueryEqualsDOA("term term term", null, "+term +term +term");
-    assertQueryEqualsDOA("term +term term", null, "+term +term +term");
-    assertQueryEqualsDOA("term term +term", null, "+term +term +term");
+  public void testSimpleDAO() throws Exception {
+    assertQueryEqualsDOA("term term term",   null, "+term +term +term");
+    assertQueryEqualsDOA("term +term term",  null, "+term +term +term");
+    assertQueryEqualsDOA("term term +term",  null, "+term +term +term");
     assertQueryEqualsDOA("term +term +term", null, "+term +term +term");
-    assertQueryEqualsDOA("-term term term", null, "-term +term +term");
+    assertQueryEqualsDOA("-term term term",  null, "-term +term +term");
   }
 
-  public void testBoost()
-      throws Exception {
+  public void testBoost() throws Exception {
     CharacterRunAutomaton stopWords = new CharacterRunAutomaton(BasicAutomata.makeString("on"));
     Analyzer oneStopAnalyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, stopWords);
     CommonQueryParserConfiguration qp = getParserConfig(oneStopAnalyzer);
@@ -823,36 +786,6 @@ public class TestSpanQPBasedOnQPTestBase extends QueryParserTestCase {
     Query query2 = getQuery("+A +B +C +D", qp);
     assertEquals(query1, query2);
   }
-
-  // Todo: convert this from DateField to DateUtil
-  //   public void testLocalDateFormat() throws IOException, ParseException {
-  //     Directory ramDir = newDirectory();
-  //     IndexWriter iw = new IndexWriter(ramDir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
-  //     addDateDoc("a", 2005, 12, 2, 10, 15, 33, iw);
-  //     addDateDoc("b", 2005, 12, 4, 22, 15, 00, iw);
-  //     iw.close();
-  //     IndexSearcher is = new IndexSearcher(ramDir, true);
-  //     assertHits(1, "[12/1/2005 TO 12/3/2005]", is);
-  //     assertHits(2, "[12/1/2005 TO 12/4/2005]", is);
-  //     assertHits(1, "[12/3/2005 TO 12/4/2005]", is);
-  //     assertHits(1, "{12/1/2005 TO 12/3/2005}", is);
-  //     assertHits(1, "{12/1/2005 TO 12/4/2005}", is);
-  //     assertHits(0, "{12/3/2005 TO 12/4/2005}", is);
-  //     is.close();
-  //     ramDir.close();
-  //   }
-  //
-  //   private void addDateDoc(String content, int year, int month,
-  //                           int day, int hour, int minute, int second, IndexWriter iw) throws IOException {
-  //     Document d = new Document();
-  //     d.add(newField(FIELD, content, Field.Store.YES, Field.Index.ANALYZED));
-  //     Calendar cal = Calendar.getInstance(Locale.ENGLISH);
-  //     cal.set(year, month - 1, day, hour, minute, second);
-  //     d.add(newField("date", DateField.dateToString(cal.getTime()), Field.Store.YES, Field.Index.NOT_ANALYZED));
-  //     iw.addDocument(d);
-  //   }
-
-  //   public abstract void testStarParsing() throws Exception;
 
   public void testEscapedWildcard() throws Exception {
     CommonQueryParserConfiguration qp = getParserConfig( new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false));

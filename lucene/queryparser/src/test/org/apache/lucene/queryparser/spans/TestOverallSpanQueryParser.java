@@ -274,15 +274,10 @@ public class TestOverallSpanQueryParser extends LuceneTestCase {
   }
 
   private void testException(String s, SpanQueryParser p) {
-    boolean ex = false;
-    try{
-      Query query = p.parse(s);
-    } catch (ParseException e) {
-      ex = true;
-    } catch (Exception e) {
-
-    }
-    assertTrue(s, ex);
+    try {
+      p.parse(s);
+      fail("didn't get expected exception");
+    } catch (ParseException expected) {}
   }
 
   public void testIsEscaped() throws Exception{

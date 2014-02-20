@@ -177,22 +177,17 @@ public class TestSpanOnlyQueryParser extends LuceneTestCase {
   public void testNear() throws Exception {
     SpanOnlyParser p = new SpanOnlyParser(TEST_VERSION_CURRENT, FIELD, noStopAnalyzer);
 
-    boolean exc = false;
-
+    // unmatched "
     try {
-      SpanQuery q = (SpanQuery)p.parse("\"brown \"dog\"");
-    } catch (ParseException e) {
-      exc = true;
-    }
-    assertEquals("unmatching \"", true, exc);
+      p.parse("\"brown \"dog\"");
+      fail("didn't get expected exception");
+    } catch (ParseException expected) {}
 
-    exc = false;
+    // unmatched [
     try {
-      SpanQuery q = (SpanQuery)p.parse("[brown [dog]");
-    } catch (ParseException e) {
-      exc = true;
-    }
-    assertEquals("unmatched [", true, exc);
+      p.parse("[brown [dog]");
+      fail("didn't get expected exception");
+    } catch (ParseException expected) {}
 
     testOffsetForSingleSpanMatch(p, "\"brown dog\"", 1, 4, 6);
 
@@ -222,13 +217,12 @@ public class TestSpanOnlyQueryParser extends LuceneTestCase {
 
   public void testNotNear() throws Exception {
     SpanOnlyParser p = new SpanOnlyParser(TEST_VERSION_CURRENT, FIELD, noStopAnalyzer);
-    boolean exc = false;
+
+    // must have two components
     try {
-      SpanQuery q = (SpanQuery)p.parse("\"brown dog car\"!~2,2");
-    } catch (ParseException e) {
-      exc = true;
-    }
-    assertEquals("must have 2 components", true, exc);
+      p.parse("\"brown dog car\"!~2,2");
+      fail("didn't get expected exception");
+    } catch (ParseException expected) {}
 
     countSpansDocs(p, "\"brown dog\"!~2,2", 2, 2);
 
@@ -253,15 +247,14 @@ public class TestSpanOnlyQueryParser extends LuceneTestCase {
 
   public void testWildcard() throws Exception {
     SpanOnlyParser p = new SpanOnlyParser(TEST_VERSION_CURRENT, FIELD, noStopAnalyzer);
-    boolean exc = false;
-    //default: don't allow leading wildcards
 
+    //default: don't allow leading wildcards
     try {
-      SpanQuery q = (SpanQuery)p.parse("*og");
-    } catch (ParseException e) {
-      exc = true;
+      p.parse("*og");
+      fail("didn't get expected exception");
+    } catch (ParseException expected) {
     }
-    assertEquals("no leading wildcards \"", true, exc);
+
     p.setAllowLeadingWildcard(true);
 
     // lowercasing as default
