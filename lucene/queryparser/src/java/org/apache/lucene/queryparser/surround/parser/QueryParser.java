@@ -41,8 +41,11 @@ import org.apache.lucene.queryparser.surround.query.SrndTruncQuery;
  *  prefix from 2-99.  So, for example, 3W(a, b) means that terms a and b
  *  must appear within three positions of each other, or in other words, up
  *  to two terms may appear between a and b.  </p>
+ *
+ * @deprecated Use {@link org.apache.lucene.queryparser.spans.SpanQueryParser} instead.
  */
 
+@Deprecated
 public class QueryParser implements QueryParserConstants {
   final int minimumPrefixLength = 3;
   final int minimumCharsInTrunc = 3;
