@@ -4,6 +4,16 @@ For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 ======================= Lucene 4.8.0 =======================
 
+New Features
+
+* LUCENE-5454: Add SortedSetSortField to lucene/sandbox, to allow sorting
+  on multi-valued field. (Robert Muir)
+
+API Changes
+
+* LUCENE-5454: Add RandomAccessOrds, an optional extension of SortedSetDocValues
+  that supports random access to the ordinals in a document. (Robert Muir)
+
 Bug fixes
 
 * LUCENE-5450: Fix getField() NPE issues with SpanOr/SpanNear when they have an 
