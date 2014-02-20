@@ -25,6 +25,7 @@ import java.util.List;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.MathUtil;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.PagedBytes.PagedBytesDataInput;
 import org.apache.lucene.util.PagedBytes.PagedBytesDataOutput;
 import org.apache.lucene.util.PagedBytes;
@@ -49,6 +50,7 @@ class TermInfosReaderIndex {
   private final PackedInts.Reader indexToDataOffset;
   private final int indexSize;
   private final int skipInterval;
+  private final long ramBytesUsed;
 
   /**
    * Loads the segment information at segment load time.
@@ -111,6 +113,9 @@ class TermInfosReaderIndex {
     dataPagedBytes.freeze(true);
     dataInput = dataPagedBytes.getDataInput();
     indexToDataOffset = indexToTerms.getMutable();
+
+    ramBytesUsed = fields.length * (RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.shallowSizeOfInstance(Term.class))
+        + dataPagedBytes.ramBytesUsed() + indexToDataOffset.ramBytesUsed();
   }
 
   private static int estimatePageBits(long estSize) {
@@ -253,4 +258,9 @@ class TermInfosReaderIndex {
     input.setPosition(indexToDataOffset.get(termIndex));
     return term.field().compareTo(fields[input.readVInt()].field());
   }
+
+  long ramBytesUsed() {
+    return ramBytesUsed;
+  }
+
 }

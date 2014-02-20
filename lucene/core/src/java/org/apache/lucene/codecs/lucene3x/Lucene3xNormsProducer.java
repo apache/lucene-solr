@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.index.BinaryDocValues;
@@ -66,6 +67,8 @@ class Lucene3xNormsProducer extends DocValuesProducer {
   IndexInput singleNormStream;
   final int maxdoc;
   
+  private final AtomicLong ramBytesUsed;
+
   // note: just like segmentreader in 3.x, we open up all the files here (including separate norms) up front.
   // but we just don't do any seeks or reading yet.
   public Lucene3xNormsProducer(Directory dir, SegmentInfo info, FieldInfos fields, IOContext context) throws IOException {
@@ -125,6 +128,7 @@ class Lucene3xNormsProducer extends DocValuesProducer {
         IOUtils.closeWhileHandlingException(openFiles);
       }
     }
+    ramBytesUsed = new AtomicLong();
   }
   
   @Override
@@ -182,6 +186,7 @@ class Lucene3xNormsProducer extends DocValuesProducer {
           openFiles.remove(file);
           file.close();
         }
+        ramBytesUsed.addAndGet(RamUsageEstimator.sizeOf(bytes));
         instance = new NumericDocValues() {
           @Override
           public long get(int docID) {
@@ -222,6 +227,6 @@ class Lucene3xNormsProducer extends DocValuesProducer {
   
   @Override
   public long ramBytesUsed() {
-    return RamUsageEstimator.sizeOf(this);
+    return ramBytesUsed.get();
   }
 }
