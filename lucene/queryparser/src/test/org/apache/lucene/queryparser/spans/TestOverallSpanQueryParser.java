@@ -110,7 +110,7 @@ public class TestOverallSpanQueryParser extends LuceneTestCase {
       writer.addDocument(doc);
     }
     reader = writer.getReader();
-    searcher = new IndexSearcher(reader);
+    searcher = newSearcher(reader);
     writer.close();
 
     parser = new SpanQueryParser(TEST_VERSION_CURRENT, FIELD1, analyzer);

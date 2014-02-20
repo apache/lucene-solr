@@ -75,9 +75,11 @@ public class TestComplexPhraseSpanQuery extends LuceneTestCase {
     // checkMatches("\"john -percival\"", "1"); // not logic doesn't work
     checkMatches("\"john percival\"!~2,2", "1"); // not logic doesn't work
 
-    //WAS: leave commented out until LUCENE-5450 is resolved
-//    checkMatches("\"john  nosuchword*\"", ""); // phrases with clauses producing
- //   checkMatches("\"john  nosuchw?rd\"!~2,3", ""); // phrases with clauses producing
+    checkMatches("\"john  nosuchword*\"", ""); // phrases with clauses producing
+    checkMatches("\"john  nosuchw?rd\"!~2,3", "1,3"); // phrases with clauses producing
+    checkMatches("\"nosuchw?rd john\"!~2,3", ""); // phrases with clauses producing
+    checkMatches("\"nosuchw?rd john\"", ""); // phrases with clauses producing
+
     // empty sets
     checkBadQuery("\"jo*  id:1 smith\""); // mixing fields in a phrase is bad
     //WAS:
