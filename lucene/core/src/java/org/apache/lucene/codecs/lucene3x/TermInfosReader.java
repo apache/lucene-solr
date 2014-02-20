@@ -352,4 +352,8 @@ final class TermInfosReader implements Closeable {
     get(term, true);
     return getThreadResources().termEnum.clone();
   }
+
+  long ramBytesUsed() {
+    return index == null ? 0 : index.ramBytesUsed();
+  }
 }

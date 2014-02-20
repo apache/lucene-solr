@@ -740,7 +740,8 @@ class Lucene3xTermVectorsReader extends TermVectorsReader {
 
   @Override
   public long ramBytesUsed() {
-    return RamUsageEstimator.sizeOf(this);
+    // everything is disk-based
+    return 0;
   }
 }
 

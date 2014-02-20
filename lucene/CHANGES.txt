@@ -187,6 +187,10 @@ Bug fixes
 
 * LUCENE-5447: StandardTokenizer should break at consecutive chars matching
   Word_Break = MidLetter, MidNum and/or MidNumLet (Steve Rowe)
+
+* LUCENE-5462: RamUsageEstimator.sizeOf(Object) is not used anymore to
+  estimate memory usage of segments. This used to make
+  SegmentReader.ramBytesUsed very CPU-intensive. (Adrien Grand)
   
 API Changes
 

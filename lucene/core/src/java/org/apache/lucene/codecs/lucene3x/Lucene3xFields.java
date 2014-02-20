@@ -1077,6 +1077,11 @@ class Lucene3xFields extends FieldsProducer {
   
   @Override
   public long ramBytesUsed() {
-    return RamUsageEstimator.sizeOf(this);
+    if (tis != null) {
+      return tis.ramBytesUsed();
+    } else {
+      // when there is no index, there is almost nothing loaded into RAM
+      return 0L;
+    }
   }
 }

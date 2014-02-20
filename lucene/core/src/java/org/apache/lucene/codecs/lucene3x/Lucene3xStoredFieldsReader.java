@@ -301,6 +301,7 @@ final class Lucene3xStoredFieldsReader extends StoredFieldsReader implements Clo
   
   @Override
   public long ramBytesUsed() {
-    return RamUsageEstimator.sizeOf(this);
+    // everything is stored on disk
+    return 0;
   }
 }
