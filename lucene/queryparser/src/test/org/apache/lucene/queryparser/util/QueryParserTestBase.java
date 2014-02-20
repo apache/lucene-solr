@@ -17,18 +17,12 @@ package org.apache.lucene.queryparser.util;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.text.DateFormat;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Locale;
 import java.util.TimeZone;
 
 import org.apache.lucene.analysis.*;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -36,239 +30,26 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
-//import org.apache.lucene.queryparser.classic.CharStream;
-//import org.apache.lucene.queryparser.classic.ParseException;
-//import org.apache.lucene.queryparser.classic.QueryParser;
-//import org.apache.lucene.queryparser.classic.QueryParserBase;
-import org.apache.lucene.queryparser.classic.QueryParserBase;
-//import org.apache.lucene.queryparser.classic.QueryParserTokenManager;
 import org.apache.lucene.queryparser.flexible.standard.CommonQueryParserConfiguration;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 
 /**
- * Base Test class for QueryParser subclasses
+ * Base Test class for QueryParser subclasses, that implement the historical lucene queryparser behavior.
+ * <p>
+ * This contains a number of concrete tests for that behavior.
  */
-// TODO: it would be better to refactor the parts that are specific really
-// to the core QP and subclass/use the parts that are not in the flexible QP
-public abstract class QueryParserTestBase extends LuceneTestCase {
-  
-  public static Analyzer qpAnalyzer;
-
-  @BeforeClass
-  public static void beforeClass() {
-    qpAnalyzer = new QPTestAnalyzer();
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    qpAnalyzer = null;
-  }
-  
-  public static final class QPTestFilter extends TokenFilter {
-    CharTermAttribute termAtt;
-    OffsetAttribute offsetAtt;
-        
-    /**
-     * Filter which discards the token 'stop' and which expands the
-     * token 'phrase' into 'phrase1 phrase2'
-     */
-    public QPTestFilter(TokenStream in) {
-      super(in);
-      termAtt = addAttribute(CharTermAttribute.class);
-      offsetAtt = addAttribute(OffsetAttribute.class);
-    }
-
-    boolean inPhrase = false;
-    int savedStart = 0, savedEnd = 0;
-
-    @Override
-    public boolean incrementToken() throws IOException {
-      if (inPhrase) {
-        inPhrase = false;
-        clearAttributes();
-        termAtt.append("phrase2");
-        offsetAtt.setOffset(savedStart, savedEnd);
-        return true;
-      } else
-        while (input.incrementToken()) {
-          if (termAtt.toString().equals("phrase")) {
-            inPhrase = true;
-            savedStart = offsetAtt.startOffset();
-            savedEnd = offsetAtt.endOffset();
-            termAtt.setEmpty().append("phrase1");
-            offsetAtt.setOffset(savedStart, savedEnd);
-            return true;
-          } else if (!termAtt.toString().equals("stop"))
-            return true;
-        }
-      return false;
-    }
-  }
-
-  public static final class QPTestAnalyzer extends Analyzer {
-
-    /** Filters MockTokenizer with StopFilter. */
-    @Override
-    public TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new MockTokenizer(MockTokenizer.SIMPLE, true);
-      return new TokenStreamComponents(tokenizer, new QPTestFilter(tokenizer));
-    }
-  }
-
-  private int originalMaxClauses;
-  
-  private String defaultField = "field";
-  
-  protected String getDefaultField(){
-    return defaultField;
-  }
-
-  protected void setDefaultField(String defaultField){
-    this.defaultField = defaultField;
-  }
-
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    originalMaxClauses = BooleanQuery.getMaxClauseCount();
-  }
-
-  public abstract CommonQueryParserConfiguration getParserConfig(Analyzer a) throws Exception;
-
-  public abstract void setDefaultOperatorOR(CommonQueryParserConfiguration cqpC);
-
-  public abstract void setDefaultOperatorAND(CommonQueryParserConfiguration cqpC);
-
-  public abstract void setAnalyzeRangeTerms(CommonQueryParserConfiguration cqpC, boolean value);
-
-  public abstract void setAutoGeneratePhraseQueries(CommonQueryParserConfiguration cqpC, boolean value);
-
-  public abstract void setDateResolution(CommonQueryParserConfiguration cqpC, CharSequence field, DateTools.Resolution value);
-
-  public abstract Query getQuery(String query, CommonQueryParserConfiguration cqpC) throws Exception;
-
-  public abstract Query getQuery(String query, Analyzer a) throws Exception;
-  
-  public abstract boolean isQueryParserException(Exception exception);
-
-  public Query getQuery(String query) throws Exception {
-    return getQuery(query, (Analyzer)null);
-  }
-
-  public void assertQueryEquals(String query, Analyzer a, String result)
-    throws Exception {
-    Query q = getQuery(query, a);
-    String s = q.toString("field");
-    if (!s.equals(result)) {
-      fail("Query /" + query + "/ yielded /" + s
-           + "/, expecting /" + result + "/");
-    }
-  }
-
-  public void assertQueryEquals(CommonQueryParserConfiguration cqpC, String field, String query, String result) 
-    throws Exception {
-    Query q = getQuery(query, cqpC);
-    String s = q.toString(field);
-    if (!s.equals(result)) {
-      fail("Query /" + query + "/ yielded /" + s
-           + "/, expecting /" + result + "/");
-    }
-  }
-  
-  public void assertEscapedQueryEquals(String query, Analyzer a, String result)
-    throws Exception {
-    String escapedQuery = QueryParserBase.escape(query);
-    if (!escapedQuery.equals(result)) {
-      fail("Query /" + query + "/ yielded /" + escapedQuery
-          + "/, expecting /" + result + "/");
-    }
-  }
-
-  public void assertWildcardQueryEquals(String query, boolean lowercase, String result, boolean allowLeadingWildcard)
-    throws Exception {
-    CommonQueryParserConfiguration cqpC = getParserConfig(null);
-    cqpC.setLowercaseExpandedTerms(lowercase);
-    cqpC.setAllowLeadingWildcard(allowLeadingWildcard);
-    Query q = getQuery(query, cqpC);
-    String s = q.toString("field");
-    if (!s.equals(result)) {
-      fail("WildcardQuery /" + query + "/ yielded /" + s
-           + "/, expecting /" + result + "/");
-    }
-  }
-
-  public void assertWildcardQueryEquals(String query, boolean lowercase, String result)
-    throws Exception {
-    assertWildcardQueryEquals(query, lowercase, result, false);
-  }
-
-  public void assertWildcardQueryEquals(String query, String result) throws Exception {
-    Query q = getQuery(query);
-    String s = q.toString("field");
-    if (!s.equals(result)) {
-      fail("WildcardQuery /" + query + "/ yielded /" + s + "/, expecting /"
-          + result + "/");
-    }
-  }
-
-  public Query getQueryDOA(String query, Analyzer a)
-    throws Exception {
-    if (a == null)
-      a = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
-    CommonQueryParserConfiguration qp = getParserConfig(a);
-    setDefaultOperatorAND(qp);
-    return getQuery(query, qp);
-  }
-
-  public void assertQueryEqualsDOA(String query, Analyzer a, String result)
-    throws Exception {
-    Query q = getQueryDOA(query, a);
-    String s = q.toString("field");
-    if (!s.equals(result)) {
-      fail("Query /" + query + "/ yielded /" + s
-           + "/, expecting /" + result + "/");
-    }
-  }
+public abstract class QueryParserTestBase extends QueryParserTestCase {
 
   public void testCJK() throws Exception {
    // Test Ideographic Space - As wide as a CJK character cell (fullwidth)
    // used google to translate the word "term" to japanese -> 用語
    assertQueryEquals("term\u3000term\u3000term", null, "term\u0020term\u0020term");
    assertQueryEquals("用語\u3000用語\u3000用語", null, "用語\u0020用語\u0020用語");
-  }
-
-  //individual CJK chars as terms, like StandardAnalyzer
-  protected static class SimpleCJKTokenizer extends Tokenizer {
-    private CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-
-    public SimpleCJKTokenizer() {
-      super();
-    }
-
-    @Override
-    public final boolean incrementToken() throws IOException {
-      int ch = input.read();
-      if (ch < 0)
-        return false;
-      clearAttributes();
-      termAtt.setEmpty().append((char) ch);
-      return true;
-    }
-  }
-
-  private class SimpleCJKAnalyzer extends Analyzer {
-    @Override
-    public TokenStreamComponents createComponents(String fieldName) {
-      return new TokenStreamComponents(new SimpleCJKTokenizer());
-    }
   }
 
   public void testCJKTerm() throws Exception {
@@ -397,8 +178,8 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
 
   public abstract void testDefaultOperator() throws Exception;
   
-  
-  public void testOperatorVsWhitespace() throws Exception { //LUCENE-2566
+  // LUCENE-2566
+  public void testOperatorVsWhitespace() throws Exception {
     // +,-,! should be directly adjacent to operand (i.e. not separated by whitespace) to be treated as an operator
     Analyzer a = new Analyzer() {
       @Override
@@ -427,7 +208,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   }
 
   public void testNumber() throws Exception {
-// The numbers go away because SimpleAnalzyer ignores them
+    // The numbers go away because SimpleAnalyzer ignores them
     assertQueryEquals("3", null, "");
     assertQueryEquals("term 1.0 1 2", null, "term");
     assertQueryEquals("term term1 term2", null, "term term term");
@@ -464,10 +245,10 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
 
     assertTrue(getQuery("term*germ") instanceof WildcardQuery);
 
-/* Tests to see that wild card terms are (or are not) properly
-   * lower-cased with propery parser configuration
-   */
-// First prefix queries:
+    // Tests to see that wild card terms are (or are not) properly
+    // lower-cased with propery parser configuration
+   
+    // First prefix queries:
     // by default, convert to lowercase:
     assertWildcardQueryEquals("Term*", true, "term*");
     // explicitly set lowercase:
@@ -478,7 +259,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     assertWildcardQueryEquals("term*", false, "term*");
     assertWildcardQueryEquals("Term*", false, "Term*");
     assertWildcardQueryEquals("TERM*", false, "TERM*");
-// Then 'full' wildcard queries:
+    // Then 'full' wildcard queries:
     // by default, convert to lowercase:
     assertWildcardQueryEquals("Te?m", "te?m");
     // explicitly set lowercase:
@@ -491,11 +272,11 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     assertWildcardQueryEquals("Te?m", false, "Te?m");
     assertWildcardQueryEquals("TE?M", false, "TE?M");
     assertWildcardQueryEquals("Te?m*gerM", false, "Te?m*gerM");
-//  Fuzzy queries:
+    // Fuzzy queries:
     assertWildcardQueryEquals("Term~", "term~2");
     assertWildcardQueryEquals("Term~", true, "term~2");
     assertWildcardQueryEquals("Term~", false, "Term~2");
-//  Range queries:
+    // Range queries:
     assertWildcardQueryEquals("[A TO C]", "[a TO c]");
     assertWildcardQueryEquals("[A TO C]", true, "[a TO c]");
     assertWildcardQueryEquals("[A TO C]", false, "[A TO C]");
@@ -571,7 +352,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     assertQueryEquals("[ a TO z}", null, "[a TO z}");
     assertQueryEquals("{ a TO z]", null, "{a TO z]"); 
 
-     assertEquals(MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT, ((TermRangeQuery)getQuery("[ a TO z]")).getRewriteMethod());
+    assertEquals(MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT, ((TermRangeQuery)getQuery("[ a TO z]")).getRewriteMethod());
 
     CommonQueryParserConfiguration qp = getParserConfig( new MockAnalyzer(random(), MockTokenizer.SIMPLE, true));
     
@@ -601,44 +382,11 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     assertQueryEquals("[* TO Z]",null,"[* TO z]");
     assertQueryEquals("[A TO *]",null,"[a TO *]");
     assertQueryEquals("[* TO *]",null,"[* TO *]");
- }
+  }
 
   public void testRangeWithPhrase() throws Exception {
     assertQueryEquals("[\\* TO \"*\"]",null,"[\\* TO \\*]");
     assertQueryEquals("[\"*\" TO *]",null,"[\\* TO *]");
-  }
-
-  private String escapeDateString(String s) {
-    if (s.indexOf(" ") > -1) {
-      return "\"" + s + "\"";
-    } else {
-      return s;
-    }
-  }
-  
-  /** for testing DateTools support */
-  private String getDate(String s, DateTools.Resolution resolution) throws Exception {
-    // we use the default Locale since LuceneTestCase randomizes it
-    DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT, Locale.getDefault());
-    return getDate(df.parse(s), resolution);      
-  }
-  
-  /** for testing DateTools support */
-  private String getDate(Date d, DateTools.Resolution resolution) {
-     return DateTools.dateToString(d, resolution);
-  }
-  
-  private String getLocalizedDate(int year, int month, int day) {
-    // we use the default Locale/TZ since LuceneTestCase randomizes it
-    DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT, Locale.getDefault());
-    Calendar calendar = new GregorianCalendar(TimeZone.getDefault(), Locale.getDefault());
-    calendar.clear();
-    calendar.set(year, month, day);
-    calendar.set(Calendar.HOUR_OF_DAY, 23);
-    calendar.set(Calendar.MINUTE, 59);
-    calendar.set(Calendar.SECOND, 59);
-    calendar.set(Calendar.MILLISECOND, 999);
-    return df.format(calendar.getTime());
   }
 
   public void testDateRange() throws Exception {
@@ -675,14 +423,6 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
 
     assertDateRangeQueryEquals(qp, hourField, startDate, endDate, 
             endDateExpected.getTime(), DateTools.Resolution.HOUR);  
-  }
-  
-  public void assertDateRangeQueryEquals(CommonQueryParserConfiguration cqpC, String field, String startDate, String endDate, 
-                                         Date endDateInclusive, DateTools.Resolution resolution) throws Exception {
-    assertQueryEquals(cqpC, field, field + ":[" + escapeDateString(startDate) + " TO " + escapeDateString(endDate) + "]",
-               "[" + getDate(startDate, resolution) + " TO " + getDate(endDateInclusive, resolution) + "]");
-    assertQueryEquals(cqpC, field, field + ":{" + escapeDateString(startDate) + " TO " + escapeDateString(endDate) + "}",
-               "{" + getDate(startDate, resolution) + " TO " + getDate(endDate, resolution) + "}");
   }
 
   public void testEscaped() throws Exception {
@@ -821,8 +561,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     assertEscapedQueryEquals("&& abc &&", a, "\\&\\& abc \\&\\&");
   }
   
-  public void testTabNewlineCarriageReturn()
-    throws Exception {
+  public void testTabNewlineCarriageReturn() throws Exception {
     assertQueryEqualsDOA("+weltbank +worlbank", null,
       "+weltbank +worlbank");
 
@@ -857,8 +596,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
       "+weltbank +worlbank");
   }
 
-  public void testSimpleDAO()
-    throws Exception {
+  public void testSimpleDAO() throws Exception {
     assertQueryEqualsDOA("term term term", null, "+term +term +term");
     assertQueryEqualsDOA("term +term term", null, "+term +term +term");
     assertQueryEqualsDOA("term term +term", null, "+term +term +term");
@@ -866,8 +604,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     assertQueryEqualsDOA("-term term term", null, "-term +term +term");
   }
 
-  public void testBoost()
-    throws Exception {
+  public void testBoost() throws Exception {
     CharacterRunAutomaton stopWords = new CharacterRunAutomaton(BasicAutomata.makeString("on"));
     Analyzer oneStopAnalyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, stopWords);
     CommonQueryParserConfiguration qp = getParserConfig(oneStopAnalyzer);
@@ -889,28 +626,6 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     assertNotNull(q);
     assertEquals("", q.toString());
     assertEquals(1.0f, q.getBoost(), 0.01f);
-  }
-
-  public void assertParseException(String queryString) throws Exception {
-    try {
-      getQuery(queryString);
-    } catch (Exception expected) {
-      if(isQueryParserException(expected)){
-        return;
-      }
-    }
-    fail("ParseException expected, not thrown");
-  }
-
-  public void assertParseException(String queryString, Analyzer a) throws Exception {
-    try {
-      getQuery(queryString, a);
-    } catch (Exception expected) {
-      if(isQueryParserException(expected)){
-        return;
-      }
-    }
-    fail("ParseException expected, not thrown");
   }
 
   public void testException() throws Exception {
@@ -1065,24 +780,6 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     assertTrue(bq.getClauses()[1].getQuery() instanceof MatchAllDocsQuery);
   }
   
-  @SuppressWarnings("unused")
-  private void assertHits(int expected, String query, IndexSearcher is) throws Exception {
-    String oldDefaultField = getDefaultField();
-    setDefaultField("date");
-    CommonQueryParserConfiguration qp = getParserConfig( new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false));
-    qp.setLocale(Locale.ENGLISH);
-    Query q = getQuery(query,qp);
-    ScoreDoc[] hits = is.search(q, null, 1000).scoreDocs;
-    assertEquals(expected, hits.length);
-    setDefaultField( oldDefaultField );
-  }
-
-  @Override
-  public void tearDown() throws Exception {
-    BooleanQuery.setMaxClauseCount(originalMaxClauses);
-    super.tearDown();
-  }
-
   // LUCENE-2002: make sure defaults for StandardAnalyzer's
   // enableStopPositionIncr & QueryParser's enablePosIncr
   // "match"
@@ -1102,92 +799,8 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     r.close();
     dir.close();
   }
-
-  /**
-   * adds synonym of "dog" for "dogs".
-   */
-  protected static class MockSynonymFilter extends TokenFilter {
-    CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-    PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
-    boolean addSynonym = false;
-    
-    public MockSynonymFilter(TokenStream input) {
-      super(input);
-    }
-
-    @Override
-    public final boolean incrementToken() throws IOException {
-      if (addSynonym) { // inject our synonym
-        clearAttributes();
-        termAtt.setEmpty().append("dog");
-        posIncAtt.setPositionIncrement(0);
-        addSynonym = false;
-        return true;
-      }
-      
-      if (input.incrementToken()) {
-        addSynonym = termAtt.toString().equals("dogs");
-        return true;
-      } else {
-        return false;
-      }
-    } 
-  }
-  
-  /** whitespace+lowercase analyzer with synonyms */
-  protected class Analyzer1 extends Analyzer {
-    public Analyzer1(){
-      super();
-    }
-    @Override
-    public TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new MockTokenizer( MockTokenizer.WHITESPACE, true);
-      return new TokenStreamComponents(tokenizer, new MockSynonymFilter(tokenizer));
-    }
-  }
-  
-  /** whitespace+lowercase analyzer without synonyms */
-  protected class Analyzer2 extends Analyzer {
-    public Analyzer2(){
-      super();
-    }
-    @Override
-    public TokenStreamComponents createComponents(String fieldName) {
-      return new TokenStreamComponents(new MockTokenizer(MockTokenizer.WHITESPACE, true));
-    }
-  }
   
   public abstract void testNewFieldQuery() throws Exception;
-  
-  /**
-   * Mock collation analyzer: indexes terms as "collated" + term
-   */
-  private class MockCollationFilter extends TokenFilter {
-    private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-
-    protected MockCollationFilter(TokenStream input) {
-      super(input);
-    }
-
-    @Override
-    public boolean incrementToken() throws IOException {
-      if (input.incrementToken()) {
-        String term = termAtt.toString();
-        termAtt.setEmpty().append("collated").append(term);
-        return true;
-      } else {
-        return false;
-      }
-    }
-    
-  }
-  private class MockCollationAnalyzer extends Analyzer {
-    @Override
-    public TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true);
-      return new TokenStreamComponents(tokenizer, new MockCollationFilter(tokenizer));
-    }
-  }
   
   public void testCollatedRange() throws Exception {
     CommonQueryParserConfiguration qp = getParserConfig(new MockCollationAnalyzer());
