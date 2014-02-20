@@ -141,11 +141,6 @@ public abstract class QueryParserTestBase extends QueryParserTestCase {
     assertQueryEquals("türm term term", new MockAnalyzer(random()), "türm term term");
     assertQueryEquals("ümlaut", new MockAnalyzer(random()), "ümlaut");
 
-    // FIXME: enhance MockAnalyzer to be able to support this
-    // it must no longer extend CharTokenizer
-    //assertQueryEquals("\"\"", new KeywordAnalyzer(), "");
-    //assertQueryEquals("foo:\"\"", new KeywordAnalyzer(), "foo:");
-
     assertQueryEquals("a AND b", null, "+a +b");
     assertQueryEquals("(a AND b)", null, "+a +b");
     assertQueryEquals("c OR (a AND b)", null, "c (+a +b)");
@@ -153,12 +148,10 @@ public abstract class QueryParserTestBase extends QueryParserTestCase {
     assertQueryEquals("a AND -b", null, "+a -b");
     assertQueryEquals("a AND !b", null, "+a -b");
     assertQueryEquals("a && b", null, "+a +b");
-//    assertQueryEquals("a && ! b", null, "+a -b");
 
     assertQueryEquals("a OR b", null, "a b");
     assertQueryEquals("a || b", null, "a b");
     assertQueryEquals("a OR !b", null, "a -b");
-//    assertQueryEquals("a OR ! b", null, "a -b");
     assertQueryEquals("a OR -b", null, "a -b");
 
     assertQueryEquals("+term -term term", null, "+term -term term");
@@ -186,9 +179,10 @@ public abstract class QueryParserTestBase extends QueryParserTestCase {
     assertQueryEquals("+(apple \"steve jobs\") -(foo bar baz)", null,
                       "+(apple \"steve jobs\") -(foo bar baz)");
     assertQueryEquals("+title:(dog OR cat) -author:\"bob dole\"", null,
-                      "+(title:dog title:cat) -author:\"bob dole\"");
-    
+                      "+(title:dog title:cat) -author:\"bob dole\"");    
   }
+  
+  // FIXME: enhance MockAnalyzer to be able to support testing the empty string.
 
   public abstract void testDefaultOperator() throws Exception;
   
@@ -297,21 +291,18 @@ public abstract class QueryParserTestBase extends QueryParserTestCase {
     // Test suffix queries: first disallow
     try {
       assertWildcardQueryEquals("*Term", true, "*term");
-    } catch(Exception pe) {
-      // expected exception
-      if(!isQueryParserException(pe)){
-        fail();
-      }
+      fail("didn't get expected exception");
+    } catch (Exception pe) {
+      assertTrue(isQueryParserException(pe));
     }
+    
     try {
       assertWildcardQueryEquals("?Term", true, "?term");
-      fail();
-    } catch(Exception pe) {
-      // expected exception
-      if(!isQueryParserException(pe)){
-        fail();
-      }
+      fail("didn't get expected exception");
+    } catch (Exception pe) {
+      assertTrue(isQueryParserException(pe));
     }
+    
     // Test suffix queries: then allow
     assertWildcardQueryEquals("*Term", true, "*term", true);
     assertWildcardQueryEquals("?Term", true, "?term", true);
@@ -648,34 +639,6 @@ public abstract class QueryParserTestBase extends QueryParserTestCase {
     Query query2 = getQuery("+A +B +C +D", qp);
     assertEquals(query1, query2);
   }
-
-// Todo: convert this from DateField to DateUtil
-//  public void testLocalDateFormat() throws IOException, ParseException {
-//    Directory ramDir = newDirectory();
-//    IndexWriter iw = new IndexWriter(ramDir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random, MockTokenizer.WHITESPACE, false)));
-//    addDateDoc("a", 2005, 12, 2, 10, 15, 33, iw);
-//    addDateDoc("b", 2005, 12, 4, 22, 15, 00, iw);
-//    iw.close();
-//    IndexSearcher is = new IndexSearcher(ramDir, true);
-//    assertHits(1, "[12/1/2005 TO 12/3/2005]", is);
-//    assertHits(2, "[12/1/2005 TO 12/4/2005]", is);
-//    assertHits(1, "[12/3/2005 TO 12/4/2005]", is);
-//    assertHits(1, "{12/1/2005 TO 12/3/2005}", is);
-//    assertHits(1, "{12/1/2005 TO 12/4/2005}", is);
-//    assertHits(0, "{12/3/2005 TO 12/4/2005}", is);
-//    is.close();
-//    ramDir.close();
-//  }
-//
-//  private void addDateDoc(String content, int year, int month,
-//                          int day, int hour, int minute, int second, IndexWriter iw) throws IOException {
-//    Document d = new Document();
-//    d.add(newField("f", content, Field.Store.YES, Field.Index.ANALYZED));
-//    Calendar cal = Calendar.getInstance(Locale.ENGLISH);
-//    cal.set(year, month - 1, day, hour, minute, second);
-//    d.add(newField("date", DateField.dateToString(cal.getTime()), Field.Store.YES, Field.Index.NOT_ANALYZED));
-//    iw.addDocument(d);
-//  }
 
   public abstract void testStarParsing() throws Exception;
 
