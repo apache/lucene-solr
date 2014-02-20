@@ -442,29 +442,29 @@ public abstract class QueryParserTestBase extends QueryParserTestCase {
   public void testEscaped() throws Exception {
     Analyzer a = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
     
-    /*assertQueryEquals("\\[brackets", a, "\\[brackets");
+    assertQueryEquals("\\[brackets", a, "[brackets");
     assertQueryEquals("\\[brackets", null, "brackets");
-    assertQueryEquals("\\\\", a, "\\\\");
-    assertQueryEquals("\\+blah", a, "\\+blah");
-    assertQueryEquals("\\(blah", a, "\\(blah");
+    assertQueryEquals("\\\\", a, "\\");
+    assertQueryEquals("\\+blah", a, "+blah");
+    assertQueryEquals("\\(blah", a, "(blah");
 
-    assertQueryEquals("\\-blah", a, "\\-blah");
-    assertQueryEquals("\\!blah", a, "\\!blah");
-    assertQueryEquals("\\{blah", a, "\\{blah");
-    assertQueryEquals("\\}blah", a, "\\}blah");
-    assertQueryEquals("\\:blah", a, "\\:blah");
-    assertQueryEquals("\\^blah", a, "\\^blah");
-    assertQueryEquals("\\[blah", a, "\\[blah");
-    assertQueryEquals("\\]blah", a, "\\]blah");
-    assertQueryEquals("\\\"blah", a, "\\\"blah");
-    assertQueryEquals("\\(blah", a, "\\(blah");
-    assertQueryEquals("\\)blah", a, "\\)blah");
-    assertQueryEquals("\\~blah", a, "\\~blah");
-    assertQueryEquals("\\*blah", a, "\\*blah");
-    assertQueryEquals("\\?blah", a, "\\?blah");
-    //assertQueryEquals("foo \\&\\& bar", a, "foo \\&\\& bar");
-    //assertQueryEquals("foo \\|| bar", a, "foo \\|| bar");
-    //assertQueryEquals("foo \\AND bar", a, "foo \\AND bar");*/
+    assertQueryEquals("\\-blah", a, "-blah");
+    assertQueryEquals("\\!blah", a, "!blah");
+    assertQueryEquals("\\{blah", a, "{blah");
+    assertQueryEquals("\\}blah", a, "}blah");
+    assertQueryEquals("\\:blah", a, ":blah");
+    assertQueryEquals("\\^blah", a, "^blah");
+    assertQueryEquals("\\[blah", a, "[blah");
+    assertQueryEquals("\\]blah", a, "]blah");
+    assertQueryEquals("\\\"blah", a, "\"blah");
+    assertQueryEquals("\\(blah", a, "(blah");
+    assertQueryEquals("\\)blah", a, ")blah");
+    assertQueryEquals("\\~blah", a, "~blah");
+    assertQueryEquals("\\*blah", a, "*blah");
+    assertQueryEquals("\\?blah", a, "?blah");
+    assertQueryEquals("foo \\&\\& bar", a, "foo && bar");
+    assertQueryEquals("foo \\|| bar", a, "foo || bar");
+    assertQueryEquals("foo \\AND bar", a, "foo AND bar");
 
     assertQueryEquals("\\a", a, "a");
     
