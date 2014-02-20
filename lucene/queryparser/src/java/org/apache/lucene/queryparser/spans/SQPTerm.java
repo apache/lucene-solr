@@ -1,4 +1,4 @@
-package org.apache.lucene.queryparser.spans.tokens;
+package org.apache.lucene.queryparser.spans;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,33 +17,33 @@ package org.apache.lucene.queryparser.spans.tokens;
  * limitations under the License.
  */
 
-public class SQPOrClause extends SQPClause {
+class SQPTerm extends SQPTerminal {
+  private final String string;
+  private boolean isQuoted = false;
 
-  public static final int DEFAULT_MINIMUM_NUMBER_SHOULD_MATCH = 1;
+  public SQPTerm(String string, boolean isQuoted) {
+    this.string = string;
+    this.isQuoted = isQuoted;
+  }
+  
+  public String getString() {
+    return string;
+  }
 
-  private int minimumNumberShouldMatch = DEFAULT_MINIMUM_NUMBER_SHOULD_MATCH;
-  
-  public SQPOrClause(int tokenOffsetStart, int tokenOffsetEnd) {
-    super(tokenOffsetStart, tokenOffsetEnd);
+  public void setIsQuoted(boolean b) {
+    isQuoted = b;
   }
   
-  public int getMinimumNumberShouldMatch() {
-    return minimumNumberShouldMatch;
-  }
-  
-  public void setMinimumNumberShouldMatch(int n) {
-    minimumNumberShouldMatch = n;
-  }
-  
-  public TYPE getType() {
-    return TYPE.PAREN;
+  public boolean isQuoted() {
+    return isQuoted;
   }
 
   @Override
   public int hashCode() {
     final int prime = 31;
     int result = 1;
-    result = prime * result + minimumNumberShouldMatch;
+    result = prime * result + (isQuoted ? 1231 : 1237);
+    result = prime * result + ((string == null) ? 0 : string.hashCode());
     return result;
   }
 
@@ -55,11 +55,18 @@ public class SQPOrClause extends SQPClause {
     if (obj == null) {
       return false;
     }
-    if (!(obj instanceof SQPOrClause)) {
+    if (!(obj instanceof SQPTerm)) {
       return false;
     }
-    SQPOrClause other = (SQPOrClause) obj;
-    if (minimumNumberShouldMatch != other.minimumNumberShouldMatch) {
+    SQPTerm other = (SQPTerm) obj;
+    if (isQuoted != other.isQuoted) {
+      return false;
+    }
+    if (string == null) {
+      if (other.string != null) {
+        return false;
+      }
+    } else if (!string.equals(other.string)) {
       return false;
     }
     return true;
@@ -68,8 +75,10 @@ public class SQPOrClause extends SQPClause {
   @Override
   public String toString() {
     StringBuilder builder = new StringBuilder();
-    builder.append("SQPOrClause [minimumNumberShouldMatch=");
-    builder.append(minimumNumberShouldMatch);
+    builder.append("SQPTerm [string=");
+    builder.append(string);
+    builder.append(", isQuoted=");
+    builder.append(isQuoted);
     builder.append("]");
     return builder.toString();
   }

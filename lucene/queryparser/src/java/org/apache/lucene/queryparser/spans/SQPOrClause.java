@@ -1,4 +1,4 @@
-package org.apache.lucene.queryparser.spans.tokens;
+package org.apache.lucene.queryparser.spans;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,24 +17,33 @@ package org.apache.lucene.queryparser.spans.tokens;
  * limitations under the License.
  */
 
-import org.apache.lucene.queryparser.spans.SpanQueryParserBase;
+class SQPOrClause extends SQPClause {
 
-public class SQPBoostableToken implements SQPToken {
-  private float boost = SpanQueryParserBase.UNSPECIFIED_BOOST;
+  public static final int DEFAULT_MINIMUM_NUMBER_SHOULD_MATCH = 1;
 
-  public void setBoost(float boost) {
-    this.boost = boost;
+  private int minimumNumberShouldMatch = DEFAULT_MINIMUM_NUMBER_SHOULD_MATCH;
+  
+  public SQPOrClause(int tokenOffsetStart, int tokenOffsetEnd) {
+    super(tokenOffsetStart, tokenOffsetEnd);
   }
   
-  public float getBoost() {
-    return boost;
+  public int getMinimumNumberShouldMatch() {
+    return minimumNumberShouldMatch;
+  }
+  
+  public void setMinimumNumberShouldMatch(int n) {
+    minimumNumberShouldMatch = n;
+  }
+  
+  public TYPE getType() {
+    return TYPE.PAREN;
   }
 
   @Override
   public int hashCode() {
     final int prime = 31;
     int result = 1;
-    result = prime * result + Float.floatToIntBits(boost);
+    result = prime * result + minimumNumberShouldMatch;
     return result;
   }
 
@@ -46,11 +55,11 @@ public class SQPBoostableToken implements SQPToken {
     if (obj == null) {
       return false;
     }
-    if (!(obj instanceof SQPBoostableToken)) {
+    if (!(obj instanceof SQPOrClause)) {
       return false;
     }
-    SQPBoostableToken other = (SQPBoostableToken) obj;
-    if (Float.floatToIntBits(boost) != Float.floatToIntBits(other.boost)) {
+    SQPOrClause other = (SQPOrClause) obj;
+    if (minimumNumberShouldMatch != other.minimumNumberShouldMatch) {
       return false;
     }
     return true;
@@ -59,8 +68,8 @@ public class SQPBoostableToken implements SQPToken {
   @Override
   public String toString() {
     StringBuilder builder = new StringBuilder();
-    builder.append("SQPBoostableToken [boost=");
-    builder.append(boost);
+    builder.append("SQPOrClause [minimumNumberShouldMatch=");
+    builder.append(minimumNumberShouldMatch);
     builder.append("]");
     return builder.toString();
   }

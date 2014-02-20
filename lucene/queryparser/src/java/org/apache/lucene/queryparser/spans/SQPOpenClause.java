@@ -1,4 +1,4 @@
-package org.apache.lucene.queryparser.spans.tokens;
+package org.apache.lucene.queryparser.spans;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,41 +17,28 @@ package org.apache.lucene.queryparser.spans.tokens;
  * limitations under the License.
  */
 
-public class SQPNotNearClause extends SQPClause {
-  
-  public static final int NOT_DEFAULT = 0;
-
+class SQPOpenClause extends SQPClause {
   private final TYPE type;
+  private final int startCharOffset;
   
-  private final int notPre;
-  private final int notPost;
-  
-  public SQPNotNearClause(int tokenStartOffset, int tokenEndOffset, TYPE type, 
-      int notPre, int notPost) {
-    super(tokenStartOffset, tokenEndOffset);
+  public SQPOpenClause(int startTokenOffset, int startCharOffset, TYPE type) {
+    super(startTokenOffset);
     this.type = type;
-    this.notPre = notPre;
-    this.notPost = notPost;
+    this.startCharOffset = startCharOffset;
   }
 
+  public int getStartCharOffset() {
+    return startCharOffset;
+  }
+  
   public TYPE getType() {
     return type;
-  }
-
-  public int getNotPre() {
-    return notPre;
-  }
-
-  public int getNotPost() {
-    return notPost;
   }
 
   @Override
   public int hashCode() {
     final int prime = 31;
     int result = super.hashCode();
-    result = prime * result + notPost;
-    result = prime * result + notPre;
     result = prime * result + ((type == null) ? 0 : type.hashCode());
     return result;
   }
@@ -64,16 +51,10 @@ public class SQPNotNearClause extends SQPClause {
     if (!super.equals(obj)) {
       return false;
     }
-    if (!(obj instanceof SQPNotNearClause)) {
+    if (!(obj instanceof SQPOpenClause)) {
       return false;
     }
-    SQPNotNearClause other = (SQPNotNearClause) obj;
-    if (notPost != other.notPost) {
-      return false;
-    }
-    if (notPre != other.notPre) {
-      return false;
-    }
+    SQPOpenClause other = (SQPOpenClause) obj;
     if (type != other.type) {
       return false;
     }
@@ -83,14 +64,9 @@ public class SQPNotNearClause extends SQPClause {
   @Override
   public String toString() {
     StringBuilder builder = new StringBuilder();
-    builder.append("SQPNotNearClause [type=");
+    builder.append("SQPOpenClause [type=");
     builder.append(type);
-    builder.append(", notPre=");
-    builder.append(notPre);
-    builder.append(", notPost=");
-    builder.append(notPost);
     builder.append("]");
-    builder.append( getTokenOffsetStart() + ": " + getTokenOffsetEnd());
     return builder.toString();
   }
 }

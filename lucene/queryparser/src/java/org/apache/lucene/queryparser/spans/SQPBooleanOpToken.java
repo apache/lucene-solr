@@ -1,4 +1,4 @@
-package org.apache.lucene.queryparser.spans.tokens;
+package org.apache.lucene.queryparser.spans;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,33 +17,31 @@ package org.apache.lucene.queryparser.spans.tokens;
  * limitations under the License.
  */
 
-public class SQPTerm extends SQPTerminal {
-  private final String string;
-  private boolean isQuoted = false;
+class SQPBooleanOpToken implements SQPToken {
 
-  public SQPTerm(String string, boolean isQuoted) {
-    this.string = string;
-    this.isQuoted = isQuoted;
+  private final int type;
+  
+  public SQPBooleanOpToken(int type) {
+    this.type = type;
   }
   
-  public String getString() {
-    return string;
+  public int getType() {
+    return type;
   }
 
-  public void setIsQuoted(boolean b) {
-    isQuoted = b;
+  public boolean isConj() {
+    if (type == SpanQueryParserBase.CONJ_AND ||
+        type == SpanQueryParserBase.CONJ_OR) {
+      return true;
+    }
+    return false;
   }
   
-  public boolean isQuoted() {
-    return isQuoted;
-  }
-
   @Override
   public int hashCode() {
     final int prime = 31;
     int result = 1;
-    result = prime * result + (isQuoted ? 1231 : 1237);
-    result = prime * result + ((string == null) ? 0 : string.hashCode());
+    result = prime * result + type;
     return result;
   }
 
@@ -55,18 +53,11 @@ public class SQPTerm extends SQPTerminal {
     if (obj == null) {
       return false;
     }
-    if (!(obj instanceof SQPTerm)) {
+    if (!(obj instanceof SQPBooleanOpToken)) {
       return false;
     }
-    SQPTerm other = (SQPTerm) obj;
-    if (isQuoted != other.isQuoted) {
-      return false;
-    }
-    if (string == null) {
-      if (other.string != null) {
-        return false;
-      }
-    } else if (!string.equals(other.string)) {
+    SQPBooleanOpToken other = (SQPBooleanOpToken) obj;
+    if (type != other.type) {
       return false;
     }
     return true;
@@ -75,11 +66,17 @@ public class SQPTerm extends SQPTerminal {
   @Override
   public String toString() {
     StringBuilder builder = new StringBuilder();
-    builder.append("SQPTerm [string=");
-    builder.append(string);
-    builder.append(", isQuoted=");
-    builder.append(isQuoted);
+    builder.append("SQPBooleanOpToken [type=");
+    builder.append(type);
     builder.append("]");
     return builder.toString();
+  }
+
+  public static boolean isMod(int i) {
+    if (i == SpanQueryParserBase.CONJ_AND ||
+        i == SpanQueryParserBase.CONJ_OR) {
+      return false;
+    }
+    return true;
   }
 }

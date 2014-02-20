@@ -1,4 +1,4 @@
-package org.apache.lucene.queryparser.spans.tokens;
+package org.apache.lucene.queryparser.spans;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,29 +17,39 @@ package org.apache.lucene.queryparser.spans.tokens;
  * limitations under the License.
  */
 
-public class SQPOpenClause extends SQPClause {
-  private final TYPE type;
-  private final int startCharOffset;
+abstract class SQPClause extends SQPBoostableToken {
   
-  public SQPOpenClause(int startTokenOffset, int startCharOffset, TYPE type) {
-    super(startTokenOffset);
-    this.type = type;
-    this.startCharOffset = startCharOffset;
-  }
+  public static enum TYPE { PAREN, BRACKET, QUOTE, CURLY};
+  private final int tokenOffsetStart;
+  private int tokenOffsetEnd;
 
-  public int getStartCharOffset() {
-    return startCharOffset;
+  public SQPClause(int tokenOffsetStart) {
+    this.tokenOffsetStart = tokenOffsetStart;
   }
   
-  public TYPE getType() {
-    return type;
+  public SQPClause(int tokenOffsetStart, int tokenOffsetEnd) {
+    this(tokenOffsetStart);
+    this.tokenOffsetEnd = tokenOffsetEnd;
+  }
+  
+  public int getTokenOffsetStart() {
+    return tokenOffsetStart;
+  }
+  
+  public int getTokenOffsetEnd() {
+    return tokenOffsetEnd;
+  }
+  
+  public void setTokenOffsetEnd(int tokenOffsetEnd) {
+    this.tokenOffsetEnd = tokenOffsetEnd;
   }
 
   @Override
   public int hashCode() {
     final int prime = 31;
-    int result = super.hashCode();
-    result = prime * result + ((type == null) ? 0 : type.hashCode());
+    int result = 1;
+    result = prime * result + tokenOffsetStart;
+    result = prime * result + tokenOffsetEnd;
     return result;
   }
 
@@ -48,14 +58,17 @@ public class SQPOpenClause extends SQPClause {
     if (this == obj) {
       return true;
     }
-    if (!super.equals(obj)) {
+    if (obj == null) {
       return false;
     }
-    if (!(obj instanceof SQPOpenClause)) {
+    if (!(obj instanceof SQPClause)) {
       return false;
     }
-    SQPOpenClause other = (SQPOpenClause) obj;
-    if (type != other.type) {
+    SQPClause other = (SQPClause) obj;
+    if (tokenOffsetStart != other.tokenOffsetStart) {
+      return false;
+    }
+    if (tokenOffsetEnd != other.tokenOffsetEnd) {
       return false;
     }
     return true;
@@ -64,8 +77,10 @@ public class SQPOpenClause extends SQPClause {
   @Override
   public String toString() {
     StringBuilder builder = new StringBuilder();
-    builder.append("SQPOpenClause [type=");
-    builder.append(type);
+    builder.append("SQPClauseBase [charOffsetStart=");
+    builder.append(tokenOffsetStart);
+    builder.append(", tokenOffsetEnd=");
+    builder.append(tokenOffsetEnd);
     builder.append("]");
     return builder.toString();
   }

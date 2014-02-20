@@ -22,17 +22,7 @@ import java.util.List;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.spans.SpanQueryLexer;
 import org.apache.lucene.queryparser.spans.SpanQueryParserBase;
-import org.apache.lucene.queryparser.spans.tokens.SQPBooleanOpToken;
-import org.apache.lucene.queryparser.spans.tokens.SQPBoostableToken;
-import org.apache.lucene.queryparser.spans.tokens.SQPClause.TYPE;
-import org.apache.lucene.queryparser.spans.tokens.SQPField;
-import org.apache.lucene.queryparser.spans.tokens.SQPNearClause;
-import org.apache.lucene.queryparser.spans.tokens.SQPNotNearClause;
-import org.apache.lucene.queryparser.spans.tokens.SQPOrClause;
-import org.apache.lucene.queryparser.spans.tokens.SQPRangeTerm;
-import org.apache.lucene.queryparser.spans.tokens.SQPRegexTerm;
-import org.apache.lucene.queryparser.spans.tokens.SQPTerm;
-import org.apache.lucene.queryparser.spans.tokens.SQPToken;
+import org.apache.lucene.queryparser.spans.SQPClause.TYPE;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**

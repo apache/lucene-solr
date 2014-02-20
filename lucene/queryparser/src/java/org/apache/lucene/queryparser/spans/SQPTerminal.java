@@ -1,4 +1,4 @@
-package org.apache.lucene.queryparser.spans.tokens;
+package org.apache.lucene.queryparser.spans;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -18,7 +18,9 @@ package org.apache.lucene.queryparser.spans.tokens;
  */
 
 /**
- * empty interface to allow for generics
+ * stub interface to gather SQPTerm, SQPRegexTerm and SQPRangeTerm 
+ *  under the same umbrella
  */
-public interface SQPToken {
+abstract class SQPTerminal extends SQPBoostableToken {
+  public abstract String getString();
 }

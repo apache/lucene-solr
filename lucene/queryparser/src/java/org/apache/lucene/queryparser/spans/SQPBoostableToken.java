@@ -1,4 +1,4 @@
-package org.apache.lucene.queryparser.spans.tokens;
+package org.apache.lucene.queryparser.spans;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,39 +17,23 @@ package org.apache.lucene.queryparser.spans.tokens;
  * limitations under the License.
  */
 
-public abstract class SQPClause extends SQPBoostableToken {
-  
-  public static enum TYPE { PAREN, BRACKET, QUOTE, CURLY};
-  private final int tokenOffsetStart;
-  private int tokenOffsetEnd;
 
-  public SQPClause(int tokenOffsetStart) {
-    this.tokenOffsetStart = tokenOffsetStart;
+class SQPBoostableToken implements SQPToken {
+  private float boost = SpanQueryParserBase.UNSPECIFIED_BOOST;
+
+  public void setBoost(float boost) {
+    this.boost = boost;
   }
   
-  public SQPClause(int tokenOffsetStart, int tokenOffsetEnd) {
-    this(tokenOffsetStart);
-    this.tokenOffsetEnd = tokenOffsetEnd;
-  }
-  
-  public int getTokenOffsetStart() {
-    return tokenOffsetStart;
-  }
-  
-  public int getTokenOffsetEnd() {
-    return tokenOffsetEnd;
-  }
-  
-  public void setTokenOffsetEnd(int tokenOffsetEnd) {
-    this.tokenOffsetEnd = tokenOffsetEnd;
+  public float getBoost() {
+    return boost;
   }
 
   @Override
   public int hashCode() {
     final int prime = 31;
     int result = 1;
-    result = prime * result + tokenOffsetStart;
-    result = prime * result + tokenOffsetEnd;
+    result = prime * result + Float.floatToIntBits(boost);
     return result;
   }
 
@@ -61,14 +45,11 @@ public abstract class SQPClause extends SQPBoostableToken {
     if (obj == null) {
       return false;
     }
-    if (!(obj instanceof SQPClause)) {
+    if (!(obj instanceof SQPBoostableToken)) {
       return false;
     }
-    SQPClause other = (SQPClause) obj;
-    if (tokenOffsetStart != other.tokenOffsetStart) {
-      return false;
-    }
-    if (tokenOffsetEnd != other.tokenOffsetEnd) {
+    SQPBoostableToken other = (SQPBoostableToken) obj;
+    if (Float.floatToIntBits(boost) != Float.floatToIntBits(other.boost)) {
       return false;
     }
     return true;
@@ -77,10 +58,8 @@ public abstract class SQPClause extends SQPBoostableToken {
   @Override
   public String toString() {
     StringBuilder builder = new StringBuilder();
-    builder.append("SQPClauseBase [charOffsetStart=");
-    builder.append(tokenOffsetStart);
-    builder.append(", tokenOffsetEnd=");
-    builder.append(tokenOffsetEnd);
+    builder.append("SQPBoostableToken [boost=");
+    builder.append(boost);
     builder.append("]");
     return builder.toString();
   }

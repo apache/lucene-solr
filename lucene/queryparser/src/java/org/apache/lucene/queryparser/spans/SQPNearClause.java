@@ -1,4 +1,4 @@
-package org.apache.lucene.queryparser.spans.tokens;
+package org.apache.lucene.queryparser.spans;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,7 +17,7 @@ package org.apache.lucene.queryparser.spans.tokens;
  * limitations under the License.
  */
 
-public class SQPNearClause extends SQPClause {
+class SQPNearClause extends SQPClause {
   
   public static final Boolean UNSPECIFIED_IN_ORDER = null;
 

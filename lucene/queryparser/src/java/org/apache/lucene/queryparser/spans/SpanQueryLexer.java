@@ -24,20 +24,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.queryparser.spans.tokens.SQPBooleanOpToken;
-import org.apache.lucene.queryparser.spans.tokens.SQPBoostableToken;
-import org.apache.lucene.queryparser.spans.tokens.SQPClause;
-import org.apache.lucene.queryparser.spans.tokens.SQPClause.TYPE;
-import org.apache.lucene.queryparser.spans.tokens.SQPField;
-import org.apache.lucene.queryparser.spans.tokens.SQPNearClause;
-import org.apache.lucene.queryparser.spans.tokens.SQPNotNearClause;
-import org.apache.lucene.queryparser.spans.tokens.SQPOpenClause;
-import org.apache.lucene.queryparser.spans.tokens.SQPOrClause;
-import org.apache.lucene.queryparser.spans.tokens.SQPRangeTerm;
-import org.apache.lucene.queryparser.spans.tokens.SQPRegexTerm;
-import org.apache.lucene.queryparser.spans.tokens.SQPTerm;
-import org.apache.lucene.queryparser.spans.tokens.SQPTerminal;
-import org.apache.lucene.queryparser.spans.tokens.SQPToken;
+import org.apache.lucene.queryparser.spans.SQPClause.TYPE;
 import org.apache.lucene.util.mutable.MutableValueInt;
 
 /**
@@ -59,7 +46,7 @@ import org.apache.lucene.util.mutable.MutableValueInt;
  * illegal (for this parser) boosts: term^0.6^2
  * 
  */
-public class SpanQueryLexer {
+class SpanQueryLexer {
 
   private final static String AND = "AND";
   private final static String NOT = "NOT";

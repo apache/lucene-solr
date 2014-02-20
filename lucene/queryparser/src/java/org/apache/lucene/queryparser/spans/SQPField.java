@@ -1,4 +1,4 @@
-package org.apache.lucene.queryparser.spans.tokens;
+package org.apache.lucene.queryparser.spans;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,52 +17,47 @@ package org.apache.lucene.queryparser.spans.tokens;
  * limitations under the License.
  */
 
-public class SQPRegexTerm extends SQPTerminal {
-  private String term;
+class SQPField implements SQPToken {
+  private final String field;
   
-  public SQPRegexTerm(String t) {
-    this.term = t;
+  public SQPField(String field) {
+    this.field = field;
   }
-
-  public String getString() {
-    return term;
+  
+  public String getField() {
+    return field;
   }
 
   @Override
   public int hashCode() {
     final int prime = 31;
     int result = 1;
-    result = prime * result + ((term == null) ? 0 : term.hashCode());
+    result = prime * result + ((field == null) ? 0 : field.hashCode());
     return result;
   }
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj) {
+    if (this == obj)
       return true;
-    }
-    if (obj == null) {
+    if (obj == null)
       return false;
-    }
-    if (!(obj instanceof SQPRegexTerm)) {
+    if (!(obj instanceof SQPField))
       return false;
-    }
-    SQPRegexTerm other = (SQPRegexTerm) obj;
-    if (term == null) {
-      if (other.term != null) {
+    SQPField other = (SQPField) obj;
+    if (field == null) {
+      if (other.field != null)
         return false;
-      }
-    } else if (!term.equals(other.term)) {
+    } else if (!field.equals(other.field))
       return false;
-    }
     return true;
   }
 
   @Override
   public String toString() {
     StringBuilder builder = new StringBuilder();
-    builder.append("SQPRegexTerm [term=");
-    builder.append(term);
+    builder.append("SQPField [field=");
+    builder.append(field);
     builder.append("]");
     return builder.toString();
   }

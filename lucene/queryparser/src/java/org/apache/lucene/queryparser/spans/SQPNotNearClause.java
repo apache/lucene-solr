@@ -1,4 +1,4 @@
-package org.apache.lucene.queryparser.spans.tokens;
+package org.apache.lucene.queryparser.spans;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,33 +17,42 @@ package org.apache.lucene.queryparser.spans.tokens;
  * limitations under the License.
  */
 
-import org.apache.lucene.queryparser.spans.SpanQueryParserBase;
-
-public class SQPBooleanOpToken implements SQPToken{
-
-  private final int type;
+class SQPNotNearClause extends SQPClause {
   
-  public SQPBooleanOpToken(int type) {
+  public static final int NOT_DEFAULT = 0;
+
+  private final TYPE type;
+  
+  private final int notPre;
+  private final int notPost;
+  
+  public SQPNotNearClause(int tokenStartOffset, int tokenEndOffset, TYPE type, 
+      int notPre, int notPost) {
+    super(tokenStartOffset, tokenEndOffset);
     this.type = type;
+    this.notPre = notPre;
+    this.notPost = notPost;
   }
-  
-  public int getType() {
+
+  public TYPE getType() {
     return type;
   }
 
-  public boolean isConj() {
-    if (type == SpanQueryParserBase.CONJ_AND ||
-        type == SpanQueryParserBase.CONJ_OR) {
-      return true;
-    }
-    return false;
+  public int getNotPre() {
+    return notPre;
   }
-  
+
+  public int getNotPost() {
+    return notPost;
+  }
+
   @Override
   public int hashCode() {
     final int prime = 31;
-    int result = 1;
-    result = prime * result + type;
+    int result = super.hashCode();
+    result = prime * result + notPost;
+    result = prime * result + notPre;
+    result = prime * result + ((type == null) ? 0 : type.hashCode());
     return result;
   }
 
@@ -52,13 +61,19 @@ public class SQPBooleanOpToken implements SQPToken{
     if (this == obj) {
       return true;
     }
-    if (obj == null) {
+    if (!super.equals(obj)) {
       return false;
     }
-    if (!(obj instanceof SQPBooleanOpToken)) {
+    if (!(obj instanceof SQPNotNearClause)) {
       return false;
     }
-    SQPBooleanOpToken other = (SQPBooleanOpToken) obj;
+    SQPNotNearClause other = (SQPNotNearClause) obj;
+    if (notPost != other.notPost) {
+      return false;
+    }
+    if (notPre != other.notPre) {
+      return false;
+    }
     if (type != other.type) {
       return false;
     }
@@ -68,17 +83,14 @@ public class SQPBooleanOpToken implements SQPToken{
   @Override
   public String toString() {
     StringBuilder builder = new StringBuilder();
-    builder.append("SQPBooleanOpToken [type=");
+    builder.append("SQPNotNearClause [type=");
     builder.append(type);
+    builder.append(", notPre=");
+    builder.append(notPre);
+    builder.append(", notPost=");
+    builder.append(notPost);
     builder.append("]");
+    builder.append( getTokenOffsetStart() + ": " + getTokenOffsetEnd());
     return builder.toString();
-  }
-
-  public static boolean isMod(int i) {
-    if (i == SpanQueryParserBase.CONJ_AND ||
-        i == SpanQueryParserBase.CONJ_OR) {
-      return false;
-    }
-    return true;
   }
 }

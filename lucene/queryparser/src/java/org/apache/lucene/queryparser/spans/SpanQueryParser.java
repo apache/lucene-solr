@@ -25,16 +25,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryparser.classic.CharStream;
 import org.apache.lucene.queryparser.classic.ParseException;
 
-import org.apache.lucene.queryparser.spans.tokens.SQPBooleanOpToken;
-import org.apache.lucene.queryparser.spans.tokens.SQPClause;
-import org.apache.lucene.queryparser.spans.tokens.SQPField;
-import org.apache.lucene.queryparser.spans.tokens.SQPNearClause;
-import org.apache.lucene.queryparser.spans.tokens.SQPNotNearClause;
-import org.apache.lucene.queryparser.spans.tokens.SQPOrClause;
-import org.apache.lucene.queryparser.spans.tokens.SQPRangeTerm;
-import org.apache.lucene.queryparser.spans.tokens.SQPTerm;
-import org.apache.lucene.queryparser.spans.tokens.SQPTerminal;
-import org.apache.lucene.queryparser.spans.tokens.SQPToken;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
