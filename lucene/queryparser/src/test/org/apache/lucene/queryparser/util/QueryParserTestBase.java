@@ -22,7 +22,10 @@ import java.util.GregorianCalendar;
 import java.util.Locale;
 import java.util.TimeZone;
 
-import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenFilter;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -31,8 +34,19 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.flexible.standard.CommonQueryParserConfiguration;
-import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.FuzzyQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.MultiTermQuery;
+import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.PrefixQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.RegexpQuery;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
@@ -57,8 +71,8 @@ public abstract class QueryParserTestBase extends QueryParserTestCase {
     SimpleCJKAnalyzer analyzer = new SimpleCJKAnalyzer(); 
     
     BooleanQuery expected = new BooleanQuery();
-    expected.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.SHOULD);
-    expected.add(new TermQuery(new Term("field", "国")), BooleanClause.Occur.SHOULD);
+    expected.add(new TermQuery(new Term("field", "中")), Occur.SHOULD);
+    expected.add(new TermQuery(new Term("field", "国")), Occur.SHOULD);
     
     assertEquals(expected, getQuery("中国", analyzer));
   }
@@ -69,8 +83,8 @@ public abstract class QueryParserTestBase extends QueryParserTestCase {
     
     BooleanQuery expected = new BooleanQuery();
     expected.setBoost(0.5f);
-    expected.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.SHOULD);
-    expected.add(new TermQuery(new Term("field", "国")), BooleanClause.Occur.SHOULD);
+    expected.add(new TermQuery(new Term("field", "中")), Occur.SHOULD);
+    expected.add(new TermQuery(new Term("field", "国")), Occur.SHOULD);
     
     assertEquals(expected, getQuery("中国^0.5", analyzer));
   }
@@ -562,38 +576,20 @@ public abstract class QueryParserTestBase extends QueryParserTestCase {
   }
   
   public void testTabNewlineCarriageReturn() throws Exception {
-    assertQueryEqualsDOA("+weltbank +worlbank", null,
-      "+weltbank +worlbank");
-
-    assertQueryEqualsDOA("+weltbank\n+worlbank", null,
-      "+weltbank +worlbank");
-    assertQueryEqualsDOA("weltbank \n+worlbank", null,
-      "+weltbank +worlbank");
-    assertQueryEqualsDOA("weltbank \n +worlbank", null,
-      "+weltbank +worlbank");
-
-    assertQueryEqualsDOA("+weltbank\r+worlbank", null,
-      "+weltbank +worlbank");
-    assertQueryEqualsDOA("weltbank \r+worlbank", null,
-      "+weltbank +worlbank");
-    assertQueryEqualsDOA("weltbank \r +worlbank", null,
-      "+weltbank +worlbank");
-
-    assertQueryEqualsDOA("+weltbank\r\n+worlbank", null,
-      "+weltbank +worlbank");
-    assertQueryEqualsDOA("weltbank \r\n+worlbank", null,
-      "+weltbank +worlbank");
-    assertQueryEqualsDOA("weltbank \r\n +worlbank", null,
-      "+weltbank +worlbank");
-    assertQueryEqualsDOA("weltbank \r \n +worlbank", null,
-      "+weltbank +worlbank");
-
-    assertQueryEqualsDOA("+weltbank\t+worlbank", null,
-      "+weltbank +worlbank");
-    assertQueryEqualsDOA("weltbank \t+worlbank", null,
-      "+weltbank +worlbank");
-    assertQueryEqualsDOA("weltbank \t +worlbank", null,
-      "+weltbank +worlbank");
+    assertQueryEqualsDOA("+weltbank +worlbank",      null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("+weltbank\n+worlbank",     null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \n+worlbank",     null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \n +worlbank",    null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("+weltbank\r+worlbank",     null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \r+worlbank",     null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \r +worlbank",    null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("+weltbank\r\n+worlbank",   null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \r\n+worlbank",   null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \r\n +worlbank",  null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \r \n +worlbank", null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("+weltbank\t+worlbank",     null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \t+worlbank",     null, "+weltbank +worlbank");
+    assertQueryEqualsDOA("weltbank \t +worlbank",    null, "+weltbank +worlbank");
   }
 
   public void testSimpleDAO() throws Exception {
@@ -867,9 +863,7 @@ public abstract class QueryParserTestBase extends QueryParserTestCase {
     new CharacterRunAutomaton(new RegExp("[sS][tT][oO][pP]").toAutomaton());
 
     CommonQueryParserConfiguration qp = getParserConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false, stopStopList));
-
-    qp = getParserConfig(
-                         new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false, stopStopList));
+    qp = getParserConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false, stopStopList));
     qp.setEnablePositionIncrements(true);
 
     PhraseQuery phraseQuery = new PhraseQuery();
@@ -896,10 +890,10 @@ public abstract class QueryParserTestBase extends QueryParserTestCase {
     String query = "(field1:[1 TO *] AND field1:[* TO 2]) AND field2:(z)";
     BooleanQuery q = new BooleanQuery();
     BooleanQuery bq = new BooleanQuery();
-    bq.add(TermRangeQuery.newStringRange("field1", "1", null, true, true), BooleanClause.Occur.MUST);
-    bq.add(TermRangeQuery.newStringRange("field1", null, "2", true, true), BooleanClause.Occur.MUST);
-    q.add(bq, BooleanClause.Occur.MUST);
-    q.add(new TermQuery(new Term("field2", "z")), BooleanClause.Occur.MUST);
+    bq.add(TermRangeQuery.newStringRange("field1", "1", null, true, true), Occur.MUST);
+    bq.add(TermRangeQuery.newStringRange("field1", null, "2", true, true), Occur.MUST);
+    q.add(bq, Occur.MUST);
+    q.add(new TermQuery(new Term("field2", "z")), Occur.MUST);
     assertEquals(q, getQuery(query, new MockAnalyzer(random())));
   }
 }
