@@ -107,6 +107,24 @@ public class TestSpanQPBasedOnQPTestBase extends QueryParserTestCase {
     return exception instanceof ParseException;
   }
 
+  @Override
+  protected String escapeDateString(String s) {
+    if (s.indexOf(" ") > -1 || s.indexOf("/") > -1 || s.indexOf("-") > -1) {
+      return "\'" + s + "\'";
+    } else {
+      return s;
+    }
+  }
+
+  @Override
+  public void assertQueryEquals(CommonQueryParserConfiguration cqpC, String field, String query, String result) throws Exception {
+    Query q = getQuery(query, cqpC);
+    if (q instanceof SpanMultiTermQueryWrapper){
+      q = ((SpanMultiTermQueryWrapper)q).getWrappedQuery();
+    }
+    assertEquals(result, q.toString(field));
+  }
+
   public void assertBoostEquals(String query, float b) throws Exception {
     Query q = getQuery(query);
     assertEquals(b, q.getBoost(), 0.00001);
@@ -532,8 +550,6 @@ public class TestSpanQPBasedOnQPTestBase extends QueryParserTestCase {
     assertQueryEquals("[\"*\" TO *]",null,"SpanMultiTermQueryWrapper([\\* TO *])");
   }
 
-  // nocommit: what is happening here (fails under some locales)
-  @Ignore
   public void testDateRange() throws Exception {
     String startDate = getLocalizedDate(2002, 1, 1);
     String endDate = getLocalizedDate(2002, 1, 4);

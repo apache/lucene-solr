@@ -27,7 +27,7 @@ import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 
-public abstract class AbstractSpanQueryParser extends SpanQueryParserBase {
+abstract class AbstractSpanQueryParser extends SpanQueryParserBase {
 
   @Override
   abstract public Query parse(String s) throws ParseException;

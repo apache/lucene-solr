@@ -37,7 +37,7 @@ import org.apache.lucene.util.Version;
  * This class also has hooks to allow subclassing to enable different
  * strategies of per field analyzer handling.
  */
-public abstract class AnalyzingQueryParserBase extends QueryParserBase {
+abstract class AnalyzingQueryParserBase extends QueryParserBase {
 
   public enum NORM_MULTI_TERMS {
     ANALYZE,

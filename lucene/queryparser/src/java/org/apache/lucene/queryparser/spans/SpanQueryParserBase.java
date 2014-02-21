@@ -66,7 +66,7 @@ import org.apache.lucene.util.BytesRef;
  * This should also allow for an easy transfer to javacc or similar.
  * 
  */
-public abstract class SpanQueryParserBase extends AnalyzingQueryParserBase {
+abstract class SpanQueryParserBase extends AnalyzingQueryParserBase {
 
   //better to make these public in QueryParserBase
 

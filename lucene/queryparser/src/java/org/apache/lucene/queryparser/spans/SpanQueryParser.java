@@ -17,7 +17,6 @@ package org.apache.lucene.queryparser.spans;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -206,8 +205,6 @@ public class SpanQueryParser extends AbstractSpanQueryParser {
    *  separate parameter for whether or not to do this.  
    */  
 
-  private static final int MAX_QUERY_LENGTH_CHARS = 30000;
-
   private String topLevelQueryString;
 
   public SpanQueryParser(Version matchVersion, String f, Analyzer a) {
@@ -218,41 +215,47 @@ public class SpanQueryParser extends AbstractSpanQueryParser {
     init(matchVersion, f, a, multitermAnalyzer);
   }
 
+  /**
+   * This is an artifact of extending QueryParserBase. 
+   * Do not use this.  It will always assert(false) and fail to set the stream.
+   * Instead, set the default field in the initializer and 
+   * use {@link #parse(String)}.
+   */
+  @Deprecated
   @Override
   public void ReInit(CharStream stream) {
-    //this is crazy...convert string to char stream then back to string for processing.
-    //The value from extending QueryParserBase was greater than this
-    //bit of craziness.  This shouldn't actually ever be called.
-    try {
-      int i = 0;
-      while(i++ <  MAX_QUERY_LENGTH_CHARS) {
-        stream.readChar();
-      }
-    } catch (IOException e) {}
-    topLevelQueryString = stream.GetImage();
+    assert(false);
   }
 
+  /**
+   * This is an artifact of extending QueryParserBase. 
+   * Do not use this.  It will always assert(false) and return null.
+   * Instead, set the default field in the initializer and 
+   * use {@link #parse(String)}.
+   */
+  @Deprecated
   @Override
   public Query TopLevelQuery(String field) throws ParseException {
-    Query q = _parse(field);
-    q = rewriteAllNegative(q);
-    return q;
+    assert(false);
+    return null;
   }
 
   @Override
   public Query parse(String s) throws ParseException {
     topLevelQueryString = s;
-    return TopLevelQuery(getField());
+    Query q = _parse(s);
+    q = rewriteAllNegative(q);
+    return q;
   }
 
-  private Query _parse(String field) throws ParseException {
-    if (topLevelQueryString == null || topLevelQueryString.equals("")) {
+  private Query _parse(String queryString) throws ParseException {
+    if (queryString == null || queryString.equals("")) {
       return getEmptySpanQuery();
     }
     SpanQueryLexer lexer = new SpanQueryLexer();
-    List<SQPToken> tokens = lexer.getTokens(topLevelQueryString);
+    List<SQPToken> tokens = lexer.getTokens(queryString);
     SQPClause overallClause = new SQPOrClause(0, tokens.size());
-    return parseRecursively(tokens, field, overallClause);
+    return parseRecursively(tokens, getField(), overallClause);
   }
 
   private Query parseRecursively(final List<SQPToken> tokens, 
