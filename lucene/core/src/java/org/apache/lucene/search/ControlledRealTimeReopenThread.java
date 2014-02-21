@@ -87,11 +87,11 @@ public class ControlledRealTimeReopenThread<T> extends Thread implements Closeab
 
     @Override
     public void afterRefresh(boolean didRefresh) {
-      refreshDone(didRefresh);
+      refreshDone();
     }
   }
 
-  private synchronized void refreshDone(boolean didRefresh) {
+  private synchronized void refreshDone() {
     searchingGen = refreshStartGen;
     notifyAll();
   }
@@ -160,12 +160,15 @@ public class ControlledRealTimeReopenThread<T> extends Thread implements Closeab
       throw new IllegalArgumentException("targetGen=" + targetGen + " was never returned by the ReferenceManager instance (current gen=" + curGen + ")");
     }
     if (targetGen > searchingGen) {
-      waitingGen = Math.max(waitingGen, targetGen);
-
       // Notify the reopen thread that the waitingGen has
       // changed, so it may wake up and realize it should
       // not sleep for much or any longer before reopening:
       reopenLock.lock();
+
+      // Need to find waitingGen inside lock as its used to determine
+      // stale time
+      waitingGen = Math.max(waitingGen, targetGen);
+
       try {
         reopenCond.signal();
       } finally {
@@ -178,7 +181,7 @@ public class ControlledRealTimeReopenThread<T> extends Thread implements Closeab
         if (maxMS < 0) {
           wait();
         } else {
-          long msLeft = ((startMS + maxMS) - (System.nanoTime())/1000000);
+          long msLeft = (startMS + maxMS) - (System.nanoTime())/1000000;
           if (msLeft <= 0) {
             return false;
           } else {
@@ -207,24 +210,25 @@ public class ControlledRealTimeReopenThread<T> extends Thread implements Closeab
       // next reopen:
       while (!finish) {
 
-        // True if we have someone waiting for reopened searcher:
-        boolean hasWaiting = waitingGen > searchingGen;
-        final long nextReopenStartNS = lastReopenStartNS + (hasWaiting ? targetMinStaleNS : targetMaxStaleNS);
+        // Need lock before finding out if has waiting
+        reopenLock.lock();
+        try {
+          // True if we have someone waiting for reopened searcher:
+          boolean hasWaiting = waitingGen > searchingGen;
+          final long nextReopenStartNS = lastReopenStartNS + (hasWaiting ? targetMinStaleNS : targetMaxStaleNS);
 
-        final long sleepNS = nextReopenStartNS - System.nanoTime();
+          final long sleepNS = nextReopenStartNS - System.nanoTime();
 
-        if (sleepNS > 0) {
-          reopenLock.lock();
-          try {
+          if (sleepNS > 0) {
             reopenCond.awaitNanos(sleepNS);
-          } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-            return;
-          } finally {
-            reopenLock.unlock();
+          } else {
+            break;
           }
-        } else {
-          break;
+        } catch (InterruptedException ie) {
+          Thread.currentThread().interrupt();
+          return;
+        } finally {
+          reopenLock.unlock();
         }
       }
 
