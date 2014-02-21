@@ -56,7 +56,7 @@
   <property name="dev.version" value="${dev.version.base}-${dev.version.suffix}"/>
   <property name="version" value="${dev.version}"/>
   <property name="spec.version" value="${version}"/>	
-  
+
   <property name="year" value="2000-${current.year}"/>
   
   <!-- Lucene modules unfortunately don't have the "lucene-" prefix, so we add it if no prefix is given in $name: -->
@@ -580,6 +580,7 @@
     <attribute name="implementation.title"/>
     <attribute name="spec.version"/>
     <attribute name="manifest.file" default="${manifest.file}"/>
+    <element name="additional-manifest-attributes" optional="true"/>
     <sequential>
       <!-- If possible, include the svnversion -->
       <exec dir="." executable="${svnversion.exe}" outputproperty="svnversion" failifexecutionfails="false"/>
@@ -619,7 +620,7 @@
                    value="The Apache Software Foundation"/>
         <attribute name="X-Compile-Source-JDK" value="${javac.source}"/>
         <attribute name="X-Compile-Target-JDK" value="${javac.target}"/>
-        <attribute name="Main-Class" value="${main.class}"/>
+        <additional-manifest-attributes />
       </manifest>
     </sequential>
   </macrodef>
@@ -633,19 +634,24 @@
     <attribute name="implementation.title" default="org.apache.lucene"/>
     <attribute name="spec.version" default="${spec.version}"/>
     <attribute name="manifest.file" default="${manifest.file}"/>
-    <element name="nested" optional="true" implicit="true"/>
+    <element name="filesets" optional="true"/>
+    <element name="jarify-additional-manifest-attributes" optional="true"/>
     <sequential>
       <build-manifest title="@{title}"
                       implementation.title="@{implementation.title}"
                       spec.version="@{spec.version}"
-                      manifest.file="@{manifest.file}"/>
+                      manifest.file="@{manifest.file}">
+        <additional-manifest-attributes>
+          <jarify-additional-manifest-attributes />
+        </additional-manifest-attributes>
+      </build-manifest>
     	
       <jar destfile="@{destfile}"
            basedir="@{basedir}"
            manifest="@{manifest.file}"
            excludes="@{excludes}">
         <metainf dir="@{metainf.source.dir}" includes="LICENSE.txt,NOTICE.txt"/>
-        <nested />
+        <filesets />
       </jar>
     </sequential>
   </macrodef>
@@ -1404,7 +1410,9 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     <sequential>
       <mkdir dir="${build.dir}" />
       <jarify basedir="${src.dir}" destfile="${build.dir}/${final.name}-src.jar">
-        <fileset dir="${resources.dir}" erroronmissingdir="no"/>
+        <filesets>
+          <fileset dir="${resources.dir}" erroronmissingdir="no"/>
+        </filesets>
       </jarify>
     </sequential>
   </target>
