@@ -191,6 +191,11 @@ Bug fixes
 * LUCENE-5462: RamUsageEstimator.sizeOf(Object) is not used anymore to
   estimate memory usage of segments. This used to make
   SegmentReader.ramBytesUsed very CPU-intensive. (Adrien Grand)
+
+* LUCENE-5461: ControlledRealTimeReopenThread would sometimes wait too
+  long (up to targetMaxStaleSec) when a searcher is waiting for a
+  specific generation, when it should have waited for at most
+  targetMinStaleSec. (Hans Lund via Mike McCandless)
   
 API Changes
 

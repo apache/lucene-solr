@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -27,13 +28,17 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SnapshotDeletionPolicy;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.ThreadedIndexingAndSearchingTestCase;
 import org.apache.lucene.index.TrackingIndexWriter;
@@ -42,7 +47,9 @@ import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.ThreadInterruptedException;
+import org.apache.lucene.util.Version;
 
 @SuppressCodecs({ "SimpleText", "Memory", "Direct" })
 public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearchingTestCase {
@@ -414,6 +421,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
 
     try {
       new SearcherManager(w.w, false, theEvilOne);
+      fail("didn't hit expected exception");
     } catch (IllegalStateException ise) {
       // expected
     }
@@ -443,6 +451,85 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
     assertFalse(afterRefreshCalled.get());
     sm.maybeRefreshBlocking();
     assertTrue(afterRefreshCalled.get());
+    sm.close();
+    iw.close();
+    dir.close();
+  }
+
+  // LUCENE-5461
+  public void testCRTReopen() throws Exception {
+    //test behaving badly
+
+    //should be high enough
+    int maxStaleSecs = 20;
+
+    //build crap data just to store it.
+    String s = "        abcdefghijklmnopqrstuvwxyz     ";
+    char[] chars = s.toCharArray();
+    StringBuilder builder = new StringBuilder(2048);
+    for (int i = 0; i < 2048; i++) {
+      builder.append(chars[random().nextInt(chars.length)]);
+    }
+    String content = builder.toString();
+
+    final SnapshotDeletionPolicy sdp = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
+    final Directory dir = new NRTCachingDirectory(newFSDirectory(_TestUtil.getTempDir("nrt")), 5, 128);
+    IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_46,
+                                                     new MockAnalyzer(random()));
+    config.setIndexDeletionPolicy(sdp);
+    config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
+    final IndexWriter iw = new IndexWriter(dir, config);
+    SearcherManager sm = new SearcherManager(iw, true, new SearcherFactory());
+    final TrackingIndexWriter tiw = new TrackingIndexWriter(iw);
+    ControlledRealTimeReopenThread<IndexSearcher> controlledRealTimeReopenThread =
+      new ControlledRealTimeReopenThread<IndexSearcher>(tiw, sm, maxStaleSecs, 0);
+
+    controlledRealTimeReopenThread.setDaemon(true);
+    controlledRealTimeReopenThread.start();
+
+    List<Thread> commitThreads = new ArrayList<Thread>();
+
+    for (int i = 0; i < 500; i++) {
+      if (i > 0 && i % 50 == 0) {
+        Thread commitThread =  new Thread(new Runnable() {
+            @Override
+            public void run() {
+              try {
+                iw.commit();
+                IndexCommit ic = sdp.snapshot();
+                for (String name : ic.getFileNames()) {
+                  //distribute, and backup
+                  //System.out.println(names);
+                  assertTrue(dir.fileExists(name));
+                }
+              } catch (Exception e) {
+                throw new RuntimeException(e);
+              }
+            }
+          });
+        commitThread.start();
+        commitThreads.add(commitThread);
+      }
+      Document d = new Document();
+      d.add(new TextField("count", i + "", Field.Store.NO));
+      d.add(new TextField("content", content, Field.Store.YES));
+      long start = System.currentTimeMillis();
+      long l = tiw.addDocument(d);
+      controlledRealTimeReopenThread.waitForGeneration(l);
+      long wait = System.currentTimeMillis() - start;
+      assertTrue("waited too long for generation " + wait,
+                 wait < (maxStaleSecs *1000));
+      IndexSearcher searcher = sm.acquire();
+      TopDocs td = searcher.search(new TermQuery(new Term("count", i + "")), 10);
+      sm.release(searcher);
+      assertEquals(1, td.totalHits);
+    }
+
+    for(Thread commitThread : commitThreads) {
+      commitThread.join();
+    }
+
+    controlledRealTimeReopenThread.close();
     sm.close();
     iw.close();
     dir.close();
