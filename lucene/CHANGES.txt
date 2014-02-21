@@ -139,6 +139,10 @@ Build
 * LUCENE-5411: Upgrade to released JFlex 1.5.0; stop requiring
   a locally built JFlex snapshot jar. (Steve Rowe)
 
+* LUCENE-5465: Solr Contrib "map-reduce" breaks Manifest of all other
+  JAR files by adding a broken Main-Class attribute.
+  (Uwe Schindler, Steve Rowe)
+
 Bug fixes
 
 * LUCENE-5285: Improved highlighting of multi-valued fields with
