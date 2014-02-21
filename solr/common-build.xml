@@ -202,7 +202,8 @@
     <attribute name="implementation.title" default="org.apache.solr"/>
     <attribute name="spec.version" default="${spec.version}"/>
     <attribute name="manifest.file" default="${manifest.file}"/>
-    <element name="nested" optional="true" implicit="true"/>
+    <element name="solr-jarify-filesets" optional="true"/>
+    <element name="solr-jarify-additional-manifest-attributes" optional="true"/>
     <sequential>
       <jarify basedir="@{basedir}" destfile="@{destfile}"
               title="@{title}" excludes="@{excludes}"
@@ -210,7 +211,12 @@
               implementation.title="@{implementation.title}"
               spec.version="@{spec.version}"
               manifest.file="@{manifest.file}">
-        <nested/>
+        <filesets>
+          <solr-jarify-filesets />
+        </filesets>
+        <jarify-additional-manifest-attributes>
+          <solr-jarify-additional-manifest-attributes />
+        </jarify-additional-manifest-attributes>
       </jarify>
     </sequential>
   </macrodef>
@@ -331,7 +337,9 @@
     <sequential>
       <mkdir dir="${build.dir}"/>
       <solr-jarify basedir="${src.dir}" destfile="${build.dir}/${final.name}-src.jar">
-        <fileset dir="${resources.dir}" erroronmissingdir="no"/>
+        <solr-jarify-filesets>
+          <fileset dir="${resources.dir}" erroronmissingdir="no"/>
+        </solr-jarify-filesets>
       </solr-jarify>
     </sequential>
   </target>
