@@ -234,14 +234,14 @@ Optimizations
 * LUCENE-5271: A slightly more accurate SloppyMath distance.
   (Gilad Barkai via Ryan Ernst)
 
+* LUCENE-5399: Deep paging using IndexSearcher.searchAfter when
+  sorting by fields is faster (Rob Muir, Mike McCandless)
+
 Changes in Runtime Behavior
 
 * LUCENE-5362: IndexReader and SegmentCoreReaders now throw 
   AlreadyClosedException if the refCount in incremented but
-  is less that 1. (Simon Willnauer) 
-
-* LUCENE-4399: Deep paging using IndexSearcher.searchAfter when
-  sorting by fields is faster (Rob Muir, Mike McCandless)
+  is less that 1. (Simon Willnauer)
 
 Documentation
 
