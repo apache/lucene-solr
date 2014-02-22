@@ -24,13 +24,12 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.hadoop.morphline.MorphlineMapRunner;
 import org.apache.solr.morphlines.solr.AbstractSolrMorphlineTestBase;
-import org.apache.solr.util.ExternalPaths;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 public abstract class MRUnitBase extends SolrTestCaseJ4 {
   
-  protected static final String RESOURCES_DIR = ExternalPaths.SOURCE_HOME + "/contrib/map-reduce/src/test-files";  
+  protected static final String RESOURCES_DIR = getFile("morphlines-core.marker").getParent();
   protected static final String DOCUMENTS_DIR = RESOURCES_DIR + "/test-documents";
   protected static File solrHomeZip;
 

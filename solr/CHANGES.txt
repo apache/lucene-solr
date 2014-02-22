@@ -40,6 +40,14 @@ New Features
 Bug Fixes
 ----------------------
 
+Other Changes
+---------------------
+
+* SOLR-5764: Fix recently added tests to not use absolute paths to load test-files,
+  use SolrTestCaseJ4.getFile() and getResource() instead; fix morphlines/map-reduce
+  to not duplicate test resources and fix dependencies among them.
+  (Uwe Schindler)
+
 
 ==================  4.7.0 ==================
 

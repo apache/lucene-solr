@@ -38,8 +38,8 @@ import org.apache.solr.common.params.SolrParams;
 import org.eclipse.jetty.util.security.CertificateUtils;
 
 public class SSLTestConfig extends SSLConfig {
-  public static File TEST_KEYSTORE = ExternalPaths.SOURCE_HOME == null ? null
-      : new File(ExternalPaths.SOURCE_HOME, "example/etc/solrtest.keystore");
+  public static File TEST_KEYSTORE = ExternalPaths.EXAMPLE_HOME == null ? null
+      : new File(ExternalPaths.EXAMPLE_HOME, "../etc/solrtest.keystore");
   
   private static String TEST_KEYSTORE_PATH = TEST_KEYSTORE != null
       && TEST_KEYSTORE.exists() ? TEST_KEYSTORE.getAbsolutePath() : null;
