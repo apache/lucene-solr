@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -1663,16 +1665,19 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * {@link Class#getResourceAsStream} using {@code this.getClass()}.
    */
   public static File getFile(String name) {
-    try {
-      File file = new File(name);
-      if (!file.exists()) {
-        file = new File(Thread.currentThread().getContextClassLoader().getResource(name).toURI());
+    final URL url = Thread.currentThread().getContextClassLoader().getResource(name.replace(File.separatorChar, '/'));
+    if (url != null) {
+      try {
+        return new File(url.toURI());
+      } catch (URISyntaxException use) {
+        // ignore + fall-through
       }
-      return file;
-    } catch (Exception e) {
-      /* more friendly than NPE */
-      throw new RuntimeException("Cannot find resource: " + new File(name).getAbsolutePath());
     }
+    final File file = new File(name);
+    if (file.exists()) {
+      return file;
+    }
+    throw new RuntimeException("Cannot find resource in classpath or in file-system (relative to CWD): " + name);
   }
   
   public static String TEST_HOME() {
