@@ -30,7 +30,7 @@ import org.junit.Ignore;
 @SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Appending","Asserting"})
 @Ignore // failing after https://issues.apache.org/jira/browse/SOLR-5685
 public class FieldFacetTest extends AbstractAnalyticsFacetTest{
-  static String fileName = "core/src/test-files/analytics/requestFiles/fieldFacets.txt";
+  static String fileName = "/analytics/requestFiles/fieldFacets.txt";
 
   public static final int INT = 71;
   public static final int LONG = 36;
@@ -391,7 +391,7 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
     }
     
     assertU(commit()); 
-    setResponse(h.query(request(fileToStringArr(fileName))));
+    setResponse(h.query(request(fileToStringArr(FieldFacetTest.class, fileName))));
   }
   
   @SuppressWarnings("unchecked")

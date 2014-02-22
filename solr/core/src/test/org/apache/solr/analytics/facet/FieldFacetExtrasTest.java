@@ -29,7 +29,7 @@ import org.junit.Test;
 
 @SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Appending","Asserting"})
 public class FieldFacetExtrasTest extends AbstractAnalyticsFacetTest {
-  static String fileName = "core/src/test-files/analytics/requestFiles/fieldFacetExtras.txt";
+  static String fileName = "/analytics/requestFiles/fieldFacetExtras.txt";
 
   public static final int INT = 21;
   public static final int LONG = 22;
@@ -104,7 +104,7 @@ public class FieldFacetExtrasTest extends AbstractAnalyticsFacetTest {
     }
     
     assertU(commit()); 
-    setResponse(h.query(request(fileToStringArr(fileName))));
+    setResponse(h.query(request(fileToStringArr(FieldFacetExtrasTest.class, fileName))));
   }
   
   @SuppressWarnings("unchecked")

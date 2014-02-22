@@ -19,7 +19,7 @@ package org.apache.solr.client.solrj.request;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -34,7 +34,6 @@ import junit.framework.Assert;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.util.ExternalPaths;
 import org.junit.Test;
 
 /**
@@ -203,7 +202,8 @@ public class TestUpdateRequestCodec extends LuceneTestCase {
 
 
 
-    FileInputStream is = new FileInputStream(new File(ExternalPaths.SOURCE_HOME, "solrj/src/test-files/solrj/updateReq_4_5.bin"));
+    InputStream is = getClass().getResourceAsStream("/solrj/updateReq_4_5.bin");
+    assertNotNull("updateReq_4_5.bin was not found", is);
     UpdateRequest updateUnmarshalled = new JavaBinUpdateRequestCodec().unmarshal(is, new JavaBinUpdateRequestCodec.StreamingUpdateHandler() {
       @Override
       public void update(SolrInputDocument document, UpdateRequest req, Integer commitWithin, Boolean override) {

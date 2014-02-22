@@ -118,7 +118,7 @@
       <exclude name="randomizedtesting-runner-*.jar" />
       <exclude name="ant*.jar" />
     </fileset>
-  	<pathelement path="${build.dir}/test-files"/>
+  	<pathelement path="src/test-files"/>
   	<path refid="test.base.classpath"/>
   </path>
  
@@ -226,7 +226,7 @@
   </target>
 
   <target name="compile-core" depends="prep-lucene-jars,resolve-example,common.compile-core"/>
-  <target name="compile-test" depends="sync-resources,compile-solr-test-framework,common.compile-test"/>
+  <target name="compile-test" depends="compile-solr-test-framework,common.compile-test"/>
 
   <target name="dist" depends="jar-core">
     <copy file="${build.dir}/${fullnamever}.jar" todir="${dist}"/>
@@ -405,15 +405,6 @@
     <ant dir="${common-solr.dir}/solrj" target="jar-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
-  </target>
-
-  <!-- TODO: really a copy should work: but sync is currently safer
-       since some buggy tests don't create their own tempdir but
-       modify this target directory directly... -->
-  <target name="sync-resources">
-    <sync todir="${build.dir}/test-files">
-      <fileset dir="${tests.userdir}"/>
-    </sync>
   </target>
 
   <!-- Solr test-framework targets -->

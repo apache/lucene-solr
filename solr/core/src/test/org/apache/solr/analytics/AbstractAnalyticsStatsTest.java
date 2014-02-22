@@ -18,9 +18,9 @@
 package org.apache.solr.analytics;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -36,11 +36,11 @@ import javax.xml.xpath.XPathFactory;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.util.MedianCalculator;
 import org.apache.solr.analytics.util.PercentileCalculator;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.util.ExternalPaths;
 import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -192,22 +192,27 @@ public class AbstractAnalyticsStatsTest extends SolrTestCaseJ4 {
   public static SolrQueryRequest request(String...args){
     return SolrTestCaseJ4.req( ObjectArrays.concat(BASEPARMS, args,String.class) );
   }
-  
-  public static String[] fileToStringArr(String fileName) throws FileNotFoundException {
-    Scanner file = new Scanner(new File(ExternalPaths.SOURCE_HOME, fileName), "UTF-8");
-    ArrayList<String> strList = new ArrayList<String>();
-    while (file.hasNextLine()) {
-      String line = file.nextLine();
-      line = line.trim();
-      if( StringUtils.isBlank(line) || line.startsWith("#")){
-        continue;
+
+  public static String[] fileToStringArr(Class<?> clazz, String fileName) throws FileNotFoundException {
+    InputStream in = clazz.getResourceAsStream(fileName);
+    if (in == null) throw new FileNotFoundException("Resource not found: " + fileName);
+    Scanner file = new Scanner(in, "UTF-8");
+    try { 
+      ArrayList<String> strList = new ArrayList<String>();
+      while (file.hasNextLine()) {
+        String line = file.nextLine();
+        line = line.trim();
+        if( StringUtils.isBlank(line) || line.startsWith("#")){
+          continue;
+        }
+        String[] param = line.split("=");
+        strList.add(param[0]);
+        strList.add(param[1]);
       }
-      String[] param = line.split("=");
-      strList.add(param[0]);
-      strList.add(param[1]);
+      return strList.toArray(new String[0]);
+    } finally {
+      IOUtils.closeWhileHandlingException(file, in);
     }
-    return strList.toArray(new String[0]);
   }
   
-
 }

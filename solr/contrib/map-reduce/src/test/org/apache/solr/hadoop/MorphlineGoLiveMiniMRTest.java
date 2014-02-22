@@ -96,7 +96,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
   }
   
   private static final int RECORD_COUNT = 2104;
-  private static final String RESOURCES_DIR = ExternalPaths.SOURCE_HOME + "/contrib/map-reduce/src/test-files";  
+  private static final String RESOURCES_DIR = getFile("morphlines-core.marker").getParent();  
   private static final String DOCUMENTS_DIR = RESOURCES_DIR + "/test-documents";
   private static final File MINIMR_INSTANCE_DIR = new File(RESOURCES_DIR + "/solr/minimr");
   private static final File MINIMR_CONF_DIR = new File(RESOURCES_DIR + "/solr/minimr");
@@ -382,7 +382,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     args = new String[] {
         "--solr-home-dir=" + MINIMR_CONF_DIR.getAbsolutePath(),
         "--output-dir=" + outDir.toString(),
-        "--log4j=" + ExternalPaths.SOURCE_HOME + "/core/src/test-files/log4j.properties",
+        "--log4j=" + getFile("log4j.properties").getAbsolutePath(),
         "--mappers=3",
         random().nextBoolean() ? "--input-list=" + INPATH.toString() : dataDir.toString(),  
         "--go-live-threads", Integer.toString(random().nextInt(15) + 1),

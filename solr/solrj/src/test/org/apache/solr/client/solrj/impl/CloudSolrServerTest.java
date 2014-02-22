@@ -34,7 +34,6 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.util.ExternalPaths;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -47,9 +46,7 @@ import org.junit.BeforeClass;
 @Slow
 public class CloudSolrServerTest extends AbstractFullDistribZkTestBase {
   
-  private static final String SOLR_HOME = ExternalPaths.SOURCE_HOME + File.separator + "solrj"
-      + File.separator + "src" + File.separator + "test-files"
-      + File.separator + "solrj" + File.separator + "solr";
+  private static final String SOLR_HOME = getFile("solrj" + File.separator + "solr").getAbsolutePath();
 
   @BeforeClass
   public static void beforeSuperClass() {

@@ -83,7 +83,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     } else {
       File tmpSolrHome = new File(dataDir, "tmp-solr-home");
       FileUtils.copyDirectory(new File(ExternalPaths.EXAMPLE_HOME), tmpSolrHome);
-      FileUtils.copyFile(new File(ExternalPaths.SOURCE_HOME, "core/src/test-files/old-solr-example/solr.xml"), new File(tmpSolrHome, "solr.xml"));
+      FileUtils.copyFile(getFile("old-solr-example/solr.xml"), new File(tmpSolrHome, "solr.xml"));
       solrHome = tmpSolrHome.getAbsolutePath();
     }
     
