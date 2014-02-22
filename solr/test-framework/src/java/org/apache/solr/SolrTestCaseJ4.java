@@ -1669,8 +1669,9 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     if (url != null) {
       try {
         return new File(url.toURI());
-      } catch (URISyntaxException use) {
-        // ignore + fall-through
+      } catch (Exception e) {
+        throw new RuntimeException("Resource was found on classpath, but cannot be resolved to a " + 
+            "normal file (maybe it is part of a JAR file): " + name);
       }
     }
     final File file = new File(name);
