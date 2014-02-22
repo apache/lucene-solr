@@ -24,17 +24,6 @@ $Id$
 
 Versions of Major Components
 ---------------------
-
-Upgrading from Solr 4.7.0
-----------------------
-
-Detailed Change List
-----------------------
-
-==================  4.8.0 ==================
-
-Versions of Major Components
----------------------
 Apache Tika 1.4
 Carrot2 3.8.0
 Velocity 1.7 and Velocity Tools 2.0
