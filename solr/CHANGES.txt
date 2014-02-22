@@ -58,17 +58,14 @@ New Features
 * SOLR-5320: Added support for tri-level compositeId routing.
   (Anshum Gupta via shalin)
   
-* SOLR-5287: You can edit files in the conf directory from the admin UI 
-  (Erick Erickson, Stefan Matheis)
+* SOLR-5287,SOLR-5522,SOLR-5446,SOLR-5456,SOLR-5539,SOLR-5458:
+  Admin UI - Added a new "Files" conf directory browser/file viewer.
+  (steffkes, Erick Erickson)
 
 * SOLR-5447, SOLR-5490: Add a QParserPlugin for Lucene's SimpleQueryParser.
   (Jack Conradson via shalin)
 
-* SOLR-5446: Admin UI - Allow changing Schema and Config (steffkes)
-
-* SOLR-5456: Admin UI - Allow creating new Files (steffkes)
-
-* SOLR-5208: Support for the setting of core.properties key/values at create-time on 
+* SOLR-5208: Support for the setting of core.properties key/values at create-time on
   Collections API (Erick Erickson)
 
 * SOLR-5428: SOLR-5690: New 'stats.calcdistinct' parameter in StatsComponent returns
@@ -85,20 +82,12 @@ New Features
 
 * SOLR-5506: Support docValues in CollationField and ICUCollationField.
   (Robert Muir)
-  
-* SOLR-5518: Added EditFileRequestHandler to deal with security issues around modifying
-  solr configuration files.
 
 * SOLR-5023: Add support for deleteInstanceDir to be passed from SolrJ for Core
   Unload action. (Lyubov Romanchuk, shalin)
 
 * SOLR-1871: The 'map' function query accepts a ValueSource as target and
   default value. (Chris Harris, shalin)
-
-* SOLR-5518: Make the EditFileRequestHandler it's own handler to allow
-  some security (Erick Erickson)
-
-* SOLR-5522: Remove EditFileRequestHandler from 4x (Erick Erickson)
 
 * SOLR-5556: Allow class of CollectionsHandler and InfoHandler to be specified
   in solr.xml. (Gregory Chanan, Alan Woodward)
@@ -116,10 +105,10 @@ New Features
 * SOLR-5529: Add support for queries to use multiple suggesters.
   (Areek Zillur, Erick Erickson, via Robert Muir)
 
-* SOLR-1301: Add a Solr contrib that allows for building Solr indexes via 
-  Hadoop's MapReduce. (Matt Revelle, Alexander Kanarsky, Steve Rowe, 
+* SOLR-1301: Add a Solr contrib that allows for building Solr indexes via
+  Hadoop's MapReduce. (Matt Revelle, Alexander Kanarsky, Steve Rowe,
   Mark Miller, Greg Bowyer, Jason Rutherglen, Kris Jirapinyo, Jason Venner ,
-  Andrzej Bialecki, Patrick Hunt, Wolfgang Hoschek, Roman Shaposhnik, 
+  Andrzej Bialecki, Patrick Hunt, Wolfgang Hoschek, Roman Shaposhnik,
   Eric Wong)
 
 * SOLR-5631: Add support for Lucene's FreeTextSuggester.
@@ -146,7 +135,7 @@ New Features
 
 * SOLR-5623: Better diagnosis of RuntimeExceptions in analysis
   (Benson Margulies)
- 
+
 * SOLR-5530: Added a NoOpResponseParser for SolrJ which puts the entire raw
   response into an entry in the NamedList.
   (Upayavira, Vitaliy Zhovtyuk via shalin)
@@ -317,10 +306,11 @@ Bug Fixes
 * SOLR-5620: ZKStateReader.aliases should be volatile to ensure all threads see
   the latest aliases. (Ramkumar Aiyengar via Mark Miller)
 
+* SOLR-5448: ShowFileRequestHandler treats everything as Directory, when in
+  Cloud-Mode. (Erick Erickson, steffkes)
+
 Optimizations
 ----------------------
-
-* SOLR-5458: Admin UI - Remove separated Pages for Config & Schema (steffkes)
 
 * SOLR-5436: Eliminate the 1500ms wait in overseer loop as well as
   polling the ZK distributed queue. (Noble Paul, Mark Miller)
@@ -370,9 +360,7 @@ Other Changes
 * SOLR-5502: Added a test for tri-level compositeId routing with documents
   having a "/" in a document id. (Anshum Gupta via Mark Miller)
 
-* SOLR-5539: Admin UI - Remove ability to create/modify files (steffkes)
-
-* SOLR-5533: Improve out of the box support for running Solr on hdfs with 
+* SOLR-5533: Improve out of the box support for running Solr on hdfs with
   SolrCloud. (Mark Miller)
 
 * SOLR-5548: Give DistributedSearchTestCase / JettySolrRunner the ability to 
