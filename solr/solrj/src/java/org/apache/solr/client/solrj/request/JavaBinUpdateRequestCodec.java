@@ -184,7 +184,13 @@ public class JavaBinUpdateRequestCodec {
     delByIdMap = (Map<String,Map<String,Object>>) namedList[0].get("delByIdMap");
     delByQ = (List<String>) namedList[0].get("delByQ");
     doclist = (List) namedList[0].get("docs");
-    docMap =  (List<Entry<SolrInputDocument,Map<Object,Object>>>) namedList[0].get("docsMap");
+    Object docsMapObj = namedList[0].get("docsMap");
+
+    if (docsMapObj instanceof Map) {//SOLR-5762
+      docMap =  new ArrayList(((Map)docsMapObj).entrySet());
+    } else {
+      docMap = (List<Entry<SolrInputDocument, Map<Object, Object>>>) docsMapObj;
+    }
     
 
     // we don't add any docs, because they were already processed
