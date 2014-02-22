@@ -126,7 +126,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
   public static final String COLL_PROP_PREFIX = "property.";
 
-  public static final Set<String> KNOWN_CLUSTER_PROPS = ImmutableSet.of("legacyCloud");
+  public static final Set<String> KNOWN_CLUSTER_PROPS = ImmutableSet.of("legacyCloud","urlScheme");
 
   public static final Map<String,Object> COLL_PROPS = ZkNodeProps.makeMap(
       ROUTER, DocRouter.DEFAULT_NAME,
