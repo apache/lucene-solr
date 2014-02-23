@@ -47,6 +47,8 @@ Other Changes
   use SolrTestCaseJ4.getFile() and getResource() instead; fix morphlines/map-reduce
   to not duplicate test resources and fix dependencies among them.
   (Uwe Schindler)
+  
+* SOLR-5765: Update to SLF4J 1.7.6. (Mark Miller)
 
 
 ==================  4.7.0 ==================
@@ -87,14 +89,17 @@ New Features
 * SOLR-5320: Added support for tri-level compositeId routing.
   (Anshum Gupta via shalin)
   
-* SOLR-5287,SOLR-5522,SOLR-5446,SOLR-5456,SOLR-5539,SOLR-5458:
-  Admin UI - Added a new "Files" conf directory browser/file viewer.
-  (steffkes, Erick Erickson)
+* SOLR-5287: You can edit files in the conf directory from the admin UI 
+  (Erick Erickson, Stefan Matheis)
 
 * SOLR-5447, SOLR-5490: Add a QParserPlugin for Lucene's SimpleQueryParser.
   (Jack Conradson via shalin)
 
-* SOLR-5208: Support for the setting of core.properties key/values at create-time on
+* SOLR-5446: Admin UI - Allow changing Schema and Config (steffkes)
+
+* SOLR-5456: Admin UI - Allow creating new Files (steffkes)
+
+* SOLR-5208: Support for the setting of core.properties key/values at create-time on 
   Collections API (Erick Erickson)
 
 * SOLR-5428: SOLR-5690: New 'stats.calcdistinct' parameter in StatsComponent returns
@@ -111,6 +116,9 @@ New Features
 
 * SOLR-5506: Support docValues in CollationField and ICUCollationField.
   (Robert Muir)
+  
+* SOLR-5518: Added EditFileRequestHandler to deal with security issues around modifying
+  solr configuration files.
 
 * SOLR-5023: Add support for deleteInstanceDir to be passed from SolrJ for Core
   Unload action. (Lyubov Romanchuk, shalin)
@@ -335,11 +343,10 @@ Bug Fixes
 * SOLR-5620: ZKStateReader.aliases should be volatile to ensure all threads see
   the latest aliases. (Ramkumar Aiyengar via Mark Miller)
 
-* SOLR-5448: ShowFileRequestHandler treats everything as Directory, when in
-  Cloud-Mode. (Erick Erickson, steffkes)
-
 Optimizations
 ----------------------
+
+* SOLR-5458: Admin UI - Remove separated Pages for Config & Schema (steffkes)
 
 * SOLR-5436: Eliminate the 1500ms wait in overseer loop as well as
   polling the ZK distributed queue. (Noble Paul, Mark Miller)
@@ -389,7 +396,9 @@ Other Changes
 * SOLR-5502: Added a test for tri-level compositeId routing with documents
   having a "/" in a document id. (Anshum Gupta via Mark Miller)
 
-* SOLR-5533: Improve out of the box support for running Solr on hdfs with
+* SOLR-5539: Admin UI - Remove ability to create/modify files (steffkes)
+
+* SOLR-5533: Improve out of the box support for running Solr on hdfs with 
   SolrCloud. (Mark Miller)
 
 * SOLR-5548: Give DistributedSearchTestCase / JettySolrRunner the ability to 
