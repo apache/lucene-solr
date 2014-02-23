@@ -86,6 +86,9 @@ New Features
 Bug Fixes
 ----------------------
 
+* SOLR-5647: The lib paths in example-schemaless will now load correctly.
+  (Paul Westin via Shawn Heisey)
+
 Other Changes
 ---------------------
 
