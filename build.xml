@@ -322,6 +322,18 @@ File | Project Structure | Platform Settings | SDKs):
     </subant>
   </target>
 
+  <target name="clean-jars" description="Remove all JAR files from lib folders in the checkout">
+    <delete failonerror="true">
+      <fileset dir=".">
+        <include name="**/*.jar"/>
+        <exclude name="*/build/**"/>
+        <exclude name="*/dist/**"/>
+        <exclude name="*/package/**"/>
+        <exclude name="*/example/exampledocs/**"/>
+      </fileset>
+    </delete>
+  </target>
+
   <target name="ivy-bootstrap" description="Download and install Ivy in the users ant lib dir">
     <subant buildpath="lucene" target="ivy-bootstrap" inheritall="false" failonerror="true"/>
   </target>
