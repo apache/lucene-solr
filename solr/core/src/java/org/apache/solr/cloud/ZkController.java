@@ -1051,7 +1051,7 @@ public final class ZkController {
 
     final CloudDescriptor cloudDesc = desc.getCloudDescriptor();
     
-    final String shardId = state.getShardId(getBaseUrl(), desc.getName());
+    final String shardId = state.getShardId(getNodeName(), desc.getName());
 
     if (shardId != null) {
       cloudDesc.setShardId(shardId);
@@ -1258,13 +1258,13 @@ public final class ZkController {
           for (Replica replica : slice.getReplicas()) {
             // TODO: for really large clusters, we could 'index' on this
             
-            String baseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
+            String nodeName = replica.getStr(ZkStateReader.NODE_NAME_PROP);
             String core = replica.getStr(ZkStateReader.CORE_NAME_PROP);
             
-            String msgBaseUrl = getBaseUrl();
+            String msgNodeName = getNodeName();
             String msgCore = descriptor.getName();
 
-            if (baseUrl.equals(msgBaseUrl) && core.equals(msgCore)) {
+            if (nodeName.equals(msgNodeName) && core.equals(msgCore)) {
               descriptor.getCloudDescriptor()
                   .setCoreNodeName(replica.getName());
               return;
@@ -1284,7 +1284,7 @@ public final class ZkController {
     log.info("waiting to find shard id in clusterstate for " + cd.getName());
     int retryCount = 320;
     while (retryCount-- > 0) {
-      final String shardId = zkStateReader.getClusterState().getShardId(getBaseUrl(), cd.getName());
+      final String shardId = zkStateReader.getClusterState().getShardId(getNodeName(), cd.getName());
       if (shardId != null) {
         cd.getCloudDescriptor().setShardId(shardId);
         return;
