@@ -2212,7 +2212,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
     </path>
   </target>  
 
-  <target name="check-forbidden-apis" depends="-check-forbidden-all,-check-forbidden-tests,-check-forbidden-sources" description="Check forbidden API calls in compiled class files"/>
+  <target name="check-forbidden-apis" depends="-check-forbidden-all,-check-forbidden-core,-check-forbidden-tests" description="Check forbidden API calls in compiled class files"/>
   
   <!-- applies to both source and test code -->
   <target name="-check-forbidden-all" depends="-init-forbidden-apis,compile-core,compile-test">
@@ -2233,7 +2233,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   </target>
  
   <!-- applies to only source code -->
-  <target name="-check-forbidden-sources" depends="-init-forbidden-apis,compile-core,-check-forbidden-sysout,-check-forbidden-rue" />
+  <target name="-check-forbidden-core" depends="-init-forbidden-apis,compile-core,-check-forbidden-sysout,-check-forbidden-rue" />
 
   <target name="-check-forbidden-rue" depends="-init-forbidden-apis,compile-core">
     <forbidden-apis signaturesFile="${common.dir}/tools/forbiddenApis/rue.txt" classpathref="forbidden-apis.allclasses.classpath">
