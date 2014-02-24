@@ -218,6 +218,13 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
       }).anyTimes();
       
     }
+    zkStateReaderMock.getClusterProps();
+    expectLastCall().andAnswer(new IAnswer<Map>() {
+      @Override
+      public Map answer() throws Throwable {
+        return new HashMap();
+      }
+    });
     
     solrZkClientMock.getZkClientTimeout();
     expectLastCall().andAnswer(new IAnswer<Object>() {
