@@ -2195,6 +2195,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <property name="forbidden-base-excludes" value=""/>
   <property name="forbidden-tests-excludes" value=""/>
   <property name="forbidden-sysout-excludes" value=""/>
+  <property name="forbidden-rue-excludes" value=""/>
   
   <target name="-install-forbidden-apis" unless="forbidden-apis.loaded" depends="ivy-availability-check,ivy-configure">
     <ivy:cachepath organisation="de.thetaphi" module="forbiddenapis" revision="1.4"
@@ -2214,9 +2215,10 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
     </path>
   </target>  
 
-  <target name="check-forbidden-apis" depends="-check-forbidden-base,-check-forbidden-tests,-check-forbidden-sysout" description="Check forbidden API calls in compiled class files"/>
+  <target name="check-forbidden-apis" depends="-check-forbidden-all,-check-forbidden-tests,-check-forbidden-sources" description="Check forbidden API calls in compiled class files"/>
   
-  <target name="-check-forbidden-base" depends="-init-forbidden-apis,compile-core,compile-test">
+  <!-- applies to both source and test code -->
+  <target name="-check-forbidden-all" depends="-init-forbidden-apis,compile-core,compile-test">
     <forbidden-apis internalRuntimeForbidden="true" classpathref="forbidden-apis.allclasses.classpath">
       <bundledSignatures name="jdk-unsafe-${javac.target}"/>
       <bundledSignatures name="jdk-deprecated-${javac.target}"/>
@@ -2226,12 +2228,22 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
     </forbidden-apis>
   </target>
   
+  <!-- applies to only test code -->
   <target name="-check-forbidden-tests" depends="-init-forbidden-apis,compile-test">
     <forbidden-apis signaturesFile="${common.dir}/tools/forbiddenApis/tests.txt" classpathref="forbidden-apis.allclasses.classpath"> 
       <fileset dir="${build.dir}/classes/test" excludes="${forbidden-tests-excludes}"/>
     </forbidden-apis>
   </target>
-    
+ 
+  <!-- applies to only source code -->
+  <target name="-check-forbidden-sources" depends="-init-forbidden-apis,compile-core,-check-forbidden-sysout,-check-forbidden-rue" />
+
+  <target name="-check-forbidden-rue" depends="-init-forbidden-apis,compile-core">
+    <forbidden-apis signaturesFile="${common.dir}/tools/forbiddenApis/rue.txt" classpathref="forbidden-apis.allclasses.classpath">
+      <fileset dir="${build.dir}/classes/java" excludes="${forbidden-rue-excludes}"/>
+    </forbidden-apis>
+  </target>
+
   <target name="-check-forbidden-sysout" depends="-init-forbidden-apis,compile-core">
     <forbidden-apis bundledSignatures="jdk-system-out" classpathref="forbidden-apis.allclasses.classpath">
       <fileset dir="${build.dir}/classes/java" excludes="${forbidden-sysout-excludes}"/>

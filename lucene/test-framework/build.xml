@@ -51,6 +51,7 @@
     </forbidden-apis>
   </target>
   <target name="-check-forbidden-sysout"/>
+  <target name="-check-forbidden-rue"/>
 
   <target name="javadocs-core" depends="javadocs"/>
   <target name="javadocs" depends="init,javadocs-lucene-core,javadocs-lucene-codecs">

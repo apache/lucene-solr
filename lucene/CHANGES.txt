@@ -24,6 +24,11 @@ Test Framework
 
 * LUCENE-5449: Rename _TestUtil and _TestHelper to remove the leading _.
 
+Build
+
+* LUCENE-5463: RamUsageEstimator.(human)sizeOf(Object) is now a forbidden API.
+  (Adrien Grand, Robert Muir)
+
 ======================= Lucene 4.7.0 =======================
 
 New Features

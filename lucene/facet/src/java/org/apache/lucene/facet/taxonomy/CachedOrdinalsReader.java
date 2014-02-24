@@ -136,13 +136,21 @@ public class CachedOrdinalsReader extends OrdinalsReader {
         this.ordinals = ords;
       }
     }
+
+    public long ramBytesUsed() {
+      long mem = RamUsageEstimator.shallowSizeOf(this) + RamUsageEstimator.sizeOf(offsets);
+      if (offsets != ordinals) {
+        mem += RamUsageEstimator.sizeOf(ordinals);
+      }
+      return mem;
+    }
   }
 
   /** How many bytes is this cache using? */
   public synchronized long ramBytesUsed() {
     long bytes = 0;
     for(CachedOrds ords : ordsCache.values()) {
-      bytes += RamUsageEstimator.sizeOf(ords);
+      bytes += ords.ramBytesUsed();
     }
 
     return bytes;
