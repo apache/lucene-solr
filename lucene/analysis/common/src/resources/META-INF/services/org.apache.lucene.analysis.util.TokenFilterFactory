@@ -51,6 +51,7 @@ org.apache.lucene.analysis.hi.HindiNormalizationFilterFactory
 org.apache.lucene.analysis.hi.HindiStemFilterFactory
 org.apache.lucene.analysis.hu.HungarianLightStemFilterFactory
 org.apache.lucene.analysis.hunspell.HunspellStemFilterFactory
+org.apache.lucene.analysis.hunspell2.Hunspell2StemFilterFactory
 org.apache.lucene.analysis.id.IndonesianStemFilterFactory
 org.apache.lucene.analysis.in.IndicNormalizationFilterFactory
 org.apache.lucene.analysis.it.ItalianLightStemFilterFactory
