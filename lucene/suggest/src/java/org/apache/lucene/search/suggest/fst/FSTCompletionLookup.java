@@ -19,26 +19,27 @@ package org.apache.lucene.search.suggest.fst;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup;
-import org.apache.lucene.search.suggest.Sort.SortInfo;
-import org.apache.lucene.search.suggest.Sort;
 import org.apache.lucene.search.suggest.fst.FSTCompletion.Completion;
 import org.apache.lucene.search.suggest.tst.TSTLookup;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
-import org.apache.lucene.store.InputStreamDataInput;
-import org.apache.lucene.store.OutputStreamDataOutput;
-import org.apache.lucene.util.*;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.NoOutputs;
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.OfflineSorter;
+import org.apache.lucene.util.OfflineSorter.SortInfo;
+import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.UnicodeUtil;
 
 /**
  * An adapter from {@link Lookup} API to {@link FSTCompletion}.
@@ -150,12 +151,12 @@ public class FSTCompletionLookup extends Lookup {
       throw new IllegalArgumentException("this suggester doesn't support payloads");
     }
     File tempInput = File.createTempFile(
-        FSTCompletionLookup.class.getSimpleName(), ".input", Sort.defaultTempDir());
+        FSTCompletionLookup.class.getSimpleName(), ".input", OfflineSorter.defaultTempDir());
     File tempSorted = File.createTempFile(
-        FSTCompletionLookup.class.getSimpleName(), ".sorted", Sort.defaultTempDir());
+        FSTCompletionLookup.class.getSimpleName(), ".sorted", OfflineSorter.defaultTempDir());
 
-    Sort.ByteSequencesWriter writer = new Sort.ByteSequencesWriter(tempInput);
-    Sort.ByteSequencesReader reader = null;
+    OfflineSorter.ByteSequencesWriter writer = new OfflineSorter.ByteSequencesWriter(tempInput);
+    OfflineSorter.ByteSequencesReader reader = null;
     ExternalRefSorter sorter = null;
 
     // Push floats up front before sequences to sort them. For now, assume they are non-negative.
@@ -180,13 +181,13 @@ public class FSTCompletionLookup extends Lookup {
 
       // We don't know the distribution of scores and we need to bucket them, so we'll sort
       // and divide into equal buckets.
-      SortInfo info = new Sort().sort(tempInput, tempSorted);
+      SortInfo info = new OfflineSorter().sort(tempInput, tempSorted);
       tempInput.delete();
       FSTCompletionBuilder builder = new FSTCompletionBuilder(
-          buckets, sorter = new ExternalRefSorter(new Sort()), sharedTailLength);
+          buckets, sorter = new ExternalRefSorter(new OfflineSorter()), sharedTailLength);
 
       final int inputLines = info.lines;
-      reader = new Sort.ByteSequencesReader(tempSorted);
+      reader = new OfflineSorter.ByteSequencesReader(tempSorted);
       long line = 0;
       int previousBucket = 0;
       int previousScore = 0;

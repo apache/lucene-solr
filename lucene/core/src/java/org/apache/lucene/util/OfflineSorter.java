@@ -1,4 +1,4 @@
-package org.apache.lucene.search.suggest;
+package org.apache.lucene.util;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,11 +17,24 @@ package org.apache.lucene.search.suggest;
  * limitations under the License.
  */
 
-import java.io.*;
-import java.util.*;
-
-import org.apache.lucene.util.*;
-import org.apache.lucene.util.PriorityQueue;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.Closeable;
+import java.io.DataInput;
+import java.io.DataInputStream;
+import java.io.DataOutput;
+import java.io.DataOutputStream;
+import java.io.EOFException;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
 
 /**
  * On-disk sorting of byte arrays. Each byte array (entry) is a composed of the following
@@ -35,7 +48,7 @@ import org.apache.lucene.util.PriorityQueue;
  * @lucene.experimental
  * @lucene.internal
  */
-public final class Sort {
+public final class OfflineSorter {
   /** Convenience constant for megabytes */
   public final static long MB = 1024 * 1024;
   /** Convenience constant for gigabytes */
@@ -170,7 +183,7 @@ public final class Sort {
    * @see #defaultTempDir()
    * @see BufferSize#automatic()
    */
-  public Sort() throws IOException {
+  public OfflineSorter() throws IOException {
     this(DEFAULT_COMPARATOR, BufferSize.automatic(), defaultTempDir(), MAX_TEMPFILES);
   }
   
@@ -180,14 +193,14 @@ public final class Sort {
    * @see #defaultTempDir()
    * @see BufferSize#automatic()
    */
-  public Sort(Comparator<BytesRef> comparator) throws IOException {
+  public OfflineSorter(Comparator<BytesRef> comparator) throws IOException {
     this(comparator, BufferSize.automatic(), defaultTempDir(), MAX_TEMPFILES);
   }
 
   /**
    * All-details constructor.
    */
-  public Sort(Comparator<BytesRef> comparator, BufferSize ramBufferSize, File tempDirectory, int maxTempfiles) {
+  public OfflineSorter(Comparator<BytesRef> comparator, BufferSize ramBufferSize, File tempDirectory, int maxTempfiles) {
     if (ramBufferSize.bytes < ABSOLUTE_MIN_SORT_BUFFER_SIZE) {
       throw new IllegalArgumentException(MIN_BUFFER_SIZE_MSG + ": " + ramBufferSize.bytes);
     }
