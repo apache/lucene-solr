@@ -86,10 +86,6 @@ public class TestRamUsageEstimator extends LuceneTestCase {
       double[] array = new double[rnd.nextInt(1024)];
       assertEquals(sizeOf(array), sizeOf((Object) array));
     }
-    {
-      String s = RandomStrings.randomUnicodeOfCodepointLength(random(), random().nextInt(10));
-      assertEquals(sizeOf(s), sizeOf((Object) s));
-    }
   }
   
   public void testReferenceSize() {
