@@ -36,8 +36,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
@@ -580,7 +578,7 @@ public final class ZkController {
       for (Slice slice : slices) {
         Collection<Replica> replicas = slice.getReplicas();
         for (Replica replica : replicas) {
-          if (replica.getNodeName().equals(getNodeName())
+          if (getNodeName().equals(replica.getNodeName())
               && !(replica.getStr(ZkStateReader.STATE_PROP)
                   .equals(ZkStateReader.DOWN))) {
             ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, "state",
@@ -1355,6 +1353,8 @@ public final class ZkController {
   public void preRegister(CoreDescriptor cd ) {
 
     String coreNodeName = getCoreNodeName(cd);
+
+    checkStateInZk(cd);
     // before becoming available, make sure we are not live and active
     // this also gets us our assigned shard id if it was not specified
     try {
@@ -1383,6 +1383,31 @@ public final class ZkController {
       doGetShardIdAndNodeNameProcess(cd);
     }
 
+  }
+
+  private void checkStateInZk(CoreDescriptor cd) {
+    if(!Overseer.isLegacy(zkStateReader.getClusterProps())){
+      DocCollection coll = zkStateReader.getClusterState().getCollection(cd.getCollectionName());
+      CloudDescriptor cloudDesc = cd.getCloudDescriptor();
+      if(cloudDesc.getShardId() == null) throw new RuntimeException("No shard id for :"+ cd.toString());
+      Slice slice = coll.getSlice(cloudDesc.getShardId());
+      if(slice == null) throw new RuntimeException("Invalid slice : "+cloudDesc.getShardId());
+      Replica replica = null;
+      if(cloudDesc.getCoreNodeName() !=null){
+        replica = slice.getReplica(cloudDesc.getCoreNodeName());
+      } else {
+        for (Replica r : slice.getReplicas()) {
+          if(cd.getName().equals(r.get(ZkStateReader.CORE_NAME_PROP)) && getBaseUrl().equals(r.get(ZkStateReader.BASE_URL_PROP))){
+            replica = r;
+            break;
+          }
+        }
+      }
+      if(replica == null){
+        throw new RuntimeException(" No such replica in clusterstate "+cd.toString());
+      }
+
+    }
   }
 
   private ZkCoreNodeProps waitForLeaderToSeeDownState(

@@ -17,6 +17,7 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import static org.apache.solr.cloud.CollectionsAPIDistributedZkTest.setClusterProp;
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 
 import java.net.URL;
@@ -30,15 +31,15 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 
-@Ignore("Not currently valid see SOLR-5580")
+//@Ignore("Not currently valid see SOLR-5580")
 public class DeleteInactiveReplicaTest extends DeleteReplicaTest{
-  private CloudSolrServer client;
 
   @Override
   public void doTest() throws Exception {
@@ -48,64 +49,62 @@ public class DeleteInactiveReplicaTest extends DeleteReplicaTest{
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    client = createCloudClient(null);
   }
   
   @After
   public void tearDown() throws Exception {
     super.tearDown();
-    client.shutdown();
   }
   
   private void deleteInactiveReplicaTest() throws Exception {
+    CloudSolrServer client = createCloudClient(null);
+
     String collectionName = "delDeadColl";
+
+    setClusterProp(client, ZkStateReader.LEGACY_CLOUD, "false");
     
     createCollection(collectionName, client);
     
     waitForRecoveriesToFinish(collectionName, false);
-    
+
+    Thread.sleep(3000);
+
     boolean stopped = false;
     JettySolrRunner stoppedJetty = null;
     StringBuilder sb = new StringBuilder();
     Replica replica1 = null;
     Slice shard1 = null;
-    DocCollection testcoll = getCommonCloudSolrServer().getZkStateReader()
-        .getClusterState().getCollection(collectionName);
-    for (JettySolrRunner jetty : jettys)
-      sb.append(jetty.getBaseUrl()).append(",");
-    
-    for (Slice slice : testcoll.getActiveSlices()) {
-      for (Replica replica : slice.getReplicas())
-        for (JettySolrRunner jetty : jettys) {
-          URL baseUrl = null;
-          try {
-            baseUrl = jetty.getBaseUrl();
-          } catch (Exception e) {
-            continue;
+    long timeout = System.currentTimeMillis() + 3000;
+    DocCollection testcoll = null;
+    while(!stopped && System.currentTimeMillis()<timeout ) {
+      testcoll = client.getZkStateReader().getClusterState().getCollection(collectionName);
+      for (JettySolrRunner jetty : jettys)
+        sb.append(jetty.getBaseUrl()).append(",");
+
+      for (Slice slice : testcoll.getActiveSlices()) {
+        for (Replica replica : slice.getReplicas())
+          for (JettySolrRunner jetty : jettys) {
+            URL baseUrl = null;
+            try {
+              baseUrl = jetty.getBaseUrl();
+            } catch (Exception e) {
+              continue;
+            }
+            if (baseUrl.toString().startsWith(
+                replica.getStr(ZkStateReader.BASE_URL_PROP))) {
+              stoppedJetty = jetty;
+              ChaosMonkey.stop(jetty);
+              replica1 = replica;
+              shard1 = slice;
+              stopped = true;
+              break;
+            }
           }
-          if (baseUrl.toString().startsWith(
-              replica.getStr(ZkStateReader.BASE_URL_PROP))) {
-            stoppedJetty = jetty;
-            ChaosMonkey.stop(jetty);
-            replica1 = replica;
-            shard1 = slice;
-            stopped = true;
-            break;
-          }
-        }
+      }
+      Thread.sleep(100);
     }
-    
-    /*
-     * final Slice shard1 = testcoll.getSlices().iterator().next();
-     * if(!shard1.getState().equals(Slice.ACTIVE)) fail("shard is not active");
-     * Replica replica1 = shard1.getReplicas().iterator().next();
-     * JettySolrRunner stoppedJetty = null; StringBuilder sb = new
-     * StringBuilder(); for (JettySolrRunner jetty : jettys) {
-     * sb.append(jetty.getBaseUrl()).append(","); if(
-     * jetty.getBaseUrl().toString
-     * ().startsWith(replica1.getStr(ZkStateReader.BASE_URL_PROP)) ) {
-     * stoppedJetty = jetty; ChaosMonkey.stop(jetty); stopped = true; break; } }
-     */
+
+
     if (!stopped) {
       fail("Could not find jetty to stop in collection " + testcoll
           + " jettys: " + sb);
@@ -114,7 +113,7 @@ public class DeleteInactiveReplicaTest extends DeleteReplicaTest{
     long endAt = System.currentTimeMillis() + 3000;
     boolean success = false;
     while (System.currentTimeMillis() < endAt) {
-      testcoll = getCommonCloudSolrServer().getZkStateReader()
+      testcoll = client.getZkStateReader()
           .getClusterState().getCollection(collectionName);
       if (!"active".equals(testcoll.getSlice(shard1.getName())
           .getReplica(replica1.getName()).getStr(Slice.STATE))) {
@@ -123,19 +122,42 @@ public class DeleteInactiveReplicaTest extends DeleteReplicaTest{
       if (success) break;
       Thread.sleep(100);
     }
+
     log.info("removed_replicas {}/{} ", shard1.getName(), replica1.getName());
     removeAndWaitForReplicaGone(collectionName, client, replica1,
         shard1.getName());
-    
     ChaosMonkey.start(stoppedJetty);
     log.info("restarted jetty");
-    
+
     Map m = makeMap("qt", "/admin/cores", "action", "status");
-    
-    NamedList<Object> resp = new HttpSolrServer(replica1.getStr("base_url"))
+
+    NamedList<Object> resp = new HttpSolrServer(replica1.getStr(ZkStateReader.BASE_URL_PROP))
         .request(new QueryRequest(new MapSolrParams(m)));
     assertNull("The core is up and running again",
         ((NamedList) resp.get("status")).get(replica1.getStr("core")));
-    
+
+
+    Exception exp = null;
+
+    try {
+
+      m = makeMap(
+          "action", CoreAdminParams.CoreAdminAction.CREATE.toString(),
+          ZkStateReader.COLLECTION_PROP, collectionName,
+          ZkStateReader.SHARD_ID_PROP, "shard2",
+          CoreAdminParams.NAME, "testcore");
+
+      QueryRequest request = new QueryRequest(new MapSolrParams(m));
+      request.setPath("/admin/cores");
+      NamedList<Object> rsp = client.request(request);
+    } catch (Exception e) {
+      exp = e;
+      log.info("error_expected",e);
+    }
+    assertNotNull( "Exception expected", exp);
+    setClusterProp(client,ZkStateReader.LEGACY_CLOUD,null);
+    client.shutdown();
+
+
   }
 }
