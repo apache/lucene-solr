@@ -60,6 +60,10 @@ Other Changes
   
 * SOLR-5765: Update to SLF4J 1.7.6. (Mark Miller)
 
+* SOLR-5609: If legacy mode is disabled don't let cores create slices/replicas/collections .
+  All operations should be performed through collection API (Noble Paul)
+
+* SOLR-5130: Implement addReplica Collections API (Noble Paul)
 
 ==================  4.7.0 ==================
 
