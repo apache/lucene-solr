@@ -35,7 +35,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
@@ -77,12 +76,9 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
-import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -1307,9 +1303,11 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     boolean changed = false;
     while(System.currentTimeMillis() <tomeOut){
       Thread.sleep(10);
-      changed = Objects.equals(val,client.getZkStateReader().getClusterProps().get(name));
+      Object b = client.getZkStateReader().getClusterProps().get(name);
+      changed = (val == b) || (val != null && val.equals(b));
       if(changed) break;
     }
     return changed;
   }
+
 }
