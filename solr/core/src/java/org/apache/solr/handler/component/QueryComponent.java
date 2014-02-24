@@ -625,7 +625,7 @@ public class QueryComponent extends SearchComponent
       return ResponseBuilder.STAGE_GET_FIELDS;
     }
     if (rb.stage < ResponseBuilder.STAGE_GET_FIELDS) return ResponseBuilder.STAGE_GET_FIELDS;
-    if (rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
+    if (rb.stage == ResponseBuilder.STAGE_GET_FIELDS && !rb.onePassDistributedQuery) {
       createRetrieveDocs(rb);
       return ResponseBuilder.STAGE_DONE;
     }
@@ -742,6 +742,17 @@ public class QueryComponent extends SearchComponent
     ShardRequest sreq = new ShardRequest();
     sreq.purpose = ShardRequest.PURPOSE_GET_TOP_IDS;
 
+    String keyFieldName = rb.req.getSchema().getUniqueKeyField().getName();
+
+    // one-pass algorithm if only id and score fields are requested, but not if fl=score since that's the same as fl=*,score
+    ReturnFields fields = rb.rsp.getReturnFields();
+
+    if(fields != null && fields.wantsField(keyFieldName)
+        && fields.getRequestedFieldNames() != null && Arrays.asList(keyFieldName, "score").containsAll(fields.getRequestedFieldNames())) {
+      sreq.purpose |= ShardRequest.PURPOSE_GET_FIELDS;
+      rb.onePassDistributedQuery = true;
+    }
+
     sreq.params = new ModifiableSolrParams(rb.req.getParams());
     // TODO: base on current params or original params?
 
@@ -772,9 +783,9 @@ public class QueryComponent extends SearchComponent
     sreq.params.set(ResponseBuilder.FIELD_SORT_VALUES,"true");
 
     if ( (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES)!=0 || rb.getSortSpec().includesScore()) {
-      sreq.params.set(CommonParams.FL, rb.req.getSchema().getUniqueKeyField().getName() + ",score");
+      sreq.params.set(CommonParams.FL, keyFieldName + ",score");
     } else {
-      sreq.params.set(CommonParams.FL, rb.req.getSchema().getUniqueKeyField().getName());      
+      sreq.params.set(CommonParams.FL, keyFieldName);
     }
 
     rb.addRequest(this, sreq);
@@ -1105,24 +1116,24 @@ public class QueryComponent extends SearchComponent
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0) {
       boolean returnScores = (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0;
 
-      assert(sreq.responses.size() == 1);
-      ShardResponse srsp = sreq.responses.get(0);
-      SolrDocumentList docs = (SolrDocumentList)srsp.getSolrResponse().getResponse().get("response");
-
       String keyFieldName = rb.req.getSchema().getUniqueKeyField().getName();
       boolean removeKeyField = !rb.rsp.getReturnFields().wantsField(keyFieldName);
 
-      for (SolrDocument doc : docs) {
-        Object id = doc.getFieldValue(keyFieldName);
-        ShardDoc sdoc = rb.resultIds.get(id.toString());
-        if (sdoc != null) {
-          if (returnScores && sdoc.score != null) {
+      for (ShardResponse srsp : sreq.responses) {
+        SolrDocumentList docs = (SolrDocumentList) srsp.getSolrResponse().getResponse().get("response");
+
+        for (SolrDocument doc : docs) {
+          Object id = doc.getFieldValue(keyFieldName);
+          ShardDoc sdoc = rb.resultIds.get(id.toString());
+          if (sdoc != null) {
+            if (returnScores && sdoc.score != null) {
               doc.setField("score", sdoc.score);
+            }
+            if (removeKeyField) {
+              doc.removeFields(keyFieldName);
+            }
+            rb._responseDocs.set(sdoc.positionInResponse, doc);
           }
-          if(removeKeyField) {
-            doc.removeFields(keyFieldName);
-          }
-          rb._responseDocs.set(sdoc.positionInResponse, doc);
         }
       }
     }
