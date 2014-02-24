@@ -320,6 +320,11 @@ public final class RamUsageEstimator {
     return alignObjectSize((long) NUM_BYTES_ARRAY_HEADER + (long) NUM_BYTES_DOUBLE * arr.length);
   }
 
+  /** Returns the size in bytes of the String object. */
+  public static long sizeOf(String s) {
+    return shallowSizeOf(s) + alignObjectSize(NUM_BYTES_ARRAY_HEADER + NUM_BYTES_CHAR * s.length());
+  }
+
   /** 
    * Estimates the RAM usage by the given object. It will
    * walk the object tree and sum up all referenced objects.
