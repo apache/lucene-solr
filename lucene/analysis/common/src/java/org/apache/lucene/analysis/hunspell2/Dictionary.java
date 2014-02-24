@@ -35,11 +35,11 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.TreeMap;
 
 /**
  * In-memory structure for the dictionary (.dic) and affix (.aff)
@@ -93,16 +93,10 @@ public class Dictionary {
     buffered.reset();
     CharsetDecoder decoder = getJavaEncoding(encoding);
     readAffixFile(buffered, decoder);
-    TreeMap<BytesRef,Integer> tempWords = new TreeMap<BytesRef,Integer>();
     flagLookup.add(new BytesRef()); // no flags -> ord 0
-    readDictionaryFile(dictionary, decoder, tempWords);
     PositiveIntOutputs o = PositiveIntOutputs.getSingleton();
-    Builder<Long> b = new Builder<Long>(FST.INPUT_TYPE.BYTE4, o); // nocommit: byte4
-    IntsRef scratchInts = new IntsRef();
-    for (Map.Entry<BytesRef,Integer> e : tempWords.entrySet()) {
-      UnicodeUtil.UTF8toUTF32(e.getKey(), scratchInts);
-      b.add(scratchInts, e.getValue().longValue());
-    }
+    Builder<Long> b = new Builder<Long>(FST.INPUT_TYPE.BYTE4, o);
+    readDictionaryFile(dictionary, decoder, b);
     words = b.finish();
   }
 
@@ -366,20 +360,51 @@ public class Dictionary {
    * @param decoder CharsetDecoder used to decode the contents of the file
    * @throws IOException Can be thrown while reading from the file
    */
-  private void readDictionaryFile(InputStream dictionary, CharsetDecoder decoder, TreeMap<BytesRef,Integer> words) throws IOException {
+  private void readDictionaryFile(InputStream dictionary, CharsetDecoder decoder, Builder<Long> words) throws IOException {
     BytesRef flagsScratch = new BytesRef();
-    BytesRef flagsScratch2 = new BytesRef();
+    IntsRef scratchInts = new IntsRef();
     
     BufferedReader reader = new BufferedReader(new InputStreamReader(dictionary, decoder));
     // TODO: don't create millions of strings.
-    String line = reader.readLine(); // first line is number of entries
+    String line = reader.readLine(); // first line is number of entries (approximately, sometimes)
     // sometimes the number of entries has a comment/copyright after it
     line = line.replaceFirst("\\s*\\#.*$", "");
     int numEntries = Integer.parseInt(line);
     
+    String lines[] = new String[numEntries];
+    int upto = 0;
+    while ((line = reader.readLine()) != null) {
+      if (upto == lines.length) {
+        lines = Arrays.copyOf(lines, (int)(lines.length * 1.25));
+      }
+      lines[upto++] = line;
+    }
+    
+    // TODO: just replace this with offline sorter?
+    Arrays.sort(lines, 0, upto, new Comparator<String>() {
+      @Override
+      public int compare(String o1, String o2) {
+        int sep1 = o1.lastIndexOf('/');
+        if (sep1 >= 0) {
+          o1 = o1.substring(0, sep1);
+        }
+        
+        int sep2 = o2.lastIndexOf('/');
+        if (sep2 >= 0) {
+          o2 = o2.substring(0, sep2);
+        }
+        return o1.compareTo(o2);
+      }
+    });
+    
     // TODO: the flags themselves can be double-chars (long) or also numeric
     // either way the trick is to encode them as char... but they must be parsed differently
-    while ((line = reader.readLine()) != null) {
+    
+    BytesRef currentEntry = new BytesRef();
+    char currentFlags[] = new char[0];
+    
+    for (int i = 0; i < upto; i++) {
+      line = lines[i];
       String entry;
       char wordForm[];
       
@@ -405,24 +430,33 @@ public class Dictionary {
       }
 
       BytesRef scratch = new BytesRef(entry);
-      Integer existingOrd = words.get(scratch);
-      final char mergedEntries[];
-      if (existingOrd == null || existingOrd == 0) {
-        mergedEntries = wordForm;
+      int cmp = scratch.compareTo(currentEntry);
+      if (cmp < 0) {
+        throw new IllegalArgumentException("out of order: " + scratch.utf8ToString() + " < " + currentEntry.utf8ToString());
+      } else if (cmp == 0) {
+        currentFlags = merge(currentFlags, wordForm);
       } else {
-        flagLookup.get(existingOrd, flagsScratch2);
-        mergedEntries = merge(decodeFlags(flagsScratch2), wordForm);
+        final int hashCode = encodeFlagsWithHash(flagsScratch, currentFlags);
+        int ord = flagLookup.add(flagsScratch, hashCode);
+        if (ord < 0) {
+          // already exists in our hash
+          ord = (-ord)-1;
+        }
+        UnicodeUtil.UTF8toUTF32(currentEntry, scratchInts);
+        words.add(scratchInts, (long)ord);
+        currentEntry = scratch;
+        currentFlags = wordForm;
       }
-
-      final int hashCode = encodeFlagsWithHash(flagsScratch, mergedEntries);
-      int ord = flagLookup.add(flagsScratch, hashCode);
-      if (ord < 0) {
-        // already exists in our hash
-        ord = (-ord)-1;
-      }
-      
-      words.put(scratch, ord);
     }
+    
+    final int hashCode = encodeFlagsWithHash(flagsScratch, currentFlags);
+    int ord = flagLookup.add(flagsScratch, hashCode);
+    if (ord < 0) {
+      // already exists in our hash
+      ord = (-ord)-1;
+    }
+    UnicodeUtil.UTF8toUTF32(currentEntry, scratchInts);
+    words.add(scratchInts, (long)ord);
   }
   
   static char[] decodeFlags(BytesRef b) {
