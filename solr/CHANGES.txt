@@ -89,6 +89,13 @@ Bug Fixes
 * SOLR-5647: The lib paths in example-schemaless will now load correctly.
   (Paul Westin via Shawn Heisey)
 
+Optimizations
+----------------------
+* SOLR-1880: Distributed Search skips GET_FIELDS stage if EXECUTE_QUERY
+  stage gets all fields. Requests with fl=id or fl=id,score are now single-pass.
+  (Shawn Smith, Vitaliy Zhovtyuk, shalin)
+
+
 Other Changes
 ---------------------
 

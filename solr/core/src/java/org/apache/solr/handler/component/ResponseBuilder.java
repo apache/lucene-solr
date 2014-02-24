@@ -157,6 +157,7 @@ public class ResponseBuilder
   // returned sequence.
   // Only valid after STAGE_EXECUTE_QUERY has completed.
 
+  public boolean onePassDistributedQuery;
 
   public FacetComponent.FacetInfo _facetInfo;
   /* private... components that don't own these shouldn't use them */
