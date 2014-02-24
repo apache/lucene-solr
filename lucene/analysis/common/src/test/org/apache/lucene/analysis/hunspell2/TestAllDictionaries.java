@@ -26,13 +26,14 @@ import org.apache.lucene.analysis.hunspell.HunspellDictionary;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.junit.Ignore;
 
 /**
  * Can be retrieved via:
  * wget --mirror -np http://archive.services.openoffice.org/pub/mirror/OpenOffice.org/contrib/dictionaries/
  * Note some of the files differ only in case. This may be a problem on your operating system!
  */
-//@Ignore("enable manually")
+@Ignore("enable manually")
 public class TestAllDictionaries extends LuceneTestCase {
   
   // set this to the location of where you downloaded all the files

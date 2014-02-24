@@ -17,7 +17,6 @@ package org.apache.lucene.analysis.hunspell2;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.hunspell2.Stemmer.Stem;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
