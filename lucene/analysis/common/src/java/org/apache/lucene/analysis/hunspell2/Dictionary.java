@@ -20,7 +20,11 @@ package org.apache.lucene.analysis.hunspell2;
 import org.apache.lucene.analysis.util.CharArrayMap;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.OfflineSorter;
+import org.apache.lucene.util.OfflineSorter.ByteSequencesReader;
+import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util.fst.Builder;
@@ -75,6 +79,8 @@ public class Dictionary {
 
   private String[] aliases;
   private int aliasCount = 0;
+  
+  private final File tempDir = OfflineSorter.defaultTempDir(); // TODO: make this configurable?
 
   /**
    * Creates a new Dictionary containing the information read from the provided InputStreams to hunspell affix
@@ -364,38 +370,53 @@ public class Dictionary {
     BytesRef flagsScratch = new BytesRef();
     IntsRef scratchInts = new IntsRef();
     
-    BufferedReader reader = new BufferedReader(new InputStreamReader(dictionary, decoder));
-    // TODO: don't create millions of strings.
-    String line = reader.readLine(); // first line is number of entries (approximately, sometimes)
-    // sometimes the number of entries has a comment/copyright after it
-    line = line.replaceFirst("\\s*\\#.*$", "");
-    int numEntries = Integer.parseInt(line);
+    BufferedReader lines = new BufferedReader(new InputStreamReader(dictionary, decoder));
+    String line = lines.readLine(); // first line is number of entries (approximately, sometimes)
     
-    String lines[] = new String[numEntries];
-    int upto = 0;
-    while ((line = reader.readLine()) != null) {
-      if (upto == lines.length) {
-        lines = Arrays.copyOf(lines, (int)(lines.length * 1.25));
+    File unsorted = File.createTempFile("unsorted", "dat", tempDir);
+    try (ByteSequencesWriter writer = new ByteSequencesWriter(unsorted)) {
+      while ((line = lines.readLine()) != null) {
+        writer.write(line.getBytes(IOUtils.CHARSET_UTF_8));
       }
-      lines[upto++] = line;
     }
+    File sorted = File.createTempFile("sorted", "dat", tempDir);
     
-    // TODO: just replace this with offline sorter?
-    Arrays.sort(lines, 0, upto, new Comparator<String>() {
+    OfflineSorter sorter = new OfflineSorter(new Comparator<BytesRef>() {
+      BytesRef scratch1 = new BytesRef();
+      BytesRef scratch2 = new BytesRef();
+      
       @Override
-      public int compare(String o1, String o2) {
-        int sep1 = o1.lastIndexOf('/');
-        if (sep1 >= 0) {
-          o1 = o1.substring(0, sep1);
+      public int compare(BytesRef o1, BytesRef o2) {
+        scratch1.bytes = o1.bytes;
+        scratch1.offset = o1.offset;
+        scratch1.length = o1.length;
+        
+        for (int i = scratch1.length - 1; i >= 0; i--) {
+          if (scratch1.bytes[scratch1.offset + i] == '/') {
+            scratch1.length = i;
+            break;
+          }
         }
         
-        int sep2 = o2.lastIndexOf('/');
-        if (sep2 >= 0) {
-          o2 = o2.substring(0, sep2);
+        scratch2.bytes = o2.bytes;
+        scratch2.offset = o2.offset;
+        scratch2.length = o2.length;
+        
+        for (int i = scratch2.length - 1; i >= 0; i--) {
+          if (scratch2.bytes[scratch2.offset + i] == '/') {
+            scratch2.length = i;
+            break;
+          }
         }
-        return o1.compareTo(o2);
+        
+        return scratch1.compareTo(scratch2);
       }
     });
+    sorter.sort(unsorted, sorted);
+    unsorted.delete();
+    
+    ByteSequencesReader reader = new ByteSequencesReader(sorted);
+    BytesRef scratchLine = new BytesRef();
     
     // TODO: the flags themselves can be double-chars (long) or also numeric
     // either way the trick is to encode them as char... but they must be parsed differently
@@ -403,8 +424,8 @@ public class Dictionary {
     BytesRef currentEntry = new BytesRef();
     char currentFlags[] = new char[0];
     
-    for (int i = 0; i < upto; i++) {
-      line = lines[i];
+    while (reader.read(scratchLine)) {
+      line = scratchLine.utf8ToString();
       String entry;
       char wordForm[];
       
@@ -457,6 +478,9 @@ public class Dictionary {
     }
     UnicodeUtil.UTF8toUTF32(currentEntry, scratchInts);
     words.add(scratchInts, (long)ord);
+    
+    reader.close();
+    sorted.delete();
   }
   
   static char[] decodeFlags(BytesRef b) {
