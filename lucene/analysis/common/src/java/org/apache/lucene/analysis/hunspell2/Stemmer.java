@@ -126,7 +126,8 @@ final class Stemmer {
 
       for (Affix suffix : suffixes) {
         if (hasCrossCheckedFlag(suffix.getFlag(), flags)) {
-          int deAffixedLength = length - suffix.getAppend().length();
+          int appendLength = length - i;
+          int deAffixedLength = length - appendLength;
           // TODO: can we do this in-place?
           String strippedWord = new StringBuilder().append(word, 0, deAffixedLength).append(suffix.getStrip()).toString();
 
@@ -148,7 +149,7 @@ final class Stemmer {
 
       for (Affix prefix : prefixes) {
         if (hasCrossCheckedFlag(prefix.getFlag(), flags)) {
-          int deAffixedStart = prefix.getAppend().length();
+          int deAffixedStart = i;
           int deAffixedLength = length - deAffixedStart;
 
           String strippedWord = new StringBuilder().append(prefix.getStrip())

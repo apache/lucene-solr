@@ -24,7 +24,6 @@ import java.util.regex.Pattern;
  */
 final class Affix {
 
-  private String append; // the affix itself, what is appended
   private char appendFlags[]; // continuation class flags
   private String strip;
   
@@ -42,24 +41,6 @@ final class Affix {
    */
   public boolean checkCondition(CharSequence text) {
     return conditionPattern.matcher(text).matches();
-  }
-
-  /**
-   * Returns the append defined for the affix
-   *
-   * @return Defined append
-   */
-  public String getAppend() {
-    return append;
-  }
-
-  /**
-   * Sets the append defined for the affix
-   *
-   * @param append Defined append for the affix
-   */
-  public void setAppend(String append) {
-    this.append = append;
   }
 
   /**

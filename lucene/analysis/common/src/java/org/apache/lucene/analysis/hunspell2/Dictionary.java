@@ -257,9 +257,7 @@ public class Dictionary {
         char appendFlags[] = flagParsingStrategy.parseFlags(flagPart);
         Arrays.sort(appendFlags);
         affix.setAppendFlags(appendFlags);
-        affix.setAppend(affixArg.substring(0, flagSep));
-      } else {
-        affix.setAppend(affixArg);
+        affixArg = affixArg.substring(0, flagSep);
       }
 
       String condition = ruleArgs[4];
@@ -283,10 +281,10 @@ public class Dictionary {
       affix.setCondition(patterns.get(patternIndex));
       affix.setCrossProduct(crossProduct);
       
-      List<Affix> list = affixes.get(affix.getAppend());
+      List<Affix> list = affixes.get(affixArg);
       if (list == null) {
         list = new ArrayList<Affix>();
-        affixes.put(affix.getAppend(), list);
+        affixes.put(affixArg, list);
       }
       
       list.add(affix);
