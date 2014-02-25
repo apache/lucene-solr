@@ -113,6 +113,9 @@ Other Changes
 * SOLR-5609: If legacy mode is disabled don't let cores create slices/replicas/collections .
   All operations should be performed through collection API (Noble Paul)
 
+* SOLR-5613: Upgrade to commons-codec 1.9 for better BeiderMorseFilter performance.
+  (Thomas Champagne, Shawn Heisey via shalin)
+
 ==================  4.7.0 ==================
 
 Versions of Major Components
