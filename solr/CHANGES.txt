@@ -82,6 +82,7 @@ Detailed Change List
 
 New Features
 ----------------------
+* SOLR-5130: Implement addReplica Collections API (Noble Paul)
 
 Bug Fixes
 ----------------------
@@ -111,8 +112,6 @@ Other Changes
 
 * SOLR-5609: If legacy mode is disabled don't let cores create slices/replicas/collections .
   All operations should be performed through collection API (Noble Paul)
-
-* SOLR-5130: Implement addReplica Collections API (Noble Paul)
 
 ==================  4.7.0 ==================
 
