@@ -198,7 +198,7 @@ public class SolrReturnFields extends ReturnFields {
             start = sp.pos;
           } else {
             if (Character.isWhitespace(ch) || ch == ',' || ch==0) {
-              addField( field, key, augmenters, req );
+              addField(field, key, augmenters, false);
               continue;
             }
             // an invalid field name... reset the position pointer to retry
@@ -213,7 +213,7 @@ public class SolrReturnFields extends ReturnFields {
           ch = sp.ch();
           if (field != null && (Character.isWhitespace(ch) || ch == ',' || ch==0)) {
             rename.add(field, key);
-            addField( field, key, augmenters, req );
+            addField(field, key, augmenters, false);
             continue;
           }
           // an invalid field name... reset the position pointer to retry
@@ -266,7 +266,7 @@ public class SolrReturnFields extends ReturnFields {
           else {
             // unknown transformer?
           }
-          addField(field, disp, augmenters, req);
+          addField(field, disp, augmenters, true);
           continue;
         }
 
@@ -307,6 +307,7 @@ public class SolrReturnFields extends ReturnFields {
             assert parser.getLocalParams() != null;
             sp.pos = start + parser.localParamsEnd;
           }
+          funcStr = sp.val.substring(start, sp.pos);
 
 
           if (q instanceof FunctionQuery) {
@@ -320,18 +321,12 @@ public class SolrReturnFields extends ReturnFields {
             if (localParams != null) {
               key = localParams.get("key");
             }
-            if (key == null) {
-              // use the function name itself as the field name
-              key = sp.val.substring(start, sp.pos);
-            }
           }
-
 
           if (key==null) {
             key = funcStr;
           }
-          okFieldNames.add( key );
-          okFieldNames.add( funcStr );
+          addField(funcStr, key, augmenters, true);
           augmenters.addTransformer( new ValueSourceAugmenter( key, parser, vs ) );
         }
         catch (SyntaxError e) {
@@ -341,7 +336,7 @@ public class SolrReturnFields extends ReturnFields {
 
           if (req.getSchema().getFieldOrNull(field) != null) {
             // OK, it was an oddly named field
-            fields.add(field);
+            addField(field, key, augmenters, false);
             if( key != null ) {
               rename.add(field, key);
             }
@@ -358,7 +353,7 @@ public class SolrReturnFields extends ReturnFields {
     }
   }
 
-  private void addField(String field, String key, DocTransformers augmenters, SolrQueryRequest req)
+  private void addField(String field, String key, DocTransformers augmenters, boolean isPseudoField)
   {
     if(reqFieldNames==null) {
       reqFieldNames = new LinkedHashSet<String>();
@@ -371,7 +366,12 @@ public class SolrReturnFields extends ReturnFields {
       reqFieldNames.add(key);
     }
 
-    fields.add(field); // need to put in the map to maintain order for things like CSVResponseWriter
+    if ( ! isPseudoField) {
+      // fields is returned by getLuceneFieldNames(), to be used to select which real fields
+      // to return, so pseudo-fields should not be added
+      fields.add(field);
+    }
+
     okFieldNames.add( field );
     okFieldNames.add( key );
     // a valid field name
