@@ -44,6 +44,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * In-memory structure for the dictionary (.dic) and affix (.aff)
@@ -67,6 +68,12 @@ public class Dictionary {
 
   public CharArrayMap<List<Affix>> prefixes;
   public CharArrayMap<List<Affix>> suffixes;
+  
+  // all Patterns used by prefixes and suffixes. these are typically re-used across
+  // many affix stripping rules. so these are deduplicated, to save RAM.
+  // TODO: maybe don't use Pattern for the condition check...
+  // TODO: when we cut over Affix to FST, just store integer index to this.
+  public ArrayList<Pattern> patterns = new ArrayList<>();
   
   // the entries in the .dic file, mapping to their set of flags.
   // the fst output is the ordinal for flagLookup
@@ -184,6 +191,7 @@ public class Dictionary {
   private void readAffixFile(InputStream affixStream, CharsetDecoder decoder) throws IOException, ParseException {
     prefixes = new CharArrayMap<List<Affix>>(Version.LUCENE_CURRENT, 8, false);
     suffixes = new CharArrayMap<List<Affix>>(Version.LUCENE_CURRENT, 8, false);
+    Map<String,Integer> seenPatterns = new HashMap<>();
 
     LineNumberReader reader = new LineNumberReader(new InputStreamReader(affixStream, decoder));
     String line = null;
@@ -191,9 +199,9 @@ public class Dictionary {
       if (line.startsWith(ALIAS_KEY)) {
         parseAlias(line);
       } else if (line.startsWith(PREFIX_KEY)) {
-        parseAffix(prefixes, line, reader, PREFIX_CONDITION_REGEX_PATTERN);
+        parseAffix(prefixes, line, reader, PREFIX_CONDITION_REGEX_PATTERN, seenPatterns);
       } else if (line.startsWith(SUFFIX_KEY)) {
-        parseAffix(suffixes, line, reader, SUFFIX_CONDITION_REGEX_PATTERN);
+        parseAffix(suffixes, line, reader, SUFFIX_CONDITION_REGEX_PATTERN, seenPatterns);
       } else if (line.startsWith(FLAG_KEY)) {
         // Assume that the FLAG line comes before any prefix or suffixes
         // Store the strategy so it can be used when parsing the dic file
@@ -210,12 +218,14 @@ public class Dictionary {
    * @param reader BufferedReader to read the content of the rule from
    * @param conditionPattern {@link String#format(String, Object...)} pattern to be used to generate the condition regex
    *                         pattern
+   * @param seenPatterns map from condition -> index of patterns, for deduplication.
    * @throws IOException Can be thrown while reading the rule
    */
   private void parseAffix(CharArrayMap<List<Affix>> affixes,
                           String header,
                           LineNumberReader reader,
-                          String conditionPattern) throws IOException, ParseException {
+                          String conditionPattern,
+                          Map<String,Integer> seenPatterns) throws IOException, ParseException {
     String args[] = header.split("\\s+");
 
     boolean crossProduct = args[2].equals("Y");
@@ -261,7 +271,16 @@ public class Dictionary {
       if (condition.indexOf('-') >= 0) {
         condition = condition.replace("-", "\\-");
       }
-      affix.setCondition(condition, String.format(Locale.ROOT, conditionPattern, condition));
+      // deduplicate patterns
+      String regex = String.format(Locale.ROOT, conditionPattern, condition);
+      Integer patternIndex = seenPatterns.get(regex);
+      if (patternIndex == null) {
+        patternIndex = patterns.size();
+        seenPatterns.put(regex, patternIndex);
+        Pattern pattern = Pattern.compile(regex);
+        patterns.add(pattern);
+      }
+      affix.setCondition(patterns.get(patternIndex));
       affix.setCrossProduct(crossProduct);
       
       List<Affix> list = affixes.get(affix.getAppend());

@@ -33,12 +33,12 @@ import org.junit.Ignore;
  * wget --mirror -np http://archive.services.openoffice.org/pub/mirror/OpenOffice.org/contrib/dictionaries/
  * Note some of the files differ only in case. This may be a problem on your operating system!
  */
-@Ignore("enable manually")
+//@Ignore("enable manually")
 public class TestAllDictionaries extends LuceneTestCase {
   
   // set this to the location of where you downloaded all the files
   static final File DICTIONARY_HOME = 
-      new File("/Users/rmuir/hunspell/archive.services.openoffice.org/pub/mirror/OpenOffice.org/contrib/dictionaries");
+      new File("/data/archive.services.openoffice.org/pub/mirror/OpenOffice.org/contrib/dictionaries");
   
   final String tests[] = {
     /* zip file */               /* dictionary */       /* affix */
@@ -176,7 +176,11 @@ public class TestAllDictionaries extends LuceneTestCase {
         try (InputStream dictionary = zip.getInputStream(dicEntry);
              InputStream affix = zip.getInputStream(affEntry)) {
           Dictionary dic = new Dictionary(affix, dictionary);
-          System.out.println(tests[i] + "\t" + oldRAM + "\t" + RamUsageEstimator.humanSizeOf(dic));
+          System.out.println(tests[i] + "\t" + oldRAM + "\t" + RamUsageEstimator.humanSizeOf(dic) + "\t(" +
+                             "words=" + RamUsageEstimator.humanSizeOf(dic.words) + ", " +
+                             "flags=" + RamUsageEstimator.humanSizeOf(dic.flagLookup) + ", " +
+                             "prefixes=" + RamUsageEstimator.humanSizeOf(dic.prefixes) + ", " +
+                             "suffixes=" + RamUsageEstimator.humanSizeOf(dic.suffixes) + ")");
         }
       }
     }

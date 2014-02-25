@@ -28,7 +28,6 @@ final class Affix {
   private char appendFlags[]; // continuation class flags
   private String strip;
   
-  private String condition;
   private Pattern conditionPattern;
   
   private char flag;
@@ -100,23 +99,12 @@ final class Affix {
   }
 
   /**
-   * Returns the condition that must be met before the affix can be applied
-   *
-   * @return Condition that must be met before the affix can be applied
-   */
-  public String getCondition() {
-    return condition;
-  }
-
-  /**
    * Sets the condition that must be met before the affix can be applied
    *
-   * @param condition Condition to be met before affix application
    * @param pattern Condition as a regular expression pattern
    */
-  public void setCondition(String condition, String pattern) {
-    this.condition = condition;
-    this.conditionPattern = Pattern.compile(pattern);
+  public void setCondition(Pattern pattern) {
+    this.conditionPattern = pattern;
   }
 
   /**
