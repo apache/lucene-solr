@@ -70,6 +70,9 @@ Other Changes
 * SOLR-5613: Upgrade to commons-codec 1.9 for better BeiderMorseFilter performance.
   (Thomas Champagne, Shawn Heisey via shalin)
 
+* SOLR-5771: Add SolrTestCaseJ4.SuppressSSL annotation to disable SSL (instead of static boolean).
+  (Robert Muir)
+
 ==================  4.7.0 ==================
 
 Versions of Major Components

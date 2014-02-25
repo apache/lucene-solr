@@ -22,6 +22,12 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -113,9 +119,17 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   private static String coreName = ConfigSolrXmlOld.DEFAULT_DEFAULT_CORE_NAME;
   public static int DEFAULT_CONNECTION_TIMEOUT = 60000;  // default socket connection timeout in ms
 
+  /**
+   * Annotation for test classes that want to disable SSL
+   */
+  @Documented
+  @Inherited
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.TYPE)
+  public @interface SuppressSSL {}
+  
   // these are meant to be accessed sequentially, but are volatile just to ensure any test
   // thread will read the latest value
-  protected static volatile boolean ALLOW_SSL = true;
   protected static volatile SSLTestConfig sslConfig;
 
   @ClassRule
@@ -170,9 +184,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     // clean up static
     sslConfig = null;
     
-    // reset SSL
-    ALLOW_SSL = true;
-    
     IpTables.unblockAllPorts();
   }
   
@@ -208,7 +219,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   private static SSLTestConfig buildSSLConfig() {
     // test has been disabled
-    if (!ALLOW_SSL) {
+    if (RandomizedContext.current().getTargetClass().isAnnotationPresent(SuppressSSL.class)) {
       return new SSLTestConfig();
     }
     
