@@ -17,6 +17,7 @@ package org.apache.lucene.analysis.hunspell2;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -92,10 +93,10 @@ public class TestStemmer extends LuceneTestCase {
   private void assertStemsTo(String s, String... expected) {
     Arrays.sort(expected);
     
-    List<Stem> stems = stemmer.stem(s);
+    List<CharsRef> stems = stemmer.stem(s);
     String actual[] = new String[stems.size()];
     for (int i = 0; i < actual.length; i++) {
-      actual[i] = stems.get(i).getStemString();
+      actual[i] = stems.get(i).toString();
     }
     Arrays.sort(actual);
     

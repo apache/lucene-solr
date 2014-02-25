@@ -24,6 +24,7 @@ import java.util.List;
 
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.Version;
 
 /**
@@ -63,7 +64,7 @@ final class Stemmer {
    * @param word Word to find the stems for
    * @return List of stems for the word
    */
-  public List<Stem> stem(String word) {
+  public List<CharsRef> stem(String word) {
     return stem(word.toCharArray(), word.length());
   }
 
@@ -73,10 +74,10 @@ final class Stemmer {
    * @param word Word to find the stems for
    * @return List of stems for the word
    */
-  public List<Stem> stem(char word[], int length) {
-    List<Stem> stems = new ArrayList<Stem>();
+  public List<CharsRef> stem(char word[], int length) {
+    List<CharsRef> stems = new ArrayList<CharsRef>();
     if (dictionary.lookupWord(word, 0, length, scratch) != null) {
-      stems.add(new Stem(word, length));
+      stems.add(new CharsRef(word, 0, length));
     }
     stems.addAll(stem(word, length, null, 0));
     return stems;
@@ -88,18 +89,18 @@ final class Stemmer {
    * @param word Word to find the stems for
    * @return List of stems for the word
    */
-  public List<Stem> uniqueStems(char word[], int length) {
-    List<Stem> stems = new ArrayList<Stem>();
+  public List<CharsRef> uniqueStems(char word[], int length) {
+    List<CharsRef> stems = new ArrayList<CharsRef>();
     CharArraySet terms = new CharArraySet(Version.LUCENE_CURRENT, 8, false);
     if (dictionary.lookupWord(word, 0, length, scratch) != null) {
-      stems.add(new Stem(word, length));
+      stems.add(new CharsRef(word, 0, length));
       terms.add(word);
     }
-    List<Stem> otherStems = stem(word, length, null, 0);
-    for (Stem s : otherStems) {
-      if (!terms.contains(s.stem)) {
+    List<CharsRef> otherStems = stem(word, length, null, 0);
+    for (CharsRef s : otherStems) {
+      if (!terms.contains(s)) {
         stems.add(s);
-        terms.add(s.stem);
+        terms.add(s);
       }
     }
     return stems;
@@ -115,8 +116,8 @@ final class Stemmer {
    * @param recursionDepth Level of recursion this stemming step is at
    * @return List of stems, or empty list if no stems are found
    */
-  private List<Stem> stem(char word[], int length, char[] flags, int recursionDepth) {
-    List<Stem> stems = new ArrayList<Stem>();
+  private List<CharsRef> stem(char word[], int length, char[] flags, int recursionDepth) {
+    List<CharsRef> stems = new ArrayList<CharsRef>();
 
     for (int i = 0; i < length; i++) {
       List<Affix> suffixes = dictionary.lookupSuffix(word, i, length - i);
@@ -131,10 +132,7 @@ final class Stemmer {
           // TODO: can we do this in-place?
           String strippedWord = new StringBuilder().append(word, 0, deAffixedLength).append(suffix.getStrip()).toString();
 
-          List<Stem> stemList = applyAffix(strippedWord.toCharArray(), strippedWord.length(), suffix, recursionDepth);
-          for (Stem stem : stemList) {
-            stem.addSuffix(suffix);
-          }
+          List<CharsRef> stemList = applyAffix(strippedWord.toCharArray(), strippedWord.length(), suffix, recursionDepth);
 
           stems.addAll(stemList);
         }
@@ -156,10 +154,7 @@ final class Stemmer {
               .append(word, deAffixedStart, deAffixedLength)
               .toString();
 
-          List<Stem> stemList = applyAffix(strippedWord.toCharArray(), strippedWord.length(), prefix, recursionDepth);
-          for (Stem stem : stemList) {
-            stem.addPrefix(prefix);
-          }
+          List<CharsRef> stemList = applyAffix(strippedWord.toCharArray(), strippedWord.length(), prefix, recursionDepth);
 
           stems.addAll(stemList);
         }
@@ -177,18 +172,18 @@ final class Stemmer {
    * @param recursionDepth Level of recursion this stemming step is at
    * @return List of stems for the word, or an empty list if none are found
    */
-  public List<Stem> applyAffix(char strippedWord[], int length, Affix affix, int recursionDepth) {
+  public List<CharsRef> applyAffix(char strippedWord[], int length, Affix affix, int recursionDepth) {
     segment.setLength(0);
     segment.append(strippedWord, 0, length);
     if (!affix.checkCondition(segment)) {
       return Collections.emptyList();
     }
 
-    List<Stem> stems = new ArrayList<Stem>();
+    List<CharsRef> stems = new ArrayList<CharsRef>();
 
     char wordFlags[] = dictionary.lookupWord(strippedWord, 0, length, scratch);
     if (wordFlags != null && Dictionary.hasFlag(wordFlags, affix.getFlag())) {
-      stems.add(new Stem(strippedWord, length));
+      stems.add(new CharsRef(strippedWord, 0, length));
     }
 
     if (affix.isCrossProduct() && recursionDepth < recursionCap) {

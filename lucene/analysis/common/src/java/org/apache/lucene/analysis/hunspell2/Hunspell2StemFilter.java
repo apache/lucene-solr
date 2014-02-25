@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.util.CharsRef;
 
 /**
  * TokenFilter that uses hunspell affix rules and words to stem tokens.  Since hunspell supports a word having multiple
@@ -49,7 +50,7 @@ public final class Hunspell2StemFilter extends TokenFilter {
   private final KeywordAttribute keywordAtt = addAttribute(KeywordAttribute.class);
   private final Stemmer stemmer;
   
-  private List<Stem> buffer;
+  private List<CharsRef> buffer;
   private State savedState;
   
   private final boolean dedup;
@@ -97,11 +98,10 @@ public final class Hunspell2StemFilter extends TokenFilter {
   @Override
   public boolean incrementToken() throws IOException {
     if (buffer != null && !buffer.isEmpty()) {
-      Stem nextStem = buffer.remove(0);
+      CharsRef nextStem = buffer.remove(0);
       restoreState(savedState);
       posIncAtt.setPositionIncrement(0);
-      termAtt.copyBuffer(nextStem.getStem(), 0, nextStem.getStemLength());
-      termAtt.setLength(nextStem.getStemLength());
+      termAtt.setEmpty().append(nextStem);
       return true;
     }
     
@@ -119,9 +119,8 @@ public final class Hunspell2StemFilter extends TokenFilter {
       return true;
     }     
 
-    Stem stem = buffer.remove(0);
-    termAtt.copyBuffer(stem.getStem(), 0, stem.getStemLength());
-    termAtt.setLength(stem.getStemLength());
+    CharsRef stem = buffer.remove(0);
+    termAtt.setEmpty().append(stem);
 
     if (!buffer.isEmpty()) {
       savedState = captureState();
