@@ -89,6 +89,9 @@ Bug Fixes
 * SOLR-5647: The lib paths in example-schemaless will now load correctly.
   (Paul Westin via Shawn Heisey)
 
+* SOLR-5423: CSV output doesn't include function field
+  (Arun Kumar, hossman, Steve Rowe)
+
 Optimizations
 ----------------------
 * SOLR-1880: Distributed Search skips GET_FIELDS stage if EXECUTE_QUERY
