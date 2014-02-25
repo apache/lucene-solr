@@ -1185,8 +1185,6 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     CloudSolrServer client = createCloudClient(null);
     try {
       createCollection(collectionName, client,2,2);
-
-      waitForRecoveriesToFinish(collectionName, false);
       String newReplicaName = Assign.assignNode(collectionName , client.getZkStateReader().getClusterState() );
       ArrayList<String> nodeList = new ArrayList<String>(client.getZkStateReader().getClusterState().getLiveNodes());
       Collections.shuffle(nodeList);
@@ -1266,7 +1264,8 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
         MAX_SHARDS_PER_NODE, maxShardsPerNode,
         NUM_SLICES, numShards);
     Map<String,List<Integer>> collectionInfos = new HashMap<String,List<Integer>>();
-    createCollection(collectionInfos, COLL_NAME, props, client);
+    createCollection(collectionInfos, COLL_NAME, props, client,"conf1");
+    waitForRecoveriesToFinish(COLL_NAME, false);
   }
   
   @Override
