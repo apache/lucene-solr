@@ -81,6 +81,9 @@ public class Dictionary {
   // the list of unique flagsets (wordforms). theoretically huge, but practically
   // small (e.g. for polish this is 756), otherwise humans wouldn't be able to deal with it either.
   public BytesRefHash flagLookup = new BytesRefHash();
+  
+  // the list of unique strip affixes.
+  public BytesRefHash stripLookup = new BytesRefHash();
 
   private FlagParsingStrategy flagParsingStrategy = new SimpleFlagParsingStrategy(); // Default flag parsing strategy
 
@@ -107,6 +110,7 @@ public class Dictionary {
     CharsetDecoder decoder = getJavaEncoding(encoding);
     readAffixFile(buffered, decoder);
     flagLookup.add(new BytesRef()); // no flags -> ord 0
+    stripLookup.add(new BytesRef()); // no strip -> ord 0
     PositiveIntOutputs o = PositiveIntOutputs.getSingleton();
     Builder<Long> b = new Builder<Long>(FST.INPUT_TYPE.BYTE4, o);
     readDictionaryFile(dictionary, decoder, b);
@@ -226,6 +230,8 @@ public class Dictionary {
                           LineNumberReader reader,
                           String conditionPattern,
                           Map<String,Integer> seenPatterns) throws IOException, ParseException {
+    
+    BytesRef scratch = new BytesRef();
     String args[] = header.split("\\s+");
 
     boolean crossProduct = args[2].equals("Y");
@@ -239,25 +245,23 @@ public class Dictionary {
           throw new ParseException("The affix file contains a rule with less than five elements", reader.getLineNumber());
       }
 
-      Affix affix = new Affix();
       
-      affix.setFlag(flagParsingStrategy.parseFlag(ruleArgs[1]));
-      affix.setStrip(ruleArgs[2].equals("0") ? "" : ruleArgs[2]);
-
+      char flag = flagParsingStrategy.parseFlag(ruleArgs[1]);
+      String strip = ruleArgs[2].equals("0") ? "" : ruleArgs[2];
       String affixArg = ruleArgs[3];
+      char appendFlags[] = null;
       
       int flagSep = affixArg.lastIndexOf('/');
       if (flagSep != -1) {
         String flagPart = affixArg.substring(flagSep + 1);
-        
+        affixArg = affixArg.substring(0, flagSep);
+
         if (aliasCount > 0) {
           flagPart = getAliasValue(Integer.parseInt(flagPart));
         } 
         
-        char appendFlags[] = flagParsingStrategy.parseFlags(flagPart);
+        appendFlags = flagParsingStrategy.parseFlags(flagPart);
         Arrays.sort(appendFlags);
-        affix.setAppendFlags(appendFlags);
-        affixArg = affixArg.substring(0, flagSep);
       }
 
       String condition = ruleArgs[4];
@@ -269,8 +273,10 @@ public class Dictionary {
       if (condition.indexOf('-') >= 0) {
         condition = condition.replace("-", "\\-");
       }
-      // deduplicate patterns
+
       String regex = String.format(Locale.ROOT, conditionPattern, condition);
+      
+      // deduplicate patterns
       Integer patternIndex = seenPatterns.get(regex);
       if (patternIndex == null) {
         patternIndex = patterns.size();
@@ -278,8 +284,29 @@ public class Dictionary {
         Pattern pattern = Pattern.compile(regex);
         patterns.add(pattern);
       }
-      affix.setCondition(patterns.get(patternIndex));
+      
+      Affix affix = new Affix();
+      scratch.copyChars(strip);
+      int ord = stripLookup.add(scratch);
+      if (ord < 0) {
+        // already exists in our hash
+        ord = (-ord)-1;
+      }
+      affix.setStrip(ord);
+      affix.setFlag(flag);
+      affix.setCondition(patternIndex);
       affix.setCrossProduct(crossProduct);
+      if (appendFlags == null) {
+        appendFlags = NOFLAGS;
+      }
+      
+      final int hashCode = encodeFlagsWithHash(scratch, appendFlags);
+      ord = flagLookup.add(scratch, hashCode);
+      if (ord < 0) {
+        // already exists in our hash
+        ord = (-ord)-1;
+      }
+      affix.setAppendFlags(ord);
       
       List<Affix> list = affixes.get(affixArg);
       if (list == null) {

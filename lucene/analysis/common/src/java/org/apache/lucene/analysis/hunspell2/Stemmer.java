@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.BytesRef;
@@ -79,7 +80,7 @@ final class Stemmer {
     if (dictionary.lookupWord(word, 0, length, scratch) != null) {
       stems.add(new CharsRef(word, 0, length));
     }
-    stems.addAll(stem(word, length, null, 0));
+    stems.addAll(stem(word, length, Dictionary.NOFLAGS, 0));
     return stems;
   }
   
@@ -96,7 +97,7 @@ final class Stemmer {
       stems.add(new CharsRef(word, 0, length));
       terms.add(word);
     }
-    List<CharsRef> otherStems = stem(word, length, null, 0);
+    List<CharsRef> otherStems = stem(word, length, Dictionary.NOFLAGS, 0);
     for (CharsRef s : otherStems) {
       if (!terms.contains(s)) {
         stems.add(s);
@@ -117,7 +118,9 @@ final class Stemmer {
    * @return List of stems, or empty list if no stems are found
    */
   private List<CharsRef> stem(char word[], int length, char[] flags, int recursionDepth) {
+    // TODO: allow this stuff to be reused by tokenfilter
     List<CharsRef> stems = new ArrayList<CharsRef>();
+    BytesRef scratch = new BytesRef();
 
     for (int i = 0; i < length; i++) {
       List<Affix> suffixes = dictionary.lookupSuffix(word, i, length - i);
@@ -130,7 +133,8 @@ final class Stemmer {
           int appendLength = length - i;
           int deAffixedLength = length - appendLength;
           // TODO: can we do this in-place?
-          String strippedWord = new StringBuilder().append(word, 0, deAffixedLength).append(suffix.getStrip()).toString();
+          dictionary.stripLookup.get(suffix.getStrip(), scratch);
+          String strippedWord = new StringBuilder().append(word, 0, deAffixedLength).append(scratch.utf8ToString()).toString();
 
           List<CharsRef> stemList = applyAffix(strippedWord.toCharArray(), strippedWord.length(), suffix, recursionDepth);
 
@@ -150,7 +154,8 @@ final class Stemmer {
           int deAffixedStart = i;
           int deAffixedLength = length - deAffixedStart;
 
-          String strippedWord = new StringBuilder().append(prefix.getStrip())
+          dictionary.stripLookup.get(prefix.getStrip(), scratch);
+          String strippedWord = new StringBuilder().append(scratch.utf8ToString())
               .append(word, deAffixedStart, deAffixedLength)
               .toString();
 
@@ -175,7 +180,9 @@ final class Stemmer {
   public List<CharsRef> applyAffix(char strippedWord[], int length, Affix affix, int recursionDepth) {
     segment.setLength(0);
     segment.append(strippedWord, 0, length);
-    if (!affix.checkCondition(segment)) {
+    
+    Pattern pattern = dictionary.patterns.get(affix.getCondition());
+    if (!pattern.matcher(segment).matches()) {
       return Collections.emptyList();
     }
 
@@ -187,7 +194,10 @@ final class Stemmer {
     }
 
     if (affix.isCrossProduct() && recursionDepth < recursionCap) {
-      stems.addAll(stem(strippedWord, length, affix.getAppendFlags(), ++recursionDepth));
+      BytesRef scratch = new BytesRef();
+      dictionary.flagLookup.get(affix.getAppendFlags(), scratch);
+      char appendFlags[] = Dictionary.decodeFlags(scratch);
+      stems.addAll(stem(strippedWord, length, appendFlags, ++recursionDepth));
     }
 
     return stems;
@@ -201,6 +211,6 @@ final class Stemmer {
    * @return {@code true} if the flag is found in the array or the array is {@code null}, {@code false} otherwise
    */
   private boolean hasCrossCheckedFlag(char flag, char[] flags) {
-    return flags == null || Arrays.binarySearch(flags, flag) >= 0;
+    return flags.length == 0 || Arrays.binarySearch(flags, flag) >= 0;
   }
 }

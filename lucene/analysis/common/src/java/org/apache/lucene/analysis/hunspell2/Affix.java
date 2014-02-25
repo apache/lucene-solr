@@ -17,38 +17,23 @@ package org.apache.lucene.analysis.hunspell2;
  * limitations under the License.
  */
 
-import java.util.regex.Pattern;
-
 /**
  * Wrapper class representing a hunspell affix
  */
 final class Affix {
 
-  private char appendFlags[]; // continuation class flags
-  private String strip;
-  
-  private Pattern conditionPattern;
-  
-  private char flag;
-
+  private int appendFlags; // continuation class flags
+  private int condition; // check condition
   private boolean crossProduct;
-
-  /**
-   * Checks whether the given text matches the conditional pattern on this affix
-   *
-   * @param text Text to check if it matches the affix's conditional pattern
-   * @return {@code true} if the text meets the condition, {@code false} otherwise
-   */
-  public boolean checkCondition(CharSequence text) {
-    return conditionPattern.matcher(text).matches();
-  }
+  private char flag;
+  private int strip;
 
   /**
    * Returns the flags defined for the affix append
    *
    * @return Flags defined for the affix append
    */
-  public char[] getAppendFlags() {
+  public int getAppendFlags() {
     return appendFlags;
   }
 
@@ -57,7 +42,7 @@ final class Affix {
    *
    * @param appendFlags Flags defined for the affix append
    */
-  public void setAppendFlags(char[] appendFlags) {
+  public void setAppendFlags(int appendFlags) {
     this.appendFlags = appendFlags;
   }
 
@@ -66,7 +51,7 @@ final class Affix {
    *
    * @return Stripping characters defined for the affix
    */
-  public String getStrip() {
+  public int getStrip() {
     return strip;
   }
 
@@ -75,17 +60,19 @@ final class Affix {
    *
    * @param strip Stripping characters defined for the affix
    */
-  public void setStrip(String strip) {
+  public void setStrip(int strip) {
     this.strip = strip;
   }
 
   /**
    * Sets the condition that must be met before the affix can be applied
-   *
-   * @param pattern Condition as a regular expression pattern
    */
-  public void setCondition(Pattern pattern) {
-    this.conditionPattern = pattern;
+  public void setCondition(int condition) {
+    this.condition = condition;
+  }
+  
+  public int getCondition() {
+    return condition;
   }
 
   /**
