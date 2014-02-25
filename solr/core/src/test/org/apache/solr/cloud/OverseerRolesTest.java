@@ -34,6 +34,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
@@ -45,13 +46,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 @LuceneTestCase.Slow
+@SuppressSSL     // SSL does not work with this feature for some reason
 public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
   private CloudSolrServer client;
-
-  static {
-    // SSL does not work with this feature for some reason
-    ALLOW_SSL = false;
-  }
   
   @BeforeClass
   public static void beforeThisClass2() throws Exception {

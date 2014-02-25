@@ -47,6 +47,7 @@ import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -83,6 +84,7 @@ import org.junit.Test;
  * @since 1.4
  */
 @Slow
+@SuppressSSL     // does not work yet with SSL
 public class TestReplicationHandler extends SolrTestCaseJ4 {
 
 
@@ -99,11 +101,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   // number of docs to index... decremented for each test case to tell if we accidentally reuse
   // index from previous test method
   static int nDocs = 500;
-
-  static {
-    // does not yet work with ssl
-    ALLOW_SSL = false;
-  }
   
   @BeforeClass
   public static void beforeClass() {
