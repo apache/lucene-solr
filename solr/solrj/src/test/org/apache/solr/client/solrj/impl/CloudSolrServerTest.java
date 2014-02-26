@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
+import org.apache.lucene.util.LuceneTestCase.BadApple;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -43,7 +44,7 @@ import org.junit.BeforeClass;
 /**
  * This test would be faster if we simulated the zk state instead.
  */
-@Slow
+@Slow @BadApple
 public class CloudSolrServerTest extends AbstractFullDistribZkTestBase {
   
   private static final String SOLR_HOME = getFile("solrj" + File.separator + "solr").getAbsolutePath();

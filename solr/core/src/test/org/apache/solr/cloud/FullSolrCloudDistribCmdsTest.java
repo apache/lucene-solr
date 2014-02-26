@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.util.LuceneTestCase.BadApple;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -49,6 +50,7 @@ import org.junit.BeforeClass;
  */
 @Slow
 @SuppressSSL     // No SSL for now - it can be too slow
+@BadApple
 public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase {
   
   @BeforeClass
