@@ -263,10 +263,10 @@ public final class SynonymFilter extends TokenFilter {
     this.synonyms = synonyms;
     this.ignoreCase = ignoreCase;
     this.fst = synonyms.fst;
-    this.fstReader = fst.getBytesReader();
     if (fst == null) {
       throw new IllegalArgumentException("fst must be non-null");
     }
+    this.fstReader = fst.getBytesReader();
 
     // Must be 1+ so that when roll buffer is at full
     // lookahead we can distinguish this full buffer from
