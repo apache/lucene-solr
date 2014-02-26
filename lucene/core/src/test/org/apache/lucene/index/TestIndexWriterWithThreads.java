@@ -40,8 +40,8 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.ThreadInterruptedException;
-import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 
 /**
@@ -228,12 +228,12 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
 
       // Quick test to make sure index is not corrupt:
       IndexReader reader = DirectoryReader.open(dir);
-      DocsEnum tdocs = _TestUtil.docs(random(), reader,
-                                      "field",
-                                      new BytesRef("aaa"),
-                                      MultiFields.getLiveDocs(reader),
-                                      null,
-                                      0);
+      DocsEnum tdocs = TestUtil.docs(random(), reader,
+          "field",
+          new BytesRef("aaa"),
+          MultiFields.getLiveDocs(reader),
+          null,
+          0);
       int count = 0;
       while(tdocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
         count++;
@@ -545,7 +545,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
       ((MockDirectoryWrapper)d).setPreventDoubleWrite(false);
     }
 
-    final int threadCount = _TestUtil.nextInt(random(), 2, 6);
+    final int threadCount = TestUtil.nextInt(random(), 2, 6);
 
     final AtomicReference<IndexWriter> writerRef = new AtomicReference<IndexWriter>();
     writerRef.set(new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))));

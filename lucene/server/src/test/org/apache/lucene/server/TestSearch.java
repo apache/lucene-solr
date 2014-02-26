@@ -24,7 +24,7 @@ import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.util.LineFileDocs;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import net.minidev.json.JSONObject;
@@ -178,7 +178,7 @@ public class TestSearch extends ServerBaseTestCase {
   public void testNumericRangeQuery() throws Exception {
     curIndexName = "nrq";
     for(String type : new String[] {"int", "long", "float", "double"}) {
-      _TestUtil.rmDir(new File("nrq"));
+      TestUtil.rmDir(new File("nrq"));
       send("createIndex", "{rootDir: nrq}");
       send("startIndex");
       send("registerFields", String.format(Locale.ROOT, "{fields: {nf: {type: %s, search: true}}}", type));
@@ -321,7 +321,7 @@ public class TestSearch extends ServerBaseTestCase {
 
   public void testRecencyBlendedSort() throws Exception {
     curIndexName = "recency";
-    File dir = new File(_TestUtil.getTempDir("recency"), "root");
+    File dir = new File(TestUtil.getTempDir("recency"), "root");
     send("createIndex", "{rootDir: " + dir.getAbsolutePath() + "}");
     send("startIndex");
     send("registerFields", "{fields: {timestamp: {type: long, search: false, sort: true}, body: {type: text, analyzer: StandardAnalyzer}}}");

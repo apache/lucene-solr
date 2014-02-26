@@ -24,7 +24,7 @@ public class TestPForDeltaDocIdSet extends BaseDocIdSetTestCase<PForDeltaDocIdSe
 
   @Override
   public PForDeltaDocIdSet copyOf(BitSet bs, int length) throws IOException {
-    final PForDeltaDocIdSet.Builder builder = new PForDeltaDocIdSet.Builder().setIndexInterval(_TestUtil.nextInt(random(), 1, 20));
+    final PForDeltaDocIdSet.Builder builder = new PForDeltaDocIdSet.Builder().setIndexInterval(TestUtil.nextInt(random(), 1, 20));
     for (int doc = bs.nextSetBit(0); doc != -1; doc = bs.nextSetBit(doc + 1)) {
       builder.add(doc);
     }

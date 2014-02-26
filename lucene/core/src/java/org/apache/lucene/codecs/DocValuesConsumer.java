@@ -37,7 +37,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.LongBitSet;
 
 /** 
  * Abstract API that consumes numeric, binary and
@@ -285,7 +285,7 @@ public abstract class DocValuesConsumer implements Closeable {
       if (liveDocs == null) {
         liveTerms[sub] = dv.termsEnum();
       } else {
-        OpenBitSet bitset = new OpenBitSet(dv.getValueCount());
+        LongBitSet bitset = new LongBitSet(dv.getValueCount());
         for (int i = 0; i < reader.maxDoc(); i++) {
           if (liveDocs.get(i)) {
             int ord = dv.getOrd(i);
@@ -420,7 +420,7 @@ public abstract class DocValuesConsumer implements Closeable {
       if (liveDocs == null) {
         liveTerms[sub] = dv.termsEnum();
       } else {
-        OpenBitSet bitset = new OpenBitSet(dv.getValueCount());
+        LongBitSet bitset = new LongBitSet(dv.getValueCount());
         for (int i = 0; i < reader.maxDoc(); i++) {
           if (liveDocs.get(i)) {
             dv.setDocument(i);
@@ -625,9 +625,9 @@ public abstract class DocValuesConsumer implements Closeable {
   
   // TODO: seek-by-ord to nextSetBit
   static class BitsFilteredTermsEnum extends FilteredTermsEnum {
-    final OpenBitSet liveTerms;
+    final LongBitSet liveTerms;
     
-    BitsFilteredTermsEnum(TermsEnum in, OpenBitSet liveTerms) {
+    BitsFilteredTermsEnum(TermsEnum in, LongBitSet liveTerms) {
       super(in, false); // <-- not passing false here wasted about 3 hours of my time!!!!!!!!!!!!!
       assert liveTerms != null;
       this.liveTerms = liveTerms;

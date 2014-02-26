@@ -17,7 +17,7 @@
 
 package org.apache.solr.handler;
 
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.common.params.CommonParams;
@@ -50,7 +50,7 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
     // if you override setUp or tearDown, you better call
     // the super classes version
     super.setUp();
-    File tempDir = _TestUtil.getTempDir("TestCSVLoader");
+    File tempDir = TestUtil.getTempDir("TestCSVLoader");
     file = new File(tempDir, "solr_tmp.csv");
     filename = file.getPath();
     cleanup();

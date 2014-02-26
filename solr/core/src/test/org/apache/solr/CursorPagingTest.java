@@ -17,7 +17,7 @@
 
 package org.apache.solr;
 
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.SentinelIntSet;
 import org.apache.lucene.util.mutable.MutableValueInt;
 import org.apache.solr.core.SolrInfoMBean;
@@ -529,7 +529,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
 
     SentinelIntSet ids = assertFullWalkNoDups
       (10, params("q", "*:*",
-                  "rows",""+_TestUtil.nextInt(random(),1,11),
+                  "rows",""+ TestUtil.nextInt(random(), 1, 11),
                   "fq", "-id:[1 TO 2]",
                   "fq", "-id:[6 TO 7]",
                   "fl", "id",
@@ -553,7 +553,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   public void testRandomSortsOnLargeIndex() throws Exception {
     final Collection<String> allFieldNames = getAllSortFieldNames();
 
-    final int initialDocs = _TestUtil.nextInt(random(),100,200);
+    final int initialDocs = TestUtil.nextInt(random(), 100, 200);
     final int totalDocs = atLeast(5000);
 
     // start with a smallish number of documents, and test that we can do a full walk using a 
@@ -568,7 +568,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     for (String f : allFieldNames) {
       for (String order : new String[] {" asc", " desc"}) {
         String sort = f + order + ("id".equals(f) ? "" : ", id" + order);
-        String rows = "" + _TestUtil.nextInt(random(),13,50);
+        String rows = "" + TestUtil.nextInt(random(), 13, 50);
         SentinelIntSet ids = assertFullWalkNoDups(totalDocs, 
                                                   params("q", "*:*",
                                                          "fl","id",
@@ -588,7 +588,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     final int numRandomSorts = atLeast(5);
     for (int i = 0; i < numRandomSorts; i++) {
       final String sort = buildRandomSort(allFieldNames);
-      final String rows = "" + _TestUtil.nextInt(random(),63,113);
+      final String rows = "" + TestUtil.nextInt(random(), 63, 113);
       final String fl = random().nextBoolean() ? "id" : "id,score";
       final boolean matchAll = random().nextBoolean();
       final String q = matchAll ? "*:*" : buildRandomQuery();
@@ -609,12 +609,12 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
    * of test multiplier and nightly status 
    */
   private static boolean useField() {
-    return 0 != _TestUtil.nextInt(random(), 0, 30);
+    return 0 != TestUtil.nextInt(random(), 0, 30);
   }
   
   /** returns likely most (1/10) of the time, otherwise unlikely */
   private static Object skewed(Object likely, Object unlikely) {
-    return (0 == _TestUtil.nextInt(random(), 0, 9)) ? unlikely : likely;
+    return (0 == TestUtil.nextInt(random(), 0, 9)) ? unlikely : likely;
   }
   
   /**
@@ -634,21 +634,24 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
    * </p>
    * <ul>
    *  <li><code>_version_</code> is removed</li>
-   *  <li><code>dv_last</code> and <code>dv_first</code> fields are removed 
-   *      if the codec doesn't support them</li>
+   *  <li>
+   *    <code>*_dv_last</code>, <code>*_dv_first</code> and <code>*_dv</code>
+   *    fields are removed if the codec doesn't support missing DocValues
+   *  </li>
    * </ul>
    * @see #defaultCodecSupportsMissingDocValues
    */
   public static List<String> pruneAndDeterministicallySort(Collection<String> raw) {
 
-    final boolean prune_dv_missing = ! defaultCodecSupportsMissingDocValues();
+    final boolean prune_dv = ! defaultCodecSupportsMissingDocValues();
 
     ArrayList<String> names = new ArrayList<String>(37);
     for (String f : raw) {
       if (f.equals("_version_")) {
         continue;
       }
-      if (prune_dv_missing && (f.endsWith("_dv_last") || f.endsWith("_dv_first")) ) {
+      if (prune_dv && (f.endsWith("_dv_last") || f.endsWith("_dv_first"))
+                       || f.endsWith("_dv")) {
         continue;
       }
       names.add(f);
@@ -707,7 +710,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
    * test faceting with deep paging
    */
   public void testFacetingWithRandomSorts() throws Exception {
-    final int numDocs = _TestUtil.nextInt(random(), 1000, 3000);
+    final int numDocs = TestUtil.nextInt(random(), 1000, 3000);
     String[] fieldsToFacetOn = { "int", "long", "str" };
     String[] facetMethods = { "enum", "fc", "fcs" };
 
@@ -720,14 +723,14 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     Collection<String> allFieldNames = getAllSortFieldNames();
     String[] fieldNames = new String[allFieldNames.size()];
     allFieldNames.toArray(fieldNames);
-    String f = fieldNames[_TestUtil.nextInt(random(), 0, fieldNames.length - 1)];
-    String order = 0 == _TestUtil.nextInt(random(), 0, 1) ? " asc" : " desc";
+    String f = fieldNames[TestUtil.nextInt(random(), 0, fieldNames.length - 1)];
+    String order = 0 == TestUtil.nextInt(random(), 0, 1) ? " asc" : " desc";
     String sort = f + order + (f.equals("id") ? "" : ", id" + order);
-    String rows = "" + _TestUtil.nextInt(random(),13,50);
+    String rows = "" + TestUtil.nextInt(random(), 13, 50);
     String facetField = fieldsToFacetOn
-        [_TestUtil.nextInt(random(), 0, fieldsToFacetOn.length - 1)];
+        [TestUtil.nextInt(random(), 0, fieldsToFacetOn.length - 1)];
     String facetMethod = facetMethods
-        [_TestUtil.nextInt(random(), 0, facetMethods.length - 1)];
+        [TestUtil.nextInt(random(), 0, facetMethods.length - 1)];
     SentinelIntSet ids = assertFullWalkNoDupsWithFacets
         (numDocs, params("q", "*:*",
             "fl", "id," + facetField,
@@ -873,11 +876,11 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     // (hopefully with lots of duplication)
     if (useField()) {
       doc.addField("int", skewed(random().nextInt(), 
-                                 _TestUtil.nextInt(random(), 20, 50)));
+                                 TestUtil.nextInt(random(), 20, 50)));
     }
     if (useField()) {
       doc.addField("long", skewed(random().nextLong(), 
-                                  _TestUtil.nextInt(random(), 5000, 5100)));
+                                  TestUtil.nextInt(random(), 5000, 5100)));
     }
     if (useField()) {
       doc.addField("float", skewed(random().nextFloat() * random().nextInt(), 
@@ -889,11 +892,11 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     }
     if (useField()) {
       doc.addField("str", skewed(randomUsableUnicodeString(),
-                                 _TestUtil.randomSimpleString(random(),1,1)));
+                                 TestUtil.randomSimpleString(random(), 1, 1)));
 
     }
     if (useField()) {
-      int numBytes = (int) skewed(_TestUtil.nextInt(random(), 20, 50), 2);
+      int numBytes = (int) skewed(TestUtil.nextInt(random(), 20, 50), 2);
       byte[] randBytes = new byte[numBytes];
       random().nextBytes(randBytes);
       doc.addField("bin", ByteBuffer.wrap(randBytes));
@@ -914,8 +917,8 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
       return "{!func}" + numericFields.get(0);
     } else {
       // several SHOULD clauses on range queries
-      int low = _TestUtil.nextInt(random(),-2379,2);
-      int high = _TestUtil.nextInt(random(),4,5713);
+      int low = TestUtil.nextInt(random(), -2379, 2);
+      int high = TestUtil.nextInt(random(), 4, 5713);
       return 
         numericFields.get(0) + ":[* TO 0] " +
         numericFields.get(1) + ":[0 TO *] " +
@@ -928,10 +931,10 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
    * updates use XML we need to ensure we don't get "special" code block.
    */
   private static String randomUsableUnicodeString() {
-    String result = _TestUtil.randomRealisticUnicodeString(random());
+    String result = TestUtil.randomRealisticUnicodeString(random());
     if (result.matches(".*\\p{InSpecials}.*")) {
       // oh well
-      result = _TestUtil.randomSimpleString(random());
+      result = TestUtil.randomSimpleString(random());
     }
     return result;
   }
@@ -955,7 +958,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
       // wrap in a function sometimes
       if ( (!"score".equals(field))
            && 
-           (0 == _TestUtil.nextInt(random(), 0, 7)) ) {
+           (0 == TestUtil.nextInt(random(), 0, 7)) ) {
         // specific function doesn't matter, just proving that we can handle the concept.
         // but we do have to be careful with non numeric fields
         if (field.startsWith("str") || field.startsWith("bin")) {

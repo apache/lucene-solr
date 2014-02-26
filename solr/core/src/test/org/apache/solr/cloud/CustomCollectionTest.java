@@ -38,9 +38,8 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -57,13 +56,10 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.ShardParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
 /**
  * Tests the Custom Sharding API.
@@ -147,7 +143,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
 
     // create new collections rapid fire
     Map<String,List<Integer>> collectionInfos = new HashMap<String,List<Integer>>();
-    int replicationFactor = _TestUtil.nextInt(random(), 0, 3) + 2;
+    int replicationFactor = TestUtil.nextInt(random(), 0, 3) + 2;
 
     int cnt = random().nextInt(6) + 1;
 
@@ -297,7 +293,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
 
 
     int numShards = 4;
-    replicationFactor = _TestUtil.nextInt(random(), 0, 3) + 2;
+    replicationFactor = TestUtil.nextInt(random(), 0, 3) + 2;
     int maxShardsPerNode = (((numShards * replicationFactor) / getCommonCloudSolrServer()
         .getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
 

@@ -235,7 +235,7 @@ public class XMLLoader extends ContentStreamLoader {
               } else if (UpdateRequestHandler.COMMIT_WITHIN.equals(attrName)) {
                 addCmd.commitWithin = Integer.parseInt(attrVal);
               } else {
-                log.warn("Unknown attribute id in add:" + attrName);
+                log.warn("XML element <add> has invalid XML attr: " + attrName);
               }
             }
 
@@ -267,7 +267,7 @@ public class XMLLoader extends ContentStreamLoader {
             processor.processCommit(cmd);
           } // end commit
           else if (UpdateRequestHandler.ROLLBACK.equals(currTag)) {
-            log.trace("parsing " + currTag);
+            log.trace("parsing rollback");
 
             RollbackUpdateCommand cmd = new RollbackUpdateCommand(req);
 
@@ -303,7 +303,7 @@ public class XMLLoader extends ContentStreamLoader {
       } else if (UpdateRequestHandler.COMMIT_WITHIN.equals(attrName)) {
         deleteCmd.commitWithin = Integer.parseInt(attrVal);
       } else {
-        log.warn("unexpected attribute delete/@" + attrName);
+        log.warn("XML element <delete> has invalid XML attr: " + attrName);
       }
     }
 
@@ -314,9 +314,10 @@ public class XMLLoader extends ContentStreamLoader {
         case XMLStreamConstants.START_ELEMENT:
           String mode = parser.getLocalName();
           if (!("id".equals(mode) || "query".equals(mode))) {
-            log.warn("unexpected XML tag /delete/" + mode);
+            String msg = "XML element <delete> has invalid XML child element: " + mode;
+            log.warn(msg);
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                    "unexpected XML tag /delete/" + mode);
+                                    msg);
           }
           text.setLength(0);
           
@@ -340,9 +341,10 @@ public class XMLLoader extends ContentStreamLoader {
           } else if ("delete".equals(currTag)) {
             return;
           } else {
-            log.warn("unexpected XML tag /delete/" + currTag);
+            String msg = "XML element <delete> has invalid XML (closing) child element: " + currTag;
+            log.warn(msg);
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                    "unexpected XML tag /delete/" + currTag);
+                                    msg);
           }
           processor.processDelete(deleteCmd);
           deleteCmd.clear();
@@ -373,7 +375,7 @@ public class XMLLoader extends ContentStreamLoader {
       if ("boost".equals(attrName)) {
         doc.setDocumentBoost(Float.parseFloat(parser.getAttributeValue(i)));
       } else {
-        log.warn("Unknown attribute doc/@" + attrName);
+        log.warn("XML element <doc> has invalid XML attr:" + attrName);
       }
     }
 
@@ -447,9 +449,10 @@ public class XMLLoader extends ContentStreamLoader {
           }
           else {
             if (!"field".equals(localName)) {
-              log.warn("unexpected XML tag doc/" + localName);
+              String msg = "XML element <doc> has invalid XML child element: " + localName;
+              log.warn(msg);
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                  "unexpected XML tag doc/" + localName);
+                                      msg);
             }
             boost = 1.0f;
             update = null;
@@ -467,7 +470,7 @@ public class XMLLoader extends ContentStreamLoader {
               } else if ("update".equals(attrName)) {
                 update = attrVal;
               } else {
-                log.warn("Unknown attribute doc/field/@" + attrName);
+                log.warn("XML element <field> has invalid XML attr: " + attrName);
               }
             }
           }

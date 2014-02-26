@@ -30,7 +30,7 @@ import org.junit.Ignore;
 public class Test2BPagedBytes extends LuceneTestCase {
 
   public void test() throws Exception {
-    BaseDirectoryWrapper dir = newFSDirectory(_TestUtil.getTempDir("test2BPagedBytes"));
+    BaseDirectoryWrapper dir = newFSDirectory(TestUtil.getTempDir("test2BPagedBytes"));
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }
@@ -41,7 +41,7 @@ public class Test2BPagedBytes extends LuceneTestCase {
     long lastFP = 0;
     Random r2 = new Random(seed);
     while(netBytes < 1.1*Integer.MAX_VALUE) {
-      int numBytes = _TestUtil.nextInt(r2, 1, 32768);
+      int numBytes = TestUtil.nextInt(r2, 1, 32768);
       byte[] bytes = new byte[numBytes];
       r2.nextBytes(bytes);
       dataOutput.writeBytes(bytes, bytes.length);
@@ -59,7 +59,7 @@ public class Test2BPagedBytes extends LuceneTestCase {
     r2 = new Random(seed);
     netBytes = 0;
     while(netBytes < 1.1*Integer.MAX_VALUE) {
-      int numBytes = _TestUtil.nextInt(r2, 1, 32768);
+      int numBytes = TestUtil.nextInt(r2, 1, 32768);
       byte[] bytes = new byte[numBytes];
       r2.nextBytes(bytes);
       BytesRef expected = new BytesRef(bytes);

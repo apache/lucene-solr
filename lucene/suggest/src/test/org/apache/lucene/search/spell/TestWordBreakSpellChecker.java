@@ -35,7 +35,7 @@ import org.apache.lucene.search.spell.WordBreakSpellChecker.BreakSuggestionSortM
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestWordBreakSpellChecker extends LuceneTestCase {
   private Directory dir = null;
@@ -262,7 +262,7 @@ public class TestWordBreakSpellChecker extends LuceneTestCase {
     }    
   }
   public void testRandom() throws Exception {
-    int numDocs = _TestUtil.nextInt(random(), (10 * RANDOM_MULTIPLIER),
+    int numDocs = TestUtil.nextInt(random(), (10 * RANDOM_MULTIPLIER),
         (100 * RANDOM_MULTIPLIER));
     Directory dir = null;
     RandomIndexWriter writer = null;
@@ -271,24 +271,24 @@ public class TestWordBreakSpellChecker extends LuceneTestCase {
       dir = newDirectory();
       writer = new RandomIndexWriter(random(), dir, new MockAnalyzer(random(),
           MockTokenizer.WHITESPACE, false));
-      int maxLength = _TestUtil.nextInt(random(), 5, 50);
+      int maxLength = TestUtil.nextInt(random(), 5, 50);
       List<String> originals = new ArrayList<String>(numDocs);
       List<String[]> breaks = new ArrayList<String[]>(numDocs);
       for (int i = 0; i < numDocs; i++) {
         String orig = "";
         if (random().nextBoolean()) {
           while (!goodTestString(orig)) {
-            orig = _TestUtil.randomSimpleString(random(), maxLength);
+            orig = TestUtil.randomSimpleString(random(), maxLength);
           }
         } else {
           while (!goodTestString(orig)) {
-            orig = _TestUtil.randomUnicodeString(random(), maxLength);
+            orig = TestUtil.randomUnicodeString(random(), maxLength);
           }
         }
         originals.add(orig);
         int totalLength = orig.codePointCount(0, orig.length());
         int breakAt = orig.offsetByCodePoints(0,
-            _TestUtil.nextInt(random(), 1, totalLength - 1));
+            TestUtil.nextInt(random(), 1, totalLength - 1));
         String[] broken = new String[2];
         broken[0] = orig.substring(0, breakAt);
         broken[1] = orig.substring(breakAt);

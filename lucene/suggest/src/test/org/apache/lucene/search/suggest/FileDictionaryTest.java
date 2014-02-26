@@ -10,7 +10,8 @@ import java.util.Map;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
 
 
@@ -36,18 +37,18 @@ public class FileDictionaryTest extends LuceneTestCase {
   private Map.Entry<List<String>, String> generateFileEntry(String fieldDelimiter, boolean hasWeight, boolean hasPayload) {
     List<String> entryValues = new ArrayList<>();
     StringBuilder sb = new StringBuilder();
-    String term = _TestUtil.randomSimpleString(random(), 1, 300);
+    String term = TestUtil.randomSimpleString(random(), 1, 300);
     sb.append(term);
     entryValues.add(term);
     if (hasWeight) {
       sb.append(fieldDelimiter);
-      long weight = _TestUtil.nextLong(random(), Long.MIN_VALUE, Long.MAX_VALUE);
+      long weight = TestUtil.nextLong(random(), Long.MIN_VALUE, Long.MAX_VALUE);
       sb.append(weight);
       entryValues.add(String.valueOf(weight));
     }
     if (hasPayload) {
       sb.append(fieldDelimiter);
-      String payload = _TestUtil.randomSimpleString(random(), 1, 300);
+      String payload = TestUtil.randomSimpleString(random(), 1, 300);
       sb.append(payload);
       entryValues.add(payload);
     }

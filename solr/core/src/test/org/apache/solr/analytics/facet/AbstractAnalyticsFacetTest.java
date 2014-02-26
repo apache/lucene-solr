@@ -18,9 +18,9 @@
 package org.apache.solr.analytics.facet;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Scanner;
 
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.util.MedianCalculator;
@@ -36,7 +37,7 @@ import org.apache.solr.analytics.util.PercentileCalculator;
 import org.apache.solr.request.SolrQueryRequest;
 
 import com.google.common.collect.ObjectArrays;
-import org.apache.solr.util.ExternalPaths;
+
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -279,18 +280,24 @@ public class AbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
   public static final String[] BASEPARMS = new String[]{ "q", "*:*", "indent", "true", "olap", "true", "rows", "0" };
 
   
-  public static String[] fileToStringArr(String fileName) throws FileNotFoundException {
-    Scanner file = new Scanner(new File(ExternalPaths.SOURCE_HOME, fileName), "UTF-8");
-    ArrayList<String> strList = new ArrayList<String>();
-    while (file.hasNextLine()) {
-      String line = file.nextLine();
-      if (line.length()<2) {
-        continue;
+  public static String[] fileToStringArr(Class<?> clazz, String fileName) throws FileNotFoundException {
+    InputStream in = clazz.getResourceAsStream(fileName);
+    if (in == null) throw new FileNotFoundException("Resource not found: " + fileName);
+    Scanner file = new Scanner(in, "UTF-8");
+    try { 
+      ArrayList<String> strList = new ArrayList<String>();
+      while (file.hasNextLine()) {
+        String line = file.nextLine();
+        if (line.length()<2) {
+          continue;
+        }
+        String[] param = line.split("=");
+        strList.add(param[0]);
+        strList.add(param[1]);
       }
-      String[] param = line.split("=");
-      strList.add(param[0]);
-      strList.add(param[1]);
+      return strList.toArray(new String[0]);
+    } finally {
+      IOUtils.closeWhileHandlingException(file, in);
     }
-    return strList.toArray(new String[0]);
   }
 }

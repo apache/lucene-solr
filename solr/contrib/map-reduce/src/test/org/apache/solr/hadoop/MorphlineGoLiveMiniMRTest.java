@@ -45,6 +45,7 @@ import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.client.solrj.SolrServer;
@@ -88,11 +89,12 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies.Conseque
 @ThreadLeakZombies(Consequence.CONTINUE)
 @ThreadLeakScope(Scope.NONE)
 @SuppressCodecs({"Lucene3x", "Lucene40"})
+@SuppressSSL
 @Slow
 public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
   
   private static final int RECORD_COUNT = 2104;
-  private static final String RESOURCES_DIR = ExternalPaths.SOURCE_HOME + "/contrib/map-reduce/src/test-files";  
+  private static final String RESOURCES_DIR = getFile("morphlines-core.marker").getParent();  
   private static final String DOCUMENTS_DIR = RESOURCES_DIR + "/test-documents";
   private static final File MINIMR_INSTANCE_DIR = new File(RESOURCES_DIR + "/solr/minimr");
   private static final File MINIMR_CONF_DIR = new File(RESOURCES_DIR + "/solr/minimr");
@@ -133,6 +135,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     assumeFalse("HDFS tests were disabled by -Dtests.disableHdfs",
         Boolean.parseBoolean(System.getProperty("tests.disableHdfs", "false")));
     
+    assumeFalse("FIXME: This test does not work with Windows because of native library requirements", Constants.WINDOWS);
     assumeFalse("FIXME: This test fails under Java 8 due to the Saxon dependency - see SOLR-1301", Constants.JRE_IS_MINIMUM_JAVA8);
     assumeFalse("FIXME: This test fails under J9 due to the Saxon dependency - see SOLR-1301", System.getProperty("java.vm.info", "<?>").contains("IBM J9"));
     
@@ -378,7 +381,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     args = new String[] {
         "--solr-home-dir=" + MINIMR_CONF_DIR.getAbsolutePath(),
         "--output-dir=" + outDir.toString(),
-        "--log4j=" + ExternalPaths.SOURCE_HOME + "/core/src/test-files/log4j.properties",
+        "--log4j=" + getFile("log4j.properties").getAbsolutePath(),
         "--mappers=3",
         random().nextBoolean() ? "--input-list=" + INPATH.toString() : dataDir.toString(),  
         "--go-live-threads", Integer.toString(random().nextInt(15) + 1),
@@ -690,7 +693,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
       throws Exception {
     
     JettySolrRunner jetty = new JettySolrRunner(solrHome.getAbsolutePath(),
-        context, 0, solrConfigOverride, schemaOverride);
+        context, 0, solrConfigOverride, schemaOverride, true, null, sslConfig);
 
     jetty.setShards(shardList);
     

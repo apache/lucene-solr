@@ -39,7 +39,6 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FailOnNonBulkMergesInfoStream;
@@ -47,7 +46,7 @@ import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util.PrintStreamInfoStream;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 // TODO
 //   - mix in forceMerge, addIndexes
@@ -137,12 +136,12 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
                   if (VERBOSE) {
                     System.out.println(Thread.currentThread().getName() + ": now long sleep");
                   }
-                  Thread.sleep(_TestUtil.nextInt(random(), 50, 500));
+                  Thread.sleep(TestUtil.nextInt(random(), 50, 500));
                 }
 
                 // Rate limit ingest rate:
                 if (random().nextInt(7) == 5) {
-                  Thread.sleep(_TestUtil.nextInt(random(), 1, 10));
+                  Thread.sleep(TestUtil.nextInt(random(), 1, 10));
                   if (VERBOSE) {
                     System.out.println(Thread.currentThread().getName() + ": done sleep");
                   }
@@ -187,16 +186,16 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
 
                     allSubDocs.add(subDocs);
                     doc.add(packIDField);
-                    docsList.add(_TestUtil.cloneDocument(doc));
+                    docsList.add(TestUtil.cloneDocument(doc));
                     docIDs.add(doc.get("docid"));
 
-                    final int maxDocCount = _TestUtil.nextInt(random(), 1, 10);
+                    final int maxDocCount = TestUtil.nextInt(random(), 1, 10);
                     while(docsList.size() < maxDocCount) {
                       doc = docs.nextDoc();
                       if (doc == null) {
                         break;
                       }
-                      docsList.add(_TestUtil.cloneDocument(doc));
+                      docsList.add(TestUtil.cloneDocument(doc));
                       docIDs.add(doc.get("docid"));
                     }
                     addCount.addAndGet(docsList.size());
@@ -317,7 +316,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
   }
 
   protected void runSearchThreads(final long stopTimeMS) throws Exception {
-    final int numThreads = _TestUtil.nextInt(random(), 1, 5);
+    final int numThreads = TestUtil.nextInt(random(), 1, 5);
     final Thread[] searchThreads = new Thread[numThreads];
     final AtomicInteger totHits = new AtomicInteger();
 
@@ -436,7 +435,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
 
     Random random = new Random(random().nextLong());
     final LineFileDocs docs = new LineFileDocs(random, true);
-    final File tempDir = _TestUtil.getTempDir(testName);
+    final File tempDir = TestUtil.getTempDir(testName);
     dir = getDirectory(newMockFSDirectory(tempDir)); // some subclasses rely on this being MDW
     if (dir instanceof BaseDirectoryWrapper) {
       ((BaseDirectoryWrapper) dir).setCheckIndexOnClose(false); // don't double-checkIndex, we do it ourselves.
@@ -497,13 +496,13 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
         });
     }
     writer = new IndexWriter(dir, conf);
-    _TestUtil.reduceOpenFiles(writer);
+    TestUtil.reduceOpenFiles(writer);
 
     final ExecutorService es = random().nextBoolean() ? null : Executors.newCachedThreadPool(new NamedThreadFactory(testName));
 
     doAfterWriter(es);
 
-    final int NUM_INDEX_THREADS = _TestUtil.nextInt(random(), 2, 4);
+    final int NUM_INDEX_THREADS = TestUtil.nextInt(random(), 2, 4);
 
     final int RUN_TIME_SEC = LuceneTestCase.TEST_NIGHTLY ? 300 : RANDOM_MULTIPLIER;
 
@@ -642,9 +641,9 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
       es.awaitTermination(1, TimeUnit.SECONDS);
     }
 
-    _TestUtil.checkIndex(dir);
+    TestUtil.checkIndex(dir);
     dir.close();
-    _TestUtil.rmDir(tempDir);
+    TestUtil.rmDir(tempDir);
 
     if (VERBOSE) {
       System.out.println("TEST: done [" + (System.currentTimeMillis()-t0) + " ms]");

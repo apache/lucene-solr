@@ -17,7 +17,7 @@
 
 package org.apache.solr.update;
 
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.DefaultSolrThreadFactory;
@@ -363,17 +363,17 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     // runner = Executors.newFixedThreadPool(1);    // to test single threaded
     try {
       for (int id = 0; id < NUM_DOCS; id++) {
-        final int numAdds = _TestUtil.nextInt(random(),3,MAX_CONCURENT);
-        final int winner = _TestUtil.nextInt(random(),0,numAdds-1);
+        final int numAdds = TestUtil.nextInt(random(), 3, MAX_CONCURENT);
+        final int winner = TestUtil.nextInt(random(), 0, numAdds - 1);
         final int winnerVersion = atLeast(100);
-        final boolean winnerIsDeleted = (0 == _TestUtil.nextInt(random(),0,4));
+        final boolean winnerIsDeleted = (0 == TestUtil.nextInt(random(), 0, 4));
         List<Callable<Object>> tasks = new ArrayList<Callable<Object>>(numAdds);
         for (int variant = 0; variant < numAdds; variant++) {
           final boolean iShouldWin = (variant==winner);
           final long version = (iShouldWin ? winnerVersion 
-                                : _TestUtil.nextInt(random(),1,winnerVersion-1));
+                                : TestUtil.nextInt(random(), 1, winnerVersion - 1));
           if ((iShouldWin && winnerIsDeleted)
-              || (!iShouldWin && 0 == _TestUtil.nextInt(random(),0,4))) {
+              || (!iShouldWin && 0 == TestUtil.nextInt(random(), 0, 4))) {
             tasks.add(delayedDelete(""+id, ""+version));
           } else {
             tasks.add(delayedAdd("id",""+id,"name","name"+id+"_"+variant,

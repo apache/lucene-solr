@@ -240,7 +240,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
   }
 
   private void waitTillRecovered() throws Exception {
-    for (int i = 0; i < 30; i++) { 
+    for (int i = 0; i < 60; i++) { 
       Thread.sleep(3000);
       ZkStateReader zkStateReader = cloudClient.getZkStateReader();
       zkStateReader.updateClusterState(true);

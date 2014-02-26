@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.io.StringReader;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -38,7 +37,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestPayloads extends LuceneTestCase {
     
@@ -301,7 +300,7 @@ public class TestPayloads extends LuceneTestCase {
     static final Charset utf8 = Charset.forName("UTF-8");
     private void generateRandomData(byte[] data) {
       // this test needs the random data to be valid unicode
-      String s = _TestUtil.randomFixedByteLengthUnicodeString(random(), data.length);
+      String s = TestUtil.randomFixedByteLengthUnicodeString(random(), data.length);
       byte b[] = s.getBytes(utf8);
       assert b.length == data.length;
       System.arraycopy(b, 0, data, 0, b.length);

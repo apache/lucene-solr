@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.Reader;
 import java.io.StringReader;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
@@ -60,7 +59,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestIndexWriterExceptions extends LuceneTestCase {
 
@@ -175,7 +174,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         Term idTerm = new Term("id", id);
         try {
           if (r.nextBoolean()) {
-            writer.updateDocuments(idTerm, new DocCopyIterator(doc, _TestUtil.nextInt(r, 1, 20)));
+            writer.updateDocuments(idTerm, new DocCopyIterator(doc, TestUtil.nextInt(r, 1, 20)));
           } else {
             writer.updateDocument(idTerm, doc);
           }
@@ -185,7 +184,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
             re.printStackTrace(System.out);
           }
           try {
-            _TestUtil.checkIndex(writer.getDirectory());
+            TestUtil.checkIndex(writer.getDirectory());
           } catch (IOException ioe) {
             System.out.println(Thread.currentThread().getName() + ": unexpected exception1");
             ioe.printStackTrace(System.out);
@@ -509,12 +508,12 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     // Make sure the doc that hit the exception was marked
     // as deleted:
-    DocsEnum tdocs = _TestUtil.docs(random(), reader,
-                                    t.field(),
-                                    new BytesRef(t.text()),
-                                    MultiFields.getLiveDocs(reader),
-                                    null,
-                                    0);
+    DocsEnum tdocs = TestUtil.docs(random(), reader,
+        t.field(),
+        new BytesRef(t.text()),
+        MultiFields.getLiveDocs(reader),
+        null,
+        0);
 
     int count = 0;
     while(tdocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
@@ -1276,7 +1275,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
           }
           if (random().nextInt(20) == 0) {
             w.commit();
-            _TestUtil.checkIndex(dir);
+            TestUtil.checkIndex(dir);
           }
             
         }
@@ -1297,7 +1296,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
           }
           if (random().nextInt(20) == 0) {
             w.commit();
-            _TestUtil.checkIndex(dir);
+            TestUtil.checkIndex(dir);
           }
         }
         document = new Document();
@@ -1435,7 +1434,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     }
 
     docs.clear();
-    final int limit = _TestUtil.nextInt(random(), 2, 25);
+    final int limit = TestUtil.nextInt(random(), 2, 25);
     final int crashAt = random().nextInt(limit);
     for(int docCount=0;docCount<limit;docCount++) {
       Document doc = new Document();

@@ -82,11 +82,11 @@ public class TestStressAdvance extends LuceneTestCase {
           System.out.println("\nTEST: iter=" + iter + " iter2=" + iter2);
         }
         assertEquals(TermsEnum.SeekStatus.FOUND, te.seekCeil(new BytesRef("a")));
-        de = _TestUtil.docs(random(), te, null, de, DocsEnum.FLAG_NONE);
+        de = TestUtil.docs(random(), te, null, de, DocsEnum.FLAG_NONE);
         testOne(de, aDocIDs);
 
         assertEquals(TermsEnum.SeekStatus.FOUND, te.seekCeil(new BytesRef("b")));
-        de = _TestUtil.docs(random(), te, null, de, DocsEnum.FLAG_NONE);
+        de = TestUtil.docs(random(), te, null, de, DocsEnum.FLAG_NONE);
         testOne(de, bDocIDs);
       }
 
@@ -115,7 +115,7 @@ public class TestStressAdvance extends LuceneTestCase {
         docID = docs.nextDoc();
       } else {
         // test advance()
-        final int inc = _TestUtil.nextInt(random(), 1, expected.size()-1-upto);
+        final int inc = TestUtil.nextInt(random(), 1, expected.size() - 1 - upto);
         if (VERBOSE) {
           System.out.println("    do advance inc=" + inc);
         }

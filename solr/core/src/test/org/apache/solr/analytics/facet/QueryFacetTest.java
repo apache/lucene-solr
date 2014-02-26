@@ -26,7 +26,7 @@ import org.junit.Test;
 
 @SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Appending","Asserting"})
 public class QueryFacetTest extends AbstractAnalyticsFacetTest {
-  static String fileName = "core/src/test-files/analytics/requestFiles/queryFacets.txt";
+  static String fileName = "/analytics/requestFiles/queryFacets.txt";
 
   public final int INT = 71;
   public final int LONG = 36;
@@ -102,7 +102,7 @@ public class QueryFacetTest extends AbstractAnalyticsFacetTest {
     assertU(commit()); 
     
     //Query ascending tests
-    setResponse(h.query(request(fileToStringArr(fileName))));
+    setResponse(h.query(request(fileToStringArr(QueryFacetTest.class, fileName))));
     
     //Int One
     ArrayList<Double> int1 = getDoubleList("ir", "queryFacets", "float1", "double", "sum");

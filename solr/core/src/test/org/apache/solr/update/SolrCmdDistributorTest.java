@@ -62,7 +62,6 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-
     // we can't use the Randomized merge policy because the test depends on
     // being able to call optimize to have all deletes expunged.
     System.setProperty("solr.tests.mergePolicy", LogDocMergePolicy.class.getName());
@@ -118,7 +117,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
           getSchemaFile());
       jettys.add(j);
       clients.add(createNewSolrServer(j.getLocalPort()));
-      String shardStr = "127.0.0.1:" + j.getLocalPort() + context;
+      String shardStr = buildUrl(j.getLocalPort());
       shardsArr[i] = shardStr;
       sb.append(shardStr);
     }

@@ -35,7 +35,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /*
   Verify we can read the pre-2.1 file format, do searches
@@ -235,7 +235,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
     writer.close();
 
     long lastDeleteTime = 0;
-    final int targetNumDelete = _TestUtil.nextInt(random(), 1, 5);
+    final int targetNumDelete = TestUtil.nextInt(random(), 1, 5);
     while (policy.numDelete < targetNumDelete) {
       // Record last time when writer performed deletes of
       // past commits

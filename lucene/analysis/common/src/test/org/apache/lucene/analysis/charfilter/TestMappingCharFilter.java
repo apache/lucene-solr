@@ -33,8 +33,8 @@ import org.apache.lucene.analysis.CharFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.util._TestUtil;
 
 public class TestMappingCharFilter extends BaseTokenStreamTestCase {
 
@@ -274,9 +274,9 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
     int num = random.nextInt(5);
     //System.out.println("NormalizeCharMap=");
     for (int i = 0; i < num; i++) {
-      String key = _TestUtil.randomSimpleString(random);
+      String key = TestUtil.randomSimpleString(random);
       if (!keys.contains(key) && key.length() != 0) {
-        String value = _TestUtil.randomSimpleString(random);
+        String value = TestUtil.randomSimpleString(random);
         builder.add(key, value);
         keys.add(key);
         //System.out.println("mapping: '" + key + "' => '" + value + "'");
@@ -294,7 +294,7 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
         System.out.println("\nTEST iter=" + iter);
       }
 
-      final char endLetter = (char) _TestUtil.nextInt(random, 'b', 'z');
+      final char endLetter = (char) TestUtil.nextInt(random, 'b', 'z');
 
       final Map<String,String> map = new HashMap<String,String>();
       final NormalizeCharMap.Builder builder = new NormalizeCharMap.Builder();
@@ -303,9 +303,9 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
         System.out.println("  mappings:");
       }
       while (map.size() < numMappings) {
-        final String key = _TestUtil.randomSimpleStringRange(random, 'a', endLetter, 7);
+        final String key = TestUtil.randomSimpleStringRange(random, 'a', endLetter, 7);
         if (key.length() != 0 && !map.containsKey(key)) {
-          final String value = _TestUtil.randomSimpleString(random);
+          final String value = TestUtil.randomSimpleString(random);
           map.put(key, value);
           builder.add(key, value);
           if (VERBOSE) {
@@ -321,7 +321,7 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
       }
 
       for(int iter2=0;iter2<100;iter2++) {
-        final String content = _TestUtil.randomSimpleStringRange(random, 'a', endLetter, atLeast(1000));
+        final String content = TestUtil.randomSimpleStringRange(random, 'a', endLetter, atLeast(1000));
 
         if (VERBOSE) {
           System.out.println("  content=" + content);
@@ -427,7 +427,7 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
             }
             actualBuilder.append((char) ch);
           } else {
-            final char[] buffer = new char[_TestUtil.nextInt(random, 1, 100)];
+            final char[] buffer = new char[TestUtil.nextInt(random, 1, 100)];
             final int off = buffer.length == 1 ? 0 : random.nextInt(buffer.length-1);
             final int count = mapFilter.read(buffer, off, buffer.length-off);
             if (count == -1) {

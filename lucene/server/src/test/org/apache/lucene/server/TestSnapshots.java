@@ -20,7 +20,7 @@ package org.apache.lucene.server;
 import java.io.File;
 import java.util.Map;
 
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import net.minidev.json.JSONArray;
@@ -70,7 +70,7 @@ public class TestSnapshots extends ServerBaseTestCase {
     long indexGen2 = getLong("indexGen");
     commit();
 
-    File backupDir = _TestUtil.getTempDir("backup");
+    File backupDir = TestUtil.getTempDir("backup");
 
     // Make sure all files in the snapshot still exist, even
     // though we deleted that segment, and make a backup:
@@ -163,7 +163,7 @@ public class TestSnapshots extends ServerBaseTestCase {
       assertEquals(2, o.get("totalHits"));
 
     } finally {
-      _TestUtil.rmDir(backupDir);
+      TestUtil.rmDir(backupDir);
     }
   }
 

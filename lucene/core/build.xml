@@ -30,6 +30,12 @@
     org/apache/lucene/util/PrintStreamInfoStream.class
   "/>
 
+  <property name="forbidden-rue-excludes" value="
+    org/apache/lucene/search/FieldCache$CacheEntry.class
+    org/apache/lucene/util/RamUsageEstimator.class
+    org/apache/lucene/search/CachingWrapperFilter.class
+  "/>
+
   <import file="../common-build.xml"/>
 
   <property name="moman.commit-hash" value="5c5c2a1e4dea" />

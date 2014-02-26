@@ -198,7 +198,7 @@ public class JaspellLookup extends Lookup {
   /** Returns byte size of the underlying TST. */
   @Override
   public long sizeInBytes() {
-    return RamUsageEstimator.sizeOf(trie);
+    return trie.sizeInBytes();
   }
   
   @Override

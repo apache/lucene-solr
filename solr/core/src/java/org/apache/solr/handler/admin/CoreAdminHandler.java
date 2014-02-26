@@ -440,9 +440,6 @@ public class CoreAdminHandler extends RequestHandlerBase {
       .put(CoreAdminParams.COLLECTION, CoreDescriptor.CORE_COLLECTION)
       .put(CoreAdminParams.ROLES, CoreDescriptor.CORE_ROLES)
       .put(CoreAdminParams.CORE_NODE_NAME, CoreDescriptor.CORE_NODE_NAME)
-      .put(CoreAdminParams.SHARD_STATE, CloudDescriptor.SHARD_STATE)
-      .put(CoreAdminParams.SHARD_RANGE, CloudDescriptor.SHARD_RANGE)
-      .put(CoreAdminParams.SHARD_PARENT, CloudDescriptor.SHARD_PARENT)
       .put(ZkStateReader.NUM_SHARDS_PROP, CloudDescriptor.NUM_SHARDS)
       .build();
 
@@ -824,7 +821,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
     try {
       core = coreContainer.getCore(cname);
       if (core != null) {
-        syncStrategy = new SyncStrategy(core.getCoreDescriptor().getCoreContainer().getUpdateShardHandler());
+        syncStrategy = new SyncStrategy(core.getCoreDescriptor().getCoreContainer());
         
         Map<String,Object> props = new HashMap<String,Object>();
         props.put(ZkStateReader.BASE_URL_PROP, zkController.getBaseUrl());

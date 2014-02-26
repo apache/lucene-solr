@@ -268,7 +268,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
             for (String shard : sreq.actualShards) {
               ModifiableSolrParams params = new ModifiableSolrParams(sreq.params);
               params.remove(ShardParams.SHARDS);      // not a top-level request
-              params.set("distrib", "false");               // not a top-level request
+              params.set(CommonParams.DISTRIB, "false");               // not a top-level request
               params.remove("indent");
               params.remove(CommonParams.HEADER_ECHO_PARAMS);
               params.set(ShardParams.IS_SHARD, true);  // a sub (shard) request

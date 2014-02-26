@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.lucene.util.LuceneTestCase.BadApple;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -74,7 +75,7 @@ import org.junit.BeforeClass;
  * This test simply does a bunch of basic things in solrcloud mode and asserts things
  * work as expected.
  */
-@Slow
+@Slow @BadApple
 public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   
   private static final String DEFAULT_COLLECTION = "collection1";
@@ -342,7 +343,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     params.set("commitWithin", 10);
     add(cloudClient, params , getDoc("id", 300));
     
-    long timeout = System.currentTimeMillis() + 15000;
+    long timeout = System.currentTimeMillis() + 30000;
     while (cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound() != before + 1) {
       if (timeout <= System.currentTimeMillis()) {
         fail("commitWithin did not work");
@@ -440,7 +441,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
         // each replica should also give the same numDocs
         ArrayList<String> replicaAlts = new ArrayList<String>(replicaJetties.size() * 2);
         for (CloudJettyRunner replicaJetty : shardToJetty.get(shard)) {
-          String replica = removeProtocol(replicaJetty.url);
+          String replica = replicaJetty.url;
           query.set("shards", replica);
 
           // replicas already shuffled, use this in the alternative check below
@@ -484,7 +485,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
           ArrayList<String> replicas = new ArrayList<String>(7);
           for (CloudJettyRunner replicaJetty : shardToJetty.get(shard)) {
             if (0 == random().nextInt(3) || 0 == replicas.size()) {
-              replicas.add(removeProtocol(replicaJetty.url));
+              replicas.add(replicaJetty.url);
             }
           }
           Collections.shuffle(replicas, random());
@@ -1200,12 +1201,5 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     
     // insurance
     DirectUpdateHandler2.commitOnClose = true;
-  }
-
-  /**
-   * Given a URL as a string, removes the leading protocol from that string
-   */
-  private static String removeProtocol(String url) {
-    return url.replaceFirst("^[^:/]{1,20}:/+","");
   }
 }

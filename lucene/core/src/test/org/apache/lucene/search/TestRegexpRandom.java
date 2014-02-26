@@ -32,7 +32,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Create an index with terms from 000-999.
@@ -50,7 +50,7 @@ public class TestRegexpRandom extends LuceneTestCase {
     dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
-        .setMaxBufferedDocs(_TestUtil.nextInt(random(), 50, 1000)));
+        .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000)));
     
     Document doc = new Document();
     FieldType customType = new FieldType(TextField.TYPE_STORED);

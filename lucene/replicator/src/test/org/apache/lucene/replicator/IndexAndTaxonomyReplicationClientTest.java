@@ -48,8 +48,8 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.ThreadInterruptedException;
-import org.apache.lucene.util._TestUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -91,7 +91,7 @@ public class IndexAndTaxonomyReplicationClientTest extends ReplicatorTestCase {
         indexReader.close();
         indexReader = newReader;
         lastIndexGeneration = newGeneration;
-        _TestUtil.checkIndex(indexDir);
+        TestUtil.checkIndex(indexDir);
         
         // verify taxonomy index
         DirectoryTaxonomyReader newTaxoReader = TaxonomyReader.openIfChanged(taxoReader);
@@ -99,7 +99,7 @@ public class IndexAndTaxonomyReplicationClientTest extends ReplicatorTestCase {
           taxoReader.close();
           taxoReader = newTaxoReader;
         }
-        _TestUtil.checkIndex(taxoDir);
+        TestUtil.checkIndex(taxoDir);
         
         // verify faceted search
         int id = Integer.parseInt(indexReader.getIndexCommit().getUserData().get(VERSION_ID), 16);
@@ -191,7 +191,7 @@ public class IndexAndTaxonomyReplicationClientTest extends ReplicatorTestCase {
     publishTaxoDir = newDirectory();
     handlerIndexDir = newMockDirectory();
     handlerTaxoDir = newMockDirectory();
-    clientWorkDir = _TestUtil.getTempDir("replicationClientTest");
+    clientWorkDir = TestUtil.getTempDir("replicationClientTest");
     sourceDirFactory = new PerSessionDirectoryFactory(clientWorkDir);
     replicator = new LocalReplicator();
     callback = new IndexAndTaxonomyReadyCallback(handlerIndexDir, handlerTaxoDir);
@@ -399,11 +399,11 @@ public class IndexAndTaxonomyReplicationClientTest extends ReplicatorTestCase {
               reader.close();
             }
             // verify index is fully consistent
-            _TestUtil.checkIndex(handlerIndexDir.getDelegate());
+            TestUtil.checkIndex(handlerIndexDir.getDelegate());
             
             // verify taxonomy index is fully consistent (since we only add one
             // category to all documents, there's nothing much more to validate
-            _TestUtil.checkIndex(handlerTaxoDir.getDelegate());
+            TestUtil.checkIndex(handlerTaxoDir.getDelegate());
           } catch (IOException e) {
             throw new RuntimeException(e);
           } finally {

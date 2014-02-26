@@ -33,7 +33,6 @@ import java.util.concurrent.Callable;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.search.suggest.Lookup; // javadocs
 import org.apache.lucene.search.suggest.analyzing.AnalyzingInfixSuggester;
 import org.apache.lucene.search.suggest.analyzing.AnalyzingSuggester;
 import org.apache.lucene.search.suggest.analyzing.FuzzySuggester;
@@ -162,7 +161,7 @@ public class LookupBenchmarkTest extends LuceneTestCase {
     } catch (InstantiationException e) {
       Analyzer a = new MockAnalyzer(random, MockTokenizer.KEYWORD, false);
       if (cls == AnalyzingInfixSuggester.class) {
-        lookup = new AnalyzingInfixSuggester(TEST_VERSION_CURRENT, _TestUtil.getTempDir("LookupBenchmarkTest"), a);
+        lookup = new AnalyzingInfixSuggester(TEST_VERSION_CURRENT, TestUtil.getTempDir("LookupBenchmarkTest"), a);
       } else {
         Constructor<? extends Lookup> ctor = cls.getConstructor(Analyzer.class);
         lookup = ctor.newInstance(a);

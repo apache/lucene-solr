@@ -86,7 +86,7 @@ public abstract class BaseDocIdSetTestCase<T extends DocIdSet> extends LuceneTes
 
   /** Compare the content of the set against a {@link BitSet}. */
   public void testAgainstBitSet() throws IOException {
-    final int numBits = _TestUtil.nextInt(random(), 100, 1 << 20);
+    final int numBits = TestUtil.nextInt(random(), 100, 1 << 20);
     // test various random sets with various load factors
     for (float percentSet : new float[] {0f, 0.0001f, random().nextFloat() / 2, 0.9f, 1f}) {
       final BitSet set = randomSet(numBits, percentSet);
@@ -103,7 +103,7 @@ public abstract class BaseDocIdSetTestCase<T extends DocIdSet> extends LuceneTes
     copy = copyOf(set, numBits); // then random index
     assertEquals(numBits, set, copy);
     // test regular increments
-    for (int inc = 2; inc < 1000; inc += _TestUtil.nextInt(random(), 1, 100)) {
+    for (int inc = 2; inc < 1000; inc += TestUtil.nextInt(random(), 1, 100)) {
       set = new BitSet(numBits);
       for (int d = random().nextInt(10); d < numBits; d += inc) {
         set.set(d);

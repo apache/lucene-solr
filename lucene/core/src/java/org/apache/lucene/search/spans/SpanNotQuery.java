@@ -62,7 +62,7 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
     this.pre = (pre >=0) ? pre : 0;
     this.post = (post >= 0) ? post : 0;
 
-    if (!include.getField().equals(exclude.getField()))
+    if (include.getField() != null && exclude.getField() != null && !include.getField().equals(exclude.getField()))
       throw new IllegalArgumentException("Clauses must have same field.");
   }
 

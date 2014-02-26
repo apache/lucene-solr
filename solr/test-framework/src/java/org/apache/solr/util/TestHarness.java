@@ -132,7 +132,7 @@ public class TestHarness extends BaseTestHarness {
       this.coreName = coreName;
 
       SolrResourceLoader loader = new SolrResourceLoader(SolrResourceLoader.locateSolrHome());
-      ConfigSolr config = getTestHarnessConfig(coreName, dataDir, solrConfig, indexSchema);
+      ConfigSolr config = getTestHarnessConfig(loader, coreName, dataDir, solrConfig, indexSchema);
       container = new CoreContainer(loader, config);
       container.load();
 
@@ -150,11 +150,19 @@ public class TestHarness extends BaseTestHarness {
   /**
    * Create a TestHarness using a specific solr home directory and solr xml
    * @param solrHome the solr home directory
-   * @param solrXml a File pointing to a solr.xml configuration
+   * @param solrXml the text of a solrxml
    */
   public TestHarness(String solrHome, String solrXml) {
-    this(new SolrResourceLoader(solrHome),
-          ConfigSolr.fromString(solrXml));
+    this(new SolrResourceLoader(solrHome), solrXml);
+  }
+
+  /**
+   * Create a TestHarness using a specific solr resource loader and solr xml
+   * @param loader the SolrResourceLoader to use
+   * @param solrXml the text of a solrxml
+   */
+  public TestHarness(SolrResourceLoader loader, String solrXml) {
+    this(loader, ConfigSolr.fromString(loader, solrXml));
   }
 
   /**
@@ -169,7 +177,7 @@ public class TestHarness extends BaseTestHarness {
     updater.init(null);
   }
 
-  private static ConfigSolr getTestHarnessConfig(String coreName, String dataDir,
+  private static ConfigSolr getTestHarnessConfig(SolrResourceLoader loader, String coreName, String dataDir,
                                                  String solrConfig, String schema) {
     String solrxml = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"
         + "<solr persistent=\"false\">\n"
@@ -185,7 +193,7 @@ public class TestHarness extends BaseTestHarness {
         + "\" transient=\"false\" loadOnStartup=\"true\""
         + " shard=\"${shard:shard1}\" collection=\"${collection:collection1}\" instanceDir=\"" + coreName + "/\" />\n"
         + "  </cores>\n" + "</solr>";
-    return ConfigSolr.fromString(solrxml);
+    return ConfigSolr.fromString(loader, solrxml);
   }
   
   public CoreContainer getCoreContainer() {

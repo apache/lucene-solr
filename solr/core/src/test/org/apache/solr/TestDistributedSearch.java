@@ -442,7 +442,10 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     // TODO: look into why passing true causes fails
     params.set("distrib", "false");
     final QueryResponse controlRsp = controlClient.query(params);
-    validateControlData(controlRsp);
+    // if time.allowed is specified then even a control response can return a partialResults header
+    if (params.get(CommonParams.TIME_ALLOWED) == null)  {
+      validateControlData(controlRsp);
+    }
 
     params.remove("distrib");
     setDistributedParams(params);

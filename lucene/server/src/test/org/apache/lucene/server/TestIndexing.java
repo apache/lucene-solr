@@ -21,7 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Locale;
 
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import net.minidev.json.JSONArray;
@@ -230,7 +230,7 @@ public class TestIndexing extends ServerBaseTestCase {
   }
 
   public void testBoost() throws Exception {
-    _TestUtil.rmDir(new File("boost"));
+    TestUtil.rmDir(new File("boost"));
     curIndexName = "boost";
     send("createIndex");
     send("settings", "{directory: RAMDirectory, matchVersion: LUCENE_40}");
@@ -314,7 +314,7 @@ public class TestIndexing extends ServerBaseTestCase {
       if (i == 0) {
         send("createIndex");
       } else {
-        File dir = new File(_TestUtil.getTempDir("recency"), "root");
+        File dir = new File(TestUtil.getTempDir("recency"), "root");
         send("createIndex", "{rootDir: " + dir.getAbsolutePath() + "}");
       }
       String dirImpl = i == 0 ? "RAMDirectory" : "FSDirectory";

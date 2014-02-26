@@ -25,14 +25,13 @@ import java.util.Random;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.IndexWriter; // javadoc
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NullInfoStream;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
-import org.apache.lucene.util._TestUtil;
 
 /** Silly class that randomizes the indexing experience.  EG
  *  it may swap in a different merge policy/scheduler; may
@@ -88,7 +87,7 @@ public class RandomIndexWriter implements Closeable {
     // TODO: this should be solved in a different way; Random should not be shared (!).
     this.r = new Random(r.nextLong());
     w = mockIndexWriter(dir, c, r);
-    flushAt = _TestUtil.nextInt(r, 10, 1000);
+    flushAt = TestUtil.nextInt(r, 10, 1000);
     codec = w.getConfig().getCodec();
     if (LuceneTestCase.VERBOSE) {
       System.out.println("RIW dir=" + dir + " config=" + w.getConfig());
@@ -155,7 +154,7 @@ public class RandomIndexWriter implements Closeable {
         System.out.println("RIW.add/updateDocument: now doing a commit at docCount=" + docCount);
       }
       w.commit();
-      flushAt += _TestUtil.nextInt(r, (int) (flushAtFactor * 10), (int) (flushAtFactor * 1000));
+      flushAt += TestUtil.nextInt(r, (int) (flushAtFactor * 10), (int) (flushAtFactor * 1000));
       if (flushAtFactor < 2e6) {
         // gradually but exponentially increase time b/w flushes
         flushAtFactor *= 1.05;
@@ -283,7 +282,7 @@ public class RandomIndexWriter implements Closeable {
         w.forceMerge(1);
       } else {
         // partial forceMerge
-        final int limit = _TestUtil.nextInt(r, 1, segCount);
+        final int limit = TestUtil.nextInt(r, 1, segCount);
         if (LuceneTestCase.VERBOSE) {
           System.out.println("RIW: doRandomForceMerge(" + limit + ")");
         }

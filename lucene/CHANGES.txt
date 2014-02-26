@@ -65,6 +65,38 @@ Optimizations
   on Windows if NIOFSDirectory is used, mmapped files are still locked.
   (Michael Poindexter, Robert Muir, Uwe Schindler)
 
+
+======================= Lucene 4.8.0 =======================
+
+New Features
+
+* LUCENE-5454: Add SortedSetSortField to lucene/sandbox, to allow sorting
+  on multi-valued field. (Robert Muir)
+
+API Changes
+
+* LUCENE-5454: Add RandomAccessOrds, an optional extension of SortedSetDocValues
+  that supports random access to the ordinals in a document. (Robert Muir)
+
+Bug fixes
+
+* LUCENE-5450: Fix getField() NPE issues with SpanOr/SpanNear when they have an 
+  empty list of clauses. This can happen for example,  when a wildcard matches 
+  no terms.  (Tim Allison via Robert Muir)
+
+* LUCENE-5473: Throw IllegalArgumentException, not
+  NullPointerException, if the synonym map is empty when creating
+  SynonymFilter (帅广应 via Mike McCandless)
+
+Test Framework
+
+* LUCENE-5449: Rename _TestUtil and _TestHelper to remove the leading _.
+
+Build
+
+* LUCENE-5463: RamUsageEstimator.(human)sizeOf(Object) is now a forbidden API.
+  (Adrien Grand, Robert Muir)
+
 ======================= Lucene 4.7.0 =======================
 
 New Features
@@ -107,11 +139,11 @@ New Features
   parent. Added QueryNode.removeFromParent() that allows nodes to be 
   detached from its parent node. (Adriano Crestani)
 
-* LUCENE-5395: Upgrade Spatial4j 0.4: Parses WKT (including ENVELOPE) with
-  extension "BUFFER"; buffering a point results in a Circle. JTS isn't needed
-  for WKT any more but remains required for Polygons. New Shapes:
-  ShapeCollection and BufferedLineString. Various other improvements and bug
-  fixes too. More info:
+* LUCENE-5395 LUCENE-5451: Upgrade to Spatial4j 0.4.1: Parses WKT (including
+  ENVELOPE) with extension "BUFFER"; buffering a point results in a Circle.
+  JTS isn't needed for WKT any more but remains required for Polygons. New
+  Shapes: ShapeCollection and BufferedLineString. Various other improvements and
+  bug fixes too. More info:
   https://github.com/spatial4j/spatial4j/blob/master/CHANGES.md  (David Smiley)
 
 * LUCENE-5405: If an analysis component throws an exception, Lucene
@@ -154,6 +186,21 @@ New Features
   are out of bounds, e.g. using a bounding box filter with distance
   range faceting.  (Mike McCandless)
 
+* LUCENE-5440: Add LongBitSet for managing more than 2.1B bits (otherwise use
+  FixedBitSet). (Shai Erera)
+
+* LUCENE-5437: ASCIIFoldingFilter now has an option to preserve the original token
+  and emit it on the same position as the folded token only if the actual token was
+  folded. (Simon Willnauer, Nik Everett)
+
+* LUCENE-5408: Add spatial SerializedDVStrategy that serializes a binary
+  representations of a shape into BinaryDocValues. It supports exact geometry
+  relationship calculations. (David Smiley)
+
+* LUCENE-5457: Add SloppyMath.earthDiameter(double latitude) that returns an
+  approximate value of the diameter of the earth at the given latitude.
+  (Adrien Grand)
+
 Build
 
 * LUCENE-5217,LUCENE-5420: Maven config: get dependencies from Ant+Ivy config;
@@ -190,45 +237,18 @@ Build
 * LUCENE-5411: Upgrade to released JFlex 1.5.0; stop requiring
   a locally built JFlex snapshot jar. (Steve Rowe)
 
+* LUCENE-5465: Solr Contrib "map-reduce" breaks Manifest of all other
+  JAR files by adding a broken Main-Class attribute.
+  (Uwe Schindler, Steve Rowe)
+
 Bug fixes
 
 * LUCENE-5285: Improved highlighting of multi-valued fields with
   FastVectorHighlighter. (Nik Everett via Adrien Grand)
 
-* LUCENE-5373: Memory usage of
-  [Lucene40/Lucene42/Memory/Direct]DocValuesFormat was over-estimated.
-  (Shay Banon, Adrien Grand, Robert Muir)
-
-* LUCENE-5374: IndexWriter processes internal events after the it
-  closed itself internally. This rare condition can happen if an
-  IndexWriter has internal changes that were not fully applied yet
-  like when index / flush requests happen concurrently to the close or
-  rollback call. (Simon Willnauer)
-
-* LUCENE-5361: Fixed handling of query boosts in FastVectorHighlighter.
-  (Nik Everett via Adrien Grand)
-  
-* LUCENE-5344: Flexible StandardQueryParser behaves differently than 
-  ClassicQueryParser. (Adriano Crestani)
-
 * LUCENE-5391: UAX29URLEmailTokenizer should not tokenize no-scheme
   domain-only URLs that are followed by an alphanumeric character.
   (Chris Geeringh, Steve Rowe)
-
-* LUCENE-5394: Fix TokenSources.getTokenStream to return payloads if
-  they were indexed with the term vectors. (Mike McCandless)
-
-* LUCENE-5375: ToChildBlockJoinQuery works harder to detect mis-use,
-  when the parent query incorrectly returns child documents, and throw
-  a clear exception saying so. (Dr. Oleg Savrasov via Mike McCandless)
-
-* LUCENE-5401: Field.StringTokenStream#end() calls super.end() now,
-  preventing wrong term positions for fields that use
-  StringTokenStream. (Michael Busch)
-
-* LUCENE-5377: IndexWriter.addIndexes(Directory[]) would cause corruption
-  on Lucene 4.6 if any index segments were Lucene 4.0-4.5.
-  (Littlestar, Mike McCandless, Shai Erera, Robert Muir)
 
 * SOLR-5661: PriorityQueue now refuses to allocate itself if the
   incoming maxSize is too large (Raintung Li via Mike McCandless)
@@ -256,6 +276,25 @@ Bug fixes
   loop. ReferenceManager now throws IllegalStateException if currently managed
   resources ref count is 0. (Simon Willnauer)
 
+* LUCENE-5443: Lucene45DocValuesProducer.ramBytesUsed() may throw
+  ConcurrentModificationException. (Shai Erera, Simon Willnauer)
+
+* LUCENE-5444: MemoryIndex did't respect the analyzers offset gap and
+  offsets were corrupted if multiple fields with the same name were
+  added to the memory index. (Britta Weber, Simon Willnauer)
+
+* LUCENE-5447: StandardTokenizer should break at consecutive chars matching
+  Word_Break = MidLetter, MidNum and/or MidNumLet (Steve Rowe)
+
+* LUCENE-5462: RamUsageEstimator.sizeOf(Object) is not used anymore to
+  estimate memory usage of segments. This used to make
+  SegmentReader.ramBytesUsed very CPU-intensive. (Adrien Grand)
+
+* LUCENE-5461: ControlledRealTimeReopenThread would sometimes wait too
+  long (up to targetMaxStaleSec) when a searcher is waiting for a
+  specific generation, when it should have waited for at most
+  targetMinStaleSec. (Hans Lund via Mike McCandless)
+  
 API Changes
 
 * LUCENE-5339: The facet module was simplified/reworked to make the
@@ -291,14 +330,14 @@ Optimizations
 * LUCENE-5271: A slightly more accurate SloppyMath distance.
   (Gilad Barkai via Ryan Ernst)
 
+* LUCENE-5399: Deep paging using IndexSearcher.searchAfter when
+  sorting by fields is faster (Rob Muir, Mike McCandless)
+
 Changes in Runtime Behavior
 
 * LUCENE-5362: IndexReader and SegmentCoreReaders now throw 
   AlreadyClosedException if the refCount in incremented but
-  is less that 1. (Simon Willnauer) 
-
-* LUCENE-4399: Deep paging using IndexSearcher.searchAfter when
-  sorting by fields is faster (Rob Muir, Mike McCandless)
+  is less that 1. (Simon Willnauer)
 
 Documentation
 
@@ -309,6 +348,41 @@ Documentation
 * LUCENE-5389: Add more guidance in the analyis documentation 
   package overview.
   (Benson Margulies via Robert Muir - pull request #14)
+
+======================= Lucene 4.6.1 =======================
+
+Bug fixes
+
+* LUCENE-5373: Memory usage of
+  [Lucene40/Lucene42/Memory/Direct]DocValuesFormat was over-estimated.
+  (Shay Banon, Adrien Grand, Robert Muir)
+
+* LUCENE-5361: Fixed handling of query boosts in FastVectorHighlighter.
+  (Nik Everett via Adrien Grand)
+
+* LUCENE-5374: IndexWriter processes internal events after the it
+  closed itself internally. This rare condition can happen if an
+  IndexWriter has internal changes that were not fully applied yet
+  like when index / flush requests happen concurrently to the close or
+  rollback call. (Simon Willnauer)
+
+* LUCENE-5394: Fix TokenSources.getTokenStream to return payloads if
+  they were indexed with the term vectors. (Mike McCandless)
+
+* LUCENE-5344: Flexible StandardQueryParser behaves differently than
+  ClassicQueryParser. (Adriano Crestani)
+
+* LUCENE-5375: ToChildBlockJoinQuery works harder to detect mis-use,
+  when the parent query incorrectly returns child documents, and throw
+  a clear exception saying so. (Dr. Oleg Savrasov via Mike McCandless)
+
+* LUCENE-5401: Field.StringTokenStream#end() calls super.end() now,
+  preventing wrong term positions for fields that use
+  StringTokenStream. (Michael Busch)
+
+* LUCENE-5377: IndexWriter.addIndexes(Directory[]) would cause corruption
+  on Lucene 4.6 if any index segments were Lucene 4.0-4.5.
+  (Littlestar, Mike McCandless, Shai Erera, Robert Muir)
 
 ======================= Lucene 4.6.0 =======================
 

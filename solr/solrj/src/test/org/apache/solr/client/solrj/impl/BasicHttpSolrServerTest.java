@@ -48,6 +48,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.ExternalPaths;
+import org.apache.solr.util.SSLTestConfig;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -138,27 +139,6 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
         .addServletWithMapping(SlowServlet.class, "/slow/*");
     jetty.getDispatchFilter().getServletHandler()
         .addServletWithMapping(DebugServlet.class, "/debug/*");
-  }
-  
-  // what is this actually testing? this test WILL randomly fail.
-  // not a good unit test!
-  @Test
-  public void testConnectionRefused() throws MalformedURLException {
-    int unusedPort = findUnusedPort(); // XXX even if fwe found an unused port
-                                       // it might not be unused anymore
-    HttpSolrServer server = new HttpSolrServer("http://127.0.0.1:" + unusedPort
-        + "/solr");
-    server.setConnectionTimeout(500);
-    SolrQuery q = new SolrQuery("*:*");
-    try {
-      QueryResponse response = server.query(q);
-      fail("Should have thrown an exception.");
-    } catch (SolrServerException e) {
-      assumeFalse("blackholed!", e.getMessage().contains("IOException occured when talking to server"));
-      assertTrue(e.getMessage().contains("refused"));
-    } finally {
-      server.shutdown();
-    }
   }
   
   @Test
@@ -506,8 +486,8 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
 
   /**
    * A trivial test that verifies the example keystore used for SSL testing can be 
-   * found using the base class. this helps future-proof against hte possibility of 
-   * something moving/breaking thekeystore path in a way that results in the SSL 
+   * found using the base class. this helps future-proof against the possibility of 
+   * something moving/breaking the keystore path in a way that results in the SSL 
    * randomization logic being forced to silently never use SSL.  (We can't enforce 
    * this type of check in the base class because then it would not be usable by client 
    * code depending on the test framework
@@ -516,7 +496,7 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
     assertNotNull("Example keystore is null, meaning that something has changed in the " +
                   "structure of the example configs and/or ExternalPaths.java - " + 
                   "SSL randomization is broken",
-                  getExampleKeystoreFile());
+                  SSLTestConfig.TEST_KEYSTORE);
   }
 
 

@@ -477,6 +477,12 @@ public class IndexSchema {
       similarityFactory = readSimilarity(loader, node);
       if (similarityFactory == null) {
         similarityFactory = new DefaultSimilarityFactory();
+        final NamedList similarityParams = new NamedList();
+        Version luceneVersion = getDefaultLuceneMatchVersion();
+        if (!luceneVersion.onOrAfter(Version.LUCENE_47)) {
+          similarityParams.add(DefaultSimilarityFactory.DISCOUNT_OVERLAPS, false);
+        }
+        similarityFactory.init(SolrParams.toSolrParams(similarityParams));
       } else {
         isExplicitSimilarity = true;
       }

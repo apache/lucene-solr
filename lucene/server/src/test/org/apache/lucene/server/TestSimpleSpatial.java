@@ -20,7 +20,7 @@ package org.apache.lucene.server;
 import java.io.File;
 import java.util.Locale;
 
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import net.minidev.json.JSONArray;

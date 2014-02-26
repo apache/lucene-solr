@@ -20,7 +20,7 @@ package org.apache.lucene.server;
 import java.io.File;
 import java.util.Locale;
 
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import net.minidev.json.JSONArray;
@@ -122,7 +122,7 @@ public class TestAnalysis extends ServerBaseTestCase {
 
   public void testPositionIncrementGap() throws Exception {
     curIndexName = "posinc";
-    _TestUtil.rmDir(new File("posinc"));
+    TestUtil.rmDir(new File("posinc"));
     send("createIndex", "{rootDir: posinc}");
     send("settings", "{directory: RAMDirectory}");
     send("registerFields", "{fields: {author1: {type: text, analyzer: {tokenizer: Whitespace}, multiValued: true}, author2: {type: text, analyzer: {tokenizer: Whitespace, positionIncrementGap: 1}, multiValued: true}}}");

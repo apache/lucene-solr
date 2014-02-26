@@ -18,7 +18,6 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
-import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -31,7 +30,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
 
 
@@ -85,7 +84,7 @@ public class FuzzyTermOnShortTermsTest extends LuceneTestCase {
       Directory directory = newDirectory();
       RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
           newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer)
-          .setMaxBufferedDocs(_TestUtil.nextInt(random(), 100, 1000)).setMergePolicy(newLogMergePolicy()));
+          .setMaxBufferedDocs(TestUtil.nextInt(random(), 100, 1000)).setMergePolicy(newLogMergePolicy()));
 
       for (String s : vals){
          Document d = new Document();

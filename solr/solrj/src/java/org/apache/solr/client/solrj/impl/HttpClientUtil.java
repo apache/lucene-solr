@@ -93,6 +93,10 @@ public class HttpClientUtil {
     configurer = newConfigurer;
   }
   
+  public static HttpClientConfigurer getConfigurer() {
+    return configurer;
+  }
+  
   /**
    * Creates new http client by using the provided configuration.
    * 

@@ -29,19 +29,19 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestFacetsConfig extends FacetTestCase {
   
   public void testPathToStringAndBack() throws Exception {
     int iters = atLeast(1000);
     for(int i=0;i<iters;i++) {
-      int numParts = _TestUtil.nextInt(random(), 1, 6);
+      int numParts = TestUtil.nextInt(random(), 1, 6);
       String[] parts = new String[numParts];
       for(int j=0;j<numParts;j++) {
         String s;
         while (true) {
-          s = _TestUtil.randomUnicodeString(random());
+          s = TestUtil.randomUnicodeString(random());
           if (s.length() > 0) {
             break;
           }

@@ -17,22 +17,6 @@
 
 package org.apache.solr.core;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
-import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.client.solrj.response.UpdateResponse;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -45,9 +29,25 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.LuceneTestCase.BadApple;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 /**
  * Incorporate the open/close stress tests into unit tests.
  */
+@BadApple
 public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
 
   private final Object locker = new Object();
@@ -74,7 +74,12 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
   List<HttpSolrServer> queryServers = new ArrayList<HttpSolrServer>(queryThreads);
 
   static String savedFactory;
+  
+  @BeforeClass
+  public static void beforeClass() {
 
+  }
+  
   @Before
   public void setupServer() throws Exception {
     coreCounts = new TreeMap<String, Long>();
@@ -84,7 +89,7 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
     solrHomeDirectory = new File(TEMP_DIR, "OpenCloseCoreStressTest_");
     FileUtils.deleteDirectory(solrHomeDirectory); // Ensure that a failed test didn't leave something lying around.
 
-    jetty = new JettySolrRunner(solrHomeDirectory.getAbsolutePath(), "/solr", 0);
+    jetty = new JettySolrRunner(solrHomeDirectory.getAbsolutePath(), "/solr", 0, null, null, true, null, sslConfig);
   }
 
   @After
@@ -132,7 +137,7 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
 
   private void getServers() throws Exception {
     jetty.start();
-    url = "http://127.0.0.1:" + jetty.getLocalPort() + "/solr/";
+    url = buildUrl(jetty.getLocalPort(), "/solr/");
 
     // Mostly to keep annoying logging messages from being sent out all the time.
 

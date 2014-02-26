@@ -30,7 +30,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestLimitTokenCountAnalyzer extends BaseTokenStreamTestCase {
 
@@ -59,7 +59,7 @@ public class TestLimitTokenCountAnalyzer extends BaseTokenStreamTestCase {
     
     for (boolean consumeAll : new boolean[] { true, false }) {
       Directory dir = newDirectory();
-      int limit = _TestUtil.nextInt(random(), 50, 101000);
+      int limit = TestUtil.nextInt(random(), 50, 101000);
       MockAnalyzer mock = new MockAnalyzer(random());
 
       // if we are consuming all tokens, we can use the checks, 

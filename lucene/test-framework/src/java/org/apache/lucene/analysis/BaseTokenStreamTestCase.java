@@ -41,7 +41,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Rethrow;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /** 
  * Base class for all Lucene unit tests that use TokenStreams. 
@@ -493,12 +493,12 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     boolean useCharFilter = random.nextBoolean();
     Directory dir = null;
     RandomIndexWriter iw = null;
-    final String postingsFormat =  _TestUtil.getPostingsFormat("dummy");
+    final String postingsFormat =  TestUtil.getPostingsFormat("dummy");
     boolean codecOk = iterations * maxWordLength < 100000 ||
         !(postingsFormat.equals("Memory") ||
             postingsFormat.equals("SimpleText"));
     if (rarely(random) && codecOk) {
-      dir = newFSDirectory(_TestUtil.getTempDir("bttc"));
+      dir = newFSDirectory(TestUtil.getTempDir("bttc"));
       iw = new RandomIndexWriter(new Random(seed), dir, a);
     }
     boolean success = false;
@@ -506,7 +506,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       checkRandomData(new Random(seed), a, iterations, maxWordLength, useCharFilter, simple, offsetsAreCorrect, iw);
       // now test with multiple threads: note we do the EXACT same thing we did before in each thread,
       // so this should only really fail from another thread if its an actual thread problem
-      int numThreads = _TestUtil.nextInt(random, 2, 4);
+      int numThreads = TestUtil.nextInt(random, 2, 4);
       AnalysisThread threads[] = new AnalysisThread[numThreads];
       for (int i = 0; i < threads.length; i++) {
         threads[i] = new AnalysisThread(seed, a, iterations, maxWordLength, useCharFilter, simple, offsetsAreCorrect, iw);
@@ -556,7 +556,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       if (random.nextBoolean()) {
         ft.setOmitNorms(true);
       }
-      String pf = _TestUtil.getPostingsFormat("dummy");
+      String pf = TestUtil.getPostingsFormat("dummy");
       boolean supportsOffsets = !doesntSupportOffsets.contains(pf);
       switch(random.nextInt(4)) {
         case 0: ft.setIndexOptions(IndexOptions.DOCS_ONLY); break;
@@ -598,7 +598,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
           }
         } else {
           // synthetic
-          text = randomAnalysisString(random, maxWordLength, simple);
+          text = TestUtil.randomAnalysisString(random, maxWordLength, simple);
         }
         
         try {
@@ -874,77 +874,6 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       }
 
       field.setReaderValue(useCharFilter ? new MockCharFilter(reader, remainder) : reader);
-    }
-  }
-  
-  private static String randomAnalysisString(Random random, int maxLength, boolean simple) {
-    assert maxLength >= 0;
-    
-    // sometimes just a purely random string
-    if (random.nextInt(31) == 0) {
-      return randomSubString(random, random.nextInt(maxLength), simple);
-    }
-    
-    // otherwise, try to make it more realistic with 'words' since most tests use MockTokenizer
-    // first decide how big the string will really be: 0..n
-    maxLength = random.nextInt(maxLength);
-    int avgWordLength = _TestUtil.nextInt(random, 3, 8);
-    StringBuilder sb = new StringBuilder();
-    while (sb.length() < maxLength) {
-      if (sb.length() > 0) {
-        sb.append(' ');
-      }
-      int wordLength = -1;
-      while (wordLength < 0) {
-        wordLength = (int) (random.nextGaussian() * 3 + avgWordLength);
-      }
-      wordLength = Math.min(wordLength, maxLength - sb.length());
-      sb.append(randomSubString(random, wordLength, simple));
-    }
-    return sb.toString();
-  }
-  
-  private static String randomSubString(Random random, int wordLength, boolean simple) {
-    if (wordLength == 0) {
-      return "";
-    }
-    
-    int evilness = _TestUtil.nextInt(random, 0, 20);
-    
-    StringBuilder sb = new StringBuilder();
-    while (sb.length() < wordLength) {;
-      if (simple) { 
-        sb.append(random.nextBoolean() ? _TestUtil.randomSimpleString(random, wordLength) : _TestUtil.randomHtmlishString(random, wordLength));
-      } else {
-        if (evilness < 10) {
-          sb.append(_TestUtil.randomSimpleString(random, wordLength));
-        } else if (evilness < 15) {
-          assert sb.length() == 0; // we should always get wordLength back!
-          sb.append(_TestUtil.randomRealisticUnicodeString(random, wordLength, wordLength));
-        } else if (evilness == 16) {
-          sb.append(_TestUtil.randomHtmlishString(random, wordLength));
-        } else if (evilness == 17) {
-          // gives a lot of punctuation
-          sb.append(_TestUtil.randomRegexpishString(random, wordLength));
-        } else {
-          sb.append(_TestUtil.randomUnicodeString(random, wordLength));
-        }
-      }
-    }
-    if (sb.length() > wordLength) {
-      sb.setLength(wordLength);
-      if (Character.isHighSurrogate(sb.charAt(wordLength-1))) {
-        sb.setLength(wordLength-1);
-      }
-    }
-    
-    if (random.nextInt(17) == 0) {
-      // mix up case
-      String mixedUp = _TestUtil.randomlyRecaseCodePoints(random, sb.toString());
-      assert mixedUp.length() == sb.length();
-      return mixedUp;
-    } else {
-      return sb.toString();
     }
   }
 

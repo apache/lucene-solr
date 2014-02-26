@@ -27,7 +27,7 @@ import java.util.LinkedHashMap;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.FixedBitSet;
 
 final class SloppyPhraseScorer extends Scorer {
   private PhrasePositions min, max;
@@ -152,7 +152,7 @@ final class SloppyPhraseScorer extends Scorer {
       return true; // not a repeater
     }
     PhrasePositions[] rg = rptGroups[pp.rptGroup];
-    OpenBitSet bits = new OpenBitSet(rg.length); // for re-queuing after collisions are resolved
+    FixedBitSet bits = new FixedBitSet(rg.length); // for re-queuing after collisions are resolved
     int k0 = pp.rptInd;
     int k;
     while((k=collide(pp)) >= 0) {
@@ -161,16 +161,21 @@ final class SloppyPhraseScorer extends Scorer {
         return false; // exhausted
       }
       if (k != k0) { // careful: mark only those currently in the queue
+        bits = FixedBitSet.ensureCapacity(bits, k);
         bits.set(k); // mark that pp2 need to be re-queued
       }
     }
     // collisions resolved, now re-queue
     // empty (partially) the queue until seeing all pps advanced for resolving collisions
     int n = 0;
+    // TODO would be good if we can avoid calling cardinality() in each iteration!
+    int numBits = bits.length(); // larges bit we set
     while (bits.cardinality() > 0) {
       PhrasePositions pp2 = pq.pop();
       rptStack[n++] = pp2;
-      if (pp2.rptGroup >= 0 && bits.get(pp2.rptInd)) {
+      if (pp2.rptGroup >= 0 
+          && pp2.rptInd < numBits  // this bit may not have been set
+          && bits.get(pp2.rptInd)) {
         bits.clear(pp2.rptInd);
       }
     }
@@ -405,7 +410,7 @@ final class SloppyPhraseScorer extends Scorer {
     } else {
       // more involved - has multi-terms
       ArrayList<HashSet<PhrasePositions>> tmp = new ArrayList<HashSet<PhrasePositions>>();
-      ArrayList<OpenBitSet> bb = ppTermsBitSets(rpp, rptTerms);
+      ArrayList<FixedBitSet> bb = ppTermsBitSets(rpp, rptTerms);
       unionTermGroups(bb);
       HashMap<Term,Integer> tg = termGroups(rptTerms, bb);
       HashSet<Integer> distinctGroupIDs = new HashSet<Integer>(tg.values());
@@ -467,10 +472,10 @@ final class SloppyPhraseScorer extends Scorer {
   }
   
   /** bit-sets - for each repeating pp, for each of its repeating terms, the term ordinal values is set */
-  private ArrayList<OpenBitSet> ppTermsBitSets(PhrasePositions[] rpp, HashMap<Term,Integer> tord) {
-    ArrayList<OpenBitSet> bb = new ArrayList<OpenBitSet>(rpp.length);
+  private ArrayList<FixedBitSet> ppTermsBitSets(PhrasePositions[] rpp, HashMap<Term,Integer> tord) {
+    ArrayList<FixedBitSet> bb = new ArrayList<FixedBitSet>(rpp.length);
     for (PhrasePositions pp : rpp) {
-      OpenBitSet b = new OpenBitSet(tord.size());
+      FixedBitSet b = new FixedBitSet(tord.size());
       Integer ord;
       for (Term t: pp.terms) {
         if ((ord=tord.get(t))!=null) {
@@ -483,14 +488,14 @@ final class SloppyPhraseScorer extends Scorer {
   }
   
   /** union (term group) bit-sets until they are disjoint (O(n^^2)), and each group have different terms */
-  private void unionTermGroups(ArrayList<OpenBitSet> bb) {
+  private void unionTermGroups(ArrayList<FixedBitSet> bb) {
     int incr;
     for (int i=0; i<bb.size()-1; i+=incr) {
       incr = 1;
       int j = i+1;
       while (j<bb.size()) {
         if (bb.get(i).intersects(bb.get(j))) {
-          bb.get(i).union(bb.get(j));
+          bb.get(i).or(bb.get(j));
           bb.remove(j);
           incr = 0;
         } else {
@@ -501,7 +506,7 @@ final class SloppyPhraseScorer extends Scorer {
   }
   
   /** map each term to the single group that contains it */ 
-  private HashMap<Term,Integer> termGroups(LinkedHashMap<Term,Integer> tord, ArrayList<OpenBitSet> bb) throws IOException {
+  private HashMap<Term,Integer> termGroups(LinkedHashMap<Term,Integer> tord, ArrayList<FixedBitSet> bb) throws IOException {
     HashMap<Term,Integer> tg = new HashMap<Term,Integer>();
     Term[] t = tord.keySet().toArray(new Term[0]);
     for (int i=0; i<bb.size(); i++) { // i is the group no.

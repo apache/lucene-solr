@@ -42,7 +42,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CommandLineUtil;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.LongBitSet;
 import org.apache.lucene.util.StringHelper;
 
 /**
@@ -1392,7 +1392,7 @@ public class CheckIndex {
   
   private static void checkSortedSetDocValues(String fieldName, AtomicReader reader, SortedSetDocValues dv, Bits docsWithField) {
     final long maxOrd = dv.getValueCount()-1;
-    OpenBitSet seenOrds = new OpenBitSet(dv.getValueCount());
+    LongBitSet seenOrds = new LongBitSet(dv.getValueCount());
     long maxOrd2 = -1;
     for (int i = 0; i < reader.maxDoc(); i++) {
       dv.setDocument(i);
@@ -1401,24 +1401,42 @@ public class CheckIndex {
       if (docsWithField.get(i)) {
         int ordCount = 0;
         while ((ord = dv.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
-          ordCount++;
           if (ord <= lastOrd) {
             throw new RuntimeException("ords out of order: " + ord + " <= " + lastOrd + " for doc: " + i);
           }
           if (ord < 0 || ord > maxOrd) {
             throw new RuntimeException("ord out of bounds: " + ord);
           }
+          if (dv instanceof RandomAccessOrds) {
+            long ord2 = ((RandomAccessOrds)dv).ordAt(ordCount);
+            if (ord != ord2) {
+              throw new RuntimeException("ordAt(" + ordCount + ") inconsistent, expected=" + ord + ",got=" + ord2 + " for doc: " + i);
+            }
+          }
           lastOrd = ord;
           maxOrd2 = Math.max(maxOrd2, ord);
           seenOrds.set(ord);
+          ordCount++;
         }
         if (ordCount == 0) {
           throw new RuntimeException("dv for field: " + fieldName + " has no ordinals but is not marked missing for doc: " + i);
+        }
+        if (dv instanceof RandomAccessOrds) {
+          long ordCount2 = ((RandomAccessOrds)dv).cardinality();
+          if (ordCount != ordCount2) {
+            throw new RuntimeException("cardinality inconsistent, expected=" + ordCount + ",got=" + ordCount2 + " for doc: " + i);
+          }
         }
       } else {
         long o = dv.nextOrd();
         if (o != SortedSetDocValues.NO_MORE_ORDS) {
           throw new RuntimeException("dv for field: " + fieldName + " is marked missing but has ord=" + o + " for doc: " + i);
+        }
+        if (dv instanceof RandomAccessOrds) {
+          long ordCount2 = ((RandomAccessOrds)dv).cardinality();
+          if (ordCount2 != 0) {
+            throw new RuntimeException("dv for field: " + fieldName + " is marked missing but has cardinality " + ordCount2 + " for doc: " + i);
+          }
         }
       }
     }

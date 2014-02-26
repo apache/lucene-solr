@@ -17,12 +17,9 @@
 
 package org.apache.solr.search;
 
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.*;
-
-import org.apache.lucene.util._TestUtil;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -184,25 +181,31 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testFunctions() {
-    ReturnFields rf = new SolrReturnFields( req("fl", "id sum(1,1)") );
+    ReturnFields rf = new SolrReturnFields( req("fl", "exists(text),id,sum(1,1)") );
     assertFalse(rf.wantsScore());
     assertTrue( rf.wantsField( "id" ) );
+    assertTrue( rf.wantsField( "sum(1,1)" ));
+    assertTrue( rf.wantsField( "exists(text)" ));
     assertFalse( rf.wantsAllFields() );
     assertFalse( rf.wantsField( "xxx" ) );
-    assertTrue( rf.getTransformer() instanceof ValueSourceAugmenter);
-    assertEquals("sum(1,1)", ((ValueSourceAugmenter) rf.getTransformer()).name);
+    assertTrue( rf.getTransformer() instanceof DocTransformers);
+    DocTransformers transformers = (DocTransformers)rf.getTransformer();
+    assertEquals("exists(text)", transformers.getTransformer(0).getName());
+    assertEquals("sum(1,1)", transformers.getTransformer(1).getName());
   }
 
   @Test
   public void testTransformers() {
     ReturnFields rf = new SolrReturnFields( req("fl", "[explain]") );
     assertFalse( rf.wantsScore() );
+    assertTrue(rf.wantsField("[explain]"));
     assertFalse(rf.wantsField("id"));
     assertFalse(rf.wantsAllFields());
     assertEquals( "[explain]", rf.getTransformer().getName() );
 
     rf = new SolrReturnFields( req("fl", "[shard],id") );
     assertFalse( rf.wantsScore() );
+    assertTrue(rf.wantsField("[shard]"));
     assertTrue(rf.wantsField("id"));
     assertFalse(rf.wantsField("xxx"));
     assertFalse(rf.wantsAllFields());
@@ -210,6 +213,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
 
     rf = new SolrReturnFields( req("fl", "[docid]") );
     assertFalse( rf.wantsScore() );
+    assertTrue(rf.wantsField("[docid]"));
     assertFalse( rf.wantsField( "id" ) );
     assertFalse(rf.wantsField("xxx"));
     assertFalse(rf.wantsAllFields());
@@ -217,6 +221,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
 
     rf = new SolrReturnFields( req("fl", "mydocid:[docid]") );
     assertFalse( rf.wantsScore() );
+    assertTrue(rf.wantsField("mydocid"));
     assertFalse( rf.wantsField( "id" ) );
     assertFalse(rf.wantsField("xxx"));
     assertFalse(rf.wantsAllFields());
@@ -224,6 +229,8 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
 
     rf = new SolrReturnFields( req("fl", "[docid][shard]") );
     assertFalse( rf.wantsScore() );
+    assertTrue(rf.wantsField("[docid]"));
+    assertTrue(rf.wantsField("[shard]"));
     assertFalse(rf.wantsField("xxx"));
     assertFalse(rf.wantsAllFields());
     assertTrue( rf.getTransformer() instanceof DocTransformers);
@@ -231,6 +238,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
 
     rf = new SolrReturnFields( req("fl", "[xxxxx]") );
     assertFalse( rf.wantsScore() );
+    assertTrue(rf.wantsField("[xxxxx]"));
     assertFalse( rf.wantsField( "id" ) );
     assertFalse(rf.wantsAllFields());
     assertNull(rf.getTransformer());
@@ -333,14 +341,14 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
       final boolean aliasId = r.nextBoolean();
       final boolean aliasFoo = r.nextBoolean();
 
-      final String id = _TestUtil.randomWhitespace(r, 0, 3) + 
+      final String id = TestUtil.randomWhitespace(r, 0, 3) +
         (aliasId ? "aliasId:" : "") +
         "id" + 
-        _TestUtil.randomWhitespace(r, 1, 3);
-      final String foo_i = _TestUtil.randomWhitespace(r, 0, 3) + 
+        TestUtil.randomWhitespace(r, 1, 3);
+      final String foo_i = TestUtil.randomWhitespace(r, 0, 3) +
         (aliasFoo ? "aliasFoo:" : "") +
         "foo_i" + 
-        _TestUtil.randomWhitespace(r, 0, 3);
+        TestUtil.randomWhitespace(r, 0, 3);
 
       final String fl = id + (r.nextBoolean() ? "" : ",") + foo_i;
       ReturnFields rf = new SolrReturnFields(req("fl", fl));

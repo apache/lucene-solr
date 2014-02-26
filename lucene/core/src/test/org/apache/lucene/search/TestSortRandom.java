@@ -40,7 +40,8 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /** random sorting tests */
 public class TestSortRandom extends LuceneTestCase {
@@ -53,7 +54,7 @@ public class TestSortRandom extends LuceneTestCase {
     final RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     final boolean allowDups = random.nextBoolean();
     final Set<String> seen = new HashSet<String>();
-    final int maxLength = _TestUtil.nextInt(random, 5, 100);
+    final int maxLength = TestUtil.nextInt(random, 5, 100);
     if (VERBOSE) {
       System.out.println("TEST: NUM_DOCS=" + NUM_DOCS + " maxLength=" + maxLength + " allowDups=" + allowDups);
     }
@@ -69,9 +70,9 @@ public class TestSortRandom extends LuceneTestCase {
       if (random().nextInt(10) != 7) {
         final String s;
         if (random.nextBoolean()) {
-          s = _TestUtil.randomSimpleString(random, maxLength);
+          s = TestUtil.randomSimpleString(random, maxLength);
         } else {
-          s = _TestUtil.randomUnicodeString(random, maxLength);
+          s = TestUtil.randomUnicodeString(random, maxLength);
         }
 
         if (!allowDups) {
@@ -145,7 +146,7 @@ public class TestSortRandom extends LuceneTestCase {
       } else {
         sort = new Sort(sf, SortField.FIELD_DOC);
       }
-      final int hitCount = _TestUtil.nextInt(random, 1, r.maxDoc() + 20);
+      final int hitCount = TestUtil.nextInt(random, 1, r.maxDoc() + 20);
       final RandomFilter f = new RandomFilter(random, random.nextFloat(), docValues);
       int queryType = random.nextInt(3);
       if (queryType == 0) {

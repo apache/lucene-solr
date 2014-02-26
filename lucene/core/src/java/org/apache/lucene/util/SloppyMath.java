@@ -48,11 +48,10 @@ public class SloppyMath {
     double h2 = 1 - cos((lon1 - lon2) * TO_RADIANS);
     double h = (h1 + cos(x1) * cos(x2) * h2) / 2;
 
-    double avgLat = Math.abs((x1 + x2) / 2d);
-    int index = (int)(avgLat * RADIUS_INDEXER + 0.5) % earthDiameterPerLatitude.length;
-    double radius = earthDiameterPerLatitude[index];
+    double avgLat = (x1 + x2) / 2d;
+    double diameter = earthDiameter(avgLat);
 
-    return radius * asin(Math.min(1, Math.sqrt(h)));
+    return diameter * asin(Math.min(1, Math.sqrt(h)));
     
   }
 
@@ -137,7 +136,13 @@ public class SloppyMath {
       }
     }
   }
-  
+
+  /** Return an approximate value of the diameter of the earth at the given latitude, in kilometers. */
+  public static double earthDiameter(double latitude) {
+    final int index = (int)(Math.abs(latitude) * RADIUS_INDEXER + 0.5) % earthDiameterPerLatitude.length;
+    return earthDiameterPerLatitude[index];
+  }
+
   // haversin
   private static final double TO_RADIANS = Math.PI / 180D;
   

@@ -17,30 +17,30 @@
 
 package org.apache.solr.search.join;
 
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.FixedBitSet;
 
 class BitSetSlice {
-  private final OpenBitSet obs;
+  private final FixedBitSet fbs;
   private final int off;
   private final int len;
 
-  BitSetSlice(OpenBitSet obs, int off, int len) {
-    this.obs = obs;
+  BitSetSlice(FixedBitSet fbs, int off, int len) {
+    this.fbs = fbs;
     this.off = off;
     this.len = len;
   }
 
   public boolean get(int pos) {
-    return obs.get(pos + off);
+    return fbs.get(pos + off);
   }
 
   public int prevSetBit(int pos) {
-    int result = obs.prevSetBit(pos + off) - off;
+    int result = fbs.prevSetBit(pos + off) - off;
     return (result < 0) ? -1 : result;
   }
 
   public int nextSetBit(int pos) {
-    int result = obs.nextSetBit(pos + off) - off;
+    int result = fbs.nextSetBit(pos + off) - off;
     return (result < 0 || result >= len) ? -1 : result;
   }
 }

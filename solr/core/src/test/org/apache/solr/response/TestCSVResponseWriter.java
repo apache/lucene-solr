@@ -22,7 +22,6 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.DateUtil;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrReturnFields;
 import org.junit.*;
 
@@ -192,6 +191,24 @@ public class TestCSVResponseWriter extends SolrTestCaseJ4 {
         "2,,\n",
       buf.toString());
 
+    // Test function queries
+    rsp.setReturnFields( new SolrReturnFields("sum(1,1),id,exists(foo_i),div(9,1),foo_f", req) );
+    buf = new StringWriter();
+    w.write(buf, req, rsp);
+    assertEquals("\"sum(1,1)\",id,exists(foo_i),\"div(9,1)\",foo_f\n" +
+        "\"\",1,,,1.414\n" +
+        "\"\",2,,,\n",
+        buf.toString());
+
+    // Test transformers
+    rsp.setReturnFields( new SolrReturnFields("mydocid:[docid],[explain]", req) );
+    buf = new StringWriter();
+    w.write(buf, req, rsp);
+    assertEquals("mydocid,[explain]\n" +
+        "\"\",\n" +
+        "\"\",\n",
+        buf.toString());
+
     req.close();
   }
   
@@ -207,6 +224,23 @@ public class TestCSVResponseWriter extends SolrTestCaseJ4 {
     assertEquals(2, lines.length);
     assertEquals("XXX,YYY,FOO", lines[0] );
     assertEquals("1,0,hi", lines[1] );
+
+    //assertions specific to multiple pseudofields functions like abs, div, exists, etc.. (SOLR-5423)
+    String funcText = h.query(req("q","*", "wt","csv", "csv.header","true", "fl","XXX:id,YYY:exists(foo_i),exists(shouldbeunstored)"));
+    String[] funcLines = funcText.split("\n");
+    assertEquals(6, funcLines.length);
+    assertEquals("XXX,YYY,exists(shouldbeunstored)", funcLines[0] );
+    assertEquals("1,true,false", funcLines[1] );
+    assertEquals("3,false,true", funcLines[3] );
+    
+    
+    //assertions specific to single function without alias (SOLR-5423)
+    String singleFuncText = h.query(req("q","*", "wt","csv", "csv.header","true", "fl","exists(shouldbeunstored),XXX:id"));
+    String[] singleFuncLines = singleFuncText.split("\n");
+    assertEquals(6, singleFuncLines.length);
+    assertEquals("exists(shouldbeunstored),XXX", singleFuncLines[0] );
+    assertEquals("false,1", singleFuncLines[1] );
+    assertEquals("true,3", singleFuncLines[3] );
   }
     
 

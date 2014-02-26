@@ -23,7 +23,7 @@ import java.util.NoSuchElementException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.util.Counter;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.AppendingDeltaPackedLongBuffer;
 import org.apache.lucene.util.packed.PackedInts;
@@ -37,18 +37,16 @@ class NumericDocValuesWriter extends DocValuesWriter {
   private AppendingDeltaPackedLongBuffer pending;
   private final Counter iwBytesUsed;
   private long bytesUsed;
-  private final OpenBitSet docsWithField;
+  private FixedBitSet docsWithField;
   private final FieldInfo fieldInfo;
-  private final boolean trackDocsWithField;
 
   public NumericDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed, boolean trackDocsWithField) {
     pending = new AppendingDeltaPackedLongBuffer(PackedInts.COMPACT);
-    docsWithField = new OpenBitSet();
+    docsWithField = trackDocsWithField ? new FixedBitSet(64) : null;
     bytesUsed = pending.ramBytesUsed() + docsWithFieldBytesUsed();
     this.fieldInfo = fieldInfo;
     this.iwBytesUsed = iwBytesUsed;
     iwBytesUsed.addAndGet(bytesUsed);
-    this.trackDocsWithField = trackDocsWithField;
   }
 
   public void addValue(int docID, long value) {
@@ -62,7 +60,8 @@ class NumericDocValuesWriter extends DocValuesWriter {
     }
 
     pending.add(value);
-    if (trackDocsWithField) {
+    if (docsWithField != null) {
+      docsWithField = FixedBitSet.ensureCapacity(docsWithField, docID);
       docsWithField.set(docID);
     }
 
@@ -71,7 +70,7 @@ class NumericDocValuesWriter extends DocValuesWriter {
   
   private long docsWithFieldBytesUsed() {
     // size of the long[] + some overhead
-    return RamUsageEstimator.sizeOf(docsWithField.getBits()) + 64;
+    return docsWithField == null ? 0 : RamUsageEstimator.sizeOf(docsWithField.getBits()) + 64;
   }
 
   private void updateBytesUsed() {
@@ -126,13 +125,13 @@ class NumericDocValuesWriter extends DocValuesWriter {
       Long value;
       if (upto < size) {
         long v = iter.next();
-        if (!trackDocsWithField || docsWithField.get(upto)) {
+        if (docsWithField == null || docsWithField.get(upto)) {
           value = v;
         } else {
           value = null;
         }
       } else {
-        value = trackDocsWithField ? null : MISSING;
+        value = docsWithField != null ? null : MISSING;
       }
       upto++;
       return value;

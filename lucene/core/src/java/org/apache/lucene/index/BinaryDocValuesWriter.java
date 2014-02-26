@@ -27,7 +27,7 @@ import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.AppendingDeltaPackedLongBuffer;
@@ -48,7 +48,7 @@ class BinaryDocValuesWriter extends DocValuesWriter {
 
   private final Counter iwBytesUsed;
   private final AppendingDeltaPackedLongBuffer lengths;
-  private final OpenBitSet docsWithField;
+  private FixedBitSet docsWithField;
   private final FieldInfo fieldInfo;
   private int addedValues;
   private long bytesUsed;
@@ -59,7 +59,7 @@ class BinaryDocValuesWriter extends DocValuesWriter {
     this.bytesOut = bytes.getDataOutput();
     this.lengths = new AppendingDeltaPackedLongBuffer(PackedInts.COMPACT);
     this.iwBytesUsed = iwBytesUsed;
-    this.docsWithField = new OpenBitSet();
+    this.docsWithField = new FixedBitSet(64);
     this.bytesUsed = docsWithFieldBytesUsed();
     iwBytesUsed.addAndGet(bytesUsed);
   }
@@ -88,6 +88,7 @@ class BinaryDocValuesWriter extends DocValuesWriter {
       // Should never happen!
       throw new RuntimeException(ioe);
     }
+    docsWithField = FixedBitSet.ensureCapacity(docsWithField, docID);
     docsWithField.set(docID);
     updateBytesUsed();
   }

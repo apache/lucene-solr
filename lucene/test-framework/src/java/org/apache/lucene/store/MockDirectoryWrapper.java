@@ -42,8 +42,8 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.NoDeletionPolicy;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.ThrottledIndexOutput;
-import org.apache.lucene.util._TestUtil;
 
 /**
  * This is a Directory Wrapper that adds methods
@@ -661,7 +661,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         if (LuceneTestCase.VERBOSE) {
           System.out.println("\nNOTE: MockDirectoryWrapper: now run CheckIndex");
         } 
-        _TestUtil.checkIndex(this, getCrossCheckTermVectorsOnClose());
+        TestUtil.checkIndex(this, getCrossCheckTermVectorsOnClose());
 
         // TODO: factor this out / share w/ TestIW.assertNoUnreferencedFiles
         if (assertNoUnreferencedFilesOnClose) {

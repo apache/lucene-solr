@@ -44,7 +44,7 @@ public abstract class AbstractAllGroupHeadsCollector<GH extends AbstractAllGroup
 
   /**
    * @param maxDoc The maxDoc of the top level {@link IndexReader}.
-   * @return an {@link FixedBitSet} containing all group heads.
+   * @return a {@link FixedBitSet} containing all group heads.
    */
   public FixedBitSet retrieveGroupHeads(int maxDoc) {
     FixedBitSet bitSet = new FixedBitSet(maxDoc);

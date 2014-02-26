@@ -23,10 +23,9 @@ import java.io.InputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-
 import net.minidev.json.JSONObject;
 
 public class TestPlugins extends ServerBaseTestCase {
@@ -34,7 +33,7 @@ public class TestPlugins extends ServerBaseTestCase {
   @BeforeClass
   public static void init() throws Exception {
     useDefaultIndex = false;
-    File tmpDir = _TestUtil.getTempDir("TestPlugins");
+    File tmpDir = TestUtil.getTempDir("TestPlugins");
     tmpDir.mkdirs();
     File zipFile = new File(tmpDir, "MockPlugin-0.1.zip");
     ZipOutputStream os = new ZipOutputStream(new FileOutputStream(zipFile));
@@ -76,7 +75,7 @@ public class TestPlugins extends ServerBaseTestCase {
     // nocommit need a "list plugins" API: verify foobar is there
     // nocommit send addDocument & verify change "took"
 
-    _TestUtil.rmDir(new File("index"));
+    TestUtil.rmDir(new File("index"));
     send("createIndex", "{rootDir: index}");
     send("startIndex");
     send("registerFields", "{fields: {id: {type: int, store: true, postingsFormat: Memory}, intfield: {type: int, store: true}}}");

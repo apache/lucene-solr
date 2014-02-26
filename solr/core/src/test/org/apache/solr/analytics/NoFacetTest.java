@@ -27,7 +27,7 @@ import org.junit.Test;
 
 @SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Appending","Asserting"})
 public class NoFacetTest extends AbstractAnalyticsStatsTest {
-  static String fileName = "core/src/test-files/analytics/requestFiles/noFacets.txt";
+  static String fileName = "/analytics/requestFiles/noFacets.txt";
 
   static public final int INT = 71;
   static public final int LONG = 36;
@@ -135,7 +135,7 @@ public class NoFacetTest extends AbstractAnalyticsStatsTest {
     assertU(commit()); 
     
     //Sort ascending tests
-    setResponse(h.query(request(fileToStringArr(fileName))));
+    setResponse(h.query(request(fileToStringArr(NoFacetTest.class, fileName))));
   }
       
   @Test

@@ -83,7 +83,7 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
    * The {@link #getDocIdSet()} method here starts the work. It first checks
    * that there are indexed terms; if not it quickly returns null. Then it calls
    * {@link #start()} so a subclass can set up a return value, like an
-   * {@link org.apache.lucene.util.OpenBitSet}. Then it starts the traversal
+   * {@link org.apache.lucene.util.FixedBitSet}. Then it starts the traversal
    * process, calling {@link #findSubCellsToVisit(org.apache.lucene.spatial.prefix.tree.Cell)}
    * which by default finds the top cells that intersect {@code queryShape}. If
    * there isn't an indexed cell for a corresponding cell returned for this

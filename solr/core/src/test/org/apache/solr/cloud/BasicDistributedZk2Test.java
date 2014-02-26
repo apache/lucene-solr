@@ -20,13 +20,13 @@ package org.apache.solr.cloud;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.io.IOUtils;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.BasicResponseHandler;
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -45,21 +45,18 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.util.AbstractSolrTestCase;
-import org.junit.BeforeClass;
 
 /**
  * This test simply does a bunch of basic things in solrcloud mode and asserts things
  * work as expected.
  */
+// disable SSL until this test is hardened more to deal with the 
+// consequences of how slow it can make some things
+@SuppressSSL
 public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
   private static final String SHARD2 = "shard2";
   private static final String SHARD1 = "shard1";
   private static final String ONE_NODE_COLLECTION = "onenodecollection";
-
-  @BeforeClass
-  public static void beforeThisClass2() throws Exception {
-
-  }
   
   public BasicDistributedZk2Test() {
     super();
@@ -407,7 +404,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     // make sure we have published we are recovering
     Thread.sleep(1500);
     
-    waitForThingsToLevelOut(30);
+    waitForThingsToLevelOut(45);
     
     Thread.sleep(500);
     
@@ -444,12 +441,9 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
       public void run() {
         String masterUrl = client.getBaseURL() + "/replication?command="
             + ReplicationHandler.CMD_DETAILS;
-        URL url;
-        InputStream stream = null;
+        
         try {
-          url = new URL(masterUrl);
-          stream = url.openStream();
-          response = IOUtils.toString(stream, "UTF-8");
+          response = client.getHttpClient().execute(new HttpGet(masterUrl), new BasicResponseHandler());
           if (response.contains("<str name=\"status\">success</str>")) {
             Matcher m = p.matcher(response);
             if (!m.find()) {
@@ -458,12 +452,9 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
             
             success = true;
           }
-          stream.close();
         } catch (Exception e) {
           e.printStackTrace();
           fail = e.getMessage();
-        } finally {
-          IOUtils.closeQuietly(stream);
         }
         
       };

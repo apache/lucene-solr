@@ -21,9 +21,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.RandomAccessFile;
-import java.nio.channels.FileChannel;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -41,10 +38,9 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.store.NIOFSDirectory.NIOFSIndexInput;
-import org.apache.lucene.store.SimpleFSDirectory.SimpleFSIndexInput;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.ArrayUtil;
 
 public class TestBufferedIndexInput extends LuceneTestCase {
@@ -227,7 +223,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
     }
 
     public void testSetBufferSize() throws IOException {
-      File indexDir = _TestUtil.getTempDir("testSetBufferSize");
+      File indexDir = TestUtil.getTempDir("testSetBufferSize");
       MockFSDirectory dir = new MockFSDirectory(indexDir, random());
       try {
         IndexWriter writer = new IndexWriter(
@@ -279,7 +275,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         writer.close();
         reader.close();
       } finally {
-        _TestUtil.rmDir(indexDir);
+        TestUtil.rmDir(indexDir);
       }
     }
 

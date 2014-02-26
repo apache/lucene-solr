@@ -46,6 +46,7 @@ public final class MockAnalyzer extends Analyzer {
   private final boolean lowerCase;
   private final CharacterRunAutomaton filter;
   private int positionIncrementGap;
+  private Integer offsetGap;
   private final Random random;
   private Map<String,Integer> previousMappings = new HashMap<String,Integer>();
   private boolean enableChecks = true;
@@ -133,6 +134,23 @@ public final class MockAnalyzer extends Analyzer {
   @Override
   public int getPositionIncrementGap(String fieldName){
     return positionIncrementGap;
+  }
+
+  /**
+   * Set a new offset gap which will then be added to the offset when several fields with the same name are indexed
+   * @param offsetGap The offset gap that should be used.
+   */
+  public void setOffsetGap(int offsetGap){
+    this.offsetGap = offsetGap;
+  }
+
+  /**
+   * Get the offset gap between tokens in fields if several fields with the same name were added.
+   * @param fieldName Currently not used, the same offset gap is returned for each field.
+   */
+  @Override
+  public int getOffsetGap(String fieldName){
+    return offsetGap == null ? super.getOffsetGap(fieldName) : offsetGap;
   }
   
   /** 

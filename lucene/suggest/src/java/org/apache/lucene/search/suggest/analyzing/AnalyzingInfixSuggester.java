@@ -44,11 +44,13 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.FilterAtomicReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.sorter.Sorter;
@@ -644,7 +646,16 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
 
   @Override
   public long sizeInBytes() {
-    return RamUsageEstimator.sizeOf(this);
+    long mem = RamUsageEstimator.shallowSizeOf(this);
+    if (searcher != null) {
+      for (AtomicReaderContext context : searcher.getIndexReader().leaves()) {
+        AtomicReader reader = FilterAtomicReader.unwrap(context.reader());
+        if (reader instanceof SegmentReader) {
+          mem += ((SegmentReader) context.reader()).ramBytesUsed();
+        }
+      }
+    }
+    return mem;
   }
 
   @Override

@@ -21,7 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Locale;
 
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import net.minidev.json.JSONArray;
@@ -60,12 +60,12 @@ public class TestFacets extends ServerBaseTestCase {
     put(o, "date", "{type: atom, search: false, store: true}");
     if (random().nextBoolean()) {
       // Send facets to two different random fields:
-      String name = "x" + _TestUtil.randomSimpleString(random(), 1, 10);
+      String name = "x" + TestUtil.randomSimpleString(random(), 1, 10);
       put(o, "dateFacet", "{type: atom, search: false, store: false, facet: hierarchy, facetIndexFieldName: " + name + "}");
       if (VERBOSE) {
         System.out.println("NOTE: send dateFacet to facetIndexFieldName=" + name);
       }
-      name = "y" + _TestUtil.randomSimpleString(random(), 1, 10);
+      name = "y" + TestUtil.randomSimpleString(random(), 1, 10);
       put(o, "author", "{type: text, search: false, facet: flat, group: true, facetIndexFieldName: " + name + "}");
       if (VERBOSE) {
         System.out.println("NOTE: send author to facetIndexFieldName=" + name);
@@ -73,7 +73,7 @@ public class TestFacets extends ServerBaseTestCase {
 
     } else if (random().nextBoolean()) {
       // Send facets to the same random field:
-      indexFacetField = "x" + _TestUtil.randomSimpleString(random(), 1, 10);
+      indexFacetField = "x" + TestUtil.randomSimpleString(random(), 1, 10);
       put(o, "dateFacet", "{type: atom, search: false, store: false, facet: hierarchy, facetIndexFieldName: " + indexFacetField + "}");
       put(o, "author", "{type: text, search: false, facet: flat, group: true, facetIndexFieldName: " + indexFacetField + "}");
       if (VERBOSE) {
@@ -260,7 +260,7 @@ public class TestFacets extends ServerBaseTestCase {
 
   public void testSortedSetDocValuesFacets() throws Exception {
     curIndexName = "ssdvFacets";
-    _TestUtil.rmDir(new File(curIndexName));
+    TestUtil.rmDir(new File(curIndexName));
     send("createIndex", "{rootDir: " + curIndexName + "}");
     send("settings", "{directory: FSDirectory, matchVersion: LUCENE_46}");
     send("startIndex");
@@ -270,7 +270,7 @@ public class TestFacets extends ServerBaseTestCase {
       send("registerFields", "{fields: {ssdv: {type: atom, search: false, store: false, facet: sortedSetDocValues, facetIndexFieldName: " + indexFacetField + "}}}");
     } else if (random().nextBoolean()) {
       // Send SSDV facets to a random index field:
-      String name = _TestUtil.randomSimpleString(random(), 1, 10);
+      String name = TestUtil.randomSimpleString(random(), 1, 10);
       send("registerFields", "{fields: {ssdv: {type: atom, search: false, store: false, facet: sortedSetDocValues, facetIndexFieldName: " + name + "}}}");
     } else {
       // Send SSDV facets to default field:

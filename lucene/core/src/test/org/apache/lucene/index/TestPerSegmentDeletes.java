@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.index.MergePolicy.MergeTrigger;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -33,7 +32,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestPerSegmentDeletes extends LuceneTestCase {
   public void testDeletes1() throws Exception {
@@ -228,7 +227,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     Terms cterms = fields.terms(term.field);
     TermsEnum ctermsEnum = cterms.iterator(null);
     if (ctermsEnum.seekExact(new BytesRef(term.text()))) {
-      DocsEnum docsEnum = _TestUtil.docs(random(), ctermsEnum, bits, null, DocsEnum.FLAG_NONE);
+      DocsEnum docsEnum = TestUtil.docs(random(), ctermsEnum, bits, null, DocsEnum.FLAG_NONE);
       return toArray(docsEnum);
     }
     return null;

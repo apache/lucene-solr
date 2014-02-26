@@ -35,7 +35,8 @@ import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestTopDocsMerge extends LuceneTestCase {
 
@@ -86,7 +87,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
 
       for(int contentIDX=0;contentIDX<content.length;contentIDX++) {
         final StringBuilder sb = new StringBuilder();
-        final int numTokens = _TestUtil.nextInt(random(), 1, 10);
+        final int numTokens = TestUtil.nextInt(random(), 1, 10);
         for(int tokenIDX=0;tokenIDX<numTokens;tokenIDX++) {
           sb.append(tokens[random().nextInt(tokens.length)]).append(' ');
         }
@@ -95,7 +96,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
 
       for(int docIDX=0;docIDX<numDocs;docIDX++) {
         final Document doc = new Document();
-        doc.add(newStringField("string", _TestUtil.randomRealisticUnicodeString(random()), Field.Store.NO));
+        doc.add(newStringField("string", TestUtil.randomRealisticUnicodeString(random()), Field.Store.NO));
         doc.add(newTextField("text", content[random().nextInt(content.length)], Field.Store.NO));
         doc.add(new FloatField("float", random().nextFloat(), Field.Store.NO));
         final int intValue;
@@ -166,14 +167,14 @@ public class TestTopDocsMerge extends LuceneTestCase {
         // Sort by score
         sort = null;
       } else {
-        final SortField[] randomSortFields = new SortField[_TestUtil.nextInt(random(), 1, 3)];
+        final SortField[] randomSortFields = new SortField[TestUtil.nextInt(random(), 1, 3)];
         for(int sortIDX=0;sortIDX<randomSortFields.length;sortIDX++) {
           randomSortFields[sortIDX] = sortFields.get(random().nextInt(sortFields.size()));
         }
         sort = new Sort(randomSortFields);
       }
 
-      final int numHits = _TestUtil.nextInt(random(), 1, numDocs+5);
+      final int numHits = TestUtil.nextInt(random(), 1, numDocs + 5);
       //final int numHits = 5;
       
       if (VERBOSE) {
@@ -239,7 +240,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
         }
       }
 
-      _TestUtil.assertEquals(topHits, mergedHits);
+      TestUtil.assertEquals(topHits, mergedHits);
     }
     reader.close();
     dir.close();

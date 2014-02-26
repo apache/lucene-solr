@@ -22,7 +22,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestTieredMergePolicy extends LuceneTestCase {
 
@@ -81,7 +82,7 @@ public class TestTieredMergePolicy extends LuceneTestCase {
 
       IndexWriter w = new IndexWriter(dir, conf);
       int maxCount = 0;
-      final int numDocs = _TestUtil.nextInt(random(), 20, 100);
+      final int numDocs = TestUtil.nextInt(random(), 20, 100);
       for(int i=0;i<numDocs;i++) {
         Document doc = new Document();
         doc.add(newTextField("content", "aaa " + (i%4), Field.Store.NO));
@@ -94,7 +95,7 @@ public class TestTieredMergePolicy extends LuceneTestCase {
       w.flush(true, true);
 
       int segmentCount = w.getSegmentCount();
-      int targetCount = _TestUtil.nextInt(random(), 1, segmentCount);
+      int targetCount = TestUtil.nextInt(random(), 1, segmentCount);
       if (VERBOSE) {
         System.out.println("TEST: merge to " + targetCount + " segs (current count=" + segmentCount + ")");
       }

@@ -47,7 +47,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Tests some basic expressions against different queries,
@@ -63,7 +63,7 @@ public class TestExpressionSorts extends LuceneTestCase {
     super.setUp();
     dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    int numDocs = _TestUtil.nextInt(random(), 2049, 4000);
+    int numDocs = TestUtil.nextInt(random(), 2049, 4000);
     for (int i = 0; i < numDocs; i++) {
       Document document = new Document();
       document.add(newTextField("english", English.intToEnglish(i), Field.Store.NO));
@@ -124,13 +124,13 @@ public class TestExpressionSorts extends LuceneTestCase {
           new SortField("score", SortField.Type.SCORE)
       };
       Collections.shuffle(Arrays.asList(fields), random());
-      int numSorts = _TestUtil.nextInt(random(), 1, fields.length);
+      int numSorts = TestUtil.nextInt(random(), 1, fields.length);
       assertQuery(query, filter, new Sort(Arrays.copyOfRange(fields, 0, numSorts)));
     }
   }
 
   void assertQuery(Query query, Filter filter, Sort sort) throws Exception {
-    int size = _TestUtil.nextInt(random(), 1, searcher.getIndexReader().maxDoc()/5);
+    int size = TestUtil.nextInt(random(), 1, searcher.getIndexReader().maxDoc() / 5);
     TopDocs expected = searcher.search(query, filter, size, sort, random().nextBoolean(), random().nextBoolean());
     
     // make our actual sort, mutating original by replacing some of the 

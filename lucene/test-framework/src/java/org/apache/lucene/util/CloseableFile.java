@@ -37,7 +37,7 @@ final class CloseableFile implements Closeable {
     if (failureMarker.wasSuccessful()) {
       if (file.exists()) {
         try {
-          _TestUtil.rmDir(file);
+          TestUtil.rmDir(file);
         } catch (IOException e) {
           // Ignore the exception from rmDir.
         }

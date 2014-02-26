@@ -26,7 +26,7 @@ import org.junit.Test;
 
 @SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Appending","Asserting"})
 public class FunctionTest extends AbstractAnalyticsStatsTest {
-  static String fileName = "core/src/test-files/analytics/requestFiles/functions.txt";
+  static String fileName = "/analytics/requestFiles/functions.txt";
 
   static public final int INT = 71;
   static public final int LONG = 36;
@@ -82,7 +82,7 @@ public class FunctionTest extends AbstractAnalyticsStatsTest {
     
     assertU(commit()); 
     
-    setResponse(h.query(request(fileToStringArr(fileName))));
+    setResponse(h.query(request(fileToStringArr(FunctionTest.class, fileName))));
   }
       
   @Test

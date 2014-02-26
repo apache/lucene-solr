@@ -24,15 +24,15 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestIndexSplitter extends LuceneTestCase {
   public void test() throws Exception {
     File dir = new File(TEMP_DIR, "testfilesplitter");
-    _TestUtil.rmDir(dir);
+    TestUtil.rmDir(dir);
     dir.mkdirs();
     File destDir = new File(TEMP_DIR, "testfilesplitterdest");
-    _TestUtil.rmDir(destDir);
+    TestUtil.rmDir(destDir);
     destDir.mkdirs();
     Directory fsDir = newFSDirectory(dir);
     // IndexSplitter.split makes its own commit directly with SIPC/SegmentInfos,
@@ -81,7 +81,7 @@ public class TestIndexSplitter extends LuceneTestCase {
     
     // now test cmdline
     File destDir2 = new File(TEMP_DIR, "testfilesplitterdest2");
-    _TestUtil.rmDir(destDir2);
+    TestUtil.rmDir(destDir2);
     destDir2.mkdirs();
     IndexSplitter.main(new String[] {dir.getAbsolutePath(), destDir2.getAbsolutePath(), splitSegName});
     assertEquals(5, destDir2.listFiles().length);

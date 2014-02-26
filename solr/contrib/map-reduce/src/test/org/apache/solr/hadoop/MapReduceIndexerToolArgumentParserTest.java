@@ -27,11 +27,10 @@ import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.hadoop.dedup.NoChangeUpdateConflictResolver;
 import org.apache.solr.hadoop.dedup.RetainMostRecentUpdateConflictResolver;
-import org.apache.solr.util.ExternalPaths;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -39,7 +38,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MapReduceIndexerToolArgumentParserTest extends LuceneTestCase {
+public class MapReduceIndexerToolArgumentParserTest extends SolrTestCaseJ4 {
   
   private Configuration conf; 
   private MapReduceIndexerTool.MyArgumentParser parser;
@@ -49,7 +48,7 @@ public class MapReduceIndexerToolArgumentParserTest extends LuceneTestCase {
   private ByteArrayOutputStream bout;
   private ByteArrayOutputStream berr;
   
-  private static final String RESOURCES_DIR = ExternalPaths.SOURCE_HOME + "/contrib/map-reduce/src/test-files";  
+  private static final String RESOURCES_DIR = getFile("morphlines-core.marker").getParent();  
   private static final File MINIMR_INSTANCE_DIR = new File(RESOURCES_DIR + "/solr/minimr");
 
   private static final String MORPHLINE_FILE = RESOURCES_DIR + "/test-morphlines/solrCellDocumentTypes.conf";

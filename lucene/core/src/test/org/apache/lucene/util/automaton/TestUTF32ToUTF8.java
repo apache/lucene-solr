@@ -18,7 +18,7 @@ package org.apache.lucene.util.automaton;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
 
@@ -90,7 +90,7 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
     final int invalidRange = MAX_UNICODE - (endCode - startCode + 1);
     if (invalidRange > 0) {
       for(int iter=0;iter<iters;iter++) {
-        int x = _TestUtil.nextInt(r, 0, invalidRange-1);
+        int x = TestUtil.nextInt(r, 0, invalidRange - 1);
         final int code;
         if (x >= startCode) {
           code = endCode + 1 + x - startCode;
@@ -114,13 +114,13 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
   private int getCodeStart(Random r) {
     switch(r.nextInt(4)) {
     case 0:
-      return _TestUtil.nextInt(r, 0, 128);
+      return TestUtil.nextInt(r, 0, 128);
     case 1:
-      return _TestUtil.nextInt(r, 128, 2048);
+      return TestUtil.nextInt(r, 128, 2048);
     case 2:
-      return _TestUtil.nextInt(r, 2048, 65536);
+      return TestUtil.nextInt(r, 2048, 65536);
     default:
-      return _TestUtil.nextInt(r, 65536, 1+MAX_UNICODE);
+      return TestUtil.nextInt(r, 65536, 1 + MAX_UNICODE);
     }
   }
 
@@ -218,7 +218,7 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
       final String string;
       if (random().nextBoolean()) {
         // likely not accepted
-        string = _TestUtil.randomUnicodeString(random());
+        string = TestUtil.randomUnicodeString(random());
       } else {
         // will be accepted
         int[] codepoints = ras.getRandomAcceptedString(random());

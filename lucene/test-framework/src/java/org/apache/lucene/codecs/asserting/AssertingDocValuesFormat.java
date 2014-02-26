@@ -36,8 +36,7 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.OpenBitSet;
-import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.LongBitSet;
 
 /**
  * Just like {@link Lucene45DocValuesFormat} but with additional asserts.
@@ -147,7 +146,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
       
       int docCount = 0;
       long ordCount = 0;
-      OpenBitSet seenOrds = new OpenBitSet(valueCount);
+      LongBitSet seenOrds = new LongBitSet(valueCount);
       Iterator<Number> ordIterator = ords.iterator();
       for (Number v : docToOrdCount) {
         assert v != null;

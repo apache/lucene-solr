@@ -17,6 +17,10 @@
 
 package org.apache.solr.update;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocsEnum;
@@ -26,11 +30,12 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.OpenBitSet;
 import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.HashBasedRouter;
@@ -40,10 +45,6 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class SolrIndexSplitter {
   public static Logger log = LoggerFactory.getLogger(SolrIndexSplitter.class);
@@ -89,13 +90,13 @@ public class SolrIndexSplitter {
   public void split() throws IOException {
 
     List<AtomicReaderContext> leaves = searcher.getTopReaderContext().leaves();
-    List<OpenBitSet[]> segmentDocSets = new ArrayList<OpenBitSet[]>(leaves.size());
+    List<FixedBitSet[]> segmentDocSets = new ArrayList<FixedBitSet[]>(leaves.size());
 
     log.info("SolrIndexSplitter: partitions=" + numPieces + " segments="+leaves.size());
 
     for (AtomicReaderContext readerContext : leaves) {
       assert readerContext.ordInParent == segmentDocSets.size();  // make sure we're going in order
-      OpenBitSet[] docSets = split(readerContext);
+      FixedBitSet[] docSets = split(readerContext);
       segmentDocSets.add( docSets );
     }
 
@@ -150,11 +151,11 @@ public class SolrIndexSplitter {
 
 
 
-  OpenBitSet[] split(AtomicReaderContext readerContext) throws IOException {
+  FixedBitSet[] split(AtomicReaderContext readerContext) throws IOException {
     AtomicReader reader = readerContext.reader();
-    OpenBitSet[] docSets = new OpenBitSet[numPieces];
+    FixedBitSet[] docSets = new FixedBitSet[numPieces];
     for (int i=0; i<docSets.length; i++) {
-      docSets[i] = new OpenBitSet(reader.maxDoc());
+      docSets[i] = new FixedBitSet(reader.maxDoc());
     }
     Bits liveDocs = reader.getLiveDocs();
 
@@ -196,14 +197,14 @@ public class SolrIndexSplitter {
       docsEnum = termsEnum.docs(liveDocs, docsEnum, DocsEnum.FLAG_NONE);
       for (;;) {
         int doc = docsEnum.nextDoc();
-        if (doc == DocsEnum.NO_MORE_DOCS) break;
+        if (doc == DocIdSetIterator.NO_MORE_DOCS) break;
         if (ranges == null) {
-          docSets[currPartition].fastSet(doc);
+          docSets[currPartition].set(doc);
           currPartition = (currPartition + 1) % numPieces;
         } else  {
           for (int i=0; i<rangesArr.length; i++) {      // inner-loop: use array here for extra speed.
             if (rangesArr[i].includes(hash)) {
-              docSets[i].fastSet(doc);
+              docSets[i].set(doc);
             }
           }
         }
@@ -232,13 +233,13 @@ public class SolrIndexSplitter {
 
   // change livedocs on the reader to delete those docs we don't want
   static class LiveDocsReader extends FilterAtomicReader {
-    final OpenBitSet liveDocs;
+    final FixedBitSet liveDocs;
     final int numDocs;
 
-    public LiveDocsReader(AtomicReaderContext context, OpenBitSet liveDocs) throws IOException {
+    public LiveDocsReader(AtomicReaderContext context, FixedBitSet liveDocs) throws IOException {
       super(context.reader());
       this.liveDocs = liveDocs;
-      this.numDocs = (int)liveDocs.cardinality();
+      this.numDocs = liveDocs.cardinality();
     }
 
     @Override
@@ -253,6 +254,3 @@ public class SolrIndexSplitter {
   }
 
 }
-
-
-

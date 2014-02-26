@@ -35,7 +35,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ObjectWriter;
@@ -76,7 +76,7 @@ public abstract class ServerBaseTestCase extends LuceneTestCase {
 
   @BeforeClass
   public static void beforeClassServerBase() throws Exception {
-    File dir = _TestUtil.getTempDir("ServerBase");
+    File dir = TestUtil.getTempDir("ServerBase");
     STATE_DIR = new File(dir, "state");
   }
   
@@ -177,7 +177,7 @@ public abstract class ServerBaseTestCase extends LuceneTestCase {
   }
 
   protected static void createAndStartIndex() throws Exception {
-    _TestUtil.rmDir(new File(curIndexName));
+    TestUtil.rmDir(new File(curIndexName));
     send("createIndex", "{indexName: " + curIndexName + ", rootDir: " + curIndexName + "}");
     // Wait at most 1 msec for a searcher to reopen; this
     // value is too low for a production site but for

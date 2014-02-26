@@ -31,15 +31,17 @@ import org.apache.lucene.analysis.TokenStream;
  * &lt;fieldType name="text_ascii" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
- *     &lt;filter class="solr.ASCIIFoldingFilterFactory"/&gt;
+ *     &lt;filter class="solr.ASCIIFoldingFilterFactory" preserveOriginal="false"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  */
 public class ASCIIFoldingFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
+  private final boolean preserveOriginal;
   
   /** Creates a new ASCIIFoldingFilterFactory */
   public ASCIIFoldingFilterFactory(Map<String,String> args) {
     super(args);
+    preserveOriginal = getBoolean(args, "preserveOriginal", false);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -47,7 +49,7 @@ public class ASCIIFoldingFilterFactory extends TokenFilterFactory implements Mul
   
   @Override
   public ASCIIFoldingFilter create(TokenStream input) {
-    return new ASCIIFoldingFilter(input);
+    return new ASCIIFoldingFilter(input, preserveOriginal);
   }
 
   @Override

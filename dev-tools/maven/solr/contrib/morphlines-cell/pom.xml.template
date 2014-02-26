@@ -75,6 +75,11 @@
         <directory>${module-path}/src/test-files</directory>
       </testResource>
       <testResource>
+        <!-- TODO: This is a hack, because the shared test-files folder seems not to be
+          included by the dependency, maybe because the dependency test-jar is not unpacked? -->
+        <directory>${module-path}/../morphlines-core/src/test-files</directory>
+      </testResource>
+      <testResource>
         <directory>${top-level}/dev-tools/maven/solr</directory>
         <includes>
           <include>maven.testlogging.properties</include>

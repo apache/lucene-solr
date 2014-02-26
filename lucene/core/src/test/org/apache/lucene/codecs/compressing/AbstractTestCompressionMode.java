@@ -24,7 +24,7 @@ import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 
@@ -85,8 +85,8 @@ public abstract class AbstractTestCompressionMode extends LuceneTestCase {
     final int iterations = atLeast(10);
     for (int i = 0; i < iterations; ++i) {
       final byte[] decompressed = randomArray();
-      final int off = random().nextBoolean() ? 0 : _TestUtil.nextInt(random(), 0, decompressed.length);
-      final int len = random().nextBoolean() ? decompressed.length - off : _TestUtil.nextInt(random(), 0, decompressed.length - off);
+      final int off = random().nextBoolean() ? 0 : TestUtil.nextInt(random(), 0, decompressed.length);
+      final int len = random().nextBoolean() ? decompressed.length - off : TestUtil.nextInt(random(), 0, decompressed.length - off);
       final byte[] compressed = compress(decompressed, off, len);
       final byte[] restored = decompress(compressed, len);
       assertArrayEquals(Arrays.copyOfRange(decompressed, off, off+len), restored);
@@ -138,7 +138,7 @@ public abstract class AbstractTestCompressionMode extends LuceneTestCase {
   }
 
   public void testConstant() throws IOException {
-    final byte[] decompressed = new byte[_TestUtil.nextInt(random(), 1, 10000)];
+    final byte[] decompressed = new byte[TestUtil.nextInt(random(), 1, 10000)];
     Arrays.fill(decompressed, (byte) random().nextInt());
     test(decompressed);
   }

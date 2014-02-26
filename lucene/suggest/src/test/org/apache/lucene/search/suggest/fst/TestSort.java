@@ -37,15 +37,15 @@ public class TestSort extends LuceneTestCase {
 
   @Before
   public void prepareTempDir() throws IOException {
-    tempDir = _TestUtil.getTempDir("mergesort");
-    _TestUtil.rmDir(tempDir);
+    tempDir = TestUtil.getTempDir("mergesort");
+    TestUtil.rmDir(tempDir);
     tempDir.mkdirs();
   }
   
   @After
   public void cleanup() throws IOException {
     if (tempDir != null)
-      _TestUtil.rmDir(tempDir);
+      TestUtil.rmDir(tempDir);
   }
 
   @Test

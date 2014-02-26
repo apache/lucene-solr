@@ -27,7 +27,7 @@ import org.junit.Test;
 
 @SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Appending","Asserting"})
 public class RangeFacetTest extends AbstractAnalyticsFacetTest {
-  static String fileName = "core/src/test-files/analytics/requestFiles/rangeFacets.txt";
+  static String fileName = "/analytics/requestFiles/rangeFacets.txt";
 
   public static final int INT = 71;
   public static final int LONG = 36;
@@ -115,7 +115,7 @@ public class RangeFacetTest extends AbstractAnalyticsFacetTest {
     
     assertU(commit()); 
     
-    setResponse(h.query(request(fileToStringArr(fileName))));
+    setResponse(h.query(request(fileToStringArr(RangeFacetTest.class, fileName))));
   }
 
   @SuppressWarnings("unchecked")

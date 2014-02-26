@@ -105,8 +105,7 @@ public class CoreDescriptor {
       CORE_COLLECTION,
       CORE_ROLES,
       CORE_NODE_NAME,
-      CloudDescriptor.NUM_SHARDS,
-      CloudDescriptor.SHARD_STATE
+      CloudDescriptor.NUM_SHARDS
   );
 
   private final CoreContainer coreContainer;
@@ -162,7 +161,7 @@ public class CoreDescriptor {
     coreProperties.putAll(defaultProperties);
     coreProperties.put(CORE_NAME, name);
     coreProperties.put(CORE_INSTDIR, instanceDir);
-    coreProperties.put(CORE_ABS_INSTDIR, convertToAbsolute(instanceDir, container.getSolrHome()));
+    coreProperties.put(CORE_ABS_INSTDIR, convertToAbsolute(instanceDir, container.getCoreRootDirectory()));
 
     for (String propname : coreProps.stringPropertyNames()) {
 

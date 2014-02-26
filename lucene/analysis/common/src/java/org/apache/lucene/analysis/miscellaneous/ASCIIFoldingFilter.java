@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -57,17 +58,49 @@ import org.apache.lucene.util.RamUsageEstimator;
  * For example, '&agrave;' will be replaced by 'a'.
  */
 public final class ASCIIFoldingFilter extends TokenFilter {
-  public ASCIIFoldingFilter(TokenStream input)
-  {
-    super(input);
-  }
-
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+  private final PositionIncrementAttribute posIncAttr = addAttribute(PositionIncrementAttribute.class);
+  private final boolean preserveOriginal;
   private char[] output = new char[512];
   private int outputPos;
-  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+  private State state;
+
+  public ASCIIFoldingFilter(TokenStream input)
+  {
+    this(input, false);
+  }
+
+  /**
+   * Create a new {@link ASCIIFoldingFilter}.
+   * 
+   * @param input
+   *          TokenStream to filter
+   * @param preserveOriginal
+   *          should the original tokens be kept on the input stream with a 0 position increment
+   *          from the folded tokens?
+   **/
+  public ASCIIFoldingFilter(TokenStream input, boolean preserveOriginal)
+  {
+    super(input);
+    this.preserveOriginal = preserveOriginal;
+  }
+
+  /**
+   * Does the filter preserve the original tokens?
+   */
+  public boolean isPreserveOriginal() {
+    return preserveOriginal;
+  }
 
   @Override
   public boolean incrementToken() throws IOException {
+    if (state != null) {
+      assert preserveOriginal : "state should only be captured if preserveOriginal is true";
+      restoreState(state);
+      posIncAttr.setPositionIncrement(0);
+      state = null;
+      return true;
+    }
     if (input.incrementToken()) {
       final char[] buffer = termAtt.buffer();
       final int length = termAtt.length();
@@ -89,6 +122,12 @@ public final class ASCIIFoldingFilter extends TokenFilter {
     }
   }
 
+  @Override
+  public void reset() throws IOException {
+    super.reset();
+    state = null;
+  }
+
   /**
    * Converts characters above ASCII to their ASCII equivalents.  For example,
    * accents are removed from accented characters.
@@ -97,6 +136,9 @@ public final class ASCIIFoldingFilter extends TokenFilter {
    */
   public void foldToASCII(char[] input, int length)
   {
+    if (preserveOriginal) {
+      state = captureState();
+    }
     // Worst-case length required:
     final int maxSizeNeeded = 4 * length;
     if (output.length < maxSizeNeeded) {

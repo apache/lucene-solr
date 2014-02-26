@@ -23,7 +23,7 @@ import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import net.minidev.json.JSONArray;
@@ -40,7 +40,7 @@ public class TestSuggest extends ServerBaseTestCase {
     startServer();
     createAndStartIndex();
     commit();
-    File tempDir = _TestUtil.getTempDir("TestSuggest");
+    File tempDir = TestUtil.getTempDir("TestSuggest");
     tempDir.mkdirs();
     tempFile = new File(tempDir, "suggest.in");
   }
@@ -163,7 +163,7 @@ public class TestSuggest extends ServerBaseTestCase {
   /** Build a suggest, pulling suggestions/weights/payloads from stored fields. */
   public void testFromStoredFields() throws Exception {
     curIndexName = "storedSuggest";
-    _TestUtil.rmDir(new File("storedsuggest"));
+    TestUtil.rmDir(new File("storedsuggest"));
     send("createIndex", "{rootDir: storedsuggest}");
     send("settings", "{directory: FSDirectory, matchVersion: LUCENE_46}");
     send("startIndex");
@@ -198,7 +198,7 @@ public class TestSuggest extends ServerBaseTestCase {
    *  stored fields, and weight from an expression */
   public void testFromStoredFieldsWithWeightExpression() throws Exception {
     curIndexName = "storedsuggestexpr";
-    _TestUtil.rmDir(new File(curIndexName));
+    TestUtil.rmDir(new File(curIndexName));
     send("createIndex", "{rootDir: " + curIndexName + "}");
     send("settings", "{directory: FSDirectory, matchVersion: LUCENE_46}");
     send("startIndex");

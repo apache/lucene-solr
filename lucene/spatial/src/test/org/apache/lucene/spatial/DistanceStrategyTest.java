@@ -29,6 +29,7 @@ import org.apache.lucene.spatial.prefix.TermQueryPrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.tree.GeohashPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.QuadPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
+import org.apache.lucene.spatial.serialized.SerializedDVStrategy;
 import org.apache.lucene.spatial.vector.PointVectorStrategy;
 import org.junit.Test;
 
@@ -61,6 +62,9 @@ public class DistanceStrategyTest extends StrategyTestCase {
     strategy = new BBoxStrategy(ctx, "bbox");
     ctorArgs.add(new Object[]{new Param(strategy)});
 
+    strategy = new SerializedDVStrategy(ctx, "serialized");
+    ctorArgs.add(new Object[]{new Param(strategy)});
+
     return ctorArgs;
   }
 
@@ -86,11 +90,19 @@ public class DistanceStrategyTest extends StrategyTestCase {
     this.strategy = strategy;
   }
 
+  @Override
+  protected boolean needsDocValues() {
+    return (strategy instanceof SerializedDVStrategy);
+  }
+
   @Test
   public void testDistanceOrder() throws IOException {
-    adoc("100", ctx.makePoint(2,1));
-    adoc("101", ctx.makePoint(-1,4));
+    adoc("100", ctx.makePoint(2, 1));
+    adoc("101", ctx.makePoint(-1, 4));
     adoc("103", (Shape)null);//test score for nothing
+    adoc("999", ctx.makePoint(2, 1));//test deleted
+    commit();
+    deleteDoc("999");
     commit();
     //FYI distances are in docid order
     checkDistValueSource(ctx.makePoint(4, 3), 2.8274937f, 5.0898066f, 180f);
@@ -104,6 +116,9 @@ public class DistanceStrategyTest extends StrategyTestCase {
     Point p101 = ctx.makePoint(-1, 4);
     adoc("101", p101);
     adoc("103", (Shape)null);//test score for nothing
+    adoc("999", ctx.makePoint(2, 1));//test deleted
+    commit();
+    deleteDoc("999");
     commit();
 
     double dist = ctx.getDistCalc().distance(p100, p101);

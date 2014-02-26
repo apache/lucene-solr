@@ -95,7 +95,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
   }
   
   private String getSourceUrl() {
-    return "http://127.0.0.1:" + jetty.getLocalPort() + "/solr";
+    return buildUrl(jetty.getLocalPort(), "/solr");
   }
   
   //TODO: fix this test to close its directories
@@ -348,7 +348,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
   
   private JettySolrRunner createJetty(SolrInstance instance) throws Exception {
     System.setProperty("solr.data.dir", instance.getDataDir());
-    JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), "/solr", 0);
+    JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), "/solr", 0, null, null, true, null, sslConfig);
     jetty.start();
     return jetty;
   }

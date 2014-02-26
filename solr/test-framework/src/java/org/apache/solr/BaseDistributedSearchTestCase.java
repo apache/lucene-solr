@@ -36,8 +36,9 @@ import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.util. _TestUtil;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.TestUtil;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -45,7 +46,6 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
@@ -55,8 +55,8 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.BeforeClass;
 import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,15 +103,15 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       // half the time we use the root context, the other half...
 
       // Remember: randomSimpleString might be the empty string
-      hostContext.append(_TestUtil.randomSimpleString(random(), 2));
+      hostContext.append(TestUtil.randomSimpleString(random(), 2));
       if (random().nextBoolean()) {
         hostContext.append("_");
       }
-      hostContext.append(_TestUtil.randomSimpleString(random(), 3));
+      hostContext.append(TestUtil.randomSimpleString(random(), 3));
       if ( ! "/".equals(hostContext.toString())) {
         // if our random string is empty, this might add a trailing slash, 
         // but our code should be ok with that
-        hostContext.append("/").append(_TestUtil.randomSimpleString(random(), 2));
+        hostContext.append("/").append(TestUtil.randomSimpleString(random(), 2));
       } else {
         // we got 'lucky' and still just have the root context,
         // NOOP: don't try to add a subdir to nothing (ie "//" is bad)
@@ -123,7 +123,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     log.info("Setting hostContext system property: " + hc);
     System.setProperty("hostContext", hc);
   }
-
+  
   /**
    * Clears the "hostContext" system property
    * @see #initHostContext
@@ -307,7 +307,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
           getSchemaFile());
       jettys.add(j);
       clients.add(createNewSolrServer(j.getLocalPort()));
-      String shardStr = "127.0.0.1:" + j.getLocalPort() + context;
+      String shardStr = buildUrl(j.getLocalPort());
       shardsArr[i] = shardStr;
       sb.append(shardStr);
     }
@@ -369,14 +369,14 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     boolean stopAtShutdown = true;
     JettySolrRunner jetty = new JettySolrRunner
         (solrHome.getAbsolutePath(), context, 0, solrConfigOverride, schemaOverride, stopAtShutdown,
-          getExtraServlets(), null, getExtraRequestFilters());
+          getExtraServlets(), sslConfig, getExtraRequestFilters());
     jetty.setShards(shardList);
     jetty.setDataDir(dataDir);
     if (explicitCoreNodeName) {
       jetty.setCoreNodeName(Integer.toString(nodeCnt.incrementAndGet()));
     }
     jetty.start();
-
+    
     return jetty;
   }
   
@@ -393,10 +393,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   protected SolrServer createNewSolrServer(int port) {
     try {
       // setup the server...
-      String url = "http://127.0.0.1:" + port + context;
-      HttpSolrServer s = new HttpSolrServer(url);
+      HttpSolrServer s = new HttpSolrServer(buildUrl(port));
       s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
-      s.setSoTimeout(60000);
+      s.setSoTimeout(90000);
       s.setDefaultMaxConnectionsPerHost(100);
       s.setMaxTotalConnections(100);
       return s;
@@ -404,6 +403,10 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     catch (Exception ex) {
       throw new RuntimeException(ex);
     }
+  }
+  
+  protected String buildUrl(int port) {
+    return buildUrl(port, context);
   }
 
   protected void addFields(SolrInputDocument doc, Object... fields) {
@@ -931,4 +934,5 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       FileUtils.copyFile(new File(getSolrHome(), solrxml), new File(jettyHome, "solr.xml"));
     }
   }
+
 }

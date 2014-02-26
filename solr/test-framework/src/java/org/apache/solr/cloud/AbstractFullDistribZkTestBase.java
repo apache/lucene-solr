@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -70,6 +71,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.DirectUpdateHandler2;
+import org.apache.zookeeper.CreateMode;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -201,6 +203,19 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       System.setProperty("numShards", Integer.toString(sliceCount));
     } else {
       System.clearProperty("numShards");
+    }
+    
+    if (isSSLMode()) {
+      System.clearProperty("urlScheme");
+      ZkStateReader zkStateReader = new ZkStateReader(zkServer.getZkAddress(),
+          AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT);
+      try {
+        zkStateReader.getZkClient().create(ZkStateReader.CLUSTER_PROPS,
+          ZkStateReader.toJSON(Collections.singletonMap("urlScheme","https")), 
+          CreateMode.PERSISTENT, true);
+      } finally {
+        zkStateReader.close();
+      }
     }
   }
   
@@ -392,8 +407,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       JettySolrRunner j = this.jettys.get(i);
       JettySolrRunner j2 = this.jettys.get(i + (numJettys / 2 - 1));
       if (sb.length() > 0) sb.append(',');
-      sb.append("127.0.0.1:").append(j.getLocalPort()).append(context);
-      sb.append("|127.0.0.1:").append(j2.getLocalPort()).append(context);
+      sb.append(buildUrl(j.getLocalPort()));
+      sb.append("|").append(buildUrl(j2.getLocalPort()));
     }
     shards = sb.toString();
     
@@ -454,7 +469,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       String solrConfigOverride) throws Exception {
     
     JettySolrRunner jetty = new JettySolrRunner(getSolrHome(), context, 0,
-        solrConfigOverride, null, false, getExtraServlets(), null, getExtraRequestFilters());
+        solrConfigOverride, null, false, getExtraServlets(), sslConfig, getExtraRequestFilters());
     jetty.setShards(shardList);
     jetty.setDataDir(getDataDir(dataDir));
     jetty.start();
@@ -468,7 +483,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       solrHome = getRelativeSolrHomePath(solrHome);
     }
     
-    JettySolrRunner jetty = new JettySolrRunner(solrHome.getPath(), context, 0, solrConfigOverride, schemaOverride, false, getExtraServlets(), null, getExtraRequestFilters());
+    JettySolrRunner jetty = new JettySolrRunner(solrHome.getPath(), context, 0, solrConfigOverride, schemaOverride, false, getExtraServlets(), sslConfig, getExtraRequestFilters());
     jetty.setShards(shardList);
     jetty.setDataDir(getDataDir(dataDir));
     jetty.start();
@@ -1100,6 +1115,53 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     return sb.toString();
   }
+  
+  boolean checkForLegalDiff(SolrDocumentList a, SolrDocumentList b, String aName, String bName, Set<String> addFails, Set<String> deleteFails) {
+    // System.err.println("######"+aName+ ": " + toStr(a,10));
+    //  System.err.println("######"+bName+ ": " + toStr(b,10));
+    //System.err.println("###### sizes=" + a.size() + "," + b.size());
+    boolean legal = true;
+    Set<SolrDocument> setA = new HashSet<SolrDocument>();
+    for (SolrDocument sdoc : a) {
+      setA.add(sdoc);
+    }
+
+    Set<SolrDocument> setB = new HashSet<SolrDocument>();
+    for (SolrDocument sdoc : b) {
+      setB.add(sdoc);
+    }
+
+    Set<SolrDocument> onlyInA = new HashSet<SolrDocument>(setA);
+    onlyInA.removeAll(setB);
+    Set<SolrDocument> onlyInB = new HashSet<SolrDocument>(setB);
+    onlyInB.removeAll(setA);
+
+    if (onlyInA.size() > 0) {
+      for (SolrDocument doc : onlyInA) {
+        if (!addFails.contains(doc.getFirstValue("id"))) {
+          legal = false;
+        } else {
+          System.err.println("###### Only in " + aName + ": " + onlyInA
+              + ", but this is expected because we found an add fail for "
+              + doc.getFirstValue("id"));
+        }
+      }
+      
+    }
+    if (onlyInB.size() > 0) {
+      for (SolrDocument doc : onlyInB) {
+        if (!deleteFails.contains(doc.getFirstValue("id"))) {
+          legal = false;
+        } else {
+          System.err.println("###### Only in " + bName + ": " + onlyInB
+              + ", but this is expected because we found a delete fail for "
+              + doc.getFirstValue("id"));
+        }
+      }
+    }
+    
+    return legal;
+  }
 
   Set<Map> showDiff(SolrDocumentList a, SolrDocumentList b, String aName, String bName) {
     System.err.println("######"+aName+ ": " + toStr(a,10));
@@ -1144,6 +1206,14 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
    */
   protected void checkShardConsistency(boolean checkVsControl, boolean verbose)
       throws Exception {
+    checkShardConsistency(checkVsControl, verbose, null, null);
+  }
+  
+  /* Checks shard consistency and optionally checks against the control shard.
+   * The test will be failed if differences are found.
+   */
+  protected void checkShardConsistency(boolean checkVsControl, boolean verbose, Set<String> addFails, Set<String> deleteFails)
+      throws Exception {
 
     updateMappingsFromZk(jettys, clients, true);
     
@@ -1170,9 +1240,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     SolrDocumentList cloudDocList = cloudClient.query(q).getResults();
     long cloudClientDocs = cloudDocList.getNumFound();
 
-
-
-
+    
     // now check that the right # are on each shard
     theShards = shardToJetty.keySet();
     int cnt = 0;
@@ -1210,14 +1278,21 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       String msg = "document count mismatch.  control=" + controlDocs + " sum(shards)="+ cnt + " cloudClient="+cloudClientDocs;
       log.error(msg);
 
-      compareResults(controlDocs, cloudClientDocs);
-
-      fail(msg);
+      boolean shouldFail = compareResults(controlDocs, cloudClientDocs, addFails, deleteFails);
+      if (shouldFail) {
+        fail(msg);
+      }
     }
   }
 
-  protected void compareResults(long controlDocs, long cloudClientDocs)
+  protected boolean compareResults(long controlDocs, long cloudClientDocs)
       throws SolrServerException {
+    return compareResults(controlDocs, cloudClientDocs, null, null);
+  }
+  
+  protected boolean compareResults(long controlDocs, long cloudClientDocs, Set<String> addFails, Set<String> deleteFails)
+      throws SolrServerException {
+    boolean shouldFail = false;
     SolrParams q;
     SolrDocumentList controlDocList;
     SolrDocumentList cloudDocList;
@@ -1233,7 +1308,16 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       log.error("Something changed! cloudClient now " + cloudDocList.getNumFound());
     };
 
-    Set<Map> differences = showDiff(controlDocList, cloudDocList,"controlDocList","cloudDocList");
+    if (addFails != null || deleteFails != null) {
+      boolean legal = checkForLegalDiff(controlDocList, cloudDocList,
+          "controlDocList", "cloudDocList", addFails, deleteFails);
+      if (legal) {
+        return false;
+      }
+    }
+    
+    Set<Map> differences = showDiff(controlDocList, cloudDocList,
+        "controlDocList", "cloudDocList");
 
     // get versions for the mismatched ids
     boolean foundId = false;
@@ -1256,6 +1340,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       
       log.error("controlClient :" + a + "\n\tcloudClient :" + b);
     }
+    
+    return shouldFail;
   }
   
   protected SolrServer getClient(String nodeName) {
@@ -1353,7 +1439,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     private volatile boolean stop = false;
     protected final String id;
     protected final List<String> deletes = new ArrayList<String>();
-    protected final AtomicInteger fails = new AtomicInteger();
+    protected Set<String> addFails = new HashSet<String>();
+    protected Set<String> deleteFails = new HashSet<String>();
     protected boolean doDeletes;
     private int numCycles;
     
@@ -1404,7 +1491,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
               System.err.println("ROOT CAUSE:");
               ((SolrServerException) e).getRootCause().printStackTrace();
             }
-            fails.incrementAndGet();
+            deleteFails.add(id);
           }
         }
         
@@ -1420,7 +1507,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             System.err.println("ROOT CAUSE:");
             ((SolrServerException) e).getRootCause().printStackTrace();
           }
-          fails.incrementAndGet();
+          addFails.add(id);
         }
         
         if (!addFailed && doDeletes && random().nextBoolean()) {
@@ -1434,25 +1521,32 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         }
       }
       
-      System.err.println("added docs:" + numAdds + " with " + fails + " fails"
+      System.err.println("added docs:" + numAdds + " with " + (addFails.size() + deleteFails.size()) + " fails"
           + " deletes:" + numDeletes);
     }
     
     @Override
     public void safeStop() {
-      System.out.println("safe stop:");
       stop = true;
     }
     
-    public int getFails() {
-      return fails.get();
+    public Set<String> getAddFails() {
+      return addFails;
+    }
+    
+    public Set<String> getDeleteFails() {
+      return deleteFails;
+    }
+    
+    public int getFailCount() {
+      return addFails.size() + deleteFails.size();
     }
     
   };
   
   class StopableSearchThread extends StopableThread {
     private volatile boolean stop = false;
-    protected final AtomicInteger fails = new AtomicInteger();
+    protected final AtomicInteger queryFails = new AtomicInteger();
     private String[] QUERIES = new String[] {"to come","their country","aid","co*"};
     
     public StopableSearchThread() {
@@ -1477,7 +1571,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             System.err.println("ROOT CAUSE:");
             ((SolrServerException) e).getRootCause().printStackTrace();
           }
-          fails.incrementAndGet();
+          queryFails.incrementAndGet();
         }
         try {
           Thread.sleep(random.nextInt(4000) + 300);
@@ -1486,7 +1580,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         }
       }
       
-      System.err.println("num searches done:" + numSearches + " with " + fails + " fails");
+      System.err.println("num searches done:" + numSearches + " with " + queryFails + " fails");
     }
     
     @Override
@@ -1495,7 +1589,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
     
     public int getFails() {
-      return fails.get();
+      return queryFails.get();
     }
     
   };
@@ -1659,8 +1753,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected SolrServer createNewSolrServer(int port) {
     try {
       // setup the server...
-      String url = "http://127.0.0.1:" + port + context + 
-        (context.endsWith("/") ? "" : "/") + DEFAULT_COLLECTION;
+      String baseUrl = buildUrl(port);
+      String url = baseUrl + (baseUrl.endsWith("/") ? "" : "/") + DEFAULT_COLLECTION;
       HttpSolrServer s = new HttpSolrServer(url);
       s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
       s.setSoTimeout(60000);
@@ -1773,6 +1867,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
     return commondCloudSolrServer;
   }
+  
   public static String getUrlFromZk(ClusterState clusterState, String collection) {
     Map<String,Slice> slices = clusterState.getCollection(collection).getSlicesMap();
 

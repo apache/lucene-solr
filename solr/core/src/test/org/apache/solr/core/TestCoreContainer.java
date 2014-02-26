@@ -19,7 +19,7 @@ package org.apache.solr.core;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
@@ -240,7 +240,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
   @Test
   public void testSharedLib() throws Exception {
-    File tmpRoot = _TestUtil.getTempDir("testSharedLib");
+    File tmpRoot = TestUtil.getTempDir("testSharedLib");
 
     File lib = new File(tmpRoot, "lib");
     lib.mkdirs();
@@ -322,8 +322,8 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   @Test
   public void testCustomHandlers() throws Exception {
 
-    ConfigSolr config = ConfigSolr.fromString(CUSTOM_HANDLERS_SOLR_XML);
     SolrResourceLoader loader = new SolrResourceLoader("solr/collection1");
+    ConfigSolr config = ConfigSolr.fromString(loader, CUSTOM_HANDLERS_SOLR_XML);
 
     CoreContainer cc = new CoreContainer(loader, config);
     try {

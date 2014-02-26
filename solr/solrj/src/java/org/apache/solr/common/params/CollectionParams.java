@@ -41,7 +41,8 @@ public interface CollectionParams
     MIGRATE,
     ADDROLE,
     REMOVEROLE,
-    CLUSTERPROP;
+    CLUSTERPROP,
+    ADDREPLICA;
     
     public static CollectionAction get( String p )
     {
@@ -53,5 +54,13 @@ public interface CollectionParams
       }
       return null; 
     }
+    public boolean isEqual(String s){
+      if(s == null) return false;
+      return toString().equals(s.toUpperCase(Locale.ROOT));
+    }
+    public String toLower(){
+      return toString().toLowerCase(Locale.ROOT);
+    }
+
   }
 }

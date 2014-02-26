@@ -24,7 +24,7 @@ import java.util.Locale;
 import java.util.Set;
 
 import org.apache.lucene.store.MMapDirectory;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import net.minidev.json.JSONObject;
@@ -53,7 +53,7 @@ public class TestCustomDirectory extends ServerBaseTestCase {
 
   public void testCustomDirectory() throws Exception {
     curIndexName = "index";
-    _TestUtil.rmDir(new File("index"));
+    TestUtil.rmDir(new File("index"));
     send("createIndex", "{rootDir: " + curIndexName + "}");
     send("settings", "{directory: org.apache.lucene.server.TestCustomDirectory$MyDirectory, matchVersion: LUCENE_40}");
     send("startIndex");
@@ -64,7 +64,7 @@ public class TestCustomDirectory extends ServerBaseTestCase {
 
   public void testInvalidDirectory() throws Exception {
     curIndexName = "index";
-    _TestUtil.rmDir(new File("index"));
+    TestUtil.rmDir(new File("index"));
     send("createIndex", "{rootDir: " + curIndexName + "}");
     assertFailsWith("settings", "{directory: bad}", "could not locate Directory sub-class \"bad\"; verify CLASSPATH");
     send("deleteIndex");

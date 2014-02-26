@@ -18,7 +18,7 @@
 package org.apache.solr.search;
 
 
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.SolrException;
@@ -114,18 +114,18 @@ public class TestFiltering extends SolrTestCaseJ4 {
 
   class Model {
     int indexSize;
-    OpenBitSet answer;
-    OpenBitSet multiSelect;
-    OpenBitSet facetQuery;
+    FixedBitSet answer;
+    FixedBitSet multiSelect;
+    FixedBitSet facetQuery;
 
     void clear() {
-      answer = new OpenBitSet(indexSize);
+      answer = new FixedBitSet(indexSize);
       answer.set(0, indexSize);
 
-      multiSelect = new OpenBitSet(indexSize);
+      multiSelect = new FixedBitSet(indexSize);
       multiSelect.set(0, indexSize);
 
-      facetQuery = new OpenBitSet(indexSize);
+      facetQuery = new FixedBitSet(indexSize);
       facetQuery.set(0, indexSize);
     }
   }
@@ -161,8 +161,8 @@ public class TestFiltering extends SolrTestCaseJ4 {
     boolean positive = random().nextBoolean();
     boolean exclude = facetQuery ? false : random().nextBoolean();    // can't exclude a facet query from faceting
 
-    OpenBitSet[] sets = facetQuery ? new OpenBitSet[]{model.facetQuery} :
-        (exclude ? new OpenBitSet[]{model.answer, model.facetQuery} : new OpenBitSet[]{model.answer, model.multiSelect, model.facetQuery});
+    FixedBitSet[] sets = facetQuery ? new FixedBitSet[]{model.facetQuery} :
+        (exclude ? new FixedBitSet[]{model.answer, model.facetQuery} : new FixedBitSet[]{model.answer, model.multiSelect, model.facetQuery});
 
     if (random().nextInt(100) < 50) {
       // frange
@@ -183,33 +183,36 @@ public class TestFiltering extends SolrTestCaseJ4 {
           }
         }
 
-        for (OpenBitSet set : sets) {
+        for (FixedBitSet set : sets) {
           set.clear(0,l);
-          set.clear(u+1, model.indexSize);
+          if (u + 1 < model.indexSize) {
+            set.clear(u+1, model.indexSize);
+          }
         }
       } else {
         // negative frange.. make it relatively small
         l = random().nextInt(model.indexSize);
         u = Math.max(model.indexSize-1, l+random().nextInt(Math.max(model.indexSize / 10, 2)));
 
-        for (OpenBitSet set : sets) {
-          set.clear(l,u+1);
+        for (FixedBitSet set : sets) {
+          int end = Math.min(u+1, set.length());
+          set.clear(l,end);
         }
       }
 
       return frangeStr(!positive, l, u, cache, cost, exclude);
     } else {
       // term or boolean query
-      OpenBitSet pset = new OpenBitSet(model.indexSize);
+      FixedBitSet pset = new FixedBitSet(model.indexSize);
       for (int i=0; i<pset.getBits().length; i++) {
         pset.getBits()[i] = random().nextLong();    // set 50% of the bits on average
       }
       if (positive) {
-        for (OpenBitSet set : sets) {
+        for (FixedBitSet set : sets) {
           set.and(pset);
         }
       } else {
-        for (OpenBitSet set : sets) {
+        for (FixedBitSet set : sets) {
           set.andNot(pset);
         }
       }
@@ -217,8 +220,9 @@ public class TestFiltering extends SolrTestCaseJ4 {
 
       StringBuilder sb = new StringBuilder();
       for (int doc=-1;;) {
+        if (doc+1 >= model.indexSize) break;
         doc = pset.nextSetBit(doc+1);
-        if (doc < 0 || doc >= model.indexSize) break;
+        if (doc < 0) break;
         sb.append((positive ? " ":" -") + f+":"+doc);
       }
 

@@ -37,7 +37,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
   
@@ -97,21 +97,21 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
     writer.close();
 
     IndexReader reader = DirectoryReader.open(dir);
-    DocsEnum td = _TestUtil.docs(random(),
-                                 reader,
-                                 "partnum",
-                                 new BytesRef("Q36"),
-                                 MultiFields.getLiveDocs(reader),
-                                 null,
-                                 0);
+    DocsEnum td = TestUtil.docs(random(),
+        reader,
+        "partnum",
+        new BytesRef("Q36"),
+        MultiFields.getLiveDocs(reader),
+        null,
+        0);
     assertTrue(td.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    td = _TestUtil.docs(random(),
-                        reader,
-                        "partnum",
-                        new BytesRef("Q37"),
-                        MultiFields.getLiveDocs(reader),
-                        null,
-                        0);
+    td = TestUtil.docs(random(),
+        reader,
+        "partnum",
+        new BytesRef("Q37"),
+        MultiFields.getLiveDocs(reader),
+        null,
+        0);
     assertTrue(td.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
   }
 

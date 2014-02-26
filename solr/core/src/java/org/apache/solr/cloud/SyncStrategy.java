@@ -34,9 +34,9 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
@@ -62,10 +62,10 @@ public class SyncStrategy {
 
   private final ExecutorService updateExecutor;
   
-  public SyncStrategy(UpdateShardHandler updateShardHandler) {
+  public SyncStrategy(CoreContainer cc) {
+    UpdateShardHandler updateShardHandler = cc.getUpdateShardHandler();
     client = updateShardHandler.getHttpClient();
-    
-    shardHandler = new HttpShardHandlerFactory().getShardHandler(client);
+    shardHandler = cc.getShardHandlerFactory().getShardHandler();
     updateExecutor = updateShardHandler.getUpdateExecutor();
   }
   
@@ -245,9 +245,6 @@ public class SyncStrategy {
     sreq.coreName = coreName;
     sreq.baseUrl = baseUrl;
     sreq.purpose = 1;
-    // TODO: this sucks
-    if (replica.startsWith("http://"))
-      replica = replica.substring(7);
     sreq.shards = new String[]{replica};
     sreq.actualShards = sreq.shards;
     sreq.params = new ModifiableSolrParams();

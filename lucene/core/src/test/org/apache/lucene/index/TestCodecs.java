@@ -49,7 +49,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.BeforeClass;
 
 // TODO: test multiple codecs here?
@@ -187,7 +187,7 @@ public class TestCodecs extends LuceneTestCase {
       // Make term text
       String text2;
       while(true) {
-        text2 = _TestUtil.randomUnicodeString(random());
+        text2 = TestUtil.randomUnicodeString(random());
         if (!termsSeen.contains(text2) && !text2.endsWith(".")) {
           termsSeen.add(text2);
           break;
@@ -205,7 +205,7 @@ public class TestCodecs extends LuceneTestCase {
 
       int docID = 0;
       for(int j=0;j<docFreq;j++) {
-        docID += _TestUtil.nextInt(random(), 1, 10);
+        docID += TestUtil.nextInt(random(), 1, 10);
         docs[j] = docID;
 
         if (!omitTF) {
@@ -213,7 +213,7 @@ public class TestCodecs extends LuceneTestCase {
           positions[j] = new PositionData[termFreq];
           int position = 0;
           for(int k=0;k<termFreq;k++) {
-            position += _TestUtil.nextInt(random(), 1, 10);
+            position += TestUtil.nextInt(random(), 1, 10);
 
             final BytesRef payload;
             if (storePayloads && random().nextInt(4) == 0) {
@@ -276,7 +276,7 @@ public class TestCodecs extends LuceneTestCase {
       // make sure it properly fully resets (rewinds) its
       // internal state:
       for(int iter=0;iter<2;iter++) {
-        docsEnum = _TestUtil.docs(random(), termsEnum, null,  docsEnum, DocsEnum.FLAG_NONE);
+        docsEnum = TestUtil.docs(random(), termsEnum, null, docsEnum, DocsEnum.FLAG_NONE);
         assertEquals(terms[i].docs[0], docsEnum.nextDoc());
         assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsEnum.nextDoc());
       }
@@ -341,7 +341,7 @@ public class TestCodecs extends LuceneTestCase {
     final IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT,
       new MockAnalyzer(random()));
     config.setMergePolicy(newLogMergePolicy());
-    config.setCodec(_TestUtil.alwaysPostingsFormat(new MockSepPostingsFormat()));
+    config.setCodec(TestUtil.alwaysPostingsFormat(new MockSepPostingsFormat()));
     final IndexWriter writer = new IndexWriter(dir, config);
 
     try {
@@ -472,7 +472,7 @@ public class TestCodecs extends LuceneTestCase {
         assertEquals(status, TermsEnum.SeekStatus.FOUND);
         assertEquals(term.docs.length, termsEnum.docFreq());
         if (field.omitTF) {
-          this.verifyDocs(term.docs, term.positions, _TestUtil.docs(random(), termsEnum, null, null, DocsEnum.FLAG_NONE), false);
+          this.verifyDocs(term.docs, term.positions, TestUtil.docs(random(), termsEnum, null, null, DocsEnum.FLAG_NONE), false);
         } else {
           this.verifyDocs(term.docs, term.positions, termsEnum.docsAndPositions(null, null), true);
         }
@@ -492,7 +492,7 @@ public class TestCodecs extends LuceneTestCase {
           assertTrue(termsEnum.term().bytesEquals(new BytesRef(term.text2)));
           assertEquals(term.docs.length, termsEnum.docFreq());
           if (field.omitTF) {
-            this.verifyDocs(term.docs, term.positions, _TestUtil.docs(random(), termsEnum, null, null, DocsEnum.FLAG_NONE), false);
+            this.verifyDocs(term.docs, term.positions, TestUtil.docs(random(), termsEnum, null, null, DocsEnum.FLAG_NONE), false);
           } else {
             this.verifyDocs(term.docs, term.positions, termsEnum.docsAndPositions(null, null), true);
           }
@@ -503,7 +503,7 @@ public class TestCodecs extends LuceneTestCase {
           System.out.println("TEST: seek non-exist terms");
         }
         for(int i=0;i<100;i++) {
-          final String text2 = _TestUtil.randomUnicodeString(random()) + ".";
+          final String text2 = TestUtil.randomUnicodeString(random()) + ".";
           status = termsEnum.seekCeil(new BytesRef(text2));
           assertTrue(status == TermsEnum.SeekStatus.NOT_FOUND ||
                      status == TermsEnum.SeekStatus.END);
@@ -549,11 +549,11 @@ public class TestCodecs extends LuceneTestCase {
               if (postings != null) {
                 docs = postings;
               } else {
-                docs = _TestUtil.docs(random(), termsEnum, null, null, DocsEnum.FLAG_FREQS);
+                docs = TestUtil.docs(random(), termsEnum, null, null, DocsEnum.FLAG_FREQS);
               }
             } else {
               postings = null;
-              docs = _TestUtil.docs(random(), termsEnum, null, null, DocsEnum.FLAG_NONE);
+              docs = TestUtil.docs(random(), termsEnum, null, null, DocsEnum.FLAG_NONE);
             }
             assertNotNull(docs);
             int upto2 = -1;

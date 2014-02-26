@@ -15,7 +15,7 @@
       <module name="analysis-common" />
       <option name="TEST_OBJECT" value="package" />
       <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/idea-build/lucene/analysis/common" />
-      <option name="VM_PARAMETERS" value="-ea  -DtempDir=temp" />
+      <option name="VM_PARAMETERS" value="-Xmx256m -ea  -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
     <configuration default="false" name="Module analyzers-icu" type="JUnit" factoryName="JUnit">

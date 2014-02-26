@@ -34,7 +34,7 @@ import org.apache.lucene.facet.taxonomy.TaxonomyFacetCounts;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 public abstract class FacetTestCase extends LuceneTestCase {
   
@@ -60,7 +60,7 @@ public abstract class FacetTestCase extends LuceneTestCase {
   protected String[] getRandomTokens(int count) {
     String[] tokens = new String[count];
     for(int i=0;i<tokens.length;i++) {
-      tokens[i] = _TestUtil.randomRealisticUnicodeString(random(), 1, 10);
+      tokens[i] = TestUtil.randomRealisticUnicodeString(random(), 1, 10);
       //tokens[i] = _TestUtil.randomSimpleString(random(), 1, 10);
     }
     return tokens;

@@ -24,9 +24,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner.SSLConfig;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
-import org.apache.solr.util.ExternalPaths;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -38,46 +36,9 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
 {
   private static Logger log = LoggerFactory.getLogger(SolrJettyTestBase.class);
 
-  private static File TEST_KEYSTORE;
-  static {
-    TEST_KEYSTORE = (null == ExternalPaths.SOURCE_HOME)
-      ? null : new File(ExternalPaths.SOURCE_HOME, "example/etc/solrtest.keystore");
-  }
-
-  private static void initSSLConfig(SSLConfig sslConfig, String keystorePath) {
-    sslConfig.useSsl = false;
-    sslConfig.clientAuth = false;
-    sslConfig.keyStore = keystorePath;
-    sslConfig.keyStorePassword = "secret";
-    sslConfig.trustStore = keystorePath;
-    sslConfig.trustStorePassword = "secret";
-  }
-
-  /**
-   * Returns the File object for the example keystore used when this baseclass randomly 
-   * uses SSL.  May be null ifthis test does not appear to be running as part of the 
-   * standard solr distribution and does not have access to the example configs.
-   *
-   * @lucene.internal 
-   */
-  protected static File getExampleKeystoreFile() {
-    return TEST_KEYSTORE;
-  }
 
   @BeforeClass
   public static void beforeSolrJettyTestBase() throws Exception {
-
-
-    
-    // only randomize SSL if we are a solr test with access to the example keystore
-    if (null == getExampleKeystoreFile()) {
-      log.info("Solr's example keystore not defined (not a solr test?) skipping SSL randomization");
-      return;
-    }
-
-    assertTrue("test keystore does not exist, randomized ssl testing broken: " +
-               getExampleKeystoreFile().getAbsolutePath(), 
-               getExampleKeystoreFile().exists() );
 
   }
 
@@ -85,25 +46,6 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
   public static int port;
   public static SolrServer server = null;
   public static String context;
-  
-  public static SSLConfig getSSLConfig() {
-    SSLConfig sslConfig = new SSLConfig();
-    
-    final boolean trySsl = random().nextBoolean();
-    final boolean trySslClientAuth = random().nextBoolean();
-    
-    log.info("Randomized ssl ({}) and clientAuth ({})", trySsl,
-        trySslClientAuth);
-    String keystorePath = null == TEST_KEYSTORE ? null : TEST_KEYSTORE
-        .getAbsolutePath();
-    initSSLConfig(sslConfig, keystorePath);
-    
-    sslConfig.useSsl = trySsl;
-    sslConfig.clientAuth = trySslClientAuth;
-    
-    initSSLConfig(sslConfig, keystorePath);
-    return sslConfig;
-  }
 
   public static JettySolrRunner createJetty(String solrHome, String configFile, String schemaFile, String context,
                                             boolean stopAtShutdown, SortedMap<ServletHolder,String> extraServlets) 
@@ -118,7 +60,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
 
     context = context==null ? "/solr" : context;
     SolrJettyTestBase.context = context;
-    jetty = new JettySolrRunner(solrHome, context, 0, configFile, schemaFile, stopAtShutdown, extraServlets, getSSLConfig());
+    jetty = new JettySolrRunner(solrHome, context, 0, configFile, schemaFile, stopAtShutdown, extraServlets, sslConfig);
 
     jetty.start();
     port = jetty.getLocalPort();

@@ -28,8 +28,8 @@ import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
-import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.packed.PackedInts;
 import org.junit.Ignore;
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
@@ -45,7 +45,7 @@ public class Test2BFST extends LuceneTestCase {
     IntsRef input = new IntsRef(ints, 0, ints.length);
     long seed = random().nextLong();
 
-    Directory dir = new MMapDirectory(_TestUtil.getTempDir("2BFST"));
+    Directory dir = new MMapDirectory(TestUtil.getTempDir("2BFST"));
 
     for(int doPackIter=0;doPackIter<2;doPackIter++) {
       boolean doPack = doPackIter == 1;

@@ -17,7 +17,6 @@ package org.apache.lucene.codecs.lucene41;
  * limitations under the License.
  */
 
-import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -53,7 +52,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
@@ -83,7 +83,7 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
       }
     };
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
-    iwc.setCodec(_TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat())); 
+    iwc.setCodec(TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat()));
     // TODO we could actually add more fields implemented with different PFs
     // or, just put this test into the usual rotation?
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc.clone());
@@ -123,7 +123,7 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
     doc.add(field7);
     doc.add(field8);
     for (int i = 0; i < MAXDOC; i++) {
-      String stringValue = Integer.toString(i) + " verycommon " + English.intToEnglish(i).replace('-', ' ') + " " + _TestUtil.randomSimpleString(random());
+      String stringValue = Integer.toString(i) + " verycommon " + English.intToEnglish(i).replace('-', ' ') + " " + TestUtil.randomSimpleString(random());
       field1.setStringValue(stringValue);
       field2.setStringValue(stringValue);
       field3.setStringValue(stringValue);
@@ -136,7 +136,7 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
     }
     iw.close();
     verify(dir);
-    _TestUtil.checkIndex(dir); // for some extra coverage, checkIndex before we forceMerge
+    TestUtil.checkIndex(dir); // for some extra coverage, checkIndex before we forceMerge
     iwc.setOpenMode(OpenMode.APPEND);
     IndexWriter iw2 = new IndexWriter(dir, iwc.clone());
     iw2.forceMerge(1);

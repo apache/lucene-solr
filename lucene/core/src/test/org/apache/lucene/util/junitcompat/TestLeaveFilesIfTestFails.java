@@ -19,7 +19,7 @@ package org.apache.lucene.util.junitcompat;
 
 import java.io.File;
 
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.JUnitCore;
@@ -33,7 +33,7 @@ public class TestLeaveFilesIfTestFails extends WithNestedTests {
   public static class Nested1 extends WithNestedTests.AbstractNestedTest {
     static File file;
     public void testDummy() {
-      file = _TestUtil.getTempDir("leftover");
+      file = TestUtil.getTempDir("leftover");
       file.mkdirs();
       fail();
     }

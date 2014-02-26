@@ -199,15 +199,15 @@ public class ClusterState implements JSONWriter.Writable {
     return Collections.unmodifiableSet(liveNodes);
   }
 
-  public String getShardId(String baseUrl, String coreName) {
+  public String getShardId(String nodeName, String coreName) {
     // System.out.println("###### getShardId(" + baseUrl + "," + coreName + ") in " + collectionStates);
     for (DocCollection coll : collectionStates.values()) {
       for (Slice slice : coll.getSlices()) {
         for (Replica replica : slice.getReplicas()) {
           // TODO: for really large clusters, we could 'index' on this
-          String rbaseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
+          String rnodeName = replica.getStr(ZkStateReader.NODE_NAME_PROP);
           String rcore = replica.getStr(ZkStateReader.CORE_NAME_PROP);
-          if (baseUrl.equals(rbaseUrl) && coreName.equals(rcore)) {
+          if (nodeName.equals(rnodeName) && coreName.equals(rcore)) {
             return slice.getName();
           }
         }

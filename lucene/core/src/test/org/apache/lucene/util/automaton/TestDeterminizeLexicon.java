@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Not thorough, but tries to test determinism correctness
@@ -38,7 +38,7 @@ public class TestDeterminizeLexicon extends LuceneTestCase {
       automata.clear();
       terms.clear();
       for (int j = 0; j < 5000; j++) {
-        String randomString = _TestUtil.randomUnicodeString(random());
+        String randomString = TestUtil.randomUnicodeString(random());
         terms.add(randomString);
         automata.add(BasicAutomata.makeString(randomString));
       }

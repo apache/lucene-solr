@@ -141,7 +141,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         zkController.getZkStateReader());
     this.zkController = zkController;
     this.cc = cc;
-    syncStrategy = new SyncStrategy(cc.getUpdateShardHandler());
+    syncStrategy = new SyncStrategy(cc);
   }
   
   @Override

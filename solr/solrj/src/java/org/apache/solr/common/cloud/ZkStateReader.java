@@ -18,6 +18,8 @@ package org.apache.solr.common.cloud;
  */
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -82,6 +84,10 @@ public class ZkStateReader {
 
   public static final String CONFIGS_ZKNODE = "/configs";
   public final static String CONFIGNAME_PROP="configName";
+
+  public static final String LEGACY_CLOUD = "legacyCloud";
+
+  public static final String URL_SCHEME = "urlScheme";
   
   private volatile ClusterState clusterState;
 
@@ -178,7 +184,7 @@ public class ZkStateReader {
 
   private ZkCmdExecutor cmdExecutor;
 
-  private Aliases aliases = new Aliases();
+  private volatile Aliases aliases = new Aliases();
 
   private volatile boolean closed = false;
 
@@ -616,6 +622,30 @@ public class ZkStateReader {
       return result;
     } catch (Exception e) {
       throw new SolrException(ErrorCode.SERVER_ERROR,"Error reading cluster properties",e) ;
+    }
+  }
+  
+  /**
+   * Returns the baseURL corrisponding to a given node's nodeName --
+   * NOTE: does not (currently) imply that the nodeName (or resulting 
+   * baseURL) exists in the cluster.
+   * @lucene.experimental
+   */
+  public String getBaseUrlForNodeName(final String nodeName) {
+    final int _offset = nodeName.indexOf("_");
+    if (_offset < 0) {
+      throw new IllegalArgumentException("nodeName does not contain expected '_' seperator: " + nodeName);
+    }
+    final String hostAndPort = nodeName.substring(0,_offset);
+    try {
+      final String path = URLDecoder.decode(nodeName.substring(1+_offset), "UTF-8");
+      String urlScheme = (String) getClusterProps().get(URL_SCHEME);
+      if(urlScheme == null) {
+        urlScheme = "http";
+      }
+      return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + path));
+    } catch (UnsupportedEncodingException e) {
+      throw new IllegalStateException("JVM Does not seem to support UTF-8", e);
     }
   }
   

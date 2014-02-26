@@ -18,7 +18,6 @@
 package org.apache.solr.client.solrj;
 
 
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,15 +26,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import junit.framework.Assert;
 
-import org.apache.lucene.util._TestUtil;
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
@@ -52,7 +48,6 @@ import org.apache.solr.client.solrj.response.PivotField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.UpdateResponse;
-import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -358,7 +353,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
           }
         }
 
-        int numDocs = _TestUtil.nextInt(random(), 1, 10*RANDOM_MULTIPLIER);
+        int numDocs = TestUtil.nextInt(random(), 1, 10 * RANDOM_MULTIPLIER);
         
         // Empty the database...
         server.deleteByQuery("*:*");// delete everything!

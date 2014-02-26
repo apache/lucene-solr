@@ -40,7 +40,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Tests IndexSearcher's searchAfter() method
@@ -133,15 +133,15 @@ public class TestSearchAfter extends LuceneTestCase {
 
       fields.add(new FloatField("float", random().nextFloat(), Field.Store.NO));
       fields.add(new DoubleField("double", random().nextDouble(), Field.Store.NO));
-      fields.add(newStringField("bytes", _TestUtil.randomRealisticUnicodeString(random()), Field.Store.NO));
-      fields.add(newStringField("bytesval", _TestUtil.randomRealisticUnicodeString(random()), Field.Store.NO));
+      fields.add(newStringField("bytes", TestUtil.randomRealisticUnicodeString(random()), Field.Store.NO));
+      fields.add(newStringField("bytesval", TestUtil.randomRealisticUnicodeString(random()), Field.Store.NO));
       fields.add(new DoubleField("double", random().nextDouble(), Field.Store.NO));
 
       fields.add(new NumericDocValuesField("intdocvalues", random().nextInt()));
       fields.add(new FloatDocValuesField("floatdocvalues", random().nextFloat()));
-      fields.add(new SortedDocValuesField("sortedbytesdocvalues", new BytesRef(_TestUtil.randomRealisticUnicodeString(random()))));
-      fields.add(new SortedDocValuesField("sortedbytesdocvaluesval", new BytesRef(_TestUtil.randomRealisticUnicodeString(random()))));
-      fields.add(new BinaryDocValuesField("straightbytesdocvalues", new BytesRef(_TestUtil.randomRealisticUnicodeString(random()))));
+      fields.add(new SortedDocValuesField("sortedbytesdocvalues", new BytesRef(TestUtil.randomRealisticUnicodeString(random()))));
+      fields.add(new SortedDocValuesField("sortedbytesdocvaluesval", new BytesRef(TestUtil.randomRealisticUnicodeString(random()))));
+      fields.add(new BinaryDocValuesField("straightbytesdocvalues", new BytesRef(TestUtil.randomRealisticUnicodeString(random()))));
 
       Document document = new Document();
       document.add(new StoredField("id", ""+i));
@@ -210,7 +210,7 @@ public class TestSearchAfter extends LuceneTestCase {
   }
 
   Sort getRandomSort() {
-    SortField[] sortFields = new SortField[_TestUtil.nextInt(random(), 2, 7)];
+    SortField[] sortFields = new SortField[TestUtil.nextInt(random(), 2, 7)];
     for(int i=0;i<sortFields.length;i++) {
       sortFields[i] = allSortFields.get(random().nextInt(allSortFields.size()));
     }
@@ -220,7 +220,7 @@ public class TestSearchAfter extends LuceneTestCase {
   void assertQuery(Query query, Filter filter, Sort sort) throws Exception {
     int maxDoc = searcher.getIndexReader().maxDoc();
     TopDocs all;
-    int pageSize = _TestUtil.nextInt(random(), 1, maxDoc*2);
+    int pageSize = TestUtil.nextInt(random(), 1, maxDoc * 2);
     if (VERBOSE) {
       System.out.println("\nassertQuery " + (iter++) + ": query=" + query + " filter=" + filter + " sort=" + sort + " pageSize=" + pageSize);
     }

@@ -36,8 +36,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
@@ -59,6 +57,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
@@ -86,10 +85,6 @@ public final class ZkController {
   private static Logger log = LoggerFactory.getLogger(ZkController.class);
 
   static final String NEWL = System.getProperty("line.separator");
-
-
-  private final static Pattern URL_POST = Pattern.compile("https?://(.*)");
-  private final static Pattern URL_PREFIX = Pattern.compile("(https?://).*");
 
   private final boolean SKIP_AUTO_RECOVERY = Boolean.getBoolean("solrcloud.skip.autorecovery");
   
@@ -149,7 +144,6 @@ public final class ZkController {
 
   private final String localHostPort;      // example: 54065
   private final String localHostContext;   // example: solr
-  private final String localHost;          // example: http://127.0.0.1
   private final String hostName;           // example: 127.0.0.1
   private final String nodeName;           // example: 127.0.0.1:54065_solr
   private final String baseURL;            // example: http://127.0.0.1:54065/solr
@@ -187,11 +181,7 @@ public final class ZkController {
     this.zkServerAddress = zkServerAddress;
     this.localHostPort = locaHostPort;
     this.localHostContext = localHostContext;
-    this.localHost = getHostAddress(localHost);
-    this.baseURL = this.localHost + ":" + this.localHostPort + 
-      (this.localHostContext.isEmpty() ? "" : ("/" + this.localHostContext));
-
-    this.hostName = getHostNameFromAddress(this.localHost);
+    this.hostName = normalizeHostName(localHost);
     this.nodeName = generateNodeName(this.hostName, 
                                      this.localHostPort, 
                                      this.localHostContext);
@@ -206,7 +196,6 @@ public final class ZkController {
           @Override
           public void command() {
             try {
-              markAllAsNotLeader(registerOnReconnect);
               
               // this is troublesome - we dont want to kill anything the old
               // leader accepted
@@ -230,7 +219,8 @@ public final class ZkController {
               if (prevContext != null) {
                 prevContext.cancelElection();
               }
-              
+
+              overseerElector.setup(context);
               overseerElector.joinElection(context, true);
               zkStateReader.createClusterStateWatchersAndUpdate();
               
@@ -276,6 +266,7 @@ public final class ZkController {
             } catch (Exception e) {
               log.error("Error trying to stop any Overseer threads", e);
             }
+            markAllAsNotLeader(registerOnReconnect);
           }
         });
     
@@ -284,6 +275,8 @@ public final class ZkController {
     cmdExecutor = new ZkCmdExecutor(zkClientTimeout);
     leaderElector = new LeaderElector(zkClient);
     zkStateReader = new ZkStateReader(zkClient);
+    
+    this.baseURL = zkStateReader.getBaseUrlForNodeName(this.nodeName);
     
     init(registerOnReconnect);
   }
@@ -463,9 +456,9 @@ public final class ZkController {
     return bytes;
   }
 
-  // normalize host to url_prefix://host
+  // normalize host removing any url scheme.
   // input can be null, host, or url_prefix://host
-  private String getHostAddress(String host) throws IOException {
+  private String normalizeHostName(String host) throws IOException {
 
     if (host == null || host.length() == 0) {
       String hostaddress;
@@ -495,30 +488,15 @@ public final class ZkController {
               "Error while looking for a better host name than 127.0.0.1", e);
         }
       }
-      host = "http://" + hostaddress;
+      host = hostaddress;
     } else {
-      Matcher m = URL_PREFIX.matcher(host);
-      if (!m.matches()) {
-        host = "http://" + host;
+      if(URLUtil.hasScheme(host)) {
+        host = URLUtil.removeScheme(host);
       }
     }
 
     return host;
   }
-
-  // extract host from url_prefix://host
-  private String getHostNameFromAddress(String addr) {
-    Matcher m = URL_POST.matcher(addr);
-    if (m.matches()) {
-      return m.group(1);
-    } else {
-      log.error("Unrecognized host:" + addr);
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-          "Unrecognized host:" + addr);
-    }
-  }
-  
-  
   
   public String getHostName() {
     return hostName;
@@ -600,7 +578,7 @@ public final class ZkController {
       for (Slice slice : slices) {
         Collection<Replica> replicas = slice.getReplicas();
         for (Replica replica : replicas) {
-          if (replica.getNodeName().equals(getNodeName())
+          if (getNodeName().equals(replica.getNodeName())
               && !(replica.getStr(ZkStateReader.STATE_PROP)
                   .equals(ZkStateReader.DOWN))) {
             ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, "state",
@@ -1054,9 +1032,6 @@ public final class ZkController {
         ZkStateReader.ROLES_PROP, cd.getCloudDescriptor().getRoles(),
         ZkStateReader.NODE_NAME_PROP, getNodeName(),
         ZkStateReader.SHARD_ID_PROP, cd.getCloudDescriptor().getShardId(),
-        ZkStateReader.SHARD_RANGE_PROP, cd.getCloudDescriptor().getShardRange(),
-        ZkStateReader.SHARD_STATE_PROP, cd.getCloudDescriptor().getShardState(),
-        ZkStateReader.SHARD_PARENT_PROP, cd.getCloudDescriptor().getShardParent(),
         ZkStateReader.COLLECTION_PROP, cd.getCloudDescriptor()
             .getCollectionName(),
         ZkStateReader.NUM_SHARDS_PROP, numShards != null ? numShards.toString()
@@ -1074,7 +1049,7 @@ public final class ZkController {
 
     final CloudDescriptor cloudDesc = desc.getCloudDescriptor();
     
-    final String shardId = state.getShardId(getBaseUrl(), desc.getName());
+    final String shardId = state.getShardId(getNodeName(), desc.getName());
 
     if (shardId != null) {
       cloudDesc.setShardId(shardId);
@@ -1281,13 +1256,13 @@ public final class ZkController {
           for (Replica replica : slice.getReplicas()) {
             // TODO: for really large clusters, we could 'index' on this
             
-            String baseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
+            String nodeName = replica.getStr(ZkStateReader.NODE_NAME_PROP);
             String core = replica.getStr(ZkStateReader.CORE_NAME_PROP);
             
-            String msgBaseUrl = getBaseUrl();
+            String msgNodeName = getNodeName();
             String msgCore = descriptor.getName();
 
-            if (baseUrl.equals(msgBaseUrl) && core.equals(msgCore)) {
+            if (nodeName.equals(msgNodeName) && core.equals(msgCore)) {
               descriptor.getCloudDescriptor()
                   .setCoreNodeName(replica.getName());
               return;
@@ -1307,7 +1282,7 @@ public final class ZkController {
     log.info("waiting to find shard id in clusterstate for " + cd.getName());
     int retryCount = 320;
     while (retryCount-- > 0) {
-      final String shardId = zkStateReader.getClusterState().getShardId(getBaseUrl(), cd.getName());
+      final String shardId = zkStateReader.getClusterState().getShardId(getNodeName(), cd.getName());
       if (shardId != null) {
         cd.getCloudDescriptor().setShardId(shardId);
         return;
@@ -1378,6 +1353,8 @@ public final class ZkController {
   public void preRegister(CoreDescriptor cd ) {
 
     String coreNodeName = getCoreNodeName(cd);
+
+    checkStateInZk(cd);
     // before becoming available, make sure we are not live and active
     // this also gets us our assigned shard id if it was not specified
     try {
@@ -1406,6 +1383,31 @@ public final class ZkController {
       doGetShardIdAndNodeNameProcess(cd);
     }
 
+  }
+
+  private void checkStateInZk(CoreDescriptor cd) {
+    if(!Overseer.isLegacy(zkStateReader.getClusterProps())){
+      DocCollection coll = zkStateReader.getClusterState().getCollection(cd.getCollectionName());
+      CloudDescriptor cloudDesc = cd.getCloudDescriptor();
+      if(cloudDesc.getShardId() == null) throw new RuntimeException("No shard id for :"+ cd.toString());
+      Slice slice = coll.getSlice(cloudDesc.getShardId());
+      if(slice == null) throw new RuntimeException("Invalid slice : "+cloudDesc.getShardId());
+      Replica replica = null;
+      if(cloudDesc.getCoreNodeName() !=null){
+        replica = slice.getReplica(cloudDesc.getCoreNodeName());
+      } else {
+        for (Replica r : slice.getReplicas()) {
+          if(cd.getName().equals(r.get(ZkStateReader.CORE_NAME_PROP)) && getBaseUrl().equals(r.get(ZkStateReader.BASE_URL_PROP))){
+            replica = r;
+            break;
+          }
+        }
+      }
+      if(replica == null){
+        throw new RuntimeException(" No such replica in clusterstate "+cd.toString());
+      }
+
+    }
   }
 
   private ZkCoreNodeProps waitForLeaderToSeeDownState(
@@ -1584,7 +1586,7 @@ public final class ZkController {
    * @param hostPort - must consist only of digits, must not be null or the empty string
    * @param hostContext - should not begin or end with a slash (leading/trailin slashes will be ignored), must not be null, may be the empty string to denote the root context
    * @lucene.experimental
-   * @see SolrZkClient#getBaseUrlForNodeName
+   * @see ZkStateReader#getBaseUrlForNodeName
    */
   static String generateNodeName(final String hostName,
                                  final String hostPort,

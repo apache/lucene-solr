@@ -43,7 +43,8 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
 
 /**
@@ -107,7 +108,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     addDocs2(writer, 10);
     writer.commit();
     assertEquals(30, writer.maxDoc());
-    _TestUtil.checkIndex(dir);
+    TestUtil.checkIndex(dir);
     writer.forceMerge(1);
     assertEquals(30, writer.maxDoc());
     writer.close();
@@ -240,7 +241,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     final int docsPerRound = 97;
     int numRounds = atLeast(1);
     for (int i = 0; i < numRounds; i++) {
-      int num = _TestUtil.nextInt(random(), 30, 60);
+      int num = TestUtil.nextInt(random(), 30, 60);
       IndexWriterConfig config = newIndexWriterConfig(random(),
           TEST_VERSION_CURRENT, new MockAnalyzer(random()));
       config.setOpenMode(OpenMode.CREATE_OR_APPEND);
@@ -251,7 +252,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
           FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
           customType.setTokenized(random().nextBoolean());
           customType.setOmitNorms(random().nextBoolean());
-          Field field = newField("" + k, _TestUtil
+          Field field = newField("" + k, TestUtil
               .randomRealisticUnicodeString(random(), 128), customType);
           doc.add(field);
         }

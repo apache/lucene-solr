@@ -23,7 +23,7 @@ import subprocess
 
 # Usage: python3.2 -u buildAndPushRelease.py [-sign gpgKey(eg: 6E68DA61)] [-prepare] [-push userName] [-pushLocal dirName] [-smoke tmpDir] /path/to/checkout version(eg: 3.4.0) rcNum(eg: 0)
 #
-# EG: python3.2 -u buildAndPushRelease.py -prepare -push -sign 6E68DA61 mikemccand /lucene/34x 3.4.0 0
+# EG: python3.2 -u buildAndPushRelease.py -prepare -push mikemccand -sign 6E68DA61 /path/to/lucene_solr_4_7 4.7.0 0
 
 # NOTE: if you specify -sign, you have to type in your gpg password at
 # some point while this runs; it's VERY confusing because the output

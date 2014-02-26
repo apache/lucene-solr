@@ -43,7 +43,7 @@ import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.TestUtil;
 
 
 /** JUnit adaptation of an older test case DocTest. */
@@ -62,10 +62,10 @@ public class TestDoc extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("TEST: setUp");
         }
-        workDir = _TestUtil.getTempDir("TestDoc");
+        workDir = TestUtil.getTempDir("TestDoc");
         workDir.mkdirs();
 
-        indexDir = _TestUtil.getTempDir("testIndex");
+        indexDir = TestUtil.getTempDir("testIndex");
         indexDir.mkdirs();
 
         Directory directory = newFSDirectory(indexDir);

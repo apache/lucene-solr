@@ -17,42 +17,39 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import com.google.protobuf.TextFormat;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrServer;
-import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.data.Stat;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.MAX_SHARDS_PER_NODE;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.getSortedNodeNames;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.getLeaderNode;
+import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import static org.apache.solr.cloud.OverseerCollectionProcessor.MAX_SHARDS_PER_NODE;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.getSortedNodeNames;
-import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudSolrServer;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
 @LuceneTestCase.Slow
+@SuppressSSL     // SSL does not work with this feature for some reason
 public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
   private CloudSolrServer client;
-
+  
   @BeforeClass
   public static void beforeThisClass2() throws Exception {
 
@@ -158,6 +155,39 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
 
     assertTrue("New overseer not the frontrunner : "+ getSortedNodeNames(client.getZkStateReader().getZkClient()) + " expected : "+ anotherOverseer, leaderchanged);
 
+
+    String currentOverseer = getLeaderNode(client.getZkStateReader().getZkClient());
+
+    log.info("Current Overseer {}", currentOverseer);
+    Pattern pattern = Pattern.compile("(.*):(\\d*)(.*)");
+    Matcher m = pattern.matcher(currentOverseer);
+    if(m.matches()){
+      String hostPort =  m.group(1)+":"+m.group(2);
+
+      log.info("hostPort : {}", hostPort);
+
+      for (JettySolrRunner jetty : jettys) {
+        String s = jetty.getBaseUrl().toString();
+        if(s.contains(hostPort)){
+          log.info("leader node {}",s);
+          ChaosMonkey.stop(jetty);
+
+          timeout = System.currentTimeMillis()+10000;
+          leaderchanged = false;
+          for(;System.currentTimeMillis() < timeout;){
+            currentOverseer =  getLeaderNode(client.getZkStateReader().getZkClient());
+            if(anotherOverseer.equals(currentOverseer)){
+              leaderchanged =true;
+              break;
+            }
+            Thread.sleep(100);
+          }
+          assertTrue("New overseer designate has not become the overseer, expected : "+ anotherOverseer + "actual : "+ currentOverseer, leaderchanged);
+        }
+
+      }
+
+    }
 
     client.shutdown();
 
