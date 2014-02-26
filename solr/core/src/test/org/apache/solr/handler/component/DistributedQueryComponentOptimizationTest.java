@@ -17,6 +17,7 @@ package org.apache.solr.handler.component;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.junit.BeforeClass;
@@ -31,6 +32,7 @@ import java.nio.ByteBuffer;
  *
  * @see QueryComponent
  */
+@SuppressCodecs("Lucene3x")
 public class DistributedQueryComponentOptimizationTest extends BaseDistributedSearchTestCase {
 
   public DistributedQueryComponentOptimizationTest() {
