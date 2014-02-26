@@ -47,7 +47,6 @@ import org.junit.Test;
 /**
  * Incorporate the open/close stress tests into unit tests.
  */
-@BadApple
 public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
 
   private final Object locker = new Object();
