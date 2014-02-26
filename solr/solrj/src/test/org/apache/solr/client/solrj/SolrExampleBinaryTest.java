@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj;
 
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
@@ -30,6 +31,7 @@ import org.junit.BeforeClass;
  * A subclass of SolrExampleTests that explicitly uses the binary 
  * codec for communication. 
  */
+@SuppressSSL
 public class SolrExampleBinaryTest extends SolrExampleTests {
   @BeforeClass
   public static void beforeTest() throws Exception {
