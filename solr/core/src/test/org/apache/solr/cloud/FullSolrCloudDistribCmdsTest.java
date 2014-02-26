@@ -50,7 +50,6 @@ import org.junit.BeforeClass;
  */
 @Slow
 @SuppressSSL     // No SSL for now - it can be too slow
-@BadApple
 public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase {
   
   @BeforeClass
