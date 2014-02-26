@@ -36,7 +36,7 @@ import java.util.ArrayList;
 import java.util.Scanner;
 
 @SuppressCodecs({"Lucene3x", "Lucene40", "Lucene41", "Lucene42", "Appending", "Asserting"})
-@BadApple
+@BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5302")
 public class ExpressionTest extends AbstractAnalyticsStatsTest {
   private static final String fileName = "/analytics/requestFiles/expressions.txt";
 

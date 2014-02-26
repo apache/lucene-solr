@@ -209,7 +209,10 @@ public abstract class LuceneTestCase extends Assert {
   @Inherited
   @Retention(RetentionPolicy.RUNTIME)
   @TestGroup(enabled = false, sysProperty = SYSPROP_BADAPPLES)
-  public @interface BadApple {}
+  public @interface BadApple {
+    /** Point to JIRA entry. */
+    public String bugUrl();
+  }
 
   /**
    * Annotation for test classes that should avoid certain codec types
