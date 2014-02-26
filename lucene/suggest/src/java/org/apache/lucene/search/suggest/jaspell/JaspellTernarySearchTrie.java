@@ -94,6 +94,7 @@ public class JaspellTernarySearchTrie {
       relatives[PARENT] = parent;
     }
 
+    /** Return an approximate memory usage for this node and its sub-nodes. */
     public long sizeInBytes() {
       long mem = RamUsageEstimator.shallowSizeOf(this) + RamUsageEstimator.shallowSizeOf(relatives);
       for (TSTNode node : relatives) {
