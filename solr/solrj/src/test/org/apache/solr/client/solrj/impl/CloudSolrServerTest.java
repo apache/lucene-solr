@@ -44,7 +44,7 @@ import org.junit.BeforeClass;
 /**
  * This test would be faster if we simulated the zk state instead.
  */
-@Slow @BadApple
+@Slow
 public class CloudSolrServerTest extends AbstractFullDistribZkTestBase {
   
   private static final String SOLR_HOME = getFile("solrj" + File.separator + "solr").getAbsolutePath();
