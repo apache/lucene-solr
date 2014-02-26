@@ -731,8 +731,8 @@ def verifyUnpacked(project, artifact, unpackPath, svnRevision, version, testArgs
       os.chdir('solr')
 
       # DISABLED until solr tests consistently pass
-      #print("    run tests w/ Java 7 and testArgs='%s'..." % testArgs)
-      #run('%s; ant clean test %s' % (javaExe('1.7'), testArgs), '%s/test.log' % unpackPath)
+      print("    run tests w/ Java 7 and testArgs='%s'..." % testArgs)
+      run('%s; ant clean test %s' % (javaExe('1.7'), testArgs), '%s/test.log' % unpackPath)
  
       # test javadocs
       print('    generate javadocs w/ Java 7...')
