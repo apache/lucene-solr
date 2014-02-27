@@ -1,5 +1,7 @@
 package org.apache.lucene.search.suggest.tst;
 
+import org.apache.lucene.util.RamUsageEstimator;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -42,4 +44,22 @@ public class TernaryTreeNode {
    */
   String token;
   Object val;
+
+  long sizeInBytes() {
+    long mem = RamUsageEstimator.shallowSizeOf(this);
+    if (loKid != null) {
+      mem += loKid.sizeInBytes();
+    }
+    if (eqKid != null) {
+      mem += eqKid.sizeInBytes();
+    }
+    if (hiKid != null) {
+      mem += hiKid.sizeInBytes();
+    }
+    if (token != null) {
+      mem += RamUsageEstimator.shallowSizeOf(token) + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + RamUsageEstimator.NUM_BYTES_CHAR * token.length();
+    }
+    mem += RamUsageEstimator.shallowSizeOf(val);
+    return mem;
+  }
 }

@@ -45,6 +45,7 @@ import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.client.solrj.SolrServer;
@@ -68,7 +69,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.hadoop.hack.MiniMRClientCluster;
 import org.apache.solr.hadoop.hack.MiniMRClientClusterFactory;
 import org.apache.solr.morphlines.solr.AbstractSolrMorphlineTestBase;
-import org.apache.solr.util.ExternalPaths;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -88,12 +88,9 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies.Conseque
 @ThreadLeakZombies(Consequence.CONTINUE)
 @ThreadLeakScope(Scope.NONE)
 @SuppressCodecs({"Lucene3x", "Lucene40"})
+@SuppressSSL // SSL does not work with this test for currently unknown reasons
 @Slow
 public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
-  
-  static {
-    ALLOW_SSL = false;
-  }
   
   private static final int RECORD_COUNT = 2104;
   private static final String RESOURCES_DIR = getFile("morphlines-core.marker").getParent();  

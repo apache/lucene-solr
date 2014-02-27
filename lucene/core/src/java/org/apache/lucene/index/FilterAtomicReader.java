@@ -46,6 +46,15 @@ import org.apache.lucene.util.BytesRef;
  */
 public class FilterAtomicReader extends AtomicReader {
 
+  /** Get the wrapped instance by <code>reader</code> as long as this reader is
+   *  an intance of {@link FilterAtomicReader}.  */
+  public static AtomicReader unwrap(AtomicReader reader) {
+    while (reader instanceof FilterAtomicReader) {
+      reader = ((FilterAtomicReader) reader).in;
+    }
+    return reader;
+  }
+
   /** Base class for filtering {@link Fields}
    *  implementations. */
   public static class FilterFields extends Fields {

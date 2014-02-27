@@ -26,6 +26,7 @@ import java.util.regex.Pattern;
 
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.BasicResponseHandler;
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -49,16 +50,11 @@ import org.apache.solr.util.AbstractSolrTestCase;
  * This test simply does a bunch of basic things in solrcloud mode and asserts things
  * work as expected.
  */
+@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
   private static final String SHARD2 = "shard2";
   private static final String SHARD1 = "shard1";
   private static final String ONE_NODE_COLLECTION = "onenodecollection";
-
-  static {
-    // disable SSL until this test is hardened more to deal with the 
-    // consequences of how slow it can make some things
-    ALLOW_SSL = false;
-  }
   
   public BasicDistributedZk2Test() {
     super();

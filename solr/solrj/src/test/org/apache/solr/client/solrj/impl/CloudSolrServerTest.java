@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
+import org.apache.lucene.util.LuceneTestCase.BadApple;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;

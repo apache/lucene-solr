@@ -482,7 +482,9 @@ public class HttpSolrServer extends SolrServer {
           NamedList err = (NamedList) rsp.get("error");
           if (err != null) {
             reason = (String) err.get("msg");
-            // TODO? get the trace?
+            if(reason == null) {
+              reason = (String) err.get("trace");
+            }
           }
         } catch (Exception ex) {}
         if (reason == null) {

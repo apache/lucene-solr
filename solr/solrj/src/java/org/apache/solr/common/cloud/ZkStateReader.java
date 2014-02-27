@@ -84,6 +84,10 @@ public class ZkStateReader {
 
   public static final String CONFIGS_ZKNODE = "/configs";
   public final static String CONFIGNAME_PROP="configName";
+
+  public static final String LEGACY_CLOUD = "legacyCloud";
+
+  public static final String URL_SCHEME = "urlScheme";
   
   private volatile ClusterState clusterState;
 
@@ -635,7 +639,7 @@ public class ZkStateReader {
     final String hostAndPort = nodeName.substring(0,_offset);
     try {
       final String path = URLDecoder.decode(nodeName.substring(1+_offset), "UTF-8");
-      String urlScheme = (String) getClusterProps().get("urlScheme");
+      String urlScheme = (String) getClusterProps().get(URL_SCHEME);
       if(urlScheme == null) {
         urlScheme = "http";
       }

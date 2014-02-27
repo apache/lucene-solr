@@ -36,8 +36,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
@@ -580,7 +578,7 @@ public final class ZkController {
       for (Slice slice : slices) {
         Collection<Replica> replicas = slice.getReplicas();
         for (Replica replica : replicas) {
-          if (replica.getNodeName().equals(getNodeName())
+          if (getNodeName().equals(replica.getNodeName())
               && !(replica.getStr(ZkStateReader.STATE_PROP)
                   .equals(ZkStateReader.DOWN))) {
             ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, "state",
@@ -1051,7 +1049,7 @@ public final class ZkController {
 
     final CloudDescriptor cloudDesc = desc.getCloudDescriptor();
     
-    final String shardId = state.getShardId(getBaseUrl(), desc.getName());
+    final String shardId = state.getShardId(getNodeName(), desc.getName());
 
     if (shardId != null) {
       cloudDesc.setShardId(shardId);
@@ -1258,13 +1256,13 @@ public final class ZkController {
           for (Replica replica : slice.getReplicas()) {
             // TODO: for really large clusters, we could 'index' on this
             
-            String baseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
+            String nodeName = replica.getStr(ZkStateReader.NODE_NAME_PROP);
             String core = replica.getStr(ZkStateReader.CORE_NAME_PROP);
             
-            String msgBaseUrl = getBaseUrl();
+            String msgNodeName = getNodeName();
             String msgCore = descriptor.getName();
 
-            if (baseUrl.equals(msgBaseUrl) && core.equals(msgCore)) {
+            if (msgNodeName.equals(nodeName) && core.equals(msgCore)) {
               descriptor.getCloudDescriptor()
                   .setCoreNodeName(replica.getName());
               return;
@@ -1284,7 +1282,7 @@ public final class ZkController {
     log.info("waiting to find shard id in clusterstate for " + cd.getName());
     int retryCount = 320;
     while (retryCount-- > 0) {
-      final String shardId = zkStateReader.getClusterState().getShardId(getBaseUrl(), cd.getName());
+      final String shardId = zkStateReader.getClusterState().getShardId(getNodeName(), cd.getName());
       if (shardId != null) {
         cd.getCloudDescriptor().setShardId(shardId);
         return;
@@ -1355,9 +1353,12 @@ public final class ZkController {
   public void preRegister(CoreDescriptor cd ) {
 
     String coreNodeName = getCoreNodeName(cd);
+
     // before becoming available, make sure we are not live and active
     // this also gets us our assigned shard id if it was not specified
     try {
+      checkStateInZk(cd);
+
       CloudDescriptor cloudDesc = cd.getCloudDescriptor();
 
 
@@ -1383,6 +1384,29 @@ public final class ZkController {
       doGetShardIdAndNodeNameProcess(cd);
     }
 
+  }
+
+  private void checkStateInZk(CoreDescriptor cd) throws InterruptedException {
+    if (!Overseer.isLegacy(zkStateReader.getClusterProps())) {
+      CloudDescriptor cloudDesc = cd.getCloudDescriptor();
+      String coreNodeName = cloudDesc.getCoreNodeName();
+      assert coreNodeName != null;
+      if (cloudDesc.getShardId() == null) throw new SolrException(ErrorCode.SERVER_ERROR ,"No shard id for :" + cd);
+      long endTime = System.currentTimeMillis()+3000;
+      String errMessage= null;
+      for (; System.currentTimeMillis()<endTime; ) {
+        Thread.sleep(100);
+        errMessage = null;
+        Slice slice = zkStateReader.getClusterState().getSlice(cd.getCollectionName(), cloudDesc.getShardId());
+        if (slice == null) {
+          errMessage = "Invalid slice : " + cloudDesc.getShardId();
+          continue;
+        }
+        if (slice.getReplica(coreNodeName) != null) return;
+      }
+      if(errMessage == null)  errMessage = " no_such_replica in clusterstate ,replicaName :  " + coreNodeName;
+      throw new SolrException(ErrorCode.SERVER_ERROR,errMessage + "state : "+ zkStateReader.getClusterState().getCollection(cd.getCollectionName()));
+    }
   }
 
   private ZkCoreNodeProps waitForLeaderToSeeDownState(

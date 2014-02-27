@@ -47,8 +47,8 @@ import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
-import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -87,11 +87,12 @@ public class OverseerTest extends SolrTestCaseJ4 {
     }
 
     private void deleteNode(final String path) {
+      
       try {
-        Stat stat = zkClient.exists(path, null, true);
-        if (stat != null) {
-          zkClient.delete(path, stat.getVersion(), true);
-        }
+        zkClient.delete(path, -1, true);
+      } catch (NoNodeException e) {
+        // fine
+        log.warn("cancelElection did not find election node to remove");
       } catch (KeeperException e) {
         fail("Unexpected KeeperException!" + e);
       } catch (InterruptedException e) {
@@ -134,8 +135,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       }
       
       for (int i = 0; i < 120; i++) {
-        String shardId = getShardId("http://" + nodeName
-            + "/solr/", coreName);
+        String shardId = getShardId("http://" + nodeName + "/solr/", coreName);
         if (shardId != null) {
           try {
             zkClient.makePath("/collections/" + collection + "/leader_elect/"
@@ -150,6 +150,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
           ShardLeaderElectionContextBase ctx = new ShardLeaderElectionContextBase(
               elector, shardId, collection, nodeName + "_" + coreName, props,
               zkStateReader);
+          elector.setup(ctx);
           elector.joinElection(ctx, false);
           return shardId;
         }
@@ -545,46 +546,52 @@ public class OverseerTest extends SolrTestCaseJ4 {
       
       reader = new ZkStateReader(controllerClient);
       reader.createClusterStateWatchersAndUpdate();
-
-      mockController = new MockZKController(server.getZkAddress(), "node1", "collection1");
+      
+      mockController = new MockZKController(server.getZkAddress(), "node1",
+          "collection1");
       
       overseerClient = electNewOverseer(server.getZkAddress());
-
+      
       Thread.sleep(1000);
-      mockController.publishState("core1", "core_node1", ZkStateReader.RECOVERING, 1);
-
+      mockController.publishState("core1", "core_node1",
+          ZkStateReader.RECOVERING, 1);
+      
       waitForCollections(reader, "collection1");
       verifyStatus(reader, ZkStateReader.RECOVERING);
-
+      
       int version = getClusterStateVersion(controllerClient);
       
-      mockController.publishState("core1", "core_node1", ZkStateReader.ACTIVE, 1);
+      mockController.publishState("core1", "core_node1", ZkStateReader.ACTIVE,
+          1);
       
-      while(version == getClusterStateVersion(controllerClient));
-
+      while (version == getClusterStateVersion(controllerClient))
+        ;
+      
       verifyStatus(reader, ZkStateReader.ACTIVE);
       version = getClusterStateVersion(controllerClient);
       overseerClient.close();
-      Thread.sleep(1000); //wait for overseer to get killed
-
-      mockController.publishState("core1",  "core_node1", ZkStateReader.RECOVERING, 1);
+      Thread.sleep(1000); // wait for overseer to get killed
+      
+      mockController.publishState("core1", "core_node1",
+          ZkStateReader.RECOVERING, 1);
       version = getClusterStateVersion(controllerClient);
       
       overseerClient = electNewOverseer(server.getZkAddress());
-
-      while(version == getClusterStateVersion(controllerClient));
-
+      
+      while (version == getClusterStateVersion(controllerClient));
+      
       verifyStatus(reader, ZkStateReader.RECOVERING);
       
-      assertEquals("Live nodes count does not match", 1, reader.getClusterState()
-          .getLiveNodes().size());
+      assertEquals("Live nodes count does not match", 1, reader
+          .getClusterState().getLiveNodes().size());
       assertEquals("Shard count does not match", 1, reader.getClusterState()
           .getSlice("collection1", "shard1").getReplicasMap().size());
       version = getClusterStateVersion(controllerClient);
-      mockController.publishState("core1", "core_node1", null,1);
-      while(version == getClusterStateVersion(controllerClient));
+      mockController.publishState("core1", "core_node1", null, 1);
+      while (version == getClusterStateVersion(controllerClient));
       Thread.sleep(500);
-      assertFalse("collection1 should be gone after publishing the null state", reader.getClusterState().getCollections().contains("collection1"));
+      assertFalse("collection1 should be gone after publishing the null state",
+          reader.getClusterState().getCollections().contains("collection1"));
     } finally {
       
       close(mockController);
@@ -898,18 +905,21 @@ public class OverseerTest extends SolrTestCaseJ4 {
   }
 
 
-  private SolrZkClient electNewOverseer(String address) throws InterruptedException,
- TimeoutException, IOException,
+  private SolrZkClient electNewOverseer(String address)
+      throws InterruptedException, TimeoutException, IOException,
       KeeperException, ParserConfigurationException, SAXException {
     SolrZkClient zkClient = new SolrZkClient(address, TIMEOUT);
     ZkStateReader reader = new ZkStateReader(zkClient);
     readers.add(reader);
     LeaderElector overseerElector = new LeaderElector(zkClient);
-    // TODO: close Overseer
+    if (overseers.size() > 0) {
+      overseers.get(overseers.size() -1).close();
+    }
     Overseer overseer = new Overseer(
         new HttpShardHandlerFactory().getShardHandler(), "/admin/cores", reader);
     overseers.add(overseer);
-    ElectionContext ec = new OverseerElectionContext(zkClient, overseer, address.replaceAll("/", "_"));
+    ElectionContext ec = new OverseerElectionContext(zkClient, overseer,
+        address.replaceAll("/", "_"));
     overseerElector.setup(ec);
     overseerElector.joinElection(ec, false);
     return zkClient;

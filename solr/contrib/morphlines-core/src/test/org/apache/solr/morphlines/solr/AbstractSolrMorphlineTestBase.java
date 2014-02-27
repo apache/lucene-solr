@@ -20,12 +20,15 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.io.FileUtils;
@@ -130,7 +133,9 @@ public class AbstractSolrMorphlineTestBase extends SolrTestCaseJ4 {
       String[] files, 
       Map<String,Integer> expectedRecords, 
       Map<String, Map<String, Object>> expectedRecordContents) throws Exception {
-    
+
+    assumeTrue("This test has issues with this locale: https://issues.apache.org/jira/browse/SOLR-5778", 
+        "GregorianCalendar".equals(Calendar.getInstance(TimeZone.getDefault(), Locale.getDefault()).getClass().getSimpleName()));
     deleteAllDocuments();
     int numDocs = 0;    
     for (int i = 0; i < 1; i++) {

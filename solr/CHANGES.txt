@@ -82,12 +82,26 @@ Detailed Change List
 
 New Features
 ----------------------
+* SOLR-5130: Implement addReplica Collections API (Noble Paul)
 
 Bug Fixes
 ----------------------
 
 * SOLR-5647: The lib paths in example-schemaless will now load correctly.
   (Paul Westin via Shawn Heisey)
+
+* SOLR-5423: CSV output doesn't include function field
+  (Arun Kumar, hossman, Steve Rowe)
+
+* SOLR-5777: Fix ordering of field values in JSON updates where
+  field name key is repeated (hossman)
+
+Optimizations
+----------------------
+* SOLR-1880: Distributed Search skips GET_FIELDS stage if EXECUTE_QUERY
+  stage gets all fields. Requests with fl=id or fl=id,score are now single-pass.
+  (Shawn Smith, Vitaliy Zhovtyuk, shalin)
+
 
 Other Changes
 ---------------------
@@ -98,6 +112,15 @@ Other Changes
   (Uwe Schindler)
 
 * SOLR-5765: Update to SLF4J 1.7.6. (Mark Miller)
+
+* SOLR-5609: If legacy mode is disabled don't let cores create slices/replicas/collections .
+  All operations should be performed through collection API (Noble Paul)
+
+* SOLR-5613: Upgrade to commons-codec 1.9 for better BeiderMorseFilter performance.
+  (Thomas Champagne, Shawn Heisey via shalin)
+
+* SOLR-5771: Add SolrTestCaseJ4.SuppressSSL annotation to disable SSL (instead of static boolean).
+  (Robert Muir)
 
 ==================  4.7.0 ==================
 
@@ -388,6 +411,9 @@ Bug Fixes
 
 * SOLR-5448: ShowFileRequestHandler treats everything as Directory, when in
   Cloud-Mode. (Erick Erickson, steffkes)
+
+* SOLR-5770: All attempts to match a SolrCore with it's state in clusterstate.json 
+  should be done with the CoreNodeName. (Steve Davids via Mark Miller)
 
 Optimizations
 ----------------------

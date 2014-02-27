@@ -292,7 +292,15 @@ public class FSTCompletionLookup extends Lookup {
 
   @Override
   public long sizeInBytes() {
-    return RamUsageEstimator.sizeOf(this);
+    long mem = RamUsageEstimator.shallowSizeOf(this) + RamUsageEstimator.shallowSizeOf(normalCompletion) + RamUsageEstimator.shallowSizeOf(higherWeightsCompletion);
+    if (normalCompletion != null) {
+      mem += normalCompletion.getFST().sizeInBytes();
+    }
+    if (higherWeightsCompletion != null && (normalCompletion == null || normalCompletion.getFST() != higherWeightsCompletion.getFST())) {
+      // the fst should be shared between the 2 completion instances, don't count it twice
+      mem += higherWeightsCompletion.getFST().sizeInBytes();
+    }
+    return mem;
   }
 
   @Override

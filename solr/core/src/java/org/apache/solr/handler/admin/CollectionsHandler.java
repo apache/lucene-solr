@@ -38,6 +38,7 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -71,6 +72,7 @@ import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
 
 public class CollectionsHandler extends RequestHandlerBase {
@@ -180,15 +182,21 @@ public class CollectionsHandler extends RequestHandlerBase {
       case MIGRATE: {
         this.handleMigrate(req, rsp);
         break;
-      } case ADDROLE:{
+      }
+      case ADDROLE: {
         handleRole(ADDROLE, req, rsp);
         break;
-      } case REMOVEROLE:{
+      }
+      case REMOVEROLE: {
         handleRole(REMOVEROLE, req, rsp);
         break;
       }
       case CLUSTERPROP: {
         this.handleProp(req, rsp);
+        break;
+      }
+      case ADDREPLICA:  {
+        this.handleAddReplica(req, rsp);
         break;
       }
       default: {
@@ -207,19 +215,19 @@ public class CollectionsHandler extends RequestHandlerBase {
     }
 
     Map<String,Object> props = ZkNodeProps.makeMap(
-        Overseer.QUEUE_OPERATION, CollectionAction.CLUSTERPROP.toString().toLowerCase(Locale.ROOT) );
+        Overseer.QUEUE_OPERATION, CLUSTERPROP.toLower() );
     copyIfNotNull(req.getParams(),props,
         "name",
         "val");
-    handleResponse(CollectionAction.CLUSTERPROP.toString().toLowerCase(Locale.ROOT),new ZkNodeProps(props),rsp);
 
+    Overseer.getInQueue(coreContainer.getZkController().getZkClient()).offer(ZkStateReader.toJSON(props)) ;
   }
 
   static Set<String> KNOWN_ROLES = ImmutableSet.of("overseer");
 
   private void handleRole(CollectionAction action, SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
     req.getParams().required().check("role", "node");
-    Map<String, Object> map = ZkNodeProps.makeMap(Overseer.QUEUE_OPERATION, action.toString().toLowerCase(Locale.ROOT));
+    Map<String, Object> map = ZkNodeProps.makeMap(Overseer.QUEUE_OPERATION, action.toLower());
     copyIfNotNull(req.getParams(), map,"role", "node");
     ZkNodeProps m = new ZkNodeProps(map);
     if(!KNOWN_ROLES.contains(m.getStr("role"))) throw new SolrException(ErrorCode.BAD_REQUEST,"Unknown role. Supported roles are ,"+ KNOWN_ROLES);
@@ -492,6 +500,16 @@ public class CollectionsHandler extends RequestHandlerBase {
     copyIfNotNull(req.getParams(), props, "collection", "split.key", "target.collection", "forward.timeout");
     ZkNodeProps m = new ZkNodeProps(props);
     handleResponse(OverseerCollectionProcessor.MIGRATE, m, rsp, DEFAULT_ZK_TIMEOUT * 20);
+  }
+
+  private void handleAddReplica(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException  {
+    log.info("Add replica action invoked: " + req.getParamString());
+    Map<String,Object> props = new HashMap<String,Object>();
+    props.put(Overseer.QUEUE_OPERATION, CollectionAction.ADDREPLICA.toString());
+    copyIfNotNull(req.getParams(), props, COLLECTION_PROP, "node", SHARD_ID_PROP, ShardParams._ROUTE_,
+        CoreAdminParams.NAME, CoreAdminParams.INSTANCE_DIR, CoreAdminParams.DATA_DIR);
+    ZkNodeProps m = new ZkNodeProps(props);
+    handleResponse(CollectionAction.ADDREPLICA.toString(), m, rsp);
   }
 
   public static ModifiableSolrParams params(String... params) {

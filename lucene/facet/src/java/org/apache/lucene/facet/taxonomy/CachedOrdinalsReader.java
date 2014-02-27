@@ -93,7 +93,7 @@ public class CachedOrdinalsReader extends OrdinalsReader {
     };
   }
 
-  /** Holds the cached ordinals in two paralel {@code int[]} arrays. */
+  /** Holds the cached ordinals in two parallel {@code int[]} arrays. */
   public static final class CachedOrds {
 
     /** Index into {@link #ordinals} for each document. */
@@ -136,13 +136,22 @@ public class CachedOrdinalsReader extends OrdinalsReader {
         this.ordinals = ords;
       }
     }
+
+    /** Returns number of bytes used by this cache entry */
+    public long ramBytesUsed() {
+      long mem = RamUsageEstimator.shallowSizeOf(this) + RamUsageEstimator.sizeOf(offsets);
+      if (offsets != ordinals) {
+        mem += RamUsageEstimator.sizeOf(ordinals);
+      }
+      return mem;
+    }
   }
 
   /** How many bytes is this cache using? */
   public synchronized long ramBytesUsed() {
     long bytes = 0;
     for(CachedOrds ords : ordsCache.values()) {
-      bytes += RamUsageEstimator.sizeOf(ords);
+      bytes += ords.ramBytesUsed();
     }
 
     return bytes;

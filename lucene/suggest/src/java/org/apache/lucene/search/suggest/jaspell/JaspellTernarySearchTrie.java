@@ -40,6 +40,7 @@ import java.util.Vector;
 import java.util.zip.GZIPInputStream;
 
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Implementation of a Ternary Search Trie, a data structure for storing
@@ -75,7 +76,7 @@ public class JaspellTernarySearchTrie {
     protected Object data;
 
     /** The relative nodes. */
-    protected TSTNode[] relatives = new TSTNode[4];
+    protected final TSTNode[] relatives = new TSTNode[4];
 
     /** The char used in the split. */
     protected char splitchar;
@@ -92,6 +93,18 @@ public class JaspellTernarySearchTrie {
       this.splitchar = splitchar;
       relatives[PARENT] = parent;
     }
+
+    /** Return an approximate memory usage for this node and its sub-nodes. */
+    public long sizeInBytes() {
+      long mem = RamUsageEstimator.shallowSizeOf(this) + RamUsageEstimator.shallowSizeOf(relatives);
+      for (TSTNode node : relatives) {
+        if (node != null) {
+          mem += node.sizeInBytes();
+        }
+      }
+      return mem;
+    }
+
   }
 
   /**
@@ -871,6 +884,16 @@ public class JaspellTernarySearchTrie {
             sortKeysNumReturnValues, sortKeysResult);
     return sortKeysRecursion(currentNode.relatives[TSTNode.HIKID],
             sortKeysNumReturnValues, sortKeysResult);
+  }
+
+  /** Return an approximate memory usage for this trie. */
+  public long sizeInBytes() {
+    long mem = RamUsageEstimator.shallowSizeOf(this);
+    final TSTNode root = getRoot();
+    if (root != null) {
+      mem += root.sizeInBytes();
+    }
+    return mem;
   }
 
 }
