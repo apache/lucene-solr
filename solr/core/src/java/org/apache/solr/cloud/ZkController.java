@@ -1262,7 +1262,7 @@ public final class ZkController {
             String msgNodeName = getNodeName();
             String msgCore = descriptor.getName();
 
-            if (nodeName.equals(msgNodeName) && core.equals(msgCore)) {
+            if (msgNodeName.equals(nodeName) && core.equals(msgCore)) {
               descriptor.getCloudDescriptor()
                   .setCoreNodeName(replica.getName());
               return;
@@ -1354,10 +1354,11 @@ public final class ZkController {
 
     String coreNodeName = getCoreNodeName(cd);
 
-    checkStateInZk(cd);
     // before becoming available, make sure we are not live and active
     // this also gets us our assigned shard id if it was not specified
     try {
+      checkStateInZk(cd);
+
       CloudDescriptor cloudDesc = cd.getCloudDescriptor();
 
 
@@ -1385,28 +1386,26 @@ public final class ZkController {
 
   }
 
-  private void checkStateInZk(CoreDescriptor cd) {
-    if(!Overseer.isLegacy(zkStateReader.getClusterProps())){
-      DocCollection coll = zkStateReader.getClusterState().getCollection(cd.getCollectionName());
+  private void checkStateInZk(CoreDescriptor cd) throws InterruptedException {
+    if (!Overseer.isLegacy(zkStateReader.getClusterProps())) {
       CloudDescriptor cloudDesc = cd.getCloudDescriptor();
-      if(cloudDesc.getShardId() == null) throw new RuntimeException("No shard id for :"+ cd.toString());
-      Slice slice = coll.getSlice(cloudDesc.getShardId());
-      if(slice == null) throw new RuntimeException("Invalid slice : "+cloudDesc.getShardId());
-      Replica replica = null;
-      if(cloudDesc.getCoreNodeName() !=null){
-        replica = slice.getReplica(cloudDesc.getCoreNodeName());
-      } else {
-        for (Replica r : slice.getReplicas()) {
-          if(cd.getName().equals(r.get(ZkStateReader.CORE_NAME_PROP)) && getBaseUrl().equals(r.get(ZkStateReader.BASE_URL_PROP))){
-            replica = r;
-            break;
-          }
+      String coreNodeName = cloudDesc.getCoreNodeName();
+      assert coreNodeName != null;
+      if (cloudDesc.getShardId() == null) throw new SolrException(ErrorCode.SERVER_ERROR ,"No shard id for :" + cd);
+      long endTime = System.currentTimeMillis()+3000;
+      String errMessage= null;
+      for (; System.currentTimeMillis()<endTime; ) {
+        Thread.sleep(100);
+        errMessage = null;
+        Slice slice = zkStateReader.getClusterState().getSlice(cd.getCollectionName(), cloudDesc.getShardId());
+        if (slice == null) {
+          errMessage = "Invalid slice : " + cloudDesc.getShardId();
+          continue;
         }
+        if (slice.getReplica(coreNodeName) != null) return;
       }
-      if(replica == null){
-        throw new RuntimeException(" No such replica in clusterstate "+cd.toString());
-      }
-
+      if(errMessage == null)  errMessage = " no_such_replica in clusterstate ,replicaName :  " + coreNodeName;
+      throw new SolrException(ErrorCode.SERVER_ERROR,errMessage + "state : "+ zkStateReader.getClusterState().getCollection(cd.getCollectionName()));
     }
   }
 

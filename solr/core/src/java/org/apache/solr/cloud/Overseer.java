@@ -305,8 +305,7 @@ public class Overseer {
           makeMap(
           ZkStateReader.CORE_NAME_PROP, message.getStr(ZkStateReader.CORE_NAME_PROP),
           ZkStateReader.BASE_URL_PROP,message.getStr(ZkStateReader.BASE_URL_PROP),
-          ZkStateReader.STATE_PROP,message.getStr(ZkStateReader.STATE_PROP),
-          ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName));
+          ZkStateReader.STATE_PROP,message.getStr(ZkStateReader.STATE_PROP)));
       sl.getReplicasMap().put(coreNodeName, replica);
       return clusterState;
     }

@@ -630,7 +630,16 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
   }
 
   private void testCollectionsAPI() throws Exception {
- 
+
+    boolean disableLegacy = random().nextBoolean();
+    CloudSolrServer client1 = null;
+
+    if(disableLegacy) {
+      log.info("legacyCloud=false");
+      client1 = createCloudClient(null);
+      setClusterProp(client1, ZkStateReader.LEGACY_CLOUD, "false");
+    }
+
     // TODO: fragile - because we dont pass collection.confName, it will only
     // find a default if a conf set with a name matching the collection name is found, or 
     // if there is only one conf set. That and the fact that other tests run first in this
@@ -907,6 +916,10 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     checkForCollection(collectionInfos.keySet().iterator().next(), collectionInfos.entrySet().iterator().next().getValue(), createNodeList);
     
     checkNoTwoShardsUseTheSameIndexDir();
+    if(disableLegacy) {
+      setClusterProp(client1, ZkStateReader.LEGACY_CLOUD, null);
+      client1.shutdown();
+    }
   }
   
   private void testCollectionsAPIAddRemoveStress() throws Exception {
