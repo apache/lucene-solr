@@ -177,7 +177,7 @@ public class EliasFanoEncoder {
     this.numIndexEntries = (nIndexEntries >= 0) ? nIndexEntries : 0;
     long maxIndexEntry = maxHighValue + numValues - 1; // clear upper bits, set upper bits, start at zero
     this.nIndexEntryBits = (maxIndexEntry <= 0) ? 0
-                          : (64 - Long.numberOfLeadingZeros(maxIndexEntry - 1));
+                          : (64 - Long.numberOfLeadingZeros(maxIndexEntry));
     long numLongsForIndexBits = numLongsForBits(numIndexEntries * nIndexEntryBits);
     if (numLongsForIndexBits > Integer.MAX_VALUE) {
       throw new IllegalArgumentException("numLongsForIndexBits too large to index a long array: " + numLongsForIndexBits);
