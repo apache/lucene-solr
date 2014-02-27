@@ -66,7 +66,7 @@ public final class HunspellStemFilter extends TokenFilter {
   }
 
   /**
-   * Creates a new Hunspell2StemFilter that will stem tokens from the given TokenStream using affix rules in the provided
+   * Creates a new HunspellStemFilter that will stem tokens from the given TokenStream using affix rules in the provided
    * Dictionary
    *
    * @param input TokenStream whose tokens will be stemmed
