@@ -129,7 +129,10 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   @Inherited
   @Retention(RetentionPolicy.RUNTIME)
   @Target(ElementType.TYPE)
-  public @interface SuppressSSL {}
+  public @interface SuppressSSL {
+    /** Point to JIRA entry. */
+    public String bugUrl() default "None";
+  }
   
   // these are meant to be accessed sequentially, but are volatile just to ensure any test
   // thread will read the latest value

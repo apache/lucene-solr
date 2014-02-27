@@ -84,7 +84,7 @@ import org.junit.Test;
  * @since 1.4
  */
 @Slow
-@SuppressSSL     // does not work yet with SSL
+@SuppressSSL     // Currently unknown why SSL does not work with this test
 public class TestReplicationHandler extends SolrTestCaseJ4 {
 
 

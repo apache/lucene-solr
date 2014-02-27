@@ -77,7 +77,7 @@ import org.junit.BeforeClass;
  * work as expected.
  */
 @Slow 
-@SuppressSSL
+@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   
   private static final String DEFAULT_COLLECTION = "collection1";

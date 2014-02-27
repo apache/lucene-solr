@@ -46,7 +46,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 @LuceneTestCase.Slow
-@SuppressSSL     // SSL does not work with this feature for some reason
+@SuppressSSL     // Currently unknown why SSL does not work
 public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
   private CloudSolrServer client;
   
