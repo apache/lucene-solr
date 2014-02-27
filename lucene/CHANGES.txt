@@ -92,6 +92,9 @@ Bug fixes
   NullPointerException, if the synonym map is empty when creating
   SynonymFilter (帅广应 via Mike McCandless)
 
+* LUCENE-5432: EliasFanoDocIdSet: Fix number of index entry bits when the maximum
+  entry is a power of 2. (Paul Elschot via Adrien Grand)
+
 Test Framework
 
 * LUCENE-5449: Rename _TestUtil and _TestHelper to remove the leading _.
