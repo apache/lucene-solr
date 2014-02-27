@@ -120,7 +120,6 @@ final class Stemmer {
   private List<CharsRef> stem(char word[], int length, char[] flags, int recursionDepth) {
     // TODO: allow this stuff to be reused by tokenfilter
     List<CharsRef> stems = new ArrayList<CharsRef>();
-    BytesRef scratch = new BytesRef();
 
     for (int i = 0; i < length; i++) {
       List<Affix> suffixes = dictionary.lookupSuffix(word, i, length - i);
@@ -194,7 +193,6 @@ final class Stemmer {
     }
 
     if (affix.isCrossProduct() && recursionDepth < recursionCap) {
-      BytesRef scratch = new BytesRef();
       dictionary.flagLookup.get(affix.getAppendFlags(), scratch);
       char appendFlags[] = Dictionary.decodeFlags(scratch);
       stems.addAll(stem(strippedWord, length, appendFlags, ++recursionDepth));
