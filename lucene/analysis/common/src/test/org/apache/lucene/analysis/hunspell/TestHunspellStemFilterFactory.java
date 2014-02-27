@@ -30,7 +30,7 @@ public class TestHunspellStemFilterFactory extends BaseTokenStreamFactoryTestCas
   public void testStemming() throws Exception {
     Reader reader = new StringReader("abc");
     TokenStream stream = whitespaceMockTokenizer(reader);
-    stream = tokenFilterFactory("Hunspell2Stem",
+    stream = tokenFilterFactory("HunspellStem",
         "dictionary", "simple.dic",
         "affix", "simple.aff").create(stream);
     assertTokenStreamContents(stream, new String[] { "ab" });
@@ -39,7 +39,7 @@ public class TestHunspellStemFilterFactory extends BaseTokenStreamFactoryTestCas
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
     try {
-      tokenFilterFactory("Hunspell2Stem",
+      tokenFilterFactory("HunspellStem",
           "dictionary", "simple.dic",
           "bogusArg", "bogusValue");
       fail();
