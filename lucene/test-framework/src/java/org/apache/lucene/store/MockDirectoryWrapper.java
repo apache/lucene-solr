@@ -282,8 +282,11 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         out.close();
       }
       if (LuceneTestCase.VERBOSE) {
-        System.out.println("MockDirectoryWrapper: " + action + " unsynced file: " + name);
+        System.out.println(Thread.currentThread().getName() + ": MockDirectoryWrapper: " + action + " unsynced file: " + name);
       }
+    }
+    if (LuceneTestCase.VERBOSE) {
+      System.out.println(Thread.currentThread().getName() + ": MockDirectoryWrapper: done crash dir=" + in);
     }
   }
 

@@ -368,7 +368,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       long delGen = input.readLong();
       int delCount = input.readInt();
       if (delCount < 0 || delCount > info.getDocCount()) {
-        throw new CorruptIndexException("invalid deletion count: " + delCount + " (resource: " + input + ")");
+        throw new CorruptIndexException("invalid deletion count: " + delCount + " (resource: " + input + ") delCount=" + delCount + " info.getDocCount()=" + info.getDocCount() + " info=" + info);
       }
       long fieldInfosGen = -1;
       if (format >= VERSION_46) {

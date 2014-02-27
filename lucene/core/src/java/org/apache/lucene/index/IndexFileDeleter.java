@@ -106,7 +106,7 @@ final class IndexFileDeleter implements Closeable {
 
   /** Change to true to see details of reference counts when
    *  infoStream is enabled */
-  public static boolean VERBOSE_REF_COUNTS = true;
+  public static boolean VERBOSE_REF_COUNTS = false;
 
   // Used only for assert
   private final IndexWriter writer;
@@ -582,6 +582,7 @@ final class IndexFileDeleter implements Closeable {
       if (infoStream.isEnabled("IFD")) {
         infoStream.message("IFD", "delete \"" + fileName + "\"");
       }
+      System.out.println("IFD: delete file " + fileName);
       directory.deleteFile(fileName);
     } catch (IOException e) {  // if delete fails
       if (directory.fileExists(fileName)) {

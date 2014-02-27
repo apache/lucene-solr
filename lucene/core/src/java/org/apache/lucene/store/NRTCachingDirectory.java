@@ -216,7 +216,7 @@ public class NRTCachingDirectory extends Directory {
 
   @Override
   public void sync(Collection<String> fileNames) throws IOException {
-    if (VERBOSE) {
+    if (true || VERBOSE) {
       System.out.println("nrtdir.sync files=" + fileNames);
     }
     for(String fileName : fileNames) {
@@ -302,11 +302,14 @@ public class NRTCachingDirectory extends Directory {
     // Only let one thread uncache at a time; this only
     // happens during commit() or close():
     synchronized(uncacheLock) {
-      if (VERBOSE) {
+      if (true || VERBOSE) {
         System.out.println("nrtdir.unCache name=" + fileName);
       }
       if (!cache.fileExists(fileName)) {
         // Another thread beat us...
+        if (true || VERBOSE) {
+          System.out.println("nrtdir.unCache skip name=" + fileName);
+        }
         return;
       }
       if (delegate.fileExists(fileName)) {

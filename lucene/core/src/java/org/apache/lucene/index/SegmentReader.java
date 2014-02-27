@@ -129,7 +129,7 @@ public final class SegmentReader extends AtomicReader {
    *  deletes file.  Used by openIfChanged. */
   SegmentReader(SegmentCommitInfo si, SegmentReader sr) throws IOException {
     this(si, sr,
-         si.info.getCodec().liveDocsFormat().readLiveDocs(si.info.dir, si, IOContext.READONCE),
+         si.hasDeletions() ? si.info.getCodec().liveDocsFormat().readLiveDocs(si.info.dir, si, IOContext.READONCE) : null,
          si.info.getDocCount() - si.getDelCount());
   }
 

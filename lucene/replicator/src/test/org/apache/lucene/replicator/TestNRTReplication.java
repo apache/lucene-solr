@@ -34,6 +34,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.zip.Adler32;
+import java.util.zip.Checksum;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.CodecUtil;
@@ -45,6 +47,7 @@ import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.IndexNotFoundException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
 import org.apache.lucene.index.IndexWriter;
@@ -76,11 +79,13 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.RAMOutputStream;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.PrintStreamInfoStream;
+import org.apache.lucene.util.TreeLogger;
 import org.apache.lucene.util._TestUtil;
 import org.junit.AfterClass;
 
@@ -126,6 +131,8 @@ public class TestNRTReplication extends LuceneTestCase {
 
   private void _test() throws Exception {
 
+    TreeLogger.setLogger(new TreeLogger("main"));
+
     // Maps all segmentInfos.getVersion() we've seen, to the
     // expected doc count.  On each replica when we do a
     // *:* search we verify the totalHits is correct:
@@ -150,10 +157,11 @@ public class TestNRTReplication extends LuceneTestCase {
       }
     }
 
-    nodes[0] = master = new Master(-1, -1, dirs[0], 0, nodes, versionDocCounts);
+    nodes[0] = master = new Master(dirs[0], 0, nodes, versionDocCounts);
 
     // Periodically stops/starts/commits replicas, moves master:
     CommitThread commitThread = new CommitThread(dirs, nodes, versionDocCounts);
+    commitThread.setName("commitThread");
     commitThread.start();
 
     // nocommit test graceful full shutdown / restart
@@ -163,36 +171,31 @@ public class TestNRTReplication extends LuceneTestCase {
     long endTime = System.currentTimeMillis() + 60000;
     //long endTime = System.currentTimeMillis() + 10000;
 
-    // nocommit this is GLOBAL state; e.g. we will need
-    // ZooKeeper or something to make sure this is
-    // available to all nodes at all times even after crash
-    // recovery:
-    long globalMaxVersion = -1;
-    int globalMaxSegment = -1;
-
     while (System.currentTimeMillis() < endTime) {
       Thread.sleep(_TestUtil.nextInt(random(), 2, 20));
 
+      assert master != null;
+
+      TreeLogger.log("\nTEST: now replicate master id=" + master.id);
+      TreeLogger.start("replicate");
+
       SegmentInfos infos;
-      Directory masterDir;
+      boolean closeMaster = false;
       if (master == null) {
         infos = null;
-        masterDir = null;
       } else {
-        masterDir = master.dir;
         if (random().nextInt(100) == 57) {
-          System.out.println("\nTEST: move master");
+          closeMaster = true;
+          TreeLogger.log("now move master");
           // Commits & closes current master and pull the
           // infos of the final commit:
           masterLock.lock();
           try {
             infos = master.close(random().nextBoolean());
-            nodes[master.id] = null;
-            master = null;
           } finally {
             masterLock.unlock();
           }
-          System.out.println("\nTEST: done shutdown master");
+          TreeLogger.log("done shutdown master");
         } else {
 
           // Have writer do a full flush, and return the
@@ -201,27 +204,25 @@ public class TestNRTReplication extends LuceneTestCase {
           // the replica (s).  This is just like pulling an
           // NRT reader, except we don't actually open the
           // readers on the newly flushed segments:
-          System.out.println("\nTEST: flushAndIncRef to replicate");
+          TreeLogger.log("flush current master");
           infos = master.writer.w.flushAndIncRef();
         }
       }
 
       if (infos != null) {
 
-        globalMaxVersion = infos.version;
-        globalMaxSegment = infos.counter;
-
         int count = docCount(infos);
-        System.out.println("TEST: add version=" + infos.version + " count=" + count);
+        TreeLogger.log("record version=" + infos.version + " count=" + count + " segs=" + infos.toString(master.dir));
         Integer oldCount = versionDocCounts.put(infos.version, count);
 
-        if (oldCount != null) {
-          assertEquals("version=" + infos.version + " oldCount=" + oldCount + " newCount=" + count, oldCount.intValue(), count);
-        }
+        // nocommit cannot do this: versions can go backwards
+        //if (oldCount != null) {
+        //assertEquals("version=" + infos.version + " oldCount=" + oldCount + " newCount=" + count, oldCount.intValue(), count);
+        //}
 
         // nocommit need to do this concurrently w/ pushing
         // out to replicas:
-        if (master != null) {
+        if (closeMaster == false) {
           master.mgr.refresh(infos);
         }
 
@@ -230,13 +231,9 @@ public class TestNRTReplication extends LuceneTestCase {
         // already moved those bytes to disk...
 
         int totDocCount = docCount(infos);
-        String extra;
-        if (master != null) {
-          extra = " master.sizeInBytes=" + ((NRTCachingDirectory) master.dir).sizeInBytes();
-        } else {
-          extra = "";
-        }
-        System.out.println("\nTEST: replicate docCount=" + totDocCount + " version=" + infos.version + extra + " segments=" + infos.toString(masterDir));
+        String extra = " master.sizeInBytes=" + ((NRTCachingDirectory) master.dir).sizeInBytes();
+
+        TreeLogger.log("replicate docCount=" + totDocCount + " version=" + infos.version + extra + " segments=" + infos.toString(master.dir));
 
         // Convert infos to byte[], to send "on the wire":
         RAMOutputStream out = new RAMOutputStream();
@@ -246,21 +243,22 @@ public class TestNRTReplication extends LuceneTestCase {
         
         // nocommit test master crash (promoting replica to master)
 
-        Map<String,Long> filesAndSizes = getFilesAndSizes(masterDir, infos.files(masterDir, false));
         // nocommit do this sync in separate threads
+        Map<String,FileMetaData> filesMetaData = getFilesMetaData(master, infos.files(master.dir, false));
 
         // nocommit simulate super-slow replica: it should not
         // hold up the copying of other replicas, nor new
         // flushing; the copy of a given SIS to a given
         // replica should be fully concurrent/bg
-
+        int upto = 0;
         for(Object n : nodes) {
           if (n != null && n instanceof Replica) {
             Replica r = (Replica) n;
+
             // nocommit improve this: load each file ONCE,
             // push to the N replicas that need it
             try {
-              r.sync(masterDir, filesAndSizes, infosBytes, infos.version);
+              r.sync(master.dir, master.checksums, filesMetaData, infosBytes, infos.version);
             } catch (AlreadyClosedException ace) {
               // Ignore this: it means the replica shut down
               // while we were trying to sync.  This
@@ -268,43 +266,71 @@ public class TestNRTReplication extends LuceneTestCase {
               // see trying to push file bytes to a replica
               // that was just taken offline.
             } catch (Exception e) {
-              System.out.println("TEST FAIL: replica " + r.id);
-              e.printStackTrace(System.out);
+              TreeLogger.log("TEST FAIL: replica " + r.id, e);
               throw e;
             }
-          } else {
-            System.out.println("  skip down replica n=" + n);
+          } else if (n == null) {
+            TreeLogger.log("id=" + upto + " skip down replica");
           }
+          upto++;
         }
       }
 
-      if (master != null) {
+      if (closeMaster == false) {
         // Done pushing to all replicas so we now release
         // the files on master, so IW is free to delete if it
         // needs to:
         master.setInfos(infos);
       } else {
-        if (masterDir != null) {
-          System.out.println("TEST: close old master dir");
-          masterDir.close();
-        }
+        // nocommit awkward to do this "after close";
+        // clean this up:
+        master.checksums.save(new HashSet<String>(infos.files(master.dir, true)));
+        TreeLogger.log("close old master dir dir.listAll()=" + Arrays.toString(master.dir.listAll()));
+        master.dir.close();
+
         masterLock.lock();
         try {
-          int idx = random().nextInt(nodes.length);
+
+          nodes[master.id] = null;
+
+          // Must pick newest replica to promote
+          int bestIDX = -1;
+          long highestVersion = -1;
+          for(int idx=0;idx<nodes.length;idx++) {
+            if (nodes[idx] instanceof Replica) {
+              Replica r = (Replica) nodes[idx];
+              long version = r.mgr.getCurrentInfos().version;
+              if (version > highestVersion) {
+                bestIDX = idx;
+                highestVersion = version;
+              }
+            }
+          }
+
+          int idx;
+          if (bestIDX != -1) {
+            idx = bestIDX;
+          } else {
+            // All replicas are down; it doesn't matter
+            // which one we pick
+            idx = random().nextInt(nodes.length);
+          }
+
           if (nodes[idx] == null) {
             // Directly start up Master:
-            System.out.println("TEST: promote master on down node id=" + idx + " globalMaxVersion=" + globalMaxVersion + " globalMaxSegment=" + globalMaxSegment);
-            nodes[idx] = master = new Master(globalMaxVersion, globalMaxSegment, dirs[idx], idx, nodes, versionDocCounts);
+            TreeLogger.log("id=" + idx + " promote down node to master");
+            nodes[idx] = master = new Master(dirs[idx], idx, nodes, versionDocCounts);
           } else {
             assert nodes[idx] instanceof Replica;
-            System.out.println("TEST: promote node id=" + idx + " from replica to master; globalMaxVersion=" + globalMaxVersion + " globalMaxSegment=" + globalMaxSegment);
-            master = new Master(globalMaxVersion, globalMaxSegment, (Replica) nodes[idx], nodes);
+            TreeLogger.log("id=" + idx + " promote replica to master");
+            master = new Master((Replica) nodes[idx], nodes);
             nodes[idx] = master;
           }
         } finally {
           masterLock.unlock();
         }
       }
+      TreeLogger.end("replicate");
     }
 
     System.out.println("TEST: stop commit thread");
@@ -329,28 +355,69 @@ public class TestNRTReplication extends LuceneTestCase {
     }
   }
 
-  static Map<String,Long> getFilesAndSizes(Directory dir, Collection<String> files) throws IOException {
-    Map<String,Long> filesAndSizes = new HashMap<String,Long>();
-    for(String file : files) {
-      filesAndSizes.put(file, dir.fileLength(file));
+  static class FileMetaData {
+    public final long sizeInBytes;
+    public final long checksum;
+
+    public FileMetaData(long sizeInBytes, long checksum) {
+      this.sizeInBytes = sizeInBytes;
+      this.checksum = checksum;
     }
-    return filesAndSizes;
   }
 
-  static void copyFiles(Directory src, Replica dst, Map<String,Long> filesAndSizes, boolean lowPriority) throws IOException {
+  static Map<String,FileMetaData> getFilesMetaData(Master master, Collection<String> files) throws IOException {
+    Map<String,FileMetaData> filesMetaData = new HashMap<String,FileMetaData>();
+    for(String file : files) {
+      Long prevChecksum = master.checksums.get(file);
+      long checksum;
+      if (prevChecksum == null) {
+        checksum = -1;
+      } else {
+        checksum = prevChecksum.longValue();
+      }
+      filesMetaData.put(file, new FileMetaData(master.dir.fileLength(file), checksum));
+    }
+
+    return filesMetaData;
+  }
+
+  static Set<String> copyFiles(Directory src, Checksums srcChecksums, Replica dst, Map<String,FileMetaData> filesMetaData, boolean lowPriority) throws IOException {
     long t0 = System.currentTimeMillis();
     long totBytes = 0;
     Set<String> toCopy = new HashSet<String>();
-    for(Map.Entry<String,Long> ent : filesAndSizes.entrySet()) {
-      if (dst.dir.fileExists(ent.getKey()) == false) {
-        toCopy.add(ent.getKey());
-        totBytes += ent.getValue();
+    for(Map.Entry<String,FileMetaData> ent : filesMetaData.entrySet()) {
+      String fileName = ent.getKey();
+      // nocommit remove now unused metaData.checksum
+      FileMetaData metaData = ent.getValue();
+      Long srcChecksum0 = srcChecksums.get(fileName);
+      long srcChecksum = srcChecksum0 == null ? -1 : srcChecksum0.longValue();
+      
+      Long checksum = dst.checksums.get(fileName);
+      if (dst.dir.fileExists(fileName) == false) {
+        TreeLogger.log("id=" + dst.id + " " + fileName + " will copy [does not exist] length=" + metaData.sizeInBytes + " srcChecksum=" + srcChecksum);
+        toCopy.add(fileName);
+        totBytes += metaData.sizeInBytes;
+      } else if (dst.dir.fileLength(fileName) != metaData.sizeInBytes) {
+        TreeLogger.log("id=" + dst.id + " " + fileName + " will copy [different file length old=" + dst.dir.fileLength(fileName) + " new=" + metaData.sizeInBytes + "]");
+        toCopy.add(fileName);
+        totBytes += metaData.sizeInBytes;
+      } else if (checksum == null) {
+        TreeLogger.log("id=" + dst.id + " " + fileName + " will copy [no checksum] length=" + metaData.sizeInBytes);
+        toCopy.add(fileName);
+        totBytes += metaData.sizeInBytes;
+      } else if (checksum.longValue() != srcChecksum) {
+        TreeLogger.log("id=" + dst.id + " " + fileName + " will copy [wrong checksum: cur=" + checksum.longValue() + " new=" + srcChecksum + "] length=" + metaData.sizeInBytes);
+        toCopy.add(fileName);
+        totBytes += metaData.sizeInBytes;
       } else {
-        System.out.println("  replica id=" + dst.id + ": skip copy file " + ent.getKey());
-        assert dst.dir.fileLength(ent.getKey()) == ent.getValue() : "file size is wrong: current=" + dst.dir.fileLength(ent.getKey()) + " vs " + ent.getValue();
+        TreeLogger.log("id=" + dst.id + " " + fileName + " skip copy checksum=" + srcChecksum);
       }
     }
 
+    // nocommit should we "organize" the files to be copied
+    // by segment name?  so that NRTCachingDir can
+    // separately decide on a seg by seg basis whether to
+    // cache the seg's files?
     IOContext ioContext;
     if (lowPriority) {
       // nocommit do we need the tot docs / merge num segs?
@@ -363,11 +430,10 @@ public class TestNRTReplication extends LuceneTestCase {
       long bytes = src.fileLength(f);
       //System.out.println("  copy " + f + " (" + bytes + " bytes)");
       totBytes += bytes;
-      System.out.println("  replica id=" + dst.id + ": copy file " + f);
+      TreeLogger.log("id=" + dst.id + " " + f + " copy file");
 
-      // Sync on each file to copy, so that MDW isn't closed
-      // while a copy is happening, else MDW.close is angry:
-      src.copy(dst.dir, f, f, ioContext);
+      dst.copyOneFile(dst.id, src, srcChecksums, f, ioContext);
+
       if (lowPriority) {
         try {
           Thread.sleep(bytes/100000);
@@ -378,7 +444,9 @@ public class TestNRTReplication extends LuceneTestCase {
       }
     }
     long t1 = System.currentTimeMillis();
-    System.out.println("  replica " + dst.id + ": " + (lowPriority ? "low-priority " : "") + "took " + (t1-t0) + " millis for " + totBytes + " bytes; " + toCopy.size() + " files (of " + filesAndSizes.size() + "); sizeInBytes=" + ((NRTCachingDirectory) dst.dir).sizeInBytes());
+    TreeLogger.log("replica " + dst.id + ": " + (lowPriority ? "low-priority " : "") + "took " + (t1-t0) + " millis for " + totBytes + " bytes; " + toCopy.size() + " files (of " + filesMetaData.size() + "); sizeInBytes=" + ((NRTCachingDirectory) dst.dir).sizeInBytes());
+
+    return toCopy;
   }
 
   /** Like SearcherManager, except it refreshes via a
@@ -387,15 +455,19 @@ public class TestNRTReplication extends LuceneTestCase {
     private SegmentInfos currentInfos;
     private final Directory dir;
 
-    public InfosSearcherManager(Directory dir, int id) throws IOException {
+    public InfosSearcherManager(Directory dir, int id, SegmentInfos infosIn) throws IOException {
       this.dir = dir;
-      currentInfos = new SegmentInfos();
-      String fileName = SegmentInfos.getLastCommitSegmentsFileName(dir);
-      if (fileName != null) {
-        // Load last commit:
-        System.out.println("TEST id=" + id + ": replica load initial segments file " + fileName);
-        currentInfos.read(dir, fileName);
-        System.out.println("TEST id=" + id + ": replica loaded version=" + currentInfos.version + " docCount=" + docCount(currentInfos));
+      if (infosIn != null) {
+        currentInfos = infosIn;
+        TreeLogger.log("InfosSearcherManager.init id=" + id + ": use incoming infos=" + infosIn.toString(dir));
+      } else {
+        currentInfos = new SegmentInfos();
+        String fileName = SegmentInfos.getLastCommitSegmentsFileName(dir);
+        if (fileName != null) {
+          // Load last commit:
+          currentInfos.read(dir, fileName);
+          TreeLogger.log("InfosSearcherManager.init id=" + id + ": load initial segments file " + fileName + ": loaded version=" + currentInfos.version + " docCount=" + docCount(currentInfos));
+        }
       }
       current = new IndexSearcher(StandardDirectoryReader.open(dir, currentInfos, null));
     }
@@ -459,6 +531,7 @@ public class TestNRTReplication extends LuceneTestCase {
 
     @Override
     public void run() {
+      TreeLogger.setLogger(new TreeLogger("commit"));
       try {
         while (stop == false) {
           Thread.sleep(_TestUtil.nextInt(random(), 10, 30));
@@ -471,26 +544,35 @@ public class TestNRTReplication extends LuceneTestCase {
               if (n instanceof Replica) {
                 Replica r = (Replica) n;
                 if (random().nextInt(100) == 17) {
+                  TreeLogger.log("id=" + i + " commit");
                   r.commit(false);
                 }
                 if (random().nextInt(100) == 17) {
                   // Shutdown this replica
                   nodes[i] = null;
+                  TreeLogger.log("id=" + i + " shutdown");
                   r.shutdown();
                 } else if (random().nextInt(100) == 17) {
                   // Crash the replica
                   nodes[i] = null;
+                  TreeLogger.log("id=" + i + " crash");
                   r.crash();
                 }
-              } else if (master != null) {
+              } else if (master != null && master.isClosed() == false) {
                 // Randomly commit master:
                 if (random().nextInt(100) == 17) {
+                  TreeLogger.log("id=" + i + " commit master");
                   master.commit();
                 }
               }
             } else if (random().nextInt(20) == 17) {
               // Restart this replica
-              nodes[i] = new Replica(dirs[i], i, versionDocCounts, null);
+              try {
+                nodes[i] = new Replica(dirs[i], i, versionDocCounts, null);
+              } catch (Throwable t) {
+                TreeLogger.log("id=" + i + " FAIL startup", t);
+                throw t;
+              }
             }
           } finally {
             masterLock.unlock();
@@ -519,11 +601,12 @@ public class TestNRTReplication extends LuceneTestCase {
     final SearchThread searchThread;
     final IndexThread indexThread;
     final int id;
-    //final Checksums checksums;
+    final Checksums checksums;
+    private boolean isClosed;
 
     SegmentInfos lastInfos;
 
-    public Master(long globalMaxVersion, int globalMaxSegment, File path,
+    public Master(File path,
                   int id, Object[] nodes, Map<Long,Integer> versionDocCounts) throws IOException {
       final MockDirectoryWrapper dirOrig = newMockFSDirectory(path);
 
@@ -532,21 +615,26 @@ public class TestNRTReplication extends LuceneTestCase {
 
       this.id = id;
       this.nodes = nodes;
-      //checksums = new Checksums(dir);
 
       // nocommit put back
       dirOrig.setCheckIndexOnClose(false);
 
       dir = new NRTCachingDirectory(dirOrig, 1.0, 10.0);
       //((NRTCachingDirectory) master).VERBOSE = true;
+      checksums = new Checksums(id, dir);
+      SegmentInfos infos = new SegmentInfos();
+      try {
+        infos.read(dir);
+      } catch (IndexNotFoundException infe) {
+      }
 
-      mgr = new InfosSearcherManager(dir, id);
+      checksums.prune(new HashSet<String>(infos.files(dir, true)));
+
+      mgr = new InfosSearcherManager(dir, id, infos);
       searchThread = new SearchThread("master", mgr, versionDocCounts);
       searchThread.start();
 
       SegmentInfos curInfos = mgr.getCurrentInfos().clone();
-      curInfos.version = 1+globalMaxVersion;
-      curInfos.counter = 1+globalMaxSegment;
 
       IndexWriterConfig iwc = getIWC();
       iwc.setOpenMode(IndexWriterConfig.OpenMode.APPEND);
@@ -568,19 +656,20 @@ public class TestNRTReplication extends LuceneTestCase {
     }
 
     public void commit() throws IOException {
-      //checksums.save(dir);
+      checksums.save(null);
       writer.w.commit();
     }
 
     /** Promotes an existing Replica to Master, re-using the
      *  open NRTCachingDir, the SearcherManager, the search
      *  thread, etc. */
-    public Master(long globalMaxVersion, int globalMaxSegment, Replica replica, Object[] nodes) throws IOException {
+    public Master(Replica replica, Object[] nodes) throws IOException {
       this.id = replica.id;
       this.dir = replica.dir;
       this.nodes = nodes;
       this.mgr = replica.mgr;
       this.searchThread = replica.searchThread;
+      this.checksums = replica.checksums;
 
       // nocommit must somehow "stop" this replica?  e.g. we
       // don't want it doing any more deleting?
@@ -593,8 +682,6 @@ public class TestNRTReplication extends LuceneTestCase {
       // "survive" over to the replica
 
       SegmentInfos curInfos = replica.mgr.getCurrentInfos().clone();
-      curInfos.version = 1+globalMaxVersion;
-      curInfos.counter = 1+globalMaxSegment;
 
       writer = new RandomIndexWriter(random(), dir, curInfos, iwc);
       _TestUtil.reduceOpenFiles(writer.w);
@@ -621,13 +708,16 @@ public class TestNRTReplication extends LuceneTestCase {
           @Override
           public void warm(AtomicReader reader) throws IOException {
             SegmentCommitInfo info = ((SegmentReader) reader).getSegmentInfo();
+            if (TreeLogger.getLogger() == null) {
+              TreeLogger.setLogger(new TreeLogger("merge"));
+            }
             //System.out.println("TEST: warm merged segment files " + info);
-            Map<String,Long> filesAndSizes = getFilesAndSizes(dir, info.files());
+            Map<String,FileMetaData> filesMetaData = getFilesMetaData(Master.this, info.files());
             for(Object n : nodes) {
               if (n != null && n instanceof Replica) {
                 try {
                   // nocommit do we need to check for merge aborted...?
-                  ((Replica) n).warmMerge(info.info.name, dir, filesAndSizes);
+                  ((Replica) n).warmMerge(info.info.name, dir, Master.this.checksums, filesMetaData);
                 } catch (AlreadyClosedException ace) {
                   // Ignore this: it means the replica shut down
                   // while we were trying to copy files.  This
@@ -646,7 +736,7 @@ public class TestNRTReplication extends LuceneTestCase {
     /** Gracefully shuts down the master, and returns the
      *  final segments in the index .*/
     public SegmentInfos close(boolean waitForMerges) throws IOException {
-      System.out.println("TEST id=" + id + ": close master waitForMerges=" + waitForMerges);
+      TreeLogger.log("id=" + id + " close master waitForMerges=" + waitForMerges);
 
       try {
         searchThread.finish();
@@ -661,7 +751,7 @@ public class TestNRTReplication extends LuceneTestCase {
         // Do it here, instead of on close, so we can
         // continue indexing while waiting for merges:
         writer.w.waitForMerges();
-        System.out.println("TEST: waitForMerges done");
+        TreeLogger.log("waitForMerges done");
       }
 
       if (lastInfos != null) {
@@ -676,26 +766,29 @@ public class TestNRTReplication extends LuceneTestCase {
         throw new RuntimeException(ie);
       }
 
-      System.out.println("TEST: close writer");
+      TreeLogger.log("close writer");
 
       // nocommit can we optionally NOT commit here?  it
       // should be decoupled from master migration?
 
       // Don't wait for merges now; we already did above:
       writer.close(false);
-      System.out.println("TEST: done close writer");
+      TreeLogger.log("done close writer");
 
       SegmentInfos infos = new SegmentInfos();
       infos.read(dir);
 
-      System.out.println("TEST: return final infos=" + infos.toString(master.dir));
-
-      System.out.println("TEST: close master dir");
+      TreeLogger.log("final infos=" + infos.toString(master.dir));
 
       // nocommit caller must close
       // dir.close();
+      isClosed = true;
 
       return infos;
+    }
+
+    public synchronized boolean isClosed() {
+      return isClosed;
     }
 
     public synchronized SegmentInfos getInfos() throws IOException {
@@ -762,6 +855,7 @@ public class TestNRTReplication extends LuceneTestCase {
     private final InfosSearcherManager mgr;
     private volatile boolean stop;
     private SearchThread searchThread;
+    private final Checksums checksums;
 
     private final Collection<String> lastCommitFiles;
     private final Collection<String> lastNRTFiles;
@@ -770,7 +864,9 @@ public class TestNRTReplication extends LuceneTestCase {
     private final IndexReaderWarmer mergedSegmentWarmer;
 
     public Replica(File path, int id, Map<Long,Integer> versionDocCounts, IndexReaderWarmer mergedSegmentWarmer) throws IOException {
-      System.out.println("TEST id=" + id + ": replica startup");
+      TreeLogger.log("id=" + id + " replica startup path=" + path);
+      TreeLogger.start("startup");
+      
       this.id = id;
       this.mergedSegmentWarmer = mergedSegmentWarmer;
 
@@ -783,62 +879,174 @@ public class TestNRTReplication extends LuceneTestCase {
       ((BaseDirectoryWrapper) fsDir).setCheckIndexOnClose(false);
 
       dir = new NRTCachingDirectory(fsDir, 1.0, 10.0);
-
-      // nocommit do this after sync?:
-      mgr = new InfosSearcherManager(dir, id);
-      lastCommitFiles = mgr.getCurrentInfos().files(dir, true);
-      deleter = new InfosRefCounts(id, dir, lastCommitFiles);
-
-      lastNRTFiles = new HashSet<String>(lastCommitFiles);
-      deleter.incRef(lastNRTFiles);
+      checksums = new Checksums(id, dir);
+      TreeLogger.log("id=" + id + " created dirs, checksums; dir.listAll=" + Arrays.toString(dir.listAll()));
+      TreeLogger.log("id=" + id + " checksum files=" + checksums.checksums.keySet());
 
       // Startup sync to pull latest index over:
+      Set<String> copiedFiles = null;
+
+      lastCommitFiles = new HashSet<String>();
+      lastNRTFiles = new HashSet<String>();
+
+      String segmentsFileName = SegmentInfos.getLastCommitSegmentsFileName(dir);
+      if (segmentsFileName != null) {
+        SegmentInfos lastCommit = new SegmentInfos();
+        TreeLogger.log("id=" + id + " " + segmentsFileName + " now load");
+        lastCommit.read(dir, segmentsFileName);
+        lastCommitFiles.addAll(lastCommit.files(dir, true));
+        TreeLogger.log("id=" + id + " lastCommitFiles = " + lastCommitFiles);
+      }
+
+      // Must sync latest index from master before starting
+      // up mgr, so that we don't hold open any files that
+      // need to be overwritten when the master is against
+      // an older index than our copy:
+      SegmentInfos infos = null;
       if (master != null) {
         masterLock.lock();
-        SegmentInfos infos = master.getInfos();
+        SegmentInfos masterInfos = null;
         try {
-          // Convert infos to byte[], to send "on the wire":
-          RAMOutputStream out = new RAMOutputStream();
-          infos.write(out);
-          byte[] infosBytes = new byte[(int) out.getFilePointer()];
-          out.writeTo(infosBytes, 0);
 
-          Map<String,Long> filesAndSizes = getFilesAndSizes(master.dir, infos.files(master.dir, false));
-          try {
-            sync(master.dir, filesAndSizes, infosBytes, infos.version);
-          } catch (Throwable t) {
-            System.out.println("TEST id=" + id + ": FAIL replica");
-            t.printStackTrace(System.out);
-            throw new RuntimeException(t);
+          if (master.isClosed() == false) {
+            masterInfos = master.getInfos();
+            // Convert infos to byte[], to send "on the wire":
+            RAMOutputStream out = new RAMOutputStream();
+            masterInfos.write(out);
+            byte[] infosBytes = new byte[(int) out.getFilePointer()];
+            out.writeTo(infosBytes, 0);
+
+            Map<String,FileMetaData> filesMetaData = getFilesMetaData(master, masterInfos.files(master.dir, false));
+
+            try {
+              // Copy files over to replica:
+              copiedFiles = copyFiles(master.dir, master.checksums, this, filesMetaData, false);
+            } catch (Throwable t) {
+              TreeLogger.log("id=" + id + " FAIL", t);
+              throw new RuntimeException(t);
+            }
+      
+            // Turn byte[] back to SegmentInfos:
+            infos = new SegmentInfos();
+            infos.read(dir, new ByteArrayDataInput(infosBytes));
+            lastNRTFiles.addAll(infos.files(dir, false));
           }
         } finally {
           masterLock.unlock();
-          master.releaseInfos(infos);
+          if (masterInfos != null) {
+            master.releaseInfos(masterInfos);
+          }
         }
-
-        // Very important to do this: we may start up w/ a
-        // later version against a master w/ an older
-        // version, in which case we will have incorrect
-        // "future" segment files:
-        deleter.deleteUnknownFiles();
+      } else {
+        TreeLogger.log("id=" + id + " no master on startup; fallback to last commit");
       }
+
+      if (copiedFiles != null) {
+        // nocommit factor out & share this invalidation
+
+        // nocommit we need to do this invalidation BEFORE
+        // actually ovewriting the file?  because if we crash
+        // in between the two, we've left an invalid commit?
+
+        // If any of the files we just copied over
+        // were referenced by the last commit,
+        // then we must remove this commit point (it is now
+        // corrupt):
+        for(String fileName : copiedFiles) {
+          if (lastCommitFiles.contains(fileName)) {
+            TreeLogger.log("id=" + id + " " + segmentsFileName + " delete now corrupt commit and clear lastCommitFiles");
+            dir.deleteFile(segmentsFileName);
+            dir.deleteFile("segments.gen");
+            lastCommitFiles.clear();
+            break;
+          }
+        }
+      }
+
+      mgr = new InfosSearcherManager(dir, id, infos);
+
+      deleter = new InfosRefCounts(id, dir);
+      TreeLogger.log("id=" + id + " incRef lastCommitFiles");
+      deleter.incRef(lastCommitFiles);
+      TreeLogger.log("id=" + id + ": incRef lastNRTFiles=" + lastNRTFiles);
+      deleter.incRef(lastNRTFiles);
+      deleter.deleteUnknownFiles();
 
       searchThread = new SearchThread(""+id, mgr, versionDocCounts);
       searchThread.start();
+      pruneChecksums();
+      TreeLogger.log("done startup");
+      TreeLogger.end("startup");
+    }
+
+    private void pruneChecksums() {
+      TreeLogger.log("id=" + id + " now pruneChecksums");
+      TreeLogger.start("pruneChecksums");
+      Set<String> validFiles = new HashSet<String>();
+      validFiles.addAll(lastNRTFiles);
+      validFiles.addAll(lastCommitFiles);
+      checksums.prune(validFiles);
+      TreeLogger.end("pruneChecksums");
+    }
+
+    public void copyOneFile(int id, Directory src, Checksums srcChecksums, String fileName, IOContext context) throws IOException {
+      IndexOutput os = null;
+      IndexInput is = null;
+      IOException priorException = null;
+      try {
+        os = dir.createOutput(fileName, context);
+        is = src.openInput(fileName, context);
+        byte[] copyBuffer = new byte[16384];
+        long left = is.length();
+        Checksum checksum = new Adler32();
+        while (left > 0) {
+          final int toCopy;
+          if (left > copyBuffer.length) {
+            toCopy = copyBuffer.length;
+          } else {
+            toCopy = (int) left;
+          }
+          is.readBytes(copyBuffer, 0, toCopy);
+          os.writeBytes(copyBuffer, 0, toCopy);
+          checksum.update(copyBuffer, 0, toCopy);
+          left -= toCopy;
+        }
+        long finalChecksum = checksum.getValue();
+        checksums.add(fileName, finalChecksum, false);
+        srcChecksums.add(fileName, finalChecksum, true);
+      } catch (IOException ioe) {
+        priorException = ioe;
+        TreeLogger.log("id=" + id + " " + fileName + " failed copy1", ioe);
+      } finally {
+        boolean success = false;
+        try {
+          IOUtils.closeWhileHandlingException(priorException, os, is);
+          success = true;
+        } finally {
+          if (!success) {
+            TreeLogger.log("id=" + id + " " + fileName + " failed copy2");
+            try {
+              dir.deleteFile(fileName);
+            } catch (Throwable t) {
+            }
+          }
+        }
+      }
     }
 
     // nocommit move this to a thread so N replicas copy at
     // once:
 
-    public synchronized void sync(Directory master, Map<String,Long> filesAndSizes, byte[] infosBytes,
-                                  long infosVersion) throws IOException {
+    public synchronized Set<String> sync(Directory master, Checksums masterChecksums, Map<String,FileMetaData> filesMetaData, byte[] infosBytes,
+                                         long infosVersion) throws IOException {
 
       if (stop) {
         throw new AlreadyClosedException("replica closed");
       }
 
       SegmentInfos currentInfos = mgr.getCurrentInfos();
-      System.out.println("TEST id=" + id + ": replica sync version=" + infosVersion + " vs current version=" + currentInfos.getVersion());
+      TreeLogger.log("id=" + id + " sync version=" + infosVersion + " vs current version=" + currentInfos.getVersion());
+      TreeLogger.start("sync");
 
       /*
       if (currentInfos != null && currentInfos.getVersion() >= infosVersion) {
@@ -848,15 +1056,12 @@ public class TestNRTReplication extends LuceneTestCase {
       */
 
       // Copy files over to replica:
-      copyFiles(master, this, filesAndSizes, false);
+      Set<String> copiedFiles = copyFiles(master, masterChecksums, this, filesMetaData, false);
 
       // Turn byte[] back to SegmentInfos:
       SegmentInfos infos = new SegmentInfos();
       infos.read(dir, new ByteArrayDataInput(infosBytes));
-      System.out.println("TEST id=" + id + ": replica sync version=" + infos.version + " segments=" + infos.toString(dir));
-
-      // Cutover to new searcher
-      mgr.refresh(infos);
+      TreeLogger.log("id=" + id + " replica sync version=" + infos.version + " segments=" + infos.toString(dir));
 
       // Delete now un-referenced files:
       Collection<String> newFiles = infos.files(dir, false);
@@ -864,14 +1069,56 @@ public class TestNRTReplication extends LuceneTestCase {
       deleter.decRef(lastNRTFiles);
       lastNRTFiles.clear();
       lastNRTFiles.addAll(newFiles);
+
+      // nocommit factor out & share this invalidation
+
+      // nocommit we need to do this invalidation BEFORE
+      // actually ovewriting the file?  because if we crash
+      // in between the two, we've left an invalid commit?
+
+      // Invalidate the current commit if we overwrote any
+      // files from it:
+      for(String fileName : copiedFiles) {
+        if (lastCommitFiles.contains(fileName)) {
+          TreeLogger.log("id=" + id + " delete now corrupt commit and clear lastCommitFiles=" + lastCommitFiles);
+          deleter.decRef(lastCommitFiles);
+          dir.deleteFile("segments.gen");
+          lastCommitFiles.clear();
+          break;
+        }
+      }
+      
+      // Cutover to new searcher
+      mgr.refresh(infos);
+
+      TreeLogger.end("sync");
+      return copiedFiles;
     }
 
-    public synchronized void warmMerge(String segmentName, Directory master, Map<String,Long> filesAndSizes) throws IOException {
+    public synchronized void warmMerge(String segmentName, Directory master, Checksums masterChecksums, Map<String,FileMetaData> filesMetaData) throws IOException {
       if (stop) {
         throw new AlreadyClosedException("replica closed");
       }
-      System.out.println("TEST id=" + id + ": replica warm merge " + segmentName);
-      copyFiles(master, this, filesAndSizes, true);
+      TreeLogger.log("id=" + id + " replica warm merge " + segmentName);
+      Set<String> copiedFiles = copyFiles(master, masterChecksums, this, filesMetaData, true);
+
+      // nocommit factor out & share this invalidation
+
+      // nocommit we need to do this invalidation BEFORE
+      // actually ovewriting the file?  because if we crash
+      // in between the two, we've left an invalid commit?
+
+      // Invalidate the current commit if we overwrote any
+      // files from it:
+      for(String fileName : copiedFiles) {
+        if (lastCommitFiles.contains(fileName)) {
+          TreeLogger.log("id=" + id + " delete now corrupt commit and clear lastCommitFiles=" + lastCommitFiles);
+          deleter.decRef(lastCommitFiles);
+          lastCommitFiles.clear();
+          dir.deleteFile("segments.gen");
+          break;
+        }
+      }
 
       // nocommit we could also pre-warm a SegmentReader
       // here, and add it onto subReader list for next reopen ...?
@@ -881,9 +1128,10 @@ public class TestNRTReplication extends LuceneTestCase {
     public synchronized void shutdown() throws IOException, InterruptedException {
       stop = true;
       // Sometimes shutdown w/o commiting
-      System.out.println("TEST id=" + id + ": replica shutdown");
+      TreeLogger.log("id=" + id + " replica shutdown");
+      TreeLogger.start("shutdown");
       if (random().nextBoolean()) {
-        System.out.println("TEST id=" + id + ": replica commit before shutdown");
+        TreeLogger.log("id=" + id + " commit before shutdown");
         commit(true);
       }
 
@@ -891,15 +1139,21 @@ public class TestNRTReplication extends LuceneTestCase {
       mgr.close();
 
       // Delete now un-referenced files:
+      TreeLogger.log("id=" + id + " now deletePending during shutdown");
+      deleter.decRef(lastNRTFiles);
+      lastNRTFiles.clear();
       deleter.deletePending();
+      TreeLogger.log("id=" + id + " at shutdown dir.listAll()=" + Arrays.toString(dir.listAll()));
       dir.close();
+      TreeLogger.end("shutdown");
     }
 
     /** Crashes the underlying directory, corrupting any
      *  un-sync'd files. */
     public synchronized void crash() throws IOException, InterruptedException {
       stop = true;
-      System.out.println("TEST id=" + id + ": replica crash");
+      TreeLogger.log("id=" + id + " replica crash; dir.listAll()=" + Arrays.toString(dir.listAll()));
+      TreeLogger.log("id=" + id + " replica crash; fsdir.listAll()=" + Arrays.toString(((NRTCachingDirectory) dir).getDelegate().listAll()));
       searchThread.finish();
       mgr.close();
       ((MockDirectoryWrapper) ((NRTCachingDirectory) dir).getDelegate()).crash();
@@ -911,22 +1165,33 @@ public class TestNRTReplication extends LuceneTestCase {
     public synchronized void commit(boolean deleteAll) throws IOException {
       SegmentInfos infos = mgr.getCurrentInfos();
       if (infos != null) {
-        System.out.println("TEST id=" + id + ": replica commit deleteAll=" + deleteAll + "; infos.version=" + infos.getVersion() + " files=" + infos.files(dir, false));
-        dir.sync(infos.files(dir, false));
+        TreeLogger.log("id=" + id + " commit deleteAll=" + deleteAll + "; infos.version=" + infos.getVersion() + " files=" + infos.files(dir, false) + " segs=" + infos.toString(dir));
+        TreeLogger.start("commit");
+        Set<String> fileNames = new HashSet<String>(infos.files(dir, false));
+        dir.sync(fileNames);
+        // Can only save those files that have been
+        // explicitly sync'd; a warmed, but not yet visible,
+        // merge cannot be sync'd:
+        checksums.save(fileNames);
         infos.commit(dir);
-        System.out.println("TEST id=" + id + ": replica commit segments file: " + infos.getSegmentsFileName());
+        TreeLogger.log("id=" + id + " " + infos.getSegmentsFileName() + " committed");
 
         Collection<String> newFiles = infos.files(dir, true);
         deleter.incRef(newFiles);
         deleter.decRef(lastCommitFiles);
         lastCommitFiles.clear();
         lastCommitFiles.addAll(newFiles);
+        TreeLogger.log("id=" + id + " " + infos.getSegmentsFileName() + " lastCommitFiles=" + lastCommitFiles);
 
         if (deleteAll) {
           // nocommit this is messy: we may delete a merge's files
           // that just copied over as we closed the writer:
+          TreeLogger.log("id=" + id + " now deleteUnknownFiles during commit");
           deleter.deleteUnknownFiles();
         }
+
+        pruneChecksums();
+        TreeLogger.end("commit");
       }
     }
   }
@@ -957,7 +1222,9 @@ public class TestNRTReplication extends LuceneTestCase {
               long version = ((DirectoryReader) s.getIndexReader()).getVersion();
               Integer expectedCount = versionDocCounts.get(version);
               assertNotNull("searcher " + s + " is missing expected count", expectedCount);
-              assertEquals("searcher version=" + version + " replica id=" + id + " searcher=" + s, expectedCount.intValue(), totalHits);
+              // nocommit since master may roll back in time
+              // we cannot assert this:
+              //assertEquals("searcher version=" + version + " replica id=" + id + " searcher=" + s, expectedCount.intValue(), totalHits);
             }
           } finally {
             mgr.release(s);
@@ -991,17 +1258,9 @@ public class TestNRTReplication extends LuceneTestCase {
     private final Directory dir;
     private final int id;
 
-    public InfosRefCounts(int id, Directory dir, Collection<String> commitFileNames) throws IOException {
+    public InfosRefCounts(int id, Directory dir) throws IOException {
       this.dir = dir;
       this.id = id;
-
-      incRef(commitFileNames);
-
-      // Must delete unused files on startup: we could have
-      // crashed, and copied-but-not-sync'd files may now be
-      // corrupt.  We can only trust the files referenced by
-      // the commit point we just loaded:
-      deleteUnknownFiles();
     }
 
     public synchronized void incRef(Collection<String> fileNames) {
@@ -1031,12 +1290,12 @@ public class TestNRTReplication extends LuceneTestCase {
 
     private synchronized void delete(String fileName) {
       try {
-        System.out.println("  replica id=" + id + ": delete " + fileName);
+        TreeLogger.log("id=" + id + " " + fileName + " now delete");
         dir.deleteFile(fileName);
       } catch (IOException ioe) {
         // nocommit why do we keep trying to delete the file
         // "segments" ...
-        System.out.println("  replica id=" + id + ": delete " + fileName + " failed; will retry later");
+        TreeLogger.log("id=" + id + " " + fileName + " delete failed; will retry later");
         pending.add(fileName);
       }
     }
@@ -1051,7 +1310,10 @@ public class TestNRTReplication extends LuceneTestCase {
 
     public synchronized void deleteUnknownFiles() throws IOException {
       for(String fileName : dir.listAll()) {
-        if (refCounts.containsKey(fileName) == false) {
+        if (refCounts.containsKey(fileName) == false &&
+            fileName.startsWith("segments") == false &&
+            fileName.startsWith("checksum") == false) {
+          TreeLogger.log("id=" + id + " delete unknown file \"" + fileName + "\"");
           delete(fileName);
         }
       }
@@ -1061,19 +1323,28 @@ public class TestNRTReplication extends LuceneTestCase {
   // nocommit unused currently:
   static class Checksums {
 
+    // nocommit we need to remove old checksum file when
+    // writing new one:
+
     private static final String FILE_NAME_PREFIX = "checksums";
     private static final String CHECKSUM_CODEC = "checksum";
     private static final int CHECKSUM_VERSION_START = 0;
     private static final int CHECKSUM_VERSION_CURRENT = CHECKSUM_VERSION_START;
 
-    private final Map<String,Long> checksums = new HashMap<String,Long>();
+    // nocommit need to sometimes prune this map
+
+    final Map<String,Long> checksums = new HashMap<String,Long>();
+    private final Directory dir;
+    private final int id;
 
     private long nextWriteGen;
 
     // nocommit need to test crashing after writing checksum
     // & before committing
 
-    public Checksums(Directory dir) throws IOException {
+    public Checksums(int id, Directory dir) throws IOException {
+      this.id = id;
+      this.dir = dir;
       long maxGen = -1;
       for (String fileName : dir.listAll()) {
         if (fileName.startsWith(FILE_NAME_PREFIX)) {
@@ -1096,9 +1367,10 @@ public class TestNRTReplication extends LuceneTestCase {
           for(int i=0;i<count;i++) {
             String name = in.readString();
             long checksum = in.readLong();
-            add(name, checksum);
+            checksums.put(name, checksum);
           }
           nextWriteGen = maxGen+1;
+          TreeLogger.log("id=" + id + " " + genToFileName(maxGen) + " loaded checksums");
           break;
         } catch (IOException ioe) {
           // This file was truncated, probably due to
@@ -1114,29 +1386,63 @@ public class TestNRTReplication extends LuceneTestCase {
       return FILE_NAME_PREFIX + "_" + Long.toString(gen, Character.MAX_RADIX);
     }
     
-    public synchronized void add(String name, long checksum) {
-      checksums.put(name, checksum);
+    public synchronized void add(String fileName, long checksum, boolean mustMatch) {
+      Long oldChecksum = checksums.put(fileName, checksum);
+      if (oldChecksum == null) {
+        TreeLogger.log("id=" + id + " " + fileName + " record checksum=" + checksum);
+      } else if (oldChecksum.longValue() != checksum) {
+        TreeLogger.log("id=" + id + " " + fileName + " record new checksum=" + checksum + " replaces old checksum=" + oldChecksum);
+      }
+      // cannot assert this: in the "master rolled back"
+      // case, this can easily happen:
+      // assert mustMatch == false || oldChecksum == null || oldChecksum.longValue() == checksum: "fileName=" + fileName + " oldChecksum=" + oldChecksum + " newChecksum=" + checksum;
     }
 
-    public synchronized long get(String name) {
+    public synchronized Long get(String name) {
       return checksums.get(name);
     }
 
-    public synchronized void save(Directory dir) throws IOException {
+    public synchronized void save(Set<String> toSave) throws IOException {
       String fileName = genToFileName(nextWriteGen++);
+      TreeLogger.log("id=" + id + " save checksums to file \"" + fileName + "\"; files=" + checksums.keySet());
       IndexOutput out = dir.createOutput(fileName, IOContext.DEFAULT);
       try {
         CodecUtil.writeHeader(out, CHECKSUM_CODEC, CHECKSUM_VERSION_CURRENT);
-        out.writeVInt(checksums.size());
+        int count;
+        if (toSave == null) {
+          count = checksums.size();
+        } else {
+          count = 0;
+          for(Map.Entry<String,Long> ent : checksums.entrySet()) {
+            if (toSave.contains(ent.getKey())) {
+              count++;
+            }
+          }
+        }
+
+        out.writeVInt(count);
         for(Map.Entry<String,Long> ent : checksums.entrySet()) {
-          out.writeString(ent.getKey());
-          out.writeLong(ent.getValue());
+          if (toSave == null || toSave.contains(ent.getKey())) {
+            out.writeString(ent.getKey());
+            out.writeLong(ent.getValue());
+          }
         }
       } finally {
         out.close();
       }
 
       dir.sync(Collections.singletonList(fileName));
+    }
+
+    public synchronized void prune(Set<String> validFileNames) {
+      Iterator<String> it = checksums.keySet().iterator();
+      while (it.hasNext()) {
+        String fileName = it.next();
+        if (validFileNames.contains(fileName) == false) {
+          it.remove();
+          TreeLogger.log("id=" + id + " " + fileName + " pruned from checksums");
+        }
+      }
     }
   }
 }
