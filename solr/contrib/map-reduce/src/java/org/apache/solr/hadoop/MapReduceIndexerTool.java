@@ -183,11 +183,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
         .action(new HelpArgumentAction() {
           @Override
           public void run(ArgumentParser parser, Argument arg, Map<String, Object> attrs, String flag, Object value) throws ArgumentParserException {
-            try {
-              parser.printHelp(new PrintWriter(new OutputStreamWriter(System.out, "UTF-8")));
-            } catch (UnsupportedEncodingException e) {
-              throw new RuntimeException("Won't Happen for UTF-8");
-            }  
+            parser.printHelp();
             System.out.println();
             System.out.print(ToolRunnerHelpFormatter.getGenericCommandUsage());
             //ToolRunner.printGenericCommandUsage(System.out);
