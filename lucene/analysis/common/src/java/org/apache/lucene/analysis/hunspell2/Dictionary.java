@@ -18,6 +18,8 @@ package org.apache.lucene.analysis.hunspell2;
  */
 
 import org.apache.lucene.analysis.util.CharArrayMap;
+import org.apache.lucene.store.ByteArrayDataOutput;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.IOUtils;
@@ -66,8 +68,8 @@ public class Dictionary {
   private static final String PREFIX_CONDITION_REGEX_PATTERN = "%s.*";
   private static final String SUFFIX_CONDITION_REGEX_PATTERN = ".*%s";
 
-  public CharArrayMap<List<Affix>> prefixes;
-  public CharArrayMap<List<Affix>> suffixes;
+  public CharArrayMap<List<Character>> prefixes;
+  public CharArrayMap<List<Character>> suffixes;
   
   // all Patterns used by prefixes and suffixes. these are typically re-used across
   // many affix stripping rules. so these are deduplicated, to save RAM.
@@ -84,6 +86,10 @@ public class Dictionary {
   
   // the list of unique strip affixes.
   public BytesRefHash stripLookup = new BytesRefHash();
+  
+  // 8 bytes per affix
+  public byte[] affixData = new byte[64];
+  private int currentAffix = 0;
 
   private FlagParsingStrategy flagParsingStrategy = new SimpleFlagParsingStrategy(); // Default flag parsing strategy
 
@@ -169,7 +175,7 @@ public class Dictionary {
    * @param length Length from the offset that the String is
    * @return List of HunspellAffix prefixes with an append that matches the String, or {@code null} if none are found
    */
-  public List<Affix> lookupPrefix(char word[], int offset, int length) {
+  public List<Character> lookupPrefix(char word[], int offset, int length) {
     return prefixes.get(word, offset, length);
   }
 
@@ -181,7 +187,7 @@ public class Dictionary {
    * @param length Length from the offset that the String is
    * @return List of HunspellAffix suffixes with an append that matches the String, or {@code null} if none are found
    */
-  List<Affix> lookupSuffix(char word[], int offset, int length) {
+  List<Character> lookupSuffix(char word[], int offset, int length) {
     return suffixes.get(word, offset, length);
   }
 
@@ -193,8 +199,8 @@ public class Dictionary {
    * @throws IOException Can be thrown while reading from the InputStream
    */
   private void readAffixFile(InputStream affixStream, CharsetDecoder decoder) throws IOException, ParseException {
-    prefixes = new CharArrayMap<List<Affix>>(Version.LUCENE_CURRENT, 8, false);
-    suffixes = new CharArrayMap<List<Affix>>(Version.LUCENE_CURRENT, 8, false);
+    prefixes = new CharArrayMap<List<Character>>(Version.LUCENE_CURRENT, 8, false);
+    suffixes = new CharArrayMap<List<Character>>(Version.LUCENE_CURRENT, 8, false);
     Map<String,Integer> seenPatterns = new HashMap<>();
 
     LineNumberReader reader = new LineNumberReader(new InputStreamReader(affixStream, decoder));
@@ -225,7 +231,7 @@ public class Dictionary {
    * @param seenPatterns map from condition -> index of patterns, for deduplication.
    * @throws IOException Can be thrown while reading the rule
    */
-  private void parseAffix(CharArrayMap<List<Affix>> affixes,
+  private void parseAffix(CharArrayMap<List<Character>> affixes,
                           String header,
                           LineNumberReader reader,
                           String conditionPattern,
@@ -237,14 +243,20 @@ public class Dictionary {
     boolean crossProduct = args[2].equals("Y");
     
     int numLines = Integer.parseInt(args[3]);
+    affixData = ArrayUtil.grow(affixData, (currentAffix << 3) + (numLines << 3));
+    ByteArrayDataOutput affixWriter = new ByteArrayDataOutput(affixData, currentAffix << 3, numLines << 3);
+    
     for (int i = 0; i < numLines; i++) {
+      if (currentAffix > Short.MAX_VALUE) {
+        throw new UnsupportedOperationException("Too many affixes, please report this to dev@lucene.apache.org");
+      }
+      assert affixWriter.getPosition() == currentAffix << 3;
       String line = reader.readLine();
       String ruleArgs[] = line.split("\\s+");
 
       if (ruleArgs.length < 5) {
           throw new ParseException("The affix file contains a rule with less than five elements", reader.getLineNumber());
       }
-
       
       char flag = flagParsingStrategy.parseFlag(ruleArgs[1]);
       String strip = ruleArgs[2].equals("0") ? "" : ruleArgs[2];
@@ -285,36 +297,42 @@ public class Dictionary {
         patterns.add(pattern);
       }
       
-      Affix affix = new Affix();
       scratch.copyChars(strip);
-      int ord = stripLookup.add(scratch);
-      if (ord < 0) {
+      int stripOrd = stripLookup.add(scratch);
+      if (stripOrd < 0) {
         // already exists in our hash
-        ord = (-ord)-1;
+        stripOrd = (-stripOrd)-1;
       }
-      affix.setStrip(ord);
-      affix.setFlag(flag);
-      affix.setCondition(patternIndex);
-      affix.setCrossProduct(crossProduct);
+
       if (appendFlags == null) {
         appendFlags = NOFLAGS;
       }
       
       final int hashCode = encodeFlagsWithHash(scratch, appendFlags);
-      ord = flagLookup.add(scratch, hashCode);
-      if (ord < 0) {
+      int appendFlagsOrd = flagLookup.add(scratch, hashCode);
+      if (appendFlagsOrd < 0) {
         // already exists in our hash
-        ord = (-ord)-1;
+        appendFlagsOrd = (-appendFlagsOrd)-1;
+      } else if (appendFlagsOrd > Short.MAX_VALUE) {
+        // this limit is probably flexible, but its a good sanity check too
+        throw new UnsupportedOperationException("Too many unique flags, please report this to dev@lucene.apache.org");
       }
-      affix.setAppendFlags(ord);
       
-      List<Affix> list = affixes.get(affixArg);
+      affixWriter.writeShort((short)flag);
+      affixWriter.writeShort((short)stripOrd);
+      // encode crossProduct into patternIndex
+      int patternOrd = patternIndex.intValue() << 1 | (crossProduct ? 1 : 0);
+      affixWriter.writeShort((short)patternOrd);
+      affixWriter.writeShort((short)appendFlagsOrd);
+      
+      List<Character> list = affixes.get(affixArg);
       if (list == null) {
-        list = new ArrayList<Affix>();
+        list = new ArrayList<Character>();
         affixes.put(affixArg, list);
       }
       
-      list.add(affix);
+      list.add((char)currentAffix);
+      currentAffix++;
     }
   }
 

@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.Version;
@@ -37,6 +38,7 @@ final class Stemmer {
   private final Dictionary dictionary;
   private BytesRef scratch = new BytesRef();
   private final StringBuilder segment = new StringBuilder();
+  private final ByteArrayDataInput affixReader;
 
   /**
    * Constructs a new Stemmer which will use the provided Dictionary to create its stems. Uses the 
@@ -56,6 +58,7 @@ final class Stemmer {
    */
   public Stemmer(Dictionary dictionary, int recursionCap) {
     this.dictionary = dictionary;
+    this.affixReader = new ByteArrayDataInput(dictionary.affixData);
     this.recursionCap = recursionCap;
   } 
   
@@ -122,17 +125,20 @@ final class Stemmer {
     List<CharsRef> stems = new ArrayList<CharsRef>();
 
     for (int i = 0; i < length; i++) {
-      List<Affix> suffixes = dictionary.lookupSuffix(word, i, length - i);
+      List<Character> suffixes = dictionary.lookupSuffix(word, i, length - i);
       if (suffixes == null) {
         continue;
       }
 
-      for (Affix suffix : suffixes) {
-        if (hasCrossCheckedFlag(suffix.getFlag(), flags)) {
+      for (Character suffix : suffixes) {
+        affixReader.setPosition(8 * suffix);
+        char flag = (char) (affixReader.readShort() & 0xffff);
+        if (hasCrossCheckedFlag(flag, flags)) {
           int appendLength = length - i;
           int deAffixedLength = length - appendLength;
           // TODO: can we do this in-place?
-          dictionary.stripLookup.get(suffix.getStrip(), scratch);
+          char stripOrd = (char) (affixReader.readShort() & 0xffff);
+          dictionary.stripLookup.get(stripOrd, scratch);
           String strippedWord = new StringBuilder().append(word, 0, deAffixedLength).append(scratch.utf8ToString()).toString();
 
           List<CharsRef> stemList = applyAffix(strippedWord.toCharArray(), strippedWord.length(), suffix, recursionDepth);
@@ -143,17 +149,20 @@ final class Stemmer {
     }
 
     for (int i = length - 1; i >= 0; i--) {
-      List<Affix> prefixes = dictionary.lookupPrefix(word, 0, i);
+      List<Character> prefixes = dictionary.lookupPrefix(word, 0, i);
       if (prefixes == null) {
         continue;
       }
 
-      for (Affix prefix : prefixes) {
-        if (hasCrossCheckedFlag(prefix.getFlag(), flags)) {
+      for (Character prefix : prefixes) {
+        affixReader.setPosition(8 * prefix);
+        char flag = (char) (affixReader.readShort() & 0xffff);
+        if (hasCrossCheckedFlag(flag, flags)) {
           int deAffixedStart = i;
           int deAffixedLength = length - deAffixedStart;
+          char stripOrd = (char) (affixReader.readShort() & 0xffff);
 
-          dictionary.stripLookup.get(prefix.getStrip(), scratch);
+          dictionary.stripLookup.get(stripOrd, scratch);
           String strippedWord = new StringBuilder().append(scratch.utf8ToString())
               .append(word, deAffixedStart, deAffixedLength)
               .toString();
@@ -176,11 +185,19 @@ final class Stemmer {
    * @param recursionDepth Level of recursion this stemming step is at
    * @return List of stems for the word, or an empty list if none are found
    */
-  public List<CharsRef> applyAffix(char strippedWord[], int length, Affix affix, int recursionDepth) {
+  public List<CharsRef> applyAffix(char strippedWord[], int length, char affix, int recursionDepth) {
     segment.setLength(0);
     segment.append(strippedWord, 0, length);
     
-    Pattern pattern = dictionary.patterns.get(affix.getCondition());
+    affixReader.setPosition(8 * affix);
+    char flag = (char) (affixReader.readShort() & 0xffff);
+    affixReader.skipBytes(2); // strip
+    int condition = (char) (affixReader.readShort() & 0xffff);
+    boolean crossProduct = (condition & 1) == 1;
+    condition >>>= 1;
+    char append = (char) (affixReader.readShort() & 0xffff);
+
+    Pattern pattern = dictionary.patterns.get(condition);
     if (!pattern.matcher(segment).matches()) {
       return Collections.emptyList();
     }
@@ -188,12 +205,12 @@ final class Stemmer {
     List<CharsRef> stems = new ArrayList<CharsRef>();
 
     char wordFlags[] = dictionary.lookupWord(strippedWord, 0, length, scratch);
-    if (wordFlags != null && Dictionary.hasFlag(wordFlags, affix.getFlag())) {
+    if (wordFlags != null && Dictionary.hasFlag(wordFlags, flag)) {
       stems.add(new CharsRef(strippedWord, 0, length));
     }
 
-    if (affix.isCrossProduct() && recursionDepth < recursionCap) {
-      dictionary.flagLookup.get(affix.getAppendFlags(), scratch);
+    if (crossProduct && recursionDepth < recursionCap) {
+      dictionary.flagLookup.get(append, scratch);
       char appendFlags[] = Dictionary.decodeFlags(scratch);
       stems.addAll(stem(strippedWord, length, appendFlags, ++recursionDepth));
     }
