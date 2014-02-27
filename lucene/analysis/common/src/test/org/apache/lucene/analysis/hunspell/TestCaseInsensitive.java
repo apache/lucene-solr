@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.hunspell2;
+package org.apache.lucene.analysis.hunspell;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,6 +17,8 @@ package org.apache.lucene.analysis.hunspell2;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.hunspell.Dictionary;
+import org.apache.lucene.analysis.hunspell.Stemmer;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
@@ -24,16 +26,17 @@ import org.junit.BeforeClass;
 
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
-public class TestStemmer extends LuceneTestCase {
+public class TestCaseInsensitive extends LuceneTestCase {
   private static Stemmer stemmer;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    try (InputStream affixStream = TestStemmer.class.getResourceAsStream("simple.aff");
-        InputStream dictStream = TestStemmer.class.getResourceAsStream("simple.dic")) {
-     Dictionary dictionary = new Dictionary(affixStream, dictStream);
+    try (InputStream affixStream = TestCaseInsensitive.class.getResourceAsStream("simple.aff");
+        InputStream dictStream = TestCaseInsensitive.class.getResourceAsStream("mixedcase.dic")) {
+     Dictionary dictionary = new Dictionary(affixStream, Collections.singletonList(dictStream), true);
      stemmer = new Stemmer(dictionary);
    }
   }
@@ -43,9 +46,11 @@ public class TestStemmer extends LuceneTestCase {
     stemmer = null;
   }
 
-  public void testSimpleSuffix() {
+  public void testCaseInsensitivity() {
     assertStemsTo("lucene", "lucene", "lucen");
+    assertStemsTo("LuCeNe", "lucene", "lucen");
     assertStemsTo("mahoute", "mahout");
+    assertStemsTo("MaHoUte", "mahout");
   }
 
   public void testSimplePrefix() {

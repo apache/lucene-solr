@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.hunspell2;
+package org.apache.lucene.analysis.hunspell;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -22,7 +22,7 @@ import java.io.InputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import org.apache.lucene.analysis.hunspell.HunspellDictionary;
+import org.apache.lucene.analysis.hunspell.Dictionary;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -33,7 +33,7 @@ import org.junit.Ignore;
  * wget --mirror -np http://archive.services.openoffice.org/pub/mirror/OpenOffice.org/contrib/dictionaries/
  * Note some of the files differ only in case. This may be a problem on your operating system!
  */
-//@Ignore("enable manually")
+@Ignore("enable manually")
 public class TestAllDictionaries extends LuceneTestCase {
   
   // set this to the location of where you downloaded all the files
@@ -162,21 +162,11 @@ public class TestAllDictionaries extends LuceneTestCase {
         assert dicEntry != null;
         ZipEntry affEntry = zip.getEntry(tests[i+2]);
         assert affEntry != null;
-        
-        // get ram from previous impl
-        String oldRAM = "FAIL";
-        try (InputStream dictionary = zip.getInputStream(dicEntry);
-            InputStream affix = zip.getInputStream(affEntry)) {
-          try {
-            HunspellDictionary dic = new HunspellDictionary(affix, dictionary, TEST_VERSION_CURRENT);
-            oldRAM = RamUsageEstimator.humanSizeOf(dic);
-          } catch (Throwable t) {}
-       }
       
         try (InputStream dictionary = zip.getInputStream(dicEntry);
              InputStream affix = zip.getInputStream(affEntry)) {
           Dictionary dic = new Dictionary(affix, dictionary);
-          System.out.println(tests[i] + "\t" + oldRAM + "\t" + RamUsageEstimator.humanSizeOf(dic) + "\t(" +
+          System.out.println(tests[i] + "\t" + RamUsageEstimator.humanSizeOf(dic) + "\t(" +
                              "words=" + RamUsageEstimator.humanSizeOf(dic.words) + ", " +
                              "flags=" + RamUsageEstimator.humanSizeOf(dic.flagLookup) + ", " +
                              "strips=" + RamUsageEstimator.humanSizeOf(dic.stripLookup) + ", " +
@@ -204,7 +194,7 @@ public class TestAllDictionaries extends LuceneTestCase {
         
           try (InputStream dictionary = zip.getInputStream(dicEntry);
                InputStream affix = zip.getInputStream(affEntry)) {
-              Dictionary dic = new Dictionary(affix, dictionary);
+              new Dictionary(affix, dictionary);
           }
         }
       }

@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.hunspell2;
+package org.apache.lucene.analysis.hunspell;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.util.CharacterUtils;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
@@ -37,9 +38,10 @@ import org.apache.lucene.util.Version;
 final class Stemmer {
   private final int recursionCap;
   private final Dictionary dictionary;
-  private BytesRef scratch = new BytesRef();
+  private final BytesRef scratch = new BytesRef();
   private final StringBuilder segment = new StringBuilder();
   private final ByteArrayDataInput affixReader;
+  private final CharacterUtils charUtils = CharacterUtils.getInstance(Version.LUCENE_CURRENT);
 
   /**
    * Constructs a new Stemmer which will use the provided Dictionary to create its stems. Uses the 
@@ -80,6 +82,9 @@ final class Stemmer {
    * @return List of stems for the word
    */
   public List<CharsRef> stem(char word[], int length) {
+    if (dictionary.ignoreCase) {
+      charUtils.toLowerCase(word, 0, length);
+    }
     List<CharsRef> stems = new ArrayList<CharsRef>();
     if (dictionary.lookupWord(word, 0, length, scratch) != null) {
       stems.add(new CharsRef(word, 0, length));
@@ -95,20 +100,19 @@ final class Stemmer {
    * @return List of stems for the word
    */
   public List<CharsRef> uniqueStems(char word[], int length) {
-    List<CharsRef> stems = new ArrayList<CharsRef>();
-    CharArraySet terms = new CharArraySet(Version.LUCENE_CURRENT, 8, false);
-    if (dictionary.lookupWord(word, 0, length, scratch) != null) {
-      stems.add(new CharsRef(word, 0, length));
-      terms.add(word);
+    List<CharsRef> stems = stem(word, length);
+    if (stems.size() < 2) {
+      return stems;
     }
-    List<CharsRef> otherStems = stem(word, length, Dictionary.NOFLAGS, 0);
-    for (CharsRef s : otherStems) {
+    CharArraySet terms = new CharArraySet(Version.LUCENE_CURRENT, 8, dictionary.ignoreCase);
+    List<CharsRef> deduped = new ArrayList<>();
+    for (CharsRef s : stems) {
       if (!terms.contains(s)) {
-        stems.add(s);
+        deduped.add(s);
         terms.add(s);
       }
     }
-    return stems;
+    return deduped;
   }
 
   // ================================================= Helper Methods ================================================
@@ -188,7 +192,7 @@ final class Stemmer {
    * @param recursionDepth Level of recursion this stemming step is at
    * @return List of stems for the word, or an empty list if none are found
    */
-  public List<CharsRef> applyAffix(char strippedWord[], int length, int affix, int recursionDepth) {
+  List<CharsRef> applyAffix(char strippedWord[], int length, int affix, int recursionDepth) {
     segment.setLength(0);
     segment.append(strippedWord, 0, length);
     

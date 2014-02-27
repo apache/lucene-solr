@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.hunspell2;
+package org.apache.lucene.analysis.hunspell;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,7 +17,6 @@ package org.apache.lucene.analysis.hunspell2;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.util.CharArrayMap;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
@@ -28,14 +27,19 @@ import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesReader;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
 import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.util.Version;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.IntSequenceOutputs;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.LineNumberReader;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
@@ -71,27 +75,27 @@ public class Dictionary {
   private static final String PREFIX_CONDITION_REGEX_PATTERN = "%s.*";
   private static final String SUFFIX_CONDITION_REGEX_PATTERN = ".*%s";
 
-  public FST<IntsRef> prefixes;
-  public FST<IntsRef> suffixes;
+  FST<IntsRef> prefixes;
+  FST<IntsRef> suffixes;
   
   // all Patterns used by prefixes and suffixes. these are typically re-used across
   // many affix stripping rules. so these are deduplicated, to save RAM.
   // TODO: maybe don't use Pattern for the condition check...
   // TODO: when we cut over Affix to FST, just store integer index to this.
-  public ArrayList<Pattern> patterns = new ArrayList<>();
+  ArrayList<Pattern> patterns = new ArrayList<>();
   
   // the entries in the .dic file, mapping to their set of flags.
   // the fst output is the ordinal for flagLookup
-  public FST<Long> words;
+  FST<Long> words;
   // the list of unique flagsets (wordforms). theoretically huge, but practically
   // small (e.g. for polish this is 756), otherwise humans wouldn't be able to deal with it either.
-  public BytesRefHash flagLookup = new BytesRefHash();
+  BytesRefHash flagLookup = new BytesRefHash();
   
   // the list of unique strip affixes.
-  public BytesRefHash stripLookup = new BytesRefHash();
+  BytesRefHash stripLookup = new BytesRefHash();
   
   // 8 bytes per affix
-  public byte[] affixData = new byte[64];
+  byte[] affixData = new byte[64];
   private int currentAffix = 0;
 
   private FlagParsingStrategy flagParsingStrategy = new SimpleFlagParsingStrategy(); // Default flag parsing strategy
@@ -100,7 +104,11 @@ public class Dictionary {
   private int aliasCount = 0;
   
   private final File tempDir = OfflineSorter.defaultTempDir(); // TODO: make this configurable?
-
+  
+  public static final int IGNORE_CASE = 1;
+  
+  boolean ignoreCase;
+  
   /**
    * Creates a new Dictionary containing the information read from the provided InputStreams to hunspell affix
    * and dictionary files.
@@ -112,6 +120,21 @@ public class Dictionary {
    * @throws ParseException Can be thrown if the content of the files does not meet expected formats
    */
   public Dictionary(InputStream affix, InputStream dictionary) throws IOException, ParseException {
+    this(affix, Collections.singletonList(dictionary), false);
+  }
+
+  /**
+   * Creates a new Dictionary containing the information read from the provided InputStreams to hunspell affix
+   * and dictionary files.
+   * You have to close the provided InputStreams yourself.
+   *
+   * @param affix InputStream for reading the hunspell affix file (won't be closed).
+   * @param dictionaries InputStream for reading the hunspell dictionary files (won't be closed).
+   * @throws IOException Can be thrown while reading from the InputStreams
+   * @throws ParseException Can be thrown if the content of the files does not meet expected formats
+   */
+  public Dictionary(InputStream affix, List<InputStream> dictionaries, boolean ignoreCase) throws IOException, ParseException {
+    this.ignoreCase = ignoreCase;
     BufferedInputStream buffered = new BufferedInputStream(affix, 8192);
     buffered.mark(8192);
     String encoding = getDictionaryEncoding(affix);
@@ -122,7 +145,7 @@ public class Dictionary {
     stripLookup.add(new BytesRef()); // no strip -> ord 0
     PositiveIntOutputs o = PositiveIntOutputs.getSingleton();
     Builder<Long> b = new Builder<Long>(FST.INPUT_TYPE.BYTE4, o);
-    readDictionaryFile(dictionary, decoder, b);
+    readDictionaryFiles(dictionaries, decoder, b);
     words = b.finish();
   }
 
@@ -145,7 +168,7 @@ public class Dictionary {
     return decodeFlags(flagLookup.get(ord, scratch));
   }
   
-  public Integer lookupOrd(char word[], int offset, int length) throws IOException {
+  Integer lookupOrd(char word[], int offset, int length) throws IOException {
     final FST.BytesReader bytesReader = words.getBytesReader();
     final FST.Arc<Long> arc = words.getFirstArc(new FST.Arc<Long>());
     // Accumulate output as we go
@@ -269,7 +292,6 @@ public class Dictionary {
       Util.toUTF32(entry.getKey(), scratch);
       List<Character> entries = entry.getValue();
       IntsRef output = new IntsRef(entries.size());
-      int upto = 0;
       for (Character c : entries) {
         output.ints[output.length++] = c;
       }
@@ -480,23 +502,39 @@ public class Dictionary {
   }
 
   /**
-   * Reads the dictionary file through the provided InputStream, building up the words map
+   * Reads the dictionary file through the provided InputStreams, building up the words map
    *
-   * @param dictionary InputStream to read the dictionary file through
+   * @param dictionaries InputStreams to read the dictionary file through
    * @param decoder CharsetDecoder used to decode the contents of the file
    * @throws IOException Can be thrown while reading from the file
    */
-  private void readDictionaryFile(InputStream dictionary, CharsetDecoder decoder, Builder<Long> words) throws IOException {
+  private void readDictionaryFiles(List<InputStream> dictionaries, CharsetDecoder decoder, Builder<Long> words) throws IOException {
     BytesRef flagsScratch = new BytesRef();
     IntsRef scratchInts = new IntsRef();
     
-    BufferedReader lines = new BufferedReader(new InputStreamReader(dictionary, decoder));
-    String line = lines.readLine(); // first line is number of entries (approximately, sometimes)
-    
     File unsorted = File.createTempFile("unsorted", "dat", tempDir);
     try (ByteSequencesWriter writer = new ByteSequencesWriter(unsorted)) {
-      while ((line = lines.readLine()) != null) {
-        writer.write(line.getBytes(IOUtils.CHARSET_UTF_8));
+      for (InputStream dictionary : dictionaries) {
+        BufferedReader lines = new BufferedReader(new InputStreamReader(dictionary, decoder));
+        String line = lines.readLine(); // first line is number of entries (approximately, sometimes)
+        
+        while ((line = lines.readLine()) != null) {
+          if (ignoreCase) {
+            int flagSep = line.lastIndexOf('/');
+            if (flagSep == -1) {
+              writer.write(line.toLowerCase(Locale.ROOT).getBytes(IOUtils.CHARSET_UTF_8));
+            } else {
+              StringBuilder sb = new StringBuilder();
+              sb.append(line.substring(0, flagSep).toLowerCase(Locale.ROOT));
+              if (flagSep < line.length()) {
+                sb.append(line.substring(flagSep, line.length()));
+              }
+              writer.write(sb.toString().getBytes(IOUtils.CHARSET_UTF_8));
+            }
+          } else {
+            writer.write(line.getBytes(IOUtils.CHARSET_UTF_8));
+          }
+        }
       }
     }
     File sorted = File.createTempFile("sorted", "dat", tempDir);
@@ -544,6 +582,7 @@ public class Dictionary {
     BytesRef currentEntry = new BytesRef();
     char currentFlags[] = new char[0];
     
+    String line;
     while (reader.read(scratchLine)) {
       line = scratchLine.utf8ToString();
       String entry;
