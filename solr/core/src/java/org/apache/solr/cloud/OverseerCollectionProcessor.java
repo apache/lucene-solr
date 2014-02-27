@@ -74,6 +74,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -1624,6 +1625,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Could not fully createcollection: " + message.getStr("name"));
 
       log.info("going to create cores replicas shardNames {} , repFactor : {}", shardNames, repFactor);
+      Map<String ,ShardRequest> coresToCreate = new LinkedHashMap<String, ShardRequest>();
       for (int i = 1; i <= shardNames.size(); i++) {
         String sliceName = shardNames.get(i-1);
         for (int j = 1; j <= repFactor; j++) {
@@ -1662,13 +1664,22 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
           ShardRequest sreq = new ShardRequest();
           params.set("qt", adminPath);
           sreq.purpose = 1;
-          String replica = zkStateReader.getBaseUrlForNodeName(nodeName);
-          sreq.shards = new String[] {replica};
+          sreq.shards = new String[] {baseUrl};
           sreq.actualShards = sreq.shards;
           sreq.params = params;
 
-          shardHandler.submit(sreq, replica, sreq.params);
+          if(isLegacyCloud) shardHandler.submit(sreq, sreq.shards[0], sreq.params);
+          else coresToCreate.put(coreName, sreq);
+        }
+      }
 
+      if(!isLegacyCloud) {
+        //wait for all replica entries to be created
+        Map<String, Replica> replicas = lookupReplicas(collectionName, coresToCreate.keySet());
+        for (Map.Entry<String, ShardRequest> e : coresToCreate.entrySet()) {
+          ShardRequest sreq = e.getValue();
+          sreq.params.set(CoreAdminParams.CORE_NODE_NAME, replicas.get(e.getKey()).getName());
+          shardHandler.submit(sreq, sreq.shards[0], sreq.params);
         }
       }
 
@@ -1689,6 +1700,37 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       throw new SolrException(ErrorCode.SERVER_ERROR, null, ex);
     }
   }
+
+  private Map<String, Replica> lookupReplicas(String collectionName, Collection<String> coreNames) throws InterruptedException {
+    Map<String, Replica> result = new HashMap<String, Replica>();
+    long endTime = System.currentTimeMillis() +3000;
+    for(;;) {
+      DocCollection coll = zkStateReader.getClusterState().getCollection(collectionName);
+      for (String  coreName : coreNames) {
+        if(result.containsKey(coreName)) continue;
+        for (Slice slice : coll.getSlices()) {
+          for (Replica replica : slice.getReplicas()) {
+            if(coreName.equals(replica.getStr(ZkStateReader.CORE_NAME_PROP))) {
+              result.put(coreName,replica);
+              break;
+            }
+          }
+        }
+      }
+
+      if(result.size() == coreNames.size()) {
+        return result;
+      }
+      if( System.currentTimeMillis() > endTime) {
+        //time up . throw exception and go out
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to create replica entries in ZK");
+      }
+
+      Thread.sleep(100);
+    }
+
+  }
+
 
   private void addReplica(ClusterState clusterState, ZkNodeProps message, NamedList results) throws KeeperException, InterruptedException {
     String collection = message.getStr(COLLECTION_PROP);
@@ -1733,6 +1775,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       }
       coreName = collection + "_" + shard + "_replica" + replicaNum;
     }
+    ModifiableSolrParams params = new ModifiableSolrParams();
 
     if(!Overseer.isLegacy(zkStateReader.getClusterProps())){
       ZkNodeProps props = new ZkNodeProps(
@@ -1743,6 +1786,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
           ZkStateReader.STATE_PROP, ZkStateReader.DOWN,
           ZkStateReader.BASE_URL_PROP,zkStateReader.getBaseUrlForNodeName(node));
       Overseer.getInQueue(zkStateReader.getZkClient()).offer(ZkStateReader.toJSON(props));
+      params.set(CoreAdminParams.CORE_NODE_NAME, lookupReplicas(collection, Collections.singletonList(coreName)).get(coreName).getName());
     }
 
 
@@ -1751,7 +1795,6 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     String dataDir = message.getStr(CoreAdminParams.DATA_DIR);
     String instanceDir = message.getStr(CoreAdminParams.INSTANCE_DIR);
 
-    ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CoreAdminParams.ACTION, CoreAdminAction.CREATE.toString());
     params.set(CoreAdminParams.NAME, coreName);
     params.set(COLL_CONF, configName);

@@ -39,6 +39,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.SyncStrategy;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -489,6 +490,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
   protected void handleCreateAction(SolrQueryRequest req, SolrQueryResponse rsp) throws SolrException {
 
     SolrParams params = req.getParams();
+    log.info("core create command {}", params);
     CoreDescriptor dcore = buildCoreDescriptor(params, coreContainer);
 
     if (coreContainer.getAllCoreNames().contains(dcore.getName())) {
@@ -500,6 +502,13 @@ public class CoreAdminHandler extends RequestHandlerBase {
     // TODO this should be moved into CoreContainer, really...
     try {
       if (coreContainer.getZkController() != null) {
+        if(!Overseer.isLegacy(coreContainer.getZkController() .getZkStateReader().getClusterProps())){
+          if(dcore.getCloudDescriptor().getCoreNodeName() ==null) {
+            throw new SolrException(ErrorCode.SERVER_ERROR,
+                "non legacy mode coreNodeName missing "+ params);
+
+          }
+        }
         coreContainer.preRegisterInZk(dcore);
       }
 
