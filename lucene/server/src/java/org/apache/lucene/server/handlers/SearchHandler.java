@@ -66,6 +66,10 @@ import org.apache.lucene.queries.BooleanFilter;
 import org.apache.lucene.queries.CommonTermsQuery;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
+import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
+import org.apache.lucene.queries.function.valuesource.IntFieldSource;
+import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
@@ -408,8 +412,9 @@ public class SearchHandler extends Handler {
                                              new OrType(new StringType(), new ListType(new StringType()))),
                                    new Param("numericRanges", "Custom numeric ranges.  Field must be indexed with facet=numericRange.",
                                        new ListType(NUMERIC_RANGE_TYPE)),
-                                   new Param("autoDrillDown", "True if single-child facet should be auto-expanded (not yet implemented!).", new BooleanType()),
+                                   // new Param("autoDrillDown", "True if single-child facet should be auto-expanded (not yet implemented!).", new BooleanType()),
                                    new Param("useOrdsCache", "True if the ordinals cache should be used.", new BooleanType(), false),
+                                   new Param("labels", "Specific facet labels to retrieve.", new ListType(new StringType())),
                                    new Param("topN", "How many top facets to return.", new IntType(), 7)))),
         new Param("drillDowns", "Facet drill down filters to apply.",
                   new ListType(new StructType(
@@ -962,6 +967,7 @@ public class SearchHandler extends Handler {
   /** Records configuration for a block join query. */
   static class BlockJoinQueryChild {
     public Sort sort;
+    public List<String> sortFieldNames;
     public int maxChildren;
     public boolean trackScores;
     public boolean trackMaxScore;
@@ -1180,7 +1186,8 @@ public class SearchHandler extends Handler {
         Request childHits = pr.r.getStruct("childHits");
         BlockJoinQueryChild child = new BlockJoinQueryChild();
         if (childHits.hasParam("sort")) {
-          child.sort = parseSort(timeStamp, state, childHits.getList("sort"), null, dynamicFields);
+          child.sortFieldNames = new ArrayList<String>();
+          child.sort = parseSort(timeStamp, state, childHits.getList("sort"), child.sortFieldNames, dynamicFields);
         }
         child.maxChildren = childHits.getInt("maxChildren");
         child.trackScores = childHits.getBoolean("trackScores");
@@ -1586,15 +1593,32 @@ public class SearchHandler extends Handler {
                                       rr.getDouble("max"),
                                       rr.getBoolean("maxInclusive"));
             } else {
-              rr.fail("numericRange", "field \"" + fd.name + "\" is not numeric");
+              fr.fail("numericRange", "field \"" + fd.name + "\" is not numeric");
 
               // Dead code but compiler disagrees:
               range = null;
             }
+
+            ValueSource valueSource;
             if (fd.valueSource == null) {
-              rr.fail("numericRange", "currently only supported for virtual fields");
+              if (fd.valueType.equals("int")) {
+                valueSource = new IntFieldSource(fd.name);
+              } else if (fd.valueType.equals("long")) {
+                valueSource = new LongFieldSource(fd.name);
+              } else if (fd.valueType.equals("double")) {
+                valueSource = new DoubleFieldSource(fd.name);
+              } else if (fd.valueType.equals("float")) {
+                valueSource = new FloatFieldSource(fd.name);
+              } else {
+                fr.fail("numericRange", "currently only supported for virtual and numeric fields");
+
+                // Dead code but compiler disagrees:
+                valueSource = null;
+              }
+            } else {
+              valueSource = fd.valueSource;
             }
-            ddq.add(fd.name, new ConstantScoreQuery(range.getFilter(fd.valueSource)));
+            ddq.add(fd.name, range.getFilter(valueSource));
           } else {
             String[] path;
             if (fr.isString("value")) {
@@ -1869,8 +1893,22 @@ public class SearchHandler extends Handler {
             facetsMap.put(indexFieldName, facets);
           }
         }
+        if (r2.hasParam("topN")) {
+          facetResult = facets.getTopChildren(r2.getInt("topN"), fd.name, path);
+        } else if (r2.hasParam("labels")) {
+          List<LabelAndValue> results = new ArrayList<LabelAndValue>();
+          for(Object o : r2.getList("labels")) {
+            String label = (String) o;
+            results.add(new LabelAndValue(label, 
+                                          facets.getSpecificValue(fd.name, label)));
+          }
+          facetResult = new FacetResult(fd.name, path, -1, results.toArray(new LabelAndValue[results.size()]), -1);
+        } else {
+          r2.fail("each facet request must have either topN or labels");
 
-        facetResult = facets.getTopChildren(r2.getInt("topN"), fd.name, path);
+          // Dead code but compiler disagrees:
+          facetResult = null;
+        }
       }
 
       if (facetResult == null) {
@@ -2530,9 +2568,7 @@ public class SearchHandler extends Handler {
             if (fields != null || highlightFields != null) {
               JSONObject o4 = new JSONObject();
               o3.put("fields", o4);
-              // nocommit where does parent score come
-              // from ...
-              ScoreDoc sd = new ScoreDoc(group.groupValue.intValue(), 0.0f);
+              ScoreDoc sd = new ScoreDoc(group.groupValue.intValue(), group.score);
               fillFields(state, highlighter, s.searcher, o4, sd, fields, highlights, hitIndex, sort, sortFieldNames, dynamicFields);
             }
             hitIndex++;
@@ -2568,7 +2604,7 @@ public class SearchHandler extends Handler {
               if (fields != null || highlightFields != null) {
                 JSONObject o7 = new JSONObject();
                 o6.put("fields", o7);
-                fillFields(state, highlighter, s.searcher, o7, hit, fields, highlights, hitIndex, child.sort, null, dynamicFields);
+                fillFields(state, highlighter, s.searcher, o7, hit, fields, highlights, hitIndex, child.sort, child.sortFieldNames, dynamicFields);
               }
 
               hitIndex++;

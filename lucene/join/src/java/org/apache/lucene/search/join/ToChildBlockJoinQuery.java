@@ -87,6 +87,11 @@ public class ToChildBlockJoinQuery extends Query {
     this.doScores = doScores;
   }
 
+  /** Returns the parent query passed during init. */
+  public Query getParentQuery() {
+    return parentQuery;
+  }
+
   @Override
   public Weight createWeight(IndexSearcher searcher) throws IOException {
     return new ToChildBlockJoinWeight(this, parentQuery.createWeight(searcher), parentsFilter, doScores);

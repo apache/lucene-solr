@@ -266,6 +266,8 @@ public class BuildSuggestHandler extends Handler {
                 o.put("isHit", true);
                 o.put("text", text.substring(startOffset, startOffset+prefixToken.length()));
                 if (prefixToken.length() < token.length()) {
+                  o = new JSONObject();
+                  fragments.add(o);
                   o.put("isHit", false);
                   o.put("text", text.substring(startOffset+prefixToken.length(), startOffset+token.length()));
                 }

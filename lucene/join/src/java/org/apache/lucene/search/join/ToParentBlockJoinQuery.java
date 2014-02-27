@@ -449,6 +449,11 @@ public class ToParentBlockJoinQuery extends Query {
     childQuery.extractTerms(terms);
   }
 
+  /** Returns the child query passed during init. */
+  public Query getChildQuery() {
+    return childQuery;
+  }
+
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     final Query childRewrite = childQuery.rewrite(reader);

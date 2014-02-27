@@ -17,6 +17,10 @@ package org.apache.lucene.search.postingshighlight;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -24,24 +28,34 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
+import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.search.grouping.GroupDocs;
+import org.apache.lucene.search.grouping.TopGroups;
+import org.apache.lucene.search.join.FixedBitSetCachingWrapperFilter;
+import org.apache.lucene.search.join.ScoreMode;
+import org.apache.lucene.search.join.ToChildBlockJoinQuery;
+import org.apache.lucene.search.join.ToParentBlockJoinCollector;
+import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.lucene.search.spans.SpanFirstQuery;
 import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
 import org.apache.lucene.search.spans.SpanNearQuery;
@@ -50,8 +64,8 @@ import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.LuceneTestCase;
 
 /** 
  * Some tests that override {@link PostingsHighlighter#getIndexAnalyzer} to
@@ -792,6 +806,80 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
     assertEquals("<b>Test(body:te*)</b> a <b>one(body:one)</b> <b>sentence(body:se*)</b> document.", snippets[0]);
     
     ir.close();
+    dir.close();
+  }
+
+  public void testWildcardWithJoins() throws Exception {
+    Directory dir = newDirectory();
+    final Analyzer analyzer = new MockAnalyzer(random());
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, analyzer);
+    List<Document> docs = new ArrayList<Document>();
+    Document child = new Document();
+    child.add(newTextField("body", "something to highlight here", Field.Store.YES));
+    docs.add(child);
+
+    Document parent = new Document();
+    parent.add(newStringField("isParent", "yes", Field.Store.NO));
+    parent.add(newTextField("parentBody", "something else to highlight here", Field.Store.YES));
+    docs.add(parent);
+
+    w.addDocuments(docs);
+    IndexReader r = w.getReader();
+    w.close();
+    IndexSearcher s = newSearcher(r);
+
+    Filter parentsFilter = new FixedBitSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("isParent", "yes"))));
+
+    PostingsHighlighter highlighter = new PostingsHighlighter() {
+        // Must override this else no MTQ highlights:
+        @Override
+        protected Analyzer getIndexAnalyzer(String field) {
+          return analyzer;
+        }
+      };
+
+    // To parent join:
+    {
+      Query childQuery = new WildcardQuery(new Term("body", "high*"));
+      ToParentBlockJoinQuery parentQuery = new ToParentBlockJoinQuery(childQuery, parentsFilter, ScoreMode.Max);
+      ToParentBlockJoinCollector c = new ToParentBlockJoinCollector(Sort.RELEVANCE, 10, true, true);
+      s.search(parentQuery, c);
+      TopGroups<Integer> groups = c.getTopGroups(parentQuery, Sort.RELEVANCE, 0, 10, 0, true);
+      assertEquals(1, groups.totalGroupCount.intValue());
+      assertEquals(1, groups.groups.length);
+
+      GroupDocs<Integer> group = groups.groups[0];
+      assertEquals(1, group.totalHits);
+      assertEquals(1, group.scoreDocs.length);
+
+      int[] docIDs = new int[] {group.scoreDocs[0].doc};
+
+      Map<String,String[]> highlights = highlighter.highlightFields(new String[] {"body"}, parentQuery, s, docIDs, new int[] {2});
+      assertEquals(1, highlights.size());
+      String[] snippets = highlights.get("body");
+      assertNotNull(snippets);
+      assertEquals(1, snippets.length);
+      assertEquals("something to <b>highlight</b> here", snippets[0]);
+    }
+
+    // To child join:
+    {
+      Query parentQuery = new WildcardQuery(new Term("parentBody", "high*"));
+      ToChildBlockJoinQuery childQuery = new ToChildBlockJoinQuery(parentQuery, parentsFilter, random().nextBoolean());
+      TopDocs hits = s.search(childQuery, 10);
+      assertEquals(1, hits.totalHits);
+
+      // Parent doc is 1+ child doc:
+      int[] docIDs = new int[] {hits.scoreDocs[0].doc+1};
+      Map<String,String[]> highlights = highlighter.highlightFields(new String[] {"parentBody"}, childQuery, s, docIDs, new int[] {2});
+      assertEquals(1, highlights.size());
+      String[] snippets = highlights.get("parentBody");
+      assertNotNull(snippets);
+      assertEquals(1, snippets.length);
+      assertEquals("something else to <b>highlight</b> here", snippets[0]);
+    }
+    
+    r.close();
     dir.close();
   }
 }

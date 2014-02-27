@@ -476,6 +476,17 @@
     <property name="grouping-javadocs.uptodate" value="true"/>
   </target>
 
+  <property name="join-javadoc.jar" value="${common.dir}/build/join/lucene-join-${version}-javadoc.jar"/>
+  <target name="check-join-javadocs-uptodate" unless="join-javadocs.uptodate">
+    <module-uptodate name="join" jarfile="${join-javadoc.jar}" property="join-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-join" unless="join-javadocs.uptodate" depends="check-join-javadocs-uptodate">
+    <ant dir="${common.dir}/join" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="join-javadocs.uptodate" value="true"/>
+  </target>
+
   <property name="highlighter.jar" value="${common.dir}/build/highlighter/lucene-highlighter-${version}.jar"/>
   <target name="check-highlighter-uptodate" unless="highlighter.uptodate">
     <module-uptodate name="highlighter" jarfile="${highlighter.jar}" property="highlighter.uptodate"/>

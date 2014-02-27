@@ -221,6 +221,19 @@ public class TestFacets extends ServerBaseTestCase {
     assertEquals("top: 6, Tom: 3, Lisa: 2, Bob: 1", formatFacetCounts(getObject("facets[0]")));
   }
 
+  public void testCustomLabels() throws Exception {
+    deleteAllDocs();
+    send("addDocument", "{fields: {author: Bob}}");
+    send("addDocument", "{fields: {author: Lisa}}");
+    send("addDocument", "{fields: {author: Lisa}}");
+    send("addDocument", "{fields: {author: Tom}}");
+    send("addDocument", "{fields: {author: Tom}}");
+    send("addDocument", "{fields: {author: Tom}}");
+
+    send("search", "{query: MatchAllDocsQuery, facets: [{dim: author, labels: [Bob, Lisa, Tom]}]}");
+    assertEquals("top: -1, Bob: 1, Lisa: 2, Tom: 3", formatFacetCounts(getObject("facets[0]")));
+  }
+
   public void testLongRangeFacets() throws Exception {
     deleteAllDocs();    
     for(int i=0;i<100;i++) {
@@ -228,6 +241,10 @@ public class TestFacets extends ServerBaseTestCase {
     }
     send("search", "{facets: [{dim: longField, numericRanges: [{label: All, min: 0, max: 99, minInclusive: true, maxInclusive: true}, {label: Half, min: 0, max: 49, minInclusive: true, maxInclusive: true}]}]}");
     assertEquals("top: 100, All: 100, Half: 50", formatFacetCounts(getObject("facets[0]")));
+
+    send("search", "{drillDowns: [{field: longField, numericRange: {label: Half, min: 0, max: 49, minInclusive: true, maxInclusive: true}}], facets: [{dim: longField, numericRanges: [{label: All, min: 0, max: 99, minInclusive: true, maxInclusive: true}, {label: Half, min: 0, max: 49, minInclusive: true, maxInclusive: true}]}]}");
+    assertEquals("top: 100, All: 100, Half: 50", formatFacetCounts(getObject("facets[0]")));
+    assertEquals(50, getInt("totalHits"));
   }
 
   public void testDoubleRangeFacets() throws Exception {
@@ -237,6 +254,10 @@ public class TestFacets extends ServerBaseTestCase {
     }
     send("search", "{facets: [{dim: doubleField, numericRanges: [{label: All, min: 0, max: 99, minInclusive: true, maxInclusive: true}, {label: Half, min: 0, max: 49, minInclusive: true, maxInclusive: true}]}]}");
     assertEquals("top: 100, All: 100, Half: 50", formatFacetCounts(getObject("facets[0]")));
+
+    send("search", "{drillDowns: [{field: doubleField, numericRange: {label: Half, min: 0, max: 49, minInclusive: true, maxInclusive: true}}], facets: [{dim: doubleField, numericRanges: [{label: All, min: 0, max: 99, minInclusive: true, maxInclusive: true}, {label: Half, min: 0, max: 49, minInclusive: true, maxInclusive: true}]}]}");
+    assertEquals("top: 100, All: 100, Half: 50", formatFacetCounts(getObject("facets[0]")));
+    assertEquals(50, getInt("totalHits"));
   }
 
   // nocommit fails ... we need to add FloatRangeFacetCounts

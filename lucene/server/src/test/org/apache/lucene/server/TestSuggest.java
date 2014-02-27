@@ -114,6 +114,11 @@ public class TestSuggest extends ServerBaseTestCase {
       assertEquals("love <font color=red>lost</font>", toString(getArray(result, "results[0].key")));
       assertEquals("foobar", get(result, "results[0].payload"));
 
+      result = send("suggestLookup", "{text: lo, suggestName: suggest2}");
+      assertEquals(15, get(result, "results[0].weight"));
+      assertEquals("<font color=red>lo</font>ve <font color=red>lo</font>st", toString(getArray(result, "results[0].key")));
+      assertEquals("foobar", get(result, "results[0].payload"));
+
       // Make sure suggest survives server restart:    
       shutdownServer();
       startServer();

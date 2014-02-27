@@ -655,17 +655,18 @@ public class Request {
     StringBuilder sb = new StringBuilder();
     buildPath(sb);
     if (param != null) {
-      /*
       Param p = type.params.get(param);
-      if (p == null) {
+
+      // Exempt param[N]:
+      if (p == null && param.indexOf('[') == -1) {
+        // BUG:
         assert false: "name \"" + param + "\" is not a known parameter";
-      } else {
-      */
+      }
+
       if (sb.length() > 0) {
         sb.append(" > ");
       }
       sb.append(param);
-      //}
     }
 
     RequestFailedException e = new RequestFailedException(this, param, sb.toString(), reason);

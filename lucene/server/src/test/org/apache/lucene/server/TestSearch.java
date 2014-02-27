@@ -339,11 +339,13 @@ public class TestSearch extends ServerBaseTestCase {
 
       // Blended relevance + recency changes the order:
       t = System.currentTimeMillis()/1000;
+      // nocommit this isn't right: the boost gets down to 0
+      // when it's "recent"
       result = send("search",
                     "{queryText: text, virtualFields: [" + 
-                     "{name: age,   expression: '" + t + " - timestamp'}, " + 
-                     "{name: boost, expression: '(age >= 30) ? 1.0 : (2.0 * (30. - age) / 30)'}, " +
-                     "{name: blend, expression: 'boost * _score'}], " + 
+                    "{name: age,   expression: '" + t + " - timestamp'}, " + 
+                    "{name: boost, expression: '(age >= 30) ? 1.0 : (2.0 * (30. - age) / 30)'}, " +
+                    "{name: blend, expression: 'boost * _score'}], " + 
                     " sort: {fields: [{field: blend, reverse: true}]}, retrieveFields: [age, boost], searcher: {indexGen: " + gen + "}}");
       assertEquals(2, getInt(result, "totalHits"));
       assertEquals(1, getInt(result, "hits[0].doc"));
