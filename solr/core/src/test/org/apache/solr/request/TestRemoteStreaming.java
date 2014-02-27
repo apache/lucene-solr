@@ -46,7 +46,7 @@ import java.net.URLEncoder;
 /**
  * See SOLR-2854.
  */
-@SuppressSSL     // does not yet work with ssl - uses raw URL
+@SuppressSSL     // does not yet work with ssl yet - uses raw java.net.URL API rather than HttpClient
 public class TestRemoteStreaming extends SolrJettyTestBase {
 
   private static final File solrHomeDirectory = new File(TEMP_DIR, "TestRemoteStreaming");

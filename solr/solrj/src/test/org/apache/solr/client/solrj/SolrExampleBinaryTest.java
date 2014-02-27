@@ -31,7 +31,7 @@ import org.junit.BeforeClass;
  * A subclass of SolrExampleTests that explicitly uses the binary 
  * codec for communication. 
  */
-@SuppressSSL
+@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class SolrExampleBinaryTest extends SolrExampleTests {
   @BeforeClass
   public static void beforeTest() throws Exception {
