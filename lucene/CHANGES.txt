@@ -73,6 +73,10 @@ New Features
 * LUCENE-5454: Add SortedSetSortField to lucene/sandbox, to allow sorting
   on multi-valued field. (Robert Muir)
 
+* LUCENE-5478: CommonTermsQuery now allows to create custom term queries
+  similar to the query parser by overriding a newTermQuery method.
+  (Simon Willnauer)
+
 API Changes
 
 * LUCENE-5454: Add RandomAccessOrds, an optional extension of SortedSetDocValues
