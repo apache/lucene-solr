@@ -47,6 +47,13 @@ import org.junit.Test;
  */
 public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 
+  @BeforeClass
+  public static void betterNotBeJ9() {
+    assumeFalse("FIXME: SOLR-5793: This test fails under J9", 
+                System.getProperty("java.vm.info", "<?>").contains("IBM J9"));
+  }
+
+
   /** modified by tests as needed */
   private String chain = "dedupe";
 
