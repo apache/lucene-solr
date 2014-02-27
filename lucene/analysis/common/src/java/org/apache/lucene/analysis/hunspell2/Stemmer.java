@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.Version;
 
 /**
@@ -125,12 +126,13 @@ final class Stemmer {
     List<CharsRef> stems = new ArrayList<CharsRef>();
 
     for (int i = 0; i < length; i++) {
-      List<Character> suffixes = dictionary.lookupSuffix(word, i, length - i);
+      IntsRef suffixes = dictionary.lookupSuffix(word, i, length - i);
       if (suffixes == null) {
         continue;
       }
 
-      for (Character suffix : suffixes) {
+      for (int j = 0; j < suffixes.length; j++) {
+        int suffix = suffixes.ints[suffixes.offset + j];
         affixReader.setPosition(8 * suffix);
         char flag = (char) (affixReader.readShort() & 0xffff);
         if (hasCrossCheckedFlag(flag, flags)) {
@@ -149,12 +151,13 @@ final class Stemmer {
     }
 
     for (int i = length - 1; i >= 0; i--) {
-      List<Character> prefixes = dictionary.lookupPrefix(word, 0, i);
+      IntsRef prefixes = dictionary.lookupPrefix(word, 0, i);
       if (prefixes == null) {
         continue;
       }
 
-      for (Character prefix : prefixes) {
+      for (int j = 0; j < prefixes.length; j++) {
+        int prefix = prefixes.ints[prefixes.offset + j];
         affixReader.setPosition(8 * prefix);
         char flag = (char) (affixReader.readShort() & 0xffff);
         if (hasCrossCheckedFlag(flag, flags)) {
@@ -185,7 +188,7 @@ final class Stemmer {
    * @param recursionDepth Level of recursion this stemming step is at
    * @return List of stems for the word, or an empty list if none are found
    */
-  public List<CharsRef> applyAffix(char strippedWord[], int length, char affix, int recursionDepth) {
+  public List<CharsRef> applyAffix(char strippedWord[], int length, int affix, int recursionDepth) {
     segment.setLength(0);
     segment.append(strippedWord, 0, length);
     

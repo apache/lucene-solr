@@ -179,6 +179,9 @@ public class TestAllDictionaries extends LuceneTestCase {
           System.out.println(tests[i] + "\t" + oldRAM + "\t" + RamUsageEstimator.humanSizeOf(dic) + "\t(" +
                              "words=" + RamUsageEstimator.humanSizeOf(dic.words) + ", " +
                              "flags=" + RamUsageEstimator.humanSizeOf(dic.flagLookup) + ", " +
+                             "strips=" + RamUsageEstimator.humanSizeOf(dic.stripLookup) + ", " +
+                             "conditions=" + RamUsageEstimator.humanSizeOf(dic.patterns) + ", " +
+                             "affixData=" + RamUsageEstimator.humanSizeOf(dic.affixData) + ", " +
                              "prefixes=" + RamUsageEstimator.humanSizeOf(dic.prefixes) + ", " +
                              "suffixes=" + RamUsageEstimator.humanSizeOf(dic.suffixes) + ")");
         }

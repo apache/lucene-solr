@@ -32,8 +32,8 @@ public class TestDictionary extends LuceneTestCase {
     InputStream dictStream = getClass().getResourceAsStream("simple.dic");
 
     Dictionary dictionary = new Dictionary(affixStream, dictStream);
-    assertEquals(3, dictionary.lookupSuffix(new char[]{'e'}, 0, 1).size());
-    assertEquals(1, dictionary.lookupPrefix(new char[]{'s'}, 0, 1).size());
+    assertEquals(3, dictionary.lookupSuffix(new char[]{'e'}, 0, 1).length);
+    assertEquals(1, dictionary.lookupPrefix(new char[]{'s'}, 0, 1).length);
     char flags[] = dictionary.lookupWord(new char[]{'o', 'l', 'r'}, 0, 3, new BytesRef());
     assertNotNull(flags);
     assertEquals(1, flags.length);
@@ -48,8 +48,8 @@ public class TestDictionary extends LuceneTestCase {
     InputStream dictStream = getClass().getResourceAsStream("compressed.dic");
 
     Dictionary dictionary = new Dictionary(affixStream, dictStream);
-    assertEquals(3, dictionary.lookupSuffix(new char[]{'e'}, 0, 1).size());
-    assertEquals(1, dictionary.lookupPrefix(new char[]{'s'}, 0, 1).size());
+    assertEquals(3, dictionary.lookupSuffix(new char[]{'e'}, 0, 1).length);
+    assertEquals(1, dictionary.lookupPrefix(new char[]{'s'}, 0, 1).length);
     assertEquals(1, dictionary.lookupWord(new char[]{'o', 'l', 'r'}, 0, 3, new BytesRef()).length);
     
     affixStream.close();

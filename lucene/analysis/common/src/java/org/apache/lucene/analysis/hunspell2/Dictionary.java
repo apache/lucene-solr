@@ -31,7 +31,9 @@ import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.IntSequenceOutputs;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
+import org.apache.lucene.util.fst.Util;
 
 import java.io.*;
 import java.nio.charset.Charset;
@@ -46,6 +48,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.regex.Pattern;
 
 /**
@@ -68,8 +71,8 @@ public class Dictionary {
   private static final String PREFIX_CONDITION_REGEX_PATTERN = "%s.*";
   private static final String SUFFIX_CONDITION_REGEX_PATTERN = ".*%s";
 
-  public CharArrayMap<List<Character>> prefixes;
-  public CharArrayMap<List<Character>> suffixes;
+  public FST<IntsRef> prefixes;
+  public FST<IntsRef> suffixes;
   
   // all Patterns used by prefixes and suffixes. these are typically re-used across
   // many affix stripping rules. so these are deduplicated, to save RAM.
@@ -137,7 +140,7 @@ public class Dictionary {
       ord = lookupOrd(word, offset, length);
     } catch (IOException ex) { /* bogus */ }
     if (ord == null) {
-      return null;
+      return null;  
     }
     return decodeFlags(flagLookup.get(ord, scratch));
   }
@@ -175,8 +178,8 @@ public class Dictionary {
    * @param length Length from the offset that the String is
    * @return List of HunspellAffix prefixes with an append that matches the String, or {@code null} if none are found
    */
-  public List<Character> lookupPrefix(char word[], int offset, int length) {
-    return prefixes.get(word, offset, length);
+  IntsRef lookupPrefix(char word[], int offset, int length) {
+    return lookupAffix(prefixes, word, offset, length);
   }
 
   /**
@@ -187,8 +190,42 @@ public class Dictionary {
    * @param length Length from the offset that the String is
    * @return List of HunspellAffix suffixes with an append that matches the String, or {@code null} if none are found
    */
-  List<Character> lookupSuffix(char word[], int offset, int length) {
-    return suffixes.get(word, offset, length);
+  IntsRef lookupSuffix(char word[], int offset, int length) {
+    return lookupAffix(suffixes, word, offset, length);
+  }
+  
+  // TODO: this is pretty stupid, considering how the stemming algorithm works
+  // we can speed it up to be significantly faster!
+  IntsRef lookupAffix(FST<IntsRef> fst, char word[], int offset, int length) {
+    if (fst == null) {
+      return null;
+    }
+    final FST.BytesReader bytesReader = fst.getBytesReader();
+    final FST.Arc<IntsRef> arc = fst.getFirstArc(new FST.Arc<IntsRef>());
+    // Accumulate output as we go
+    final IntsRef NO_OUTPUT = fst.outputs.getNoOutput();
+    IntsRef output = NO_OUTPUT;
+    
+    int l = offset + length;
+    try {
+      for (int i = offset, cp = 0; i < l; i += Character.charCount(cp)) {
+        cp = Character.codePointAt(word, i, l);
+        if (fst.findTargetArc(cp, arc, arc, bytesReader) == null) {
+          return null;
+        } else if (arc.output != NO_OUTPUT) {
+          output = fst.outputs.add(output, arc.output);
+        }
+      }
+      if (fst.findTargetArc(FST.END_LABEL, arc, arc, bytesReader) == null) {
+        return null;
+      } else if (arc.output != NO_OUTPUT) {
+        return fst.outputs.add(output, arc.output);
+      } else {
+        return output;
+      }
+    } catch (IOException bogus) {
+      throw new RuntimeException(bogus);
+    }
   }
 
   /**
@@ -199,8 +236,8 @@ public class Dictionary {
    * @throws IOException Can be thrown while reading from the InputStream
    */
   private void readAffixFile(InputStream affixStream, CharsetDecoder decoder) throws IOException, ParseException {
-    prefixes = new CharArrayMap<List<Character>>(Version.LUCENE_CURRENT, 8, false);
-    suffixes = new CharArrayMap<List<Character>>(Version.LUCENE_CURRENT, 8, false);
+    TreeMap<String, List<Character>> prefixes = new TreeMap<>();
+    TreeMap<String, List<Character>> suffixes = new TreeMap<>();
     Map<String,Integer> seenPatterns = new HashMap<>();
 
     LineNumberReader reader = new LineNumberReader(new InputStreamReader(affixStream, decoder));
@@ -218,6 +255,27 @@ public class Dictionary {
         flagParsingStrategy = getFlagParsingStrategy(line);
       }
     }
+    
+    this.prefixes = affixFST(prefixes);
+    this.suffixes = affixFST(suffixes);
+  }
+  
+  private FST<IntsRef> affixFST(TreeMap<String,List<Character>> affixes) throws IOException {
+    IntSequenceOutputs outputs = IntSequenceOutputs.getSingleton();
+    Builder<IntsRef> builder = new Builder<>(FST.INPUT_TYPE.BYTE4, outputs);
+    
+    IntsRef scratch = new IntsRef();
+    for (Map.Entry<String,List<Character>> entry : affixes.entrySet()) {
+      Util.toUTF32(entry.getKey(), scratch);
+      List<Character> entries = entry.getValue();
+      IntsRef output = new IntsRef(entries.size());
+      int upto = 0;
+      for (Character c : entries) {
+        output.ints[output.length++] = c;
+      }
+      builder.add(scratch, output);
+    }
+    return builder.finish();
   }
 
   /**
@@ -231,7 +289,7 @@ public class Dictionary {
    * @param seenPatterns map from condition -> index of patterns, for deduplication.
    * @throws IOException Can be thrown while reading the rule
    */
-  private void parseAffix(CharArrayMap<List<Character>> affixes,
+  private void parseAffix(TreeMap<String,List<Character>> affixes,
                           String header,
                           LineNumberReader reader,
                           String conditionPattern,
