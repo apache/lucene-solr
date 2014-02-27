@@ -1,4 +1,4 @@
-package org.apache.lucene.search.suggest;
+package org.apache.lucene.util;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -187,7 +187,7 @@ public final class BytesRefArray {
         }
         return null;
       }
-      
+
       @Override
       public Comparator<BytesRef> getComparator() {
         return comp;

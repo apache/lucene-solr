@@ -17,14 +17,17 @@ package org.apache.lucene.search.suggest.fst;
  * limitations under the License.
  */
 
-import java.io.*;
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
 import java.util.Comparator;
 
-import org.apache.lucene.search.suggest.Sort;
-import org.apache.lucene.search.suggest.Sort.ByteSequencesReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.OfflineSorter;
+import org.apache.lucene.util.OfflineSorter.ByteSequencesReader;
+
 
 /**
  * Builds and iterates over sequences stored on disk.
@@ -32,19 +35,19 @@ import org.apache.lucene.util.IOUtils;
  * @lucene.internal
  */
 public class ExternalRefSorter implements BytesRefSorter, Closeable {
-  private final Sort sort;
-  private Sort.ByteSequencesWriter writer;
+  private final OfflineSorter sort;
+  private OfflineSorter.ByteSequencesWriter writer;
   private File input;
   private File sorted;
   
   /**
    * Will buffer all sequences to a temporary file and then sort (all on-disk).
    */
-  public ExternalRefSorter(Sort sort) throws IOException {
+  public ExternalRefSorter(OfflineSorter sort) throws IOException {
     this.sort = sort;
     this.input = File.createTempFile("RefSorter-", ".raw",
-        Sort.defaultTempDir());
-    this.writer = new Sort.ByteSequencesWriter(input);
+        OfflineSorter.defaultTempDir());
+    this.writer = new OfflineSorter.ByteSequencesWriter(input);
   }
   
   @Override
@@ -59,14 +62,14 @@ public class ExternalRefSorter implements BytesRefSorter, Closeable {
       closeWriter();
       
       sorted = File.createTempFile("RefSorter-", ".sorted",
-          Sort.defaultTempDir());
+          OfflineSorter.defaultTempDir());
       sort.sort(input, sorted);
       
       input.delete();
       input = null;
     }
     
-    return new ByteSequenceIterator(new Sort.ByteSequencesReader(sorted),
+    return new ByteSequenceIterator(new OfflineSorter.ByteSequencesReader(sorted),
         sort.getComparator());
   }
   

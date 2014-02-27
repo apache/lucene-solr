@@ -25,7 +25,6 @@ import java.util.List;
 
 import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup;
-import org.apache.lucene.search.suggest.Sort.ByteSequencesWriter;
 import org.apache.lucene.search.suggest.SortedInputIterator;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
@@ -43,6 +42,7 @@ import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util.MinResult;
 import org.apache.lucene.util.fst.Util;
+import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
 
 /**
  * Suggester based on a weighted FST: it first traverses the prefix, 

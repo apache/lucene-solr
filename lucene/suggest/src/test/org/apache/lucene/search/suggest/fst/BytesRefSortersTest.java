@@ -18,16 +18,16 @@ package org.apache.lucene.search.suggest.fst;
  */
 
 import org.apache.lucene.search.suggest.InMemorySorter;
-import org.apache.lucene.search.suggest.Sort;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.OfflineSorter;
 import org.junit.Test;
 
 public class BytesRefSortersTest extends LuceneTestCase {
   @Test
   public void testExternalRefSorter() throws Exception {
-    ExternalRefSorter s = new ExternalRefSorter(new Sort());
+    ExternalRefSorter s = new ExternalRefSorter(new OfflineSorter());
     check(s);
     s.close();
   }

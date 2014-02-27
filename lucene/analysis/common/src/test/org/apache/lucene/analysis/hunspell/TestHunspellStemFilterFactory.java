@@ -32,8 +32,8 @@ public class TestHunspellStemFilterFactory extends BaseTokenStreamFactoryTestCas
     Reader reader = new StringReader("abc");
     TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     stream = tokenFilterFactory("HunspellStem",
-        "dictionary", "test.dic",
-        "affix", "test.aff").create(stream);
+        "dictionary", "simple.dic",
+        "affix", "simple.aff").create(stream);
     assertTokenStreamContents(stream, new String[] { "ab" });
   }
   
@@ -41,7 +41,7 @@ public class TestHunspellStemFilterFactory extends BaseTokenStreamFactoryTestCas
   public void testBogusArguments() throws Exception {
     try {
       tokenFilterFactory("HunspellStem",
-          "dictionary", "test.dic",
+          "dictionary", "simple.dic",
           "bogusArg", "bogusValue");
       fail();
     } catch (IllegalArgumentException expected) {

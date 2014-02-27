@@ -22,13 +22,14 @@ import java.io.IOException;
 import java.util.Comparator;
 
 import org.apache.lucene.search.spell.TermFreqIterator;
-import org.apache.lucene.search.suggest.Sort.ByteSequencesReader;
-import org.apache.lucene.search.suggest.Sort.ByteSequencesWriter;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.OfflineSorter;
+import org.apache.lucene.util.OfflineSorter.ByteSequencesReader;
+import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
 
 /**
  * This wrapper buffers incoming elements and makes sure they are sorted based on given comparator.
@@ -130,13 +131,13 @@ public class SortedTermFreqIteratorWrapper implements TermFreqIterator {
     }
   };
   
-  private Sort.ByteSequencesReader sort() throws IOException {
+  private ByteSequencesReader sort() throws IOException {
     String prefix = getClass().getSimpleName();
-    File directory = Sort.defaultTempDir();
+    File directory = OfflineSorter.defaultTempDir();
     tempInput = File.createTempFile(prefix, ".input", directory);
     tempSorted = File.createTempFile(prefix, ".sorted", directory);
     
-    final Sort.ByteSequencesWriter writer = new Sort.ByteSequencesWriter(tempInput);
+    final ByteSequencesWriter writer = new ByteSequencesWriter(tempInput);
     boolean success = false;
     try {
       BytesRef spare;
@@ -147,8 +148,8 @@ public class SortedTermFreqIteratorWrapper implements TermFreqIterator {
         encode(writer, output, buffer, spare, source.weight());
       }
       writer.close();
-      new Sort(tieBreakByCostComparator).sort(tempInput, tempSorted);
-      ByteSequencesReader reader = new Sort.ByteSequencesReader(tempSorted);
+      new OfflineSorter(tieBreakByCostComparator).sort(tempInput, tempSorted);
+      ByteSequencesReader reader = new ByteSequencesReader(tempSorted);
       success = true;
       return reader;
       

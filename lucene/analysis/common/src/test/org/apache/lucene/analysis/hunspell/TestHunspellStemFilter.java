@@ -1,4 +1,5 @@
 package org.apache.lucene.analysis.hunspell;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -20,7 +21,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
-import java.text.ParseException;
 import java.util.Arrays;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -28,55 +28,64 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
+import org.apache.lucene.analysis.hunspell.Dictionary;
+import org.apache.lucene.analysis.hunspell.HunspellStemFilter;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-public class HunspellStemFilterTest  extends BaseTokenStreamTestCase {
+public class TestHunspellStemFilter extends BaseTokenStreamTestCase {
+  private static Dictionary dictionary;
   
-  private static HunspellDictionary DICTIONARY;
   @BeforeClass
-  public static void beforeClass() throws IOException, ParseException {
-    DICTIONARY = createDict(true);
+  public static void beforeClass() throws Exception {
+    InputStream affixStream = TestStemmer.class.getResourceAsStream("simple.aff");
+    InputStream dictStream = TestStemmer.class.getResourceAsStream("simple.dic");
+    try {
+      dictionary = new Dictionary(affixStream, dictStream);
+    } finally {
+      IOUtils.closeWhileHandlingException(affixStream, dictStream);
+    }
   }
+  
   @AfterClass
   public static void afterClass() {
-    DICTIONARY = null;
-  }
-  public static HunspellDictionary createDict(boolean ignoreCase) throws IOException, ParseException {
-    InputStream affixStream = HunspellStemmerTest.class.getResourceAsStream("test.aff");
-    InputStream dictStream = HunspellStemmerTest.class.getResourceAsStream("test.dic");
-
-    return new HunspellDictionary(affixStream, dictStream, TEST_VERSION_CURRENT, ignoreCase);
+    dictionary = null;
   }
   
-  /**
-   * Simple test for KeywordAttribute
-   */
+  /** Simple test for KeywordAttribute */
   public void testKeywordAttribute() throws IOException {
-    MockTokenizer tokenizer = new MockTokenizer(new StringReader("lucene is awesome"), MockTokenizer.WHITESPACE, true);
+    MockTokenizer tokenizer = new MockTokenizer(new StringReader("lucene is awesome"));
     tokenizer.setEnableChecks(true);
-    HunspellStemFilter filter = new HunspellStemFilter(tokenizer, DICTIONARY, TestUtil.nextInt(random(), 1, 3));
+    HunspellStemFilter filter = new HunspellStemFilter(tokenizer, dictionary, TestUtil.nextInt(random(), 1, 3));
     assertTokenStreamContents(filter, new String[]{"lucene", "lucen", "is", "awesome"}, new int[] {1, 0, 1, 1});
     
-    // assert with keywork marker
-    tokenizer = new MockTokenizer(new StringReader("lucene is awesome"), MockTokenizer.WHITESPACE, true);
+    // assert with keyword marker
+    tokenizer = new MockTokenizer(new StringReader("lucene is awesome"));
     CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, Arrays.asList("Lucene"), true);
-    filter = new HunspellStemFilter(new SetKeywordMarkerFilter(tokenizer, set), DICTIONARY, TestUtil.nextInt(random(), 1, 3));
+    filter = new HunspellStemFilter(new SetKeywordMarkerFilter(tokenizer, set), dictionary, TestUtil.nextInt(random(), 1, 3));
+    assertTokenStreamContents(filter, new String[]{"lucene", "is", "awesome"}, new int[] {1, 1, 1});
+  }
+  
+  /** simple test for longestOnly option */
+  public void testLongestOnly() throws IOException {
+    MockTokenizer tokenizer = new MockTokenizer(new StringReader("lucene is awesome"));
+    tokenizer.setEnableChecks(true);
+    HunspellStemFilter filter = new HunspellStemFilter(tokenizer, dictionary, true, TestUtil.nextInt(random(), 1, 3), true);
     assertTokenStreamContents(filter, new String[]{"lucene", "is", "awesome"}, new int[] {1, 1, 1});
   }
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     Analyzer analyzer = new Analyzer() {
-
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-        return new TokenStreamComponents(tokenizer, new HunspellStemFilter(tokenizer, DICTIONARY, TestUtil.nextInt(random(), 1, 3)));
-      }  
+        return new TokenStreamComponents(tokenizer, new HunspellStemFilter(tokenizer, dictionary, TestUtil.nextInt(random(), 1, 3)));
+      }
     };
     checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
   }
@@ -86,7 +95,7 @@ public class HunspellStemFilterTest  extends BaseTokenStreamTestCase {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new KeywordTokenizer(reader);
-        return new TokenStreamComponents(tokenizer, new HunspellStemFilter(tokenizer, DICTIONARY, TestUtil.nextInt(random(), 1, 3)));
+        return new TokenStreamComponents(tokenizer, new HunspellStemFilter(tokenizer, dictionary, TestUtil.nextInt(random(), 1, 3)));
       }
     };
     checkOneTerm(a, "", "");
