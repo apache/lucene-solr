@@ -30,6 +30,12 @@ import org.junit.BeforeClass;
  */
 public class DistributedQueryElevationComponentTest extends BaseDistributedSearchTestCase {
 
+  @BeforeClass
+  public static void betterNotBeJ9() {
+    assumeFalse("FIXME: SOLR-5791: This test fails under J9", 
+                System.getProperty("java.vm.info", "<?>").contains("IBM J9"));
+  }
+
   public DistributedQueryElevationComponentTest() {
     fixShardCount = true;
     shardCount = 3;
