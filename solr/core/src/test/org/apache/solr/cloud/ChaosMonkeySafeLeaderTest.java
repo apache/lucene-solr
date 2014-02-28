@@ -33,6 +33,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 
 @Slow
+@BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5735")
 public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
   
   private static final Integer RUN_LENGTH = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.runlength", "-1"));
