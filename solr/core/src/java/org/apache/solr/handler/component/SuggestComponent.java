@@ -78,7 +78,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
   protected NamedList initParams;
   
   /**
-   * Key is the dictionary name used in SolrConfig, value is the corrosponding {@link SolrSuggester}
+   * Key is the dictionary name used in SolrConfig, value is the corresponding {@link SolrSuggester}
    */
   protected Map<String, SolrSuggester> suggesters = new ConcurrentHashMap<String, SolrSuggester>();
   

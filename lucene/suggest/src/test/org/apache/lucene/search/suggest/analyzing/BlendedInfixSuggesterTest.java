@@ -225,7 +225,7 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
     suggester.close();
   }
 
-  private static long getInResults(BlendedInfixSuggester suggester, String prefix, BytesRef payload, int num) {
+  private static long getInResults(BlendedInfixSuggester suggester, String prefix, BytesRef payload, int num) throws IOException {
 
     List<Lookup.LookupResult> responses = suggester.lookup(prefix, num, true, false);
 
