@@ -126,6 +126,7 @@
       <str name="dictionaryImpl">FileDictionaryFactory</str>
       <str name="buildOnCommit">false</str>
       <str name="sourceLocation">blendedInfixSuggest.txt</str>
+      <str name="indexPath">blendedInfixDir1</str>
 
       <!-- Suggester properties -->
       <str name="blenderType">linear</str>
@@ -138,6 +139,7 @@
       <str name="dictionaryImpl">FileDictionaryFactory</str>
       <str name="buildOnCommit">false</str>
       <str name="sourceLocation">blendedInfixSuggest.txt</str>
+      <str name="indexPath">blendedInfixDir2</str>
 
       <!-- Suggester properties -->
       <str name="blenderType">reciprocal</str>

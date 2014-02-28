@@ -14,6 +14,10 @@ New Features
   similar to the query parser by overriding a newTermQuery method.
   (Simon Willnauer)
 
+* LUCENE-5477: AnalyzingInfixSuggester now supports near-real-time
+  additions and updates (to change weight or payload of an existing
+  suggestion).  (Mike McCandless)
+
 API Changes
 
 * LUCENE-5454: Add RandomAccessOrds, an optional extension of SortedSetDocValues

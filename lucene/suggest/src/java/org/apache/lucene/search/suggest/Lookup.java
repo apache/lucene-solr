@@ -195,7 +195,7 @@ public abstract class Lookup {
    * Get the number of entries the lookup was built with
    * @return total number of suggester entries
    */
-  public abstract long getCount();
+  public abstract long getCount() throws IOException;
   
   /**
    * Builds up a new internal {@link Lookup} representation based on the given {@link InputIterator}.
@@ -211,7 +211,7 @@ public abstract class Lookup {
    * @param num maximum number of results to return
    * @return a list of possible completions, with their relative weight (e.g. popularity)
    */
-  public abstract List<LookupResult> lookup(CharSequence key, boolean onlyMorePopular, int num);
+  public abstract List<LookupResult> lookup(CharSequence key, boolean onlyMorePopular, int num) throws IOException;
 
   /**
    * Persist the constructed lookup data to a directory. Optional operation.
