@@ -17,33 +17,13 @@ package org.apache.lucene.analysis.hunspell;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.hunspell.Dictionary;
-import org.apache.lucene.analysis.hunspell.Stemmer;
-import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.LuceneTestCase;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-import java.io.InputStream;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
-public class TestCaseInsensitive extends LuceneTestCase {
-  private static Stemmer stemmer;
+public class TestCaseInsensitive extends StemmerTestBase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    try (InputStream affixStream = TestCaseInsensitive.class.getResourceAsStream("simple.aff");
-        InputStream dictStream = TestCaseInsensitive.class.getResourceAsStream("mixedcase.dic")) {
-     Dictionary dictionary = new Dictionary(affixStream, Collections.singletonList(dictStream), true);
-     stemmer = new Stemmer(dictionary);
-   }
-  }
-  
-  @AfterClass
-  public static void afterClass() {
-    stemmer = null;
+    init(true, "simple.aff", "mixedcase.dic");
   }
 
   public void testCaseInsensitivity() {
@@ -93,18 +73,5 @@ public class TestCaseInsensitive extends LuceneTestCase {
     assertStemsTo("fooss");
     assertStemsTo("lucenee");
     assertStemsTo("solre");
-  }
-  
-  private void assertStemsTo(String s, String... expected) {
-    Arrays.sort(expected);
-    
-    List<CharsRef> stems = stemmer.stem(s);
-    String actual[] = new String[stems.size()];
-    for (int i = 0; i < actual.length; i++) {
-      actual[i] = stems.get(i).toString();
-    }
-    Arrays.sort(actual);
-    
-    assertArrayEquals(expected, actual);
   }
 }
