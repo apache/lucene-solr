@@ -18,6 +18,9 @@ New Features
   additions and updates (to change weight or payload of an existing
   suggestion).  (Mike McCandless)
 
+* LUCENE-5482: Improve default TurkishAnalyzer by adding apostrophe
+  handling suitable for Turkish.  (Ahmet Arslan via Robert Muir)
+
 API Changes
 
 * LUCENE-5454: Add RandomAccessOrds, an optional extension of SortedSetDocValues
