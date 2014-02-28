@@ -86,8 +86,13 @@ final class Stemmer {
       charUtils.toLowerCase(word, 0, length);
     }
     List<CharsRef> stems = new ArrayList<CharsRef>();
-    if (dictionary.lookupWord(word, 0, length, scratch) != null) {
-      stems.add(new CharsRef(word, 0, length));
+    IntsRef forms = dictionary.lookupWord(word, 0, length);
+    if (forms != null) {
+      // TODO: some forms should not be added, e.g. ONLYINCOMPOUND
+      // just because it exists, does not make it valid...
+      for (int i = 0; i < forms.length; i++) {
+        stems.add(new CharsRef(word, 0, length));
+      }
     }
     stems.addAll(stem(word, length, Dictionary.NOFLAGS, 0));
     return stems;
@@ -203,7 +208,7 @@ final class Stemmer {
     boolean crossProduct = (condition & 1) == 1;
     condition >>>= 1;
     char append = (char) (affixReader.readShort() & 0xffff);
-
+    
     Pattern pattern = dictionary.patterns.get(condition);
     if (!pattern.matcher(segment).matches()) {
       return Collections.emptyList();
@@ -211,9 +216,15 @@ final class Stemmer {
 
     List<CharsRef> stems = new ArrayList<CharsRef>();
 
-    char wordFlags[] = dictionary.lookupWord(strippedWord, 0, length, scratch);
-    if (wordFlags != null && Dictionary.hasFlag(wordFlags, flag)) {
-      stems.add(new CharsRef(strippedWord, 0, length));
+    IntsRef forms = dictionary.lookupWord(strippedWord, 0, length);
+    if (forms != null) {
+      for (int i = 0; i < forms.length; i++) {
+        dictionary.flagLookup.get(forms.ints[forms.offset+i], scratch);
+        char wordFlags[] = Dictionary.decodeFlags(scratch);
+        if (wordFlags != null && Dictionary.hasFlag(wordFlags, flag)) {
+          stems.add(new CharsRef(strippedWord, 0, length));
+        }
+      }
     }
 
     if (crossProduct && recursionDepth < recursionCap) {

@@ -47,7 +47,7 @@ public class TestCaseInsensitive extends StemmerTestBase {
     assertStemsTo("abc", "ab");
     assertStemsTo("apach", "apach");
     assertStemsTo("apache", "apach");
-    assertStemsTo("foo", "foo");
+    assertStemsTo("foo", "foo", "foo");
     assertStemsTo("food", "foo");
     assertStemsTo("foos", "foo");
     assertStemsTo("lucen", "lucen");

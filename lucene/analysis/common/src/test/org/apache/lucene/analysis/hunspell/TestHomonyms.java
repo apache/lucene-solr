@@ -19,17 +19,14 @@ package org.apache.lucene.analysis.hunspell;
 
 import org.junit.BeforeClass;
 
-public class TestTwoFold extends StemmerTestBase {
+public class TestHomonyms extends StemmerTestBase {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    init("twofold.aff", "morph.dic");
+    init("homonyms.aff", "homonyms.dic");
   }
   
   public void testExamples() {
-    assertStemsTo("drink", "drink");
-    assertStemsTo("drinkable", "drink");
-    assertStemsTo("drinkables", "drink");
-    assertStemsTo("drinksable");
+    assertStemsTo("works", "work", "work");
   }
 }
