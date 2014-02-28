@@ -520,14 +520,14 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
   /** Returns true if this single info is already fully merged (has no
    *  pending deletes, is in the same dir as the
    *  writer, and matches the current compound file setting */
-  protected final boolean isMerged(SegmentCommitInfo info) {
+  protected final boolean isMerged(SegmentInfos infos, SegmentCommitInfo info) throws IOException {
     IndexWriter w = writer.get();
     assert w != null;
     boolean hasDeletions = w.numDeletedDocs(info) > 0;
     return !hasDeletions &&
       !info.info.hasSeparateNorms() &&
       info.info.dir == w.getDirectory() &&
-      ((noCFSRatio > 0.0 && noCFSRatio < 1.0) || maxCFSSegmentSize < Long.MAX_VALUE);
+      useCompoundFile(infos, info) == info.info.getUseCompoundFile();
   }
   
   /** Returns current {@code noCFSRatio}.
