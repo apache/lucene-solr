@@ -125,9 +125,6 @@ public enum Version {
   LUCENE_46,
 
   /** Match settings and bugs in Lucene's 4.7 release.
-   *  <p>
-   *  Use this to get the latest &amp; greatest settings, bug
-   *  fixes, etc, for Lucene.
    * @deprecated (4.8) Use latest
    */
   @Deprecated
