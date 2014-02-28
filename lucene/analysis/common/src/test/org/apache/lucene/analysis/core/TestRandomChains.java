@@ -62,8 +62,8 @@ import org.apache.lucene.analysis.commongrams.CommonGramsQueryFilter;
 import org.apache.lucene.analysis.compound.HyphenationCompoundWordTokenFilter;
 import org.apache.lucene.analysis.compound.TestCompoundWordTokenFilter;
 import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
-import org.apache.lucene.analysis.hunspell.HunspellDictionary;
-import org.apache.lucene.analysis.hunspell.HunspellDictionaryTest;
+import org.apache.lucene.analysis.hunspell.Dictionary;
+import org.apache.lucene.analysis.hunspell.TestHunspellStemFilter;
 import org.apache.lucene.analysis.miscellaneous.HyphenatedWordsFilter;
 import org.apache.lucene.analysis.miscellaneous.LimitTokenCountFilter;
 import org.apache.lucene.analysis.miscellaneous.LimitTokenPositionFilter;
@@ -406,13 +406,13 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         return new IdentityEncoder(); // the other encoders will throw exceptions if tokens arent numbers?
       }
     });
-    put(HunspellDictionary.class, new ArgProducer() {
+    put(Dictionary.class, new ArgProducer() {
       @Override public Object create(Random random) {
         // TODO: make nastier
-        InputStream affixStream = HunspellDictionaryTest.class.getResourceAsStream("test.aff");
-        InputStream dictStream = HunspellDictionaryTest.class.getResourceAsStream("test.dic");
+        InputStream affixStream = TestHunspellStemFilter.class.getResourceAsStream("simple.aff");
+        InputStream dictStream = TestHunspellStemFilter.class.getResourceAsStream("simple.dic");
         try {
-         return new HunspellDictionary(affixStream, dictStream, TEST_VERSION_CURRENT);
+         return new Dictionary(affixStream, dictStream);
         } catch (Exception ex) {
           Rethrow.rethrow(ex);
           return null; // unreachable code

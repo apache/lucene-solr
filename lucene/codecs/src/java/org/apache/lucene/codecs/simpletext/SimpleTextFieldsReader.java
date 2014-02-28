@@ -562,7 +562,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
           termCount++;
         }
       }
-      docCount = (int) visitedDocs.cardinality();
+      docCount = visitedDocs.cardinality();
       fst = b.finish();
       /*
       PrintStream ps = new PrintStream("out.dot");

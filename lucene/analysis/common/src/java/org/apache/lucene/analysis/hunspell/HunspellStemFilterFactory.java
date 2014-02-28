@@ -31,89 +31,75 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * TokenFilterFactory that creates instances of {@link org.apache.lucene.analysis.hunspell.HunspellStemFilter}.
- * Example config for British English including a custom dictionary, case insensitive matching:
+ * TokenFilterFactory that creates instances of {@link HunspellStemFilter}.
+ * Example config for British English:
  * <pre class="prettyprint">
  * &lt;filter class=&quot;solr.HunspellStemFilterFactory&quot;
- *    dictionary=&quot;en_GB.dic,my_custom.dic&quot;
- *    affix=&quot;en_GB.aff&quot;
- *    ignoreCase=&quot;true&quot; /&gt;</pre>
+ *         dictionary=&quot;en_GB.dic,my_custom.dic&quot;
+ *         affix=&quot;en_GB.aff&quot; 
+ *         ignoreCase=&quot;false&quot;
+ *         longestOnly=&quot;false&quot; /&gt;</pre>
  * Both parameters dictionary and affix are mandatory.
- * <br/>
- * The parameter ignoreCase (true/false) controls whether matching is case sensitive or not. Default false.
- * <br/>
- * The parameter strictAffixParsing (true/false) controls whether the affix parsing is strict or not. Default true.
- * If strict an error while reading an affix rule causes a ParseException, otherwise is ignored.
- * <br/>
  * Dictionaries for many languages are available through the OpenOffice project.
  * 
  * See <a href="http://wiki.apache.org/solr/Hunspell">http://wiki.apache.org/solr/Hunspell</a>
+ * @lucene.experimental
  */
 public class HunspellStemFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
-  private static final String PARAM_DICTIONARY = "dictionary";
-  private static final String PARAM_AFFIX = "affix";
-  private static final String PARAM_IGNORE_CASE = "ignoreCase";
-  private static final String PARAM_STRICT_AFFIX_PARSING = "strictAffixParsing";
+  private static final String PARAM_DICTIONARY    = "dictionary";
+  private static final String PARAM_AFFIX         = "affix";
   private static final String PARAM_RECURSION_CAP = "recursionCap";
+  private static final String PARAM_IGNORE_CASE   = "ignoreCase";
+  private static final String PARAM_LONGEST_ONLY  = "longestOnly";
 
-  private final String dictionaryArg;
+  private final String dictionaryFiles;
   private final String affixFile;
   private final boolean ignoreCase;
-  private final boolean strictAffixParsing;
-  private HunspellDictionary dictionary;
+  private final boolean longestOnly;
+  private Dictionary dictionary;
   private int recursionCap;
   
   /** Creates a new HunspellStemFilterFactory */
   public HunspellStemFilterFactory(Map<String,String> args) {
     super(args);
-    assureMatchVersion();
-    dictionaryArg = require(args, PARAM_DICTIONARY);
+    dictionaryFiles = require(args, PARAM_DICTIONARY);
     affixFile = get(args, PARAM_AFFIX);
     ignoreCase = getBoolean(args, PARAM_IGNORE_CASE, false);
-    strictAffixParsing = getBoolean(args, PARAM_STRICT_AFFIX_PARSING, true);
     recursionCap = getInt(args, PARAM_RECURSION_CAP, 2);
+    longestOnly = getBoolean(args, PARAM_LONGEST_ONLY, false);
+    // this isnt necessary: we properly load all dictionaries.
+    // but recognize and ignore for back compat
+    getBoolean(args, "strictAffixParsing", true);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
 
-  /**
-   * Loads the hunspell dictionary and affix files defined in the configuration
-   *  
-   * @param loader ResourceLoader used to load the files
-   */
   @Override
   public void inform(ResourceLoader loader) throws IOException {
-    String dictionaryFiles[] = dictionaryArg.split(",");
+    String dicts[] = dictionaryFiles.split(",");
 
     InputStream affix = null;
     List<InputStream> dictionaries = new ArrayList<InputStream>();
 
     try {
       dictionaries = new ArrayList<InputStream>();
-      for (String file : dictionaryFiles) {
+      for (String file : dicts) {
         dictionaries.add(loader.openResource(file));
       }
       affix = loader.openResource(affixFile);
 
-      this.dictionary = new HunspellDictionary(affix, dictionaries, luceneMatchVersion, ignoreCase, strictAffixParsing);
+      this.dictionary = new Dictionary(affix, dictionaries, ignoreCase);
     } catch (ParseException e) {
-      throw new IOException("Unable to load hunspell data! [dictionary=" + dictionaryArg + ",affix=" + affixFile + "]", e);
+      throw new IOException("Unable to load hunspell data! [dictionary=" + dictionaries + ",affix=" + affixFile + "]", e);
     } finally {
       IOUtils.closeWhileHandlingException(affix);
       IOUtils.closeWhileHandlingException(dictionaries);
     }
   }
 
-  /**
-   * Creates an instance of {@link org.apache.lucene.analysis.hunspell.HunspellStemFilter} that will filter the given
-   * TokenStream
-   *
-   * @param tokenStream TokenStream that will be filtered
-   * @return HunspellStemFilter that filters the TokenStream 
-   */
   @Override
   public TokenStream create(TokenStream tokenStream) {
-    return new HunspellStemFilter(tokenStream, dictionary, recursionCap);
+    return new HunspellStemFilter(tokenStream, dictionary, true, recursionCap, longestOnly);
   }
 }

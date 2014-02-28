@@ -50,9 +50,7 @@ import org.apache.solr.util.AbstractSolrTestCase;
  * This test simply does a bunch of basic things in solrcloud mode and asserts things
  * work as expected.
  */
-// disable SSL until this test is hardened more to deal with the 
-// consequences of how slow it can make some things
-@SuppressSSL
+@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
   private static final String SHARD2 = "shard2";
   private static final String SHARD1 = "shard1";

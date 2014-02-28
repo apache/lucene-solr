@@ -104,20 +104,21 @@ public class TestSuggest extends ServerBaseTestCase {
     out.write("15\u001flove lost\u001ffoobar\n");
     out.close();
 
-    JSONObject result = send("buildSuggest", "{source: {localFile: '" + tempFile.getAbsolutePath() + "'}, class: InfixSuggester, suggestName: suggest2, analyzer: {tokenizer: Whitespace, tokenFilters: [LowerCase]}}");
-    assertEquals(1, result.get("count"));
+    send("buildSuggest", "{source: {localFile: '" + tempFile.getAbsolutePath() + "'}, class: InfixSuggester, suggestName: suggest2, analyzer: {tokenizer: Whitespace, tokenFilters: [LowerCase]}}");
+    assertEquals(1, getInt("count"));
     //commit();
 
     for(int i=0;i<2;i++) {
-      result = send("suggestLookup", "{text: lost, suggestName: suggest2}");
-      assertEquals(15, get(result, "results[0].weight"));
-      assertEquals("love <font color=red>lost</font>", toString(getArray(result, "results[0].key")));
-      assertEquals("foobar", get(result, "results[0].payload"));
+      System.out.println("i=" + i);
+      send("suggestLookup", "{text: lost, suggestName: suggest2}");
+      assertEquals(15, getLong("results[0].weight"));
+      assertEquals("love <font color=red>lost</font>", toString(getArray("results[0].key")));
+      assertEquals("foobar", getString("results[0].payload"));
 
-      result = send("suggestLookup", "{text: lo, suggestName: suggest2}");
-      assertEquals(15, get(result, "results[0].weight"));
-      assertEquals("<font color=red>lo</font>ve <font color=red>lo</font>st", toString(getArray(result, "results[0].key")));
-      assertEquals("foobar", get(result, "results[0].payload"));
+      send("suggestLookup", "{text: lo, suggestName: suggest2}");
+      assertEquals(15, getLong("results[0].weight"));
+      assertEquals("<font color=red>lo</font>ve <font color=red>lo</font>st", toString(getArray("results[0].key")));
+      assertEquals("foobar", getString("results[0].payload"));
 
       // Make sure suggest survives server restart:    
       shutdownServer();

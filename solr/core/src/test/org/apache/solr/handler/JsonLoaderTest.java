@@ -209,6 +209,54 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     req.close();
   }
 
+  public void testFieldValueOrdering() throws Exception {
+    final String pre = "{'add':[{'id':'1',";
+    final String post = "},{'id':'2'}]}";
+
+    // list
+    checkFieldValueOrdering((pre+ "'f':[45,67,89]" +post)
+                            .replace('\'', '"'),
+                            1.0F);
+    // dup fieldname keys
+    checkFieldValueOrdering((pre+ "'f':45,'f':67,'f':89" +post)
+                            .replace('\'', '"'),
+                            1.0F);
+    // extended w/boost
+    checkFieldValueOrdering((pre+ "'f':{'boost':4.0,'value':[45,67,89]}" +post)
+                            .replace('\'', '"'),
+                            4.0F);
+    // dup keys extended w/ multiplicitive boost
+    checkFieldValueOrdering((pre+ 
+                             "'f':{'boost':2.0,'value':[45,67]}," +
+                             "'f':{'boost':2.0,'value':89}" 
+                             +post)
+                            .replace('\'', '"'),
+                            4.0F);
+
+  }
+  private void checkFieldValueOrdering(String rawJson, float fBoost) throws Exception {
+    SolrQueryRequest req = req();
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+    JsonLoader loader = new JsonLoader();
+    loader.load(req, rsp, new ContentStreamBase.StringStream(rawJson), p);
+    assertEquals( 2, p.addCommands.size() );
+
+    SolrInputDocument d = p.addCommands.get(0).solrDoc;
+    assertEquals(2, d.getFieldNames().size());
+    assertEquals("1", d.getFieldValue("id"));
+    assertEquals(new Object[] {45L, 67L, 89L} , d.getFieldValues("f").toArray());
+    assertEquals(0.0F, fBoost, d.getField("f").getBoost());
+
+    d = p.addCommands.get(1).solrDoc;
+    assertEquals(1, d.getFieldNames().size());
+    assertEquals("2", d.getFieldValue("id"));
+
+    req.close();
+  }
+
+
+
   public void testExtendedFieldValues() throws Exception {
     String str = "[{'id':'1', 'val_s':{'add':'foo'}}]".replace('\'', '"');
     SolrQueryRequest req = req();
@@ -497,6 +545,162 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertEquals( delete.getVersion(), 88888L);
 
     req.close();
+  }
+
+  @Test
+  public void testSimpleChildDocs() throws Exception {
+    String str = "{\n" +
+        "    \"add\": {\n" +
+        "        \"doc\": {\n" +
+        "            \"id\": \"1\",\n" +
+        "            \"_childDocuments_\": [\n" +
+        "                {\n" +
+        "                    \"id\": \"2\"\n" +
+        "                },\n" +
+        "                {\n" +
+        "                    \"id\": \"3\",\n" +
+        "                    \"foo_i\": [666,777]\n" +
+        "                }\n" +
+        "            ]\n" +
+        "        }\n" +
+        "    }\n" +
+        "}";
+    checkTwoChildDocs(str);
+  }
+
+  @Test
+  public void testDupKeysChildDocs() throws Exception {
+    String str = "{\n" +
+        "    \"add\": {\n" +
+        "        \"doc\": {\n" +
+        "            \"_childDocuments_\": [\n" +
+        "                {\n" +
+        "                    \"id\": \"2\"\n" +
+        "                }\n" +
+        "            ],\n" +
+        "            \"id\": \"1\",\n" +
+        "            \"_childDocuments_\": [\n" +
+        "                {\n" +
+        "                    \"id\": \"3\",\n" +
+        "                    \"foo_i\": 666,\n" +
+        "                    \"foo_i\": 777\n" +
+        "                }\n" +
+        "            ]\n" +
+        "        }\n" +
+        "    }\n" +
+        "}";
+    checkTwoChildDocs(str);
+  }
+
+  private void checkTwoChildDocs(String rawJsonStr) throws Exception {
+    SolrQueryRequest req = req("commit","true");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+    JsonLoader loader = new JsonLoader();
+    loader.load(req, rsp, new ContentStreamBase.StringStream(rawJsonStr), p);
+
+    assertEquals( 1, p.addCommands.size() );
+
+    AddUpdateCommand add = p.addCommands.get(0);
+    SolrInputDocument d = add.solrDoc;
+    SolrInputField f = d.getField( "id" );
+    assertEquals("1", f.getValue());
+
+    SolrInputDocument cd = d.getChildDocuments().get(0);
+    SolrInputField cf = cd.getField( "id" );
+    assertEquals("2", cf.getValue());
+
+    cd = d.getChildDocuments().get(1);
+    cf = cd.getField( "id" );
+    assertEquals("3", cf.getValue());
+    cf = cd.getField( "foo_i" );
+    assertEquals(2, cf.getValueCount());
+
+    assertEquals(new Object[] {666L,777L}, cf.getValues().toArray());
+
+    req.close();
+  }
+
+  @Test
+  public void testEmptyChildDocs() throws Exception {
+    String str = "{\n" +
+        "    \"add\": {\n" +
+        "        \"doc\": {\n" +
+        "            \"id\": \"1\",\n" +
+        "            \"_childDocuments_\": []\n" +
+        "        }\n" +
+        "    }\n" +
+        "}";
+    SolrQueryRequest req = req("commit","true");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+    JsonLoader loader = new JsonLoader();
+    loader.load(req, rsp, new ContentStreamBase.StringStream(str), p);
+
+    assertEquals( 1, p.addCommands.size() );
+
+    AddUpdateCommand add = p.addCommands.get(0);
+    SolrInputDocument d = add.solrDoc;
+    SolrInputField f = d.getField( "id" );
+    assertEquals("1", f.getValue());
+    List<SolrInputDocument> cd = d.getChildDocuments();
+    assertNull(cd);
+
+    req.close();
+  }
+
+  @Test
+  public void testGrandChildDocs() throws Exception {
+    String str = "{\n" +
+        "    \"add\": {\n" +
+        "        \"doc\": {\n" +
+        "            \"id\": \"1\",\n" +
+        "            \"_childDocuments_\": [\n" +
+        "                {\n" +
+        "                    \"id\": \"2\",\n" +
+        "                    \"_childDocuments_\": [\n" +
+        "                        {\n" +
+        "                           \"id\": \"4\",\n" +
+        "                           \"foo_s\": \"Baz\"\n" +
+        "                        }\n" +
+        "                    ],\n" +
+        "                    \"foo_s\": \"Yaz\"\n" +
+        "                },\n" +
+        "                {\n" +
+        "                    \"id\": \"3\",\n" +
+        "                    \"foo_s\": \"Bar\"\n" +
+        "                }\n" +
+        "            ]\n" +
+        "        }\n" +
+        "    }\n" +
+        "}";
+
+    SolrQueryRequest req = req("commit","true");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+    JsonLoader loader = new JsonLoader();
+    loader.load(req, rsp, new ContentStreamBase.StringStream(str), p);
+
+    assertEquals( 1, p.addCommands.size() );
+
+    AddUpdateCommand add = p.addCommands.get(0);
+    SolrInputDocument one = add.solrDoc;
+    assertEquals("1", one.getFieldValue("id"));
+
+    SolrInputDocument two = one.getChildDocuments().get(0);
+    assertEquals("2", two.getFieldValue("id"));
+    assertEquals("Yaz", two.getFieldValue("foo_s"));
+
+    SolrInputDocument four = two.getChildDocuments().get(0);
+    assertEquals("4", four.getFieldValue("id"));
+    assertEquals("Baz", four.getFieldValue("foo_s"));
+
+    SolrInputDocument three = one.getChildDocuments().get(1);
+    assertEquals("3", three.getFieldValue("id"));
+    assertEquals("Bar", three.getFieldValue("foo_s"));
+
+    req.close();
+
   }
 
 

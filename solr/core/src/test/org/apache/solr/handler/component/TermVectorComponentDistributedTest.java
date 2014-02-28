@@ -19,8 +19,14 @@ package org.apache.solr.handler.component;
 
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.common.params.TermVectorParams;
+import org.junit.BeforeClass;
 
 public class TermVectorComponentDistributedTest extends BaseDistributedSearchTestCase {
+  @BeforeClass
+  public static void betterNotBeJ9() {
+    assumeFalse("FIXME: SOLR-5792: This test fails under J9", 
+                System.getProperty("java.vm.info", "<?>").contains("IBM J9"));
+  }
 
   @Override
   public void doTest() throws Exception {

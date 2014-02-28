@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj;
 
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.RequestWriter;
@@ -27,6 +28,7 @@ import org.junit.BeforeClass;
  * A subclass of SolrExampleTests that explicitly uses the xml codec for
  * communication.
  */
+@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class SolrExampleXMLTest extends SolrExampleTests {
   @BeforeClass
   public static void beforeTest() throws Exception {

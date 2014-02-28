@@ -82,7 +82,11 @@ Detailed Change List
 
 New Features
 ----------------------
+
 * SOLR-5130: Implement addReplica Collections API (Noble Paul)
+
+* SOLR-5183: JSON updates now support nested child documents using a 
+  "_childDocument_" object key.  (Varun Thacker, hossman)
 
 Bug Fixes
 ----------------------
@@ -92,6 +96,12 @@ Bug Fixes
 
 * SOLR-5423: CSV output doesn't include function field
   (Arun Kumar, hossman, Steve Rowe)
+
+* SOLR-5777: Fix ordering of field values in JSON updates where
+  field name key is repeated (hossman)
+
+* SOLR-5782: The full MapReduceIndexer help text does not display when using
+  --help.  (Mark Miller, Wolfgang Hoschek)
 
 Optimizations
 ----------------------

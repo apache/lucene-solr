@@ -17,14 +17,6 @@ package org.apache.lucene.queries;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.AtomicReader;
@@ -33,12 +25,14 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
@@ -49,7 +43,15 @@ import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
+import org.junit.Test;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
 
 public class CommonTermsQueryTest extends LuceneTestCase {
   
@@ -338,6 +340,60 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       
     }
   }
+
+  @Test
+  public void testExtend() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    String[] docs = new String[] {"this is the end of the world right",
+        "is this it or maybe not",
+        "this is the end of the universe as we know it",
+        "there is the famous restaurant at the end of the universe",};
+    for (int i = 0; i < docs.length; i++) {
+      Document doc = new Document();
+      doc.add(newStringField("id", "" + i, Field.Store.YES));
+      doc.add(newTextField("field", docs[i], Field.Store.NO));
+      w.addDocument(doc);
+    }
+
+    IndexReader r = w.getReader();
+    IndexSearcher s = newSearcher(r);
+    {
+      CommonTermsQuery query = new CommonTermsQuery(Occur.SHOULD, Occur.SHOULD,
+          random().nextBoolean() ? 2.0f : 0.5f);
+      query.add(new Term("field", "is"));
+      query.add(new Term("field", "this"));
+      query.add(new Term("field", "end"));
+      query.add(new Term("field", "world"));
+      query.add(new Term("field", "universe"));
+      query.add(new Term("field", "right"));
+      TopDocs search = s.search(query, 10);
+      assertEquals(search.totalHits, 3);
+      assertEquals("0", r.document(search.scoreDocs[0].doc).get("id"));
+      assertEquals("2", r.document(search.scoreDocs[1].doc).get("id"));
+      assertEquals("3", r.document(search.scoreDocs[2].doc).get("id"));
+    }
+
+    {
+      // this one boosts the termQuery("field" "universe") by 10x
+      CommonTermsQuery query = new ExtendedCommonTermsQuery(Occur.SHOULD, Occur.SHOULD,
+          random().nextBoolean() ? 2.0f : 0.5f);
+      query.add(new Term("field", "is"));
+      query.add(new Term("field", "this"));
+      query.add(new Term("field", "end"));
+      query.add(new Term("field", "world"));
+      query.add(new Term("field", "universe"));
+      query.add(new Term("field", "right"));
+      TopDocs search = s.search(query, 10);
+      assertEquals(search.totalHits, 3);
+      assertEquals("2", r.document(search.scoreDocs[0].doc).get("id"));
+      assertEquals("3", r.document(search.scoreDocs[1].doc).get("id"));
+      assertEquals("0", r.document(search.scoreDocs[2].doc).get("id"));
+    }
+    r.close();
+    w.close();
+    dir.close();
+  }
   
   public void testRandomIndex() throws IOException {
     Directory dir = newDirectory();
@@ -479,5 +535,21 @@ public class CommonTermsQueryTest extends LuceneTestCase {
     }
     
     lineFileDocs.close();
+  }
+
+  private static final class ExtendedCommonTermsQuery extends CommonTermsQuery {
+
+    public ExtendedCommonTermsQuery(Occur highFreqOccur, Occur lowFreqOccur, float maxTermFrequency) {
+      super(highFreqOccur, lowFreqOccur, maxTermFrequency);
+    }
+
+    @Override
+    protected Query newTermQuery(Term term, TermContext context) {
+      Query query = super.newTermQuery(term, context);
+      if (term.text().equals("universe")) {
+        query.setBoost(100f);
+      }
+      return query;
+    }
   }
 }

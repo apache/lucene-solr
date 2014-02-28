@@ -792,17 +792,25 @@ public class IndexState implements Closeable {
   public synchronized void close() throws IOException {
     //System.out.println("IndexState.close name=" + name);
     commit();
+    List<Closeable> closeables = new ArrayList<Closeable>();
     // nocommit catch exc & rollback:
     if (writer != null) {
-      IOUtils.close(reopenThread,
-                    manager,
-                    writer.getIndexWriter(),
-                    taxoWriter,
-                    slm,
-                    indexDir,
-                    taxoDir);
+      closeables.add(reopenThread);
+      closeables.add(manager);
+      closeables.add(writer.getIndexWriter());
+      closeables.add(taxoWriter);
+      closeables.add(slm);
+      closeables.add(indexDir);
+      closeables.add(taxoDir);
       writer = null;
     }
+
+    for(Lookup suggester : suggesters.values()) {
+      if (suggester instanceof Closeable) {
+        closeables.add((Closeable) suggester);
+      }
+    }
+    IOUtils.close(closeables);
 
     // nocommit should we remove this instance?  if app
     // starts again ... should we re-use the current

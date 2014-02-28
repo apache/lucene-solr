@@ -49,8 +49,7 @@ import org.junit.BeforeClass;
  * Super basic testing, no shard restarting or anything.
  */
 @Slow
-@SuppressSSL     // No SSL for now - it can be too slow
-@BadApple
+@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase {
   
   @BeforeClass

@@ -196,7 +196,7 @@ public abstract class LogMergePolicy extends MergePolicy {
     }
 
     return numToMerge <= maxNumSegments &&
-      (numToMerge != 1 || !segmentIsOriginal || isMerged(mergeInfo));
+      (numToMerge != 1 || !segmentIsOriginal || isMerged(infos, mergeInfo));
   }
 
   /**
@@ -221,7 +221,7 @@ public abstract class LogMergePolicy extends MergePolicy {
         }
         // need to skip that segment + add a merge for the 'right' segments,
         // unless there is only 1 which is merged.
-        if (last - start - 1 > 1 || (start != last - 1 && !isMerged(infos.info(start + 1)))) {
+        if (last - start - 1 > 1 || (start != last - 1 && !isMerged(infos, infos.info(start + 1)))) {
           // there is more than 1 segment to the right of
           // this one, or a mergeable single segment.
           spec.add(new OneMerge(segments.subList(start + 1, last)));
@@ -237,7 +237,7 @@ public abstract class LogMergePolicy extends MergePolicy {
 
     // Add any left-over segments, unless there is just 1
     // already fully merged
-    if (last > 0 && (++start + 1 < last || !isMerged(infos.info(start)))) {
+    if (last > 0 && (++start + 1 < last || !isMerged(infos, infos.info(start)))) {
       spec.add(new OneMerge(segments.subList(start, last)));
     }
 
@@ -267,7 +267,7 @@ public abstract class LogMergePolicy extends MergePolicy {
 
         // Since we must merge down to 1 segment, the
         // choice is simple:
-        if (last > 1 || !isMerged(infos.info(0))) {
+        if (last > 1 || !isMerged(infos, infos.info(0))) {
           spec.add(new OneMerge(segments.subList(0, last)));
         }
       } else if (last > maxNumSegments) {
@@ -352,7 +352,7 @@ public abstract class LogMergePolicy extends MergePolicy {
     }
     
     // There is only one segment already, and it is merged
-    if (maxNumSegments == 1 && last == 1 && isMerged(infos.info(0))) {
+    if (maxNumSegments == 1 && last == 1 && isMerged(infos, infos.info(0))) {
       if (verbose()) {
         message("already 1 seg; skip");
       }

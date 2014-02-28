@@ -20,6 +20,7 @@ package org.apache.lucene.search.suggest.analyzing;
 // TODO
 //   - test w/ syns
 //   - add pruning of low-freq ngrams?
+
 import java.io.File;
 import java.io.IOException;
 //import java.io.PrintWriter;
@@ -54,7 +55,6 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup;
-import org.apache.lucene.search.suggest.Sort;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
@@ -74,6 +74,7 @@ import org.apache.lucene.util.fst.Outputs;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util.MinResult;
 import org.apache.lucene.util.fst.Util;
+import org.apache.lucene.util.OfflineSorter;
 
 /**
  * Builds an ngram model from the text sent to {@link
@@ -287,7 +288,7 @@ public class FreeTextSuggester extends Lookup {
     }
 
     String prefix = getClass().getSimpleName();
-    File directory = Sort.defaultTempDir();
+    File directory = OfflineSorter.defaultTempDir();
     // TODO: messy ... java7 has Files.createTempDirectory
     // ... but 4.x is java6:
     File tempIndexPath = null;
