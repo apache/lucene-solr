@@ -74,6 +74,6 @@ abstract class StemmerTestBase extends LuceneTestCase {
     }
     Arrays.sort(actual);
     
-    assertArrayEquals(expected, actual);
+    assertArrayEquals("expected=" + Arrays.toString(expected) + ",actual=" + Arrays.toString(actual), expected, actual);
   }
 }

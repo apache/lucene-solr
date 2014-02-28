@@ -26,11 +26,9 @@ import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesReader;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
-import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.IntSequenceOutputs;
-import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
 
 import java.io.BufferedInputStream;
@@ -85,8 +83,8 @@ public class Dictionary {
   ArrayList<Pattern> patterns = new ArrayList<>();
   
   // the entries in the .dic file, mapping to their set of flags.
-  // the fst output is the ordinal for flagLookup
-  FST<Long> words;
+  // the fst output is the ordinal list for flagLookup
+  FST<IntsRef> words;
   // the list of unique flagsets (wordforms). theoretically huge, but practically
   // small (e.g. for polish this is 756), otherwise humans wouldn't be able to deal with it either.
   BytesRefHash flagLookup = new BytesRefHash();
@@ -141,54 +139,17 @@ public class Dictionary {
     readAffixFile(buffered, decoder);
     flagLookup.add(new BytesRef()); // no flags -> ord 0
     stripLookup.add(new BytesRef()); // no strip -> ord 0
-    PositiveIntOutputs o = PositiveIntOutputs.getSingleton();
-    Builder<Long> b = new Builder<Long>(FST.INPUT_TYPE.BYTE4, o);
+    IntSequenceOutputs o = IntSequenceOutputs.getSingleton();
+    Builder<IntsRef> b = new Builder<IntsRef>(FST.INPUT_TYPE.BYTE4, o);
     readDictionaryFiles(dictionaries, decoder, b);
     words = b.finish();
   }
 
   /**
-   * Looks up words that match the String created from the given char array, offset and length
-   *
-   * @param word Char array to generate the String from
-   * @param offset Offset in the char array that the String starts at
-   * @param length Length from the offset that the String is
-   * @return List of HunspellWords that match the generated String, or {@code null} if none are found
+   * Looks up Hunspell word forms from the dictionary
    */
-  char[] lookupWord(char word[], int offset, int length, BytesRef scratch) {
-    Integer ord = null;
-    try {
-      ord = lookupOrd(word, offset, length);
-    } catch (IOException ex) { /* bogus */ }
-    if (ord == null) {
-      return null;  
-    }
-    return decodeFlags(flagLookup.get(ord, scratch));
-  }
-  
-  Integer lookupOrd(char word[], int offset, int length) throws IOException {
-    final FST.BytesReader bytesReader = words.getBytesReader();
-    final FST.Arc<Long> arc = words.getFirstArc(new FST.Arc<Long>());
-    // Accumulate output as we go
-    final Long NO_OUTPUT = words.outputs.getNoOutput();
-    Long output = NO_OUTPUT;
-    
-    int l = offset + length;
-    for (int i = offset, cp = 0; i < l; i += Character.charCount(cp)) {
-      cp = Character.codePointAt(word, i, l);
-      if (words.findTargetArc(cp, arc, arc, bytesReader) == null) {
-        return null;
-      } else if (arc.output != NO_OUTPUT) {
-        output = words.outputs.add(output, arc.output);
-      }
-    }
-    if (words.findTargetArc(FST.END_LABEL, arc, arc, bytesReader) == null) {
-      return null;
-    } else if (arc.output != NO_OUTPUT) {
-      return words.outputs.add(output, arc.output).intValue();
-    } else {
-      return output.intValue();
-    }
+  IntsRef lookupWord(char word[], int offset, int length) {
+    return lookup(words, word, offset, length);
   }
 
   /**
@@ -200,7 +161,7 @@ public class Dictionary {
    * @return List of HunspellAffix prefixes with an append that matches the String, or {@code null} if none are found
    */
   IntsRef lookupPrefix(char word[], int offset, int length) {
-    return lookupAffix(prefixes, word, offset, length);
+    return lookup(prefixes, word, offset, length);
   }
 
   /**
@@ -212,12 +173,12 @@ public class Dictionary {
    * @return List of HunspellAffix suffixes with an append that matches the String, or {@code null} if none are found
    */
   IntsRef lookupSuffix(char word[], int offset, int length) {
-    return lookupAffix(suffixes, word, offset, length);
+    return lookup(suffixes, word, offset, length);
   }
   
   // TODO: this is pretty stupid, considering how the stemming algorithm works
   // we can speed it up to be significantly faster!
-  IntsRef lookupAffix(FST<IntsRef> fst, char word[], int offset, int length) {
+  IntsRef lookup(FST<IntsRef> fst, char word[], int offset, int length) {
     if (fst == null) {
       return null;
     }
@@ -506,7 +467,7 @@ public class Dictionary {
    * @param decoder CharsetDecoder used to decode the contents of the file
    * @throws IOException Can be thrown while reading from the file
    */
-  private void readDictionaryFiles(List<InputStream> dictionaries, CharsetDecoder decoder, Builder<Long> words) throws IOException {
+  private void readDictionaryFiles(List<InputStream> dictionaries, CharsetDecoder decoder, Builder<IntsRef> words) throws IOException {
     BytesRef flagsScratch = new BytesRef();
     IntsRef scratchInts = new IntsRef();
     
@@ -565,7 +526,13 @@ public class Dictionary {
           }
         }
         
-        return scratch1.compareTo(scratch2);
+        int cmp = scratch1.compareTo(scratch2);
+        if (cmp == 0) {
+          // tie break on whole row
+          return o1.compareTo(o2);
+        } else {
+          return cmp;
+        }
       }
     });
     sorter.sort(unsorted, sorted);
@@ -577,8 +544,8 @@ public class Dictionary {
     // TODO: the flags themselves can be double-chars (long) or also numeric
     // either way the trick is to encode them as char... but they must be parsed differently
     
-    BytesRef currentEntry = new BytesRef();
-    char currentFlags[] = new char[0];
+    String currentEntry = null;
+    IntsRef currentOrds = new IntsRef();
     
     String line;
     while (reader.read(scratchLine)) {
@@ -592,10 +559,14 @@ public class Dictionary {
         entry = line;
       } else {
         // note, there can be comments (morph description) after a flag.
-        // we should really look for any whitespace
+        // we should really look for any whitespace: currently just tab and space
         int end = line.indexOf('\t', flagSep);
         if (end == -1)
           end = line.length();
+        int end2 = line.indexOf(' ', flagSep);
+        if (end2 == -1)
+          end2 = line.length();
+        end = Math.min(end, end2);
         
         String flagPart = line.substring(flagSep + 1, end);
         if (aliasCount > 0) {
@@ -607,34 +578,34 @@ public class Dictionary {
         entry = line.substring(0, flagSep);
       }
 
-      BytesRef scratch = new BytesRef(entry);
-      int cmp = scratch.compareTo(currentEntry);
+      int cmp = currentEntry == null ? 1 : entry.compareTo(currentEntry);
       if (cmp < 0) {
-        throw new IllegalArgumentException("out of order: " + scratch.utf8ToString() + " < " + currentEntry.utf8ToString());
-      } else if (cmp == 0) {
-        currentFlags = merge(currentFlags, wordForm);
+        throw new IllegalArgumentException("out of order: " + entry + " < " + currentEntry);
       } else {
-        final int hashCode = encodeFlagsWithHash(flagsScratch, currentFlags);
+        final int hashCode = encodeFlagsWithHash(flagsScratch, wordForm);
         int ord = flagLookup.add(flagsScratch, hashCode);
         if (ord < 0) {
           // already exists in our hash
           ord = (-ord)-1;
         }
-        UnicodeUtil.UTF8toUTF32(currentEntry, scratchInts);
-        words.add(scratchInts, (long)ord);
-        currentEntry = scratch;
-        currentFlags = wordForm;
+        // finalize current entry, and switch "current" if necessary
+        if (cmp > 0 && currentEntry != null) {
+          Util.toUTF32(currentEntry, scratchInts);
+          words.add(scratchInts, currentOrds);
+        }
+        // swap current
+        if (cmp > 0 || currentEntry == null) {
+          currentEntry = entry;
+          currentOrds = new IntsRef(); // must be this way
+        }
+        currentOrds.grow(currentOrds.length+1);
+        currentOrds.ints[currentOrds.length++] = ord;
       }
     }
     
-    final int hashCode = encodeFlagsWithHash(flagsScratch, currentFlags);
-    int ord = flagLookup.add(flagsScratch, hashCode);
-    if (ord < 0) {
-      // already exists in our hash
-      ord = (-ord)-1;
-    }
-    UnicodeUtil.UTF8toUTF32(currentEntry, scratchInts);
-    words.add(scratchInts, (long)ord);
+    // finalize last entry
+    Util.toUTF32(currentEntry, scratchInts);
+    words.add(scratchInts, currentOrds);
     
     reader.close();
     sorted.delete();
@@ -775,47 +746,5 @@ public class Dictionary {
   
   static boolean hasFlag(char flags[], char flag) {
     return Arrays.binarySearch(flags, flag) >= 0;
-  }
-  
-  static char[] merge(char[] flags1, char[] flags2) {
-    char merged[] = new char[flags1.length + flags2.length];
-    int i1 = 0, i2 = 0;
-    int last = -1;
-    int upto = 0;
-    
-    while (i1 < flags1.length && i2 < flags2.length) {
-      final char next;
-      if (flags1[i1] <= flags2[i2]) {
-        next = flags1[i1++];
-      } else {
-        next = flags2[i2++];
-      }
-      if (next != last) {
-        merged[upto++] = next;
-        last = next;
-      }
-    }
-    
-    while (i1 < flags1.length) {
-      char next = flags1[i1++];
-      if (next != last) {
-        merged[upto++] = next;
-        last = next;
-      }
-    }
-    
-    while (i2 < flags2.length) {
-      char next = flags2[i2++];
-      if (next != last) {
-        merged[upto++] = next;
-        last = next;
-      }
-    }
-    
-    if (merged.length != upto) {
-      merged = Arrays.copyOf(merged, upto);
-    }
-    
-    return merged;
   }
 }
