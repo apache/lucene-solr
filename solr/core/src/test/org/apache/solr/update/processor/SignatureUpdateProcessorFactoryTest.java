@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.util.Constants;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -49,8 +51,8 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void betterNotBeJ9() {
-    assumeFalse("FIXME: SOLR-5793: This test fails under J9", 
-                System.getProperty("java.vm.info", "<?>").contains("IBM J9"));
+    assumeFalse("FIXME: SOLR-5793: This test fails under IBM J9", 
+                Constants.JAVA_VENDOR.startsWith("IBM"));
   }
 
 
