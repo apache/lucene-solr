@@ -88,8 +88,8 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
     this.textFieldNames = textFieldNames;
     this.classFieldName = classFieldName;
     this.analyzer = analyzer;
-    this.docsWithClassSize = countDocsWithClass();
     this.query = query;
+    this.docsWithClassSize = countDocsWithClass();
   }
 
   private int countDocsWithClass() throws IOException {
