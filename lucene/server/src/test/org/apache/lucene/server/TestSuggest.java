@@ -127,6 +127,65 @@ public class TestSuggest extends ServerBaseTestCase {
     }
   }
 
+  public void testInfixSuggestNRT() throws Exception {
+    Writer fstream = new OutputStreamWriter(new FileOutputStream(tempFile), "UTF-8");
+    BufferedWriter out = new BufferedWriter(fstream);
+    out.write("15\u001flove lost\u001ffoobar\n");
+    out.close();
+
+    send("buildSuggest", "{source: {localFile: '" + tempFile.getAbsolutePath() + "'}, class: InfixSuggester, suggestName: suggestnrt, analyzer: {tokenizer: Whitespace, tokenFilters: [LowerCase]}}");
+    assertEquals(1, getInt("count"));
+
+    for(int i=0;i<2;i++) {
+      send("suggestLookup", "{text: lost, suggestName: suggestnrt}");
+      assertEquals(15, getLong("results[0].weight"));
+      assertEquals("love <font color=red>lost</font>", toString(getArray("results[0].key")));
+      assertEquals("foobar", getString("results[0].payload"));
+
+      send("suggestLookup", "{text: lo, suggestName: suggestnrt}");
+      assertEquals(15, getLong("results[0].weight"));
+      assertEquals("<font color=red>lo</font>ve <font color=red>lo</font>st", toString(getArray("results[0].key")));
+      assertEquals("foobar", getString("results[0].payload"));
+
+      // Make sure suggest survives server restart:    
+      shutdownServer();
+      startServer();
+      send("startIndex");
+    }
+
+    // Now update the suggestions:
+    fstream = new OutputStreamWriter(new FileOutputStream(tempFile), "UTF-8");
+    out = new BufferedWriter(fstream);
+    out.write("10\u001flove lost\u001ffoobaz\n");
+    out.write("20\u001flove found\u001ffooboo\n");
+    out.close();
+
+    send("updateSuggest", "{source: {localFile: '" + tempFile.getAbsolutePath() + "'}, suggestName: suggestnrt}");
+    assertEquals(2, getInt("count"));
+
+    for(int i=0;i<2;i++) {
+      send("suggestLookup", "{text: lost, suggestName: suggestnrt}");
+      assertEquals(10, getLong("results[0].weight"));
+      assertEquals("love <font color=red>lost</font>", toString(getArray("results[0].key")));
+      assertEquals("foobaz", getString("results[0].payload"));
+
+      send("suggestLookup", "{text: lo, suggestName: suggestnrt}");
+      assertEquals(2, getInt("results.length"));
+      assertEquals(20, getLong("results[0].weight"));
+      assertEquals("<font color=red>lo</font>ve found", toString(getArray("results[0].key")));
+      assertEquals("fooboo", getString("results[0].payload"));
+
+      assertEquals(10, getLong("results[1].weight"));
+      assertEquals("<font color=red>lo</font>ve <font color=red>lo</font>st", toString(getArray("results[1].key")));
+      assertEquals("foobaz", getString("results[1].payload"));
+
+      // Make sure suggest survives server restart:    
+      shutdownServer();
+      startServer();
+      send("startIndex");
+    }
+  }
+
   public String toString(JSONArray fragments) {
     StringBuilder sb = new StringBuilder();
     for(Object _o : fragments) {

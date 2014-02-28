@@ -53,7 +53,6 @@ import org.apache.lucene.server.params.PolyType.PolyEntry;
 import org.apache.lucene.util.BytesRef;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
-import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
 import net.minidev.json.parser.ParseException;
 
@@ -125,7 +124,9 @@ public class BuildSuggestHandler extends Handler {
   public void load(IndexState state, JSONObject saveState) throws IOException {
     for(Map.Entry<String,Object> ent : saveState.entrySet()) {
       String suggestName = ent.getKey();
+
       JSONObject params = (JSONObject) ent.getValue();
+      String jsonOrig = params.toString();
 
       Request r = new Request(null, null, params, TYPE);
       // Must consume these up front since getSuggester
@@ -154,7 +155,7 @@ public class BuildSuggestHandler extends Handler {
       Lookup suggester = getSuggester(state, suggestName, r);
       assert !Request.anythingLeft(params);
 
-      if (!(suggester instanceof AnalyzingInfixSuggester)) {
+      if ((suggester instanceof AnalyzingInfixSuggester) == false) {
         File path = new File(state.rootDir, "suggest." + suggestName);
         FileInputStream in = new FileInputStream(path);
         try {
@@ -162,6 +163,13 @@ public class BuildSuggestHandler extends Handler {
         } finally {
           in.close();
         }
+      }
+
+      try {
+        state.addSuggest(suggestName, (JSONObject) JSONValue.parseStrict(jsonOrig));
+      } catch (ParseException pe) {
+        // BUG
+        throw new RuntimeException(pe);
       }
     }
   }

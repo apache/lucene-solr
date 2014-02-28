@@ -642,6 +642,7 @@ public class Server {
       globalState.addHandler("stats", new StatsHandler(globalState));
       globalState.addHandler("stopIndex", new StopIndexHandler(globalState));
       globalState.addHandler("suggestLookup", new SuggestLookupHandler(globalState));
+      globalState.addHandler("updateSuggest", new UpdateSuggestHandler(globalState));
       globalState.addHandler("updateDocument", new UpdateDocumentHandler(globalState));
 
       globalState.loadPlugins();
