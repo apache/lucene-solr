@@ -53,7 +53,8 @@ import org.slf4j.LoggerFactory;
  */
 public class JsonLoader extends ContentStreamLoader {
   final static Logger log = LoggerFactory.getLogger( JsonLoader.class );
-  
+  private static final String CHILD_DOC_KEY = "_childDocuments_";
+
   @Override
   public String getDefaultWT() {
     return "json";
@@ -409,35 +410,40 @@ public class JsonLoader extends ContentStreamLoader {
             +" at ["+parser.getPosition()+"]" );
       }
     }
-  
-  
+
+
     private SolrInputDocument parseDoc(int ev) throws IOException {
       assert ev == JSONParser.OBJECT_START;
-  
+
       SolrInputDocument sdoc = new SolrInputDocument();
       for (;;) {
-        SolrInputField sif = parseField();
-        if (sif == null) return sdoc;
-        // pulling out hte pieces may seem weird, but it's because
-        // SolrInputDocument.addField will do the right thing
-        // if the doc already has another value for this field
-        // (ie: repeating fieldname keys)
-        sdoc.addField(sif.getName(), sif.getValue(), sif.getBoost());
+        ev = parser.nextEvent();
+        if (ev == JSONParser.OBJECT_END) {
+          return sdoc;
+        }
+        String fieldName = parser.getString();
+
+        if(fieldName.equals(JsonLoader.CHILD_DOC_KEY)) {
+          ev = parser.nextEvent();
+          assertEvent(ev, JSONParser.ARRAY_START);
+          while( (ev = parser.nextEvent()) != JSONParser.ARRAY_END ) {
+            assertEvent(ev, JSONParser.OBJECT_START);
+
+            sdoc.addChildDocument(parseDoc(ev));
+          }
+        } else {
+          SolrInputField sif = new SolrInputField(fieldName);
+          parseFieldValue(sif);
+          // pulling out the pieces may seem weird, but it's because
+          // SolrInputDocument.addField will do the right thing
+          // if the doc already has another value for this field
+          // (ie: repeating fieldname keys)
+          sdoc.addField(sif.getName(), sif.getValue(), sif.getBoost());
+        }
+
       }
     }
-  
-    private SolrInputField parseField()  throws IOException {
-      int ev = parser.nextEvent();
-      if (ev == JSONParser.OBJECT_END) {
-        return null;
-      }
-  
-      String fieldName = parser.getString();
-      SolrInputField sif = new SolrInputField(fieldName);
-      parseFieldValue(sif);
-      return sif;
-    }
-  
+
     private void parseFieldValue(SolrInputField sif) throws IOException {
       int ev = parser.nextEvent();
       if (ev == JSONParser.OBJECT_START) {
