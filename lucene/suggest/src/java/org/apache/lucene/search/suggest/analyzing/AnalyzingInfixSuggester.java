@@ -195,7 +195,6 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
 
   @Override
   public void build(InputIterator iter) throws IOException {
-
     if (searcherMgr != null) {
       searcherMgr.close();
       searcherMgr = null;
@@ -273,6 +272,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       writer = new IndexWriter(dir,
                                getIndexWriterConfig(matchVersion, getGramAnalyzer(), sorter, IndexWriterConfig.OpenMode.CREATE));
       writer.addIndexes(new IndexReader[] {r});
+      writer.commit();
       r.close();
 
       //System.out.println("sort time: " + ((System.nanoTime()-t1)/1000000) + " msec");

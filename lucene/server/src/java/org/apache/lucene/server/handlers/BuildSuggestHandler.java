@@ -96,7 +96,7 @@ public class BuildSuggestHandler extends Handler {
         new Param("source", "Where to get suggestions from",
             new StructType(
                   new Param("localFile", "Local file (to the server) to read suggestions + weights from; format is weight U+001F suggestion U+001F payload, one per line, with suggestion UTF-8 encoded.  If this option is used then searcher, suggestField, weightField/Expression, payloadField should not be specified.", new StringType()),
-                  new Param("searcher", "Specific searcher version to use for searching.  There are three different ways to specify a searcher version.",
+                  new Param("searcher", "Specific searcher version to use for pull suggestions to build.  There are three different ways to specify a searcher version.",
                             SearchHandler.SEARCHER_VERSION_TYPE),
                   new Param("suggestField", "Field (from stored documents) containing the suggestion text", new StringType()),
                   new Param("weightField", "Numeric field (from stored documents) containing the weight", new StringType()),

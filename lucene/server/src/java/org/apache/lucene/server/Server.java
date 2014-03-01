@@ -644,6 +644,8 @@ public class Server {
       globalState.addHandler("suggestLookup", new SuggestLookupHandler(globalState));
       globalState.addHandler("updateSuggest", new UpdateSuggestHandler(globalState));
       globalState.addHandler("updateDocument", new UpdateDocumentHandler(globalState));
+      globalState.addHandler("setCommitUserData", new SetCommitUserDataHandler(globalState));
+      globalState.addHandler("getCommitUserData", new GetCommitUserDataHandler(globalState));
 
       globalState.loadPlugins();
 
