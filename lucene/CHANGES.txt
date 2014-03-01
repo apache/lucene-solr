@@ -84,6 +84,9 @@ New Features
 * LUCENE-5482: Improve default TurkishAnalyzer by adding apostrophe
   handling suitable for Turkish.  (Ahmet Arslan via Robert Muir)
 
+* LUCENE-5479: FacetsConfig subclass can now customize the default
+  per-dim facets configuration.  (Rob Audenaerde via Mike McCandless)
+
 API Changes
 
 * LUCENE-5454: Add RandomAccessOrds, an optional extension of SortedSetDocValues

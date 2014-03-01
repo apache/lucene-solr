@@ -98,11 +98,22 @@ public class FacetsConfig {
   public FacetsConfig() {
   }
 
+  /** Get the default configuration for new dimensions.  Useful when
+   *  the dimension is not known beforehand and may need different 
+   *  global default settings, like {@code multivalue =
+   *  true}.
+   *
+   *  @return The default configuration to be used for dimensions that 
+   *  are not yet set in the {@link FacetsConfig} */
+  protected DimConfig getDefaultDimConfig(){
+    return DEFAULT_DIM_CONFIG;
+  }
+  
   /** Get the current configuration for a dimension. */
   public synchronized DimConfig getDimConfig(String dimName) {
     DimConfig ft = fieldTypes.get(dimName);
     if (ft == null) {
-      ft = DEFAULT_DIM_CONFIG;
+      ft = getDefaultDimConfig();
     }
     return ft;
   }
