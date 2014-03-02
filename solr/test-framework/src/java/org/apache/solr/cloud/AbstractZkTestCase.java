@@ -86,7 +86,7 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
   // static to share with distrib test
   public static void buildZooKeeper(String zkHost, String zkAddress, File solrhome, String config,
       String schema) throws Exception {
-    SolrZkClient zkClient = new SolrZkClient(zkHost, AbstractZkTestCase.TIMEOUT);
+    SolrZkClient zkClient = new SolrZkClient(zkHost, AbstractZkTestCase.TIMEOUT, 45000, null);
     zkClient.makePath("/solr", false, true);
     zkClient.close();
 
