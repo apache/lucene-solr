@@ -1,0 +1,4 @@
+SET UTF-8
+FLAG num
+SFX 65000 Y 1
+SFX 65000 0 s .

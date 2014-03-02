@@ -36,7 +36,8 @@ public class TestStemmer extends StemmerTestBase {
   }
 
   public void testRecursiveSuffix() {
-    assertStemsTo("abcd", "ab");
+    // we should not recurse here, as the suffix has no continuation!
+    assertStemsTo("abcd");
   }
 
   // all forms unmunched from dictionary

@@ -54,13 +54,13 @@ public class TestHunspellStemFilter extends BaseTokenStreamTestCase {
   public void testKeywordAttribute() throws IOException {
     MockTokenizer tokenizer = whitespaceMockTokenizer("lucene is awesome");
     tokenizer.setEnableChecks(true);
-    HunspellStemFilter filter = new HunspellStemFilter(tokenizer, dictionary, TestUtil.nextInt(random(), 1, 3));
+    HunspellStemFilter filter = new HunspellStemFilter(tokenizer, dictionary);
     assertTokenStreamContents(filter, new String[]{"lucene", "lucen", "is", "awesome"}, new int[] {1, 0, 1, 1});
     
     // assert with keyword marker
     tokenizer = whitespaceMockTokenizer("lucene is awesome");
     CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, Arrays.asList("Lucene"), true);
-    filter = new HunspellStemFilter(new SetKeywordMarkerFilter(tokenizer, set), dictionary, TestUtil.nextInt(random(), 1, 3));
+    filter = new HunspellStemFilter(new SetKeywordMarkerFilter(tokenizer, set), dictionary);
     assertTokenStreamContents(filter, new String[]{"lucene", "is", "awesome"}, new int[] {1, 1, 1});
   }
   
@@ -68,7 +68,7 @@ public class TestHunspellStemFilter extends BaseTokenStreamTestCase {
   public void testLongestOnly() throws IOException {
     MockTokenizer tokenizer = whitespaceMockTokenizer("lucene is awesome");
     tokenizer.setEnableChecks(true);
-    HunspellStemFilter filter = new HunspellStemFilter(tokenizer, dictionary, true, TestUtil.nextInt(random(), 1, 3), true);
+    HunspellStemFilter filter = new HunspellStemFilter(tokenizer, dictionary, true, true);
     assertTokenStreamContents(filter, new String[]{"lucene", "is", "awesome"}, new int[] {1, 1, 1});
   }
   
@@ -78,7 +78,7 @@ public class TestHunspellStemFilter extends BaseTokenStreamTestCase {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
         Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        return new TokenStreamComponents(tokenizer, new HunspellStemFilter(tokenizer, dictionary, TestUtil.nextInt(random(), 1, 3)));
+        return new TokenStreamComponents(tokenizer, new HunspellStemFilter(tokenizer, dictionary));
       }  
     };
     checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
@@ -89,7 +89,7 @@ public class TestHunspellStemFilter extends BaseTokenStreamTestCase {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
         Tokenizer tokenizer = new KeywordTokenizer();
-        return new TokenStreamComponents(tokenizer, new HunspellStemFilter(tokenizer, dictionary, TestUtil.nextInt(random(), 1, 3)));
+        return new TokenStreamComponents(tokenizer, new HunspellStemFilter(tokenizer, dictionary));
       }
     };
     checkOneTerm(a, "", "");

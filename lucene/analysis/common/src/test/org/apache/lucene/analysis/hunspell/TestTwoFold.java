@@ -31,5 +31,7 @@ public class TestTwoFold extends StemmerTestBase {
     assertStemsTo("drinkable", "drink");
     assertStemsTo("drinkables", "drink");
     assertStemsTo("drinksable");
+    assertStemsTo("drinkableable");
+    assertStemsTo("drinks");
   }
 }

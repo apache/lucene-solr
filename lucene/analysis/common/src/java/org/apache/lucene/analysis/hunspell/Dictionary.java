@@ -65,6 +65,7 @@ public class Dictionary {
   private static final String PREFIX_KEY = "PFX";
   private static final String SUFFIX_KEY = "SFX";
   private static final String FLAG_KEY = "FLAG";
+  private static final String COMPLEXPREFIXES_KEY = "COMPLEXPREFIXES";
 
   private static final String NUM_FLAG_TYPE = "num";
   private static final String UTF8_FLAG_TYPE = "UTF-8";
@@ -104,6 +105,7 @@ public class Dictionary {
   private final File tempDir = OfflineSorter.defaultTempDir(); // TODO: make this configurable?
   
   boolean ignoreCase;
+  boolean complexPrefixes;
   
   /**
    * Creates a new Dictionary containing the information read from the provided InputStreams to hunspell affix
@@ -131,9 +133,10 @@ public class Dictionary {
    */
   public Dictionary(InputStream affix, List<InputStream> dictionaries, boolean ignoreCase) throws IOException, ParseException {
     this.ignoreCase = ignoreCase;
-    BufferedInputStream buffered = new BufferedInputStream(affix, 8192);
-    buffered.mark(8192);
-    String encoding = getDictionaryEncoding(affix);
+    // hungarian has thousands of AF before the SET, so a 32k buffer is needed 
+    BufferedInputStream buffered = new BufferedInputStream(affix, 32768);
+    buffered.mark(32768);
+    String encoding = getDictionaryEncoding(buffered);
     buffered.reset();
     CharsetDecoder decoder = getJavaEncoding(encoding);
     readAffixFile(buffered, decoder);
@@ -235,6 +238,8 @@ public class Dictionary {
         // Assume that the FLAG line comes before any prefix or suffixes
         // Store the strategy so it can be used when parsing the dic file
         flagParsingStrategy = getFlagParsingStrategy(line);
+      } else if (line.equals(COMPLEXPREFIXES_KEY)) {
+        complexPrefixes = true; // 2-stage prefix+1-stage suffix instead of 2-stage suffix+1-stage prefix
       }
     }
     

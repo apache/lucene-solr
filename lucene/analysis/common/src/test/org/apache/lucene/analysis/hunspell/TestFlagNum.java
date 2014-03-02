@@ -19,16 +19,15 @@ package org.apache.lucene.analysis.hunspell;
 
 import org.junit.BeforeClass;
 
-public class TestMorph extends StemmerTestBase {
-  
+public class TestFlagNum extends StemmerTestBase {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    init("morph.aff", "morph.dic");
+    init("flagnum.aff", "flagnum.dic");
   }
   
-  public void testExamples() {
-    assertStemsTo("drink", "drink");
-    assertStemsTo("drinkable", "drink");
-    assertStemsTo("drinkableable");
+  public void testNumFlags() {
+    assertStemsTo("foo", "foo");
+    assertStemsTo("foos", "foo");
+    assertStemsTo("fooss");
   }
 }
