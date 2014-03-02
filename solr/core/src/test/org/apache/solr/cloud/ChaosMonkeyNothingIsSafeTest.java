@@ -47,6 +47,8 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 @Slow
 @ThreadLeakLingering(linger = 60000)
 public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase {
+  private static final int FAIL_TOLERANCE = 20;
+
   public static Logger log = LoggerFactory.getLogger(ChaosMonkeyNothingIsSafeTest.class);
   
   private static final Integer RUN_LENGTH = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.runlength", "-1"));
@@ -207,7 +209,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       // we expect full throttle fails, but cloud client should not easily fail
       for (StopableThread indexThread : threads) {
         if (indexThread instanceof StopableIndexingThread && !(indexThread instanceof FullThrottleStopableIndexingThread)) {
-          assertFalse("There were too many update fails - we expect it can happen, but shouldn't easily", ((StopableIndexingThread) indexThread).getFailCount() > 10);
+          assertFalse("There were too many update fails - we expect it can happen, but shouldn't easily", ((StopableIndexingThread) indexThread).getFailCount() > FAIL_TOLERANCE);
         }
       }
       
