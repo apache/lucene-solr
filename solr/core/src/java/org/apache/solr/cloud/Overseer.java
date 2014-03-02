@@ -1132,4 +1132,8 @@ public class Overseer {
     return !"false".equals(clusterProps.get(ZkStateReader.LEGACY_CLOUD));
   }
 
+  public ZkStateReader getZkStateReader() {
+    return reader;
+  }
+
 }
