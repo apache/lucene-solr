@@ -83,6 +83,10 @@ Other Changes
 * SOLR-5771: Add SolrTestCaseJ4.SuppressSSL annotation to disable SSL (instead of static boolean).
   (Robert Muir)
 
+* SOLR-5799: When registering as the leader, if an existing ephemeral
+  registration exists, wait a short time to see if it goes away.
+  (Mark Miller)
+
 ==================  4.7.0 ==================
 
 Versions of Major Components

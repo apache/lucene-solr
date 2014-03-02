@@ -564,8 +564,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       mockController.publishState("core1", "core_node1", ZkStateReader.ACTIVE,
           1);
       
-      while (version == getClusterStateVersion(controllerClient))
-        ;
+      while (version == getClusterStateVersion(controllerClient));
       
       verifyStatus(reader, ZkStateReader.ACTIVE);
       version = getClusterStateVersion(controllerClient);
@@ -593,9 +592,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       assertFalse("collection1 should be gone after publishing the null state",
           reader.getClusterState().getCollections().contains("collection1"));
     } finally {
-      
       close(mockController);
-      
       close(overseerClient);
       close(controllerClient);
       close(reader);
