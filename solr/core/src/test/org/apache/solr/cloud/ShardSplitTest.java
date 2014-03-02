@@ -78,8 +78,6 @@ public class ShardSplitTest extends BasicDistributedZkTest {
   @Override
   @After
   public void tearDown() throws Exception {
-    super.tearDown();
-
     if (VERBOSE || printLayoutOnTearDown) {
       super.printLayout();
     }
@@ -93,15 +91,6 @@ public class ShardSplitTest extends BasicDistributedZkTest {
       controlClientCloud.shutdown();
     }
     super.tearDown();
-
-    System.clearProperty("zkHost");
-    System.clearProperty("numShards");
-    System.clearProperty("solr.xml.persist");
-
-    // insurance
-    DirectUpdateHandler2.commitOnClose = true;
-
-
   }
 
   @Override
