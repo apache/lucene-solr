@@ -113,25 +113,26 @@ class ShardLeaderElectionContextBase extends ElectionContext {
   }
   
   @Override
-  void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStart)
+  void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs)
       throws KeeperException, InterruptedException, IOException {
     // register as leader - if an ephemeral is already there, wait just a bit
     // to see if it goes away
-    RetryUtil.retryOnThrowable(NodeExistsException.class, 15000, 1000,
-        new RetryCmd() {
-          
-          @Override
-          public void execute() throws InterruptedException {
-            try {
+    try {
+      RetryUtil.retryOnThrowable(NodeExistsException.class, 15000, 1000,
+          new RetryCmd() {
+            
+            @Override
+            public void execute() throws Throwable {
               zkClient.makePath(leaderPath, ZkStateReader.toJSON(leaderProps),
                   CreateMode.EPHEMERAL, true);
-            } catch (KeeperException e) {
-              throw new SolrException(
-                  ErrorCode.SERVER_ERROR,
-                  "Could not register as the leader because creating the ephemeral registration node in ZooKeeper failed", e);
             }
-          }
-        });
+          });
+    } catch (Throwable t) {
+      if (t instanceof OutOfMemoryError) {
+        throw (OutOfMemoryError) t;
+      }
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Could not register as the leader because creating the ephemeral registration node in ZooKeeper failed", t);
+    }
     
     assert shardId != null;
     ZkNodeProps m = ZkNodeProps.fromKeyVals(Overseer.QUEUE_OPERATION,

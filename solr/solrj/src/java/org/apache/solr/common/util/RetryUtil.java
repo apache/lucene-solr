@@ -24,10 +24,10 @@ import org.apache.solr.common.SolrException.ErrorCode;
 
 public class RetryUtil {
   public static interface RetryCmd {
-    public void execute() throws InterruptedException;
+    public void execute() throws Throwable;
   }
   
-  public static void retryOnThrowable(Class clazz, long timeoutms, long intervalms, RetryCmd cmd) throws InterruptedException {
+  public static void retryOnThrowable(Class clazz, long timeoutms, long intervalms, RetryCmd cmd) throws Throwable {
     long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeoutms, TimeUnit.MILLISECONDS);
     while (true) {
       try {
