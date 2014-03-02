@@ -30,10 +30,10 @@ public class TestDependencies extends StemmerTestBase {
     assertStemsTo("drink", "drink", "drink");
     assertStemsTo("drinks", "drink", "drink");
     assertStemsTo("drinkable", "drink");
-    // TODO: BUG! assertStemsTo("drinkables", "drink");
+    assertStemsTo("drinkables", "drink");
     assertStemsTo("undrinkable", "drink");
-    // TODO: BUG! assertStemsTo("undrinkables", "drink");
+    assertStemsTo("undrinkables", "drink");
     assertStemsTo("undrink");
-    // TODO: BUG! assertStemsTo("undrinks");
+    assertStemsTo("undrinks");
   }
 }

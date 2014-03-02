@@ -56,6 +56,12 @@ Bug fixes
 * LUCENE-5481: IndexWriter.forceMerge used to run a merge even if there was a
   single segment in the index. (Adrien Grand, Mike McCandless)
 
+* LUCENE-5483: Fix inaccuracies in HunspellStemFilter. Multi-stage affix-stripping,
+  prefix-suffix dependencies, and COMPLEXPREFIXES now work correctly according
+  to the hunspell algorithm. Removed recursionCap parameter, as its no longer needed, rules for
+  recursive affix application are driven correctly by continuation classes in the affix file.
+  (Robert Muir)
+
 Test Framework
 
 * LUCENE-5449: Rename _TestUtil and _TestHelper to remove the leading _.

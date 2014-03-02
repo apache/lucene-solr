@@ -58,29 +58,16 @@ public final class HunspellStemFilter extends TokenFilter {
   private final boolean dedup;
   private final boolean longestOnly;
 
-  /** Create a {@link HunspellStemFilter} which deduplicates stems and has a maximum
-   *  recursion level of 2. 
-   *  @see #HunspellStemFilter(TokenStream, Dictionary, int) */
+  /** Create a {@link HunspellStemFilter} outputting all possible stems.
+   *  @see #HunspellStemFilter(TokenStream, Dictionary, boolean) */
   public HunspellStemFilter(TokenStream input, Dictionary dictionary) {
-    this(input, dictionary, 2);
+    this(input, dictionary, true);
   }
 
-  /**
-   * Creates a new HunspellStemFilter that will stem tokens from the given TokenStream using affix rules in the provided
-   * Dictionary
-   *
-   * @param input TokenStream whose tokens will be stemmed
-   * @param dictionary HunspellDictionary containing the affix rules and words that will be used to stem the tokens
-   * @param recursionCap maximum level of recursion stemmer can go into, defaults to <code>2</code>
-   */
-  public HunspellStemFilter(TokenStream input, Dictionary dictionary, int recursionCap) {
-    this(input, dictionary, true, recursionCap);
-  }
-
-  /** Create a {@link HunspellStemFilter} which has a maximum recursion level of 2. 
-   *  @see #HunspellStemFilter(TokenStream, Dictionary, boolean, int) */
+  /** Create a {@link HunspellStemFilter} outputting all possible stems. 
+   *  @see #HunspellStemFilter(TokenStream, Dictionary, boolean, boolean) */
   public HunspellStemFilter(TokenStream input, Dictionary dictionary, boolean dedup) {
-    this(input, dictionary, dedup, 2);
+    this(input, dictionary, dedup, false);
   }
   
   /**
@@ -89,27 +76,12 @@ public final class HunspellStemFilter extends TokenFilter {
    *
    * @param input TokenStream whose tokens will be stemmed
    * @param dictionary HunspellDictionary containing the affix rules and words that will be used to stem the tokens
-   * @param dedup true if only unique terms should be output.
-   * @param recursionCap maximum level of recursion stemmer can go into, defaults to <code>2</code>
-   */
-  public HunspellStemFilter(TokenStream input, Dictionary dictionary, boolean dedup, int recursionCap) {
-    this(input, dictionary, dedup, recursionCap, false);
-  }
-
-  /**
-   * Creates a new HunspellStemFilter that will stem tokens from the given TokenStream using affix rules in the provided
-   * Dictionary
-   *
-   * @param input TokenStream whose tokens will be stemmed
-   * @param dictionary HunspellDictionary containing the affix rules and words that will be used to stem the tokens
-   * @param dedup true if only unique terms should be output.
-   * @param recursionCap maximum level of recursion stemmer can go into, defaults to <code>2</code>
    * @param longestOnly true if only the longest term should be output.
    */
-  public HunspellStemFilter(TokenStream input, Dictionary dictionary, boolean dedup, int recursionCap, boolean longestOnly) {
+  public HunspellStemFilter(TokenStream input, Dictionary dictionary, boolean dedup,  boolean longestOnly) {
     super(input);
     this.dedup = dedup && longestOnly == false; // don't waste time deduping if longestOnly is set
-    this.stemmer = new Stemmer(dictionary, recursionCap);
+    this.stemmer = new Stemmer(dictionary);
     this.longestOnly = longestOnly;
   }
 

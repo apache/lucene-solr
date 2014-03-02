@@ -19,16 +19,21 @@ package org.apache.lucene.analysis.hunspell;
 
 import org.junit.BeforeClass;
 
-public class TestMorph extends StemmerTestBase {
-  
+public class TestComplexPrefix extends StemmerTestBase {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    init("morph.aff", "morph.dic");
+    init("complexprefix.aff", "complexprefix.dic");
   }
   
-  public void testExamples() {
-    assertStemsTo("drink", "drink");
-    assertStemsTo("drinkable", "drink");
-    assertStemsTo("drinkableable");
+  public void testPrefixes() {
+    assertStemsTo("ptwofoo", "foo");
+    assertStemsTo("poneptwofoo", "foo");
+    assertStemsTo("foosuf", "foo");
+    assertStemsTo("ptwofoosuf", "foo");
+    assertStemsTo("poneptwofoosuf", "foo");
+    assertStemsTo("ponefoo");
+    assertStemsTo("ponefoosuf");
+    assertStemsTo("ptwoponefoo");
+    assertStemsTo("ptwoponefoosuf");
   }
 }
