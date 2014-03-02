@@ -91,7 +91,7 @@ public class SimpleFacetsExample {
   }
 
   /** User runs a query and counts facets. */
-  private List<FacetResult> search() throws IOException {
+  private List<FacetResult> facetsWithSearch() throws IOException {
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     IndexSearcher searcher = new IndexSearcher(indexReader);
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
@@ -108,6 +108,34 @@ public class SimpleFacetsExample {
 
     // Count both "Publish Date" and "Author" dimensions
     Facets facets = new FastTaxonomyFacetCounts(taxoReader, config, fc);
+    results.add(facets.getTopChildren(10, "Author"));
+    results.add(facets.getTopChildren(10, "Publish Date"));
+    
+    indexReader.close();
+    taxoReader.close();
+    
+    return results;
+  }
+  
+  /** User runs a query and counts facets only without collecting the matching documents.*/
+  private List<FacetResult> facetsOnly() throws IOException {
+    DirectoryReader indexReader = DirectoryReader.open(indexDir);
+    IndexSearcher searcher = new IndexSearcher(indexReader);
+    TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
+
+    FacetsCollector fc = new FacetsCollector();
+
+    // MatchAllDocsQuery is for "browsing" (counts facets
+    // for all non-deleted docs in the index); normally
+    // you'd use a "normal" query:
+    searcher.search(new MatchAllDocsQuery(), null /*Filter */, fc);
+
+    // Retrieve results
+    List<FacetResult> results = new ArrayList<FacetResult>();
+
+    // Count both "Publish Date" and "Author" dimensions
+    Facets facets = new FastTaxonomyFacetCounts(taxoReader, config, fc);
+   
     results.add(facets.getTopChildren(10, "Author"));
     results.add(facets.getTopChildren(10, "Publish Date"));
     
@@ -143,9 +171,15 @@ public class SimpleFacetsExample {
   }
 
   /** Runs the search example. */
+  public List<FacetResult> runFacetOnly() throws IOException {
+    index();
+    return facetsOnly();
+  }
+  
+  /** Runs the search example. */
   public List<FacetResult> runSearch() throws IOException {
     index();
-    return search();
+    return facetsWithSearch();
   }
   
   /** Runs the drill-down example. */
@@ -158,10 +192,18 @@ public class SimpleFacetsExample {
   public static void main(String[] args) throws Exception {
     System.out.println("Facet counting example:");
     System.out.println("-----------------------");
+    SimpleFacetsExample example1 = new SimpleFacetsExample();
+    List<FacetResult> results1 = example1.runFacetOnly();
+    System.out.println("Author: " + results1.get(0));
+    System.out.println("Publish Date: " + results1.get(1));
+    
+    System.out.println("Facet counting example (combined facets and search):");
+    System.out.println("-----------------------");
     SimpleFacetsExample example = new SimpleFacetsExample();
     List<FacetResult> results = example.runSearch();
     System.out.println("Author: " + results.get(0));
     System.out.println("Publish Date: " + results.get(1));
+    
 
     System.out.println("\n");
     System.out.println("Facet drill-down example (Publish Date/2010):");
