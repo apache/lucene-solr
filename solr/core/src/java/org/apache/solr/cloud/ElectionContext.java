@@ -14,6 +14,8 @@ import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.RetryUtil;
+import org.apache.solr.common.util.RetryUtil.RetryCmd;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -22,6 +24,7 @@ import org.apache.solr.util.RefCounted;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
+import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,24 +82,28 @@ public abstract class ElectionContext {
 }
 
 class ShardLeaderElectionContextBase extends ElectionContext {
-  private static Logger log = LoggerFactory.getLogger(ShardLeaderElectionContextBase.class);
+  private static Logger log = LoggerFactory
+      .getLogger(ShardLeaderElectionContextBase.class);
   protected final SolrZkClient zkClient;
   protected String shardId;
   protected String collection;
   protected LeaderElector leaderElector;
-
-  public ShardLeaderElectionContextBase(LeaderElector leaderElector, final String shardId,
-      final String collection, final String coreNodeName, ZkNodeProps props, ZkStateReader zkStateReader) {
-    super(coreNodeName, ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/leader_elect/"
-        + shardId, ZkStateReader.getShardLeadersPath(collection, shardId),
-        props, zkStateReader.getZkClient());
+  
+  public ShardLeaderElectionContextBase(LeaderElector leaderElector,
+      final String shardId, final String collection, final String coreNodeName,
+      ZkNodeProps props, ZkStateReader zkStateReader) {
+    super(coreNodeName, ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection
+        + "/leader_elect/" + shardId, ZkStateReader.getShardLeadersPath(
+        collection, shardId), props, zkStateReader.getZkClient());
     this.leaderElector = leaderElector;
     this.zkClient = zkStateReader.getZkClient();
     this.shardId = shardId;
     this.collection = collection;
     
     try {
-      new ZkCmdExecutor(zkStateReader.getZkClient().getZkClientTimeout()).ensureExists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection, zkClient);
+      new ZkCmdExecutor(zkStateReader.getZkClient().getZkClientTimeout())
+          .ensureExists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection,
+              zkClient);
     } catch (KeeperException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     } catch (InterruptedException e) {
@@ -104,24 +111,39 @@ class ShardLeaderElectionContextBase extends ElectionContext {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
   }
-
+  
   @Override
-  void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStart) throws KeeperException,
-      InterruptedException, IOException {
+  void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStart)
+      throws KeeperException, InterruptedException, IOException {
+    // register as leader - if an ephemeral is already there, wait just a bit
+    // to see if it goes away
+    RetryUtil.retryOnThrowable(NodeExistsException.class, 15000, 1000,
+        new RetryCmd() {
+          
+          @Override
+          public void execute() throws InterruptedException {
+            try {
+              zkClient.makePath(leaderPath, ZkStateReader.toJSON(leaderProps),
+                  CreateMode.EPHEMERAL, true);
+            } catch (KeeperException e) {
+              throw new SolrException(
+                  ErrorCode.SERVER_ERROR,
+                  "Could not register as the leader because creating the ephemeral registration node in ZooKeeper failed", e);
+            }
+          }
+        });
     
-    zkClient.makePath(leaderPath, ZkStateReader.toJSON(leaderProps),
-        CreateMode.EPHEMERAL, true);
     assert shardId != null;
-    ZkNodeProps m = ZkNodeProps.fromKeyVals(Overseer.QUEUE_OPERATION, ZkStateReader.LEADER_PROP,
-        ZkStateReader.SHARD_ID_PROP, shardId, ZkStateReader.COLLECTION_PROP,
-        collection, ZkStateReader.BASE_URL_PROP, leaderProps.getProperties()
-            .get(ZkStateReader.BASE_URL_PROP), ZkStateReader.CORE_NAME_PROP,
+    ZkNodeProps m = ZkNodeProps.fromKeyVals(Overseer.QUEUE_OPERATION,
+        ZkStateReader.LEADER_PROP, ZkStateReader.SHARD_ID_PROP, shardId,
+        ZkStateReader.COLLECTION_PROP, collection, ZkStateReader.BASE_URL_PROP,
+        leaderProps.getProperties().get(ZkStateReader.BASE_URL_PROP),
+        ZkStateReader.CORE_NAME_PROP,
         leaderProps.getProperties().get(ZkStateReader.CORE_NAME_PROP),
         ZkStateReader.STATE_PROP, ZkStateReader.ACTIVE);
     Overseer.getInQueue(zkClient).offer(ZkStateReader.toJSON(m));
-    
   }
-
+  
 }
 
 // add core container and stop passing core around...
