@@ -78,6 +78,7 @@ public class TestRetryUtil extends SolrTestCaseJ4 {
       caughtSolrException = true;
     }
     
+    assertTrue(caughtSolrException);
     assertTrue(executes3.get() > 1);
   }
 
