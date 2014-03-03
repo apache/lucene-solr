@@ -283,8 +283,8 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
       if ((req.getDocuments() == null || req.getDocuments().isEmpty())
           && (req.getDeleteById() == null || req.getDeleteById().isEmpty())
           && (req.getDeleteByIdMap() == null || req.getDeleteByIdMap().isEmpty())) {
-        blockUntilFinished();
         if (req.getDeleteQuery() == null) {
+          blockUntilFinished();
           return server.request(request);
         }
       }
