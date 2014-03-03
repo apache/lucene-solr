@@ -99,7 +99,7 @@ public class TestCloudManagedSchemaAddField extends AbstractFullDistribZkTestBas
             + "  content=" + content + "  response=" + response);
       }
         
-      int maxAttempts = 20;
+      int maxAttempts = 40;
       long retryPauseMillis = 20;
 
       for (RestTestHarness client : restTestHarnesses) {
