@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -116,10 +117,11 @@ public class LukeRequest extends SolrRequest
   @Override
   public LukeResponse process( SolrServer server ) throws SolrServerException, IOException 
   {
-    long startTime = System.currentTimeMillis();
+    long startTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
     LukeResponse res = new LukeResponse();
     res.setResponse( server.request( this ) );
-    res.setElapsedTime( System.currentTimeMillis()-startTime );
+    long endTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
+    res.setElapsedTime(endTime - startTime);
     return res;
   }
 }

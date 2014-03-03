@@ -28,6 +28,7 @@ import org.apache.solr.handler.dataimport.config.EntityField;
 import static org.apache.solr.handler.dataimport.SolrWriter.LAST_INDEX_KEY;
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
+
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.slf4j.Logger;
@@ -35,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -186,7 +188,7 @@ public class DocBuilder {
     try {
       dataImporter.store(DataImporter.STATUS_MSGS, statusMessages);
       config = dataImporter.getConfig();
-      final AtomicLong startTime = new AtomicLong(System.currentTimeMillis());
+      final AtomicLong startTime = new AtomicLong(System.nanoTime());
       statusMessages.put(TIME_ELAPSED, new Object() {
         @Override
         public String toString() {
@@ -894,7 +896,7 @@ public class DocBuilder {
   public static final String TIME_ELAPSED = "Time Elapsed";
 
   static String getTimeElapsedSince(long l) {
-    l = System.currentTimeMillis() - l;
+    l = TimeUnit.MILLISECONDS.convert(System.nanoTime() - l, TimeUnit.NANOSECONDS);
     return (l / (60000 * 60)) + ":" + (l / 60000) % 60 + ":" + (l / 1000)
             % 60 + "." + l % 1000;
   }

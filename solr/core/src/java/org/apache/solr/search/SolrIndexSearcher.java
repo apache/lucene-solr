@@ -31,6 +31,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.document.Document;
@@ -2141,7 +2142,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    */
   public void warm(SolrIndexSearcher old) throws IOException {
     // Make sure this is first!  filters can help queryResults execute!
-    long warmingStartTime = System.currentTimeMillis();
+    long warmingStartTime = System.nanoTime();
     // warm the caches in order...
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("warming","true");
@@ -2168,7 +2169,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
       if (debug) log.debug("autowarming result for " + this + "\n\t" + this.cacheList[i]);
     }
-    warmupTime = System.currentTimeMillis() - warmingStartTime;
+    warmupTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - warmingStartTime, TimeUnit.NANOSECONDS);
   }
 
   /**

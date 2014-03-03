@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.request;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
@@ -266,10 +267,11 @@ public class CollectionAdminRequest extends SolrRequest
   @Override
   public CollectionAdminResponse process(SolrServer server) throws SolrServerException, IOException
   {
-    long startTime = System.currentTimeMillis();
+    long startTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
     CollectionAdminResponse res = new CollectionAdminResponse();
     res.setResponse( server.request( this ) );
-    res.setElapsedTime( System.currentTimeMillis()-startTime );
+    long endTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
+    res.setElapsedTime(endTime - startTime);
     return res;
   }
 

@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class is experimental and subject to change.
@@ -487,10 +488,11 @@ public class CoreAdminRequest extends SolrRequest
   @Override
   public CoreAdminResponse process(SolrServer server) throws SolrServerException, IOException 
   {
-    long startTime = System.currentTimeMillis();
+    long startTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
     CoreAdminResponse res = new CoreAdminResponse();
     res.setResponse( server.request( this ) );
-    res.setElapsedTime( System.currentTimeMillis()-startTime );
+    long endTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
+    res.setElapsedTime(endTime - startTime);
     return res;
   }
 

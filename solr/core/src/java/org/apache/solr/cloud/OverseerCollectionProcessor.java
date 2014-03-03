@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import com.google.common.collect.ImmutableSet;
+
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
@@ -81,6 +82,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import static org.apache.solr.cloud.Assign.Node;
 import static org.apache.solr.cloud.Assign.getNodesForNewShard;
@@ -271,9 +273,9 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
       //wait for a while to ensure the designate has indeed come in front
       boolean prioritizationComplete = false;
-      long timeout = System.currentTimeMillis() + 2500;
+      long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(2500, TimeUnit.MILLISECONDS);
 
-      for(;System.currentTimeMillis()< timeout ;){
+      while (System.nanoTime() < timeout) {
         List<String> currentNodeNames = getSortedNodeNames(zk);
 
         int totalLeaders = 0;
@@ -519,9 +521,9 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   }
 
   private boolean waitForCoreNodeGone(String collectionName, String shard, String replicaName, int timeoutms) throws InterruptedException {
-    long waitUntil = System.currentTimeMillis() + timeoutms;
+    long waitUntil = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeoutms, TimeUnit.MILLISECONDS);
     boolean deleted = false;
-    while (System.currentTimeMillis() < waitUntil) {
+    while (System.nanoTime() < waitUntil) {
       Thread.sleep(100);
       deleted = zkStateReader.getClusterState().getCollection(collectionName).getSlice(shard).getReplica(replicaName) == null;
       if (deleted) break;
@@ -565,10 +567,10 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
           ZkStateReader.toJSON(m));
       
       // wait for a while until we don't see the collection
-      long now = System.currentTimeMillis();
-      long timeout = now + 30000;
+      long now = System.nanoTime();
+      long timeout = now + TimeUnit.NANOSECONDS.convert(30, TimeUnit.SECONDS);
       boolean removed = false;
-      while (System.currentTimeMillis() < timeout) {
+      while (System.nanoTime() < timeout) {
         Thread.sleep(100);
         removed = !zkStateReader.getClusterState().hasCollection(message.getStr(collection));
         if (removed) {
@@ -637,11 +639,11 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   
   private void checkForAlias(String name, String value) {
 
-    long now = System.currentTimeMillis();
-    long timeout = now + 30000;
+    long now = System.nanoTime();
+    long timeout = now + TimeUnit.NANOSECONDS.convert(30, TimeUnit.SECONDS);
     boolean success = false;
     Aliases aliases = null;
-    while (System.currentTimeMillis() < timeout) {
+    while (System.nanoTime() < timeout) {
       aliases = zkStateReader.getAliases();
       String collections = aliases.getCollectionAlias(name);
       if (collections != null && collections.equals(value)) {
@@ -656,11 +658,11 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   
   private void checkForAliasAbsence(String name) {
 
-    long now = System.currentTimeMillis();
-    long timeout = now + 30000;
+    long now = System.nanoTime();
+    long timeout = now + TimeUnit.NANOSECONDS.convert(30, TimeUnit.SECONDS);
     boolean success = false;
     Aliases aliases = null;
-    while (System.currentTimeMillis() < timeout) {
+    while (System.nanoTime() < timeout) {
       aliases = zkStateReader.getAliases();
       String collections = aliases.getCollectionAlias(name);
       if (collections == null) {
@@ -719,9 +721,9 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
     Overseer.getInQueue(zkStateReader.getZkClient()).offer(ZkStateReader.toJSON(message));
     // wait for a while until we see the shard
-    long waitUntil = System.currentTimeMillis() + 30000;
+    long waitUntil = System.nanoTime() + TimeUnit.NANOSECONDS.convert(30, TimeUnit.SECONDS);;
     boolean created = false;
-    while (System.currentTimeMillis() < waitUntil) {
+    while (System.nanoTime() < waitUntil) {
       Thread.sleep(100);
       created = zkStateReader.getClusterState().getCollection(collectionName).getSlice(shard) != null;
       if (created) break;
@@ -1254,10 +1256,10 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       Overseer.getInQueue(zkStateReader.getZkClient()).offer(ZkStateReader.toJSON(m));
 
       // wait for a while until we don't see the shard
-      long now = System.currentTimeMillis();
-      long timeout = now + 30000;
+      long now = System.nanoTime();
+      long timeout = now + TimeUnit.NANOSECONDS.convert(30, TimeUnit.SECONDS);;
       boolean removed = false;
-      while (System.currentTimeMillis() < timeout) {
+      while (System.nanoTime() < timeout) {
         Thread.sleep(100);
         removed = zkStateReader.getClusterState().getSlice(collection, sliceId) == null;
         if (removed) {
@@ -1364,6 +1366,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         "routeKey", SolrIndexSplitter.getRouteKey(splitKey) + "!",
         "range", splitRange.toString(),
         "targetCollection", targetCollection.getName(),
+        // TODO: look at using nanoTime here?
         "expireAt", String.valueOf(System.currentTimeMillis() + timeout));
     log.info("Adding routing rule: " + m);
     Overseer.getInQueue(zkStateReader.getZkClient()).offer(
@@ -1371,9 +1374,9 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
     // wait for a while until we see the new rule
     log.info("Waiting to see routing rule updated in clusterstate");
-    long waitUntil = System.currentTimeMillis() + 60000;
+    long waitUntil = System.nanoTime() + TimeUnit.NANOSECONDS.convert(60, TimeUnit.SECONDS);
     boolean added = false;
-    while (System.currentTimeMillis() < waitUntil) {
+    while (System.nanoTime() < waitUntil) {
       Thread.sleep(100);
       Map<String, RoutingRule> rules = zkStateReader.getClusterState().getSlice(sourceCollection.getName(), sourceSlice.getName()).getRoutingRules();
       if (rules != null) {
@@ -1614,9 +1617,9 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       Overseer.getInQueue(zkStateReader.getZkClient()).offer(ZkStateReader.toJSON(message));
 
       // wait for a while until we don't see the collection
-      long waitUntil = System.currentTimeMillis() + 30000;
+      long waitUntil = System.nanoTime() + TimeUnit.NANOSECONDS.convert(30, TimeUnit.SECONDS);
       boolean created = false;
-      while (System.currentTimeMillis() < waitUntil) {
+      while (System.nanoTime() < waitUntil) {
         Thread.sleep(100);
         created = zkStateReader.getClusterState().getCollections().contains(message.getStr("name"));
         if(created) break;
@@ -1703,7 +1706,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
   private Map<String, Replica> lookupReplicas(String collectionName, Collection<String> coreNames) throws InterruptedException {
     Map<String, Replica> result = new HashMap<String, Replica>();
-    long endTime = System.currentTimeMillis() +3000;
+    long endTime = System.nanoTime() + TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS);
     for(;;) {
       DocCollection coll = zkStateReader.getClusterState().getCollection(collectionName);
       for (String  coreName : coreNames) {
@@ -1721,7 +1724,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       if(result.size() == coreNames.size()) {
         return result;
       }
-      if( System.currentTimeMillis() > endTime) {
+      if( System.nanoTime() > endTime) {
         //time up . throw exception and go out
         throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to create replica entries in ZK");
       }

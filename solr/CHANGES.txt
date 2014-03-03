@@ -57,6 +57,9 @@ Bug Fixes
 * SOLR-5782: The full MapReduceIndexer help text does not display when using
   --help.  (Mark Miller, Wolfgang Hoschek)
 
+* SOLR-5734: We should use System.nanoTime rather than System.currentTimeMillis
+  when calculating elapsed time. (Mark Miller, Ramkumar Aiyengar)
+
 Optimizations
 ----------------------
 * SOLR-1880: Distributed Search skips GET_FIELDS stage if EXECUTE_QUERY
