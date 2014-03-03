@@ -52,7 +52,7 @@ class GoLive {
   public boolean goLive(Options options, FileStatus[] outDirs) {
     LOG.info("Live merging of output shards into Solr cluster...");
     boolean success = false;
-    long start = System.currentTimeMillis();
+    long start = System.nanoTime();
     int concurrentMerges = options.goLiveThreads;
     ThreadPoolExecutor executor = new ThreadPoolExecutor(concurrentMerges,
         concurrentMerges, 1, TimeUnit.SECONDS,
@@ -173,7 +173,7 @@ class GoLive {
       return true;
     } finally {
       shutdownNowAndAwaitTermination(executor);
-      float secs = (System.currentTimeMillis() - start) / 1000.0f;
+      float secs = (System.nanoTime() - start) / (float)(10^9);
       LOG.info("Live merging of index shards into Solr cluster took " + secs + " secs");
       if (success) {
         LOG.info("Live merging completed successfully");

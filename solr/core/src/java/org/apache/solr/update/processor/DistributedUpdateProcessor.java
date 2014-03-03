@@ -411,6 +411,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         if (routeKey != null) {
           RoutingRule rule = routingRules.get(routeKey + "!");
           if (rule != null) {
+            // TODO: look at using nanoTime
             if (rule.getExpireAt() >= System.currentTimeMillis()) {
               List<DocRouter.Range> ranges = rule.getRouteRanges();
               if (ranges != null && !ranges.isEmpty()) {

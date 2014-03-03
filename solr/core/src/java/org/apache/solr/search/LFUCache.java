@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 
 /**
  * SolrCache based on ConcurrentLFUCache implementation.
@@ -165,7 +166,7 @@ public class LFUCache<K, V> implements SolrCache<K, V> {
   @Override
   public void warm(SolrIndexSearcher searcher, SolrCache old) {
     if (regenerator == null) return;
-    long warmingStartTime = System.currentTimeMillis();
+    long warmingStartTime = System.nanoTime();
     LFUCache other = (LFUCache) old;
     // warm entries
     if (autowarmCount != 0) {
@@ -187,7 +188,7 @@ public class LFUCache<K, V> implements SolrCache<K, V> {
         }
       }
     }
-    warmupTime = System.currentTimeMillis() - warmingStartTime;
+    warmupTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - warmingStartTime, TimeUnit.NANOSECONDS);
   }
 
 

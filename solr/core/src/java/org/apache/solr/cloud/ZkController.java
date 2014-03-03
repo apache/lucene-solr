@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.io.FileUtils;
@@ -289,7 +290,7 @@ public final class ZkController {
     try {
       zkClient.delete("/overseer_elect/leader",-1, true);
       log.info("Forcing me to be leader  {} ", getBaseUrl());
-      overseerElector.getContext().runLeaderProcess(true, Overseer.STATE_UPDATE_DELAY+100);
+      overseerElector.getContext().runLeaderProcess(true, Overseer.STATE_UPDATE_DELAY + 100);
     } catch (Exception e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, " Error becoming overseer ",e);
 
@@ -601,10 +602,10 @@ public final class ZkController {
     }
     
     // now wait till the updates are in our state
-    long now = System.currentTimeMillis();
-    long timeout = now + 1000 * 30;
+    long now = System.nanoTime();
+    long timeout = now + TimeUnit.NANOSECONDS.convert(60, TimeUnit.SECONDS);
     boolean foundStates = false;
-    while (System.currentTimeMillis() < timeout) {
+    while (System.nanoTime() < timeout) {
       clusterState = zkStateReader.getClusterState();
       collections = clusterState.getCollections();
       for (String collectionName : collections) {
@@ -1392,9 +1393,9 @@ public final class ZkController {
       String coreNodeName = cloudDesc.getCoreNodeName();
       assert coreNodeName != null;
       if (cloudDesc.getShardId() == null) throw new SolrException(ErrorCode.SERVER_ERROR ,"No shard id for :" + cd);
-      long endTime = System.currentTimeMillis()+3000;
+      long endTime = System.nanoTime() + TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS);
       String errMessage= null;
-      for (; System.currentTimeMillis()<endTime; ) {
+      for (; System.nanoTime()<endTime; ) {
         Thread.sleep(100);
         errMessage = null;
         Slice slice = zkStateReader.getClusterState().getSlice(cd.getCollectionName(), cloudDesc.getShardId());
