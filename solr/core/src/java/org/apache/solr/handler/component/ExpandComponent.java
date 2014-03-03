@@ -174,7 +174,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     searcher.search(query, pfilter.filter, collector);
     IntObjectOpenHashMap groups = groupExpandCollector.getGroups();
     Iterator<IntObjectCursor> it = groups.iterator();
-    Map<String, DocSlice> outMap = new HashMap<>();
+    Map<String, DocSlice> outMap = new HashMap();
     BytesRef bytesRef = new BytesRef();
     CharsRef charsRef = new CharsRef();
     FieldType fieldType = searcher.getSchema().getField(field).getType();
