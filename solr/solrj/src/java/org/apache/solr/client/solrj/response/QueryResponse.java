@@ -50,6 +50,9 @@ public class QueryResponse extends SolrResponseBase
   private NamedList<Object> _groupedInfo = null;
   private GroupResponse _groupResponse = null;
 
+  private NamedList<Object> _expandedInfo = null;
+  private Map<String, SolrDocumentList> _expandedResults = null;
+
   // Facet stuff
   private Map<String,Integer> _facetQuery = null;
   private List<FacetField> _facetFields = null;
@@ -119,7 +122,10 @@ public class QueryResponse extends SolrResponseBase
         _groupedInfo = (NamedList<Object>) res.getVal( i );
         extractGroupedInfo( _groupedInfo );
       }
-       else if( "highlighting".equals( n ) ) {
+      else if("expanded".equals(n)) {
+        _expandedResults = (Map<String, SolrDocumentList>) res.getVal( i );
+      }
+      else if( "highlighting".equals( n ) ) {
         _highlightingInfo = (NamedList<Object>) res.getVal( i );
         extractHighlightingInfo( _highlightingInfo );
       }
@@ -408,6 +414,10 @@ public class QueryResponse extends SolrResponseBase
 
   public Map<String,Integer> getFacetQuery() {
     return _facetQuery;
+  }
+
+  public Map<String, SolrDocumentList> getExpandedResults(){
+    return this._expandedResults;
   }
 
   /**

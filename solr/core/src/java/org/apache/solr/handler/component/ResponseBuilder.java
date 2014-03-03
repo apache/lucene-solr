@@ -55,6 +55,7 @@ public class ResponseBuilder
   public SolrQueryResponse rsp;
   public boolean doHighlights;
   public boolean doFacets;
+  public boolean doExpand;
   public boolean doStats;
   public boolean doTerms;
 
