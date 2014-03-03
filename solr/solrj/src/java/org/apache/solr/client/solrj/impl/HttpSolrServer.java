@@ -86,7 +86,7 @@ public class HttpSolrServer extends SolrServer {
   /**
    * The URL of the Solr server.
    */
-  protected String baseUrl;
+  protected volatile String baseUrl;
   
   /**
    * Default value: null / empty.
@@ -115,14 +115,14 @@ public class HttpSolrServer extends SolrServer {
   
   private final HttpClient httpClient;
   
-  private boolean followRedirects = false;
+  private volatile boolean followRedirects = false;
   
-  private int maxRetries = 0;
+  private volatile int maxRetries = 0;
   
-  private boolean useMultiPartPost;
+  private volatile boolean useMultiPartPost;
   private final boolean internalClient;
 
-  private Set<String> queryParams = Collections.emptySet();
+  private volatile Set<String> queryParams = Collections.emptySet();
 
   /**
    * @param baseURL
