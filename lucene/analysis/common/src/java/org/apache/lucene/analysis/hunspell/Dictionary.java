@@ -66,6 +66,7 @@ public class Dictionary {
   private static final String SUFFIX_KEY = "SFX";
   private static final String FLAG_KEY = "FLAG";
   private static final String COMPLEXPREFIXES_KEY = "COMPLEXPREFIXES";
+  private static final String CIRCUMFIX_KEY = "CIRCUMFIX";
 
   private static final String NUM_FLAG_TYPE = "num";
   private static final String UTF8_FLAG_TYPE = "UTF-8";
@@ -106,6 +107,8 @@ public class Dictionary {
   
   boolean ignoreCase;
   boolean complexPrefixes;
+  
+  int circumfix = -1; // circumfix flag, or -1 if one is not defined
   
   /**
    * Creates a new Dictionary containing the information read from the provided InputStreams to hunspell affix
@@ -240,6 +243,12 @@ public class Dictionary {
         flagParsingStrategy = getFlagParsingStrategy(line);
       } else if (line.equals(COMPLEXPREFIXES_KEY)) {
         complexPrefixes = true; // 2-stage prefix+1-stage suffix instead of 2-stage suffix+1-stage prefix
+      } else if (line.startsWith(CIRCUMFIX_KEY)) {
+        String parts[] = line.split("\\s+");
+        if (parts.length != 2) {
+          throw new ParseException("Illegal CIRCUMFIX declaration", reader.getLineNumber());
+        }
+        circumfix = flagParsingStrategy.parseFlag(parts[1]);
       }
     }
     

@@ -81,7 +81,7 @@ final class Stemmer {
         stems.add(new CharsRef(word, 0, length));
       }
     }
-    stems.addAll(stem(word, length, -1, -1, -1, 0, true, true, false));
+    stems.addAll(stem(word, length, -1, -1, -1, 0, true, true, false, false));
     return stems;
   }
   
@@ -122,9 +122,11 @@ final class Stemmer {
    * @param previousWasPrefix true if the previous removal was a prefix:
    *        if we are removing a suffix, and it has no continuation requirements, its ok.
    *        but two prefixes (COMPLEXPREFIXES) or two suffixes must have continuation requirements to recurse. 
+   * @param circumfix true if the previous prefix removal was signed as a circumfix
+   *        this means inner most suffix must also contain circumfix flag.
    * @return List of stems, or empty list if no stems are found
    */
-  private List<CharsRef> stem(char word[], int length, int previous, int prevFlag, int prefixFlag, int recursionDepth, boolean doPrefix, boolean doSuffix, boolean previousWasPrefix) {
+  private List<CharsRef> stem(char word[], int length, int previous, int prevFlag, int prefixFlag, int recursionDepth, boolean doPrefix, boolean doSuffix, boolean previousWasPrefix, boolean circumfix) {
     
     // TODO: allow this stuff to be reused by tokenfilter
     List<CharsRef> stems = new ArrayList<CharsRef>();
@@ -171,7 +173,7 @@ final class Stemmer {
                 .append(word, deAffixedStart, deAffixedLength)
                 .toString();
             
-            List<CharsRef> stemList = applyAffix(strippedWord.toCharArray(), strippedWord.length(), prefix, -1, recursionDepth, true);
+            List<CharsRef> stemList = applyAffix(strippedWord.toCharArray(), strippedWord.length(), prefix, -1, recursionDepth, true, circumfix);
             
             stems.addAll(stemList);
           }
@@ -219,7 +221,7 @@ final class Stemmer {
             dictionary.stripLookup.get(stripOrd, scratch);
             String strippedWord = new StringBuilder().append(word, 0, deAffixedLength).append(scratch.utf8ToString()).toString();
             
-            List<CharsRef> stemList = applyAffix(strippedWord.toCharArray(), strippedWord.length(), suffix, prefixFlag, recursionDepth, false);
+            List<CharsRef> stemList = applyAffix(strippedWord.toCharArray(), strippedWord.length(), suffix, prefixFlag, recursionDepth, false, circumfix);
             
             stems.addAll(stemList);
           }
@@ -242,7 +244,7 @@ final class Stemmer {
    * @param prefix true if we are removing a prefix (false if its a suffix)
    * @return List of stems for the word, or an empty list if none are found
    */
-  List<CharsRef> applyAffix(char strippedWord[], int length, int affix, int prefixFlag, int recursionDepth, boolean prefix) {
+  List<CharsRef> applyAffix(char strippedWord[], int length, int affix, int prefixFlag, int recursionDepth, boolean prefix, boolean circumfix) {
     segment.setLength(0);
     segment.append(strippedWord, 0, length);
     
@@ -279,9 +281,27 @@ final class Stemmer {
               continue;
             }
           }
+          
+          // if circumfix was previously set by a prefix, we must check this suffix,
+          // to ensure it has it, and vice versa
+          if (dictionary.circumfix != -1) {
+            dictionary.flagLookup.get(append, scratch);
+            char appendFlags[] = Dictionary.decodeFlags(scratch);
+            boolean suffixCircumfix = Dictionary.hasFlag(appendFlags, (char)dictionary.circumfix);
+            if (circumfix != suffixCircumfix) {
+              continue;
+            }
+          }
           stems.add(new CharsRef(strippedWord, 0, length));
         }
       }
+    }
+    
+    // if a circumfix flag is defined in the dictionary, and we are a prefix, we need to check if we have that flag
+    if (dictionary.circumfix != -1 && !circumfix && prefix) {
+      dictionary.flagLookup.get(append, scratch);
+      char appendFlags[] = Dictionary.decodeFlags(scratch);
+      circumfix = Dictionary.hasFlag(appendFlags, (char)dictionary.circumfix);
     }
 
     if (crossProduct) {
@@ -290,20 +310,20 @@ final class Stemmer {
           // we took away the first prefix.
           // COMPLEXPREFIXES = true:  combine with a second prefix and another suffix 
           // COMPLEXPREFIXES = false: combine with another suffix
-          stems.addAll(stem(strippedWord, length, affix, flag, flag, ++recursionDepth, dictionary.complexPrefixes, true, true));
+          stems.addAll(stem(strippedWord, length, affix, flag, flag, ++recursionDepth, dictionary.complexPrefixes, true, true, circumfix));
         } else if (!dictionary.complexPrefixes) {
           // we took away a suffix.
           // COMPLEXPREFIXES = true: we don't recurse! only one suffix allowed
           // COMPLEXPREFIXES = false: combine with another suffix
-          stems.addAll(stem(strippedWord, length, affix, flag, prefixFlag, ++recursionDepth, false, true, false));
+          stems.addAll(stem(strippedWord, length, affix, flag, prefixFlag, ++recursionDepth, false, true, false, circumfix));
         }
       } else if (recursionDepth == 1) {
         if (prefix && dictionary.complexPrefixes) {
           // we took away the second prefix: go look for another suffix
-          stems.addAll(stem(strippedWord, length, affix, flag, flag, ++recursionDepth, false, true, true));
+          stems.addAll(stem(strippedWord, length, affix, flag, flag, ++recursionDepth, false, true, true, circumfix));
         } else if (prefix == false && dictionary.complexPrefixes == false) {
           // we took away a prefix, then a suffix: go look for another suffix
-          stems.addAll(stem(strippedWord, length, affix, flag, prefixFlag, ++recursionDepth, false, true, false));
+          stems.addAll(stem(strippedWord, length, affix, flag, prefixFlag, ++recursionDepth, false, true, false, circumfix));
         }
       }
     }
