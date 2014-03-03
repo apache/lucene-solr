@@ -24,6 +24,8 @@ New Features
 * LUCENE-5479: FacetsConfig subclass can now customize the default
   per-dim facets configuration.  (Rob Audenaerde via Mike McCandless)
 
+* LUCENE-5485: Add circumfix support to HunspellStemFilter. (Robert Muir)
+
 API Changes
 
 * LUCENE-5454: Add RandomAccessOrds, an optional extension of SortedSetDocValues
