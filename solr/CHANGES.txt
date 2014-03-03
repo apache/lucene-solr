@@ -73,6 +73,11 @@ Optimizations
   stage gets all fields. Requests with fl=id or fl=id,score are now single-pass.
   (Shawn Smith, Vitaliy Zhovtyuk, shalin)
 
+* SOLR-5783: Requests to open a new searcher will now reuse the current registered
+  searcher (w/o additional warming) if possible in situations where the underlying 
+  index has not changed.  This reduces overhead in situations such as deletes that 
+  do not modify the index, and/or redundant commits. (hossman)
+  
 
 Other Changes
 ---------------------

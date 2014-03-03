@@ -105,8 +105,10 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     int baseRefCount = rCtx3.reader().getRefCount();
     assertEquals(1, baseRefCount);
 
-    assertU(commit());
+    assertU(commit()); // nothing has changed
     SolrQueryRequest sr4 = req("q","foo");
+    assertSame("nothing changed, searcher should be the same",
+               sr3.getSearcher(), sr4.getSearcher());
     IndexReaderContext rCtx4 = sr4.getSearcher().getTopReaderContext();
 
     // force an index change so the registered searcher won't be the one we are testing (and
@@ -114,9 +116,9 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     assertU(adoc("id","7", "v_f","7574"));
     assertU(commit()); 
 
-    // test that reader didn't change (according to equals at least... which uses the wrapped reader)
-    assertEquals(rCtx3.reader(), rCtx4.reader());
-    assertEquals(baseRefCount+1, rCtx4.reader().getRefCount());
+    // test that reader didn't change
+    assertSame(rCtx3.reader(), rCtx4.reader());
+    assertEquals(baseRefCount, rCtx4.reader().getRefCount());
     sr3.close();
     assertEquals(baseRefCount, rCtx4.reader().getRefCount());
     sr4.close();
