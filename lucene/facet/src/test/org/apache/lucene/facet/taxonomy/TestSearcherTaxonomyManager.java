@@ -35,6 +35,8 @@ import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.SearcherTaxonomyManager.SearcherAndTaxonomy;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.ReferenceManager;
 import org.apache.lucene.store.Directory;
@@ -91,7 +93,7 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
           }
           try {
             w.addDocument(config.build(tw, doc));
-            if (mgr != null && random().nextDouble() < 0.1) {
+            if (mgr != null && random().nextDouble() < 0.02) {
               w.commit();
               tw.commit();
               mgr.maybeRefresh();
@@ -99,7 +101,11 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
           } catch (IOException ioe) {
             throw new RuntimeException(ioe);
           }
-          
+
+          if (VERBOSE) {
+            System.out.println("TW size=" + tw.getSize() + " vs " + ordLimit);
+          }
+
           if (tw.getSize() >= ordLimit) {
             break;
           }
@@ -114,7 +120,16 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
   public void testNRT() throws Exception {
     Directory dir = newDirectory();
     Directory taxoDir = newDirectory();
-    final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    // Don't allow tiny maxBufferedDocs; it can make this
+    // test too slow:
+    iwc.setMaxBufferedDocs(Math.max(500, iwc.getMaxBufferedDocs()));
+
+    // MockRandom/AlcololicMergePolicy are too slow:
+    TieredMergePolicy tmp = new TieredMergePolicy();
+    tmp.setFloorSegmentMB(.001);
+    iwc.setMergePolicy(tmp);
+    final IndexWriter w = new IndexWriter(dir, iwc);
     final DirectoryTaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir);
     final FacetsConfig config = new FacetsConfig();
     config.setMultiValued("field", true);
@@ -150,8 +165,11 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
           }
         }
       };
+
+    reopener.setName("reopener");
     reopener.start();
 
+    indexer.setName("indexer");
     indexer.start();
 
     try {
