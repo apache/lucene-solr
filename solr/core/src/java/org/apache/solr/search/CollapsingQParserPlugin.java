@@ -140,6 +140,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     public static final int NULL_POLICY_COLLAPSE = 1;
     public static final int NULL_POLICY_EXPAND = 2;
 
+
+    public String getField(){
+      return this.field;
+    }
+
     public void setCache(boolean cache) {
 
     }
