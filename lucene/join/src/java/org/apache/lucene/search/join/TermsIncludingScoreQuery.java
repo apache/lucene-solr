@@ -141,6 +141,13 @@ class TermsIncludingScoreQuery extends Query {
       }
 
       @Override
+      public boolean scoresDocsOutOfOrder() {
+        // We have optimized impls below if we are allowed
+        // to score out-of-order:
+        return true;
+      }
+
+      @Override
       public Query getQuery() {
         return TermsIncludingScoreQuery.this;
       }
