@@ -1459,20 +1459,33 @@ public final class SolrCore implements SolrInfoMBean {
           }
         }
 
-        if (newReader == null) {
-          // if this is a request for a realtime searcher, just return the same searcher if there haven't been any changes.
+        if (newReader == null) { // the underlying index has not changed at all
+
           if (realtime) {
+            // if this is a request for a realtime searcher, just return the same searcher
             newestSearcher.incref();
             return newestSearcher;
-          }
 
+          } else if (newestSearcher.get().getSchema() == getLatestSchema()) {
+            // absolutely nothing has changed, can use the same searcher
+            // but log a message about it to minimize confusion
+
+            newestSearcher.incref();
+            log.info("SolrIndexSearcher has not changed - not re-opening: " + newestSearcher.get().getName());
+            return newestSearcher;
+
+          } // ELSE: open a new searcher against the old reader...
           currentReader.incRef();
           newReader = currentReader;
         }
 
-       // for now, turn off caches if this is for a realtime reader (caches take a little while to instantiate)
-        tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(), getSolrConfig().indexConfig, 
-            (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory);
+        // for now, turn off caches if this is for a realtime reader 
+        // (caches take a little while to instantiate)
+        final boolean useCaches = !realtime;
+        final String newName = realtime ? "realtime" : "main";
+        tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(), 
+                                    getSolrConfig().indexConfig, newName,
+                                    newReader, true, useCaches, true, directoryFactory);
 
       } else {
         // newestSearcher == null at this point
@@ -1668,68 +1681,68 @@ public final class SolrCore implements SolrInfoMBean {
 
       Future future=null;
 
-      // warm the new searcher based on the current searcher.
-      // should this go before the other event handlers or after?
-      if (currSearcher != null) {
-        future = searcherExecutor.submit(
-            new Callable() {
-              @Override
-              public Object call() throws Exception {
-                try {
-                  newSearcher.warm(currSearcher);
-                } catch (Throwable e) {
-                  SolrException.log(log,e);
-                  if (e instanceof Error) {
-                    throw (Error) e;
-                  }
+      // if the underlying seracher has not changed, no warming is needed
+      if (newSearcher != currSearcher) {
+        
+        // warm the new searcher based on the current searcher.
+        // should this go before the other event handlers or after?
+        if (currSearcher != null) {
+          future = searcherExecutor.submit(new Callable() {
+            @Override
+            public Object call() throws Exception {
+              try {
+                newSearcher.warm(currSearcher);
+              } catch (Throwable e) {
+                SolrException.log(log, e);
+                if (e instanceof Error) {
+                  throw (Error) e;
                 }
-                return null;
               }
+              return null;
             }
-        );
+          });
+        }
+        
+        if (currSearcher == null && firstSearcherListeners.size() > 0) {
+          future = searcherExecutor.submit(new Callable() {
+            @Override
+            public Object call() throws Exception {
+              try {
+                for (SolrEventListener listener : firstSearcherListeners) {
+                  listener.newSearcher(newSearcher, null);
+                }
+              } catch (Throwable e) {
+                SolrException.log(log, null, e);
+                if (e instanceof Error) {
+                  throw (Error) e;
+                }
+              }
+              return null;
+            }
+          });
+        }
+        
+        if (currSearcher != null && newSearcherListeners.size() > 0) {
+          future = searcherExecutor.submit(new Callable() {
+            @Override
+            public Object call() throws Exception {
+              try {
+                for (SolrEventListener listener : newSearcherListeners) {
+                  listener.newSearcher(newSearcher, currSearcher);
+                }
+              } catch (Throwable e) {
+                SolrException.log(log, null, e);
+                if (e instanceof Error) {
+                  throw (Error) e;
+                }
+              }
+              return null;
+            }
+          });
+        }
+        
       }
 
-      if (currSearcher==null && firstSearcherListeners.size() > 0) {
-        future = searcherExecutor.submit(
-            new Callable() {
-              @Override
-              public Object call() throws Exception {
-                try {
-                  for (SolrEventListener listener : firstSearcherListeners) {
-                    listener.newSearcher(newSearcher,null);
-                  }
-                } catch (Throwable e) {
-                  SolrException.log(log,null,e);
-                  if (e instanceof Error) {
-                    throw (Error) e;
-                  }
-                }
-                return null;
-              }
-            }
-        );
-      }
-
-      if (currSearcher!=null && newSearcherListeners.size() > 0) {
-        future = searcherExecutor.submit(
-            new Callable() {
-              @Override
-              public Object call() throws Exception {
-                try {
-                  for (SolrEventListener listener : newSearcherListeners) {
-                    listener.newSearcher(newSearcher, currSearcher);
-                  }
-                } catch (Throwable e) {
-                  SolrException.log(log,null,e);
-                  if (e instanceof Error) {
-                    throw (Error) e;
-                  }
-                }
-                return null;
-              }
-            }
-        );
-      }
 
       // WARNING: this code assumes a single threaded executor (that all tasks
       // queued will finish first).
