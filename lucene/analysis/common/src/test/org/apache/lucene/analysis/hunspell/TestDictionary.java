@@ -22,10 +22,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.text.ParseException;
 
-import org.apache.lucene.analysis.hunspell.Dictionary;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.CharSequenceOutputs;
+import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.Outputs;
+import org.apache.lucene.util.fst.Util;
 
 public class TestDictionary extends LuceneTestCase {
 
@@ -122,5 +127,55 @@ public class TestDictionary extends LuceneTestCase {
     
     assertTrue(affixStream.isClosed());
     assertTrue(dictStream.isClosed());
+  }
+  
+  
+  
+  public void testReplacements() throws Exception {
+    Outputs<CharsRef> outputs = CharSequenceOutputs.getSingleton();
+    Builder<CharsRef> builder = new Builder<>(FST.INPUT_TYPE.BYTE2, outputs);
+    IntsRef scratchInts = new IntsRef();
+    
+    // a -> b
+    Util.toUTF16("a", scratchInts);
+    builder.add(scratchInts, new CharsRef("b"));
+    
+    // ab -> c
+    Util.toUTF16("ab", scratchInts);
+    builder.add(scratchInts, new CharsRef("c"));
+    
+    // c -> de
+    Util.toUTF16("c", scratchInts);
+    builder.add(scratchInts, new CharsRef("de"));
+    
+    // def -> gh
+    Util.toUTF16("def", scratchInts);
+    builder.add(scratchInts, new CharsRef("gh"));
+    
+    FST<CharsRef> fst = builder.finish();
+    
+    StringBuilder sb = new StringBuilder("atestanother");
+    Dictionary.applyMappings(fst, sb);
+    assertEquals("btestbnother", sb.toString());
+    
+    sb = new StringBuilder("abtestanother");
+    Dictionary.applyMappings(fst, sb);
+    assertEquals("ctestbnother", sb.toString());
+    
+    sb = new StringBuilder("atestabnother");
+    Dictionary.applyMappings(fst, sb);
+    assertEquals("btestcnother", sb.toString());
+    
+    sb = new StringBuilder("abtestabnother");
+    Dictionary.applyMappings(fst, sb);
+    assertEquals("ctestcnother", sb.toString());
+    
+    sb = new StringBuilder("abtestabcnother");
+    Dictionary.applyMappings(fst, sb);
+    assertEquals("ctestcdenother", sb.toString());
+    
+    sb = new StringBuilder("defdefdefc");
+    Dictionary.applyMappings(fst, sb);
+    assertEquals("ghghghde", sb.toString());
   }
 }

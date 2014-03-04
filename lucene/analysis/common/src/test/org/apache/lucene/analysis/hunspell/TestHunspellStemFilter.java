@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.hunspell;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.Collections;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -30,7 +31,6 @@ import org.apache.lucene.analysis.hunspell.Dictionary;
 import org.apache.lucene.analysis.hunspell.HunspellStemFilter;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -93,5 +93,21 @@ public class TestHunspellStemFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+  }
+  
+  public void testIgnoreCaseNoSideEffects() throws Exception {
+    final Dictionary d;
+    try (InputStream affixStream = TestStemmer.class.getResourceAsStream("simple.aff");
+        InputStream dictStream = TestStemmer.class.getResourceAsStream("simple.dic")) {
+      d = new Dictionary(affixStream, Collections.singletonList(dictStream), true);
+    }
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
+        return new TokenStreamComponents(tokenizer, new HunspellStemFilter(tokenizer, d));
+      }
+    };
+    checkOneTerm(a, "NoChAnGy", "NoChAnGy");
   }
 }

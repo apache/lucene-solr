@@ -21,14 +21,17 @@ import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesReader;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
 import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.CharSequenceOutputs;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.IntSequenceOutputs;
+import org.apache.lucene.util.fst.Outputs;
 import org.apache.lucene.util.fst.Util;
 
 import java.io.BufferedInputStream;
@@ -67,6 +70,9 @@ public class Dictionary {
   private static final String FLAG_KEY = "FLAG";
   private static final String COMPLEXPREFIXES_KEY = "COMPLEXPREFIXES";
   private static final String CIRCUMFIX_KEY = "CIRCUMFIX";
+  private static final String IGNORE_KEY = "IGNORE";
+  private static final String ICONV_KEY = "ICONV";
+  private static final String OCONV_KEY = "OCONV";
 
   private static final String NUM_FLAG_TYPE = "num";
   private static final String UTF8_FLAG_TYPE = "UTF-8";
@@ -110,6 +116,16 @@ public class Dictionary {
   
   int circumfix = -1; // circumfix flag, or -1 if one is not defined
   
+  // ignored characters (dictionary, affix, inputs)
+  private char[] ignore;
+  
+  // FSTs used for ICONV/OCONV, output ord pointing to replacement text
+  FST<CharsRef> iconv;
+  FST<CharsRef> oconv;
+  
+  boolean needsInputCleaning;
+  boolean needsOutputCleaning;
+  
   /**
    * Creates a new Dictionary containing the information read from the provided InputStreams to hunspell affix
    * and dictionary files.
@@ -136,6 +152,8 @@ public class Dictionary {
    */
   public Dictionary(InputStream affix, List<InputStream> dictionaries, boolean ignoreCase) throws IOException, ParseException {
     this.ignoreCase = ignoreCase;
+    this.needsInputCleaning = ignoreCase;
+    this.needsOutputCleaning = false; // set if we have an OCONV
     // hungarian has thousands of AF before the SET, so a 32k buffer is needed 
     BufferedInputStream buffered = new BufferedInputStream(affix, 32768);
     buffered.mark(32768);
@@ -249,6 +267,29 @@ public class Dictionary {
           throw new ParseException("Illegal CIRCUMFIX declaration", reader.getLineNumber());
         }
         circumfix = flagParsingStrategy.parseFlag(parts[1]);
+      } else if (line.startsWith(IGNORE_KEY)) {
+        String parts[] = line.split("\\s+");
+        if (parts.length != 2) {
+          throw new ParseException("Illegal IGNORE declaration", reader.getLineNumber());
+        }
+        ignore = parts[1].toCharArray();
+        Arrays.sort(ignore);
+        needsInputCleaning = true;
+      } else if (line.startsWith(ICONV_KEY) || line.startsWith(OCONV_KEY)) {
+        String parts[] = line.split("\\s+");
+        String type = parts[0];
+        if (parts.length != 2) {
+          throw new ParseException("Illegal " + type + " declaration", reader.getLineNumber());
+        }
+        int num = Integer.parseInt(parts[1]);
+        FST<CharsRef> res = parseConversions(reader, num);
+        if (type.equals("ICONV")) {
+          iconv = res;
+          needsInputCleaning |= iconv != null;
+        } else {
+          oconv = res;
+          needsOutputCleaning |= oconv != null;
+        }
       }
     }
     
@@ -291,6 +332,7 @@ public class Dictionary {
                           Map<String,Integer> seenPatterns) throws IOException, ParseException {
     
     BytesRef scratch = new BytesRef();
+    StringBuilder sb = new StringBuilder();
     String args[] = header.split("\\s+");
 
     boolean crossProduct = args[2].equals("Y");
@@ -300,9 +342,6 @@ public class Dictionary {
     ByteArrayDataOutput affixWriter = new ByteArrayDataOutput(affixData, currentAffix << 3, numLines << 3);
     
     for (int i = 0; i < numLines; i++) {
-      if (currentAffix > Short.MAX_VALUE) {
-        throw new UnsupportedOperationException("Too many affixes, please report this to dev@lucene.apache.org");
-      }
       assert affixWriter.getPosition() == currentAffix << 3;
       String line = reader.readLine();
       String ruleArgs[] = line.split("\\s+");
@@ -345,6 +384,9 @@ public class Dictionary {
       Integer patternIndex = seenPatterns.get(regex);
       if (patternIndex == null) {
         patternIndex = patterns.size();
+        if (patternIndex > Short.MAX_VALUE) {
+          throw new UnsupportedOperationException("Too many patterns, please report this to dev@lucene.apache.org");          
+        }
         seenPatterns.put(regex, patternIndex);
         Pattern pattern = Pattern.compile(regex);
         patterns.add(pattern);
@@ -355,6 +397,8 @@ public class Dictionary {
       if (stripOrd < 0) {
         // already exists in our hash
         stripOrd = (-stripOrd)-1;
+      } else if (stripOrd > Character.MAX_VALUE) {
+        throw new UnsupportedOperationException("Too many unique strips, please report this to dev@lucene.apache.org");
       }
 
       if (appendFlags == null) {
@@ -368,7 +412,7 @@ public class Dictionary {
         appendFlagsOrd = (-appendFlagsOrd)-1;
       } else if (appendFlagsOrd > Short.MAX_VALUE) {
         // this limit is probably flexible, but its a good sanity check too
-        throw new UnsupportedOperationException("Too many unique flags, please report this to dev@lucene.apache.org");
+        throw new UnsupportedOperationException("Too many unique append flags, please report this to dev@lucene.apache.org");
       }
       
       affixWriter.writeShort((short)flag);
@@ -377,6 +421,11 @@ public class Dictionary {
       int patternOrd = patternIndex.intValue() << 1 | (crossProduct ? 1 : 0);
       affixWriter.writeShort((short)patternOrd);
       affixWriter.writeShort((short)appendFlagsOrd);
+      
+      if (needsInputCleaning) {
+        CharSequence cleaned = cleanInput(affixArg, sb);
+        affixArg = cleaned.toString();
+      }
       
       List<Character> list = affixes.get(affixArg);
       if (list == null) {
@@ -387,6 +436,31 @@ public class Dictionary {
       list.add((char)currentAffix);
       currentAffix++;
     }
+  }
+  
+  private FST<CharsRef> parseConversions(LineNumberReader reader, int num) throws IOException, ParseException {
+    Map<String,String> mappings = new TreeMap<>();
+    
+    for (int i = 0; i < num; i++) {
+      String line = reader.readLine();
+      String parts[] = line.split("\\s+");
+      if (parts.length != 3) {
+        throw new ParseException("invalid syntax: " + line, reader.getLineNumber());
+      }
+      if (mappings.put(parts[1], parts[2]) != null) {
+        throw new IllegalStateException("duplicate mapping specified for: " + parts[1]);
+      }
+    }
+    
+    Outputs<CharsRef> outputs = CharSequenceOutputs.getSingleton();
+    Builder<CharsRef> builder = new Builder<>(FST.INPUT_TYPE.BYTE2, outputs);
+    IntsRef scratchInts = new IntsRef();
+    for (Map.Entry<String,String> entry : mappings.entrySet()) {
+      Util.toUTF16(entry.getKey(), scratchInts);
+      builder.add(scratchInts, new CharsRef(entry.getValue()));
+    }
+    
+    return builder.finish();
   }
 
   /**
@@ -485,6 +559,8 @@ public class Dictionary {
     BytesRef flagsScratch = new BytesRef();
     IntsRef scratchInts = new IntsRef();
     
+    StringBuilder sb = new StringBuilder();
+    
     File unsorted = File.createTempFile("unsorted", "dat", tempDir);
     try (ByteSequencesWriter writer = new ByteSequencesWriter(unsorted)) {
       for (InputStream dictionary : dictionaries) {
@@ -492,16 +568,19 @@ public class Dictionary {
         String line = lines.readLine(); // first line is number of entries (approximately, sometimes)
         
         while ((line = lines.readLine()) != null) {
-          if (ignoreCase) {
+          if (needsInputCleaning) {
             int flagSep = line.lastIndexOf('/');
             if (flagSep == -1) {
-              writer.write(line.toLowerCase(Locale.ROOT).getBytes(IOUtils.CHARSET_UTF_8));
+              CharSequence cleansed = cleanInput(line, sb);
+              writer.write(cleansed.toString().getBytes(IOUtils.CHARSET_UTF_8));
             } else {
-              StringBuilder sb = new StringBuilder();
-              sb.append(line.substring(0, flagSep).toLowerCase(Locale.ROOT));
-              if (flagSep < line.length()) {
-                sb.append(line.substring(flagSep, line.length()));
+              String text = line.substring(0, flagSep);
+              CharSequence cleansed = cleanInput(text, sb);
+              if (cleansed != sb) {
+                sb.setLength(0);
+                sb.append(cleansed);
               }
+              sb.append(line.substring(flagSep));
               writer.write(sb.toString().getBytes(IOUtils.CHARSET_UTF_8));
             }
           } else {
@@ -760,5 +839,77 @@ public class Dictionary {
   
   static boolean hasFlag(char flags[], char flag) {
     return Arrays.binarySearch(flags, flag) >= 0;
+  }
+  
+  CharSequence cleanInput(CharSequence input, StringBuilder reuse) {
+    reuse.setLength(0);
+    
+    for (int i = 0; i < input.length(); i++) {
+      char ch = input.charAt(i);
+      
+      if (ignore != null && Arrays.binarySearch(ignore, ch) >= 0) {
+        continue;
+      }
+      
+      if (ignoreCase && iconv == null) {
+        // if we have no input conversion mappings, do this on-the-fly
+        ch = Character.toLowerCase(ch);
+      }
+      
+      reuse.append(ch);
+    }
+    
+    if (iconv != null) {
+      try {
+        applyMappings(iconv, reuse);
+      } catch (IOException bogus) {
+        throw new RuntimeException(bogus);
+      }
+      if (ignoreCase) {
+        for (int i = 0; i < reuse.length(); i++) {
+          reuse.setCharAt(i, Character.toLowerCase(reuse.charAt(i)));
+        }
+      }
+    }
+    
+    return reuse;
+  }
+  
+  // TODO: this could be more efficient!
+  static void applyMappings(FST<CharsRef> fst, StringBuilder sb) throws IOException {
+    final FST.BytesReader bytesReader = fst.getBytesReader();
+    final FST.Arc<CharsRef> firstArc = fst.getFirstArc(new FST.Arc<CharsRef>());
+    final CharsRef NO_OUTPUT = fst.outputs.getNoOutput();
+    
+    // temporary stuff
+    final FST.Arc<CharsRef> arc = new FST.Arc<>();
+    int longestMatch;
+    CharsRef longestOutput;
+    
+    for (int i = 0; i < sb.length(); i++) {
+      arc.copyFrom(firstArc);
+      CharsRef output = NO_OUTPUT;
+      longestMatch = -1;
+      longestOutput = null;
+      
+      for (int j = i; j < sb.length(); j++) {
+        char ch = sb.charAt(j);
+        if (fst.findTargetArc(ch, arc, arc, bytesReader) == null) {
+          break;
+        } else {
+          output = fst.outputs.add(output, arc.output);
+        }
+        if (arc.isFinal()) {
+          longestOutput = fst.outputs.add(output, arc.nextFinalOutput);
+          longestMatch = j;
+        }
+      }
+      
+      if (longestMatch >= 0) {
+        sb.delete(i, longestMatch+1);
+        sb.insert(i, longestOutput);
+        i += (longestOutput.length - 1);
+      }
+    }
   }
 }

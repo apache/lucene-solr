@@ -89,6 +89,9 @@ New Features
 
 * LUCENE-5485: Add circumfix support to HunspellStemFilter. (Robert Muir)
 
+* LUCENE-5224: Add iconv, oconv, and ignore support to HunspellStemFilter.
+  (Robert Muir)
+
 API Changes
 
 * LUCENE-5454: Add RandomAccessOrds, an optional extension of SortedSetDocValues
