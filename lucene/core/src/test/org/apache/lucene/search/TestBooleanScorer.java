@@ -32,10 +32,10 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanQuery.BooleanWeight;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
 
-public class TestBooleanScorer extends LuceneTestCase
-{
+public class TestBooleanScorer extends LuceneTestCase {
   private static final String FIELD = "category";
   
   public void testMethod() throws Exception {
@@ -206,6 +206,115 @@ public class TestBooleanScorer extends LuceneTestCase
     d.close();
   }
 
-  // nocommit add test verifying that BQ inside BQ can get BS1
-  // not BS2 like today
+  private static final class FakeScorer extends Scorer {
+    public FakeScorer() {
+      super(null);
+    }
+    
+    @Override
+    public int advance(int target) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int docID() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int freq() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int nextDoc() {
+      throw new UnsupportedOperationException();
+    }
+    
+    @Override
+    public float score() {
+      return 1.0f;
+    }
+
+    @Override
+    public long cost() {
+      throw new UnsupportedOperationException();
+    }
+  }
+
+  /** Throws UOE if Weight.scorer is called */
+  private static class CrazyMustUseTopScorerQuery extends Query {
+
+    @Override
+    public String toString(String field) {
+      return "MustUseTopScorerQuery";
+    }
+
+    @Override
+    public Weight createWeight(IndexSearcher searcher) throws IOException {
+      return new Weight() {
+        @Override
+        public Explanation explain(AtomicReaderContext context, int doc) {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Query getQuery() {
+          return CrazyMustUseTopScorerQuery.this;
+        }
+
+        @Override
+        public float getValueForNormalization() {
+          return 1.0f;
+        }
+
+        @Override
+        public void normalize(float norm, float topLevelBoost) {
+        }
+
+        @Override
+        public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public TopScorer topScorer(AtomicReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) {
+          return new TopScorer() {
+
+            @Override
+            public boolean score(Collector collector, int max) throws IOException {
+              collector.setScorer(new FakeScorer());
+              collector.collect(0);
+              return false;
+            }
+          };
+        }
+      };
+    }
+  }
+
+  /** Make sure BooleanScorer can embed another
+   *  BooleanScorer. */
+  public void testEmbeddedBooleanScorer() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newTextField("field", "doctors are people who prescribe medicines of which they know little, to cure diseases of which they know less, in human beings of whom they know nothing", Field.Store.NO));
+    w.addDocument(doc);
+    IndexReader r = w.getReader();
+    w.close();
+
+    IndexSearcher s = newSearcher(r);
+    BooleanQuery q1 = new BooleanQuery();
+    q1.add(new TermQuery(new Term("field", "little")), BooleanClause.Occur.SHOULD);
+    q1.add(new TermQuery(new Term("field", "diseases")), BooleanClause.Occur.SHOULD);
+
+    BooleanQuery q2 = new BooleanQuery();
+    q2.add(q1, BooleanClause.Occur.SHOULD);
+    q2.add(new CrazyMustUseTopScorerQuery(), BooleanClause.Occur.SHOULD);
+
+    assertEquals(1, s.search(q2, 10).totalHits);
+    r.close();
+    dir.close();
+  }
 }
