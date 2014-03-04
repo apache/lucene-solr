@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Arrays;
+import java.util.Collections;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -33,7 +34,6 @@ import org.apache.lucene.analysis.hunspell.HunspellStemFilter;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -99,5 +99,24 @@ public class TestHunspellStemFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+  }
+  
+  public void testIgnoreCaseNoSideEffects() throws Exception {
+    final Dictionary d;
+    InputStream affixStream = TestStemmer.class.getResourceAsStream("simple.aff");
+    InputStream dictStream = TestStemmer.class.getResourceAsStream("simple.dic");
+    try {
+      d = new Dictionary(affixStream, Collections.singletonList(dictStream), true);
+    } finally {
+      IOUtils.closeWhileHandlingException(affixStream, dictStream);
+    }
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(tokenizer, new HunspellStemFilter(tokenizer, d));
+      }
+    };
+    checkOneTerm(a, "NoChAnGy", "NoChAnGy");
   }
 }

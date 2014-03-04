@@ -1,0 +1,6 @@
+SET UTF-8
+
+IGNORE '-
+
+SFX X Y 1
+SFX X 0 able . +ABLE

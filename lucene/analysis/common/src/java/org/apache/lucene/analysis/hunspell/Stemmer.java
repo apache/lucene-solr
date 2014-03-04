@@ -17,6 +17,7 @@ package org.apache.lucene.analysis.hunspell;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -24,8 +25,8 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.analysis.util.CharacterUtils;
 import org.apache.lucene.store.ByteArrayDataInput;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IntsRef;
@@ -40,8 +41,11 @@ final class Stemmer {
   private final BytesRef scratch = new BytesRef();
   private final StringBuilder segment = new StringBuilder();
   private final ByteArrayDataInput affixReader;
-  private final CharacterUtils charUtils = CharacterUtils.getInstance(Version.LUCENE_CURRENT);
-
+  
+  // used for normalization
+  private final StringBuilder scratchSegment = new StringBuilder();
+  private char scratchBuffer[] = new char[32];
+  
   /**
    * Constructs a new Stemmer which will use the provided Dictionary to create its stems.
    *
@@ -68,17 +72,25 @@ final class Stemmer {
    * @param word Word to find the stems for
    * @return List of stems for the word
    */
-  public List<CharsRef> stem(char word[], int length) {
-    if (dictionary.ignoreCase) {
-      charUtils.toLowerCase(word, 0, length);
+  public List<CharsRef> stem(char word[], int length) {    
+
+    if (dictionary.needsInputCleaning) {
+      scratchSegment.setLength(0);
+      scratchSegment.append(word, 0, length);
+      CharSequence cleaned = dictionary.cleanInput(scratchSegment, segment);
+      scratchBuffer = ArrayUtil.grow(scratchBuffer, cleaned.length());
+      length = segment.length();
+      segment.getChars(0, length, scratchBuffer, 0);
+      word = scratchBuffer;
     }
+    
     List<CharsRef> stems = new ArrayList<CharsRef>();
     IntsRef forms = dictionary.lookupWord(word, 0, length);
     if (forms != null) {
       // TODO: some forms should not be added, e.g. ONLYINCOMPOUND
       // just because it exists, does not make it valid...
       for (int i = 0; i < forms.length; i++) {
-        stems.add(new CharsRef(word, 0, length));
+        stems.add(newStem(word, length));
       }
     }
     stems.addAll(stem(word, length, -1, -1, -1, 0, true, true, false, false));
@@ -105,6 +117,23 @@ final class Stemmer {
       }
     }
     return deduped;
+  }
+  
+  private CharsRef newStem(char buffer[], int length) {
+    if (dictionary.needsOutputCleaning) {
+      scratchSegment.setLength(0);
+      scratchSegment.append(buffer, 0, length);
+      try {
+        Dictionary.applyMappings(dictionary.oconv, scratchSegment);
+      } catch (IOException bogus) {
+        throw new RuntimeException(bogus);
+      }
+      char cleaned[] = new char[scratchSegment.length()];
+      scratchSegment.getChars(0, cleaned.length, cleaned, 0);
+      return new CharsRef(cleaned, 0, cleaned.length);
+    } else {
+      return new CharsRef(buffer, 0, length);
+    }
   }
 
   // ================================================= Helper Methods ================================================
@@ -292,7 +321,7 @@ final class Stemmer {
               continue;
             }
           }
-          stems.add(new CharsRef(strippedWord, 0, length));
+          stems.add(newStem(strippedWord, length));
         }
       }
     }
