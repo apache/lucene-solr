@@ -88,6 +88,9 @@ New Features
 * SOLR-5183: JSON updates now support nested child documents using a 
   "_childDocument_" object key.  (Varun Thacker, hossman)
 
+* SOLR-5714: You can now use one pool of memory for for the HDFS block cache
+  that all collections share. (Mark Miller, Gregory Chanan)
+
 Bug Fixes
 ----------------------
 

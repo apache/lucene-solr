@@ -29,6 +29,9 @@ import org.apache.hadoop.metrics.MetricsUtil;
 import org.apache.hadoop.metrics.Updater;
 import org.apache.hadoop.metrics.jvm.JvmMetrics;
 
+/**
+ * @lucene.experimental
+ */
 public class Metrics implements Updater {
   
   public static class MethodCall {

@@ -131,7 +131,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       int threadCount = 1;
       int i = 0;
       for (i = 0; i < threadCount; i++) {
-        StopableIndexingThread indexThread = new StopableIndexingThread(Integer.toString(i), true);
+        StopableIndexingThread indexThread = new StopableIndexingThread(controlClient, cloudClient, Integer.toString(i), true);
         threads.add(indexThread);
         indexThread.start();
       }
@@ -270,7 +270,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
     
     public FullThrottleStopableIndexingThread(List<SolrServer> clients,
         String id, boolean doDeletes) {
-      super(id, doDeletes);
+      super(controlClient, cloudClient, id, doDeletes);
       setName("FullThrottleStopableIndexingThread");
       setDaemon(true);
       this.clients = clients;
