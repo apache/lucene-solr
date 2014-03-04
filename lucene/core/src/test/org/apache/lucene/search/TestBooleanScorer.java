@@ -17,8 +17,10 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
@@ -78,27 +80,50 @@ public class TestBooleanScorer extends LuceneTestCase
     writer.close();
     IndexSearcher searcher = newSearcher(ir);
     BooleanWeight weight = (BooleanWeight) new BooleanQuery().createWeight(searcher);
-    Scorer[] scorers = new Scorer[] {new Scorer(weight) {
+    TopScorer[] scorers = new TopScorer[] {new TopScorer() {
       private int doc = -1;
-      @Override public float score() { return 0; }
-      @Override public int freq()  { return 0; }
-      @Override public int docID() { return doc; }
-      
-      @Override public int nextDoc() {
-        return doc = doc == -1 ? 3000 : NO_MORE_DOCS;
-      }
 
-      @Override public int advance(int target) {
-        return doc = target <= 3000 ? 3000 : NO_MORE_DOCS;
-      }
-      
       @Override
-      public long cost() {
-        return 1;
+      public boolean score(Collector c, int maxDoc) throws IOException {
+        assert doc == -1;
+        doc = 3000;
+        c.setScorer(new Scorer(null) {
+            @Override
+            public int advance(int target) {
+              throw new UnsupportedOperationException("FakeScorer doesn't support advance(int)");
+            }
+
+            @Override
+            public int docID() {
+              return doc;
+            }
+
+            @Override
+            public int freq() {
+              throw new UnsupportedOperationException("FakeScorer doesn't support freq()");
+            }
+
+            @Override
+            public int nextDoc() {
+              throw new UnsupportedOperationException("FakeScorer doesn't support nextDoc()");
+            }
+    
+            @Override
+            public float score() {
+              return 1.0f;
+            }
+
+            @Override
+            public long cost() {
+              return 1;
+            }
+          });
+        c.collect(3000);
+        return false;
       }
     }};
     
-    BooleanScorer bs = new BooleanScorer(weight, false, 1, Arrays.asList(scorers), null, scorers.length);
+    BooleanScorer bs = new BooleanScorer(weight, false, 1, Arrays.asList(scorers), Collections.<TopScorer>emptyList(), scorers.length);
 
     final List<Integer> hits = new ArrayList<Integer>();
     bs.score(new Collector() {
@@ -180,4 +205,7 @@ public class TestBooleanScorer extends LuceneTestCase
     r.close();
     d.close();
   }
+
+  // nocommit add test verifying that BQ inside BQ can get BS1
+  // not BS2 like today
 }

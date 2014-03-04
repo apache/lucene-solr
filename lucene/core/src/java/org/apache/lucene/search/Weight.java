@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReader; // javadocs
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReaderContext; // javadocs
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
@@ -110,8 +111,37 @@ public abstract class Weight {
    * @return a {@link Scorer} which scores documents in/out-of order.
    * @throws IOException if there is a low-level I/O error
    */
-  public abstract Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-      boolean topScorer, Bits acceptDocs) throws IOException;
+  public abstract Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException;
+
+  // nocommit jdocs
+  public TopScorer topScorer(AtomicReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
+
+    final Scorer scorer = scorer(context, acceptDocs);
+    if (scorer == null) {
+      // No docs match
+      return null;
+    }
+
+    // This impl always scores docs in order, so we can
+    // ignore scoreDocsInOrder:
+    return new TopScorer() {
+
+      @Override
+      public boolean score(Collector collector, int max) throws IOException {
+        // nocommit weird to do this here?  we do it many,
+        // many times from BS1 inside one segment?
+        collector.setScorer(scorer);
+        if (scorer.docID() == -1) {
+          scorer.nextDoc();
+        }
+        int doc;
+        for (doc = scorer.docID(); doc < max; doc = scorer.nextDoc()) {
+          collector.collect(doc);
+        }
+        return doc != DocsEnum.NO_MORE_DOCS;
+      }
+    };
+  }
 
   /**
    * Returns true iff this implementation scores docs only out of order. This

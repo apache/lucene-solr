@@ -93,12 +93,12 @@ public class FilteredQuery extends Query {
       }
 
       @Override
-      public void normalize (float norm, float topLevelBoost) { 
+      public void normalize(float norm, float topLevelBoost) { 
         weight.normalize(norm, topLevelBoost * getBoost()); // incorporate boost
       }
 
       @Override
-      public Explanation explain (AtomicReaderContext ir, int i) throws IOException {
+      public Explanation explain(AtomicReaderContext ir, int i) throws IOException {
         Explanation inner = weight.explain (ir, i);
         Filter f = FilteredQuery.this.filter;
         DocIdSet docIdSet = f.getDocIdSet(ir, ir.reader().getLiveDocs());
@@ -124,7 +124,7 @@ public class FilteredQuery extends Query {
 
       // return a filtering scorer
       @Override
-      public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer, final Bits acceptDocs) throws IOException {
+      public Scorer scorer(AtomicReaderContext context, final Bits acceptDocs) throws IOException {
         assert filter != null;
 
         final DocIdSet filterDocIdSet = filter.getDocIdSet(context, acceptDocs);
@@ -133,7 +133,7 @@ public class FilteredQuery extends Query {
           return null;
         }
 
-        return strategy.filteredScorer(context, scoreDocsInOrder, topScorer, weight, filterDocIdSet);
+        return strategy.filteredScorer(context, weight, filterDocIdSet);
       }
     };
   }
@@ -154,8 +154,10 @@ public class FilteredQuery extends Query {
       this.scorer = other;
       this.filterbits = filterBits;
     }
-    
+
+    // nocommit move to custom TopScorer
     // optimization: we are topScorer and collect directly
+    /*
     @Override
     public void score(Collector collector) throws IOException {
       // the normalization trick already applies the boost of this query,
@@ -171,6 +173,7 @@ public class FilteredQuery extends Query {
         }
       }
     }
+    */
     
     @Override
     public int nextDoc() throws IOException {
@@ -236,8 +239,10 @@ public class FilteredQuery extends Query {
       this.secondary = secondary;
       this.scorer = scorer;
     }
-    
+
+    // nocommit move to TopScorer
     // optimization: we are topScorer and collect directly using short-circuited algo
+    /*
     @Override
     public final void score(Collector collector) throws IOException {
       // the normalization trick already applies the boost of this query,
@@ -261,6 +266,7 @@ public class FilteredQuery extends Query {
         }
       }
     }
+    */
     
     private final int advanceToNextCommonDoc() throws IOException {
       for (;;) {
@@ -491,8 +497,7 @@ public class FilteredQuery extends Query {
      * @throws IOException if an {@link IOException} occurs
      */
     public abstract Scorer filteredScorer(AtomicReaderContext context,
-        boolean scoreDocsInOrder, boolean topScorer, Weight weight,
-        DocIdSet docIdSet) throws IOException;
+        Weight weight, DocIdSet docIdSet) throws IOException;
   }
   
   /**
@@ -506,7 +511,7 @@ public class FilteredQuery extends Query {
   public static class RandomAccessFilterStrategy extends FilterStrategy {
 
     @Override
-    public Scorer filteredScorer(AtomicReaderContext context, boolean scoreDocsInOrder, boolean topScorer, Weight weight, DocIdSet docIdSet) throws IOException {
+    public Scorer filteredScorer(AtomicReaderContext context, Weight weight, DocIdSet docIdSet) throws IOException {
       final DocIdSetIterator filterIter = docIdSet.iterator();
       if (filterIter == null) {
         // this means the filter does not accept any documents.
@@ -523,12 +528,12 @@ public class FilteredQuery extends Query {
       final boolean useRandomAccess = filterAcceptDocs != null && useRandomAccess(filterAcceptDocs, firstFilterDoc);
       if (useRandomAccess) {
         // if we are using random access, we return the inner scorer, just with other acceptDocs
-        return weight.scorer(context, scoreDocsInOrder, topScorer, filterAcceptDocs);
+        return weight.scorer(context, filterAcceptDocs);
       } else {
         assert firstFilterDoc > -1;
         // we are gonna advance() this scorer, so we set inorder=true/toplevel=false
         // we pass null as acceptDocs, as our filter has already respected acceptDocs, no need to do twice
-        final Scorer scorer = weight.scorer(context, true, false, null);
+        final Scorer scorer = weight.scorer(context, null);
         // TODO once we have way to figure out if we use RA or LeapFrog we can remove this scorer
         return (scorer == null) ? null : new PrimaryAdvancedLeapFrogScorer(weight, firstFilterDoc, filterIter, scorer);
       }
@@ -559,18 +564,17 @@ public class FilteredQuery extends Query {
     private LeapFrogFilterStrategy(boolean scorerFirst) {
       this.scorerFirst = scorerFirst;
     }
+
     @Override
     public Scorer filteredScorer(AtomicReaderContext context,
-        boolean scoreDocsInOrder, boolean topScorer, Weight weight,
-        DocIdSet docIdSet) throws IOException {
+        Weight weight, DocIdSet docIdSet) throws IOException {
       final DocIdSetIterator filterIter = docIdSet.iterator();
       if (filterIter == null) {
         // this means the filter does not accept any documents.
         return null;
       }
-      // we are gonna advance() this scorer, so we set inorder=true/toplevel=false
       // we pass null as acceptDocs, as our filter has already respected acceptDocs, no need to do twice
-      final Scorer scorer = weight.scorer(context, true, false, null);
+      final Scorer scorer = weight.scorer(context, null);
       if (scorerFirst) {
         return (scorer == null) ? null : new LeapFrogScorer(weight, scorer, filterIter, scorer);  
       } else {
@@ -596,13 +600,13 @@ public class FilteredQuery extends Query {
   private static final class QueryFirstFilterStrategy extends FilterStrategy {
     @Override
     public Scorer filteredScorer(final AtomicReaderContext context,
-        boolean scoreDocsInOrder, boolean topScorer, Weight weight,
+        Weight weight,
         DocIdSet docIdSet) throws IOException {
       Bits filterAcceptDocs = docIdSet.bits();
       if (filterAcceptDocs == null) {
-        return LEAP_FROG_QUERY_FIRST_STRATEGY.filteredScorer(context, scoreDocsInOrder, topScorer, weight, docIdSet);
+        return LEAP_FROG_QUERY_FIRST_STRATEGY.filteredScorer(context, weight, docIdSet);
       }
-      final Scorer scorer = weight.scorer(context, true, false, null);
+      final Scorer scorer = weight.scorer(context, null);
       return scorer == null ? null : new QueryFirstScorer(weight,
           filterAcceptDocs, scorer);
     }

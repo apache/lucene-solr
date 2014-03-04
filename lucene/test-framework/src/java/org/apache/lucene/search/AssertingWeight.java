@@ -58,13 +58,21 @@ class AssertingWeight extends Weight {
   }
 
   @Override
-  public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-                       boolean topScorer, Bits acceptDocs) throws IOException {
+  public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException {
     // if the caller asks for in-order scoring or if the weight does not support
     // out-of order scoring then collection will have to happen in-order.
-    final boolean inOrder = scoreDocsInOrder || !scoresDocsOutOfOrder();
-    final Scorer inScorer = in.scorer(context, scoreDocsInOrder, topScorer, acceptDocs);
-    return AssertingScorer.wrap(new Random(random.nextLong()), inScorer, topScorer, inOrder);
+    final Scorer inScorer = in.scorer(context, acceptDocs);
+    return AssertingScorer.wrap(new Random(random.nextLong()), inScorer);
+  }
+
+  @Override
+  public TopScorer topScorer(AtomicReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
+    // if the caller asks for in-order scoring or if the weight does not support
+    // out-of order scoring then collection will have to happen in-order.
+    // nocommit add wrapping:
+    TopScorer inScorer = in.topScorer(context, scoreDocsInOrder, acceptDocs);
+    //return AssertingScorer.wrap(new Random(random.nextLong()), inScorer);
+    return inScorer;
   }
 
   @Override

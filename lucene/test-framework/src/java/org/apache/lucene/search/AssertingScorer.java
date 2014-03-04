@@ -32,29 +32,21 @@ import org.apache.lucene.util.VirtualMethod;
 /** Wraps a Scorer with additional checks */
 public class AssertingScorer extends Scorer {
 
-  enum TopScorer {
-    YES, NO, UNKNOWN;
-  }
-
-  private static final VirtualMethod<Scorer> SCORE_COLLECTOR = new VirtualMethod<Scorer>(Scorer.class, "score", Collector.class);
-  private static final VirtualMethod<Scorer> SCORE_COLLECTOR_RANGE = new VirtualMethod<Scorer>(Scorer.class, "score", Collector.class, int.class, int.class);
+  //private static final VirtualMethod<Scorer> SCORE_COLLECTOR = new VirtualMethod<Scorer>(Scorer.class, "score", Collector.class);
+  //private static final VirtualMethod<Scorer> SCORE_COLLECTOR_RANGE = new VirtualMethod<Scorer>(Scorer.class, "score", Collector.class, int.class, int.class);
 
   // we need to track scorers using a weak hash map because otherwise we
   // could loose references because of eg.
   // AssertingScorer.score(Collector) which needs to delegate to work correctly
   private static Map<Scorer, WeakReference<AssertingScorer>> ASSERTING_INSTANCES = Collections.synchronizedMap(new WeakHashMap<Scorer, WeakReference<AssertingScorer>>());
 
-  private static Scorer wrap(Random random, Scorer other, TopScorer topScorer, boolean inOrder) {
+  public static Scorer wrap(Random random, Scorer other) {
     if (other == null || other instanceof AssertingScorer) {
       return other;
     }
-    final AssertingScorer assertScorer = new AssertingScorer(random, other, topScorer, inOrder);
+    final AssertingScorer assertScorer = new AssertingScorer(random, other);
     ASSERTING_INSTANCES.put(other, new WeakReference<AssertingScorer>(assertScorer));
     return assertScorer;
-  }
-
-  static Scorer wrap(Random random, Scorer other, boolean topScorer, boolean inOrder) {
-    return wrap(random, other, topScorer ? TopScorer.YES : TopScorer.NO, inOrder);
   }
 
   static Scorer getAssertingScorer(Random random, Scorer other) {
@@ -68,7 +60,7 @@ public class AssertingScorer extends Scorer {
       // scorer1.score(collector) calls
       // collector.setScorer(scorer2) with scorer1 != scorer2, such as
       // BooleanScorer. In that case we can't enable all assertions
-      return new AssertingScorer(random, other, TopScorer.UNKNOWN, false);
+      return new AssertingScorer(random, other);
     } else {
       return assertingScorer;
     }
@@ -77,20 +69,12 @@ public class AssertingScorer extends Scorer {
   final Random random;
   final Scorer in;
   final AssertingAtomicReader.AssertingDocsEnum docsEnumIn;
-  final TopScorer topScorer;
-  final boolean inOrder;
-  final boolean canCallNextDoc;
 
-  private AssertingScorer(Random random, Scorer in, TopScorer topScorer, boolean inOrder) {
+  private AssertingScorer(Random random, Scorer in) {
     super(in.weight);
     this.random = random;
     this.in = in;
-    this.topScorer = topScorer;
-    this.inOrder = inOrder;
-    this.docsEnumIn = new AssertingAtomicReader.AssertingDocsEnum(in, topScorer == TopScorer.NO);
-    this.canCallNextDoc = topScorer != TopScorer.YES // not a top scorer
-      || !SCORE_COLLECTOR_RANGE.isOverriddenAsOf(in.getClass()) // the default impl relies upon nextDoc()
-      || !SCORE_COLLECTOR.isOverriddenAsOf(in.getClass()); // the default impl relies upon nextDoc()
+    this.docsEnumIn = new AssertingAtomicReader.AssertingDocsEnum(in);
   }
 
   public Scorer getIn() {
@@ -116,9 +100,10 @@ public class AssertingScorer extends Scorer {
     return score;
   }
 
+  // nocommit make an AssertingTopScorer
+  /*
   @Override
   public void score(Collector collector) throws IOException {
-    assert topScorer != TopScorer.NO;
     if (SCORE_COLLECTOR.isOverriddenAsOf(this.in.getClass())) {
       if (random.nextBoolean()) {
         try {
@@ -148,6 +133,7 @@ public class AssertingScorer extends Scorer {
       return super.score(collector, max, firstDocID);
     }
   }
+  */
 
   @Override
   public Collection<ChildScorer> getChildren() {
@@ -171,13 +157,11 @@ public class AssertingScorer extends Scorer {
 
   @Override
   public int nextDoc() throws IOException {
-    assert canCallNextDoc : "top scorers should not call nextDoc()";
     return docsEnumIn.nextDoc();
   }
 
   @Override
   public int advance(int target) throws IOException {
-    assert canCallNextDoc : "top scorers should not call advance(target)";
     return docsEnumIn.advance(target);
   }
 
