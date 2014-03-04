@@ -66,10 +66,10 @@ public class RecoveryZkTest extends AbstractFullDistribZkTestBase {
     
     int maxDoc = maxDocList[random().nextInt(maxDocList.length - 1)];
     
-    indexThread = new StopableIndexingThread("1", true, maxDoc);
+    indexThread = new StopableIndexingThread(controlClient, cloudClient, "1", true, maxDoc);
     indexThread.start();
     
-    indexThread2 = new StopableIndexingThread("2", true, maxDoc);
+    indexThread2 = new StopableIndexingThread(controlClient, cloudClient, "2", true, maxDoc);
     
     indexThread2.start();
 
@@ -100,7 +100,7 @@ public class RecoveryZkTest extends AbstractFullDistribZkTestBase {
     
     Thread.sleep(1000);
   
-    waitForThingsToLevelOut(45);
+    waitForThingsToLevelOut(90);
     
     Thread.sleep(2000);
     

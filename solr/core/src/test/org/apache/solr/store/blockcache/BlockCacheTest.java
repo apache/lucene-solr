@@ -51,6 +51,7 @@ public class BlockCacheTest extends LuceneTestCase {
       int file = 0;
       blockCacheKey.setBlock(block);
       blockCacheKey.setFile(file);
+      blockCacheKey.setPath("/");
 
       if (blockCache.fetch(blockCacheKey, buffer)) {
         hitsInCache.incrementAndGet();
@@ -91,6 +92,7 @@ public class BlockCacheTest extends LuceneTestCase {
     BlockCacheKey blockCacheKey = new BlockCacheKey();
     blockCacheKey.setBlock(0);
     blockCacheKey.setFile(0);
+    blockCacheKey.setPath("/");
     byte[] newData = new byte[blockSize*3];
     byte[] testData = testData(random, blockSize, newData);
 

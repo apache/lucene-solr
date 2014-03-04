@@ -28,6 +28,9 @@ import org.apache.lucene.store.DataInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @lucene.experimental
+ */
 public class HdfsFileReader extends DataInput {
   
   public static Logger LOG = LoggerFactory.getLogger(HdfsFileReader.class);

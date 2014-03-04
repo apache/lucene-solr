@@ -129,6 +129,9 @@
     <str name="solr.hdfs.confdir">${solr.hdfs.confdir:}</str>
     <!-- Enable/Disable the hdfs cache. -->    
     <str name="solr.hdfs.blockcache.enabled">${solr.hdfs.blockcache.enabled:true}</str>
+    <!-- Enable/Disable using one global cache for all SolrCores. 
+         The settings used will be from the first HdfsDirectoryFactory created. -->    
+    <str name="solr.hdfs.blockcache.global">${solr.hdfs.blockcache.global:true}</str>
     
   </directoryFactory> 
 

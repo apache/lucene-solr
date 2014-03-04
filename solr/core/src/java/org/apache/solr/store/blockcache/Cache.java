@@ -17,6 +17,9 @@ package org.apache.solr.store.blockcache;
  * limitations under the License.
  */
 
+/**
+ * @lucene.experimental
+ */
 public interface Cache {
   
   /**

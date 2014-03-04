@@ -34,6 +34,9 @@ import org.apache.solr.store.hdfs.HdfsDirectory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @lucene.experimental
+ */
 public class BlockDirectory extends Directory {
   public static Logger LOG = LoggerFactory.getLogger(BlockDirectory.class);
   
@@ -82,11 +85,11 @@ public class BlockDirectory extends Directory {
   private Directory directory;
   private int blockSize;
   private String dirName;
-  private Cache cache;
+  private final Cache cache;
   private Set<String> blockCacheFileTypes;
   private final boolean blockCacheReadEnabled;
   private final boolean blockCacheWriteEnabled;
-  
+
   public BlockDirectory(String dirName, Directory directory, Cache cache,
       Set<String> blockCacheFileTypes, boolean blockCacheReadEnabled,
       boolean blockCacheWriteEnabled) throws IOException {
@@ -265,6 +268,15 @@ public class BlockDirectory extends Directory {
     return dirName + "/" + name;
   }
   
+  /**
+   * Expert: mostly for tests
+   * 
+   * @lucene.experimental
+   */
+  public Cache getCache() {
+    return cache;
+  }
+  
   @Override
   public void copy(Directory to, String src, String dest, IOContext context)
       throws IOException {
@@ -381,6 +393,15 @@ public class BlockDirectory extends Directory {
   
   public Directory getDirectory() {
     return directory;
+  }
+  
+  
+  public boolean isBlockCacheReadEnabled() {
+    return blockCacheReadEnabled;
+  }
+
+  public boolean isBlockCacheWriteEnabled() {
+    return blockCacheWriteEnabled;
   }
   
 }

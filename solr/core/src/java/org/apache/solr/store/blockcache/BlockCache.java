@@ -24,6 +24,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
 import com.googlecode.concurrentlinkedhashmap.EvictionListener;
 
+/**
+ * @lucene.experimental
+ */
 public class BlockCache {
   
   public static final int _128M = 134217728;

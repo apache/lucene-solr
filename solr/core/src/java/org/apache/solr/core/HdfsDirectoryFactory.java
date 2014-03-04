@@ -51,6 +51,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory {
   public static final String BLOCKCACHE_SLAB_COUNT = "solr.hdfs.blockcache.slab.count";
   public static final String BLOCKCACHE_DIRECT_MEMORY_ALLOCATION = "solr.hdfs.blockcache.direct.memory.allocation";
   public static final String BLOCKCACHE_ENABLED = "solr.hdfs.blockcache.enabled";
+  public static final String BLOCKCACHE_GLOBAL = "solr.hdfs.blockcache.global";
   public static final String BLOCKCACHE_READ_ENABLED = "solr.hdfs.blockcache.read.enabled";
   public static final String BLOCKCACHE_WRITE_ENABLED = "solr.hdfs.blockcache.write.enabled";
   
@@ -72,6 +73,8 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory {
   private String hdfsDataDir;
   
   private String confDir;
+
+  private static BlockCache globalBlockCache;
   
   public static Metrics metrics;
   private static Boolean kerberosInit;
@@ -102,6 +105,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory {
     }
     
     boolean blockCacheEnabled = params.getBool(BLOCKCACHE_ENABLED, true);
+    boolean blockCacheGlobal = params.getBool(BLOCKCACHE_GLOBAL, false); // default to false for back compat
     boolean blockCacheReadEnabled = params.getBool(BLOCKCACHE_READ_ENABLED,
         true);
     boolean blockCacheWriteEnabled = params.getBool(BLOCKCACHE_WRITE_ENABLED, true);
@@ -117,8 +121,6 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory {
       boolean directAllocation = params.getBool(
           BLOCKCACHE_DIRECT_MEMORY_ALLOCATION, true);
       
-      BlockCache blockCache;
-      
       int slabSize = numberOfBlocksPerBank * blockSize;
       LOG.info(
           "Number of slabs of block cache [{}] with direct memory allocation set to [{}]",
@@ -131,22 +133,13 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory {
       int bufferSize = params.getInt("solr.hdfs.blockcache.bufferstore.buffersize", 128);
       int bufferCount = params.getInt("solr.hdfs.blockcache.bufferstore.buffercount", 128 * 128);
       
-      BufferStore.initNewBuffer(bufferSize, bufferCount);
-      long totalMemory = (long) bankCount * (long) numberOfBlocksPerBank
-          * (long) blockSize;
-      try {
-        blockCache = new BlockCache(metrics, directAllocation, totalMemory,
-            slabSize, blockSize);
-      } catch (OutOfMemoryError e) {
-        throw new RuntimeException(
-            "The max direct memory is likely too low.  Either increase it (by adding -XX:MaxDirectMemorySize=<size>g -XX:+UseLargePages to your containers startup args)"
-                + " or disable direct allocation using solr.hdfs.blockcache.direct.memory.allocation=false in solrconfig.xml. If you are putting the block cache on the heap,"
-                + " your java heap size might not be large enough."
-                + " Failed allocating ~" + totalMemory / 1000000.0 + " MB.", e);
-      }
-      Cache cache = new BlockDirectoryCache(blockCache, metrics);
+      BlockCache blockCache = getBlockDirectoryCache(path, numberOfBlocksPerBank,
+          blockSize, bankCount, directAllocation, slabSize,
+          bufferSize, bufferCount, blockCacheGlobal);
+      
+      Cache cache = new BlockDirectoryCache(blockCache, path, metrics);
       HdfsDirectory hdfsDirectory = new HdfsDirectory(new Path(path), conf);
-      dir = new BlockDirectory("solrcore", hdfsDirectory, cache, null,
+      dir = new BlockDirectory(path, hdfsDirectory, cache, null,
           blockCacheReadEnabled, blockCacheWriteEnabled);
     } else {
       dir = new HdfsDirectory(new Path(path), conf);
@@ -163,6 +156,45 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory {
           nrtCacheMaxCacheMB);
     }
     return dir;
+  }
+
+  private BlockCache getBlockDirectoryCache(String path,
+      int numberOfBlocksPerBank, int blockSize, int bankCount,
+      boolean directAllocation, int slabSize, int bufferSize, int bufferCount, boolean staticBlockCache) {
+    if (!staticBlockCache) {
+      LOG.info("Creating new single instance HDFS BlockCache");
+      return createBlockCache(numberOfBlocksPerBank, blockSize, bankCount, directAllocation, slabSize, bufferSize, bufferCount);
+    }
+    LOG.info("Creating new global HDFS BlockCache");
+    synchronized (HdfsDirectoryFactory.class) {
+      
+      if (globalBlockCache == null) {
+        globalBlockCache = createBlockCache(numberOfBlocksPerBank, blockSize, bankCount,
+            directAllocation, slabSize, bufferSize, bufferCount);
+      }
+    }
+    return globalBlockCache;
+  }
+
+  private BlockCache createBlockCache(int numberOfBlocksPerBank, int blockSize,
+      int bankCount, boolean directAllocation, int slabSize, int bufferSize,
+      int bufferCount) {
+    BufferStore.initNewBuffer(bufferSize, bufferCount);
+    long totalMemory = (long) bankCount * (long) numberOfBlocksPerBank
+        * (long) blockSize;
+    
+    BlockCache blockCache;
+    try {
+      blockCache = new BlockCache(metrics, directAllocation, totalMemory, slabSize, blockSize);
+    } catch (OutOfMemoryError e) {
+      throw new RuntimeException(
+          "The max direct memory is likely too low.  Either increase it (by adding -XX:MaxDirectMemorySize=<size>g -XX:+UseLargePages to your containers startup args)"
+              + " or disable direct allocation using solr.hdfs.blockcache.direct.memory.allocation=false in solrconfig.xml. If you are putting the block cache on the heap,"
+              + " your java heap size might not be large enough."
+              + " Failed allocating ~" + totalMemory / 1000000.0 + " MB.",
+          e);
+    }
+    return blockCache;
   }
   
   @Override

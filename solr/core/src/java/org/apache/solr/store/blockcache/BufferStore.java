@@ -22,7 +22,9 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-
+/**
+ * @lucene.experimental
+ */
 public class BufferStore implements Store {
 
   private static final Store EMPTY = new Store() {
