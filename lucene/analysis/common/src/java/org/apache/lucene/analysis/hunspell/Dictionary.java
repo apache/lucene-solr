@@ -154,9 +154,11 @@ public class Dictionary {
     this.ignoreCase = ignoreCase;
     this.needsInputCleaning = ignoreCase;
     this.needsOutputCleaning = false; // set if we have an OCONV
-    // hungarian has thousands of AF before the SET, so a 32k buffer is needed 
-    BufferedInputStream buffered = new BufferedInputStream(affix, 32768);
-    buffered.mark(32768);
+    // TODO: we really need to probably buffer this on disk since so many newer dictionaries
+    // (en_GB, hu_HU, etc) now have tons of AM lines (morph metadata) etc before they finally declare 
+    // their encoding... but for now this large buffer is a workaround
+    BufferedInputStream buffered = new BufferedInputStream(affix, 65536);
+    buffered.mark(65536);
     String encoding = getDictionaryEncoding(buffered);
     buffered.reset();
     CharsetDecoder decoder = getJavaEncoding(encoding);
