@@ -69,10 +69,17 @@ class AssertingWeight extends Weight {
   public TopScorer topScorer(AtomicReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
     // if the caller asks for in-order scoring or if the weight does not support
     // out-of order scoring then collection will have to happen in-order.
-    // nocommit add wrapping:
     TopScorer inScorer = in.topScorer(context, scoreDocsInOrder, acceptDocs);
-    //return AssertingScorer.wrap(new Random(random.nextLong()), inScorer);
-    return inScorer;
+    if (inScorer == null) {
+      return null;
+    }
+    if (AssertingTopScorer.shouldWrap(inScorer)) {
+      return AssertingTopScorer.wrap(new Random(random.nextLong()), inScorer);
+    } else {
+      // Let super wrap this.scorer instead, so we use
+      // AssertingScorer:
+      return super.topScorer(context, scoreDocsInOrder, acceptDocs);
+    }
   }
 
   @Override

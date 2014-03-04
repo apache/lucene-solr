@@ -32,9 +32,6 @@ import org.apache.lucene.util.VirtualMethod;
 /** Wraps a Scorer with additional checks */
 public class AssertingScorer extends Scorer {
 
-  //private static final VirtualMethod<Scorer> SCORE_COLLECTOR = new VirtualMethod<Scorer>(Scorer.class, "score", Collector.class);
-  //private static final VirtualMethod<Scorer> SCORE_COLLECTOR_RANGE = new VirtualMethod<Scorer>(Scorer.class, "score", Collector.class, int.class, int.class);
-
   // we need to track scorers using a weak hash map because otherwise we
   // could loose references because of eg.
   // AssertingScorer.score(Collector) which needs to delegate to work correctly
@@ -99,41 +96,6 @@ public class AssertingScorer extends Scorer {
     assert !Float.isNaN(score);
     return score;
   }
-
-  // nocommit make an AssertingTopScorer
-  /*
-  @Override
-  public void score(Collector collector) throws IOException {
-    if (SCORE_COLLECTOR.isOverriddenAsOf(this.in.getClass())) {
-      if (random.nextBoolean()) {
-        try {
-          final boolean remaining = in.score(collector, DocsEnum.NO_MORE_DOCS, in.nextDoc());
-          assert !remaining;
-        } catch (UnsupportedOperationException e) {
-          in.score(collector);
-        }
-      } else {
-        in.score(collector);
-      }
-    } else {
-      // score(Collector) has not been overridden, use the super method in
-      // order to benefit from all assertions
-      super.score(collector);
-    }
-  }
-
-  @Override
-  public boolean score(Collector collector, int max, int firstDocID) throws IOException {
-    assert topScorer != TopScorer.NO;
-    if (SCORE_COLLECTOR_RANGE.isOverriddenAsOf(this.in.getClass())) {
-      return in.score(collector, max, firstDocID);
-    } else {
-      // score(Collector,int,int) has not been overridden, use the super
-      // method in order to benefit from all assertions
-      return super.score(collector, max, firstDocID);
-    }
-  }
-  */
 
   @Override
   public Collection<ChildScorer> getChildren() {
