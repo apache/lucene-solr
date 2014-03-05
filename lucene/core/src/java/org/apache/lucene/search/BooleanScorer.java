@@ -112,33 +112,47 @@ final class BooleanScorer extends TopScorer {
   // An internal class which is used in score(Collector, int) for setting the
   // current score. This is required since Collector exposes a setScorer method
   // and implementations that need the score will call scorer.score().
-  // Therefore the only methods that are implemented are score() and doc().
-  private static final class BucketScorer extends Scorer {
+  // Therefore the only methods that are implemented are
+  // score(), doc() and freq().
+  private static final class FakeScorer extends Scorer {
 
-    double score;
-    int doc = NO_MORE_DOCS;
+    float score;
+    int doc;
     int freq;
     
-    public BucketScorer(Weight weight) { super(weight); }
+    public FakeScorer() {
+      super(null);
+    }
     
     @Override
-    public int advance(int target) { return DocsEnum.NO_MORE_DOCS; }
+    public int advance(int target) {
+      throw new UnsupportedOperationException();
+    }
 
     @Override
-    public int docID() { return doc; }
+    public int docID() {
+      return doc;
+    }
 
     @Override
-    public int freq() { return freq; }
+    public int freq() {
+      return freq;
+    }
 
     @Override
-    public int nextDoc() { return DocsEnum.NO_MORE_DOCS; }
+    public int nextDoc() {
+      throw new UnsupportedOperationException();
+    }
     
     @Override
-    public float score() { return (float)score; }
+    public float score() {
+      return score;
+    }
     
     @Override
-    public long cost() { return 1; }
-
+    public long cost() {
+      throw new UnsupportedOperationException();
+    }
   }
 
   static final class Bucket {
@@ -236,10 +250,10 @@ final class BooleanScorer extends TopScorer {
 
     boolean more;
     Bucket tmp;
-    BucketScorer bs = new BucketScorer(weight);
+    FakeScorer fs = new FakeScorer();
 
     // The internal loop will set the score and doc before calling collect.
-    collector.setScorer(bs);
+    collector.setScorer(fs);
     do {
       bucketTable.first = null;
       
@@ -267,9 +281,9 @@ final class BooleanScorer extends TopScorer {
           }
           
           if (current.coord >= minNrShouldMatch) {
-            bs.score = current.score * coordFactors[current.coord];
-            bs.doc = current.doc;
-            bs.freq = current.coord;
+            fs.score = (float) (current.score * coordFactors[current.coord]);
+            fs.doc = current.doc;
+            fs.freq = current.coord;
             collector.collect(current.doc);
           }
         }

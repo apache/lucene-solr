@@ -182,7 +182,7 @@ public class TestBooleanScorer extends LuceneTestCase {
       public void setScorer(Scorer scorer) {
         // Make sure we got BooleanScorer:
         final Class<?> clazz = scorer instanceof AssertingScorer ? ((AssertingScorer) scorer).getIn().getClass() : scorer.getClass();
-        assertEquals("Scorer is implemented by wrong class", BooleanScorer.class.getName() + "$BucketScorer", clazz.getName());
+        assertEquals("Scorer is implemented by wrong class", BooleanScorer.class.getName() + "$FakeScorer", clazz.getName());
       }
       
       @Override

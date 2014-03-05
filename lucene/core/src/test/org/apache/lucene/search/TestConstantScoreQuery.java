@@ -121,7 +121,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
       checkHits(searcher, csq2, csq2.getBoost(), ConstantScoreQuery.ConstantScorer.class.getName(), ConstantScoreQuery.ConstantScorer.class.getName());
       
       // for the combined BQ, the scorer should always be BooleanScorer's BucketScorer, because our scorer supports out-of order collection!
-      final String bucketScorerClass = BooleanScorer.class.getName() + "$BucketScorer";
+      final String bucketScorerClass = BooleanScorer.class.getName() + "$FakeScorer";
       checkHits(searcher, bq, csq1.getBoost() + csq2.getBoost(), bucketScorerClass, null);
       checkHits(searcher, csqbq, csqbq.getBoost(), ConstantScoreQuery.ConstantScorer.class.getName(), bucketScorerClass);
     } finally {

@@ -92,18 +92,6 @@ public abstract class Weight {
    * 
    * @param context
    *          the {@link AtomicReaderContext} for which to return the {@link Scorer}.
-   * @param scoreDocsInOrder
-   *          specifies whether in-order scoring of documents is required. Note
-   *          that if set to false (i.e., out-of-order scoring is required),
-   *          this method can return whatever scoring mode it supports, as every
-   *          in-order scorer is also an out-of-order one. However, an
-   *          out-of-order scorer may not support {@link Scorer#nextDoc()}
-   *          and/or {@link Scorer#advance(int)}, therefore it is recommended to
-   *          request an in-order scorer if use of these methods is required.
-   * @param topScorer
-   *          if true, {@link Scorer#score(Collector)} will be called; if false,
-   *          {@link Scorer#nextDoc()} and/or {@link Scorer#advance(int)} will
-   *          be called.
    * @param acceptDocs
    *          Bits that represent the allowable docs to match (typically deleted docs
    *          but possibly filtering other documents)
@@ -113,7 +101,33 @@ public abstract class Weight {
    */
   public abstract Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException;
 
-  // nocommit jdocs
+  /**
+   * Optional method, to return a {@link TopScorer} to
+   * score the query and send hits to a {@link Collector}.
+   * Only queries that have a different top-level approach
+   * need to override this; the default implementation
+   * pulls a normal {@link Scorer} and iterates and
+   * collects the resulting hits.
+   *
+   * @param context
+   *          the {@link AtomicReaderContext} for which to return the {@link Scorer}.
+   * @param scoreDocsInOrder
+   *          specifies whether in-order scoring of documents is required. Note
+   *          that if set to false (i.e., out-of-order scoring is required),
+   *          this method can return whatever scoring mode it supports, as every
+   *          in-order scorer is also an out-of-order one. However, an
+   *          out-of-order scorer may not support {@link Scorer#nextDoc()}
+   *          and/or {@link Scorer#advance(int)}, therefore it is recommended to
+   *          request an in-order scorer if use of these
+   *          methods is required.
+   * @param acceptDocs
+   *          Bits that represent the allowable docs to match (typically deleted docs
+   *          but possibly filtering other documents)
+   *
+   * @return a {@link TopScorer} which scores documents and
+   * passes them to a collector.
+   * @throws IOException if there is a low-level I/O error
+   */
   public TopScorer topScorer(AtomicReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
 
     final Scorer scorer = scorer(context, acceptDocs);
