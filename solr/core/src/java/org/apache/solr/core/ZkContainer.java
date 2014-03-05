@@ -72,7 +72,7 @@ public class ZkContainer {
 
     initZooKeeper(cc, solrHome,
         config.getZkHost(), config.getZkClientTimeout(), config.getZkHostPort(), config.getZkHostContext(),
-        config.getHost(), config.getLeaderVoteWait(), config.getGenericCoreNodeNames());
+        config.getHost(), config.getLeaderVoteWait(), config.getLeaderConflictResolveWait(), config.getGenericCoreNodeNames());
   }
   // TODO: 5.0 remove this, it's only here for back-compat and only called from ConfigSolr.
   public static boolean isZkMode() {
@@ -84,7 +84,8 @@ public class ZkContainer {
   }
 
   public void initZooKeeper(final CoreContainer cc, String solrHome, String zkHost, int zkClientTimeout, String hostPort,
-                            String hostContext, String host, int leaderVoteWait, boolean genericCoreNodeNames) {
+        String hostContext, String host, int leaderVoteWait, int leaderConflictResolveWait, boolean genericCoreNodeNames) {
+
     ZkController zkController = null;
     
     // if zkHost sys property is not set, we are not using ZooKeeper
@@ -156,7 +157,7 @@ public class ZkContainer {
         }
         zkController = new ZkController(cc, zookeeperHost, zkClientTimeout,
             zkClientConnectTimeout, host, hostPort, hostContext,
-            leaderVoteWait, genericCoreNodeNames,
+            leaderVoteWait, leaderConflictResolveWait, genericCoreNodeNames,
             new CurrentCoreDescriptorProvider() {
 
               @Override
