@@ -68,6 +68,13 @@ Optimizations
 
 ======================= Lucene 4.8.0 =======================
 
+Changes in Runtime Behavior
+
+* LUCENE-5472: IndexWriter.addDocument will now throw an IllegalArgumentException 
+  if a Term to be indexed exceeds IndexWriter.MAX_TERM_LENGTH.  To recreate previous
+  behavior of silently ignoring these terms, use LengthFilter in your Analyzer.
+  (hossman, Mike McCandless, Varun Thacker)
+
 New Features
 
 * LUCENE-5454: Add SortedSetSortField to lucene/sandbox, to allow sorting

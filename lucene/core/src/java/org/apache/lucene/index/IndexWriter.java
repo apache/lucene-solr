@@ -207,8 +207,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
   /**
    * Absolute hard maximum length for a term, in bytes once
    * encoded as UTF8.  If a term arrives from the analyzer
-   * longer than this length, it is skipped and a message is
-   * printed to infoStream, if set (see {@link
+   * longer than this length, an
+   * <code>IllegalArgumentException</code>  is thrown
+   * and a message is printed to infoStream, if set (see {@link
    * IndexWriterConfig#setInfoStream(InfoStream)}).
    */
   public final static int MAX_TERM_LENGTH = DocumentsWriterPerThread.MAX_TERM_LENGTH_UTF8;
@@ -1159,7 +1160,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
    * merge policy.
    *
    * <p>Note that each term in the document can be no longer
-   * than 16383 characters, otherwise an
+   * than {@link #MAX_TERM_LENGTH} in bytes, otherwise an
    * IllegalArgumentException will be thrown.</p>
    *
    * <p>Note that it's possible to create an invalid Unicode

@@ -1660,32 +1660,32 @@ public class TestIndexWriter extends LuceneTestCase {
     // This contents produces a too-long term:
     String contents = "abc xyz x" + bigTerm + " another term";
     doc.add(new TextField("content", contents, Field.Store.NO));
-    w.addDocument(doc);
+    try {
+      w.addDocument(doc);
+      fail("should have hit exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
 
     // Make sure we can add another normal document
     doc = new Document();
     doc.add(new TextField("content", "abc bbb ccc", Field.Store.NO));
     w.addDocument(doc);
 
+    // So we remove the deleted doc:
+    w.forceMerge(1);
+
     IndexReader reader = w.getReader();
     w.close();
 
     // Make sure all terms < max size were indexed
-    assertEquals(2, reader.docFreq(new Term("content", "abc")));
+    assertEquals(1, reader.docFreq(new Term("content", "abc")));
     assertEquals(1, reader.docFreq(new Term("content", "bbb")));
-    assertEquals(1, reader.docFreq(new Term("content", "term")));
-    assertEquals(1, reader.docFreq(new Term("content", "another")));
+    assertEquals(0, reader.docFreq(new Term("content", "term")));
 
-    // Make sure position is still incremented when
-    // massive term is skipped:
-    DocsAndPositionsEnum tps = MultiFields.getTermPositionsEnum(reader, null, "content", new BytesRef("another"));
-    assertEquals(0, tps.nextDoc());
-    assertEquals(1, tps.freq());
-    assertEquals(3, tps.nextPosition());
-
-    // Make sure the doc that has the massive term is in
+    // Make sure the doc that has the massive term is NOT in
     // the index:
-    assertEquals("document with wicked long term should is not in the index!", 2, reader.numDocs());
+    assertEquals("document with wicked long term is in the index!", 1, reader.numDocs());
 
     reader.close();
     dir.close();
