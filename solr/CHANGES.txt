@@ -30,7 +30,16 @@ Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.5
 
-                      
+Upgrading from Solr 4.7
+----------------------
+
+* In previous versions of Solr, Terms that exceeded Lucene's MAX_TERM_LENGTH were
+  silently ignored when indexing documents.  Begining with Solr 4.8, a document
+  an error will be generated when attempting to index a document with a term
+  that is too large.  If you wish to continue to have large terms ignored,
+  use "solr.LengthFilterFactory" in all of your Analyzers.  See LUCENE-5472 for
+  more details.
+
 Detailed Change List
 ----------------------
 
@@ -107,6 +116,11 @@ Other Changes
 * SOLR-5799: When registering as the leader, if an existing ephemeral
   registration exists, wait a short time to see if it goes away.
   (Mark Miller)
+
+* LUCENE-5472: IndexWriter.addDocument will now throw an IllegalArgumentException 
+  if a Term to be indexed exceeds IndexWriter.MAX_TERM_LENGTH.  To recreate previous
+  behavior of silently ignoring these terms, use LengthFilter in your Analyzer.
+  (hossman, Mike McCandless, Varun Thacker)
 
 ==================  4.7.0 ==================
 

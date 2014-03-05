@@ -287,6 +287,16 @@ valued. -->
                class="solr.ExternalFileField"/>
 
     <fieldType name="text_no_analyzer" stored="false" indexed="true" class="solr.TextField" />
+
+    <fieldtype name="text_length" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <filter class="solr.StandardFilterFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+        <filter class="solr.LengthFilterFactory" min="2" max="32768"/>
+      </analyzer>
+    </fieldtype>  
+
  </types>
 
 
@@ -323,6 +333,9 @@ valued. -->
    <field name="text_no_analyzer" type="text_no_analyzer" indexed="true" />
 
    <field name="_version_" type="long" indexed="true" stored="true" multiValued="false" />
+
+   <field name="cat" type="string" indexed="true" stored="true" multiValued="true"/>
+   <field name="cat_length" type="text_length" indexed="true" stored="true" multiValued="true"/>   
 
    <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
         will be used if the name matches any of the patterns.
