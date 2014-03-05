@@ -626,7 +626,7 @@ public class ZkStateReader {
   }
   
   /**
-   * Returns the baseURL corrisponding to a given node's nodeName --
+   * Returns the baseURL corresponding to a given node's nodeName --
    * NOTE: does not (currently) imply that the nodeName (or resulting 
    * baseURL) exists in the cluster.
    * @lucene.experimental
