@@ -47,7 +47,7 @@ import org.apache.lucene.util.packed.MonotonicAppendingLongBuffer;
  *  to have sequentially-assigned doc IDs, this policy will scatter doc IDs.
  *  <p><b>NOTE</b>: This {@link MergePolicy} should only be used with idempotent
  *  {@link Sort}s so that the order of segments is predictable. For example,
- *  using {@link SortingMergePolicy} with {@link Sorter#REVERSE_DOCS} (which is
+ *  using {@link SortingMergePolicy} with {@link Sort#INDEXORDER in reverse} (which is
  *  not idempotent) will make the order of documents in a segment depend on the
  *  number of times the segment has been merged.
  *  @lucene.experimental */

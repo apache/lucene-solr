@@ -36,14 +36,6 @@ import org.apache.lucene.util.packed.MonotonicAppendingLongBuffer;
  */
 abstract class Sorter {
 
-  /** A comparator that keeps documents in index order. */
-  public static final DocComparator INDEX_ORDER_COMPARATOR = new DocComparator() {
-    @Override
-    public int compare(int docID1, int docID2) {
-      return docID1 - docID2;
-    }
-  };
-
   /**
    * A permutation of doc IDs. For every document ID between <tt>0</tt> and
    * {@link IndexReader#maxDoc()}, <code>oldToNew(newToOld(docID))</code> must
@@ -89,38 +81,6 @@ abstract class Sorter {
 
   }
 
-  /**
-   * Sorts documents in reverse order. <b>NOTE</b>: This {@link Sorter} is not
-   * idempotent. Sorting an {@link AtomicReader} once or twice will return two
-   * different {@link AtomicReader} views. This {@link Sorter} should not be
-   * used with {@link SortingMergePolicy}.
-   */
-  public static final Sorter REVERSE_DOCS = new Sorter() {
-    @Override
-    public DocMap sort(final AtomicReader reader) throws IOException {
-      final int maxDoc = reader.maxDoc();
-      return new DocMap() {
-        @Override
-        public int oldToNew(int docID) {
-          return maxDoc - docID - 1;
-        }
-        @Override
-        public int newToOld(int docID) {
-          return maxDoc - docID - 1;
-        }
-        @Override
-        public int size() {
-          return maxDoc;
-        }
-      };
-    }
-    
-    @Override
-    public String getID() {
-      return "ReverseDocs";
-    }
-  };
-  
   private static final class DocValueSorter extends TimSorter {
     
     private final int[] docs;
