@@ -131,7 +131,7 @@ public class Overseer {
                     // ZooKeeper in which case another Overseer should take over
                     // TODO: if ordering for the message is not important, we could
                     // track retries and put it back on the end of the queue
-                    log.error("Could not process Overseer message", e);
+                    log.error("Overseer could not process the current clusterstate state update message, skipping the message.", e);
                   }
                   zkClient.setData(ZkStateReader.CLUSTER_STATE,
                       ZkStateReader.toJSON(clusterState), true);
@@ -206,7 +206,7 @@ public class Overseer {
                 // ZooKeeper in which case another Overseer should take over
                 // TODO: if ordering for the message is not important, we could
                 // track retries and put it back on the end of the queue
-                log.error("Could not process Overseer message", e);
+                log.error("Overseer could not process the current clusterstate state update message, skipping the message.", e);
               }
               workQueue.offer(head.getBytes());
 
