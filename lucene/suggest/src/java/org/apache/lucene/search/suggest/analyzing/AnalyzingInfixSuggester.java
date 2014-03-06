@@ -54,10 +54,8 @@ import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.sorter.EarlyTerminatingSortingCollector;
-import org.apache.lucene.index.sorter.Sorter;
 import org.apache.lucene.index.sorter.SortingAtomicReader;
 import org.apache.lucene.index.sorter.SortingMergePolicy;
-import org.apache.lucene.index.sorter.SortSorter;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Collector;
@@ -131,7 +129,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
    *  PrefixQuery is used (4). */
   public static final int DEFAULT_MIN_PREFIX_CHARS = 4;
 
-  private Sorter sorter;
+  private Sort sorter;
 
   /** Create a new instance, loading from a previously built
    *  directory, if it exists. */
@@ -173,7 +171,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
   /** Override this to customize index settings, e.g. which
    *  codec to use. Sorter is null if this config is for
    *  the first pass writer. */
-  protected IndexWriterConfig getIndexWriterConfig(Version matchVersion, Analyzer indexAnalyzer, Sorter sorter, IndexWriterConfig.OpenMode openMode) {
+  protected IndexWriterConfig getIndexWriterConfig(Version matchVersion, Analyzer indexAnalyzer, Sort sorter, IndexWriterConfig.OpenMode openMode) {
     IndexWriterConfig iwc = new IndexWriterConfig(matchVersion, indexAnalyzer);
     iwc.setCodec(new Lucene46Codec());
     iwc.setOpenMode(openMode);
@@ -360,7 +358,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
   }
 
   private void initSorter() {
-    sorter = new SortSorter(new Sort(new SortField("weight", SortField.Type.LONG, true)));
+    sorter = new Sort(new SortField("weight", SortField.Type.LONG, true));
   }
 
   /**

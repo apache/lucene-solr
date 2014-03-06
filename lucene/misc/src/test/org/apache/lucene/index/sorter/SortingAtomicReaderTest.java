@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TestUtil;
@@ -57,16 +58,8 @@ public class SortingAtomicReaderTest extends SorterTestBase {
       System.out.println("sortedValues: " + Arrays.toString(sortedValues));
     }
     
-    reader = SortingAtomicReader.wrap(reader, new Sorter() {
-      @Override
-      public Sorter.DocMap sort(AtomicReader reader) throws IOException {
-        return docMap;
-      }
-      @Override
-      public String getID() {
-        return ID_FIELD;
-      }
-    });
+    // TODO: what is this doing? like a no-op sort?
+    reader = SortingAtomicReader.wrap(reader, docMap);
     
     if (VERBOSE) {
       System.out.print("mapped-deleted-docs: ");

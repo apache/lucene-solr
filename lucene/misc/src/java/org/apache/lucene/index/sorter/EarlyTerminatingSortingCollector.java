@@ -24,6 +24,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.CollectionTerminatedException;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TotalHitCountCollector;
 
@@ -47,7 +48,7 @@ import org.apache.lucene.search.TotalHitCountCollector;
  * <p>
  * <b>NOTE</b>: This {@link Collector} uses {@link Sorter#getID()} to detect
  * whether a segment was sorted with the same {@link Sorter} as the one given in
- * {@link #EarlyTerminatingSortingCollector(Collector, Sorter, int)}. This has
+ * {@link #EarlyTerminatingSortingCollector(Collector, Sort, int)}. This has
  * two implications:
  * <ul>
  * <li>if {@link Sorter#getID()} is not implemented correctly and returns
@@ -61,10 +62,11 @@ import org.apache.lucene.search.TotalHitCountCollector;
  * 
  * @lucene.experimental
  */
+// nocommit: fix these javadocs to be about Sort
 public class EarlyTerminatingSortingCollector extends Collector {
 
   protected final Collector in;
-  protected final Sorter sorter;
+  protected final Sort sort;
   protected final int numDocsToCollect;
   
   protected int segmentTotalCollect;
@@ -77,20 +79,19 @@ public class EarlyTerminatingSortingCollector extends Collector {
    * 
    * @param in
    *          the collector to wrap
-   * @param sorter
-   *          the same sorter as the one which is used by {@link IndexWriter}'s
-   *          {@link SortingMergePolicy}
+   * @param sort
+   *          the sort you are sorting the search results on
    * @param numDocsToCollect
    *          the number of documents to collect on each segment. When wrapping
    *          a {@link TopDocsCollector}, this number should be the number of
    *          hits.
    */
-  public EarlyTerminatingSortingCollector(Collector in, Sorter sorter, int numDocsToCollect) {
+  public EarlyTerminatingSortingCollector(Collector in, Sort sort, int numDocsToCollect) {
     if (numDocsToCollect <= 0) {
       throw new IllegalStateException("numDocsToCollect must always be > 0, got " + segmentTotalCollect);
     }
     this.in = in;
-    this.sorter = sorter;
+    this.sort = sort;
     this.numDocsToCollect = numDocsToCollect;
   }
 
@@ -110,7 +111,7 @@ public class EarlyTerminatingSortingCollector extends Collector {
   @Override
   public void setNextReader(AtomicReaderContext context) throws IOException {
     in.setNextReader(context);
-    segmentSorted = SortingMergePolicy.isSorted(context.reader(), sorter);
+    segmentSorted = SortingMergePolicy.isSorted(context.reader(), sort);
     segmentTotalCollect = segmentSorted ? numDocsToCollect : Integer.MAX_VALUE;
     numCollected = 0;
   }

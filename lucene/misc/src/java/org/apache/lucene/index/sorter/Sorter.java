@@ -34,7 +34,7 @@ import org.apache.lucene.util.packed.MonotonicAppendingLongBuffer;
  * when documents are directly comparable by their field values.
  * @lucene.experimental
  */
-public abstract class Sorter {
+abstract class Sorter {
 
   /** A comparator that keeps documents in index order. */
   public static final DocComparator INDEX_ORDER_COMPARATOR = new DocComparator() {

@@ -26,7 +26,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 
 // nocommit: temporary class to engage the cutover!
-public class SortSorter extends Sorter {
+class SortSorter extends Sorter {
   final Sort sort;
   
   public SortSorter(Sort sort) {

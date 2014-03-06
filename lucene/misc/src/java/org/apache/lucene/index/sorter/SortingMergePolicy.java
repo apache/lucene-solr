@@ -33,11 +33,12 @@ import org.apache.lucene.index.SegmentCommitInfo;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.packed.MonotonicAppendingLongBuffer;
 
-/** A {@link MergePolicy} that reorders documents according to a {@link Sorter}
+/** A {@link MergePolicy} that reorders documents according to a {@link Sort}
  *  before merging them. As a consequence, all segments resulting from a merge
  *  will be sorted while segments resulting from a flush will be in the order
  *  in which documents have been added.
@@ -45,11 +46,12 @@ import org.apache.lucene.util.packed.MonotonicAppendingLongBuffer;
  *  {@link IndexWriter#addDocuments(Iterable, org.apache.lucene.analysis.Analyzer)}
  *  to have sequentially-assigned doc IDs, this policy will scatter doc IDs.
  *  <p><b>NOTE</b>: This {@link MergePolicy} should only be used with idempotent
- *  {@link Sorter}s so that the order of segments is predictable. For example,
+ *  {@link Sort}s so that the order of segments is predictable. For example,
  *  using {@link SortingMergePolicy} with {@link Sorter#REVERSE_DOCS} (which is
  *  not idempotent) will make the order of documents in a segment depend on the
  *  number of times the segment has been merged.
  *  @lucene.experimental */
+// nocommit: fix these jdocs around idempotency
 public final class SortingMergePolicy extends MergePolicy {
 
   /**
@@ -147,12 +149,12 @@ public final class SortingMergePolicy extends MergePolicy {
 
   }
 
-  /** Returns true if the given reader is sorted by the given sorter. */
-  public static boolean isSorted(AtomicReader reader, Sorter sorter) {
+  /** Returns true if the given reader is sorted by the given sort. */
+  public static boolean isSorted(AtomicReader reader, Sort sort) {
     if (reader instanceof SegmentReader) {
       final SegmentReader segReader = (SegmentReader) reader;
       final Map<String, String> diagnostics = segReader.getSegmentInfo().info.getDiagnostics();
-      if (diagnostics != null && sorter.getID().equals(diagnostics.get(SORTER_ID_PROP))) {
+      if (diagnostics != null && sort.toString().equals(diagnostics.get(SORTER_ID_PROP))) {
         return true;
       }
     }
@@ -172,11 +174,13 @@ public final class SortingMergePolicy extends MergePolicy {
 
   final MergePolicy in;
   final Sorter sorter;
+  final Sort sort;
 
-  /** Create a new {@link MergePolicy} that sorts documents with <code>sorter</code>. */
-  public SortingMergePolicy(MergePolicy in, Sorter sorter) {
+  /** Create a new {@link MergePolicy} that sorts documents with <code>sort</code>. */
+  public SortingMergePolicy(MergePolicy in, Sort sort) {
     this.in = in;
-    this.sorter = sorter;
+    this.sorter = new SortSorter(sort);
+    this.sort = sort;
   }
 
   @Override
@@ -200,7 +204,7 @@ public final class SortingMergePolicy extends MergePolicy {
 
   @Override
   public MergePolicy clone() {
-    return new SortingMergePolicy(in.clone(), sorter);
+    return new SortingMergePolicy(in.clone(), sort);
   }
 
   @Override

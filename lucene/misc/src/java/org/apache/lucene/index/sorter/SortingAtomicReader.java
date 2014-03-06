@@ -35,6 +35,7 @@ import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMFile;
@@ -710,12 +711,12 @@ public class SortingAtomicReader extends FilterAtomicReader {
   /** Return a sorted view of <code>reader</code> according to the order
    *  defined by <code>sorter</code>. If the reader is already sorted, this
    *  method might return the reader as-is. */
-  public static AtomicReader wrap(AtomicReader reader, Sorter sorter) throws IOException {
-    return wrap(reader, sorter.sort(reader));
+  public static AtomicReader wrap(AtomicReader reader, Sort sort) throws IOException {
+    return wrap(reader, new SortSorter(sort).sort(reader));
   }
 
-  /** Expert: same as {@link #wrap(AtomicReader, Sorter)} but operates directly on a {@link Sorter.DocMap}. */
-  public static AtomicReader wrap(AtomicReader reader, Sorter.DocMap docMap) {
+  /** Expert: same as {@link #wrap(AtomicReader, Sort)} but operates directly on a {@link Sorter.DocMap}. */
+  static AtomicReader wrap(AtomicReader reader, Sorter.DocMap docMap) {
     if (docMap == null) {
       // the reader is already sorter
       return reader;
