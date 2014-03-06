@@ -34,41 +34,43 @@ import org.apache.lucene.search.TotalHitCountCollector;
  * {@link Sort}.
  * 
  * <p>
- * <b>NOTE:</b> the {@link Collector} detects sorted segments according to
+ * <b>NOTE:</b> the {@code Collector} detects sorted segments according to
  * {@link SortingMergePolicy}, so it's best used in conjunction with it. Also,
- * it collects up to a specified num docs from each segment, and therefore is
- * mostly suitable for use in conjunction with collectors such as
+ * it collects up to a specified {@code numDocsToCollect} from each segment, 
+ * and therefore is mostly suitable for use in conjunction with collectors such as
  * {@link TopDocsCollector}, and not e.g. {@link TotalHitCountCollector}.
  * <p>
- * <b>NOTE</b>: If you wrap a {@link TopDocsCollector} that sorts in the same
- * order as the index order, the returned {@link TopDocsCollector#topDocs()}
+ * <b>NOTE</b>: If you wrap a {@code TopDocsCollector} that sorts in the same
+ * order as the index order, the returned {@link TopDocsCollector#topDocs() TopDocs}
  * will be correct. However the total of {@link TopDocsCollector#getTotalHits()
  * hit count} will be underestimated since not all matching documents will have
  * been collected.
  * <p>
- * <b>NOTE</b>: This {@link Collector} uses {@link Sort#toString()} to detect
- * whether a segment was sorted with the same {@link Sort} as the one given in
- * {@link #EarlyTerminatingSortingCollector(Collector, Sort, int)}. This has
+ * <b>NOTE</b>: This {@code Collector} uses {@link Sort#toString()} to detect
+ * whether a segment was sorted with the same {@code Sort}. This has
  * two implications:
  * <ul>
  * <li>if a custom comparator is not implemented correctly and returns
  * different identifiers for equivalent instances, this collector will not
  * detect sorted segments,</li>
  * <li>if you suddenly change the {@link IndexWriter}'s
- * {@link SortingMergePolicy} to sort according to another criterion and if both
- * the old and the new {@link Sort}s have the same identifier, this
- * {@link Collector} will incorrectly detect sorted segments.</li>
+ * {@code SortingMergePolicy} to sort according to another criterion and if both
+ * the old and the new {@code Sort}s have the same identifier, this
+ * {@code Collector} will incorrectly detect sorted segments.</li>
  * </ul>
  * 
  * @lucene.experimental
  */
 public class EarlyTerminatingSortingCollector extends Collector {
-
+  /** The wrapped Collector */
   protected final Collector in;
+  /** Sort used to sort the search results */
   protected final Sort sort;
+  /** Number of documents to collect in each segment */
   protected final int numDocsToCollect;
-  
+  /** Number of documents to collect in the current segment being processed */
   protected int segmentTotalCollect;
+  /** True if the current segment being processed is sorted by {@link #sort} */
   protected boolean segmentSorted;
 
   private int numCollected;

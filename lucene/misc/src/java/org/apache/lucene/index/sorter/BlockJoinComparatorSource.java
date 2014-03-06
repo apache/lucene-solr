@@ -24,6 +24,9 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FieldComparatorSource;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.IndexSearcher; // javadocs
+import org.apache.lucene.search.Query; // javadocs
+import org.apache.lucene.search.ScoreDoc; // javadocs
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -32,12 +35,12 @@ import org.apache.lucene.util.FixedBitSet;
 /**
  * Helper class to sort readers that contain blocks of documents.
  * <p>
- * Note that this currently has some limitations:
+ * Note that this class is intended to used with {@link SortingMergePolicy},
+ * and for other purposes has some limitations:
  * <ul>
- *    <li>Cannot yet be used with IndexSearcher.searchAfter
- *    <li>Filling sort value fields is not yet supported.
+ *    <li>Cannot yet be used with {@link IndexSearcher#searchAfter(ScoreDoc, Query, int, Sort) IndexSearcher.searchAfter}
+ *    <li>Filling sort field values is not yet supported.
  * </ul>
- * Its intended to be used with {@link SortingMergePolicy}.
  */
 // TODO: can/should we clean this thing up (e.g. return a proper sort value)
 // and move to the join/ module?
@@ -160,7 +163,7 @@ public class BlockJoinComparatorSource extends FieldComparatorSource {
       @Override
       public Integer value(int slot) {
         // really our sort "value" is more complex...
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("filling sort field values is not yet supported");
       }
       
       @Override
