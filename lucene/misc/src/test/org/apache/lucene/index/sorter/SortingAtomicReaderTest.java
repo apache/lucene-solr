@@ -33,7 +33,7 @@ public class SortingAtomicReaderTest extends SorterTestBase {
     
     // sort the index by id (as integer, in NUMERIC_DV_FIELD)
     Sort sort = new Sort(new SortField(NUMERIC_DV_FIELD, SortField.Type.INT));
-    final Sorter.DocMap docMap = new SortSorter(sort).sort(reader);
+    final Sorter.DocMap docMap = new Sorter(sort).sort(reader);
  
     // Sorter.compute also sorts the values
     NumericDocValues dv = reader.getNumericDocValues(NUMERIC_DV_FIELD);

@@ -712,7 +712,7 @@ public class SortingAtomicReader extends FilterAtomicReader {
    *  defined by <code>sorter</code>. If the reader is already sorted, this
    *  method might return the reader as-is. */
   public static AtomicReader wrap(AtomicReader reader, Sort sort) throws IOException {
-    return wrap(reader, new SortSorter(sort).sort(reader));
+    return wrap(reader, new Sorter(sort).sort(reader));
   }
 
   /** Expert: same as {@link #wrap(AtomicReader, Sort)} but operates directly on a {@link Sorter.DocMap}. */

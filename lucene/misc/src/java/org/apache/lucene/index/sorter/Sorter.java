@@ -22,19 +22,25 @@ import java.util.Comparator;
 
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.TimSorter;
 import org.apache.lucene.util.packed.MonotonicAppendingLongBuffer;
 
 /**
  * Sorts documents of a given index by returning a permutation on the document
  * IDs.
- * <p><b>NOTE</b>: A {@link Sorter} implementation can be easily written from
- * a {@link DocComparator document comparator} by using the
- * {@link #sort(int, DocComparator)} helper method. This is especially useful
- * when documents are directly comparable by their field values.
  * @lucene.experimental
  */
-abstract class Sorter {
+final class Sorter {
+  final Sort sort;
+  
+  /** Creates a new Sorter to sort the index with {@code sort} */
+  Sorter(Sort sort) {
+    this.sort = sort;
+  }
 
   /**
    * A permutation of doc IDs. For every document ID between <tt>0</tt> and
@@ -54,7 +60,6 @@ abstract class Sorter {
      *  {@link AtomicReader#maxDoc() number of documents} of the
      *  {@link AtomicReader} which is sorted. */
     public abstract int size();
-
   }
 
   /** Check consistency of a {@link DocMap}, useful for assertions. */
@@ -202,7 +207,39 @@ abstract class Sorter {
    * <b>NOTE:</b> deleted documents are expected to appear in the mapping as
    * well, they will however be marked as deleted in the sorted view.
    */
-  public abstract DocMap sort(AtomicReader reader) throws IOException;
+  public DocMap sort(AtomicReader reader) throws IOException {
+    SortField fields[] = sort.getSort();
+    final int reverseMul[] = new int[fields.length];
+    final FieldComparator<?> comparators[] = new FieldComparator[fields.length];
+    
+    for (int i = 0; i < fields.length; i++) {
+      reverseMul[i] = fields[i].getReverse() ? -1 : 1;
+      comparators[i] = fields[i].getComparator(1, i);
+      comparators[i].setNextReader(reader.getContext());
+      comparators[i].setScorer(FAKESCORER);
+    }
+    final DocComparator comparator = new DocComparator() {
+      @Override
+      public int compare(int docID1, int docID2) {
+        try {
+          for (int i = 0; i < comparators.length; i++) {
+            // TODO: would be better if copy() didnt cause a term lookup in TermOrdVal & co,
+            // the segments are always the same here...
+            comparators[i].copy(0, docID1);
+            comparators[i].setBottom(0);
+            int comp = reverseMul[i] * comparators[i].compareBottom(docID2);
+            if (comp != 0) {
+              return comp;
+            }
+          }
+          return Integer.compare(docID1, docID2); // docid order tiebreak
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      }
+    };
+    return sort(reader.maxDoc(), comparator);
+  }
 
   /**
    * Returns the identifier of this {@link Sorter}.
@@ -211,11 +248,34 @@ abstract class Sorter {
    * will have the same identifier. On the contrary, this identifier should be
    * different on different {@link Sorter sorters}.
    */
-  public abstract String getID();
+  public String getID() {
+    return sort.toString();
+  }
 
   @Override
   public String toString() {
     return getID();
   }
+  
+  static final Scorer FAKESCORER = new Scorer(null) {
+    
+    @Override
+    public float score() throws IOException { throw new UnsupportedOperationException(); }
+    
+    @Override
+    public int freq() throws IOException { throw new UnsupportedOperationException(); }
+
+    @Override
+    public int docID() { throw new UnsupportedOperationException(); }
+
+    @Override
+    public int nextDoc() throws IOException { throw new UnsupportedOperationException(); }
+
+    @Override
+    public int advance(int target) throws IOException { throw new UnsupportedOperationException(); }
+
+    @Override
+    public long cost() { throw new UnsupportedOperationException(); }
+  };
   
 }

@@ -98,7 +98,7 @@ public class TestBlockJoinSorter extends LuceneTestCase {
     final Sort childSort = new Sort(new SortField("child_val", SortField.Type.LONG));
 
     final Sort sort = new Sort(new SortField("custom", new BlockJoinComparatorSource(parentsFilter, parentSort, childSort)));
-    final Sorter sorter = new SortSorter(sort);
+    final Sorter sorter = new Sorter(sort);
     final Sorter.DocMap docMap = sorter.sort(reader);
     assertEquals(reader.maxDoc(), docMap.size());
 

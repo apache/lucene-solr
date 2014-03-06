@@ -179,7 +179,7 @@ public final class SortingMergePolicy extends MergePolicy {
   /** Create a new {@link MergePolicy} that sorts documents with <code>sort</code>. */
   public SortingMergePolicy(MergePolicy in, Sort sort) {
     this.in = in;
-    this.sorter = new SortSorter(sort);
+    this.sorter = new Sorter(sort);
     this.sort = sort;
   }
 
