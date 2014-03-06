@@ -665,7 +665,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     boolean disableLegacy = random().nextBoolean();
     CloudSolrServer client1 = null;
 
-    if(disableLegacy) {
+    if (disableLegacy) {
       log.info("legacyCloud=false");
       client1 = createCloudClient(null);
       setClusterProp(client1, ZkStateReader.LEGACY_CLOUD, "false");

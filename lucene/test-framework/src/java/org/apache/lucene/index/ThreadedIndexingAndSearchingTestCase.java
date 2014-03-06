@@ -440,8 +440,10 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
     if (dir instanceof BaseDirectoryWrapper) {
       ((BaseDirectoryWrapper) dir).setCheckIndexOnClose(false); // don't double-checkIndex, we do it ourselves.
     }
+    MockAnalyzer analyzer = new MockAnalyzer(random());
+    analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
     final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, 
-        new MockAnalyzer(random())).setInfoStream(new FailOnNonBulkMergesInfoStream());
+        analyzer).setInfoStream(new FailOnNonBulkMergesInfoStream());
 
     if (LuceneTestCase.TEST_NIGHTLY) {
       // newIWConfig makes smallish max seg size, which
