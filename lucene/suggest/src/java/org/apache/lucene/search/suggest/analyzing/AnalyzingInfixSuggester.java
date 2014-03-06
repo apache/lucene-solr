@@ -129,7 +129,8 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
    *  PrefixQuery is used (4). */
   public static final int DEFAULT_MIN_PREFIX_CHARS = 4;
 
-  private Sort sorter;
+  /** How we sort the postings and search results. */
+  private static final Sort SORT = new Sort(new SortField("weight", SortField.Type.LONG, true));
 
   /** Create a new instance, loading from a previously built
    *  directory, if it exists. */
@@ -161,26 +162,25 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
 
     if (DirectoryReader.indexExists(dir)) {
       // Already built; open it:
-      initSorter();
       writer = new IndexWriter(dir,
-                               getIndexWriterConfig(matchVersion, getGramAnalyzer(), sorter, IndexWriterConfig.OpenMode.APPEND));
+                               getIndexWriterConfig(matchVersion, getGramAnalyzer(), SORT, IndexWriterConfig.OpenMode.APPEND));
       searcherMgr = new SearcherManager(writer, true, null);
     }
   }
 
   /** Override this to customize index settings, e.g. which
-   *  codec to use. Sorter is null if this config is for
+   *  codec to use. The sort is null if this config is for
    *  the first pass writer. */
-  protected IndexWriterConfig getIndexWriterConfig(Version matchVersion, Analyzer indexAnalyzer, Sort sorter, IndexWriterConfig.OpenMode openMode) {
+  protected IndexWriterConfig getIndexWriterConfig(Version matchVersion, Analyzer indexAnalyzer, Sort sort, IndexWriterConfig.OpenMode openMode) {
     IndexWriterConfig iwc = new IndexWriterConfig(matchVersion, indexAnalyzer);
     iwc.setCodec(new Lucene46Codec());
     iwc.setOpenMode(openMode);
 
-    if (sorter != null) {
+    if (sort != null) {
       // This way all merged segments will be sorted at
       // merge time, allow for per-segment early termination
       // when those segments are searched:
-      iwc.setMergePolicy(new SortingMergePolicy(iwc.getMergePolicy(), sorter));
+      iwc.setMergePolicy(new SortingMergePolicy(iwc.getMergePolicy(), sort));
     }
     return iwc;
   }
@@ -264,12 +264,10 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       // (no sense in fsync'ing it):
       w.rollback();
 
-      initSorter();
-
-      r = SortingAtomicReader.wrap(r, sorter);
+      r = SortingAtomicReader.wrap(r, SORT);
       
       writer = new IndexWriter(dir,
-                               getIndexWriterConfig(matchVersion, getGramAnalyzer(), sorter, IndexWriterConfig.OpenMode.CREATE));
+                               getIndexWriterConfig(matchVersion, getGramAnalyzer(), SORT, IndexWriterConfig.OpenMode.CREATE));
       writer.addIndexes(new IndexReader[] {r});
       r.close();
 
@@ -355,10 +353,6 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
    *  once in the end. */
   public void refresh() throws IOException {
     searcherMgr.maybeRefreshBlocking();
-  }
-
-  private void initSorter() {
-    sorter = new Sort(new SortField("weight", SortField.Type.LONG, true));
   }
 
   /**
@@ -466,12 +460,11 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     //System.out.println("finalQuery=" + query);
 
     // Sort by weight, descending:
-    TopFieldCollector c = TopFieldCollector.create(new Sort(new SortField("weight", SortField.Type.LONG, true)),
-                                                   num, true, false, false, false);
+    TopFieldCollector c = TopFieldCollector.create(SORT, num, true, false, false, false);
 
     // We sorted postings by weight during indexing, so we
     // only retrieve the first num hits now:
-    Collector c2 = new EarlyTerminatingSortingCollector(c, sorter, num);
+    Collector c2 = new EarlyTerminatingSortingCollector(c, SORT, num);
     IndexSearcher searcher = searcherMgr.acquire();
     List<LookupResult> results = null;
     try {
@@ -481,7 +474,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       TopFieldDocs hits = (TopFieldDocs) c.topDocs();
 
       // Slower way if postings are not pre-sorted by weight:
-      // hits = searcher.search(query, null, num, new Sort(new SortField("weight", SortField.Type.LONG, true)));
+      // hits = searcher.search(query, null, num, SORT);
       results = createResults(searcher, hits, num, key, doHighlight, matchedTokens, prefixToken);
     } finally {
       searcherMgr.release(searcher);
