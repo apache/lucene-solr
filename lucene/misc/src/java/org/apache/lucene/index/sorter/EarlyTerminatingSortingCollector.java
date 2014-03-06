@@ -31,7 +31,7 @@ import org.apache.lucene.search.TotalHitCountCollector;
 /**
  * A {@link Collector} that early terminates collection of documents on a
  * per-segment basis, if the segment was sorted according to the given
- * {@link Sorter}.
+ * {@link Sort}.
  * 
  * <p>
  * <b>NOTE:</b> the {@link Collector} detects sorted segments according to
@@ -46,23 +46,22 @@ import org.apache.lucene.search.TotalHitCountCollector;
  * hit count} will be underestimated since not all matching documents will have
  * been collected.
  * <p>
- * <b>NOTE</b>: This {@link Collector} uses {@link Sorter#getID()} to detect
- * whether a segment was sorted with the same {@link Sorter} as the one given in
+ * <b>NOTE</b>: This {@link Collector} uses {@link Sort#toString()} to detect
+ * whether a segment was sorted with the same {@link Sort} as the one given in
  * {@link #EarlyTerminatingSortingCollector(Collector, Sort, int)}. This has
  * two implications:
  * <ul>
- * <li>if {@link Sorter#getID()} is not implemented correctly and returns
- * different identifiers for equivalent {@link Sorter}s, this collector will not
+ * <li>if a custom comparator is not implemented correctly and returns
+ * different identifiers for equivalent instances, this collector will not
  * detect sorted segments,</li>
  * <li>if you suddenly change the {@link IndexWriter}'s
  * {@link SortingMergePolicy} to sort according to another criterion and if both
- * the old and the new {@link Sorter}s have the same identifier, this
+ * the old and the new {@link Sort}s have the same identifier, this
  * {@link Collector} will incorrectly detect sorted segments.</li>
  * </ul>
  * 
  * @lucene.experimental
  */
-// nocommit: fix these javadocs to be about Sort
 public class EarlyTerminatingSortingCollector extends Collector {
 
   protected final Collector in;

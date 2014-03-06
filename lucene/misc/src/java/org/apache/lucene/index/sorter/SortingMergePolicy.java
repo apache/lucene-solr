@@ -51,7 +51,6 @@ import org.apache.lucene.util.packed.MonotonicAppendingLongBuffer;
  *  not idempotent) will make the order of documents in a segment depend on the
  *  number of times the segment has been merged.
  *  @lucene.experimental */
-// nocommit: fix these jdocs around idempotency
 public final class SortingMergePolicy extends MergePolicy {
 
   /**

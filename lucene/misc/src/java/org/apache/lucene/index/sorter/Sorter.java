@@ -47,19 +47,19 @@ final class Sorter {
    * {@link IndexReader#maxDoc()}, <code>oldToNew(newToOld(docID))</code> must
    * return <code>docID</code>.
    */
-  public static abstract class DocMap {
+  static abstract class DocMap {
 
     /** Given a doc ID from the original index, return its ordinal in the
      *  sorted index. */
-    public abstract int oldToNew(int docID);
+    abstract int oldToNew(int docID);
 
     /** Given the ordinal of a doc ID, return its doc ID in the original index. */
-    public abstract int newToOld(int docID);
+    abstract int newToOld(int docID);
 
     /** Return the number of documents in this map. This must be equal to the
      *  {@link AtomicReader#maxDoc() number of documents} of the
      *  {@link AtomicReader} which is sorted. */
-    public abstract int size();
+    abstract int size();
   }
 
   /** Check consistency of a {@link DocMap}, useful for assertions. */
@@ -78,7 +78,7 @@ final class Sorter {
   }
 
   /** A comparator of doc IDs. */
-  public static abstract class DocComparator {
+  static abstract class DocComparator {
 
     /** Compare docID1 against docID2. The contract for the return value is the
      *  same as {@link Comparator#compare(Object, Object)}. */
@@ -92,7 +92,7 @@ final class Sorter {
     private final Sorter.DocComparator comparator;
     private final int[] tmp;
     
-    public DocValueSorter(int[] docs, Sorter.DocComparator comparator) {
+    DocValueSorter(int[] docs, Sorter.DocComparator comparator) {
       super(docs.length / 64);
       this.docs = docs;
       this.comparator = comparator;
@@ -133,7 +133,7 @@ final class Sorter {
   }
 
   /** Computes the old-to-new permutation over the given comparator. */
-  protected static Sorter.DocMap sort(final int maxDoc, DocComparator comparator) {
+  private static Sorter.DocMap sort(final int maxDoc, DocComparator comparator) {
     // check if the index is sorted
     boolean sorted = true;
     for (int i = 1; i < maxDoc; ++i) {
@@ -207,7 +207,7 @@ final class Sorter {
    * <b>NOTE:</b> deleted documents are expected to appear in the mapping as
    * well, they will however be marked as deleted in the sorted view.
    */
-  public DocMap sort(AtomicReader reader) throws IOException {
+  DocMap sort(AtomicReader reader) throws IOException {
     SortField fields[] = sort.getSort();
     final int reverseMul[] = new int[fields.length];
     final FieldComparator<?> comparators[] = new FieldComparator[fields.length];
@@ -246,7 +246,7 @@ final class Sorter {
    * <p>This identifier is similar to {@link Object#hashCode()} and should be
    * chosen so that two instances of this class that sort documents likewise
    * will have the same identifier. On the contrary, this identifier should be
-   * different on different {@link Sorter sorters}.
+   * different on different {@link Sort sorts}.
    */
   public String getID() {
     return sort.toString();
