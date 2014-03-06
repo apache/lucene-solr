@@ -1627,7 +1627,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       if (!created)
         throw new SolrException(ErrorCode.SERVER_ERROR, "Could not fully createcollection: " + message.getStr("name"));
 
-      log.info("going to create cores replicas shardNames {} , repFactor : {}", shardNames, repFactor);
+      log.info("Creating SolrCores for new collection, shardNames {} , replicationFactor : {}", shardNames, repFactor);
       Map<String ,ShardRequest> coresToCreate = new LinkedHashMap<String, ShardRequest>();
       for (int i = 1; i <= shardNames.size(); i++) {
         String sliceName = shardNames.get(i-1);
@@ -1671,14 +1671,17 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
           sreq.actualShards = sreq.shards;
           sreq.params = params;
 
-          if(isLegacyCloud) shardHandler.submit(sreq, sreq.shards[0], sreq.params);
-          else coresToCreate.put(coreName, sreq);
+          if(isLegacyCloud) {
+            shardHandler.submit(sreq, sreq.shards[0], sreq.params);
+          } else {
+            coresToCreate.put(coreName, sreq);
+          }
         }
       }
 
       if(!isLegacyCloud) {
-        //wait for all replica entries to be created
-        Map<String, Replica> replicas = lookupReplicas(collectionName, coresToCreate.keySet());
+        // wait for all replica entries to be created
+        Map<String, Replica> replicas = waitToSeeReplicasInState(collectionName, coresToCreate.keySet());
         for (Map.Entry<String, ShardRequest> e : coresToCreate.entrySet()) {
           ShardRequest sreq = e.getValue();
           sreq.params.set(CoreAdminParams.CORE_NODE_NAME, replicas.get(e.getKey()).getName());
@@ -1704,36 +1707,34 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     }
   }
 
-  private Map<String, Replica> lookupReplicas(String collectionName, Collection<String> coreNames) throws InterruptedException {
+  private Map<String, Replica> waitToSeeReplicasInState(String collectionName, Collection<String> coreNames) throws InterruptedException {
     Map<String, Replica> result = new HashMap<String, Replica>();
-    long endTime = System.nanoTime() + TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS);
-    for(;;) {
-      DocCollection coll = zkStateReader.getClusterState().getCollection(collectionName);
-      for (String  coreName : coreNames) {
-        if(result.containsKey(coreName)) continue;
+    long endTime = System.nanoTime() + TimeUnit.NANOSECONDS.convert(30, TimeUnit.SECONDS);
+    while (true) {
+      DocCollection coll = zkStateReader.getClusterState().getCollection(
+          collectionName);
+      for (String coreName : coreNames) {
+        if (result.containsKey(coreName)) continue;
         for (Slice slice : coll.getSlices()) {
           for (Replica replica : slice.getReplicas()) {
-            if(coreName.equals(replica.getStr(ZkStateReader.CORE_NAME_PROP))) {
-              result.put(coreName,replica);
+            if (coreName.equals(replica.getStr(ZkStateReader.CORE_NAME_PROP))) {
+              result.put(coreName, replica);
               break;
             }
           }
         }
       }
-
-      if(result.size() == coreNames.size()) {
+      
+      if (result.size() == coreNames.size()) {
         return result;
       }
-      if( System.nanoTime() > endTime) {
-        //time up . throw exception and go out
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to create replica entries in ZK");
+      if (System.nanoTime() > endTime) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Timed out waiting to see all replicas in cluster state.");
       }
-
+      
       Thread.sleep(100);
     }
-
   }
-
 
   private void addReplica(ClusterState clusterState, ZkNodeProps message, NamedList results) throws KeeperException, InterruptedException {
     String collection = message.getStr(COLLECTION_PROP);
@@ -1789,7 +1790,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
           ZkStateReader.STATE_PROP, ZkStateReader.DOWN,
           ZkStateReader.BASE_URL_PROP,zkStateReader.getBaseUrlForNodeName(node));
       Overseer.getInQueue(zkStateReader.getZkClient()).offer(ZkStateReader.toJSON(props));
-      params.set(CoreAdminParams.CORE_NODE_NAME, lookupReplicas(collection, Collections.singletonList(coreName)).get(coreName).getName());
+      params.set(CoreAdminParams.CORE_NODE_NAME, waitToSeeReplicasInState(collection, Collections.singletonList(coreName)).get(coreName).getName());
     }
 
 
