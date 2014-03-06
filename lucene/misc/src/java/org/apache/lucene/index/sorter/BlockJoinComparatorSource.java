@@ -31,7 +31,16 @@ import org.apache.lucene.util.FixedBitSet;
 
 /**
  * Helper class to sort readers that contain blocks of documents.
+ * <p>
+ * Note that this currently has some limitations:
+ * <ul>
+ *    <li>Cannot yet be used with IndexSearcher.searchAfter
+ *    <li>Filling sort value fields is not yet supported.
+ * </ul>
+ * Its intended to be used with {@link SortingMergePolicy}.
  */
+// TODO: can/should we clean this thing up (e.g. return a proper sort value)
+// and move to the join/ module?
 public class BlockJoinComparatorSource extends FieldComparatorSource {
   final Filter parentsFilter;
   final Sort parentSort;
@@ -84,8 +93,8 @@ public class BlockJoinComparatorSource extends FieldComparatorSource {
       childComparators[i] = childFields[i].getComparator(1, i);
     }
         
-    // NOTE: not quite right i guess, really our sort "value" is more complex...
-    // but at the moment you really should only use this at indexing time.
+    // NOTE: we could return parent ID as value but really our sort "value" is more complex...
+    // So we throw UOE for now. At the moment you really should only use this at indexing time.
     return new FieldComparator<Integer>() {
       int bottomParent;
       int bottomChild;
@@ -171,7 +180,6 @@ public class BlockJoinComparatorSource extends FieldComparatorSource {
       
       int compare(int docID1, int parent1, int docID2, int parent2) throws IOException {
         if (parent1 == parent2) { // both are in the same block
-          // nocommit: should not be needed?
           if (docID1 == parent1 || docID2 == parent2) {
             // keep parents at the end of blocks
             return docID1 - docID2;
@@ -180,7 +188,6 @@ public class BlockJoinComparatorSource extends FieldComparatorSource {
           }
         } else {
           int cmp = compare(parent1, parent2, parentComparators, parentReverseMul);
-          // nocommit: should not be needed?
           if (cmp == 0) {
             return parent1 - parent2;
           } else {
