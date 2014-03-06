@@ -41,6 +41,7 @@ import org.apache.lucene.util.FixedBitSet;
  *    <li>Cannot yet be used with {@link IndexSearcher#searchAfter(ScoreDoc, Query, int, Sort) IndexSearcher.searchAfter}
  *    <li>Filling sort field values is not yet supported.
  * </ul>
+ * @lucene.experimental
  */
 // TODO: can/should we clean this thing up (e.g. return a proper sort value)
 // and move to the join/ module?
