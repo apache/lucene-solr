@@ -748,7 +748,7 @@ def verifyUnpacked(project, artifact, unpackPath, svnRevision, version, testArgs
       os.chdir('solr')
 
       print("    run tests w/ Java 6 and testArgs='%s'..." % testArgs)
-      run('%s; ant test %s' % (javaExe('1.6'), testArgs), '%s/test.log' % unpackPath)
+      run('%s; ant test -Dtests.slow=false %s' % (javaExe('1.6'), testArgs), '%s/test.log' % unpackPath)
 
       # test javadocs
       print('    generate javadocs w/ Java 6...')
@@ -756,7 +756,7 @@ def verifyUnpacked(project, artifact, unpackPath, svnRevision, version, testArgs
       checkJavadocpath('%s/solr/build/docs' % unpackPath, False)
 
       print("    run tests w/ Java 7 and testArgs='%s'..." % testArgs)
-      run('%s; ant clean test %s' % (javaExe('1.7'), testArgs), '%s/test.log' % unpackPath)
+      run('%s; ant clean test -Dtests.slow=false %s' % (javaExe('1.7'), testArgs), '%s/test.log' % unpackPath)
  
       # test javadocs
       print('    generate javadocs w/ Java 7...')
