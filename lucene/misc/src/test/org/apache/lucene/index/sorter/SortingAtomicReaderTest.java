@@ -17,13 +17,12 @@ package org.apache.lucene.index.sorter;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TestUtil;
 import org.junit.BeforeClass;
 
@@ -31,35 +30,24 @@ public class SortingAtomicReaderTest extends SorterTestBase {
   
   @BeforeClass
   public static void beforeClassSortingAtomicReaderTest() throws Exception {
-    // build the mapping from the reader, since we deleted documents, some of
-    // them might have disappeared from the index (e.g. if an entire segment is
-    // dropped b/c all its docs are deleted)
-    final int[] values = new int[reader.maxDoc()];
-    for (int i = 0; i < reader.maxDoc(); i++) {
-      values[i] = Integer.valueOf(reader.document(i).get(ID_FIELD));
-    }
-    final Sorter.DocComparator comparator = new Sorter.DocComparator() {
-      @Override
-      public int compare(int docID1, int docID2) {
-        final int v1 = values[docID1];
-        final int v2 = values[docID2];
-        return v1 < v2 ? -1 : v1 == v2 ? 0 : 1;
-      }
-    };
-
-    final Sorter.DocMap docMap = Sorter.sort(reader.maxDoc(), comparator);
+    
+    // sort the index by id (as integer, in NUMERIC_DV_FIELD)
+    Sort sort = new Sort(new SortField(NUMERIC_DV_FIELD, SortField.Type.INT));
+    final Sorter.DocMap docMap = new SortSorter(sort).sort(reader);
+ 
     // Sorter.compute also sorts the values
+    NumericDocValues dv = reader.getNumericDocValues(NUMERIC_DV_FIELD);
     sortedValues = new Integer[reader.maxDoc()];
     for (int i = 0; i < reader.maxDoc(); ++i) {
-      sortedValues[docMap.oldToNew(i)] = values[i];
+      sortedValues[docMap.oldToNew(i)] = (int)dv.get(i);
     }
     if (VERBOSE) {
       System.out.println("docMap: " + docMap);
       System.out.println("sortedValues: " + Arrays.toString(sortedValues));
     }
     
-    // TODO: what is this doing? like a no-op sort?
-    reader = SortingAtomicReader.wrap(reader, docMap);
+    // sort the index by id (as integer, in NUMERIC_DV_FIELD)
+    reader = SortingAtomicReader.wrap(reader, sort);
     
     if (VERBOSE) {
       System.out.print("mapped-deleted-docs: ");
