@@ -99,12 +99,22 @@ New Features
 * LUCENE-5224: Add iconv, oconv, and ignore support to HunspellStemFilter.
   (Robert Muir)
 
+* LUCENE-5493: SortingMergePolicy, and EarlyTerminatingSortingCollector
+  support arbitrary Sort specifications.  
+  (Robert Muir, Mike McCandless, Adrien Grand)
+
 API Changes
 
 * LUCENE-5454: Add RandomAccessOrds, an optional extension of SortedSetDocValues
   that supports random access to the ordinals in a document. (Robert Muir)
 
 * LUCENE-5468: Move offline Sort (from suggest module) to OfflineSort. (Robert Muir)
+
+* LUCENE-5493: SortingMergePolicy and EarlyTerminatingSortingCollector take
+  Sort instead of Sorter. BlockJoinSorter is removed, replaced with 
+  BlockJoinComparatorSource, which can take a Sort for ordering of parents
+  and a separate Sort for ordering of children within a block. 
+  (Robert Muir, Mike McCandless, Adrien Grand)
 
 Optimizations
 
