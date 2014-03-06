@@ -50,7 +50,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiDocValues;
-import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
@@ -58,6 +57,7 @@ import org.apache.lucene.index.sorter.EarlyTerminatingSortingCollector;
 import org.apache.lucene.index.sorter.Sorter;
 import org.apache.lucene.index.sorter.SortingAtomicReader;
 import org.apache.lucene.index.sorter.SortingMergePolicy;
+import org.apache.lucene.index.sorter.SortSorter;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Collector;
@@ -360,36 +360,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
   }
 
   private void initSorter() {
-    sorter = new Sorter() {
-
-        @Override
-        public Sorter.DocMap sort(AtomicReader reader) throws IOException {
-          final NumericDocValues weights = reader.getNumericDocValues("weight");
-          final Sorter.DocComparator comparator = new Sorter.DocComparator() {
-              @Override
-              public int compare(int docID1, int docID2) {
-                final long v1 = weights.get(docID1);
-                final long v2 = weights.get(docID2);
-                // Reverse sort (highest weight first);
-                // java7 only:
-                //return Long.compare(v2, v1);
-                if (v1 > v2) {
-                  return -1;
-                } else if (v1 < v2) {
-                  return 1;
-                } else {
-                  return 0;
-                }
-              }
-            };
-          return Sorter.sort(reader.maxDoc(), comparator);
-        }
-
-        @Override
-        public String getID() {
-          return "BySuggestWeight";
-        }
-      };
+    sorter = new SortSorter(new Sort(new SortField("weight", SortField.Type.LONG, true)));
   }
 
   /**

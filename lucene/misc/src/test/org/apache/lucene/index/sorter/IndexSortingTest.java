@@ -24,6 +24,8 @@ import java.util.List;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.TestUtil;
@@ -32,7 +34,7 @@ import org.junit.BeforeClass;
 public class IndexSortingTest extends SorterTestBase {
   
   private static final Sorter[] SORTERS = new Sorter[] {
-    new NumericDocValuesSorter(NUMERIC_DV_FIELD, true),
+    new SortSorter(new Sort(new SortField(NUMERIC_DV_FIELD, SortField.Type.LONG))),
     Sorter.REVERSE_DOCS,
   };
   
@@ -52,8 +54,8 @@ public class IndexSortingTest extends SorterTestBase {
       Collections.reverse(values);
     } else {
       Collections.sort(values);
-      if (sorter instanceof NumericDocValuesSorter && random().nextBoolean()) {
-        sorter = new NumericDocValuesSorter(NUMERIC_DV_FIELD, false); // descending
+      if (sorter instanceof SortSorter && random().nextBoolean()) {
+        sorter = new SortSorter(new Sort(new SortField(NUMERIC_DV_FIELD, SortField.Type.LONG, true))); // descending
         Collections.reverse(values);
       }
     }

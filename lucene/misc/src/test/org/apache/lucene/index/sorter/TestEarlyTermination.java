@@ -58,7 +58,7 @@ public class TestEarlyTermination extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    sorter = new NumericDocValuesSorter("ndv1");
+    sorter = new SortSorter(new Sort(new SortField("ndv1", SortField.Type.LONG)));
   }
 
   private Document randomDocument() {
@@ -144,7 +144,8 @@ public class TestEarlyTermination extends LuceneTestCase {
     for (int i = 0; i < iters; ++i) {
       final TermQuery query = new TermQuery(new Term("s", RandomPicks.randomFrom(random(), terms)));
       searcher.search(query, collector1);
-      searcher.search(query, new EarlyTerminatingSortingCollector(collector2, new NumericDocValuesSorter("ndv2"), numHits) {
+      Sorter different = new SortSorter(new Sort(new SortField("ndv2", SortField.Type.LONG)));
+      searcher.search(query, new EarlyTerminatingSortingCollector(collector2, different, numHits) {
         @Override
         public void setNextReader(AtomicReaderContext context) throws IOException {
           super.setNextReader(context);

@@ -40,6 +40,8 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TieredMergePolicy;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -57,7 +59,7 @@ public class TestSortingMergePolicy extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    sorter = new NumericDocValuesSorter("ndv");
+    sorter = new SortSorter(new Sort(new SortField("ndv", SortField.Type.LONG)));
     createRandomIndexes();
   }
 
