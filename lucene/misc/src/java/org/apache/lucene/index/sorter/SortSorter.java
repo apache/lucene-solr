@@ -41,7 +41,7 @@ class SortSorter extends Sorter {
     
     for (int i = 0; i < fields.length; i++) {
       reverseMul[i] = fields[i].getReverse() ? -1 : 1;
-      comparators[i] = fields[i].getComparator(2, i);
+      comparators[i] = fields[i].getComparator(1, i);
       comparators[i].setNextReader(reader.getContext());
       comparators[i].setScorer(FAKESCORER);
     }
@@ -50,9 +50,11 @@ class SortSorter extends Sorter {
       public int compare(int docID1, int docID2) {
         try {
           for (int i = 0; i < comparators.length; i++) {
+            // TODO: would be better if copy() didnt cause a term lookup in TermOrdVal & co,
+            // the segments are always the same here...
             comparators[i].copy(0, docID1);
-            comparators[i].copy(1, docID2);
-            int comp = reverseMul[i] * comparators[i].compare(0, 1);
+            comparators[i].setBottom(0);
+            int comp = reverseMul[i] * comparators[i].compareBottom(docID2);
             if (comp != 0) {
               return comp;
             }

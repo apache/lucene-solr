@@ -73,7 +73,7 @@ public class BlockJoinComparatorSource extends FieldComparatorSource {
     final FieldComparator<?> parentComparators[] = new FieldComparator[parentFields.length];
     for (int i = 0; i < parentFields.length; i++) {
       parentReverseMul[i] = parentFields[i].getReverse() ? -1 : 1;
-      parentComparators[i] = parentFields[i].getComparator(2, i);
+      parentComparators[i] = parentFields[i].getComparator(1, i);
     }
     
     SortField childFields[] = childSort.getSort();
@@ -81,7 +81,7 @@ public class BlockJoinComparatorSource extends FieldComparatorSource {
     final FieldComparator<?> childComparators[] = new FieldComparator[childFields.length];
     for (int i = 0; i < childFields.length; i++) {
       childReverseMul[i] = childFields[i].getReverse() ? -1 : 1;
-      childComparators[i] = childFields[i].getComparator(2, i);
+      childComparators[i] = childFields[i].getComparator(1, i);
     }
         
     // NOTE: not quite right i guess, really our sort "value" is more complex...
@@ -191,9 +191,11 @@ public class BlockJoinComparatorSource extends FieldComparatorSource {
       
       int compare(int docID1, int docID2, FieldComparator<?> comparators[], int reverseMul[]) throws IOException {
         for (int i = 0; i < comparators.length; i++) {
+          // TODO: would be better if copy() didnt cause a term lookup in TermOrdVal & co,
+          // the segments are always the same here...
           comparators[i].copy(0, docID1);
-          comparators[i].copy(1, docID2);
-          int comp = reverseMul[i] * comparators[i].compare(0, 1);
+          comparators[i].setBottom(0);
+          int comp = reverseMul[i] * comparators[i].compareBottom(docID2);
           if (comp != 0) {
             return comp;
           }
@@ -203,5 +205,8 @@ public class BlockJoinComparatorSource extends FieldComparatorSource {
     };
   }
   
-  
+  @Override
+  public String toString() {
+    return "blockJoin(parentSort=" + parentSort + ",childSort=" + childSort + ")";
+  }
 }
