@@ -385,10 +385,10 @@ public class TestFilteredQuery extends LuceneTestCase {
   
   private static FilteredQuery.FilterStrategy randomFilterStrategy(Random random, final boolean useRandomAccess) {
     if (useRandomAccess) {
-      return  new FilteredQuery.RandomAccessFilterStrategy() {
+      return new FilteredQuery.RandomAccessFilterStrategy() {
         @Override
         protected boolean useRandomAccess(Bits bits, int firstFilterDoc) {
-          return useRandomAccess;
+          return true;
         }
       };
     }

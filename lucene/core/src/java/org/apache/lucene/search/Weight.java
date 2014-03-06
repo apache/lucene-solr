@@ -130,7 +130,7 @@ public abstract class Weight {
    */
   public TopScorer topScorer(AtomicReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
 
-    final Scorer scorer = scorer(context, acceptDocs);
+    Scorer scorer = scorer(context, acceptDocs);
     if (scorer == null) {
       // No docs match
       return null;
@@ -138,23 +138,36 @@ public abstract class Weight {
 
     // This impl always scores docs in order, so we can
     // ignore scoreDocsInOrder:
-    return new TopScorer() {
+    return new DefaultTopScorer(scorer);
+  }
 
-      @Override
-      public boolean score(Collector collector, int max) throws IOException {
-        // nocommit weird to do this here?  we do it many,
-        // many times from BS1 inside one segment?
-        collector.setScorer(scorer);
-        if (scorer.docID() == -1) {
-          scorer.nextDoc();
-        }
-        int doc;
-        for (doc = scorer.docID(); doc < max; doc = scorer.nextDoc()) {
-          collector.collect(doc);
-        }
-        return doc != DocsEnum.NO_MORE_DOCS;
+  /** Just wraps a Scorer and performs top scoring using it. */
+  static class DefaultTopScorer extends TopScorer {
+    private final Scorer scorer;
+
+    public DefaultTopScorer(Scorer scorer) {
+      assert scorer != null;
+      this.scorer = scorer;
+    }
+
+    @Override
+    public boolean score(Collector collector, int max) throws IOException {
+      // TODO: this may be sort of weird, when we are
+      // embedded in a BooleanScorer, because we are
+      // called for every chunk of 2048 documents.  But,
+      // then, scorer is a FakeScorer in that case, so any
+      // Collector doing something "interesting" in
+      // setScorer will be forced to use BS2 anyways:
+      collector.setScorer(scorer);
+      if (scorer.docID() == -1) {
+        scorer.nextDoc();
       }
-    };
+      int doc;
+      for (doc = scorer.docID(); doc < max; doc = scorer.nextDoc()) {
+        collector.collect(doc);
+      }
+      return doc != DocsEnum.NO_MORE_DOCS;
+    }
   }
 
   /**

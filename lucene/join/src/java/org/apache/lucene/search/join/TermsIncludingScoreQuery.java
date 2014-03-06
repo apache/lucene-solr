@@ -258,8 +258,6 @@ class TermsIncludingScoreQuery extends Query {
     int scoreUpto;
     int doc;
 
-    // nocommit can we embed this into a BQ and get BS1?
-
     SVInnerScorer(Weight weight, Bits acceptDocs, TermsEnum termsEnum, long cost) {
       this.acceptDocs = acceptDocs;
       this.termsEnum = termsEnum;

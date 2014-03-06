@@ -117,7 +117,7 @@ final class BooleanScorer extends TopScorer {
   private static final class FakeScorer extends Scorer {
 
     float score;
-    int doc;
+    int doc = -1;
     int freq;
     
     public FakeScorer() {
@@ -272,7 +272,7 @@ final class BooleanScorer extends TopScorer {
           // that should work)... but in theory an outside
           // app could pass a different max so we must check
           // it:
-          if (current.doc >= max){
+          if (current.doc >= max) {
             tmp = current;
             current = current.next;
             tmp.next = bucketTable.first;

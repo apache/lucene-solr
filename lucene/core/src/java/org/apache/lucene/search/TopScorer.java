@@ -36,7 +36,7 @@ public abstract class TopScorer {
    * @param collector
    *          The collector to which all matching documents are passed.
    * @param max
-   *          Do not score documents past this.
+   *          Score up to, but not including, this doc
    * @return true if more matching documents may remain.
    */
   public abstract boolean score(Collector collector, int max) throws IOException;
