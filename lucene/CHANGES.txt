@@ -128,7 +128,7 @@ New Features
   AnalyzingInfixSuggester but boosts suggestions that matched tokens
   with lower positions.  (Remi Melisson via Mike McCandless)
 
-* LUCENE-4399: When sorting by String (SortField.STRING), you can now
+* LUCENE-5399: When sorting by String (SortField.STRING), you can now
   specify whether missing values should be sorted first (the default),
   using SortField.setMissingValue(SortField.STRING_FIRST), or last,
   using SortField.setMissingValue(SortField.STRING_LAST). (Rob Muir,
