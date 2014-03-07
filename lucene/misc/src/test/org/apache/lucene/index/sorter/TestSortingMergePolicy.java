@@ -172,5 +172,14 @@ public class TestSortingMergePolicy extends LuceneTestCase {
     
     assertReaderEquals("", sortedReader1, sortedReader2);
   }
+  
+  public void testBadSort() throws Exception {
+    try {
+      new SortingMergePolicy(newMergePolicy(), Sort.RELEVANCE);
+      fail("Didn't get expected exception");
+    } catch (IllegalArgumentException e) {
+      assertEquals("Cannot sort an index with a Sort that refers to the relevance score", e.getMessage());
+    }
+  }
 
 }

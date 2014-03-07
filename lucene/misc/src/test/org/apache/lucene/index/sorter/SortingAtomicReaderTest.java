@@ -62,5 +62,14 @@ public class SortingAtomicReaderTest extends SorterTestBase {
     
     TestUtil.checkReader(reader);
   }
+  
+  public void testBadSort() throws Exception {
+    try {
+      SortingAtomicReader.wrap(reader, Sort.RELEVANCE);
+      fail("Didn't get expected exception");
+    } catch (IllegalArgumentException e) {
+      assertEquals("Cannot sort an index with a Sort that refers to the relevance score", e.getMessage());
+    }
+  }
 
 }
