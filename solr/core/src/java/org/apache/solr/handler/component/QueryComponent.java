@@ -525,7 +525,7 @@ public class QueryComponent extends SearchComponent
 
         @Override
         protected int compare(int i, int j) {
-          return Long.compare(sortedIds[i], sortedIds[j]);
+          return (int) (sortedIds[i] - sortedIds[j]);
         }
       }.sort(0, sortedIds.length);
 
