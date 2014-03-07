@@ -24,6 +24,8 @@ import java.util.List;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.TestUtil;
@@ -31,9 +33,9 @@ import org.junit.BeforeClass;
 
 public class IndexSortingTest extends SorterTestBase {
   
-  private static final Sorter[] SORTERS = new Sorter[] {
-    new NumericDocValuesSorter(NUMERIC_DV_FIELD, true),
-    Sorter.REVERSE_DOCS,
+  private static final Sort[] SORT = new Sort[] {
+    new Sort(new SortField(NUMERIC_DV_FIELD, SortField.Type.LONG)),
+    new Sort(new SortField(null, SortField.Type.DOC, true))
   };
   
   @BeforeClass
@@ -47,13 +49,14 @@ public class IndexSortingTest extends SorterTestBase {
         values.add(Integer.valueOf(reader.document(i).get(ID_FIELD)));
       }
     }
-    Sorter sorter = SORTERS[random().nextInt(SORTERS.length)];
-    if (sorter == Sorter.REVERSE_DOCS) {
+    int idx = random().nextInt(SORT.length);
+    Sort sorter = SORT[idx];
+    if (idx == 1) { // reverse doc sort
       Collections.reverse(values);
     } else {
       Collections.sort(values);
-      if (sorter instanceof NumericDocValuesSorter && random().nextBoolean()) {
-        sorter = new NumericDocValuesSorter(NUMERIC_DV_FIELD, false); // descending
+      if (random().nextBoolean()) {
+        sorter = new Sort(new SortField(NUMERIC_DV_FIELD, SortField.Type.LONG, true)); // descending
         Collections.reverse(values);
       }
     }

@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.analyzing.AnalyzingInfixSuggester;
 import org.apache.lucene.search.suggest.analyzing.AnalyzingSuggester;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
@@ -90,7 +91,8 @@ public class AnalyzingInfixLookupFactory extends LookupFactory {
 
     try {
       return new AnalyzingInfixSuggester(core.getSolrConfig().luceneMatchVersion, 
-          new File(indexPath), indexAnalyzer, queryAnalyzer, minPrefixChars);
+                                         FSDirectory.open(new File(indexPath)), indexAnalyzer,
+                                         queryAnalyzer, minPrefixChars);
     } catch (IOException e) {
       throw new RuntimeException();
     }
