@@ -29,38 +29,38 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.util.VirtualMethod;
 
 /** Wraps a Scorer with additional checks */
-public class AssertingTopScorer extends TopScorer {
+public class AssertingBulkScorer extends BulkScorer {
 
-  private static final VirtualMethod<TopScorer> SCORE_COLLECTOR = new VirtualMethod<TopScorer>(TopScorer.class, "score", Collector.class);
-  private static final VirtualMethod<TopScorer> SCORE_COLLECTOR_RANGE = new VirtualMethod<TopScorer>(TopScorer.class, "score", Collector.class, int.class);
+  private static final VirtualMethod<BulkScorer> SCORE_COLLECTOR = new VirtualMethod<BulkScorer>(BulkScorer.class, "score", Collector.class);
+  private static final VirtualMethod<BulkScorer> SCORE_COLLECTOR_RANGE = new VirtualMethod<BulkScorer>(BulkScorer.class, "score", Collector.class, int.class);
 
   // we need to track scorers using a weak hash map because otherwise we
   // could loose references because of eg.
   // AssertingScorer.score(Collector) which needs to delegate to work correctly
-  private static Map<TopScorer, WeakReference<AssertingTopScorer>> ASSERTING_INSTANCES = Collections.synchronizedMap(new WeakHashMap<TopScorer, WeakReference<AssertingTopScorer>>());
+  private static Map<BulkScorer, WeakReference<AssertingBulkScorer>> ASSERTING_INSTANCES = Collections.synchronizedMap(new WeakHashMap<BulkScorer, WeakReference<AssertingBulkScorer>>());
 
-  public static TopScorer wrap(Random random, TopScorer other) {
-    if (other == null || other instanceof AssertingTopScorer) {
+  public static BulkScorer wrap(Random random, BulkScorer other) {
+    if (other == null || other instanceof AssertingBulkScorer) {
       return other;
     }
-    final AssertingTopScorer assertScorer = new AssertingTopScorer(random, other);
-    ASSERTING_INSTANCES.put(other, new WeakReference<AssertingTopScorer>(assertScorer));
+    final AssertingBulkScorer assertScorer = new AssertingBulkScorer(random, other);
+    ASSERTING_INSTANCES.put(other, new WeakReference<AssertingBulkScorer>(assertScorer));
     return assertScorer;
   }
 
-  public static boolean shouldWrap(TopScorer inScorer) {
+  public static boolean shouldWrap(BulkScorer inScorer) {
     return SCORE_COLLECTOR.isOverriddenAsOf(inScorer.getClass()) || SCORE_COLLECTOR_RANGE.isOverriddenAsOf(inScorer.getClass());
   }
 
   final Random random;
-  final TopScorer in;
+  final BulkScorer in;
 
-  private AssertingTopScorer(Random random, TopScorer in) {
+  private AssertingBulkScorer(Random random, BulkScorer in) {
     this.random = random;
     this.in = in;
   }
 
-  public TopScorer getIn() {
+  public BulkScorer getIn() {
     return in;
   }
 
@@ -85,6 +85,6 @@ public class AssertingTopScorer extends TopScorer {
 
   @Override
   public String toString() {
-    return "AssertingTopScorer(" + in + ")";
+    return "AssertingBulkScorer(" + in + ")";
   }
 }

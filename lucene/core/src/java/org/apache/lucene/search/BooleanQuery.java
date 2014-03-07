@@ -305,21 +305,21 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     }
 
     @Override
-    public TopScorer topScorer(AtomicReaderContext context, boolean scoreDocsInOrder,
+    public BulkScorer bulkScorer(AtomicReaderContext context, boolean scoreDocsInOrder,
                                Bits acceptDocs) throws IOException {
 
       if (scoreDocsInOrder || minNrShouldMatch > 1) {
         // TODO: (LUCENE-4872) in some cases BooleanScorer may be faster for minNrShouldMatch
         // but the same is even true of pure conjunctions...
-        return super.topScorer(context, scoreDocsInOrder, acceptDocs);
+        return super.bulkScorer(context, scoreDocsInOrder, acceptDocs);
       }
 
-      List<TopScorer> prohibited = new ArrayList<TopScorer>();
-      List<TopScorer> optional = new ArrayList<TopScorer>();
+      List<BulkScorer> prohibited = new ArrayList<BulkScorer>();
+      List<BulkScorer> optional = new ArrayList<BulkScorer>();
       Iterator<BooleanClause> cIter = clauses.iterator();
       for (Weight w  : weights) {
         BooleanClause c =  cIter.next();
-        TopScorer subScorer = w.topScorer(context, false, acceptDocs);
+        BulkScorer subScorer = w.bulkScorer(context, false, acceptDocs);
         if (subScorer == null) {
           if (c.isRequired()) {
             return null;
@@ -328,7 +328,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
           // TODO: there are some cases where BooleanScorer
           // would handle conjunctions faster than
           // BooleanScorer2...
-          return super.topScorer(context, scoreDocsInOrder, acceptDocs);
+          return super.bulkScorer(context, scoreDocsInOrder, acceptDocs);
         } else if (c.isProhibited()) {
           prohibited.add(subScorer);
         } else {

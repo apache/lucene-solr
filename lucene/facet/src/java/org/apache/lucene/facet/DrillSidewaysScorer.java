@@ -26,12 +26,12 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.TopScorer;
+import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 
-class DrillSidewaysScorer extends TopScorer {
+class DrillSidewaysScorer extends BulkScorer {
 
   //private static boolean DEBUG = false;
 

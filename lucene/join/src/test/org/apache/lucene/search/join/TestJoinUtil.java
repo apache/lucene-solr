@@ -154,7 +154,7 @@ public class TestJoinUtil extends LuceneTestCase {
   }
 
   /** LUCENE-5487: verify a join query inside a SHOULD BQ
-   *  will still use the join query's optimized TopScorers */
+   *  will still use the join query's optimized BulkScorers */
   public void testInsideBooleanQuery() throws Exception {
     final String idField = "id";
     final String toField = "productId";
@@ -235,7 +235,7 @@ public class TestJoinUtil extends LuceneTestCase {
           if (docID == 5) {
             sawFive = true;
           } else if (docID == 1) {
-            assertFalse("optimized topScorer was not used for join query embedded in boolean query!", sawFive);
+            assertFalse("optimized bulkScorer was not used for join query embedded in boolean query!", sawFive);
           }
         }
         @Override

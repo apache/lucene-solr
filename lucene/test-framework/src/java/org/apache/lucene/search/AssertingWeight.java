@@ -66,19 +66,19 @@ class AssertingWeight extends Weight {
   }
 
   @Override
-  public TopScorer topScorer(AtomicReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
+  public BulkScorer bulkScorer(AtomicReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
     // if the caller asks for in-order scoring or if the weight does not support
     // out-of order scoring then collection will have to happen in-order.
-    TopScorer inScorer = in.topScorer(context, scoreDocsInOrder, acceptDocs);
+    BulkScorer inScorer = in.bulkScorer(context, scoreDocsInOrder, acceptDocs);
     if (inScorer == null) {
       return null;
     }
-    if (AssertingTopScorer.shouldWrap(inScorer)) {
-      return AssertingTopScorer.wrap(new Random(random.nextLong()), inScorer);
+    if (AssertingBulkScorer.shouldWrap(inScorer)) {
+      return AssertingBulkScorer.wrap(new Random(random.nextLong()), inScorer);
     } else {
       // Let super wrap this.scorer instead, so we use
       // AssertingScorer:
-      return super.topScorer(context, scoreDocsInOrder, acceptDocs);
+      return super.bulkScorer(context, scoreDocsInOrder, acceptDocs);
     }
   }
 

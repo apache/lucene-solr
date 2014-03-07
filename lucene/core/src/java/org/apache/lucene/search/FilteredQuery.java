@@ -138,7 +138,7 @@ public class FilteredQuery extends Query {
 
       // return a filtering top scorer
       @Override
-      public TopScorer topScorer(AtomicReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
+      public BulkScorer bulkScorer(AtomicReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
         assert filter != null;
 
         DocIdSet filterDocIdSet = filter.getDocIdSet(context, acceptDocs);
@@ -147,7 +147,7 @@ public class FilteredQuery extends Query {
           return null;
         }
 
-        return strategy.filteredTopScorer(context, weight, scoreDocsInOrder, filterDocIdSet);
+        return strategy.filteredBulkScorer(context, weight, scoreDocsInOrder, filterDocIdSet);
       }
     };
   }
@@ -214,12 +214,12 @@ public class FilteredQuery extends Query {
     }
   }
 
-  private static class QueryFirstTopScorer extends TopScorer {
+  private static class QueryFirstBulkScorer extends BulkScorer {
 
     private final Scorer scorer;
     private final Bits filterBits;
 
-    public QueryFirstTopScorer(Scorer scorer, Bits filterBits) {
+    public QueryFirstBulkScorer(Scorer scorer, Bits filterBits) {
       this.scorer = scorer;
       this.filterBits = filterBits;
     }
@@ -324,12 +324,12 @@ public class FilteredQuery extends Query {
     }
   }
 
-  private static final class LeapFrogTopScorer extends TopScorer {
+  private static final class LeapFrogBulkScorer extends BulkScorer {
     private final DocIdSetIterator primary;
     private final DocIdSetIterator secondary;
     private final Scorer scorer;
 
-    public LeapFrogTopScorer(DocIdSetIterator primary, DocIdSetIterator secondary, Scorer scorer) {
+    public LeapFrogBulkScorer(DocIdSetIterator primary, DocIdSetIterator secondary, Scorer scorer) {
       this.primary = primary;
       this.secondary = secondary;
       this.scorer = scorer;
@@ -530,10 +530,10 @@ public class FilteredQuery extends Query {
         Weight weight, DocIdSet docIdSet) throws IOException;
 
     /**
-     * Returns a filtered {@link TopScorer} based on this
+     * Returns a filtered {@link BulkScorer} based on this
      * strategy.  This is an optional method: the default
      * implementation just calls {@link #filteredScorer} and
-     * wraps that into a TopScorer.
+     * wraps that into a BulkScorer.
      *
      * @param context
      *          the {@link AtomicReaderContext} for which to return the {@link Scorer}.
@@ -541,7 +541,7 @@ public class FilteredQuery extends Query {
      * @param docIdSet the filter {@link DocIdSet} to apply
      * @return a filtered top scorer
      */
-    public TopScorer filteredTopScorer(AtomicReaderContext context,
+    public BulkScorer filteredBulkScorer(AtomicReaderContext context,
         Weight weight, boolean scoreDocsInOrder, DocIdSet docIdSet) throws IOException {
       Scorer scorer = filteredScorer(context, weight, docIdSet);
       if (scorer == null) {
@@ -549,7 +549,7 @@ public class FilteredQuery extends Query {
       }
       // This impl always scores docs in order, so we can
       // ignore scoreDocsInOrder:
-      return new Weight.DefaultTopScorer(scorer);
+      return new Weight.DefaultBulkScorer(scorer);
     }
   }
   
@@ -640,7 +640,7 @@ public class FilteredQuery extends Query {
     }
 
     @Override
-    public TopScorer filteredTopScorer(AtomicReaderContext context,
+    public BulkScorer filteredBulkScorer(AtomicReaderContext context,
         Weight weight, boolean scoreDocsInOrder, DocIdSet docIdSet) throws IOException {
       final DocIdSetIterator filterIter = docIdSet.iterator();
       if (filterIter == null) {
@@ -653,9 +653,9 @@ public class FilteredQuery extends Query {
         return null;
       }
       if (scorerFirst) {
-        return new LeapFrogTopScorer(scorer, filterIter, scorer);  
+        return new LeapFrogBulkScorer(scorer, filterIter, scorer);  
       } else {
-        return new LeapFrogTopScorer(filterIter, scorer, scorer);  
+        return new LeapFrogBulkScorer(filterIter, scorer, scorer);  
       }
     }
   }
@@ -690,7 +690,7 @@ public class FilteredQuery extends Query {
     }
 
     @Override
-    public TopScorer filteredTopScorer(final AtomicReaderContext context,
+    public BulkScorer filteredBulkScorer(final AtomicReaderContext context,
         Weight weight,
         boolean scoreDocsInOrder, // ignored (we always top-score in order)
         DocIdSet docIdSet) throws IOException {
@@ -698,10 +698,10 @@ public class FilteredQuery extends Query {
       if (filterAcceptDocs == null) {
         // Filter does not provide random-access Bits; we
         // must fallback to leapfrog:
-        return LEAP_FROG_QUERY_FIRST_STRATEGY.filteredTopScorer(context, weight, scoreDocsInOrder, docIdSet);
+        return LEAP_FROG_QUERY_FIRST_STRATEGY.filteredBulkScorer(context, weight, scoreDocsInOrder, docIdSet);
       }
       final Scorer scorer = weight.scorer(context, null);
-      return scorer == null ? null : new QueryFirstTopScorer(scorer, filterAcceptDocs);
+      return scorer == null ? null : new QueryFirstBulkScorer(scorer, filterAcceptDocs);
     }
   }
   

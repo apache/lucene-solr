@@ -34,7 +34,7 @@ import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.TopScorer;
+import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -132,7 +132,7 @@ class TermsIncludingScoreQuery extends Query {
 
       @Override
       public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-        SVInnerScorer scorer = (SVInnerScorer) topScorer(context, false, null);
+        SVInnerScorer scorer = (SVInnerScorer) bulkScorer(context, false, null);
         if (scorer != null) {
           return scorer.explain(doc);
         }
@@ -180,10 +180,10 @@ class TermsIncludingScoreQuery extends Query {
       }
 
       @Override
-      public TopScorer topScorer(AtomicReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
+      public BulkScorer bulkScorer(AtomicReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
 
         if (scoreDocsInOrder) {
-          return super.topScorer(context, scoreDocsInOrder, acceptDocs);
+          return super.bulkScorer(context, scoreDocsInOrder, acceptDocs);
         } else {
           Terms terms = context.reader().terms(field);
           if (terms == null) {
@@ -245,7 +245,7 @@ class TermsIncludingScoreQuery extends Query {
   }
 
   // This impl assumes that the 'join' values are used uniquely per doc per field. Used for one to many relations.
-  class SVInnerScorer extends TopScorer {
+  class SVInnerScorer extends BulkScorer {
 
     final BytesRef spare = new BytesRef();
     final Bits acceptDocs;

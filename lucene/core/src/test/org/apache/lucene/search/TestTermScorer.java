@@ -78,7 +78,7 @@ public class TestTermScorer extends LuceneTestCase {
     Weight weight = indexSearcher.createNormalizedWeight(termQuery);
     assertTrue(indexSearcher.getTopReaderContext() instanceof AtomicReaderContext);
     AtomicReaderContext context = (AtomicReaderContext)indexSearcher.getTopReaderContext();
-    TopScorer ts = weight.topScorer(context, true, context.reader().getLiveDocs());
+    BulkScorer ts = weight.bulkScorer(context, true, context.reader().getLiveDocs());
     // we have 2 documents with the term all in them, one document for all the
     // other values
     final List<TestHit> docs = new ArrayList<TestHit>();

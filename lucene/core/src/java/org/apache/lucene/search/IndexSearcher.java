@@ -607,7 +607,7 @@ public class IndexSearcher {
         // continue with the following leaf
         continue;
       }
-      TopScorer scorer = weight.topScorer(ctx, !collector.acceptsDocsOutOfOrder(), ctx.reader().getLiveDocs());
+      BulkScorer scorer = weight.bulkScorer(ctx, !collector.acceptsDocsOutOfOrder(), ctx.reader().getLiveDocs());
       if (scorer != null) {
         try {
           scorer.score(collector);

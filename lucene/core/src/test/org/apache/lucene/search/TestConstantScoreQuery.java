@@ -158,7 +158,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
   }
 
   // LUCENE-5307
-  // don't reuse the scorer of filters since they have been created with topScorer=false
+  // don't reuse the scorer of filters since they have been created with bulkScorer=false
   public void testQueryWrapperFilter() throws IOException {
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d);

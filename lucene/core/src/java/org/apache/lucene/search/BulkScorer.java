@@ -19,7 +19,14 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-public abstract class TopScorer {
+/** This class is used to score a range of documents at
+ *  once, and is returned by {@link Weight#bulkScorer}.  Only
+ *  queries that have a more optimized means of scoring
+ *  across a range of documents need to override this.
+ *  Otherwise, a default implementation is wrapped around
+ *  the {@link Scorer} returned by {@link Weight#scorer}. */
+
+public abstract class BulkScorer {
 
   /** Scores and collects all matching documents.
    * @param collector The collector to which all matching documents are passed.
@@ -29,14 +36,10 @@ public abstract class TopScorer {
   }
 
   /**
-   * Expert: Collects matching documents in a range. Hook for optimization.
-   * Note, <code>firstDocID</code> is added to ensure that {@link #nextDoc()}
-   * was called before this method.
+   * Collects matching documents in a range.
    * 
-   * @param collector
-   *          The collector to which all matching documents are passed.
-   * @param max
-   *          Score up to, but not including, this doc
+   * @param collector The collector to which all matching documents are passed.
+   * @param max Score up to, but not including, this doc
    * @return true if more matching documents may remain.
    */
   public abstract boolean score(Collector collector, int max) throws IOException;

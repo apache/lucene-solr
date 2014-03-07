@@ -134,18 +134,18 @@ public class ConstantScoreQuery extends Query {
     }
 
     @Override
-    public TopScorer topScorer(AtomicReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
+    public BulkScorer bulkScorer(AtomicReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
       final DocIdSetIterator disi;
       if (filter != null) {
         assert query == null;
-        return super.topScorer(context, scoreDocsInOrder, acceptDocs);
+        return super.bulkScorer(context, scoreDocsInOrder, acceptDocs);
       } else {
         assert query != null && innerWeight != null;
-        TopScorer topScorer = innerWeight.topScorer(context, scoreDocsInOrder, acceptDocs);
-        if (topScorer == null) {
+        BulkScorer bulkScorer = innerWeight.bulkScorer(context, scoreDocsInOrder, acceptDocs);
+        if (bulkScorer == null) {
           return null;
         }
-        return new ConstantTopScorer(topScorer, this, queryWeight);
+        return new ConstantBulkScorer(bulkScorer, this, queryWeight);
       }
     }
 
@@ -196,24 +196,24 @@ public class ConstantScoreQuery extends Query {
     }
   }
 
-  /** We return this as our {@link TopScorer} so that if the CSQ
+  /** We return this as our {@link BulkScorer} so that if the CSQ
    *  wraps a query with its own optimized top-level
    *  scorer (e.g. BooleanScorer) we can use that
    *  top-level scorer. */
-  protected class ConstantTopScorer extends TopScorer {
-    final TopScorer topScorer;
+  protected class ConstantBulkScorer extends BulkScorer {
+    final BulkScorer bulkScorer;
     final Weight weight;
     final float theScore;
 
-    public ConstantTopScorer(TopScorer topScorer, Weight weight, float theScore) {
-      this.topScorer = topScorer;
+    public ConstantBulkScorer(BulkScorer bulkScorer, Weight weight, float theScore) {
+      this.bulkScorer = bulkScorer;
       this.weight = weight;
       this.theScore = theScore;
     }
 
     @Override
     public boolean score(Collector collector, int max) throws IOException {
-      return topScorer.score(wrapCollector(collector), max);
+      return bulkScorer.score(wrapCollector(collector), max);
     }
 
     private Collector wrapCollector(final Collector collector) {

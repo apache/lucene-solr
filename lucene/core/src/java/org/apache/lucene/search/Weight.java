@@ -36,8 +36,7 @@ import org.apache.lucene.util.Bits;
  * {@link AtomicReader} dependent state should reside in the {@link Scorer}.
  * <p>
  * Since {@link Weight} creates {@link Scorer} instances for a given
- * {@link AtomicReaderContext} ({@link #scorer(AtomicReaderContext, 
- * boolean, boolean, Bits)})
+ * {@link AtomicReaderContext} ({@link #scorer(AtomicReaderContext, Bits)})
  * callers must maintain the relationship between the searcher's top-level
  * {@link IndexReaderContext} and the context used to create a {@link Scorer}. 
  * <p>
@@ -52,7 +51,7 @@ import org.apache.lucene.util.Bits;
  * <li>The query normalization factor is passed to {@link #normalize(float, float)}. At
  * this point the weighting is complete.
  * <li>A <code>Scorer</code> is constructed by
- * {@link #scorer(AtomicReaderContext, boolean, boolean, Bits)}.
+ * {@link #scorer(AtomicReaderContext, Bits)}.
  * </ol>
  * 
  * @since 2.9
@@ -102,7 +101,7 @@ public abstract class Weight {
   public abstract Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException;
 
   /**
-   * Optional method, to return a {@link TopScorer} to
+   * Optional method, to return a {@link BulkScorer} to
    * score the query and send hits to a {@link Collector}.
    * Only queries that have a different top-level approach
    * need to override this; the default implementation
@@ -124,11 +123,11 @@ public abstract class Weight {
    *          Bits that represent the allowable docs to match (typically deleted docs
    *          but possibly filtering other documents)
    *
-   * @return a {@link TopScorer} which scores documents and
+   * @return a {@link BulkScorer} which scores documents and
    * passes them to a collector.
    * @throws IOException if there is a low-level I/O error
    */
-  public TopScorer topScorer(AtomicReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
+  public BulkScorer bulkScorer(AtomicReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
 
     Scorer scorer = scorer(context, acceptDocs);
     if (scorer == null) {
@@ -138,14 +137,14 @@ public abstract class Weight {
 
     // This impl always scores docs in order, so we can
     // ignore scoreDocsInOrder:
-    return new DefaultTopScorer(scorer);
+    return new DefaultBulkScorer(scorer);
   }
 
   /** Just wraps a Scorer and performs top scoring using it. */
-  static class DefaultTopScorer extends TopScorer {
+  static class DefaultBulkScorer extends BulkScorer {
     private final Scorer scorer;
 
-    public DefaultTopScorer(Scorer scorer) {
+    public DefaultBulkScorer(Scorer scorer) {
       assert scorer != null;
       this.scorer = scorer;
     }
@@ -174,7 +173,7 @@ public abstract class Weight {
    * Returns true iff this implementation scores docs only out of order. This
    * method is used in conjunction with {@link Collector}'s
    * {@link Collector#acceptsDocsOutOfOrder() acceptsDocsOutOfOrder} and
-   * {@link #scorer(AtomicReaderContext, boolean, boolean, Bits)} to
+   * {@link #scorer(AtomicReaderContext, Bits)} to
    * create a matching {@link Scorer} instance for a given {@link Collector}, or
    * vice versa.
    * <p>

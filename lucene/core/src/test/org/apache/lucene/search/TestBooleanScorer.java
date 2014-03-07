@@ -80,7 +80,7 @@ public class TestBooleanScorer extends LuceneTestCase {
     writer.close();
     IndexSearcher searcher = newSearcher(ir);
     BooleanWeight weight = (BooleanWeight) new BooleanQuery().createWeight(searcher);
-    TopScorer[] scorers = new TopScorer[] {new TopScorer() {
+    BulkScorer[] scorers = new BulkScorer[] {new BulkScorer() {
       private int doc = -1;
 
       @Override
@@ -123,7 +123,7 @@ public class TestBooleanScorer extends LuceneTestCase {
       }
     }};
     
-    BooleanScorer bs = new BooleanScorer(weight, false, 1, Arrays.asList(scorers), Collections.<TopScorer>emptyList(), scorers.length);
+    BooleanScorer bs = new BooleanScorer(weight, false, 1, Arrays.asList(scorers), Collections.<BulkScorer>emptyList(), scorers.length);
 
     final List<Integer> hits = new ArrayList<Integer>();
     bs.score(new Collector() {
@@ -243,11 +243,11 @@ public class TestBooleanScorer extends LuceneTestCase {
   }
 
   /** Throws UOE if Weight.scorer is called */
-  private static class CrazyMustUseTopScorerQuery extends Query {
+  private static class CrazyMustUseBulkScorerQuery extends Query {
 
     @Override
     public String toString(String field) {
-      return "MustUseTopScorerQuery";
+      return "MustUseBulkScorerQuery";
     }
 
     @Override
@@ -260,7 +260,7 @@ public class TestBooleanScorer extends LuceneTestCase {
 
         @Override
         public Query getQuery() {
-          return CrazyMustUseTopScorerQuery.this;
+          return CrazyMustUseBulkScorerQuery.this;
         }
 
         @Override
@@ -278,8 +278,8 @@ public class TestBooleanScorer extends LuceneTestCase {
         }
 
         @Override
-        public TopScorer topScorer(AtomicReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) {
-          return new TopScorer() {
+        public BulkScorer bulkScorer(AtomicReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) {
+          return new BulkScorer() {
 
             @Override
             public boolean score(Collector collector, int max) throws IOException {
@@ -311,7 +311,7 @@ public class TestBooleanScorer extends LuceneTestCase {
 
     BooleanQuery q2 = new BooleanQuery();
     q2.add(q1, BooleanClause.Occur.SHOULD);
-    q2.add(new CrazyMustUseTopScorerQuery(), BooleanClause.Occur.SHOULD);
+    q2.add(new CrazyMustUseBulkScorerQuery(), BooleanClause.Occur.SHOULD);
 
     assertEquals(1, s.search(q2, 10).totalHits);
     r.close();

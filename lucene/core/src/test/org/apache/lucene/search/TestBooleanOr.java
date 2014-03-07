@@ -183,7 +183,7 @@ public class TestBooleanOr extends LuceneTestCase {
     Weight w = s.createNormalizedWeight(bq);
 
     assertEquals(1, s.getIndexReader().leaves().size());
-    TopScorer scorer = w.topScorer(s.getIndexReader().leaves().get(0), false, null);
+    BulkScorer scorer = w.bulkScorer(s.getIndexReader().leaves().get(0), false, null);
 
     final FixedBitSet hits = new FixedBitSet(docCount);
     final AtomicInteger end = new AtomicInteger();

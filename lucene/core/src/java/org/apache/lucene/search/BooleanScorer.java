@@ -59,7 +59,7 @@ import org.apache.lucene.search.BooleanQuery.BooleanWeight;
  * conjunction can reduce the number of priority queue
  * updates for the optional terms. */
 
-final class BooleanScorer extends TopScorer {
+final class BooleanScorer extends BulkScorer {
   
   private static final class BooleanScorerCollector extends Collector {
     private BucketTable bucketTable;
@@ -190,7 +190,7 @@ final class BooleanScorer extends TopScorer {
   }
 
   static final class SubScorer {
-    public TopScorer scorer;
+    public BulkScorer scorer;
     // TODO: re-enable this if BQ ever sends us required clauses
     //public boolean required = false;
     public boolean prohibited;
@@ -198,7 +198,7 @@ final class BooleanScorer extends TopScorer {
     public SubScorer next;
     public boolean more;
 
-    public SubScorer(TopScorer scorer, boolean required, boolean prohibited,
+    public SubScorer(BulkScorer scorer, boolean required, boolean prohibited,
         Collector collector, SubScorer next) {
       if (required) {
         throw new IllegalArgumentException("this scorer cannot handle required=true");
@@ -227,15 +227,15 @@ final class BooleanScorer extends TopScorer {
   private final Weight weight;
 
   BooleanScorer(BooleanWeight weight, boolean disableCoord, int minNrShouldMatch,
-      List<TopScorer> optionalScorers, List<TopScorer> prohibitedScorers, int maxCoord) throws IOException {
+      List<BulkScorer> optionalScorers, List<BulkScorer> prohibitedScorers, int maxCoord) throws IOException {
     this.minNrShouldMatch = minNrShouldMatch;
     this.weight = weight;
 
-    for (TopScorer scorer : optionalScorers) {
+    for (BulkScorer scorer : optionalScorers) {
       scorers = new SubScorer(scorer, false, false, bucketTable.newCollector(0), scorers);
     }
     
-    for (TopScorer scorer : prohibitedScorers) {
+    for (BulkScorer scorer : prohibitedScorers) {
       scorers = new SubScorer(scorer, false, true, bucketTable.newCollector(PROHIBITED_MASK), scorers);
     }
 
@@ -313,11 +313,6 @@ final class BooleanScorer extends TopScorer {
     return false;
   }
 
-  @Override
-  public void score(Collector collector) throws IOException {
-    score(collector, Integer.MAX_VALUE);
-  }
-  
   @Override
   public String toString() {
     StringBuilder buffer = new StringBuilder();
