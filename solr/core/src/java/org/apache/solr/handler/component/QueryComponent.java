@@ -25,12 +25,14 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -500,12 +502,32 @@ public class QueryComponent extends SearchComponent
 
       // sort ids from lowest to highest so we can access them in order
       int nDocs = docList.size();
-      long[] sortedIds = new long[nDocs];
-      DocIterator it = rb.getResults().docList.iterator();
+      final long[] sortedIds = new long[nDocs];
+      final float[] scores = new float[nDocs]; // doc scores, parallel to sortedIds
+      DocList docs = rb.getResults().docList;
+      DocIterator it = docs.iterator();
       for (int i=0; i<nDocs; i++) {
         sortedIds[i] = (((long)it.nextDoc()) << 32) | i;
+        scores[i] = docs.hasScores() ? it.score() : Float.NaN;
       }
-      Arrays.sort(sortedIds);
+
+      // sort ids and scores together
+      new InPlaceMergeSorter() {
+        @Override
+        protected void swap(int i, int j) {
+          long tmpId = sortedIds[i];
+          float tmpScore = scores[i];
+          sortedIds[i] = sortedIds[j];
+          scores[i] = scores[j];
+          sortedIds[j] = tmpId;
+          scores[j] = tmpScore;
+        }
+
+        @Override
+        protected int compare(int i, int j) {
+          return Long.compare(sortedIds[i], sortedIds[j]);
+        }
+      }.sort(0, sortedIds.length);
 
       SortSpec sortSpec = rb.getSortSpec();
       Sort sort = searcher.weightSort(sortSpec.getSort());
@@ -527,7 +549,9 @@ public class QueryComponent extends SearchComponent
         int lastIdx = -1;
         int idx = 0;
 
-        for (long idAndPos : sortedIds) {
+        for (int i = 0; i < sortedIds.length; ++i) {
+          long idAndPos = sortedIds[i];
+          float score = scores[i];
           int doc = (int)(idAndPos >>> 32);
           int position = (int)idAndPos;
 
@@ -546,6 +570,7 @@ public class QueryComponent extends SearchComponent
           }
 
           doc -= currentLeaf.docBase;  // adjust for what segment this is in
+          comparator.setScorer(new FakeScorer(doc, score));
           comparator.copy(0, doc);
           Object val = comparator.value(0);
           if (null != ft) val = ft.marshalSortValue(val); 
@@ -1156,5 +1181,51 @@ public class QueryComponent extends SearchComponent
   @Override
   public URL[] getDocs() {
     return null;
+  }
+
+  /**
+   * Fake scorer for a single document
+   *
+   * TODO: when SOLR-5595 is fixed, this wont be needed, as we dont need to recompute sort values here from the comparator
+   */
+  private static class FakeScorer extends Scorer {
+    final int docid;
+    final float score;
+
+    FakeScorer(int docid, float score) {
+      super(null);
+      this.docid = docid;
+      this.score = score;
+    }
+
+    @Override
+    public int docID() {
+      return docid;
+    }
+
+    @Override
+    public float score() throws IOException {
+      return score;
+    }
+
+    @Override
+    public int freq() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long cost() {
+      return 1;
+    }
   }
 }

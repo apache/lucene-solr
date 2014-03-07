@@ -135,6 +135,9 @@ Bug Fixes
 * SOLR-5796: Increase how long we are willing to wait for a core to see the ZK
   advertised leader in it's local state. (Timothy Potter, Mark Miller)  
 
+* SOLR-5818: distrib search with custom comparator does not quite work correctly
+  (Ryan Ernst)
+
 Optimizations
 ----------------------
 * SOLR-1880: Distributed Search skips GET_FIELDS stage if EXECUTE_QUERY
