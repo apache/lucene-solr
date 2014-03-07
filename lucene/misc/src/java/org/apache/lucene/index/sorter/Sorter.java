@@ -39,6 +39,9 @@ final class Sorter {
   
   /** Creates a new Sorter to sort the index with {@code sort} */
   Sorter(Sort sort) {
+    if (sort.needsScores()) {
+      throw new IllegalArgumentException("Cannot sort an index with a Sort that refers to the relevance score");
+    }
     this.sort = sort;
   }
 
