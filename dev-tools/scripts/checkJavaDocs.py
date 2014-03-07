@@ -212,7 +212,7 @@ def checkClassSummaries(fullPath):
     if inThing:
       if lineLower.find('</tr>') != -1:
         if not hasDesc:
-          missing.append((lastCaption, lastItem))
+          missing.append((lastCaption, unEscapeURL(lastItem)))
         inThing = False
         continue
       else:
@@ -297,6 +297,11 @@ def checkSummary(fullPath):
     raise RuntimeError('BUG: failed to locate description in %s' % fullPath)
   f.close()
   return anyMissing
+
+def unEscapeURL(s):
+  # Not exhaustive!!
+  s = s.replace('%20', ' ')
+  return s
 
 def unescapeHTML(s):
   s = s.replace('&lt;', '<')
