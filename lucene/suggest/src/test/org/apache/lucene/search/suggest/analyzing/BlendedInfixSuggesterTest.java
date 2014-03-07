@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.search.suggest.Input;
 import org.apache.lucene.search.suggest.InputArrayIterator;
 import org.apache.lucene.search.suggest.Lookup;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -49,15 +48,10 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
     File tempDir = TestUtil.getTempDir("BlendedInfixSuggesterTest");
 
     Analyzer a = new StandardAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET);
-    BlendedInfixSuggester suggester = new BlendedInfixSuggester(TEST_VERSION_CURRENT, tempDir, a, a,
-        AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS,
-        BlendedInfixSuggester.BlenderType.POSITION_LINEAR,
-        BlendedInfixSuggester.DEFAULT_NUM_FACTOR) {
-      @Override
-      protected Directory getDirectory(File path) {
-        return newFSDirectory(path);
-      }
-    };
+    BlendedInfixSuggester suggester = new BlendedInfixSuggester(TEST_VERSION_CURRENT, newFSDirectory(tempDir), a, a,
+                                                                AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS,
+                                                                BlendedInfixSuggester.BlenderType.POSITION_LINEAR,
+                                                                BlendedInfixSuggester.DEFAULT_NUM_FACTOR);
     suggester.build(new InputArrayIterator(keys));
 
     // we query for star wars and check that the weight
@@ -94,12 +88,7 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
     Analyzer a = new StandardAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET);
 
     // BlenderType.LINEAR is used by default (remove position*10%)
-    BlendedInfixSuggester suggester = new BlendedInfixSuggester(TEST_VERSION_CURRENT, tempDir, a) {
-      @Override
-      protected Directory getDirectory(File path) {
-        return newFSDirectory(path);
-      }
-    };
+    BlendedInfixSuggester suggester = new BlendedInfixSuggester(TEST_VERSION_CURRENT, newFSDirectory(tempDir), a);
     suggester.build(new InputArrayIterator(keys));
 
     assertEquals(w, getInResults(suggester, "top", pl, 1));
@@ -109,13 +98,8 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
     suggester.close();
 
     // BlenderType.RECIPROCAL is using 1/(1+p) * w where w is weight and p the position of the word
-    suggester = new BlendedInfixSuggester(TEST_VERSION_CURRENT, tempDir, a, a,
-        AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS, BlendedInfixSuggester.BlenderType.POSITION_RECIPROCAL, 1) {
-      @Override
-      protected Directory getDirectory(File path) {
-        return newFSDirectory(path);
-      }
-    };
+    suggester = new BlendedInfixSuggester(TEST_VERSION_CURRENT, newFSDirectory(tempDir), a, a,
+                                          AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS, BlendedInfixSuggester.BlenderType.POSITION_RECIPROCAL, 1);
     suggester.build(new InputArrayIterator(keys));
 
     assertEquals(w, getInResults(suggester, "top", pl, 1));
@@ -145,13 +129,8 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
     Analyzer a = new StandardAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET);
 
     // if factor is small, we don't get the expected element
-    BlendedInfixSuggester suggester = new BlendedInfixSuggester(TEST_VERSION_CURRENT, tempDir, a, a,
-        AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS, BlendedInfixSuggester.BlenderType.POSITION_RECIPROCAL, 1) {
-      @Override
-      protected Directory getDirectory(File path) {
-        return newFSDirectory(path);
-      }
-    };
+    BlendedInfixSuggester suggester = new BlendedInfixSuggester(TEST_VERSION_CURRENT, newFSDirectory(tempDir), a, a,
+                                                                AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS, BlendedInfixSuggester.BlenderType.POSITION_RECIPROCAL, 1);
 
     suggester.build(new InputArrayIterator(keys));
 
@@ -169,13 +148,8 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
     suggester.close();
 
     // if we increase the factor we have it
-    suggester = new BlendedInfixSuggester(TEST_VERSION_CURRENT, tempDir, a, a,
-        AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS, BlendedInfixSuggester.BlenderType.POSITION_RECIPROCAL, 2) {
-      @Override
-      protected Directory getDirectory(File path) {
-        return newFSDirectory(path);
-      }
-    };
+    suggester = new BlendedInfixSuggester(TEST_VERSION_CURRENT, newFSDirectory(tempDir), a, a,
+                                          AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS, BlendedInfixSuggester.BlenderType.POSITION_RECIPROCAL, 2);
     suggester.build(new InputArrayIterator(keys));
 
     // we have it
@@ -205,14 +179,9 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
     Analyzer a = new StandardAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET);
 
     // if factor is small, we don't get the expected element
-    BlendedInfixSuggester suggester = new BlendedInfixSuggester(TEST_VERSION_CURRENT, tempDir, a, a,
-        AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS, BlendedInfixSuggester.BlenderType.POSITION_RECIPROCAL,
-        BlendedInfixSuggester.DEFAULT_NUM_FACTOR) {
-      @Override
-      protected Directory getDirectory(File path) {
-        return newFSDirectory(path);
-      }
-    };
+    BlendedInfixSuggester suggester = new BlendedInfixSuggester(TEST_VERSION_CURRENT, newFSDirectory(tempDir), a, a,
+                                                                AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS, BlendedInfixSuggester.BlenderType.POSITION_RECIPROCAL,
+                                                                BlendedInfixSuggester.DEFAULT_NUM_FACTOR);
     suggester.build(new InputArrayIterator(keys));
 
 
