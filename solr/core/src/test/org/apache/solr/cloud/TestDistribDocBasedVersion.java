@@ -103,6 +103,8 @@ public class TestDistribDocBasedVersion extends AbstractFullDistribZkTestBase {
       doTestDocVersions();
       doTestHardFail();
 
+      commit(); // work arround SOLR-5628
+
       testFinished = true;
     } finally {
       if (!testFinished) {

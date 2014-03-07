@@ -40,6 +40,7 @@ import org.apache.lucene.search.suggest.fst.FSTCompletionLookup;
 import org.apache.lucene.search.suggest.fst.WFSTCompletionLookup;
 import org.apache.lucene.search.suggest.jaspell.JaspellLookup;
 import org.apache.lucene.search.suggest.tst.TSTLookup;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.*;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -161,7 +162,7 @@ public class LookupBenchmarkTest extends LuceneTestCase {
     } catch (InstantiationException e) {
       Analyzer a = new MockAnalyzer(random, MockTokenizer.KEYWORD, false);
       if (cls == AnalyzingInfixSuggester.class) {
-        lookup = new AnalyzingInfixSuggester(TEST_VERSION_CURRENT, TestUtil.getTempDir("LookupBenchmarkTest"), a);
+        lookup = new AnalyzingInfixSuggester(TEST_VERSION_CURRENT, FSDirectory.open(TestUtil.getTempDir("LookupBenchmarkTest")), a);
       } else {
         Constructor<? extends Lookup> ctor = cls.getConstructor(Analyzer.class);
         lookup = ctor.newInstance(a);

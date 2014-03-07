@@ -46,17 +46,12 @@ import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FilterAtomicReader;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiDocValues;
-import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReader;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.sorter.EarlyTerminatingSortingCollector;
-import org.apache.lucene.index.sorter.Sorter;
-import org.apache.lucene.index.sorter.SortingAtomicReader;
 import org.apache.lucene.index.sorter.SortingMergePolicy;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -117,9 +112,8 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
   /** Analyzer used at index time */
   protected final Analyzer indexAnalyzer;
   final Version matchVersion;
-  private final File indexPath;
+  private final Directory dir;
   final int minPrefixChars;
-  private Directory dir;
 
   /** Used for ongoing NRT additions/updates. */
   private IndexWriter writer;
@@ -131,16 +125,19 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
    *  PrefixQuery is used (4). */
   public static final int DEFAULT_MIN_PREFIX_CHARS = 4;
 
-  private Sorter sorter;
+  /** How we sort the postings and search results. */
+  private static final Sort SORT = new Sort(new SortField("weight", SortField.Type.LONG, true));
 
   /** Create a new instance, loading from a previously built
-   *  directory, if it exists. */
-  public AnalyzingInfixSuggester(Version matchVersion, File indexPath, Analyzer analyzer) throws IOException {
-    this(matchVersion, indexPath, analyzer, analyzer, DEFAULT_MIN_PREFIX_CHARS);
+   *  directory, if it exists.  Note that {@link #close}
+   *  will also close the provided directory. */
+  public AnalyzingInfixSuggester(Version matchVersion, Directory dir, Analyzer analyzer) throws IOException {
+    this(matchVersion, dir, analyzer, analyzer, DEFAULT_MIN_PREFIX_CHARS);
   }
 
   /** Create a new instance, loading from a previously built
-   *  directory, if it exists.
+   *  directory, if it exists. Note that {@link #close}
+   *  will also close the provided directory.
    *
    *  @param minPrefixChars Minimum number of leading characters
    *     before PrefixQuery is used (default 4).
@@ -148,7 +145,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
    *     ngrams (increasing index size but making lookups
    *     faster).
    */
-  public AnalyzingInfixSuggester(Version matchVersion, File indexPath, Analyzer indexAnalyzer, Analyzer queryAnalyzer, int minPrefixChars) throws IOException {
+  public AnalyzingInfixSuggester(Version matchVersion, Directory dir, Analyzer indexAnalyzer, Analyzer queryAnalyzer, int minPrefixChars) throws IOException {
 
     if (minPrefixChars < 0) {
       throw new IllegalArgumentException("minPrefixChars must be >= 0; got: " + minPrefixChars);
@@ -157,33 +154,29 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     this.queryAnalyzer = queryAnalyzer;
     this.indexAnalyzer = indexAnalyzer;
     this.matchVersion = matchVersion;
-    this.indexPath = indexPath;
+    this.dir = dir;
     this.minPrefixChars = minPrefixChars;
-    dir = getDirectory(indexPath);
 
     if (DirectoryReader.indexExists(dir)) {
       // Already built; open it:
-      initSorter();
       writer = new IndexWriter(dir,
-                               getIndexWriterConfig(matchVersion, getGramAnalyzer(), sorter, IndexWriterConfig.OpenMode.APPEND));
+                               getIndexWriterConfig(matchVersion, getGramAnalyzer(), IndexWriterConfig.OpenMode.APPEND));
       searcherMgr = new SearcherManager(writer, true, null);
     }
   }
 
   /** Override this to customize index settings, e.g. which
-   *  codec to use. Sorter is null if this config is for
-   *  the first pass writer. */
-  protected IndexWriterConfig getIndexWriterConfig(Version matchVersion, Analyzer indexAnalyzer, Sorter sorter, IndexWriterConfig.OpenMode openMode) {
+   *  codec to use. */
+  protected IndexWriterConfig getIndexWriterConfig(Version matchVersion, Analyzer indexAnalyzer, IndexWriterConfig.OpenMode openMode) {
     IndexWriterConfig iwc = new IndexWriterConfig(matchVersion, indexAnalyzer);
     iwc.setCodec(new Lucene46Codec());
     iwc.setOpenMode(openMode);
 
-    if (sorter != null) {
-      // This way all merged segments will be sorted at
-      // merge time, allow for per-segment early termination
-      // when those segments are searched:
-      iwc.setMergePolicy(new SortingMergePolicy(iwc.getMergePolicy(), sorter));
-    }
+    // This way all merged segments will be sorted at
+    // merge time, allow for per-segment early termination
+    // when those segments are searched:
+    iwc.setMergePolicy(new SortingMergePolicy(iwc.getMergePolicy(), SORT));
+
     return iwc;
   }
 
@@ -206,16 +199,13 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       writer = null;
     }
 
-    Directory dirTmp = getDirectory(new File(indexPath.toString() + ".tmp"));
-
-    IndexWriter w = null;
     AtomicReader r = null;
     boolean success = false;
     try {
       // First pass: build a temporary normal Lucene index,
       // just indexing the suggestions as they iterate:
-      w = new IndexWriter(dirTmp,
-                          getIndexWriterConfig(matchVersion, getGramAnalyzer(), null, IndexWriterConfig.OpenMode.CREATE));
+      writer = new IndexWriter(dir,
+                               getIndexWriterConfig(matchVersion, getGramAnalyzer(), IndexWriterConfig.OpenMode.CREATE));
       BytesRef text;
       Document doc = new Document();
       FieldType ft = getTextFieldType();
@@ -253,37 +243,17 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
         if (iter.hasPayloads()) {
           payloadField.setBytesValue(iter.payload());
         }
-        w.addDocument(doc);
+        writer.addDocument(doc);
       }
       //System.out.println("initial indexing time: " + ((System.nanoTime()-t0)/1000000) + " msec");
-
-      // Second pass: sort the entire index:
-      r = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(w, false));
-      //long t1 = System.nanoTime();
-
-      // We can rollback the first pass, now that have have
-      // the reader open, because we will discard it anyway
-      // (no sense in fsync'ing it):
-      w.rollback();
-
-      initSorter();
-
-      r = SortingAtomicReader.wrap(r, sorter);
-      
-      writer = new IndexWriter(dir,
-                               getIndexWriterConfig(matchVersion, getGramAnalyzer(), sorter, IndexWriterConfig.OpenMode.CREATE));
-      writer.addIndexes(new IndexReader[] {r});
-      r.close();
-
-      //System.out.println("sort time: " + ((System.nanoTime()-t1)/1000000) + " msec");
 
       searcherMgr = new SearcherManager(writer, true, null);
       success = true;
     } finally {
       if (success) {
-        IOUtils.close(w, r, dirTmp);
+        IOUtils.close(r);
       } else {
-        IOUtils.closeWhileHandlingException(w, writer, r, dirTmp);
+        IOUtils.closeWhileHandlingException(writer, r);
         writer = null;
       }
     }
@@ -357,39 +327,6 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
    *  once in the end. */
   public void refresh() throws IOException {
     searcherMgr.maybeRefreshBlocking();
-  }
-
-  private void initSorter() {
-    sorter = new Sorter() {
-
-        @Override
-        public Sorter.DocMap sort(AtomicReader reader) throws IOException {
-          final NumericDocValues weights = reader.getNumericDocValues("weight");
-          final Sorter.DocComparator comparator = new Sorter.DocComparator() {
-              @Override
-              public int compare(int docID1, int docID2) {
-                final long v1 = weights.get(docID1);
-                final long v2 = weights.get(docID2);
-                // Reverse sort (highest weight first);
-                // java7 only:
-                //return Long.compare(v2, v1);
-                if (v1 > v2) {
-                  return -1;
-                } else if (v1 < v2) {
-                  return 1;
-                } else {
-                  return 0;
-                }
-              }
-            };
-          return Sorter.sort(reader.maxDoc(), comparator);
-        }
-
-        @Override
-        public String getID() {
-          return "BySuggestWeight";
-        }
-      };
   }
 
   /**
@@ -497,12 +434,11 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     //System.out.println("finalQuery=" + query);
 
     // Sort by weight, descending:
-    TopFieldCollector c = TopFieldCollector.create(new Sort(new SortField("weight", SortField.Type.LONG, true)),
-                                                   num, true, false, false, false);
+    TopFieldCollector c = TopFieldCollector.create(SORT, num, true, false, false, false);
 
     // We sorted postings by weight during indexing, so we
     // only retrieve the first num hits now:
-    Collector c2 = new EarlyTerminatingSortingCollector(c, sorter, num);
+    Collector c2 = new EarlyTerminatingSortingCollector(c, SORT, num);
     IndexSearcher searcher = searcherMgr.acquire();
     List<LookupResult> results = null;
     try {
@@ -512,7 +448,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       TopFieldDocs hits = (TopFieldDocs) c.topDocs();
 
       // Slower way if postings are not pre-sorted by weight:
-      // hits = searcher.search(query, null, num, new Sort(new SortField("weight", SortField.Type.LONG, true)));
+      // hits = searcher.search(query, null, num, SORT);
       results = createResults(searcher, hits, num, key, doHighlight, matchedTokens, prefixToken);
     } finally {
       searcherMgr.release(searcher);
@@ -676,11 +612,8 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     }
     if (writer != null) {
       writer.close();
-      writer = null;
-    }
-    if (dir != null) {
       dir.close();
-      dir = null;
+      writer = null;
     }
   }
 

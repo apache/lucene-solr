@@ -30,8 +30,12 @@ import org.apache.solr.util.RefCounted;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class TestNonNRTOpen extends SolrTestCaseJ4 {
-  
+  private static final Logger log = LoggerFactory.getLogger(TestNonNRTOpen.class);
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     // use a filesystem, because we need to create an index, then "start up solr"
@@ -80,6 +84,7 @@ public class TestNonNRTOpen extends SolrTestCaseJ4 {
     
     // core reload
     String core = h.getCore().getName();
+    log.info("Reloading core: " + h.getCore().toString());
     h.getCoreContainer().reload(core);
     assertNotNRT(1);
     
@@ -90,6 +95,7 @@ public class TestNonNRTOpen extends SolrTestCaseJ4 {
     
     // add a doc and core reload
     assertU(adoc("bazz", "doc2"));
+    log.info("Reloading core: " + h.getCore().toString());
     h.getCoreContainer().reload(core);
     assertNotNRT(3);
   }
@@ -127,11 +133,15 @@ public class TestNonNRTOpen extends SolrTestCaseJ4 {
   }
   
   static void assertNotNRT(int maxDoc) {
-    RefCounted<SolrIndexSearcher> searcher = h.getCore().getSearcher();
+    SolrCore core = h.getCore();
+    log.info("Checking notNRT & maxDoc=" + maxDoc + " of core=" + core.toString());
+    RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
     try {
-      DirectoryReader ir = searcher.get().getIndexReader();
-      assertEquals(maxDoc, ir.maxDoc());
-      assertFalse("expected non-NRT reader, got: " + ir, ir.toString().contains(":nrt"));
+      SolrIndexSearcher s = searcher.get();
+      DirectoryReader ir = s.getIndexReader();
+      assertEquals("SOLR-5815? : wrong maxDoc: core=" + core.toString() +" searcher=" + s.toString(),
+                   maxDoc, ir.maxDoc());
+      assertFalse("SOLR-5815? : expected non-NRT reader, got: " + ir, ir.toString().contains(":nrt"));
     } finally {
       searcher.decref();
     }

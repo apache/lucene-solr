@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.util.IOUtils;
 
 /**
  * Holds state for inverting all occurrences of a single
@@ -182,6 +181,17 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
           // when we come back around to the field...
           fieldState.position += posIncrAttribute.getPositionIncrement();
           fieldState.offset += offsetAttribute.endOffset();
+
+
+          if (docState.maxTermPrefix != null) {
+            final String msg = "Document contains at least one immense term in field=\"" + fieldInfo.name + "\" (whose UTF8 encoding is longer than the max length " + DocumentsWriterPerThread.MAX_TERM_LENGTH_UTF8 + "), all of which were skipped.  Please correct the analyzer to not produce such terms.  The prefix of the first immense term is: '" + docState.maxTermPrefix + "...'";
+            if (docState.infoStream.isEnabled("IW")) {
+              docState.infoStream.message("IW", "ERROR: " + msg);
+            }
+            docState.maxTermPrefix = null;
+            throw new IllegalArgumentException(msg);
+          }
+
           /* if success was false above there is an exception coming through and we won't get here.*/
           succeededInProcessingField = true;
         } finally {

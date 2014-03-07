@@ -203,14 +203,14 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     testCollectionsAPI();
     testCollectionsAPIAddRemoveStress();
     testErrorHandling();
+    testNoCollectionSpecified();
     deletePartiallyCreatedCollection();
     deleteCollectionRemovesStaleZkCollectionsNode();
     clusterPropTest();
-
     addReplicaTest();
-
     // last
     deleteCollectionWithDownNodes();
+    
     if (DEBUG) {
       super.printLayout();
     }
@@ -578,6 +578,40 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     String val2 = failure.getVal(0).toString();
     assertTrue(val1.contains("SolrException") || val2.contains("SolrException"));
   }
+  
+  private void testNoCollectionSpecified() throws Exception {
+    
+    cloudClient.getZkStateReader().updateClusterState(true);
+    assertFalse(cloudClient.getZkStateReader().getAllCollections().contains("corewithnocollection"));
+    assertFalse(cloudClient.getZkStateReader().getAllCollections().contains("corewithnocollection2"));
+    
+    // try and create a SolrCore with no collection name
+    Create createCmd = new Create();
+    createCmd.setCoreName("corewithnocollection");
+    createCmd.setCollection("");
+    String dataDir = SolrTestCaseJ4.dataDir.getAbsolutePath() + File.separator
+        + System.currentTimeMillis() + "corewithnocollection" + "_1v";
+    createCmd.setDataDir(dataDir);
+    createCmd.setNumShards(1);
+    if (secondConfigSet) {
+      createCmd.setCollectionConfigName("conf1");
+    }
+    
+    createNewSolrServer("", getBaseUrl((HttpSolrServer) clients.get(1)))
+        .request(createCmd);
+    
+    // try and create a SolrCore with no collection name
+    createCmd.setCollection(null);
+    createCmd.setCoreName("corewithnocollection2");
+    
+    createNewSolrServer("", getBaseUrl((HttpSolrServer) clients.get(1)))
+        .request(createCmd);
+    
+    // in both cases, the collection should have default to the core name
+    cloudClient.getZkStateReader().updateClusterState(true);
+    assertTrue(cloudClient.getZkStateReader().getAllCollections().contains("corewithnocollection"));
+    assertTrue(cloudClient.getZkStateReader().getAllCollections().contains("corewithnocollection2"));
+  }
 
   private void testNodesUsedByCreate() throws Exception {
     // we can use this client because we just want base url
@@ -631,7 +665,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     boolean disableLegacy = random().nextBoolean();
     CloudSolrServer client1 = null;
 
-    if(disableLegacy) {
+    if (disableLegacy) {
       log.info("legacyCloud=false");
       client1 = createCloudClient(null);
       setClusterProp(client1, ZkStateReader.LEGACY_CLOUD, "false");
