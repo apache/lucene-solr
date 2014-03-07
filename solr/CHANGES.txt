@@ -54,6 +54,10 @@ New Features
 * SOLR-5714: You can now use one pool of memory for for the HDFS block cache
   that all collections share. (Mark Miller, Gregory Chanan)
 
+* SOLR-5720: Add ExpandComponent to expand results collapsed by the 
+  CollapsingQParserPlugin. (Joel Bernstein)
+
+
 Bug Fixes
 ----------------------
 
