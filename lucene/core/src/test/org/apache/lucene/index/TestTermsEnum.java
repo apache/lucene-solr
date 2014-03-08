@@ -44,7 +44,9 @@ public class TestTermsEnum extends LuceneTestCase {
     Random random = new Random(random().nextLong());
     final LineFileDocs docs = new LineFileDocs(random, true);
     final Directory d = newDirectory();
-    final RandomIndexWriter w = new RandomIndexWriter(random(), d);
+    MockAnalyzer analyzer = new MockAnalyzer(random());
+    analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
+    final RandomIndexWriter w = new RandomIndexWriter(random(), d, analyzer);
     final int numDocs = atLeast(10);
     for(int docCount=0;docCount<numDocs;docCount++) {
       w.addDocument(docs.nextDoc());
