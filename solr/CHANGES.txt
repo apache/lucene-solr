@@ -138,6 +138,9 @@ Bug Fixes
 * SOLR-5818: distrib search with custom comparator does not quite work correctly
   (Ryan Ernst)
 
+* SOLR-5834: Overseer threads are only being interrupted and not closed.
+  (hossman, Mark Miller)
+
 Optimizations
 ----------------------
 * SOLR-1880: Distributed Search skips GET_FIELDS stage if EXECUTE_QUERY
