@@ -17,19 +17,29 @@ package org.apache.lucene.queries;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
+
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -45,19 +55,13 @@ import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
-
 public class CommonTermsQueryTest extends LuceneTestCase {
   
   public void testBasics() throws IOException {
     Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    MockAnalyzer analyzer = new MockAnalyzer(random());
+    analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, analyzer);
     String[] docs = new String[] {"this is the end of the world right",
         "is this it or maybe not",
         "this is the end of the universe as we know it",
@@ -186,7 +190,9 @@ public class CommonTermsQueryTest extends LuceneTestCase {
   
   public void testMinShouldMatch() throws IOException {
     Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    MockAnalyzer analyzer = new MockAnalyzer(random());
+    analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, analyzer);
     String[] docs = new String[] {"this is the end of the world right",
         "is this it or maybe not",
         "this is the end of the universe as we know it",
@@ -344,7 +350,9 @@ public class CommonTermsQueryTest extends LuceneTestCase {
   @Test
   public void testExtend() throws IOException {
     Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    MockAnalyzer analyzer = new MockAnalyzer(random());
+    analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, analyzer);
     String[] docs = new String[] {"this is the end of the world right",
         "is this it or maybe not",
         "this is the end of the universe as we know it",
@@ -397,7 +405,9 @@ public class CommonTermsQueryTest extends LuceneTestCase {
   
   public void testRandomIndex() throws IOException {
     Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    MockAnalyzer analyzer = new MockAnalyzer(random());
+    analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, analyzer);
     createRandomIndex(atLeast(50), w, random().nextLong());
     DirectoryReader reader = w.getReader();
     AtomicReader wrapper = SlowCompositeReaderWrapper.wrap(reader);
