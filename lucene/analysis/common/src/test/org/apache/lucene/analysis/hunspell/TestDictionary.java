@@ -17,6 +17,7 @@ package org.apache.lucene.analysis.hunspell;
  * limitations under the License.
  */
 
+import java.io.ByteArrayInputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,6 +25,7 @@ import java.text.ParseException;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.fst.Builder;
@@ -177,5 +179,17 @@ public class TestDictionary extends LuceneTestCase {
     sb = new StringBuilder("defdefdefc");
     Dictionary.applyMappings(fst, sb);
     assertEquals("ghghghde", sb.toString());
+  }
+  
+  public void testSetWithCrazyWhitespaceAndBOMs() throws Exception {
+    assertEquals("UTF-8", Dictionary.getDictionaryEncoding(new ByteArrayInputStream("SET\tUTF-8\n".getBytes(IOUtils.CHARSET_UTF_8))));
+    assertEquals("UTF-8", Dictionary.getDictionaryEncoding(new ByteArrayInputStream("SET\t UTF-8\n".getBytes(IOUtils.CHARSET_UTF_8))));
+    assertEquals("UTF-8", Dictionary.getDictionaryEncoding(new ByteArrayInputStream("\uFEFFSET\tUTF-8\n".getBytes(IOUtils.CHARSET_UTF_8))));
+    assertEquals("UTF-8", Dictionary.getDictionaryEncoding(new ByteArrayInputStream("\uFEFFSET\tUTF-8\r\n".getBytes(IOUtils.CHARSET_UTF_8))));
+  }
+  
+  public void testFlagWithCrazyWhitespace() throws Exception {
+    assertNotNull(Dictionary.getFlagParsingStrategy("FLAG\tUTF-8"));
+    assertNotNull(Dictionary.getFlagParsingStrategy("FLAG    UTF-8"));
   }
 }

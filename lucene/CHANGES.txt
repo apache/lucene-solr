@@ -87,6 +87,9 @@ Bug fixes
 * LUCENE-5497: HunspellStemFilter properly handles escaped terms and affixes without conditions.
   (Robert Muir)
 
+* LUCENE-5505: HunspellStemFilter ignores BOM markers in dictionaries and handles varying
+  types of whitespace in SET/FLAG commands. (Robert Muir)
+
 Test Framework
 
 * LUCENE-5449: Rename _TestUtil and _TestHelper to remove the leading _.
