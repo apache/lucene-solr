@@ -54,6 +54,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -251,6 +252,10 @@ public class Dictionary {
     LineNumberReader reader = new LineNumberReader(new InputStreamReader(affixStream, decoder));
     String line = null;
     while ((line = reader.readLine()) != null) {
+      // ignore any BOM marker on first line
+      if (reader.getLineNumber() == 1 && line.startsWith("\uFEFF")) {
+        line = line.substring(1);
+      }
       if (line.startsWith(ALIAS_KEY)) {
         parseAlias(line);
       } else if (line.startsWith(PREFIX_KEY)) {
@@ -466,6 +471,9 @@ public class Dictionary {
     
     return builder.finish();
   }
+  
+  /** pattern accepts optional BOM + SET + any whitespace */
+  final static Pattern ENCODING_PATTERN = Pattern.compile("^(\u00EF\u00BB\u00BF)?SET\\s+");
 
   /**
    * Parses the encoding specified in the affix file readable through the provided InputStream
@@ -475,7 +483,7 @@ public class Dictionary {
    * @throws IOException Can be thrown while reading from the InputStream
    * @throws ParseException Thrown if the first non-empty non-comment line read from the file does not adhere to the format {@code SET <encoding>}
    */
-  private String getDictionaryEncoding(InputStream affix) throws IOException, ParseException {
+  static String getDictionaryEncoding(InputStream affix) throws IOException, ParseException {
     final StringBuilder encoding = new StringBuilder();
     for (;;) {
       encoding.setLength(0);
@@ -498,9 +506,10 @@ public class Dictionary {
         }
         continue;
       }
-      if (encoding.length() > 4 && "SET ".equals(encoding.substring(0, 4))) {
-        // cleanup the encoding string, too (whitespace)
-        return encoding.substring(4).trim();
+      Matcher matcher = ENCODING_PATTERN.matcher(encoding);
+      if (matcher.find()) {
+        int last = matcher.end();
+        return encoding.substring(last).trim();
       }
     }
   }
@@ -538,8 +547,12 @@ public class Dictionary {
    * @param flagLine Line containing the flag information
    * @return FlagParsingStrategy that handles parsing flags in the way specified in the FLAG definition
    */
-  private FlagParsingStrategy getFlagParsingStrategy(String flagLine) {
-    String flagType = flagLine.substring(5);
+  static FlagParsingStrategy getFlagParsingStrategy(String flagLine) {
+    String parts[] = flagLine.split("\\s+");
+    if (parts.length != 2) {
+      throw new IllegalArgumentException("Illegal FLAG specification: " + flagLine);
+    }
+    String flagType = parts[1];
 
     if (NUM_FLAG_TYPE.equals(flagType)) {
       return new NumFlagParsingStrategy();
@@ -774,7 +787,7 @@ public class Dictionary {
   /**
    * Abstraction of the process of parsing flags taken from the affix and dic files
    */
-  private static abstract class FlagParsingStrategy {
+  static abstract class FlagParsingStrategy {
 
     /**
      * Parses the given String into a single flag
