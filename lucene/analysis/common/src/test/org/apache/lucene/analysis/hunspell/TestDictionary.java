@@ -87,7 +87,7 @@ public class TestDictionary extends LuceneTestCase {
       new Dictionary(affixStream, dictStream);
       fail("didn't get expected exception");
     } catch (ParseException expected) {
-      assertEquals("The affix file contains a rule with less than five elements", expected.getMessage());
+      assertTrue(expected.getMessage().startsWith("The affix file contains a rule with less than four elements"));
       assertEquals(24, expected.getErrorOffset());
     }
     

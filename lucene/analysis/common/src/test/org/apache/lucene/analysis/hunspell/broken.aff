@@ -19,6 +19,6 @@ SFX E   0     d         o
 PFX B Y 1
 PFX B   0     s         o
 
-#wrong rule (only 4 elements)
+#wrong rule (only 3 elements)
 PFX A0 Y 1
-PFX A0 0 a
+PFX A0 0
