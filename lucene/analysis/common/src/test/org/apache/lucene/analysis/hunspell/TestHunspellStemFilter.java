@@ -31,6 +31,7 @@ import org.apache.lucene.analysis.hunspell.Dictionary;
 import org.apache.lucene.analysis.hunspell.HunspellStemFilter;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.util.IOUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -39,9 +40,13 @@ public class TestHunspellStemFilter extends BaseTokenStreamTestCase {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    try (InputStream affixStream = TestStemmer.class.getResourceAsStream("simple.aff");
-         InputStream dictStream = TestStemmer.class.getResourceAsStream("simple.dic")) {
+    // no multiple try-with to workaround bogus VerifyError
+    InputStream affixStream = TestStemmer.class.getResourceAsStream("simple.aff");
+    InputStream dictStream = TestStemmer.class.getResourceAsStream("simple.dic");
+    try {
       dictionary = new Dictionary(affixStream, dictStream);
+    } finally {
+      IOUtils.closeWhileHandlingException(affixStream, dictStream);
     }
   }
   
@@ -97,9 +102,13 @@ public class TestHunspellStemFilter extends BaseTokenStreamTestCase {
   
   public void testIgnoreCaseNoSideEffects() throws Exception {
     final Dictionary d;
-    try (InputStream affixStream = TestStemmer.class.getResourceAsStream("simple.aff");
-        InputStream dictStream = TestStemmer.class.getResourceAsStream("simple.dic")) {
+    // no multiple try-with to workaround bogus VerifyError
+    InputStream affixStream = TestStemmer.class.getResourceAsStream("simple.aff");
+    InputStream dictStream = TestStemmer.class.getResourceAsStream("simple.dic");
+    try {
       d = new Dictionary(affixStream, Collections.singletonList(dictStream), true);
+    } finally {
+      IOUtils.closeWhileHandlingException(affixStream, dictStream);
     }
     Analyzer a = new Analyzer() {
       @Override

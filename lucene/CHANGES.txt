@@ -147,6 +147,9 @@ Bug fixes
   recursive affix application are driven correctly by continuation classes in the affix file.
   (Robert Muir)
 
+* LUCENE-5497: HunspellStemFilter properly handles escaped terms and affixes without conditions.
+  (Robert Muir)
+
 Test Framework
 
 * LUCENE-5449: Rename _TestUtil and _TestHelper to remove the leading _.

@@ -348,8 +348,10 @@ public class Dictionary {
       String line = reader.readLine();
       String ruleArgs[] = line.split("\\s+");
 
-      if (ruleArgs.length < 5) {
-          throw new ParseException("The affix file contains a rule with less than five elements", reader.getLineNumber());
+      // from the manpage: PFX flag stripping prefix [condition [morphological_fields...]]
+      // condition is optional
+      if (ruleArgs.length < 4) {
+          throw new ParseException("The affix file contains a rule with less than four elements: " + line, reader.getLineNumber());
       }
       
       char flag = flagParsingStrategy.parseFlag(ruleArgs[1]);
@@ -370,7 +372,7 @@ public class Dictionary {
         Arrays.sort(appendFlags);
       }
 
-      String condition = ruleArgs[4];
+      String condition = ruleArgs.length > 4 ? ruleArgs[4] : ".";
       // at least the gascon affix file has this issue
       if (condition.startsWith("[") && !condition.endsWith("]")) {
         condition = condition + "]";
@@ -550,6 +552,24 @@ public class Dictionary {
     throw new IllegalArgumentException("Unknown flag type: " + flagType);
   }
 
+  final char FLAG_SEPARATOR = 0x1f; // flag separator after escaping
+  
+  String unescapeEntry(String entry) {
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < entry.length(); i++) {
+      char ch = entry.charAt(i);
+      if (ch == '\\' && i+1 < entry.length()) {
+        sb.append(entry.charAt(i+1));
+        i++;
+      } else if (ch == '/') {
+        sb.append(FLAG_SEPARATOR);
+      } else {
+        sb.append(ch);
+      }
+    }
+    return sb.toString();
+  }
+  
   /**
    * Reads the dictionary file through the provided InputStreams, building up the words map
    *
@@ -570,8 +590,9 @@ public class Dictionary {
         String line = lines.readLine(); // first line is number of entries (approximately, sometimes)
         
         while ((line = lines.readLine()) != null) {
+          line = unescapeEntry(line);
           if (needsInputCleaning) {
-            int flagSep = line.lastIndexOf('/');
+            int flagSep = line.lastIndexOf(FLAG_SEPARATOR);
             if (flagSep == -1) {
               CharSequence cleansed = cleanInput(line, sb);
               writer.write(cleansed.toString().getBytes(IOUtils.CHARSET_UTF_8));
@@ -604,7 +625,7 @@ public class Dictionary {
         scratch1.length = o1.length;
         
         for (int i = scratch1.length - 1; i >= 0; i--) {
-          if (scratch1.bytes[scratch1.offset + i] == '/') {
+          if (scratch1.bytes[scratch1.offset + i] == FLAG_SEPARATOR) {
             scratch1.length = i;
             break;
           }
@@ -615,7 +636,7 @@ public class Dictionary {
         scratch2.length = o2.length;
         
         for (int i = scratch2.length - 1; i >= 0; i--) {
-          if (scratch2.bytes[scratch2.offset + i] == '/') {
+          if (scratch2.bytes[scratch2.offset + i] == FLAG_SEPARATOR) {
             scratch2.length = i;
             break;
           }
@@ -648,7 +669,7 @@ public class Dictionary {
       String entry;
       char wordForm[];
       
-      int flagSep = line.lastIndexOf('/');
+      int flagSep = line.lastIndexOf(FLAG_SEPARATOR);
       if (flagSep == -1) {
         wordForm = NOFLAGS;
         entry = line;
@@ -828,6 +849,9 @@ public class Dictionary {
       }
 
       StringBuilder builder = new StringBuilder();
+      if (rawFlags.length() % 2 == 1) {
+        throw new IllegalArgumentException("Invalid flags (should be even number of characters): " + rawFlags);
+      }
       for (int i = 0; i < rawFlags.length(); i+=2) {
         char cookedFlag = (char) ((int) rawFlags.charAt(i) + (int) rawFlags.charAt(i + 1));
         builder.append(cookedFlag);
