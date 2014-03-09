@@ -79,6 +79,40 @@ public class TestDictionary extends LuceneTestCase {
     affixStream.close();
     dictStream.close();
   }
+  
+  public void testCompressedBeforeSetDictionary() throws Exception {
+    InputStream affixStream = getClass().getResourceAsStream("compressed-before-set.aff");
+    InputStream dictStream = getClass().getResourceAsStream("compressed.dic");
+
+    Dictionary dictionary = new Dictionary(affixStream, dictStream);
+    assertEquals(3, dictionary.lookupSuffix(new char[]{'e'}, 0, 1).length);
+    assertEquals(1, dictionary.lookupPrefix(new char[]{'s'}, 0, 1).length);
+    IntsRef ordList = dictionary.lookupWord(new char[]{'o', 'l', 'r'}, 0, 3);
+    BytesRef ref = new BytesRef();
+    dictionary.flagLookup.get(ordList.ints[0], ref);
+    char flags[] = Dictionary.decodeFlags(ref);
+    assertEquals(1, flags.length);
+    
+    affixStream.close();
+    dictStream.close();
+  }
+  
+  public void testCompressedEmptyAliasDictionary() throws Exception {
+    InputStream affixStream = getClass().getResourceAsStream("compressed-empty-alias.aff");
+    InputStream dictStream = getClass().getResourceAsStream("compressed.dic");
+
+    Dictionary dictionary = new Dictionary(affixStream, dictStream);
+    assertEquals(3, dictionary.lookupSuffix(new char[]{'e'}, 0, 1).length);
+    assertEquals(1, dictionary.lookupPrefix(new char[]{'s'}, 0, 1).length);
+    IntsRef ordList = dictionary.lookupWord(new char[]{'o', 'l', 'r'}, 0, 3);
+    BytesRef ref = new BytesRef();
+    dictionary.flagLookup.get(ordList.ints[0], ref);
+    char flags[] = Dictionary.decodeFlags(ref);
+    assertEquals(1, flags.length);
+    
+    affixStream.close();
+    dictStream.close();
+  }
 
   // malformed rule causes ParseException
   public void testInvalidData() throws Exception {

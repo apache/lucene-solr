@@ -35,12 +35,16 @@ import org.apache.lucene.util.fst.Outputs;
 import org.apache.lucene.util.fst.Util;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
+import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
@@ -155,21 +159,41 @@ public class Dictionary {
     this.ignoreCase = ignoreCase;
     this.needsInputCleaning = ignoreCase;
     this.needsOutputCleaning = false; // set if we have an OCONV
-    // TODO: we really need to probably buffer this on disk since so many newer dictionaries
-    // (en_GB, hu_HU, etc) now have tons of AM lines (morph metadata) etc before they finally declare 
-    // their encoding... but for now this large buffer is a workaround
-    BufferedInputStream buffered = new BufferedInputStream(affix, 65536);
-    buffered.mark(65536);
-    String encoding = getDictionaryEncoding(buffered);
-    buffered.reset();
-    CharsetDecoder decoder = getJavaEncoding(encoding);
-    readAffixFile(buffered, decoder);
     flagLookup.add(new BytesRef()); // no flags -> ord 0
     stripLookup.add(new BytesRef()); // no strip -> ord 0
-    IntSequenceOutputs o = IntSequenceOutputs.getSingleton();
-    Builder<IntsRef> b = new Builder<IntsRef>(FST.INPUT_TYPE.BYTE4, o);
-    readDictionaryFiles(dictionaries, decoder, b);
-    words = b.finish();
+
+    File aff = File.createTempFile("affix", "aff", tempDir);
+    OutputStream out = new BufferedOutputStream(new FileOutputStream(aff));
+    InputStream aff1 = null;
+    InputStream aff2 = null;
+    try {
+      // copy contents of affix stream to temp file
+      final byte [] buffer = new byte [1024 * 8];
+      int len;
+      while ((len = affix.read(buffer)) > 0) {
+        out.write(buffer, 0, len);
+      }
+      out.close();
+      
+      // pass 1: get encoding
+      aff1 = new BufferedInputStream(new FileInputStream(aff));
+      String encoding = getDictionaryEncoding(aff1);
+      
+      // pass 2: parse affixes
+      CharsetDecoder decoder = getJavaEncoding(encoding);
+      aff2 = new BufferedInputStream(new FileInputStream(aff));
+      readAffixFile(aff2, decoder);
+      
+      // read dictionary entries
+      IntSequenceOutputs o = IntSequenceOutputs.getSingleton();
+      Builder<IntsRef> b = new Builder<IntsRef>(FST.INPUT_TYPE.BYTE4, o);
+      readDictionaryFiles(dictionaries, decoder, b);
+      words = b.finish();
+      aliases = null; // no longer needed
+    } finally {
+      IOUtils.closeWhileHandlingException(out, aff1, aff2);
+      aff.delete();
+    }
   }
 
   /**
@@ -772,7 +796,9 @@ public class Dictionary {
       final int count = Integer.parseInt(ruleArgs[1]);
       aliases = new String[count];
     } else {
-      aliases[aliasCount++] = ruleArgs[1];
+      // an alias can map to no flags
+      String aliasValue = ruleArgs.length == 1 ? "" : ruleArgs[1];
+      aliases[aliasCount++] = aliasValue;
     }
   }
   

@@ -47,7 +47,7 @@ public class TestAllDictionaries2 extends LuceneTestCase {
     "afrikaans_spell_checker-20110323-fx+tb+fn+sm.xpi",                               "dictionaries/af-ZA.dic",             "dictionaries/af-ZA.aff",
     "albanisches_worterbuch-1.6.9-fx+tb+sm+fn.xpi",                                   "dictionaries/sq.dic",                "dictionaries/sq.aff",
     "amharic_spell_checker-0.4-fx+fn+tb+sm.xpi",                                      "dictionaries/am_ET.dic",             "dictionaries/am_ET.aff",
-//BUG! "arabic_spell_checking_dictionary-3.2.20120321-fx+tb.xpi",                        "dictionaries/ar.dic",                "dictionaries/ar.aff",
+    "arabic_spell_checking_dictionary-3.2.20120321-fx+tb.xpi",                        "dictionaries/ar.dic",                "dictionaries/ar.aff",
     "armenian_spell_checker_dictionary-0.32-fx+tb+sm.xpi",                            "dictionaries/hy_AM.dic",             "dictionaries/hy_AM.aff",
     "azerbaijani_spell_checker-0.3-fx+tb+fn+sm+sb.xpi",                               "dictionaries/az-Latn-AZ.dic",        "dictionaries/az-Latn-AZ.aff",
     "belarusian_classic_dictionary-0.1.2-tb+fx+sm.xpi",                               "dictionaries/be-classic.dic",        "dictionaries/be-classic.aff",
@@ -101,8 +101,8 @@ public class TestAllDictionaries2 extends LuceneTestCase {
     "hausa_spelling_dictionary-0.2-tb+fx.xpi",                                        "dictionaries/ha-GH.dic",             "dictionaries/ha-GH.aff",
     "hebrew_spell_checking_dictionary_from_hspell-1.2.0.1-fx+sm+tb.xpi",              "dictionaries/he.dic",                "dictionaries/he.aff",
     "hindi_spell_checker-0.4-fx+tb+sm+sb+fn.xpi",                                     "dictionaries/hi_IN.dic",             "dictionaries/hi_IN.aff",
-//BUG! "hungarian_dictionary-1.6.1.1-fx+tb+sm+fn.xpi",                                   "dictionaries/hu.dic",                "dictionaries/hu.aff",
-//BUG! "icelandic_dictionary-1.3-fx+tb+sm.xpi",                                          "dictionaries/is.dic",                "dictionaries/is.aff",
+    "hungarian_dictionary-1.6.1.1-fx+tb+sm+fn.xpi",                                   "dictionaries/hu.dic",                "dictionaries/hu.aff",
+//BUG: has no encoding declaration "icelandic_dictionary-1.3-fx+tb+sm.xpi",                                          "dictionaries/is.dic",                "dictionaries/is.aff",
     "kamus_pengecek_ejaan_bahasa_indonesia-1.1-fx+tb.xpi",                            "dictionaries/id.dic",                "dictionaries/id.aff",
     "kannada_spell_checker-2.0.1-tb+sm+fn+an+fx.xpi",                                 "dictionaries/kn.dic",                "dictionaries/kn.aff",
     "kashubian_spell_checker_poland-0.9-sm+tb+fx.xpi",                                "dictionaries/Kaszebsczi.dic",        "dictionaries/Kaszebsczi.aff",
@@ -146,11 +146,11 @@ public class TestAllDictionaries2 extends LuceneTestCase {
     "telugu_spell_checker-0.3-tb+fx+sm.xpi",                                          "dictionaries/te_IN.dic",             "dictionaries/te_IN.aff",
     "te_papakupu_m__ori-0.9.9.20080630-fx+tb.xpi",                                    "dictionaries/mi-x-Tai Tokerau.dic",  "dictionaries/mi-x-Tai Tokerau.aff",
     "te_papakupu_m__ori-0.9.9.20080630-fx+tb.xpi",                                    "dictionaries/mi.dic",                "dictionaries/mi.aff",
-//BUG! "thamizha_solthiruthitamil_spellchecker-0.8-fx+tb.xpi",                           "dictionaries/ta_IN.dic",             "dictionaries/ta_IN.aff",
+//BUG: broken file (hunspell refuses to load, too)    "thamizha_solthiruthitamil_spellchecker-0.8-fx+tb.xpi",                           "dictionaries/ta_IN.dic",             "dictionaries/ta_IN.aff",
     "tsonga_spell_checker-20110323-tb+sm+fx+fn.xpi",                                  "dictionaries/ts-ZA.dic",             "dictionaries/ts-ZA.aff",
     "tswana_spell_checker-20110323-tb+sm+fx+fn.xpi",                                  "dictionaries/tn-ZA.dic",             "dictionaries/tn-ZA.aff",
     "turkce_yazm_denetimi-3.5-sm+tb+fx.xpi",                                          "dictionaries/tr.dic",                "dictionaries/tr.aff",
-//BUG! "turkmen_spell_checker_dictionary-0.1.6-tb+fx+sm.xpi",                            "dictionaries/tk_TM.dic",             "dictionaries/tk_TM.aff",
+    "turkmen_spell_checker_dictionary-0.1.6-tb+fx+sm.xpi",                            "dictionaries/tk_TM.dic",             "dictionaries/tk_TM.aff",
     "ukrainian_dictionary-1.7.0-sm+an+fx+fn+tb.xpi",                                  "dictionaries/uk-UA.dic",             "dictionaries/uk-UA.aff",
     "united_states_english_spellchecker-7.0.1-sm+tb+fx+an.xpi",                       "dictionaries/en-US.dic",             "dictionaries/en-US.aff",
     "upper_sorbian_spelling_dictionary-0.0.20060327.3-tb+fx+sm.xpi",                  "dictionaries/hsb.dic",               "dictionaries/hsb.aff",
@@ -196,7 +196,7 @@ public class TestAllDictionaries2 extends LuceneTestCase {
   }
   
   public void testOneDictionary() throws Exception {
-    String toTest = "turkmen_spell_checker_dictionary-0.1.6-tb+fx+sm.xpi";
+    String toTest = "hungarian_dictionary-1.6.1.1-fx+tb+sm+fn.xpi";
     for (int i = 0; i < tests.length; i++) {
       if (tests[i].equals(toTest)) {
         File f = new File(DICTIONARY_HOME, tests[i]);
@@ -210,7 +210,7 @@ public class TestAllDictionaries2 extends LuceneTestCase {
         
           try (InputStream dictionary = zip.getInputStream(dicEntry);
                InputStream affix = zip.getInputStream(affEntry)) {
-              new Dictionary(affix, dictionary);
+            new Dictionary(affix, dictionary);
           }
         }
       }
