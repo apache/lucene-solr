@@ -90,6 +90,9 @@ Bug fixes
 * LUCENE-5505: HunspellStemFilter ignores BOM markers in dictionaries and handles varying
   types of whitespace in SET/FLAG commands. (Robert Muir)
 
+* LUCENE-5507: Fix HunspellStemFilter loading of dictionaries with large amounts of aliases
+  etc before the encoding declaration.  (Robert Muir)
+
 Test Framework
 
 * LUCENE-5449: Rename _TestUtil and _TestHelper to remove the leading _.
