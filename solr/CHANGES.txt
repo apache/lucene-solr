@@ -141,6 +141,9 @@ Other Changes
 * SOLR-5796: Make how long we are willing to wait for a core to see the ZK
   advertised leader in it's local state configurable. 
   (Timothy Potter via Mark Miller)
+  
+* SOLR-5825: Separate http request creating and execution in SolrJ
+  (Steven Bower via Erick Erickson)
 
 ==================  4.7.0 ==================
 
