@@ -99,6 +99,9 @@ Build
 * LUCENE-5463: RamUsageEstimator.(human)sizeOf(Object) is now a forbidden API.
   (Adrien Grand, Robert Muir)
 
+* LUCENE-5511: "ant precommit" / "ant check-svn-working-copy" now work again
+  with any working copy format (thanks to svnkit 1.8.4).  (Uwe Schindler)
+
 ======================= Lucene 4.7.0 =======================
 
 New Features
