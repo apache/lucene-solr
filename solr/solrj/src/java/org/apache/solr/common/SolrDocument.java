@@ -213,7 +213,12 @@ public class SolrDocument implements Map<String,Object>, Iterable<Map.Entry<Stri
   public Iterator<Entry<String, Object>> iterator() {
     return _fields.entrySet().iterator();
   }
-
+  /**
+   * This method is implemented for tests and should not be counted
+   * on in production code.
+   * 
+   * @lucene.experimental
+   */
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -232,6 +237,12 @@ public class SolrDocument implements Map<String,Object>, Iterable<Map.Entry<Stri
     return true;
   }
 
+  /**
+   * This method is implemented for tests and should not be counted
+   * on in production code.
+   * 
+   * @lucene.experimental
+   */
   @Override
   public int hashCode() {
     return _fields.hashCode();

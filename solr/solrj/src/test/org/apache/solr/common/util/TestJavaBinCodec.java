@@ -17,15 +17,6 @@ package org.apache.solr.common.util;
  * limitations under the License.
  */
 
-import org.apache.commons.io.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
-import org.apache.solr.common.EnumFieldValue;
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.SolrInputDocument;
-import org.junit.Test;
-
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -37,17 +28,26 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
+import org.apache.solr.common.EnumFieldValue;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrInputDocument;
+import org.junit.Test;
+
 public class TestJavaBinCodec extends LuceneTestCase {
 
- private final String BIN_FILE_LOCATION = "./solr/solrj/src/test-files/solrj/javabin_backcompat.bin";
+ private static final String SOLRJ_JAVABIN_BACKCOMPAT_BIN = "/solrj/javabin_backcompat.bin";
+private final String BIN_FILE_LOCATION = "./solr/solrj/src/test-files/solrj/javabin_backcompat.bin";
 
  public void testStrings() throws Exception {
     JavaBinCodec javabin = new JavaBinCodec();
-    for (int i = 0; i < 10000*RANDOM_MULTIPLIER; i++) {
+    for (int i = 0; i < 10000 * RANDOM_MULTIPLIER; i++) {
       String s = TestUtil.randomUnicodeString(random());
       ByteArrayOutputStream os = new ByteArrayOutputStream();
       javabin.marshal(s, os);
@@ -95,9 +95,10 @@ public class TestJavaBinCodec extends LuceneTestCase {
 
     types.add(new byte[] {1,2,3,4,5});
 
-    List<String> list = new ArrayList<String>();
-    list.add("one");
-    //types.add(list.iterator());
+    // TODO?
+    // List<String> list = new ArrayList<String>();
+    // list.add("one");
+    // types.add(list.iterator());
 
     types.add((byte) 15); //END
 
@@ -143,7 +144,7 @@ public class TestJavaBinCodec extends LuceneTestCase {
       }
     };
     try {
-      InputStream is = getClass().getResourceAsStream("/solrj/javabin_backcompat.bin");
+      InputStream is = getClass().getResourceAsStream(SOLRJ_JAVABIN_BACKCOMPAT_BIN);
       List<Object> unmarshaledObj = (List<Object>) javabin.unmarshal(is);
       List<Object> matchObj = generateAllDataTypes();
 
@@ -176,7 +177,7 @@ public class TestJavaBinCodec extends LuceneTestCase {
       javabin.marshal(data, os);
       byte[] newFormatBytes = os.toByteArray();
 
-      InputStream is = getClass().getResourceAsStream("/solrj/javabin_backcompat.bin");
+      InputStream is = getClass().getResourceAsStream(SOLRJ_JAVABIN_BACKCOMPAT_BIN);
       byte[] currentFormatBytes = IOUtils.toByteArray(is);
 
       for (int i = 1; i < currentFormatBytes.length; i++) {//ignore the first byte. It is version information
@@ -184,30 +185,27 @@ public class TestJavaBinCodec extends LuceneTestCase {
       }
 
     } catch (IOException e) {
+      e.printStackTrace();
       fail(e.getMessage());
     }
 
   }
 
-  public void genBinaryFile() {
+  public void genBinaryFile() throws IOException {
     JavaBinCodec javabin = new JavaBinCodec();
     ByteArrayOutputStream os = new ByteArrayOutputStream();
-
+    
     Object data = generateAllDataTypes();
-    try {
-      javabin.marshal(data, os);
-      byte[] out = os.toByteArray();
-      FileOutputStream fs = new FileOutputStream(new File( BIN_FILE_LOCATION ));
-      BufferedOutputStream bos = new BufferedOutputStream(fs);
-      bos.write(out);
-      bos.close();
-    } catch (IOException e) {
-      //TODO fail test?
-    }
-
+    
+    javabin.marshal(data, os);
+    byte[] out = os.toByteArray();
+    FileOutputStream fs = new FileOutputStream(new File(BIN_FILE_LOCATION));
+    BufferedOutputStream bos = new BufferedOutputStream(fs);
+    bos.write(out);
+    bos.close();
   }
 
-  public static void main(String[] args) {
+  public static void main(String[] args) throws IOException {
     TestJavaBinCodec test = new TestJavaBinCodec();
     test.genBinaryFile();
   }

@@ -276,6 +276,12 @@ public class SolrInputDocument implements Map<String,SolrInputField>, Iterable<S
     return _fields.values();
   }
 
+  /**
+   * This method is implemented for tests and should not be counted
+   * on in production code.
+   * 
+   * @lucene.experimental
+   */
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -300,6 +306,12 @@ public class SolrInputDocument implements Map<String,SolrInputField>, Iterable<S
     return true;
   }
 
+  /**
+   * This method is implemented for tests and should not be counted
+   * on in production code.
+   * 
+   * @lucene.experimental
+   */
   @Override
   public int hashCode() {
     int result = _fields.hashCode();
