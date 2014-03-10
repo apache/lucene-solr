@@ -190,6 +190,10 @@ Other Changes
   
 * SOLR-5825: Separate http request creating and execution in SolrJ
   (Steven Bower via Erick Erickson)
+  
+* SOLR-5837: Add hashCode/equals to SolrDocument, SolrInputDocument
+  and SolrInputField for testing purposes. (Varun Thacker, Noble Paul,
+  Mark Miller)
 
 ==================  4.7.0 ==================
 

@@ -510,7 +510,6 @@ public class JavaBinCodec {
   public Map.Entry<Object,Object> readMapEntry(DataInputInputStream dis) throws IOException {
     final Object key = readVal(dis);
     final Object value = readVal(dis);
-    //return new AbstractMap.SimpleImmutableEntry(key, value);
     return new Map.Entry<Object,Object>() {
 
       @Override

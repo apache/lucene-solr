@@ -230,6 +230,12 @@ public class SolrInputField implements Iterable<Object>, Serializable
     return clone;
   }
 
+  /**
+   * This method is implemented for tests and should not be counted
+   * on in production code.
+   * 
+   * @lucene.experimental
+   */
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -256,6 +262,12 @@ public class SolrInputField implements Iterable<Object>, Serializable
     return true;
   }
 
+  /**
+   * This method is implemented for tests and should not be counted
+   * on in production code.
+   * 
+   * @lucene.experimental
+   */
   @Override
   public int hashCode() {
     int result = name.hashCode();
