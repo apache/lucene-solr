@@ -29,12 +29,14 @@ class AssertingWeight extends Weight {
     return other instanceof AssertingWeight ? other : new AssertingWeight(random, other);
   }
 
+  final boolean scoresDocsOutOfOrder;
   final Random random;
   final Weight in;
 
   AssertingWeight(Random random, Weight in) {
     this.random = random;
     this.in = in;
+    scoresDocsOutOfOrder = in.scoresDocsOutOfOrder() || random.nextBoolean();
   }
 
   @Override
@@ -69,7 +71,7 @@ class AssertingWeight extends Weight {
 
   @Override
   public boolean scoresDocsOutOfOrder() {
-    return in.scoresDocsOutOfOrder();
+    return scoresDocsOutOfOrder;
   }
 
 }

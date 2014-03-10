@@ -116,6 +116,106 @@ public class AssertingScorer extends Scorer {
     return score;
   }
 
+  private final static class FakeScorer extends Scorer {
+
+    float score;
+    int doc;
+    int freq;
+    final long cost;
+
+    public FakeScorer(Scorer other) {
+      super((Weight) null);
+      this.cost = other.cost();
+    }
+
+    @Override
+    public float score() {
+      return score;
+    }
+
+    @Override
+    public int freq() {
+      return freq;
+    }
+
+    @Override
+    public int docID() {
+      return doc;
+    }
+
+    @Override
+    public int advance(int target) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int nextDoc() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long cost() {
+      return cost;
+    }
+  }
+
+  private void shuffle(int[] docIDs, float[] scores, int[] freqs, int size) {
+    for (int i = size - 1; i > 0; --i) {
+      final int other = random.nextInt(i + 1);
+
+      final int tmpDoc = docIDs[i];
+      docIDs[i] = docIDs[other];
+      docIDs[other] = tmpDoc;
+
+      final float tmpScore = scores[i];
+      scores[i] = scores[other];
+      scores[other] = tmpScore;
+      
+      final int tmpFreq = freqs[i];
+      freqs[i] = freqs[other];
+      freqs[other] = tmpFreq;
+    }
+  }
+
+  private static void flush(int[] docIDs, float[] scores, int[] freqs, int size,
+      FakeScorer scorer, Collector collector) throws IOException {
+    for (int i = 0; i < size; ++i) {
+      scorer.doc = docIDs[i];
+      scorer.freq = freqs[i];
+      scorer.score = scores[i];
+      collector.collect(scorer.doc);
+    }
+  }
+
+  private void scoreInRandomOrder(Collector collector) throws IOException {
+    assert docID() == -1; // not started
+    FakeScorer fake = new FakeScorer(this);
+    collector.setScorer(fake);
+
+    final int bufferSize = 1 + random.nextInt(100);
+    final int[] docIDs = new int[bufferSize];
+    final float[] scores = new float[bufferSize];
+    final int[] freqs = new int[bufferSize];
+
+    int buffered = 0;
+    int doc;
+    while ((doc = nextDoc()) != NO_MORE_DOCS) {
+      docIDs[buffered] = doc;
+      scores[buffered] = score();
+      freqs[buffered] = freq();
+
+      if (++buffered == bufferSize) {
+        shuffle(docIDs, scores, freqs, buffered);
+        flush(docIDs, scores, freqs, buffered, fake, collector);
+        buffered = 0;
+      }
+    }
+
+    shuffle(docIDs, scores, freqs, buffered);
+    flush(docIDs, scores, freqs, buffered, fake, collector);
+  }
+
+
   @Override
   public void score(Collector collector) throws IOException {
     assert topScorer != TopScorer.NO;
@@ -133,7 +233,11 @@ public class AssertingScorer extends Scorer {
     } else {
       // score(Collector) has not been overridden, use the super method in
       // order to benefit from all assertions
-      super.score(collector);
+      if (collector.acceptsDocsOutOfOrder() && random.nextBoolean()) {
+        scoreInRandomOrder(collector);
+      } else {
+        super.score(collector);
+      }
     }
   }
 
