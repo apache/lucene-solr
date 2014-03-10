@@ -213,7 +213,30 @@ public class SolrDocument implements Map<String,Object>, Iterable<Map.Entry<Stri
   public Iterator<Entry<String, Object>> iterator() {
     return _fields.entrySet().iterator();
   }
-  
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof SolrDocument)) {
+      return false;
+    }
+
+    SolrDocument solrDocument = (SolrDocument) o;
+
+    if (!_fields.equals(solrDocument._fields)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    return _fields.hashCode();
+  }
+
   //-----------------------------------------------------------------------------------------
   // JSTL Helpers
   //-----------------------------------------------------------------------------------------
