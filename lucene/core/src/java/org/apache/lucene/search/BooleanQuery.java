@@ -306,7 +306,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
 
     @Override
     public BulkScorer bulkScorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-                               Bits acceptDocs) throws IOException {
+                                 Bits acceptDocs) throws IOException {
 
       if (scoreDocsInOrder || minNrShouldMatch > 1) {
         // TODO: (LUCENE-4872) in some cases BooleanScorer may be faster for minNrShouldMatch
@@ -394,9 +394,14 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     
     @Override
     public boolean scoresDocsOutOfOrder() {
+      if (minNrShouldMatch > 1) {
+        // BS2 (in-order) will be used by scorer()
+        return false;
+      }
       for (BooleanClause c : clauses) {
         if (c.isRequired()) {
-          return false; // BS2 (in-order) will be used by scorer()
+          // BS2 (in-order) will be used by scorer()
+          return false;
         }
       }
       

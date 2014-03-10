@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -29,6 +30,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -42,7 +44,6 @@ import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NamedThreadFactory;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TestUtil;
 
 public class TestBooleanQuery extends LuceneTestCase {
@@ -323,6 +324,32 @@ public class TestBooleanQuery extends LuceneTestCase {
     assertEquals("Bug in boolean query composed of span queries", failed, false);
     assertEquals("Bug in boolean query composed of span queries", hits, 1);
     directory.close();
+  }
+
+  // LUCENE-5487
+  public void testInOrderWithMinShouldMatch() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newTextField("field", "some text here", Field.Store.NO));
+    w.addDocument(doc);
+    IndexReader r = w.getReader();
+    w.close();
+    IndexSearcher s = new IndexSearcher(r) {
+        @Override
+        protected void search(List<AtomicReaderContext> leaves, Weight weight, Collector collector) throws IOException {
+          assertEquals(-1, collector.getClass().getSimpleName().indexOf("OutOfOrder"));
+          super.search(leaves, weight, collector);
+        }
+      };
+    BooleanQuery bq = new BooleanQuery();
+    bq.add(new TermQuery(new Term("field", "some")), BooleanClause.Occur.SHOULD);
+    bq.add(new TermQuery(new Term("field", "text")), BooleanClause.Occur.SHOULD);
+    bq.add(new TermQuery(new Term("field", "here")), BooleanClause.Occur.SHOULD);
+    bq.setMinimumNumberShouldMatch(2);
+    s.search(bq, 10);
+    r.close();
+    dir.close();
   }
 
 }

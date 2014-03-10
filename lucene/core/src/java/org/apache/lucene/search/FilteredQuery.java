@@ -323,48 +323,6 @@ public class FilteredQuery extends Query {
       return Math.min(primary.cost(), secondary.cost());
     }
   }
-
-  private static final class LeapFrogBulkScorer extends BulkScorer {
-    private final DocIdSetIterator primary;
-    private final DocIdSetIterator secondary;
-    private final Scorer scorer;
-
-    public LeapFrogBulkScorer(DocIdSetIterator primary, DocIdSetIterator secondary, Scorer scorer) {
-      this.primary = primary;
-      this.secondary = secondary;
-      this.scorer = scorer;
-    }
-
-    @Override
-    public boolean score(Collector collector, int maxDoc) throws IOException {
-      // the normalization trick already applies the boost of this query,
-      // so we can use the wrapped scorer directly:
-      collector.setScorer(scorer);
-      int primDoc, secDoc;
-      if (primary.docID() == -1) {
-        primDoc = primary.nextDoc();
-        secDoc = secondary.advance(primDoc);
-      } else {
-        primDoc = primary.docID();
-        secDoc = secondary.docID();
-      }
-      for (;;) {
-        if (primDoc == secDoc) {
-          // Check if scorer has exhausted, only before collecting.
-          if (primDoc >= maxDoc) {
-            return primDoc < Scorer.NO_MORE_DOCS;
-          }
-          collector.collect(primDoc);
-          primDoc = primary.nextDoc();
-          secDoc = secondary.advance(primDoc);
-        } else if (secDoc > primDoc) {
-          primDoc = primary.advance(secDoc);
-        } else {
-          secDoc = secondary.advance(primDoc);
-        }
-      }
-    }
-  }
   
   // TODO once we have way to figure out if we use RA or LeapFrog we can remove this scorer
   private static final class PrimaryAdvancedLeapFrogScorer extends LeapFrogScorer {
@@ -636,26 +594,6 @@ public class FilteredQuery extends Query {
         return new LeapFrogScorer(weight, scorer, filterIter, scorer);  
       } else {
         return new LeapFrogScorer(weight, filterIter, scorer, scorer);  
-      }
-    }
-
-    @Override
-    public BulkScorer filteredBulkScorer(AtomicReaderContext context,
-        Weight weight, boolean scoreDocsInOrder, DocIdSet docIdSet) throws IOException {
-      final DocIdSetIterator filterIter = docIdSet.iterator();
-      if (filterIter == null) {
-        // this means the filter does not accept any documents.
-        return null;
-      }
-      // we pass null as acceptDocs, as our filter has already respected acceptDocs, no need to do twice
-      final Scorer scorer = weight.scorer(context, null);
-      if (scorer == null) {
-        return null;
-      }
-      if (scorerFirst) {
-        return new LeapFrogBulkScorer(scorer, filterIter, scorer);  
-      } else {
-        return new LeapFrogBulkScorer(filterIter, scorer, scorer);  
       }
     }
   }
