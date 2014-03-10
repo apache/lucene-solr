@@ -23,7 +23,9 @@ import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -392,6 +394,108 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
         + "<field name=\"title_stringNoNorms\">mytitle</field>"
         + "</doc>";
     assertNull(h.validateUpdate(add(xml, new String[0])));
+  }
+
+  public void testSolrDocumentEquals() {
+
+    String randomString = TestUtil.randomSimpleString(random());
+
+    SolrDocument doc1 = new SolrDocument();
+    doc1.addField("foo", randomString);
+
+    SolrDocument doc2 = new SolrDocument();
+    doc2.addField("foo", randomString);
+
+    assertTrue(doc1.equals(doc2));
+
+    doc1.addField("foo", "bar");
+
+    assertFalse(doc1.equals(doc2));
+
+    doc1 = new SolrDocument();
+    doc1.addField("bar", randomString);
+
+    assertFalse(doc1.equals(doc2));
+
+    int randomInt = random().nextInt();
+    doc1 = new SolrDocument();
+    doc1.addField("foo", randomInt);
+    doc2 = new SolrDocument();
+    doc2.addField("foo", randomInt);
+
+    assertTrue(doc1.equals(doc2));
+
+    doc2 = new SolrDocument();
+    doc2.addField("bar", randomInt);
+
+    assertFalse(doc1.equals(doc2));
+
+  }
+
+  public void testSolrInputDocumentEquality() {
+
+    String randomString = TestUtil.randomSimpleString(random());
+
+    SolrInputDocument doc1 = new SolrInputDocument();
+    doc1.addField("foo", randomString);
+    SolrInputDocument doc2 = new SolrInputDocument();
+    doc2.addField("foo", randomString);
+
+    assertTrue(doc1.equals(doc2));
+
+    doc1.setDocumentBoost(1.1f);
+    assertFalse(doc1.equals(doc2));
+
+    doc2.setDocumentBoost(1.1f);
+    assertTrue(doc1.equals(doc2));
+
+    doc2.setDocumentBoost(20f);
+    assertFalse(doc1.equals(doc2));
+
+
+    doc1 = new SolrInputDocument();
+    doc1.addField("foo", randomString);
+    doc2 = new SolrInputDocument();
+    doc2.addField("foo", randomString);
+
+    SolrInputDocument childDoc = new SolrInputDocument();
+    childDoc.addField("foo", "bar");
+
+    doc1.addChildDocument(childDoc);
+    assertFalse(doc1.equals(doc2));
+
+    doc2.addChildDocument(childDoc);
+    assertTrue(doc1.equals(doc2));
+
+    SolrInputDocument childDoc1 = new SolrInputDocument();
+    childDoc.addField(TestUtil.randomSimpleString(random()), TestUtil.randomSimpleString(random()));
+    doc2.addChildDocument(childDoc1);
+    assertFalse(doc1.equals(doc2));
+
+  }
+
+  public void testSolrInputFieldEquality() {
+    String randomString = TestUtil.randomSimpleString(random(), 10, 20);
+
+    int val = random().nextInt();
+    SolrInputField sif1 = new SolrInputField(randomString);
+    sif1.setValue(val, 1.0f);
+    SolrInputField sif2 = new SolrInputField(randomString);
+    sif2.setValue(val, 1.0f);
+
+    assertTrue(sif1.equals(sif2));
+
+    sif1.setBoost(2.1f);
+    sif2.setBoost(2.1f);
+    assertTrue(sif1.equals(sif2));
+
+    sif2.setBoost(2.0f);
+    assertFalse(sif1.equals(sif2));
+
+    sif2.setName("foo");
+    assertFalse(sif1.equals(sif2));
+
+
   }
 
 }
