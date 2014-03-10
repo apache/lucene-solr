@@ -97,6 +97,9 @@ Test Framework
 
 * LUCENE-5449: Rename _TestUtil and _TestHelper to remove the leading _.
 
+* LUCENE-5501: Added random out-of-order collection testing (when the collector
+  supports it) to AssertingIndexSearcher. (Adrien Grand)
+
 Build
 
 * LUCENE-5463: RamUsageEstimator.(human)sizeOf(Object) is now a forbidden API.
