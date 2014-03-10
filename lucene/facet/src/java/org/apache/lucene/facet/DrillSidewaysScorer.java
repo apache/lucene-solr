@@ -661,6 +661,11 @@ class DrillSidewaysScorer extends BulkScorer {
     public Collection<ChildScorer> getChildren() {
       return Collections.singletonList(new ChildScorer(baseScorer, "MUST"));
     }
+
+    @Override
+    public Weight getWeight() {
+      throw new UnsupportedOperationException();
+    }
   }
 
   static class DocsAndCost implements Comparable<DocsAndCost> {

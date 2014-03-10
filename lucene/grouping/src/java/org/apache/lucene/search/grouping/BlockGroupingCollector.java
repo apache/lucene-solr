@@ -90,7 +90,7 @@ public class BlockGroupingCollector extends Collector {
     int doc;
 
     public FakeScorer() {
-      super((Weight) null);
+      super(null);
     }
 
     @Override
@@ -121,6 +121,11 @@ public class BlockGroupingCollector extends Collector {
     @Override
     public long cost() {
       return 1;
+    }
+
+    @Override
+    public Weight getWeight() {
+      throw new UnsupportedOperationException();
     }
   }
 

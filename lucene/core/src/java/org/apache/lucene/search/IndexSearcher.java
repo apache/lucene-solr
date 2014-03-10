@@ -805,6 +805,11 @@ public class IndexSearcher {
       public long cost() {
         return 1;
       }
+
+      @Override
+      public Weight getWeight() {
+        throw new UnsupportedOperationException();
+      }
     }
 
     private final FakeScorer fakeScorer = new FakeScorer();

@@ -242,6 +242,11 @@ class TermsIncludingScoreQuery extends Query {
     public long cost() {
       throw new UnsupportedOperationException();
     }
+
+    @Override
+    public Weight getWeight() {
+      throw new UnsupportedOperationException();
+    }
   }
 
   // This impl assumes that the 'join' values are used uniquely per doc per field. Used for one to many relations.

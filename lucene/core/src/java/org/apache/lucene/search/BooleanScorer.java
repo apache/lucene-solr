@@ -153,6 +153,11 @@ final class BooleanScorer extends BulkScorer {
     public long cost() {
       throw new UnsupportedOperationException();
     }
+
+    @Override
+    public Weight getWeight() {
+      throw new UnsupportedOperationException();
+    }
   }
 
   static final class Bucket {

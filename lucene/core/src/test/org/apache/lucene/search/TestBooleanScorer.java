@@ -240,6 +240,11 @@ public class TestBooleanScorer extends LuceneTestCase {
     public long cost() {
       throw new UnsupportedOperationException();
     }
+
+    @Override
+    public Weight getWeight() {
+      throw new UnsupportedOperationException();
+    }
   }
 
   /** Throws UOE if Weight.scorer is called */
