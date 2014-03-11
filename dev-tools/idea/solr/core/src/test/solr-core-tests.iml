@@ -28,5 +28,6 @@
     <orderEntry type="module" scope="TEST" module-name="spatial" />
     <orderEntry type="module" scope="TEST" module-name="misc" />
     <orderEntry type="module" scope="TEST" module-name="join" />
+    <orderEntry type="module" scope="TEST" module-name="expressions" />
   </component>
 </module>
