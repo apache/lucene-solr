@@ -993,6 +993,7 @@
                 <propertyref prefix="tests.timeoutSuite" />
                 <propertyref prefix="tests.jettyConnector" />
                 <propertyref prefix="tests.disableHdfs" />
+                <propertyref prefix="tests.filter" />
             </syspropertyset>
 
             <!-- Pass randomized settings to the forked JVM. -->

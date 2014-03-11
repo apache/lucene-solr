@@ -28,6 +28,7 @@ import org.apache.lucene.util.TestRuleIgnoreTestSuites;
 import org.apache.lucene.util.TestRuleMarkFailure;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -73,6 +74,13 @@ public abstract class WithNestedTests {
     private TestRuleIgnoreAfterMaxFailures prevRule;
 
     protected void before() throws Throwable {
+      String filter = System.getProperty("tests.filter");
+      if (filter != null && !filter.trim().isEmpty()) {
+        // We're running with a complex test filter. This will affect nested tests anyway
+        // so ignore them.
+        Assume.assumeTrue(false);
+      }
+      
       TestRuleIgnoreAfterMaxFailures newRule = new TestRuleIgnoreAfterMaxFailures(Integer.MAX_VALUE);
       prevRule = LuceneTestCase.replaceMaxFailureRule(newRule);
     }
