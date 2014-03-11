@@ -1,14 +1,15 @@
-AF 5
+SET UTF-8
+TRY abcdefghijklmopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ
+
+FLAG long
+
+AF 6
 AF AA
 AF BB
 AF CC
 AF DD
 AF EE
-
-SET UTF-8
-TRY abcdefghijklmopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ
-
-FLAG long
+AF  
 
 SFX AA Y 3
 SFX AA   0     e         n

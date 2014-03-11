@@ -54,7 +54,10 @@ public class TestForceMergeForever extends LuceneTestCase {
 
   public void test() throws Exception {
     final Directory d = newDirectory();
-    final MyIndexWriter w = new MyIndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    MockAnalyzer analyzer = new MockAnalyzer(random());
+    analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
+
+    final MyIndexWriter w = new MyIndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
 
     // Try to make an index that requires merging:
     w.getConfig().setMaxBufferedDocs(TestUtil.nextInt(random(), 2, 11));

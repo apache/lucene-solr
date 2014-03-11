@@ -51,7 +51,9 @@ public class TestIndexWriterOutOfFileDescriptors extends LuceneTestCase {
         System.out.println("TEST: iter=" + iter);
       }
       try {
-        IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+        MockAnalyzer analyzer = new MockAnalyzer(random());
+        analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
+        IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
 
         if (VERBOSE) {
           // Do this ourselves instead of relying on LTC so

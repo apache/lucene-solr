@@ -147,14 +147,32 @@ Bug fixes
   recursive affix application are driven correctly by continuation classes in the affix file.
   (Robert Muir)
 
+* LUCENE-5497: HunspellStemFilter properly handles escaped terms and affixes without conditions.
+  (Robert Muir)
+
+* LUCENE-5505: HunspellStemFilter ignores BOM markers in dictionaries and handles varying
+  types of whitespace in SET/FLAG commands. (Robert Muir)
+
+* LUCENE-5507: Fix HunspellStemFilter loading of dictionaries with large amounts of aliases
+  etc before the encoding declaration.  (Robert Muir)
+
+* LUCENE-5502: Fixed TermsFilter.equals that could return true for different
+  filters. (Igor Motov via Adrien Grand)
+
 Test Framework
 
 * LUCENE-5449: Rename _TestUtil and _TestHelper to remove the leading _.
+
+* LUCENE-5501: Added random out-of-order collection testing (when the collector
+  supports it) to AssertingIndexSearcher. (Adrien Grand)
 
 Build
 
 * LUCENE-5463: RamUsageEstimator.(human)sizeOf(Object) is now a forbidden API.
   (Adrien Grand, Robert Muir)
+
+* LUCENE-5511: "ant precommit" / "ant check-svn-working-copy" now work again
+  with any working copy format (thanks to svnkit 1.8.4).  (Uwe Schindler)
 
 ======================= Lucene 4.7.0 =======================
 
@@ -188,7 +206,7 @@ New Features
   AnalyzingInfixSuggester but boosts suggestions that matched tokens
   with lower positions.  (Remi Melisson via Mike McCandless)
 
-* LUCENE-4399: When sorting by String (SortField.STRING), you can now
+* LUCENE-5399: When sorting by String (SortField.STRING), you can now
   specify whether missing values should be sorted first (the default),
   using SortField.setMissingValue(SortField.STRING_FIRST), or last,
   using SortField.setMissingValue(SortField.STRING_LAST). (Rob Muir,

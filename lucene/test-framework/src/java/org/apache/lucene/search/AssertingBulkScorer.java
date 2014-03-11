@@ -34,18 +34,11 @@ public class AssertingBulkScorer extends BulkScorer {
   private static final VirtualMethod<BulkScorer> SCORE_COLLECTOR = new VirtualMethod<BulkScorer>(BulkScorer.class, "score", Collector.class);
   private static final VirtualMethod<BulkScorer> SCORE_COLLECTOR_RANGE = new VirtualMethod<BulkScorer>(BulkScorer.class, "score", Collector.class, int.class);
 
-  // we need to track scorers using a weak hash map because otherwise we
-  // could loose references because of eg.
-  // AssertingScorer.score(Collector) which needs to delegate to work correctly
-  private static Map<BulkScorer, WeakReference<AssertingBulkScorer>> ASSERTING_INSTANCES = Collections.synchronizedMap(new WeakHashMap<BulkScorer, WeakReference<AssertingBulkScorer>>());
-
   public static BulkScorer wrap(Random random, BulkScorer other) {
     if (other == null || other instanceof AssertingBulkScorer) {
       return other;
     }
-    final AssertingBulkScorer assertScorer = new AssertingBulkScorer(random, other);
-    ASSERTING_INSTANCES.put(other, new WeakReference<AssertingBulkScorer>(assertScorer));
-    return assertScorer;
+    return new AssertingBulkScorer(random, other);
   }
 
   public static boolean shouldWrap(BulkScorer inScorer) {
@@ -87,4 +80,5 @@ public class AssertingBulkScorer extends BulkScorer {
   public String toString() {
     return "AssertingBulkScorer(" + in + ")";
   }
+
 }

@@ -1379,7 +1379,9 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
   // during flush/merge
   public void testInvertedWrite() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    MockAnalyzer analyzer = new MockAnalyzer(random());
+    analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
 
     // Must be concurrent because thread(s) can be merging
     // while up to one thread flushes, and each of those

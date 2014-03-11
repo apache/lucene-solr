@@ -81,8 +81,8 @@ public class Overseer {
     //Internal queue where overseer stores events that have not yet been published into cloudstate
     //If Overseer dies while extracting the main queue a new overseer will start from this queue 
     private final DistributedQueue workQueue;
-    private volatile boolean isClosed;
     private Map clusterProps;
+    private boolean isClosed = false;
 
     public ClusterStateUpdater(final ZkStateReader reader, final String myId) {
       this.zkClient = reader.getZkClient();
@@ -1030,20 +1030,22 @@ public class Overseer {
 
   class OverseerThread extends Thread implements ClosableThread {
 
-    private volatile boolean isClosed;
+    protected volatile boolean isClosed;
+    private ClosableThread thread;
 
-    public OverseerThread(ThreadGroup tg,
-        ClusterStateUpdater clusterStateUpdater) {
-      super(tg, clusterStateUpdater);
+    public OverseerThread(ThreadGroup tg, ClosableThread thread) {
+      super(tg, (Runnable) thread);
+      this.thread = thread;
     }
 
-    public OverseerThread(ThreadGroup ccTg,
-        OverseerCollectionProcessor overseerCollectionProcessor, String string) {
-      super(ccTg, overseerCollectionProcessor, string);
+    public OverseerThread(ThreadGroup ccTg, ClosableThread thread, String name) {
+      super(ccTg, (Runnable) thread, name);
+      this.thread = thread;
     }
 
     @Override
     public void close() {
+      thread.close();
       this.isClosed = true;
     }
 
@@ -1084,8 +1086,7 @@ public class Overseer {
     ThreadGroup ccTg = new ThreadGroup("Overseer collection creation process.");
 
     ocp = new OverseerCollectionProcessor(reader, id, shardHandler, adminPath);
-    ccThread = new OverseerThread(ccTg, ocp,
-        "Overseer-" + id);
+    ccThread = new OverseerThread(ccTg, ocp, "Overseer-" + id);
     ccThread.setDaemon(true);
     
     updaterThread.start();

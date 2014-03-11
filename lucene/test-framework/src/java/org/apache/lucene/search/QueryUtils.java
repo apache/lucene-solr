@@ -329,7 +329,7 @@ public class QueryUtils {
 
           @Override
           public boolean acceptsDocsOutOfOrder() {
-            return true;
+            return false;
           }
         });
 

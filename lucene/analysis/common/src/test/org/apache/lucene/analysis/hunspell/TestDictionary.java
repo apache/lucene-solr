@@ -17,6 +17,7 @@ package org.apache.lucene.analysis.hunspell;
  * limitations under the License.
  */
 
+import java.io.ByteArrayInputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,6 +25,7 @@ import java.text.ParseException;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.fst.Builder;
@@ -77,6 +79,40 @@ public class TestDictionary extends LuceneTestCase {
     affixStream.close();
     dictStream.close();
   }
+  
+  public void testCompressedBeforeSetDictionary() throws Exception {
+    InputStream affixStream = getClass().getResourceAsStream("compressed-before-set.aff");
+    InputStream dictStream = getClass().getResourceAsStream("compressed.dic");
+
+    Dictionary dictionary = new Dictionary(affixStream, dictStream);
+    assertEquals(3, dictionary.lookupSuffix(new char[]{'e'}, 0, 1).length);
+    assertEquals(1, dictionary.lookupPrefix(new char[]{'s'}, 0, 1).length);
+    IntsRef ordList = dictionary.lookupWord(new char[]{'o', 'l', 'r'}, 0, 3);
+    BytesRef ref = new BytesRef();
+    dictionary.flagLookup.get(ordList.ints[0], ref);
+    char flags[] = Dictionary.decodeFlags(ref);
+    assertEquals(1, flags.length);
+    
+    affixStream.close();
+    dictStream.close();
+  }
+  
+  public void testCompressedEmptyAliasDictionary() throws Exception {
+    InputStream affixStream = getClass().getResourceAsStream("compressed-empty-alias.aff");
+    InputStream dictStream = getClass().getResourceAsStream("compressed.dic");
+
+    Dictionary dictionary = new Dictionary(affixStream, dictStream);
+    assertEquals(3, dictionary.lookupSuffix(new char[]{'e'}, 0, 1).length);
+    assertEquals(1, dictionary.lookupPrefix(new char[]{'s'}, 0, 1).length);
+    IntsRef ordList = dictionary.lookupWord(new char[]{'o', 'l', 'r'}, 0, 3);
+    BytesRef ref = new BytesRef();
+    dictionary.flagLookup.get(ordList.ints[0], ref);
+    char flags[] = Dictionary.decodeFlags(ref);
+    assertEquals(1, flags.length);
+    
+    affixStream.close();
+    dictStream.close();
+  }
 
   // malformed rule causes ParseException
   public void testInvalidData() throws Exception {
@@ -87,7 +123,7 @@ public class TestDictionary extends LuceneTestCase {
       new Dictionary(affixStream, dictStream);
       fail("didn't get expected exception");
     } catch (ParseException expected) {
-      assertEquals("The affix file contains a rule with less than five elements", expected.getMessage());
+      assertTrue(expected.getMessage().startsWith("The affix file contains a rule with less than four elements"));
       assertEquals(24, expected.getErrorOffset());
     }
     
@@ -177,5 +213,17 @@ public class TestDictionary extends LuceneTestCase {
     sb = new StringBuilder("defdefdefc");
     Dictionary.applyMappings(fst, sb);
     assertEquals("ghghghde", sb.toString());
+  }
+  
+  public void testSetWithCrazyWhitespaceAndBOMs() throws Exception {
+    assertEquals("UTF-8", Dictionary.getDictionaryEncoding(new ByteArrayInputStream("SET\tUTF-8\n".getBytes(IOUtils.CHARSET_UTF_8))));
+    assertEquals("UTF-8", Dictionary.getDictionaryEncoding(new ByteArrayInputStream("SET\t UTF-8\n".getBytes(IOUtils.CHARSET_UTF_8))));
+    assertEquals("UTF-8", Dictionary.getDictionaryEncoding(new ByteArrayInputStream("\uFEFFSET\tUTF-8\n".getBytes(IOUtils.CHARSET_UTF_8))));
+    assertEquals("UTF-8", Dictionary.getDictionaryEncoding(new ByteArrayInputStream("\uFEFFSET\tUTF-8\r\n".getBytes(IOUtils.CHARSET_UTF_8))));
+  }
+  
+  public void testFlagWithCrazyWhitespace() throws Exception {
+    assertNotNull(Dictionary.getFlagParsingStrategy("FLAG\tUTF-8"));
+    assertNotNull(Dictionary.getFlagParsingStrategy("FLAG    UTF-8"));
   }
 }

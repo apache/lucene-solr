@@ -229,4 +229,50 @@ public class SolrInputField implements Iterable<Object>, Serializable
     }
     return clone;
   }
+
+  /**
+   * This method is implemented for tests and should not be counted
+   * on in production code.
+   * 
+   * @lucene.experimental
+   */
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof SolrInputField)) {
+      return false;
+    }
+
+    SolrInputField sif = (SolrInputField) o;
+
+    if (!name.equals(sif.name)) {
+      return false;
+    }
+
+    if (!value.equals(sif.value)) {
+      return false;
+    }
+
+    if (Float.compare(sif.boost, boost) != 0) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * This method is implemented for tests and should not be counted
+   * on in production code.
+   * 
+   * @lucene.experimental
+   */
+  @Override
+  public int hashCode() {
+    int result = name.hashCode();
+    result = 31 * result + value.hashCode();
+    result = 31 * result + (boost != +0.0f ? Float.floatToIntBits(boost) : 0);
+    return result;
+  }
 }

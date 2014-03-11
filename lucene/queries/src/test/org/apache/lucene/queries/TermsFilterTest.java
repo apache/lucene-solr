@@ -50,7 +50,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
 
 public class TermsFilterTest extends LuceneTestCase {
 
@@ -297,7 +296,15 @@ public class TermsFilterTest extends LuceneTestCase {
       }
     }
   }
-  
+
+  public void testSingleFieldEquals() {
+    // Two terms with the same hash code
+    assertEquals("AaAaBB".hashCode(), "BBBBBB".hashCode());
+    TermsFilter left = termsFilter(true, new Term("id", "AaAaAa"), new Term("id", "AaAaBB"));
+    TermsFilter right = termsFilter(true, new Term("id", "AaAaAa"), new Term("id", "BBBBBB"));
+    assertFalse(left.equals(right));
+  }
+
   public void testNoTerms() {
     List<Term> emptyTerms = Collections.emptyList();
     List<BytesRef> emptyBytesRef = Collections.emptyList();

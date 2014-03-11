@@ -26,12 +26,13 @@ import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Bits.MatchNoBits;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
@@ -121,8 +122,11 @@ public class TestReuseDocsEnum extends LuceneTestCase {
   public void testReuseDocsEnumDifferentReader() throws IOException {
     Directory dir = newDirectory();
     Codec cp = TestUtil.alwaysPostingsFormat(new Lucene40RWPostingsFormat());
+    MockAnalyzer analyzer = new MockAnalyzer(random());
+    analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
+
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setCodec(cp));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).setCodec(cp));
     int numdocs = atLeast(20);
     createRandomIndex(numdocs, writer, random());
     writer.commit();

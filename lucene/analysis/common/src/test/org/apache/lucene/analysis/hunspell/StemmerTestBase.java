@@ -55,7 +55,7 @@ abstract class StemmerTestBase extends LuceneTestCase {
     }
     
     try {
-      Dictionary dictionary = new Dictionary(affixStream, Arrays.asList(dictStreams), true);
+      Dictionary dictionary = new Dictionary(affixStream, Arrays.asList(dictStreams), ignoreCase);
       stemmer = new Stemmer(dictionary);
     } finally {
       IOUtils.closeWhileHandlingException(affixStream);

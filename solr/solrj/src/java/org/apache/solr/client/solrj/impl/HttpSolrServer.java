@@ -199,8 +199,11 @@ public class HttpSolrServer extends SolrServer {
     return request(request, responseParser);
   }
   
-  public NamedList<Object> request(final SolrRequest request,
-      final ResponseParser processor) throws SolrServerException, IOException {
+  public NamedList<Object> request(final SolrRequest request, final ResponseParser processor) throws SolrServerException, IOException {
+    return executeMethod(createMethod(request),processor);
+  }
+  
+  protected HttpRequestBase createMethod(final SolrRequest request) throws IOException, SolrServerException {
     HttpRequestBase method = null;
     InputStream is = null;
     SolrParams params = request.getParams();
@@ -382,6 +385,10 @@ public class HttpSolrServer extends SolrServer {
       throw new SolrServerException("error reading streams", ex);
     }
     
+    return method;
+  }
+  
+  protected NamedList<Object> executeMethod(HttpRequestBase method, final ResponseParser processor) throws SolrServerException {
     // XXX client already has this set, is this needed?
     method.getParams().setParameter(ClientPNames.HANDLE_REDIRECTS,
         followRedirects);

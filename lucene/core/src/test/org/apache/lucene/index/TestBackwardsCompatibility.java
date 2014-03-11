@@ -139,8 +139,11 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     mp.setUseCompoundFile(false);
     mp.setNoCFSRatio(1.0);
     mp.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
+    MockAnalyzer analyzer = new MockAnalyzer(random());
+    analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
+
     // TODO: remove randomness
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer)
       .setMergePolicy(mp);
     conf.setCodec(Codec.forName("Lucene40"));
     IndexWriter writer = new IndexWriter(dir, conf);

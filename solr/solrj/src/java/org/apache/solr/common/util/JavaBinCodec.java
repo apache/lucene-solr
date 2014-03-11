@@ -521,7 +521,7 @@ public class JavaBinCodec {
       public Object getValue() {
         return value;
       }
-      
+
       @Override
       public String toString() {
         return "MapEntry[" + key.toString() + ":" + value.toString() + "]";
@@ -530,7 +530,28 @@ public class JavaBinCodec {
       @Override
       public Object setValue(Object value) {
         throw new UnsupportedOperationException();
-      }};
+      }
+
+      @Override
+      public int hashCode() {
+        int result = 31;
+        result *=31 + getKey().hashCode();
+        result *=31 + getValue().hashCode();
+        return result;
+      }
+
+      @Override
+      public boolean equals(Object obj) {
+        if(this == obj) {
+          return true;
+        }
+        if(!(obj instanceof Entry)) {
+          return false;
+        }
+        Map.Entry<Object, Object> entry = (Entry<Object, Object>) obj;
+        return (this.getKey().equals(entry.getKey()) && this.getValue().equals(entry.getValue()));
+      }
+    };
   }
 
   /**

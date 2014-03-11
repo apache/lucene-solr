@@ -436,6 +436,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     for (int i = 0; i < numDocs; i++) {
       Directory dir = newDirectory();
       MockAnalyzer mockAnalyzer = new MockAnalyzer(random());
+      mockAnalyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random(), TEST_VERSION_CURRENT, mockAnalyzer));
       Document nextDoc = lineFileDocs.nextDoc();
       Document doc = new Document();
