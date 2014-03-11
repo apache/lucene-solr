@@ -279,28 +279,6 @@ class BooleanScorer2 extends Scorer {
                                 : new MinShouldMatchSumScorer(weight, prohibitedScorers)));
   }
 
-  /** Scores and collects all matching documents.
-   * @param collector The collector to which all matching documents are passed through.
-   */
-  @Override
-  public void score(Collector collector) throws IOException {
-    collector.setScorer(this);
-    while ((doc = countingSumScorer.nextDoc()) != NO_MORE_DOCS) {
-      collector.collect(doc);
-    }
-  }
-  
-  @Override
-  public boolean score(Collector collector, int max, int firstDocID) throws IOException {
-    doc = firstDocID;
-    collector.setScorer(this);
-    while (doc < max) {
-      collector.collect(doc);
-      doc = countingSumScorer.nextDoc();
-    }
-    return doc != NO_MORE_DOCS;
-  }
-
   @Override
   public int docID() {
     return doc;

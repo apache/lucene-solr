@@ -126,7 +126,7 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
     if (slow) {
       return new SlowMinShouldMatchScorer(weight, reader, searcher);
     } else {
-      return weight.scorer(reader.getContext(), true, false, null);
+      return weight.scorer(reader.getContext(), null);
     }
   }
   

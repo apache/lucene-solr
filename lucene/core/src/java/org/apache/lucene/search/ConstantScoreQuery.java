@@ -134,8 +134,23 @@ public class ConstantScoreQuery extends Query {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, final Bits acceptDocs) throws IOException {
+    public BulkScorer bulkScorer(AtomicReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
+      final DocIdSetIterator disi;
+      if (filter != null) {
+        assert query == null;
+        return super.bulkScorer(context, scoreDocsInOrder, acceptDocs);
+      } else {
+        assert query != null && innerWeight != null;
+        BulkScorer bulkScorer = innerWeight.bulkScorer(context, scoreDocsInOrder, acceptDocs);
+        if (bulkScorer == null) {
+          return null;
+        }
+        return new ConstantBulkScorer(bulkScorer, this, queryWeight);
+      }
+    }
+
+    @Override
+    public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException {
       final DocIdSetIterator disi;
       if (filter != null) {
         assert query == null;
@@ -146,7 +161,7 @@ public class ConstantScoreQuery extends Query {
         disi = dis.iterator();
       } else {
         assert query != null && innerWeight != null;
-        disi = innerWeight.scorer(context, scoreDocsInOrder, topScorer, acceptDocs);
+        disi = innerWeight.scorer(context, acceptDocs);
       }
 
       if (disi == null) {
@@ -154,7 +169,7 @@ public class ConstantScoreQuery extends Query {
       }
       return new ConstantScorer(disi, this, queryWeight);
     }
-    
+
     @Override
     public boolean scoresDocsOutOfOrder() {
       return (innerWeight != null) ? innerWeight.scoresDocsOutOfOrder() : false;
@@ -162,7 +177,7 @@ public class ConstantScoreQuery extends Query {
 
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      final Scorer cs = scorer(context, true, false, context.reader().getLiveDocs());
+      final Scorer cs = scorer(context, context.reader().getLiveDocs());
       final boolean exists = (cs != null && cs.advance(doc) == doc);
 
       final ComplexExplanation result = new ComplexExplanation();
@@ -178,6 +193,52 @@ public class ConstantScoreQuery extends Query {
         result.setMatch(Boolean.FALSE);
       }
       return result;
+    }
+  }
+
+  /** We return this as our {@link BulkScorer} so that if the CSQ
+   *  wraps a query with its own optimized top-level
+   *  scorer (e.g. BooleanScorer) we can use that
+   *  top-level scorer. */
+  protected class ConstantBulkScorer extends BulkScorer {
+    final BulkScorer bulkScorer;
+    final Weight weight;
+    final float theScore;
+
+    public ConstantBulkScorer(BulkScorer bulkScorer, Weight weight, float theScore) {
+      this.bulkScorer = bulkScorer;
+      this.weight = weight;
+      this.theScore = theScore;
+    }
+
+    @Override
+    public boolean score(Collector collector, int max) throws IOException {
+      return bulkScorer.score(wrapCollector(collector), max);
+    }
+
+    private Collector wrapCollector(final Collector collector) {
+      return new Collector() {
+        @Override
+        public void setScorer(Scorer scorer) throws IOException {
+          // we must wrap again here, but using the scorer passed in as parameter:
+          collector.setScorer(new ConstantScorer(scorer, weight, theScore));
+        }
+        
+        @Override
+        public void collect(int doc) throws IOException {
+          collector.collect(doc);
+        }
+        
+        @Override
+        public void setNextReader(AtomicReaderContext context) throws IOException {
+          collector.setNextReader(context);
+        }
+        
+        @Override
+        public boolean acceptsDocsOutOfOrder() {
+          return collector.acceptsDocsOutOfOrder();
+        }
+      };
     }
   }
 
@@ -222,57 +283,13 @@ public class ConstantScoreQuery extends Query {
       return docIdSetIterator.cost();
     }
 
-    private Collector wrapCollector(final Collector collector) {
-      return new Collector() {
-        @Override
-        public void setScorer(Scorer scorer) throws IOException {
-          // we must wrap again here, but using the scorer passed in as parameter:
-          collector.setScorer(new ConstantScorer(scorer, ConstantScorer.this.weight, ConstantScorer.this.theScore));
-        }
-        
-        @Override
-        public void collect(int doc) throws IOException {
-          collector.collect(doc);
-        }
-        
-        @Override
-        public void setNextReader(AtomicReaderContext context) throws IOException {
-          collector.setNextReader(context);
-        }
-        
-        @Override
-        public boolean acceptsDocsOutOfOrder() {
-          return collector.acceptsDocsOutOfOrder();
-        }
-      };
-    }
-
-    // this optimization allows out of order scoring as top scorer!
-    @Override
-    public void score(Collector collector) throws IOException {
-      if (query != null) {
-        ((Scorer) docIdSetIterator).score(wrapCollector(collector));
-      } else {
-        super.score(collector);
-      }
-    }
-
-    // this optimization allows out of order scoring as top scorer,
-    @Override
-    public boolean score(Collector collector, int max, int firstDocID) throws IOException {
-      if (query != null) {
-        return ((Scorer) docIdSetIterator).score(wrapCollector(collector), max, firstDocID);
-      } else {
-        return super.score(collector, max, firstDocID);
-      }
-    }
-
     @Override
     public Collection<ChildScorer> getChildren() {
-      if (query != null)
+      if (query != null) {
         return Collections.singletonList(new ChildScorer((Scorer) docIdSetIterator, "constant"));
-      else
+      } else {
         return Collections.emptyList();
+      }
     }
   }
 

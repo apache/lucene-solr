@@ -29,6 +29,7 @@ import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
 
@@ -117,12 +118,17 @@ class DrillSidewaysQuery extends Query {
       }
 
       @Override
-      public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-                           boolean topScorer, Bits acceptDocs) throws IOException {
+      public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+        // We can only run as a top scorer:
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public BulkScorer bulkScorer(AtomicReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
 
         // TODO: it could be better if we take acceptDocs
         // into account instead of baseScorer?
-        Scorer baseScorer = baseWeight.scorer(context, scoreDocsInOrder, false, acceptDocs);
+        Scorer baseScorer = baseWeight.scorer(context, acceptDocs);
 
         DrillSidewaysScorer.DocsAndCost[] dims = new DrillSidewaysScorer.DocsAndCost[drillDowns.length];
         int nullCount = 0;
@@ -167,7 +173,7 @@ class DrillSidewaysQuery extends Query {
               dims[dim].disi = disi;
             }
           } else {
-            DocIdSetIterator disi = ((Weight) drillDowns[dim]).scorer(context, true, false, null);
+            DocIdSetIterator disi = ((Weight) drillDowns[dim]).scorer(context, null);
             if (disi == null) {
               nullCount++;
               continue;
@@ -192,7 +198,7 @@ class DrillSidewaysQuery extends Query {
           return null;
         }
 
-        return new DrillSidewaysScorer(this, context,
+        return new DrillSidewaysScorer(context,
                                        baseScorer,
                                        drillDownCollector, dims,
                                        scoreSubDocsAtOnce);

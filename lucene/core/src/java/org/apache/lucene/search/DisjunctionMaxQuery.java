@@ -153,12 +153,11 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
 
     /** Create the scorer used to score our associated DisjunctionMaxQuery */
     @Override
-    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, Bits acceptDocs) throws IOException {
+    public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException {
       List<Scorer> scorers = new ArrayList<Scorer>();
       for (Weight w : weights) {
         // we will advance() subscorers
-        Scorer subScorer = w.scorer(context, true, false, acceptDocs);
+        Scorer subScorer = w.scorer(context, acceptDocs);
         if (subScorer != null) {
           scorers.add(subScorer);
 

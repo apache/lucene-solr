@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReader; // javadocs
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReaderContext; // javadocs
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
@@ -35,8 +36,7 @@ import org.apache.lucene.util.Bits;
  * {@link AtomicReader} dependent state should reside in the {@link Scorer}.
  * <p>
  * Since {@link Weight} creates {@link Scorer} instances for a given
- * {@link AtomicReaderContext} ({@link #scorer(AtomicReaderContext, 
- * boolean, boolean, Bits)})
+ * {@link AtomicReaderContext} ({@link #scorer(AtomicReaderContext, Bits)})
  * callers must maintain the relationship between the searcher's top-level
  * {@link IndexReaderContext} and the context used to create a {@link Scorer}. 
  * <p>
@@ -51,7 +51,7 @@ import org.apache.lucene.util.Bits;
  * <li>The query normalization factor is passed to {@link #normalize(float, float)}. At
  * this point the weighting is complete.
  * <li>A <code>Scorer</code> is constructed by
- * {@link #scorer(AtomicReaderContext, boolean, boolean, Bits)}.
+ * {@link #scorer(AtomicReaderContext, Bits)}.
  * </ol>
  * 
  * @since 2.9
@@ -91,18 +91,6 @@ public abstract class Weight {
    * 
    * @param context
    *          the {@link AtomicReaderContext} for which to return the {@link Scorer}.
-   * @param scoreDocsInOrder
-   *          specifies whether in-order scoring of documents is required. Note
-   *          that if set to false (i.e., out-of-order scoring is required),
-   *          this method can return whatever scoring mode it supports, as every
-   *          in-order scorer is also an out-of-order one. However, an
-   *          out-of-order scorer may not support {@link Scorer#nextDoc()}
-   *          and/or {@link Scorer#advance(int)}, therefore it is recommended to
-   *          request an in-order scorer if use of these methods is required.
-   * @param topScorer
-   *          if true, {@link Scorer#score(Collector)} will be called; if false,
-   *          {@link Scorer#nextDoc()} and/or {@link Scorer#advance(int)} will
-   *          be called.
    * @param acceptDocs
    *          Bits that represent the allowable docs to match (typically deleted docs
    *          but possibly filtering other documents)
@@ -110,19 +98,89 @@ public abstract class Weight {
    * @return a {@link Scorer} which scores documents in/out-of order.
    * @throws IOException if there is a low-level I/O error
    */
-  public abstract Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-      boolean topScorer, Bits acceptDocs) throws IOException;
+  public abstract Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException;
+
+  /**
+   * Optional method, to return a {@link BulkScorer} to
+   * score the query and send hits to a {@link Collector}.
+   * Only queries that have a different top-level approach
+   * need to override this; the default implementation
+   * pulls a normal {@link Scorer} and iterates and
+   * collects the resulting hits.
+   *
+   * @param context
+   *          the {@link AtomicReaderContext} for which to return the {@link Scorer}.
+   * @param scoreDocsInOrder
+   *          specifies whether in-order scoring of documents is required. Note
+   *          that if set to false (i.e., out-of-order scoring is required),
+   *          this method can return whatever scoring mode it supports, as every
+   *          in-order scorer is also an out-of-order one. However, an
+   *          out-of-order scorer may not support {@link Scorer#nextDoc()}
+   *          and/or {@link Scorer#advance(int)}, therefore it is recommended to
+   *          request an in-order scorer if use of these
+   *          methods is required.
+   * @param acceptDocs
+   *          Bits that represent the allowable docs to match (typically deleted docs
+   *          but possibly filtering other documents)
+   *
+   * @return a {@link BulkScorer} which scores documents and
+   * passes them to a collector.
+   * @throws IOException if there is a low-level I/O error
+   */
+  public BulkScorer bulkScorer(AtomicReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
+
+    Scorer scorer = scorer(context, acceptDocs);
+    if (scorer == null) {
+      // No docs match
+      return null;
+    }
+
+    // This impl always scores docs in order, so we can
+    // ignore scoreDocsInOrder:
+    return new DefaultBulkScorer(scorer);
+  }
+
+  /** Just wraps a Scorer and performs top scoring using it. */
+  static class DefaultBulkScorer extends BulkScorer {
+    private final Scorer scorer;
+
+    public DefaultBulkScorer(Scorer scorer) {
+      assert scorer != null;
+      this.scorer = scorer;
+    }
+
+    @Override
+    public boolean score(Collector collector, int max) throws IOException {
+      // TODO: this may be sort of weird, when we are
+      // embedded in a BooleanScorer, because we are
+      // called for every chunk of 2048 documents.  But,
+      // then, scorer is a FakeScorer in that case, so any
+      // Collector doing something "interesting" in
+      // setScorer will be forced to use BS2 anyways:
+      collector.setScorer(scorer);
+      if (scorer.docID() == -1) {
+        scorer.nextDoc();
+      }
+      int doc;
+      for (doc = scorer.docID(); doc < max; doc = scorer.nextDoc()) {
+        collector.collect(doc);
+      }
+      return doc != DocsEnum.NO_MORE_DOCS;
+    }
+  }
 
   /**
    * Returns true iff this implementation scores docs only out of order. This
    * method is used in conjunction with {@link Collector}'s
    * {@link Collector#acceptsDocsOutOfOrder() acceptsDocsOutOfOrder} and
-   * {@link #scorer(AtomicReaderContext, boolean, boolean, Bits)} to
+   * {@link #bulkScorer(AtomicReaderContext, boolean, Bits)} to
    * create a matching {@link Scorer} instance for a given {@link Collector}, or
    * vice versa.
    * <p>
    * <b>NOTE:</b> the default implementation returns <code>false</code>, i.e.
    * the <code>Scorer</code> scores documents in-order.
    */
-  public boolean scoresDocsOutOfOrder() { return false; }
+  public boolean scoresDocsOutOfOrder() {
+    return false;
+  }
 }
