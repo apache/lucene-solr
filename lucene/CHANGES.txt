@@ -156,6 +156,9 @@ Bug fixes
 * LUCENE-5507: Fix HunspellStemFilter loading of dictionaries with large amounts of aliases
   etc before the encoding declaration.  (Robert Muir)
 
+* LUCENE-5502: Fixed TermsFilter.equals that could return true for different
+  filters. (Igor Motov via Adrien Grand)
+
 Test Framework
 
 * LUCENE-5449: Rename _TestUtil and _TestHelper to remove the leading _.
