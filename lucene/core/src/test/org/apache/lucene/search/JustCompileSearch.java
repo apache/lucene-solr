@@ -17,8 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -232,11 +230,6 @@ final class JustCompileSearch {
     }
 
     @Override
-    public boolean score(Collector collector, int max, int firstDocID) {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-    
-    @Override
     public float score() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
@@ -351,8 +344,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, Bits acceptDocs) {
+    public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     

@@ -53,8 +53,8 @@ org.apache.lucene.search.IndexSearcher#search(Query,Filter,int)}.
 <p>
 Once a Query has been created and submitted to the {@link org.apache.lucene.search.IndexSearcher IndexSearcher}, the scoring
 process begins. After some infrastructure setup, control finally passes to the {@link org.apache.lucene.search.Weight Weight}
-implementation and its {@link org.apache.lucene.search.Scorer Scorer} instances. See the <a href="#algorithm">Algorithm</a> 
-section for more notes on the process.
+implementation and its {@link org.apache.lucene.search.Scorer Scorer} or {@link org.apache.lucene.search.BulkScorer BulkScore}
+instances. See the <a href="#algorithm">Algorithm</a> section for more notes on the process.
 </p>
     <!-- FILL IN MORE HERE -->   
     <!-- TODO: this page over-links the same things too many times -->
@@ -370,6 +370,12 @@ on the built-in available scoring models and extending or changing Similarity.
             {@link org.apache.lucene.search.Scorer Scorer} &mdash; An abstract class containing common
             functionality for scoring. Provides both scoring and
             explanation capabilities.  This is created per-segment.</li>
+        <li>
+            {@link org.apache.lucene.search.BulkScorer BulkScorer} &mdash; An abstract class that scores
+	    a range of documents.  A default implementation simply iterates through the hits from
+	    {@link org.apache.lucene.search.Scorer Scorer}, but some queries such as
+	    {@link org.apache.lucene.search.BooleanQuery BooleanQuery} have more efficient
+	    implementations.</li>
     </ol>
     Details on each of these classes, and their children, can be found in the subsections below.
 </p>
@@ -430,11 +436,17 @@ on the built-in available scoring models and extending or changing Similarity.
                 that scores via a {@link org.apache.lucene.search.similarities.Similarity Similarity} will just defer to the Similarity's implementation:
                 {@link org.apache.lucene.search.similarities.Similarity.SimWeight#normalize SimWeight#normalize(float,float)}.</li>
             <li>
-                {@link org.apache.lucene.search.Weight#scorer(org.apache.lucene.index.AtomicReaderContext, boolean, boolean, org.apache.lucene.util.Bits)
-                  scorer(AtomicReaderContext context, boolean scoresDocsInOrder, boolean topScorer, Bits acceptDocs)} &mdash;
+                {@link org.apache.lucene.search.Weight#scorer(org.apache.lucene.index.AtomicReaderContext, org.apache.lucene.util.Bits)
+                  scorer(AtomicReaderContext context, Bits acceptDocs)} &mdash;
                 Construct a new {@link org.apache.lucene.search.Scorer Scorer} for this Weight. See <a href="#scorerClass">The Scorer Class</a>
                 below for help defining a Scorer. As the name implies, the Scorer is responsible for doing the actual scoring of documents 
                 given the Query.
+            </li>
+            <li>
+                {@link org.apache.lucene.search.Weight#bulkScorer(org.apache.lucene.index.AtomicReaderContext, boolean, org.apache.lucene.util.Bits)
+                  scorer(AtomicReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs)} &mdash;
+                Construct a new {@link org.apache.lucene.search.BulkScorer BulkScorer} for this Weight. See <a href="#bulkScorerClass">The BulkScorer Class</a>
+                below for help defining a BulkScorer. This is an optional method, and most queries do not implement it.
             </li>
             <li>
                 {@link org.apache.lucene.search.Weight#explain(org.apache.lucene.index.AtomicReaderContext, int) 
@@ -489,6 +501,18 @@ on the built-in available scoring models and extending or changing Similarity.
             </li>
         </ol>
     </p>
+<a name="bulkScorerClass"></a>
+<h4>The BulkScorer Class</h4>
+    <p>The
+        {@link org.apache.lucene.search.BulkScorer BulkScorer} scores a range of documents.  There is only one 
+        abstract method:
+        <ol>
+            <li>
+                {@link org.apache.lucene.search.BulkScorer#score(org.apache.lucene.search.Collector,int) score(Collector,int)} &mdash;
+		Score all documents up to but not including the specified max document.
+	    </li>
+        </ol>
+    </p>
 <h4>Why would I want to add my own Query?</h4>
 
     <p>In a nutshell, you want to add your own custom Query implementation when you think that Lucene's
@@ -539,7 +563,7 @@ on the built-in available scoring models and extending or changing Similarity.
 <p>If a Filter is being used, some initial setup is done to determine which docs to include. 
    Otherwise, we ask the Weight for a {@link org.apache.lucene.search.Scorer Scorer} for each
    {@link org.apache.lucene.index.IndexReader IndexReader} segment and proceed by calling
-   {@link org.apache.lucene.search.Scorer#score(org.apache.lucene.search.Collector) Scorer.score()}.
+   {@link org.apache.lucene.search.BulkScorer#score(org.apache.lucene.search.Collector) BulkScorer.score(Collector)}.
 </p>
 <p>At last, we are actually going to score some documents. The score method takes in the Collector
    (most likely the TopScoreDocCollector or TopFieldCollector) and does its business.Of course, here 

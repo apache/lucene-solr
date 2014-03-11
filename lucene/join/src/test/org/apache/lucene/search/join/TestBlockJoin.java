@@ -1101,7 +1101,6 @@ public class TestBlockJoin extends LuceneTestCase {
     parentDoc = s.doc(qGroup.groupValue);
     assertEquals("Lisa", parentDoc.get("name"));
 
-
     r.close();
     dir.close();
   }
@@ -1124,7 +1123,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
     ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(tq, parentFilter, ScoreMode.Avg);
     Weight weight = s.createNormalizedWeight(q);
-    DocIdSetIterator disi = weight.scorer(s.getIndexReader().leaves().get(0), true, true, null);
+    DocIdSetIterator disi = weight.scorer(s.getIndexReader().leaves().get(0), null);
     assertEquals(1, disi.advance(1));
     r.close();
     dir.close();
@@ -1158,7 +1157,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
     ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(tq, parentFilter, ScoreMode.Avg);
     Weight weight = s.createNormalizedWeight(q);
-    DocIdSetIterator disi = weight.scorer(s.getIndexReader().leaves().get(0), true, true, null);
+    DocIdSetIterator disi = weight.scorer(s.getIndexReader().leaves().get(0), null);
     assertEquals(2, disi.advance(0));
     r.close();
     dir.close();
@@ -1198,7 +1197,6 @@ public class TestBlockJoin extends LuceneTestCase {
     ToParentBlockJoinQuery childJoinQuery = new ToParentBlockJoinQuery(childQuery, parentsFilter, ScoreMode.Avg);
 
     ToParentBlockJoinCollector c = new ToParentBlockJoinCollector(Sort.RELEVANCE, 2, true, true);
-
     s.search(childJoinQuery, c);
 
     //Get all child documents within groups
@@ -1310,7 +1308,6 @@ public class TestBlockJoin extends LuceneTestCase {
     GroupDocs<Integer> group = groups.groups[0];
     Document doc = r.document(group.groupValue.intValue());
     assertEquals("0", doc.get("parentID"));
-    System.out.println("group: " + group);
 
     group = groups.groups[1];
     doc = r.document(group.groupValue.intValue());
@@ -1376,7 +1373,6 @@ public class TestBlockJoin extends LuceneTestCase {
     GroupDocs<Integer> group = groups.groups[0];
     Document doc = r.document(group.groupValue.intValue());
     assertEquals("0", doc.get("parentID"));
-    System.out.println("group: " + group);
 
     group = groups.groups[1];
     doc = r.document(group.groupValue.intValue());

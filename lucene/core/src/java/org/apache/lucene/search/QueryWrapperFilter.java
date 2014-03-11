@@ -56,7 +56,7 @@ public class QueryWrapperFilter extends Filter {
     return new DocIdSet() {
       @Override
       public DocIdSetIterator iterator() throws IOException {
-        return weight.scorer(privateContext, true, false, acceptDocs);
+        return weight.scorer(privateContext, acceptDocs);
       }
       @Override
       public boolean isCacheable() { return false; }

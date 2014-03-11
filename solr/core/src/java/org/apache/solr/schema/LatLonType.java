@@ -333,14 +333,13 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
     }
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, Bits acceptDocs) throws IOException {
+    public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException {
       return new SpatialScorer(context, acceptDocs, this, queryWeight);
     }
 
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      return ((SpatialScorer)scorer(context, true, true, context.reader().getLiveDocs())).explain(doc);
+      return ((SpatialScorer)scorer(context, context.reader().getLiveDocs())).explain(doc);
     }
   }
 

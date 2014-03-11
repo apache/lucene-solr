@@ -232,8 +232,7 @@ class JoinQuery extends Query {
 
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, Bits acceptDocs) throws IOException {
+    public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException {
       if (filter == null) {
         boolean debug = rb != null && rb.isDebug();
         long start = debug ? System.currentTimeMillis() : 0;
@@ -502,7 +501,7 @@ class JoinQuery extends Query {
 
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      Scorer scorer = scorer(context, true, false, context.reader().getLiveDocs());
+      Scorer scorer = scorer(context, context.reader().getLiveDocs());
       boolean exists = scorer.advance(doc) == doc;
 
       ComplexExplanation result = new ComplexExplanation();

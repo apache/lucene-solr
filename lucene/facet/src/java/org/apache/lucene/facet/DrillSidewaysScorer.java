@@ -22,14 +22,16 @@ import java.util.Collection;
 import java.util.Collections;
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 
-class DrillSidewaysScorer extends Scorer {
+class DrillSidewaysScorer extends BulkScorer {
 
   //private static boolean DEBUG = false;
 
@@ -50,9 +52,8 @@ class DrillSidewaysScorer extends Scorer {
   private int collectDocID = -1;
   private float collectScore;
 
-  DrillSidewaysScorer(Weight w, AtomicReaderContext context, Scorer baseScorer, Collector drillDownCollector,
+  DrillSidewaysScorer(AtomicReaderContext context, Scorer baseScorer, Collector drillDownCollector,
                       DocsAndCost[] dims, boolean scoreSubDocsAtOnce) {
-    super(w);
     this.dims = dims;
     this.context = context;
     this.baseScorer = baseScorer;
@@ -61,18 +62,22 @@ class DrillSidewaysScorer extends Scorer {
   }
 
   @Override
-  public void score(Collector collector) throws IOException {
+  public boolean score(Collector collector, int maxDoc) throws IOException {
+    if (maxDoc != Integer.MAX_VALUE) {
+      throw new IllegalArgumentException("maxDoc must be Integer.MAX_VALUE");
+    }
     //if (DEBUG) {
     //  System.out.println("\nscore: reader=" + context.reader());
     //}
     //System.out.println("score r=" + context.reader());
-    collector.setScorer(this);
+    FakeScorer scorer = new FakeScorer();
+    collector.setScorer(scorer);
     if (drillDownCollector != null) {
-      drillDownCollector.setScorer(this);
+      drillDownCollector.setScorer(scorer);
       drillDownCollector.setNextReader(context);
     }
     for (DocsAndCost dim : dims) {
-      dim.sidewaysCollector.setScorer(this);
+      dim.sidewaysCollector.setScorer(scorer);
       dim.sidewaysCollector.setNextReader(context);
     }
 
@@ -140,6 +145,8 @@ class DrillSidewaysScorer extends Scorer {
       //System.out.println("union");
       doUnionScoring(collector, disis, sidewaysCollectors);
     }
+
+    return false;
   }
 
   /** Used when base query is highly constraining vs the
@@ -154,7 +161,7 @@ class DrillSidewaysScorer extends Scorer {
     //}
     int docID = baseScorer.docID();
 
-    nextDoc: while (docID != NO_MORE_DOCS) {
+    nextDoc: while (docID != DocsEnum.NO_MORE_DOCS) {
       Collector failedCollector = null;
       for (int i=0;i<disis.length;i++) {
         // TODO: should we sort this 2nd dimension of
@@ -612,39 +619,53 @@ class DrillSidewaysScorer extends Scorer {
     sidewaysCollector.collect(collectDocID);
   }
 
-  @Override
-  public int docID() {
-    return collectDocID;
-  }
+  private final class FakeScorer extends Scorer {
+    float score;
+    int doc;
 
-  @Override
-  public float score() {
-    return collectScore;
-  }
+    public FakeScorer() {
+      super(null);
+    }
+    
+    @Override
+    public int advance(int target) {
+      throw new UnsupportedOperationException("FakeScorer doesn't support advance(int)");
+    }
 
-  @Override
-  public int freq() {
-    return 1+dims.length;
-  }
+    @Override
+    public int docID() {
+      return collectDocID;
+    }
 
-  @Override
-  public int nextDoc() {
-    throw new UnsupportedOperationException();
-  }
+    @Override
+    public int freq() {
+      return 1+dims.length;
+    }
 
-  @Override
-  public int advance(int target) {
-    throw new UnsupportedOperationException();
-  }
+    @Override
+    public int nextDoc() {
+      throw new UnsupportedOperationException("FakeScorer doesn't support nextDoc()");
+    }
+    
+    @Override
+    public float score() {
+      return collectScore;
+    }
 
-  @Override
-  public long cost() {
-    return baseScorer.cost();
-  }
+    @Override
+    public long cost() {
+      return baseScorer.cost();
+    }
 
-  @Override
-  public Collection<ChildScorer> getChildren() {
-    return Collections.singletonList(new ChildScorer(baseScorer, "MUST"));
+    @Override
+    public Collection<ChildScorer> getChildren() {
+      return Collections.singletonList(new ChildScorer(baseScorer, "MUST"));
+    }
+
+    @Override
+    public Weight getWeight() {
+      throw new UnsupportedOperationException();
+    }
   }
 
   static class DocsAndCost implements Comparable<DocsAndCost> {
