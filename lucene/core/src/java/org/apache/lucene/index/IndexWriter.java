@@ -17,6 +17,28 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
+import org.apache.lucene.index.FieldInfos.FieldNumbers;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.MergeState.CheckAbort;
+import org.apache.lucene.index.NumericFieldUpdates.UpdatesIterator;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.store.CompoundFileDirectory;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.Lock;
+import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.store.MergeInfo;
+import org.apache.lucene.store.TrackingDirectoryWrapper;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.InfoStream;
+import org.apache.lucene.util.ThreadInterruptedException;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -34,29 +56,6 @@ import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
-import org.apache.lucene.index.FieldInfos.FieldNumbers;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.index.MergePolicy.MergeTrigger;
-import org.apache.lucene.index.MergeState.CheckAbort;
-import org.apache.lucene.index.NumericFieldUpdates.UpdatesIterator;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.store.CompoundFileDirectory;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.Lock;
-import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.store.MergeInfo;
-import org.apache.lucene.store.TrackingDirectoryWrapper;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.InfoStream;
-import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
   An <code>IndexWriter</code> creates and maintains an index.
@@ -994,7 +993,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
             try {
               // Give merge scheduler last chance to run, in case
               // any pending merges are waiting:
-              mergeScheduler.merge(this);
+              mergeScheduler.merge(this, MergeTrigger.CLOSING, false);
             } catch (ThreadInterruptedException tie) {
               // ignore any interruption, does not matter
               interrupted = true;
@@ -1830,17 +1829,18 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     }
 
     MergePolicy.MergeSpecification spec;
-
+    boolean newMergesFound = false;
     synchronized(this) {
       spec = mergePolicy.findForcedDeletesMerges(segmentInfos);
-      if (spec != null) {
+      newMergesFound = spec != null;
+      if (newMergesFound) {
         final int numMerges = spec.merges.size();
         for(int i=0;i<numMerges;i++)
           registerMerge(spec.merges.get(i));
       }
     }
 
-    mergeScheduler.merge(this);
+    mergeScheduler.merge(this, MergeTrigger.EXPLICIT, newMergesFound);
 
     if (spec != null && doWait) {
       final int numMerges = spec.merges.size();
@@ -1932,29 +1932,30 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
 
   private final void maybeMerge(MergeTrigger trigger, int maxNumSegments) throws IOException {
     ensureOpen(false);
-    updatePendingMerges(trigger, maxNumSegments);
-    mergeScheduler.merge(this);
+    boolean newMergesFound = updatePendingMerges(trigger, maxNumSegments);
+    mergeScheduler.merge(this, trigger, newMergesFound);
   }
 
-  private synchronized void updatePendingMerges(MergeTrigger trigger, int maxNumSegments)
+  private synchronized boolean updatePendingMerges(MergeTrigger trigger, int maxNumSegments)
     throws IOException {
     assert maxNumSegments == -1 || maxNumSegments > 0;
     assert trigger != null;
     if (stopMerges) {
-      return;
+      return false;
     }
 
     // Do not start new merges if we've hit OOME
     if (hitOOM) {
-      return;
+      return false;
     }
-
+    boolean newMergesFound = false;
     final MergePolicy.MergeSpecification spec;
     if (maxNumSegments != UNBOUNDED_MAX_MERGE_SEGMENTS) {
       assert trigger == MergeTrigger.EXPLICIT || trigger == MergeTrigger.MERGE_FINISHED :
         "Expected EXPLICT or MERGE_FINISHED as trigger even with maxNumSegments set but was: " + trigger.name();
       spec = mergePolicy.findForcedMerges(segmentInfos, maxNumSegments, Collections.unmodifiableMap(segmentsToMerge));
-      if (spec != null) {
+      newMergesFound = spec != null;
+      if (newMergesFound) {
         final int numMerges = spec.merges.size();
         for(int i=0;i<numMerges;i++) {
           final MergePolicy.OneMerge merge = spec.merges.get(i);
@@ -1964,13 +1965,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     } else {
       spec = mergePolicy.findMerges(trigger, segmentInfos);
     }
-
-    if (spec != null) {
+    newMergesFound = spec != null;
+    if (newMergesFound) {
       final int numMerges = spec.merges.size();
       for(int i=0;i<numMerges;i++) {
         registerMerge(spec.merges.get(i));
       }
     }
+    return newMergesFound;
   }
 
   /** Expert: to be used by a {@link MergePolicy} to avoid

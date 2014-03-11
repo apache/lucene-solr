@@ -24,8 +24,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import org.apache.lucene.index.MergePolicy.MergeTrigger;
-
 
 /**
  * <p>This class implements a {@link MergePolicy} that tries

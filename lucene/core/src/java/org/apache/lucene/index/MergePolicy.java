@@ -17,17 +17,17 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MergeInfo;
+import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.SetOnce;
+import org.apache.lucene.util.SetOnce.AlreadySetException;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MergeInfo;
-import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.SetOnce.AlreadySetException;
-import org.apache.lucene.util.SetOnce;
 
 /**
  * <p>Expert: a MergePolicy determines the sequence of
@@ -566,29 +566,4 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
     this.maxCFSSegmentSize = (v > Long.MAX_VALUE) ? Long.MAX_VALUE : (long) v;
   }
 
-  /**
-   * MergeTrigger is passed to
-   * {@link MergePolicy#findMerges(MergeTrigger, SegmentInfos)} to indicate the
-   * event that triggered the merge.
-   */
-  public static enum MergeTrigger {
-    /**
-     * Merge was triggered by a segment flush.
-     */
-    SEGMENT_FLUSH, 
-    /**
-     * Merge was triggered by a full flush. Full flushes
-     * can be caused by a commit, NRT reader reopen or a close call on the index writer.
-     */
-    FULL_FLUSH,
-    /**
-     * Merge has been triggered explicitly by the user.
-     */
-    EXPLICIT,
-    
-    /**
-     * Merge was triggered by a successfully finished merge.
-     */
-    MERGE_FINISHED,
-  }
 }

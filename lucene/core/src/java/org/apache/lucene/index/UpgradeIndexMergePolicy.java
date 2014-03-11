@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.MergePolicy.MergeTrigger;
 import org.apache.lucene.util.Constants;
 
 import java.io.IOException;

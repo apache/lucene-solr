@@ -16,22 +16,23 @@ package org.apache.lucene;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import java.io.IOException;
-
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MergePolicy;
-import org.apache.lucene.index.ConcurrentMergeScheduler;
-import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.MergePolicy.OneMerge;
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.index.MergeScheduler;
+import org.apache.lucene.index.MergeTrigger;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
+
+import java.io.IOException;
 
 /**
  * Holds tests cases to verify external APIs are accessible
@@ -113,7 +114,7 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
   private static class ReportingMergeScheduler extends MergeScheduler {
 
     @Override
-    public void merge(IndexWriter writer) throws IOException {
+    public void merge(IndexWriter writer, MergeTrigger trigger, boolean newMergesFound) throws IOException {
       OneMerge merge = null;
       while ((merge = writer.getNextMerge()) != null) {
         if (VERBOSE) {
