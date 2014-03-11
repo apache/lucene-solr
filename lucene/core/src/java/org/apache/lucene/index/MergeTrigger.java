@@ -17,30 +17,33 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
+/**
+ * MergeTrigger is passed to
+ * {@link org.apache.lucene.index.MergePolicy#findMerges(MergeTrigger, org.apache.lucene.index.SegmentInfos)} to indicate the
+ * event that triggered the merge.
+ */
+public enum MergeTrigger {
+  /**
+   * Merge was triggered by a segment flush.
+   */
+  SEGMENT_FLUSH,
+  /**
+   * Merge was triggered by a full flush. Full flushes
+   * can be caused by a commit, NRT reader reopen or a close call on the index writer.
+   */
+  FULL_FLUSH,
+  /**
+   * Merge has been triggered explicitly by the user.
+   */
+  EXPLICIT,
 
-/** A {@link MergeScheduler} that simply does each merge
- *  sequentially, using the current thread. */
-public class SerialMergeScheduler extends MergeScheduler {
+  /**
+   * Merge was triggered by a successfully finished merge.
+   */
+  MERGE_FINISHED,
 
-  /** Sole constructor. */
-  public SerialMergeScheduler() {
-  }
-
-  /** Just do the merges in sequence. We do this
-   * "synchronized" so that even if the application is using
-   * multiple threads, only one merge may run at a time. */
-  @Override
-  synchronized public void merge(IndexWriter writer, MergeTrigger trigger, boolean newMergesFound) throws IOException {
-
-    while(true) {
-      MergePolicy.OneMerge merge = writer.getNextMerge();
-      if (merge == null)
-        break;
-      writer.merge(merge);
-    }
-  }
-
-  @Override
-  public void close() {}
+  /**
+   * Merge was triggered by a closing IndexWriter.
+   */
+  CLOSING
 }

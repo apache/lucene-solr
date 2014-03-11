@@ -308,7 +308,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   }
 
   @Override
-  public synchronized void merge(IndexWriter writer) throws IOException {
+  public synchronized void merge(IndexWriter writer, MergeTrigger trigger, boolean newMergesFound) throws IOException {
 
     assert !Thread.holdsLock(writer);
 

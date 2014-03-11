@@ -28,6 +28,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeState;
+import org.apache.lucene.index.MergeTrigger;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentCommitInfo;
