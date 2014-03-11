@@ -18,6 +18,7 @@ package org.apache.lucene.facet.taxonomy;
  */
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -74,6 +75,11 @@ public class TaxonomyFacetSumValueSource extends FloatTaxonomyFacets {
 
     @Override
     public Weight getWeight() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Collection<ChildScorer> getChildren() {
       throw new UnsupportedOperationException();
     }
   }

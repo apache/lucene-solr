@@ -109,57 +109,6 @@ final class BooleanScorer extends BulkScorer {
 
   }
   
-  // An internal class which is used in score(Collector, int) for setting the
-  // current score. This is required since Collector exposes a setScorer method
-  // and implementations that need the score will call scorer.score().
-  // Therefore the only methods that are implemented are
-  // score(), doc() and freq().
-  private static final class FakeScorer extends Scorer {
-
-    float score;
-    int doc = -1;
-    int freq;
-    
-    public FakeScorer() {
-      super(null);
-    }
-    
-    @Override
-    public int advance(int target) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int docID() {
-      return doc;
-    }
-
-    @Override
-    public int freq() {
-      return freq;
-    }
-
-    @Override
-    public int nextDoc() {
-      throw new UnsupportedOperationException();
-    }
-    
-    @Override
-    public float score() {
-      return score;
-    }
-    
-    @Override
-    public long cost() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Weight getWeight() {
-      throw new UnsupportedOperationException();
-    }
-  }
-
   static final class Bucket {
     int doc = -1;            // tells if bucket is valid
     double score;             // incremental score

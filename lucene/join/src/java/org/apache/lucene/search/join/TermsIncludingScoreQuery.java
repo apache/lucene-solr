@@ -205,50 +205,6 @@ class TermsIncludingScoreQuery extends Query {
     };
   }
 
-  final static class FakeScorer extends Scorer {
-    float score;
-    int doc;
-
-    public FakeScorer() {
-      super(null);
-    }
-    
-    @Override
-    public int advance(int target) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int docID() {
-      return doc;
-    }
-
-    @Override
-    public int freq() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int nextDoc() {
-      throw new UnsupportedOperationException();
-    }
-    
-    @Override
-    public float score() {
-      return score;
-    }
-
-    @Override
-    public long cost() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Weight getWeight() {
-      throw new UnsupportedOperationException();
-    }
-  }
-
   // This impl assumes that the 'join' values are used uniquely per doc per field. Used for one to many relations.
   class SVInnerScorer extends BulkScorer {
 

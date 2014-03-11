@@ -325,51 +325,6 @@ public class ToParentBlockJoinCollector extends Collector {
     }
   }
 
-  private final static class FakeScorer extends Scorer {
-
-    float score;
-    int doc;
-
-    public FakeScorer() {
-      super(null);
-    }
-
-    @Override
-    public float score() {
-      return score;
-    }
-    
-    @Override
-    public int freq() {
-      return 1; // TODO: does anything else make sense?... duplicate of grouping's FakeScorer btw?
-    }
-
-    @Override
-    public int docID() {
-      return doc;
-    }
-
-    @Override
-    public int advance(int target) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int nextDoc() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public long cost() {
-      return 1;
-    }
-
-    @Override
-    public Weight getWeight() {
-      throw new UnsupportedOperationException();
-    }
-  }
-
   private OneGroup[] sortedGroups;
 
   private void sortQueue() {

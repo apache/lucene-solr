@@ -87,37 +87,10 @@ public class TestBooleanScorer extends LuceneTestCase {
       public boolean score(Collector c, int maxDoc) throws IOException {
         assert doc == -1;
         doc = 3000;
-        c.setScorer(new Scorer(null) {
-            @Override
-            public int advance(int target) {
-              throw new UnsupportedOperationException("FakeScorer doesn't support advance(int)");
-            }
-
-            @Override
-            public int docID() {
-              return doc;
-            }
-
-            @Override
-            public int freq() {
-              throw new UnsupportedOperationException("FakeScorer doesn't support freq()");
-            }
-
-            @Override
-            public int nextDoc() {
-              throw new UnsupportedOperationException("FakeScorer doesn't support nextDoc()");
-            }
-    
-            @Override
-            public float score() {
-              return 1.0f;
-            }
-
-            @Override
-            public long cost() {
-              return 1;
-            }
-          });
+        FakeScorer fs = new FakeScorer();
+        fs.doc = doc;
+        fs.score = 1.0f;
+        c.setScorer(fs);
         c.collect(3000);
         return false;
       }
@@ -182,7 +155,7 @@ public class TestBooleanScorer extends LuceneTestCase {
       public void setScorer(Scorer scorer) {
         // Make sure we got BooleanScorer:
         final Class<?> clazz = scorer instanceof AssertingScorer ? ((AssertingScorer) scorer).getIn().getClass() : scorer.getClass();
-        assertEquals("Scorer is implemented by wrong class", BooleanScorer.class.getName() + "$FakeScorer", clazz.getName());
+        assertEquals("Scorer is implemented by wrong class", FakeScorer.class.getName(), clazz.getName());
       }
       
       @Override
@@ -204,47 +177,6 @@ public class TestBooleanScorer extends LuceneTestCase {
     
     r.close();
     d.close();
-  }
-
-  private static final class FakeScorer extends Scorer {
-    public FakeScorer() {
-      super(null);
-    }
-    
-    @Override
-    public int advance(int target) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int docID() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int freq() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int nextDoc() {
-      throw new UnsupportedOperationException();
-    }
-    
-    @Override
-    public float score() {
-      return 1.0f;
-    }
-
-    @Override
-    public long cost() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Weight getWeight() {
-      throw new UnsupportedOperationException();
-    }
   }
 
   /** Throws UOE if Weight.scorer is called */

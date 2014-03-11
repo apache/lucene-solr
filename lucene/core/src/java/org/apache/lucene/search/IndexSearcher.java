@@ -768,50 +768,6 @@ public class IndexSearcher {
       this.doMaxScore = doMaxScore;
     }
 
-    private final class FakeScorer extends Scorer {
-      float score;
-      int doc;
-
-      public FakeScorer() {
-        super(null);
-      }
-    
-      @Override
-      public int advance(int target) {
-        throw new UnsupportedOperationException("FakeScorer doesn't support advance(int)");
-      }
-
-      @Override
-      public int docID() {
-        return doc;
-      }
-
-      @Override
-      public int freq() {
-        throw new UnsupportedOperationException("FakeScorer doesn't support freq()");
-      }
-
-      @Override
-      public int nextDoc() {
-        throw new UnsupportedOperationException("FakeScorer doesn't support nextDoc()");
-      }
-    
-      @Override
-      public float score() {
-        return score;
-      }
-
-      @Override
-      public long cost() {
-        return 1;
-      }
-
-      @Override
-      public Weight getWeight() {
-        throw new UnsupportedOperationException();
-      }
-    }
-
     private final FakeScorer fakeScorer = new FakeScorer();
 
     @Override
