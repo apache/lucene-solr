@@ -822,7 +822,11 @@ public class Dictionary {
      * @return Parsed flag
      */
     char parseFlag(String rawFlag) {
-      return parseFlags(rawFlag)[0];
+      char flags[] = parseFlags(rawFlag);
+      if (flags.length != 1) {
+        throw new IllegalArgumentException("expected only one flag, got: " + rawFlag);
+      }
+      return flags[0];
     }
 
     /**

@@ -131,6 +131,22 @@ public class TestDictionary extends LuceneTestCase {
     dictStream.close();
   }
   
+  // malformed flags causes ParseException
+  public void testInvalidFlags() throws Exception {
+    InputStream affixStream = getClass().getResourceAsStream("broken-flags.aff");
+    InputStream dictStream = getClass().getResourceAsStream("simple.dic");
+    
+    try {
+      new Dictionary(affixStream, dictStream);
+      fail("didn't get expected exception");
+    } catch (Exception expected) {
+      assertTrue(expected.getMessage().startsWith("expected only one flag"));
+    }
+    
+    affixStream.close();
+    dictStream.close();
+  }
+  
   private class CloseCheckInputStream extends FilterInputStream {
     private boolean closed = false;
 
