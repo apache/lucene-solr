@@ -8,9 +8,6 @@ http://s.apache.org/luceneversions
 
 New Features
 
-* LUCENE-4747: Move to Java 7 as minimum Java version.
-  (Robert Muir, Uwe Schindler)
-
 * SOLR-3359: Added analyzer attribute/property to SynonymFilterFactory.
   (Ryo Onodera via Koji Sekiguchi)
 
@@ -58,15 +55,13 @@ Documentation
 * LUCENE-5392: Add/improve analysis package documentation to reflect
   analysis API changes.  (Benson Margulies via Robert Muir - pull request #17)
 
-Optimizations
-
-* LUCENE-4848: Use Java 7 NIO2-FileChannel instead of RandomAccessFile
-  for NIOFSDirectory and MMapDirectory. This allows to delete open files
-  on Windows if NIOFSDirectory is used, mmapped files are still locked.
-  (Michael Poindexter, Robert Muir, Uwe Schindler)
-
 
 ======================= Lucene 4.8.0 =======================
+
+System Requirements
+
+* LUCENE-4747, LUCENE-5514: Move to Java 7 as minimum Java version.
+  (Robert Muir, Uwe Schindler)
 
 Changes in Runtime Behavior
 
@@ -131,6 +126,11 @@ Optimizations
 * LUCENE-5468: HunspellStemFilter uses 10 to 100x less RAM. It also loads
   all known openoffice dictionaries without error, and supports an additional 
   longestOnly option for a less aggressive approach.  (Robert Muir)
+
+* LUCENE-4848: Use Java 7 NIO2-FileChannel instead of RandomAccessFile
+  for NIOFSDirectory and MMapDirectory. This allows to delete open files
+  on Windows if NIOFSDirectory is used, mmapped files are still locked.
+  (Michael Poindexter, Robert Muir, Uwe Schindler)
 
 Bug fixes
 
