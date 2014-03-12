@@ -24,13 +24,26 @@ import org.restlet.ext.servlet.ServerServlet;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+/**
+ * Base class for Solr Restlet-based tests. Creates test harness,
+ * including "extra" servlets for all Solr Restlet Application subclasses.
+ */
 abstract public class SolrRestletTestBase extends RestTestBase {
+
+  /**
+   * Creates test harness, including "extra" servlets for all
+   * Solr Restlet Application subclasses.
+   */
   @BeforeClass
   public static void init() throws Exception {
     final SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
-    final ServletHolder solrRestApi = new ServletHolder("SolrRestApi", ServerServlet.class);
-    solrRestApi.setInitParameter("org.restlet.application", "org.apache.solr.rest.SolrRestApi");
-    extraServlets.put(solrRestApi, "/schema/*");  // '/schema/*' matches '/schema', '/schema/', and '/schema/whatever...'
+    final ServletHolder solrSchemaRestApi = new ServletHolder("SolrSchemaRestApi", ServerServlet.class);
+    solrSchemaRestApi.setInitParameter("org.restlet.application", "org.apache.solr.rest.SolrSchemaRestApi");
+    extraServlets.put(solrSchemaRestApi, "/schema/*");  // '/schema/*' matches '/schema', '/schema/', and '/schema/whatever...'
+
+    final ServletHolder solrConfigRestApi = new ServletHolder("SolrConfigRestApi", ServerServlet.class);
+    solrConfigRestApi.setInitParameter("org.restlet.application", "org.apache.solr.rest.SolrConfigRestApi");
+    extraServlets.put(solrConfigRestApi, "/config/*");
 
     createJettyAndHarness(TEST_HOME(), "solrconfig.xml", "schema-rest.xml", "/solr", true, extraServlets);
   }

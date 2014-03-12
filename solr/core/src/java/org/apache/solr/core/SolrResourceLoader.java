@@ -33,6 +33,7 @@ import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.rest.RestManager;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.ManagedIndexSchemaFactory;
 import org.apache.solr.schema.SimilarityFactory;
@@ -79,7 +80,11 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
 
   static final String project = "solr";
   static final String base = "org.apache" + "." + project;
-  static final String[] packages = {"","analysis.","schema.","handler.","search.","update.","core.","response.","request.","update.processor.","util.", "spelling.", "handler.component.", "handler.dataimport.", "spelling.suggest.", "spelling.suggest.fst." };
+  static final String[] packages = {
+      "", "analysis.", "schema.", "handler.", "search.", "update.", "core.", "response.", "request.",
+      "update.processor.", "util.", "spelling.", "handler.component.", "handler.dataimport.",
+      "spelling.suggest.", "spelling.suggest.fst.", "rest.schema.analysis."
+  };
 
   protected URLClassLoader classLoader;
   private final String instanceDir;
@@ -94,7 +99,20 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   private final Properties coreProperties;
 
   private volatile boolean live;
-
+  
+  // Provide a registry so that managed resources can register themselves while the XML configuration
+  // documents are being parsed ... after all are registered, they are asked by the RestManager to
+  // initialize themselves. This two-step process is required because not all resources are available
+  // (such as the SolrZkClient) when XML docs are being parsed.    
+  private RestManager.Registry managedResourceRegistry;
+  
+  public synchronized RestManager.Registry getManagedResourceRegistry() {
+    if (managedResourceRegistry == null) {
+      managedResourceRegistry = new RestManager.Registry();      
+    }
+    return managedResourceRegistry; 
+  }
+  
   /**
    * <p>
    * This loader will delegate to the context classloader when possible,

@@ -665,7 +665,9 @@ public class SolrRequestParsers
     {
       String method = req.getMethod().toUpperCase(Locale.ROOT);
       if ("GET".equals(method) || "HEAD".equals(method) 
-          || ("PUT".equals(method) && req.getRequestURI().contains("/schema"))) {
+          || (("PUT".equals(method) || "DELETE".equals(method))
+              && (req.getRequestURI().contains("/schema")
+                  || req.getRequestURI().contains("/config")))) {
         return parseQueryString(req.getQueryString());
       }
       if ("POST".equals( method ) ) {

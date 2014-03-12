@@ -16,8 +16,8 @@ package org.apache.solr.rest;
  * limitations under the License.
  */
 
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.rest.schema.CopyFieldCollectionResource;
-import org.apache.solr.rest.schema.DefaultSchemaResource;
 import org.apache.solr.rest.schema.SchemaResource;
 import org.apache.solr.rest.schema.DefaultSearchFieldResource;
 import org.apache.solr.rest.schema.DynamicFieldCollectionResource;
@@ -39,10 +39,16 @@ import org.restlet.routing.Router;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
 
-public class SolrRestApi extends Application {
-  public static final Logger log = LoggerFactory.getLogger(SolrRestApi.class);
+/**
+ * Restlet servlet handling /&lt;context&gt;/&lt;collection&gt;/schema/* URL paths
+ */
+public class SolrSchemaRestApi extends Application {
+  public static final Logger log = LoggerFactory.getLogger(SolrSchemaRestApi.class);
   public static final String FIELDS_PATH = "/" + IndexSchema.FIELDS;
   
   public static final String DYNAMIC_FIELDS = IndexSchema.DYNAMIC_FIELDS.toLowerCase(Locale.ROOT);
@@ -73,9 +79,28 @@ public class SolrRestApi extends Application {
   public static final String UNIQUE_KEY_FIELD = IndexSchema.UNIQUE_KEY.toLowerCase(Locale.ROOT);
   public static final String UNIQUE_KEY_FIELD_PATH = "/" + UNIQUE_KEY_FIELD;
 
+  /**
+   * Returns reserved endpoints under /schema
+   */
+  public static Set<String> getReservedEndpoints() {
+    Set<String> reservedEndpoints = new HashSet<>();
+    reservedEndpoints.add(RestManager.SCHEMA_BASE_PATH + FIELDS_PATH);
+    reservedEndpoints.add(RestManager.SCHEMA_BASE_PATH + DYNAMIC_FIELDS_PATH);
+    reservedEndpoints.add(RestManager.SCHEMA_BASE_PATH + FIELDTYPES_PATH);
+    reservedEndpoints.add(RestManager.SCHEMA_BASE_PATH + NAME_PATH);
+    reservedEndpoints.add(RestManager.SCHEMA_BASE_PATH + COPY_FIELDS_PATH);
+    reservedEndpoints.add(RestManager.SCHEMA_BASE_PATH + VERSION_PATH);
+    reservedEndpoints.add(RestManager.SCHEMA_BASE_PATH + DEFAULT_SEARCH_FIELD_PATH);
+    reservedEndpoints.add(RestManager.SCHEMA_BASE_PATH + SIMILARITY_PATH);
+    reservedEndpoints.add(RestManager.SCHEMA_BASE_PATH + SOLR_QUERY_PARSER_PATH);
+    reservedEndpoints.add(RestManager.SCHEMA_BASE_PATH + DEFAULT_OPERATOR_PATH);
+    reservedEndpoints.add(RestManager.SCHEMA_BASE_PATH + UNIQUE_KEY_FIELD_PATH);
+    return Collections.unmodifiableSet(reservedEndpoints);
+  }
+
   private Router router;
 
-  public SolrRestApi() {
+  public SolrSchemaRestApi() {
     router = new Router(getContext());
   }
 
@@ -92,8 +117,8 @@ public class SolrRestApi extends Application {
   @Override
   public synchronized Restlet createInboundRoot() {
 
-    log.info("createInboundRoot started");
-    
+    log.info("createInboundRoot started for /schema");
+
     router.attach("", SchemaResource.class);
     // Allow a trailing slash on full-schema requests
     router.attach("/", SchemaResource.class);
@@ -131,10 +156,14 @@ public class SolrRestApi extends Application {
     router.attach(SOLR_QUERY_PARSER_PATH, SolrQueryParserResource.class);
     router.attach(DEFAULT_OPERATOR_PATH, SolrQueryParserDefaultOperatorResource.class);
 
-    router.attachDefault(DefaultSchemaResource.class);
+    router.attachDefault(RestManager.ManagedEndpoint.class);
+    
+    // attach all the dynamically registered schema resources
+    RestManager.getRestManager(SolrRequestInfo.getRequestInfo())
+        .attachManagedResources(RestManager.SCHEMA_BASE_PATH, router);
 
-    log.info("createInboundRoot complete");
+    log.info("createInboundRoot complete for /schema");
 
     return router;
-  }
+  }  
 }

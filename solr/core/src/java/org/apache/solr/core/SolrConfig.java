@@ -29,6 +29,7 @@ import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.transform.TransformerFactory;
+import org.apache.solr.rest.RestManager;
 import org.apache.solr.search.CacheConfig;
 import org.apache.solr.search.FastLRUCache;
 import org.apache.solr.search.QParserPlugin;
@@ -267,7 +268,7 @@ public class SolrConfig extends Config {
      loadPluginInfo(UpdateLog.class,"updateHandler/updateLog");
      loadPluginInfo(IndexSchemaFactory.class,"schemaFactory", 
                     REQUIRE_CLASS);
-
+     loadPluginInfo(RestManager.class, "restManager");
      updateHandlerInfo = loadUpdatehandlerInfo();
      
      multipartUploadLimitKB = getInt( 

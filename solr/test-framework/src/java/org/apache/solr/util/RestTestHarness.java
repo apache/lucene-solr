@@ -23,6 +23,7 @@ import javax.xml.xpath.XPathExpressionException;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
@@ -110,6 +111,18 @@ public class RestTestHarness extends BaseTestHarness {
   }
 
   /**
+   * Processes a DELETE request using a URL path (with no context path) + optional query params,
+   * e.g. "/schema/analysis/protwords/english", and returns the response content.
+   *
+   * @param request the URL path and optional query params
+   * @return The response to the DELETE request
+   */
+  public String delete(String request) throws IOException {
+    HttpDelete httpDelete = new HttpDelete(getBaseURL() + request);
+    return getResponse(httpDelete);
+  }
+
+  /**
    * Processes a POST request using a URL path (with no context path) + optional query params,
    * e.g. "/schema/fields/newfield", PUTs the given content, and returns the response content.
    *
@@ -160,7 +173,10 @@ public class RestTestHarness extends BaseTestHarness {
       throw new RuntimeException(e);
     }
   }
-  
+
+  /**
+   * Executes the given request and returns the response.
+   */
   private String getResponse(HttpUriRequest request) throws IOException {
     HttpEntity entity = null;
     try {
