@@ -188,7 +188,7 @@ public class GenerateUTR30DataFiles {
         if (matcher.matches()) {
           final String leftHandSide = matcher.group(1);
           final String rightHandSide = matcher.group(2).trim();
-          List<String> diacritics = new ArrayList<String>();
+          List<String> diacritics = new ArrayList<>();
           for (String outputCodePoint : rightHandSide.split("\\s+")) {
             int ch = Integer.parseInt(outputCodePoint, 16);
             if (UCharacter.hasBinaryProperty(ch, UProperty.DIACRITIC)

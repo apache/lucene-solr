@@ -50,8 +50,8 @@ public abstract class BaseFragListBuilder implements FragListBuilder {
     if( fragCharSize < minFragCharSize )
       throw new IllegalArgumentException( "fragCharSize(" + fragCharSize + ") is too small. It must be " + minFragCharSize + " or higher." );
     
-    List<WeightedPhraseInfo> wpil = new ArrayList<WeightedPhraseInfo>();
-    IteratorQueue<WeightedPhraseInfo> queue = new IteratorQueue<WeightedPhraseInfo>(fieldPhraseList.getPhraseList().iterator());
+    List<WeightedPhraseInfo> wpil = new ArrayList<>();
+    IteratorQueue<WeightedPhraseInfo> queue = new IteratorQueue<>(fieldPhraseList.getPhraseList().iterator());
     WeightedPhraseInfo phraseInfo = null;
     int startOffset = 0;
     while((phraseInfo = queue.top()) != null){

@@ -280,7 +280,7 @@ public class KStemmer {
     DictEntry defaultEntry;
     DictEntry entry;
 
-    CharArrayMap<DictEntry> d = new CharArrayMap<DictEntry>(Version.LUCENE_CURRENT, 1000, false);
+    CharArrayMap<DictEntry> d = new CharArrayMap<>(Version.LUCENE_CURRENT, 1000, false);
     for (int i = 0; i < exceptionWords.length; i++) {
       if (!d.containsKey(exceptionWords[i])) {
         entry = new DictEntry(exceptionWords[i], true);
@@ -574,7 +574,7 @@ public class KStemmer {
     return matchedEntry != null;
   }
   
-  // Set<String> lookups = new HashSet<String>();
+  // Set<String> lookups = new HashSet<>();
   
   /* convert past tense (-ed) to present, and `-ied' to `y' */
   private void pastTense() {

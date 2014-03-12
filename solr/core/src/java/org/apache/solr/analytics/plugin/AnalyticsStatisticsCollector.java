@@ -88,7 +88,7 @@ public class AnalyticsStatisticsCollector {
   }
 
   public NamedList<Object> getStatistics() {
-    NamedList<Object> lst = new SimpleOrderedMap<Object>();
+    NamedList<Object> lst = new SimpleOrderedMap<>();
     Snapshot snapshot = requestTimes.getSnapshot();
     lst.add("requests", numRequests.longValue());
     lst.add("analyticsRequests", numAnalyticsRequests.longValue());

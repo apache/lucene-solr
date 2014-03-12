@@ -45,7 +45,7 @@ public class SortableBinaryField extends BinaryField {
   @Override
   public List<StorableField> createFields(SchemaField field, Object value, float boost) {
     if (field.hasDocValues()) {
-      List<StorableField> fields = new ArrayList<StorableField>();
+      List<StorableField> fields = new ArrayList<>();
       StorableField storedField = createField(field, value, boost);
       fields.add(storedField);
       ByteBuffer byteBuffer = toObject(storedField);

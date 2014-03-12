@@ -225,7 +225,7 @@ public final class OfflineSorter {
 
     output.delete();
 
-    ArrayList<File> merges = new ArrayList<File>();
+    ArrayList<File> merges = new ArrayList<>();
     boolean success2 = false;
     try {
       ByteSequencesReader is = new ByteSequencesReader(input);

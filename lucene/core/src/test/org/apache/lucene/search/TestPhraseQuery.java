@@ -590,7 +590,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
 
     RandomIndexWriter w  = new RandomIndexWriter(random(), dir, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).setMergePolicy(newLogMergePolicy()));
-    List<List<String>> docs = new ArrayList<List<String>>();
+    List<List<String>> docs = new ArrayList<>();
     Document d = new Document();
     Field f = newTextField("f", "", Field.Store.NO);
     d.add(f);
@@ -602,7 +602,7 @@ public class TestPhraseQuery extends LuceneTestCase {
       // must be > 4096 so it spans multiple chunks
       int termCount = TestUtil.nextInt(random(), 4097, 8200);
 
-      List<String> doc = new ArrayList<String>();
+      List<String> doc = new ArrayList<>();
 
       StringBuilder sb = new StringBuilder();
       while(doc.size() < termCount) {

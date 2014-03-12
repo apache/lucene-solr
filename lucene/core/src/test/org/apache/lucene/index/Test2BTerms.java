@@ -52,7 +52,7 @@ public class Test2BTerms extends LuceneTestCase {
 
     private final int tokensPerDoc;
     private int tokenCount;
-    public final List<BytesRef> savedTerms = new ArrayList<BytesRef>();
+    public final List<BytesRef> savedTerms = new ArrayList<>();
     private int nextSave;
     private final Random random;
 
@@ -204,7 +204,7 @@ public class Test2BTerms extends LuceneTestCase {
       savedTerms = findTerms(r);
     }
     final int numSavedTerms = savedTerms.size();
-    final List<BytesRef> bigOrdTerms = new ArrayList<BytesRef>(savedTerms.subList(numSavedTerms-10, numSavedTerms));
+    final List<BytesRef> bigOrdTerms = new ArrayList<>(savedTerms.subList(numSavedTerms-10, numSavedTerms));
     System.out.println("TEST: test big ord terms...");
     testSavedTerms(r, bigOrdTerms);
     System.out.println("TEST: test all saved terms...");
@@ -223,7 +223,7 @@ public class Test2BTerms extends LuceneTestCase {
   private List<BytesRef> findTerms(IndexReader r) throws IOException {
     System.out.println("TEST: findTerms");
     final TermsEnum termsEnum = MultiFields.getTerms(r, "field").iterator(null);
-    final List<BytesRef> savedTerms = new ArrayList<BytesRef>();
+    final List<BytesRef> savedTerms = new ArrayList<>();
     int nextSave = TestUtil.nextInt(random(), 500000, 1000000);
     BytesRef term;
     while((term = termsEnum.next()) != null) {

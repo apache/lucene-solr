@@ -177,28 +177,28 @@ public class AnalyticsContentHandler implements ContentHandler {
           }
           
           // Initiate Range Facet classes
-          gaps = new ArrayList<String>();
+          gaps = new ArrayList<>();
           includeBoundaries = EnumSet.noneOf(FacetRangeInclude.class);
           otherRanges = EnumSet.noneOf(FacetRangeOther.class);
           inRangeFacet = true;
         } else if (localName.equals(QUERY_FACET)) {
           // Start a Query Facet Request
-          queries = new ArrayList<String>();
+          queries = new ArrayList<>();
           inQueryFacet = true;
         }
       } else if (localName.equals(ANALYTICS_REQUEST)){
         // Start an Analytics Request
         
         // Renew each list.
-        fieldFacetList = new ArrayList<FieldFacetRequest>();
-        rangeFacetList = new ArrayList<RangeFacetRequest>();
-        queryFacetList = new ArrayList<QueryFacetRequest>();
-        expressionList = new ArrayList<ExpressionRequest>();
+        fieldFacetList = new ArrayList<>();
+        rangeFacetList = new ArrayList<>();
+        queryFacetList = new ArrayList<>();
+        expressionList = new ArrayList<>();
         inRequest = true;
       }
     } else if (localName.equals(ANALYTICS_REQUEST_ENVELOPE)){
       //Begin the parsing of the Analytics Requests
-      requests = new ArrayList<AnalyticsRequest>();
+      requests = new ArrayList<>();
       inEnvelope = true;
     }
   }

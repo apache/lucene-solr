@@ -61,8 +61,8 @@ public class EnumField extends PrimitiveFieldType {
   protected static final Integer DEFAULT_VALUE = -1;
   protected static final int DEFAULT_PRECISION_STEP = Integer.MAX_VALUE;
 
-  protected Map<String, Integer> enumStringToIntMap = new HashMap<String, Integer>();
-  protected Map<Integer, String> enumIntToStringMap = new HashMap<Integer, String>();
+  protected Map<String, Integer> enumStringToIntMap = new HashMap<>();
+  protected Map<Integer, String> enumIntToStringMap = new HashMap<>();
 
   protected String enumsConfigFile;
   protected String enumName;

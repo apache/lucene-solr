@@ -235,7 +235,7 @@ public abstract class TextResponseWriter {
       if (existing == null) {
         SchemaField sf = schema.getFieldOrNull(f.name());
         if (sf != null && sf.multiValued()) {
-          List<Object> vals = new ArrayList<Object>();
+          List<Object> vals = new ArrayList<>();
           vals.add( f );
           out.setField( f.name(), vals );
         } 

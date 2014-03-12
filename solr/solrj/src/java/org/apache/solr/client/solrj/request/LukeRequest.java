@@ -59,7 +59,7 @@ public class LukeRequest extends SolrRequest
   public void addField( String f )
   {
     if( fields == null ) {
-      fields = new ArrayList<String>();
+      fields = new ArrayList<>();
     }
     fields.add( f );
   }

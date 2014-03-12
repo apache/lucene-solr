@@ -75,7 +75,7 @@ sink2.consumeAllTokens();
  * <p>Note, the EntityDetect and URLDetect TokenStreams are for the example and do not currently exist in Lucene.
  */
 public final class TeeSinkTokenFilter extends TokenFilter {
-  private final List<WeakReference<SinkTokenStream>> sinks = new LinkedList<WeakReference<SinkTokenStream>>();
+  private final List<WeakReference<SinkTokenStream>> sinks = new LinkedList<>();
   
   /**
    * Instantiates a new TeeSinkTokenFilter.
@@ -98,7 +98,7 @@ public final class TeeSinkTokenFilter extends TokenFilter {
    */
   public SinkTokenStream newSinkTokenStream(SinkFilter filter) {
     SinkTokenStream sink = new SinkTokenStream(this.cloneAttributes(), filter);
-    this.sinks.add(new WeakReference<SinkTokenStream>(sink));
+    this.sinks.add(new WeakReference<>(sink));
     return sink;
   }
   
@@ -116,7 +116,7 @@ public final class TeeSinkTokenFilter extends TokenFilter {
     for (Iterator<AttributeImpl> it = this.cloneAttributes().getAttributeImplsIterator(); it.hasNext(); ) {
       sink.addAttributeImpl(it.next());
     }
-    this.sinks.add(new WeakReference<SinkTokenStream>(sink));
+    this.sinks.add(new WeakReference<>(sink));
   }
   
   /**
@@ -186,7 +186,7 @@ public final class TeeSinkTokenFilter extends TokenFilter {
    * TokenStream output from a tee with optional filtering.
    */
   public static final class SinkTokenStream extends TokenStream {
-    private final List<AttributeSource.State> cachedStates = new LinkedList<AttributeSource.State>();
+    private final List<AttributeSource.State> cachedStates = new LinkedList<>();
     private AttributeSource.State finalState;
     private Iterator<AttributeSource.State> it = null;
     private SinkFilter filter;

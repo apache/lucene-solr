@@ -706,7 +706,7 @@ public final class MoreLikeThis {
    * @param docNum the id of the lucene document from which to find terms
    */
   public PriorityQueue<Object[]> retrieveTerms(int docNum) throws IOException {
-    Map<String, Int> termFreqMap = new HashMap<String, Int>();
+    Map<String, Int> termFreqMap = new HashMap<>();
     for (String fieldName : fieldNames) {
       final Fields vectors = ir.getTermVectors(docNum);
       final Terms vector;
@@ -846,7 +846,7 @@ public final class MoreLikeThis {
    * @see #retrieveInterestingTerms
    */
   public PriorityQueue<Object[]> retrieveTerms(Reader r, String fieldName) throws IOException {
-    Map<String, Int> words = new HashMap<String, Int>();
+    Map<String, Int> words = new HashMap<>();
     addTermFrequencies(r, words, fieldName);
     return createQueue(words);
   }
@@ -855,7 +855,7 @@ public final class MoreLikeThis {
    * @see #retrieveInterestingTerms(java.io.Reader, String)
    */
   public String[] retrieveInterestingTerms(int docNum) throws IOException {
-    ArrayList<Object> al = new ArrayList<Object>(maxQueryTerms);
+    ArrayList<Object> al = new ArrayList<>(maxQueryTerms);
     PriorityQueue<Object[]> pq = retrieveTerms(docNum);
     Object cur;
     int lim = maxQueryTerms; // have to be careful, retrieveTerms returns all words but that's probably not useful to our caller...
@@ -879,7 +879,7 @@ public final class MoreLikeThis {
    * @see #setMaxQueryTerms
    */
   public String[] retrieveInterestingTerms(Reader r, String fieldName) throws IOException {
-    ArrayList<Object> al = new ArrayList<Object>(maxQueryTerms);
+    ArrayList<Object> al = new ArrayList<>(maxQueryTerms);
     PriorityQueue<Object[]> pq = retrieveTerms(r, fieldName);
     Object cur;
     int lim = maxQueryTerms; // have to be careful, retrieveTerms returns all words but that's probably not useful to our caller...

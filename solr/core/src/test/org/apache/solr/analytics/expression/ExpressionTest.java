@@ -237,7 +237,7 @@ public class ExpressionTest extends AbstractAnalyticsStatsTest {
     if (in == null) throw new FileNotFoundException("Resource not found: " + fileName);
     Scanner file = new Scanner(in, "UTF-8");
     try { 
-      ArrayList<String> strList = new ArrayList<String>();
+      ArrayList<String> strList = new ArrayList<>();
       while (file.hasNextLine()) {
         String line = file.nextLine();
         if (line.length()<2) {

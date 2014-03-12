@@ -148,7 +148,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
             CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
             OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
             ts.reset();
-            List<LookupHighlightFragment> fragments = new ArrayList<LookupHighlightFragment>();
+            List<LookupHighlightFragment> fragments = new ArrayList<>();
             int upto = 0;
             while (ts.incrementToken()) {
               String token = termAtt.toString();
@@ -492,11 +492,11 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
     int iters = atLeast(1000);
     int visibleUpto = 0;
 
-    Set<Long> usedWeights = new HashSet<Long>();
-    Set<String> usedKeys = new HashSet<String>();
+    Set<Long> usedWeights = new HashSet<>();
+    Set<String> usedKeys = new HashSet<>();
 
-    List<Input> inputs = new ArrayList<Input>();
-    List<Update> pendingUpdates = new ArrayList<Update>();
+    List<Input> inputs = new ArrayList<>();
+    List<Update> pendingUpdates = new ArrayList<>();
 
     for(int iter=0;iter<iters;iter++) {
       String text;
@@ -590,7 +590,7 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
         }
 
         // Stupid slow but hopefully correct matching:
-        List<Input> expected = new ArrayList<Input>();
+        List<Input> expected = new ArrayList<>();
         for(int i=0;i<visibleUpto;i++) {
           Input input = inputs.get(i);
           String[] inputTerms = input.term.utf8ToString().split("\\s");

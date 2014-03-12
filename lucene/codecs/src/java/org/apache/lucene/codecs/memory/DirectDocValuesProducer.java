@@ -46,22 +46,22 @@ import org.apache.lucene.util.RamUsageEstimator;
 
 class DirectDocValuesProducer extends DocValuesProducer {
   // metadata maps (just file pointers and minimal stuff)
-  private final Map<Integer,NumericEntry> numerics = new HashMap<Integer,NumericEntry>();
-  private final Map<Integer,BinaryEntry> binaries = new HashMap<Integer,BinaryEntry>();
-  private final Map<Integer,SortedEntry> sorteds = new HashMap<Integer,SortedEntry>();
-  private final Map<Integer,SortedSetEntry> sortedSets = new HashMap<Integer,SortedSetEntry>();
+  private final Map<Integer,NumericEntry> numerics = new HashMap<>();
+  private final Map<Integer,BinaryEntry> binaries = new HashMap<>();
+  private final Map<Integer,SortedEntry> sorteds = new HashMap<>();
+  private final Map<Integer,SortedSetEntry> sortedSets = new HashMap<>();
   private final IndexInput data;
   
   // ram instances we have already loaded
   private final Map<Integer,NumericDocValues> numericInstances = 
-      new HashMap<Integer,NumericDocValues>();
+      new HashMap<>();
   private final Map<Integer,BinaryDocValues> binaryInstances =
-      new HashMap<Integer,BinaryDocValues>();
+      new HashMap<>();
   private final Map<Integer,SortedDocValues> sortedInstances =
-      new HashMap<Integer,SortedDocValues>();
+      new HashMap<>();
   private final Map<Integer,SortedSetRawValues> sortedSetInstances =
-      new HashMap<Integer,SortedSetRawValues>();
-  private final Map<Integer,Bits> docsWithFieldInstances = new HashMap<Integer,Bits>();
+      new HashMap<>();
+  private final Map<Integer,Bits> docsWithFieldInstances = new HashMap<>();
   
   private final int maxDoc;
   private final AtomicLong ramBytesUsed;

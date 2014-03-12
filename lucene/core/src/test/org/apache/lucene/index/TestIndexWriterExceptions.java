@@ -215,7 +215,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     }
   }
 
-  ThreadLocal<Thread> doFail = new ThreadLocal<Thread>();
+  ThreadLocal<Thread> doFail = new ThreadLocal<>();
 
   private class TestPoint1 implements RandomIndexWriter.TestPoint {
     Random r = new Random(random().nextLong());
@@ -1355,7 +1355,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       w.addDocument(doc);
     }
     
-    final List<Document> docs = new ArrayList<Document>();
+    final List<Document> docs = new ArrayList<>();
     for(int docCount=0;docCount<7;docCount++) {
       Document doc = new Document();
       docs.add(doc);
@@ -1415,7 +1415,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     }
 
     // Use addDocs (no exception) to get docs in the index:
-    final List<Document> docs = new ArrayList<Document>();
+    final List<Document> docs = new ArrayList<>();
     final int numDocs2 = random().nextInt(25);
     for(int docCount=0;docCount<numDocs2;docCount++) {
       Document doc = new Document();
@@ -1575,8 +1575,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       // try to boost with norms omitted
       IndexDocument docList = new IndexDocument() {
         
-        List<IndexableField> list = new ArrayList<IndexableField>();
-        List<StorableField> storedList = new ArrayList<StorableField>();
+        List<IndexableField> list = new ArrayList<>();
+        List<StorableField> storedList = new ArrayList<>();
         
         @Override
         public Iterable<IndexableField> indexableFields() {

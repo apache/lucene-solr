@@ -92,13 +92,13 @@ public class CheckIndex {
 
     /** Empty unless you passed specific segments list to check as optional 3rd argument.
      *  @see CheckIndex#checkIndex(List) */
-    public List<String> segmentsChecked = new ArrayList<String>();
+    public List<String> segmentsChecked = new ArrayList<>();
   
     /** True if the index was created with a newer version of Lucene than the CheckIndex tool. */
     public boolean toolOutOfDate;
 
     /** List of {@link SegmentInfoStatus} instances, detailing status of each segment. */
-    public List<SegmentInfoStatus> segmentInfos = new ArrayList<SegmentInfoStatus>();
+    public List<SegmentInfoStatus> segmentInfos = new ArrayList<>();
   
     /** Directory index is in. */
     public Directory dir;
@@ -1069,7 +1069,7 @@ public class CheckIndex {
           final BlockTreeTermsReader.Stats stats = ((BlockTreeTermsReader.FieldReader) fieldTerms).computeStats();
           assert stats != null;
           if (status.blockTreeStats == null) {
-            status.blockTreeStats = new HashMap<String,BlockTreeTermsReader.Stats>();
+            status.blockTreeStats = new HashMap<>();
           }
           status.blockTreeStats.put(field, stats);
         }
@@ -1831,7 +1831,7 @@ public class CheckIndex {
     boolean doFix = false;
     boolean doCrossCheckTermVectors = false;
     boolean verbose = false;
-    List<String> onlySegments = new ArrayList<String>();
+    List<String> onlySegments = new ArrayList<>();
     String indexPath = null;
     String dirImpl = null;
     int i = 0;

@@ -405,7 +405,7 @@ public class FuzzyTermsEnum extends TermsEnum {
    * Stores compiled automata as a list (indexed by edit distance)
    * @lucene.internal */
   public static final class LevenshteinAutomataAttributeImpl extends AttributeImpl implements LevenshteinAutomataAttribute {
-    private final List<CompiledAutomaton> automata = new ArrayList<CompiledAutomaton>();
+    private final List<CompiledAutomaton> automata = new ArrayList<>();
       
     @Override
     public List<CompiledAutomaton> automata() {

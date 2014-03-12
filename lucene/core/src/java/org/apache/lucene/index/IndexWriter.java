@@ -235,7 +235,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
   final IndexFileDeleter deleter;
 
   // used by forceMerge to note those needing merging
-  private Map<SegmentCommitInfo,Boolean> segmentsToMerge = new HashMap<SegmentCommitInfo,Boolean>();
+  private Map<SegmentCommitInfo,Boolean> segmentsToMerge = new HashMap<>();
   private int mergeMaxNumSegments;
 
   private Lock writeLock;
@@ -245,13 +245,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
 
   // Holds all SegmentInfo instances currently involved in
   // merges
-  private HashSet<SegmentCommitInfo> mergingSegments = new HashSet<SegmentCommitInfo>();
+  private HashSet<SegmentCommitInfo> mergingSegments = new HashSet<>();
 
   private MergePolicy mergePolicy;
   private final MergeScheduler mergeScheduler;
-  private LinkedList<MergePolicy.OneMerge> pendingMerges = new LinkedList<MergePolicy.OneMerge>();
-  private Set<MergePolicy.OneMerge> runningMerges = new HashSet<MergePolicy.OneMerge>();
-  private List<MergePolicy.OneMerge> mergeExceptions = new ArrayList<MergePolicy.OneMerge>();
+  private LinkedList<MergePolicy.OneMerge> pendingMerges = new LinkedList<>();
+  private Set<MergePolicy.OneMerge> runningMerges = new HashSet<>();
+  private List<MergePolicy.OneMerge> mergeExceptions = new ArrayList<>();
   private long mergeGen;
   private boolean stopMerges;
 
@@ -422,7 +422,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
 
   class ReaderPool {
     
-    private final Map<SegmentCommitInfo,ReadersAndUpdates> readerMap = new HashMap<SegmentCommitInfo,ReadersAndUpdates>();
+    private final Map<SegmentCommitInfo,ReadersAndUpdates> readerMap = new HashMap<>();
 
     // used only by asserts
     public synchronized boolean infoIsLive(SegmentCommitInfo info) {
@@ -603,7 +603,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     // Make sure that every segment appears only once in the
     // pool:
     private boolean noDups() {
-      Set<String> seen = new HashSet<String>();
+      Set<String> seen = new HashSet<>();
       for(SegmentCommitInfo info : readerMap.keySet()) {
         assert !seen.contains(info.info.name);
         seen.add(info.info.name);
@@ -2346,12 +2346,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
   }
 
   private synchronized void resetMergeExceptions() {
-    mergeExceptions = new ArrayList<MergePolicy.OneMerge>();
+    mergeExceptions = new ArrayList<>();
     mergeGen++;
   }
 
   private void noDupDirs(Directory... dirs) {
-    HashSet<Directory> dups = new HashSet<Directory>();
+    HashSet<Directory> dups = new HashSet<>();
     for(int i=0;i<dirs.length;i++) {
       if (dups.contains(dirs[i]))
         throw new IllegalArgumentException("Directory " + dirs[i] + " appears more than once");
@@ -2365,7 +2365,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
    *  to match with a call to {@link IOUtils#close} in a
    *  finally clause. */
   private List<Lock> acquireWriteLocks(Directory... dirs) throws IOException {
-    List<Lock> locks = new ArrayList<Lock>();
+    List<Lock> locks = new ArrayList<>();
     for(int i=0;i<dirs.length;i++) {
       boolean success = false;
       try {
@@ -2444,7 +2444,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
 
       flush(false, true);
 
-      List<SegmentCommitInfo> infos = new ArrayList<SegmentCommitInfo>();
+      List<SegmentCommitInfo> infos = new ArrayList<>();
 
       boolean success = false;
       try {
@@ -2567,7 +2567,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
       flush(false, true);
 
       String mergedName = newSegmentName();
-      final List<AtomicReader> mergeReaders = new ArrayList<AtomicReader>();
+      final List<AtomicReader> mergeReaders = new ArrayList<>();
       for (IndexReader indexReader : readers) {
         numDocs += indexReader.numDocs();
         for (AtomicReaderContext ctx : indexReader.leaves()) {
@@ -2606,7 +2606,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
 
       SegmentCommitInfo infoPerCommit = new SegmentCommitInfo(info, 0, -1L, -1L);
 
-      info.setFiles(new HashSet<String>(trackingDir.getCreatedFiles()));
+      info.setFiles(new HashSet<>(trackingDir.getCreatedFiles()));
       trackingDir.getCreatedFiles().clear();
                                          
       setDiagnostics(info, SOURCE_ADDINDEXES_READERS);
@@ -2684,7 +2684,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
                                           info.info.getDiagnostics());
     SegmentCommitInfo newInfoPerCommit = new SegmentCommitInfo(newInfo, info.getDelCount(), info.getDelGen(), info.getFieldInfosGen());
 
-    Set<String> segFiles = new HashSet<String>();
+    Set<String> segFiles = new HashSet<>();
 
     // Build up new segment's file names.  Must do this
     // before writing SegmentInfo:
@@ -2880,7 +2880,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
    * contents after calling this method has no effect.
    */
   public final synchronized void setCommitData(Map<String,String> commitUserData) {
-    segmentInfos.setUserData(new HashMap<String,String>(commitUserData));
+    segmentInfos.setUserData(new HashMap<>(commitUserData));
     ++changeCount;
   }
   
@@ -3203,7 +3203,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     ReadersAndUpdates mergedDeletesAndUpdates = null;
     boolean initWritableLiveDocs = false;
     MergePolicy.DocMap docMap = null;
-    final Map<String,NumericFieldUpdates> mergedFieldUpdates = new HashMap<String,NumericFieldUpdates>();
+    final Map<String,NumericFieldUpdates> mergedFieldUpdates = new HashMap<>();
     
     for (int i = 0; i < sourceSegments.size(); i++) {
       SegmentCommitInfo info = sourceSegments.get(i);
@@ -3857,7 +3857,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     // names.
     final String mergeSegmentName = newSegmentName();
     SegmentInfo si = new SegmentInfo(directory, Constants.LUCENE_MAIN_VERSION, mergeSegmentName, -1, false, codec, null);
-    Map<String,String> details = new HashMap<String,String>();
+    Map<String,String> details = new HashMap<>();
     details.put("mergeMaxNumSegments", "" + merge.maxNumSegments);
     details.put("mergeFactor", Integer.toString(merge.segments.size()));
     setDiagnostics(si, SOURCE_MERGE, details);
@@ -3878,7 +3878,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
   }
 
   private static void setDiagnostics(SegmentInfo info, String source, Map<String,String> details) {
-    Map<String,String> diagnostics = new HashMap<String,String>();
+    Map<String,String> diagnostics = new HashMap<>();
     diagnostics.put("source", source);
     diagnostics.put("lucene.version", Constants.LUCENE_VERSION);
     diagnostics.put("os", Constants.OS_NAME);
@@ -3972,7 +3972,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
       infoStream.message("IW", "merging " + segString(merge.segments));
     }
 
-    merge.readers = new ArrayList<SegmentReader>();
+    merge.readers = new ArrayList<>();
 
     // This is try/finally to make sure merger's readers are
     // closed:
@@ -4069,7 +4069,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
         }
       }
       assert mergeState.segmentInfo == merge.info.info;
-      merge.info.info.setFiles(new HashSet<String>(dirWrapper.getCreatedFiles()));
+      merge.info.info.setFiles(new HashSet<>(dirWrapper.getCreatedFiles()));
 
       // Record which codec was used to write the segment
 
@@ -4316,7 +4316,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
   // For infoStream output
   synchronized SegmentInfos toLiveInfos(SegmentInfos sis) {
     final SegmentInfos newSIS = new SegmentInfos();
-    final Map<SegmentCommitInfo,SegmentCommitInfo> liveSIS = new HashMap<SegmentCommitInfo,SegmentCommitInfo>();        
+    final Map<SegmentCommitInfo,SegmentCommitInfo> liveSIS = new HashMap<>();
     for(SegmentCommitInfo info : segmentInfos) {
       liveSIS.put(info, info);
     }
@@ -4608,7 +4608,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     }
 
     // Replace all previous files with the CFS/CFE files:
-    Set<String> siFiles = new HashSet<String>();
+    Set<String> siFiles = new HashSet<>();
     siFiles.add(fileName);
     siFiles.add(IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
     info.setFiles(siFiles);

@@ -35,7 +35,7 @@ public class SuggestQueryConverter extends SpellingQueryConverter {
       return Collections.emptyList();
     }
 
-    Collection<Token> result = new ArrayList<Token>();
+    Collection<Token> result = new ArrayList<>();
     try {
       analyze(result, original, 0, 0);
     } catch (IOException e) {

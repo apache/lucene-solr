@@ -73,7 +73,7 @@ public class FSTCompletion {
    * An empty result. Keep this an {@link ArrayList} to keep all the returned
    * lists of single type (monomorphic calls).
    */
-  private static final ArrayList<Completion> EMPTY_RESULT = new ArrayList<Completion>();
+  private static final ArrayList<Completion> EMPTY_RESULT = new ArrayList<>();
 
   /**
    * Finite state automaton encoding all the lookup terms. See class notes for
@@ -137,12 +137,12 @@ public class FSTCompletion {
   @SuppressWarnings({"unchecked","rawtypes"})
   private static Arc<Object>[] cacheRootArcs(FST<Object> automaton) {
     try {
-      List<Arc<Object>> rootArcs = new ArrayList<Arc<Object>>();
-      Arc<Object> arc = automaton.getFirstArc(new Arc<Object>());
+      List<Arc<Object>> rootArcs = new ArrayList<>();
+      Arc<Object> arc = automaton.getFirstArc(new Arc<>());
       FST.BytesReader fstReader = automaton.getBytesReader();
       automaton.readFirstTargetArc(arc, arc, fstReader);
       while (true) {
-        rootArcs.add(new Arc<Object>().copyFrom(arc));
+        rootArcs.add(new Arc<>().copyFrom(arc));
         if (arc.isLast()) break;
         automaton.readNextArc(arc, fstReader);
       }
@@ -172,7 +172,7 @@ public class FSTCompletion {
       int rootArcIndex, BytesRef utf8) {
     // Get the UTF-8 bytes representation of the input key.
     try {
-      final FST.Arc<Object> scratch = new FST.Arc<Object>();
+      final FST.Arc<Object> scratch = new FST.Arc<>();
       FST.BytesReader fstReader = automaton.getBytesReader();
       for (; rootArcIndex < rootArcs.length; rootArcIndex++) {
         final FST.Arc<Object> rootArc = rootArcs[rootArcIndex];
@@ -261,12 +261,12 @@ public class FSTCompletion {
     // Don't overallocate the results buffers. This also serves the purpose of
     // allowing the user of this class to request all matches using Integer.MAX_VALUE as
     // the number of results.
-    final ArrayList<Completion> res = new ArrayList<Completion>(Math.min(10, num));
+    final ArrayList<Completion> res = new ArrayList<>(Math.min(10, num));
 
     final BytesRef output = BytesRef.deepCopyOf(key);
     for (int i = 0; i < rootArcs.length; i++) {
       final FST.Arc<Object> rootArc = rootArcs[i];
-      final FST.Arc<Object> arc = new FST.Arc<Object>().copyFrom(rootArc);
+      final FST.Arc<Object> arc = new FST.Arc<>().copyFrom(rootArc);
 
       // Descend into the automaton using the key as prefix.
       if (descendWithPrefix(arc, key)) {
@@ -370,7 +370,7 @@ public class FSTCompletion {
         if (res.size() >= num) return true;
       } else {
         int save = output.length;
-        if (collect(res, num, bucket, output, new Arc<Object>().copyFrom(arc))) {
+        if (collect(res, num, bucket, output, new Arc<>().copyFrom(arc))) {
           return true;
         }
         output.length = save;

@@ -39,7 +39,7 @@ public class TestJapanesePartOfSpeechStopFilterFactory extends BaseTokenStreamTe
     tokenizerFactory.inform(new StringMockResourceLoader(""));
     TokenStream ts = tokenizerFactory.create();
     ((Tokenizer)ts).setReader(new StringReader("私は制限スピードを超える。"));
-    Map<String,String> args = new HashMap<String,String>();
+    Map<String,String> args = new HashMap<>();
     args.put("luceneMatchVersion", TEST_VERSION_CURRENT.toString());
     args.put("tags", "stoptags.txt");
     JapanesePartOfSpeechStopFilterFactory factory = new JapanesePartOfSpeechStopFilterFactory(args);

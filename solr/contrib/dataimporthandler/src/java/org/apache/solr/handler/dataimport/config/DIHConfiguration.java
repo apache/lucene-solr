@@ -71,7 +71,7 @@ public class DIHConfiguration {
     this.deleteQuery = ConfigParseUtil.getStringAttribute(element, "deleteQuery", null);
     this.onImportStart = ConfigParseUtil.getStringAttribute(element, "onImportStart", null);
     this.onImportEnd = ConfigParseUtil.getStringAttribute(element, "onImportEnd", null);
-    List<Entity> modEntities = new ArrayList<Entity>();
+    List<Entity> modEntities = new ArrayList<>();
     List<Element> l = ConfigParseUtil.getChildNodes(element, "entity");
     boolean docRootFound = false;
     for (Element e : l) {
@@ -84,7 +84,7 @@ public class DIHConfiguration {
     if(functions==null) {
       functions = Collections.emptyList();
     }
-    List<Map<String, String>> modFunc = new ArrayList<Map<String, String>>(functions.size());
+    List<Map<String, String>> modFunc = new ArrayList<>(functions.size());
     for(Map<String, String> f : functions) {
       modFunc.add(Collections.unmodifiableMap(f));
     }
@@ -119,7 +119,7 @@ public class DIHConfiguration {
   }
 
   private Map<String,EntityField> gatherAllFields(DataImporter di, Entity e) {
-    Map<String,EntityField> fields = new HashMap<String,EntityField>();
+    Map<String,EntityField> fields = new HashMap<>();
     if (e.getFields() != null) {
       for (EntityField f : e.getFields()) {
         fields.put(f.getName(), f);
@@ -132,7 +132,7 @@ public class DIHConfiguration {
   }
 
   private Map<String,SchemaField> loadSchemaFieldMap() {
-    Map<String, SchemaField> modLnvsf = new HashMap<String, SchemaField>();
+    Map<String, SchemaField> modLnvsf = new HashMap<>();
     for (Map.Entry<String, SchemaField> entry : schema.getFields().entrySet()) {
       modLnvsf.put(entry.getKey().toLowerCase(Locale.ROOT), entry.getValue());
     }

@@ -73,11 +73,11 @@ public class TestEarlyTermination extends LuceneTestCase {
     dir = newDirectory();
     numDocs = atLeast(150);
     final int numTerms = TestUtil.nextInt(random(), 1, numDocs / 5);
-    Set<String> randomTerms = new HashSet<String>();
+    Set<String> randomTerms = new HashSet<>();
     while (randomTerms.size() < numTerms) {
       randomTerms.add(TestUtil.randomSimpleString(random()));
     }
-    terms = new ArrayList<String>(randomTerms);
+    terms = new ArrayList<>(randomTerms);
     final long seed = random().nextLong();
     final IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(new Random(seed)));
     iwc.setMergePolicy(TestSortingMergePolicy.newSortingMergePolicy(sort));

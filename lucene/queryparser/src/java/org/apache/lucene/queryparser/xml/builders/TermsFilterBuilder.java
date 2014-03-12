@@ -50,7 +50,7 @@ public class TermsFilterBuilder implements FilterBuilder {
     */
   @Override
   public Filter getFilter(Element e) throws ParserException {
-    List<BytesRef> terms = new ArrayList<BytesRef>();
+    List<BytesRef> terms = new ArrayList<>();
     String text = DOMUtils.getNonBlankTextOrFail(e);
     String fieldName = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
 

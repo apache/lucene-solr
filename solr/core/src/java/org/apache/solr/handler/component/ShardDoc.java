@@ -110,7 +110,7 @@ class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
   protected SortField[] fields;
 
   /** The order of these fieldNames should correspond to the order of sort field values retrieved from the shard */
-  protected List<String> fieldNames = new ArrayList<String>();
+  protected List<String> fieldNames = new ArrayList<>();
 
   public ShardFieldSortedHitQueue(SortField[] fields, int size, IndexSearcher searcher) {
     super(size);

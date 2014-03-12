@@ -61,7 +61,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
   private final PagedBytes termBytes = new PagedBytes(PAGED_BYTES_BITS);
   private PagedBytes.Reader termBytesReader;
 
-  final HashMap<FieldInfo,FieldIndexData> fields = new HashMap<FieldInfo,FieldIndexData>();
+  final HashMap<FieldInfo,FieldIndexData> fields = new HashMap<>();
   
   // start of the field info data
   private long dirOffset;

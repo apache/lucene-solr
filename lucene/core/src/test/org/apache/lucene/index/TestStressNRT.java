@@ -42,8 +42,8 @@ import org.apache.lucene.util.TestUtil;
 public class TestStressNRT extends LuceneTestCase {
   volatile DirectoryReader reader;
 
-  final ConcurrentHashMap<Integer,Long> model = new ConcurrentHashMap<Integer,Long>();
-  Map<Integer,Long> committedModel = new HashMap<Integer,Long>();
+  final ConcurrentHashMap<Integer,Long> model = new ConcurrentHashMap<>();
+  Map<Integer,Long> committedModel = new HashMap<>();
   long snapshotCount;
   long committedModelClock;
   volatile int lastId;
@@ -102,7 +102,7 @@ public class TestStressNRT extends LuceneTestCase {
 
     final AtomicInteger numCommitting = new AtomicInteger();
 
-    List<Thread> threads = new ArrayList<Thread>();
+    List<Thread> threads = new ArrayList<>();
 
     Directory dir = newDirectory();
 
@@ -128,7 +128,7 @@ public class TestStressNRT extends LuceneTestCase {
                   DirectoryReader oldReader;
 
                   synchronized(TestStressNRT.this) {
-                    newCommittedModel = new HashMap<Integer,Long>(model);  // take a snapshot
+                    newCommittedModel = new HashMap<>(model);  // take a snapshot
                     version = snapshotCount++;
                     oldReader = reader;
                     oldReader.incRef();  // increment the reference since we will use this for reopening

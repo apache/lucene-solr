@@ -43,7 +43,7 @@ public abstract class LoggerInfo implements Comparable<LoggerInfo> {
   public abstract boolean isSet();
 
   public SimpleOrderedMap<?> getInfo() {
-    SimpleOrderedMap<Object> info = new SimpleOrderedMap<Object>();
+    SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
     info.add("name", getName());
     info.add("level", getLevel());
     info.add("set", isSet());

@@ -126,7 +126,7 @@ public class TestNumberUtils extends LuceneTestCase {
     int iter=1000;
 
     // INTEGERS
-    List<Converter> converters = new ArrayList<Converter>();
+    List<Converter> converters = new ArrayList<>();
     converters.add( new Int2Int() );
     converters.add( new SortInt() );
     converters.add( new Base10kS() );

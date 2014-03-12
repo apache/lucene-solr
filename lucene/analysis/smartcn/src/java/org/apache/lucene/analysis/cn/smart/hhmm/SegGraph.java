@@ -34,7 +34,7 @@ class SegGraph {
   /**
    * Map of start offsets to ArrayList of tokens at that position
    */
-  private Map<Integer,ArrayList<SegToken>> tokenListTable = new HashMap<Integer,ArrayList<SegToken>>();
+  private Map<Integer,ArrayList<SegToken>> tokenListTable = new HashMap<>();
 
   private int maxStart = -1;
 
@@ -72,7 +72,7 @@ class SegGraph {
    * @return a {@link List} of these ordered tokens.
    */
   public List<SegToken> makeIndex() {
-    List<SegToken> result = new ArrayList<SegToken>();
+    List<SegToken> result = new ArrayList<>();
     int s = -1, count = 0, size = tokenListTable.size();
     List<SegToken> tokenList;
     int index = 0;
@@ -98,7 +98,7 @@ class SegGraph {
   public void addToken(SegToken token) {
     int s = token.startOffset;
     if (!isStartExist(s)) {
-      ArrayList<SegToken> newlist = new ArrayList<SegToken>();
+      ArrayList<SegToken> newlist = new ArrayList<>();
       newlist.add(token);
       tokenListTable.put(s, newlist);
     } else {
@@ -115,7 +115,7 @@ class SegGraph {
    * @return {@link List} of all tokens in the map.
    */
   public List<SegToken> toTokenList() {
-    List<SegToken> result = new ArrayList<SegToken>();
+    List<SegToken> result = new ArrayList<>();
     int s = -1, count = 0, size = tokenListTable.size();
     List<SegToken> tokenList;
 

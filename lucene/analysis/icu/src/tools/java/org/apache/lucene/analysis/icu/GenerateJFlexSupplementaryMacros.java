@@ -95,7 +95,7 @@ public class GenerateJFlexSupplementaryMacros {
       System.out.println("\t  []");
     }
     
-    HashMap<Character,UnicodeSet> utf16ByLead = new HashMap<Character,UnicodeSet>();
+    HashMap<Character,UnicodeSet> utf16ByLead = new HashMap<>();
     for (UnicodeSetIterator it = new UnicodeSetIterator(set); it.next();) {    
       char utf16[] = Character.toChars(it.codepoint);
       UnicodeSet trails = utf16ByLead.get(utf16[0]);

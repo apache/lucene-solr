@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
 public class RegexRulesPasswordProvider implements PasswordProvider {
   private static final Logger log = LoggerFactory.getLogger(RegexRulesPasswordProvider.class);
   
-  private LinkedHashMap<Pattern,String> passwordMap = new LinkedHashMap<Pattern,String>(); 
+  private LinkedHashMap<Pattern,String> passwordMap = new LinkedHashMap<>();
   private String explicitPassword; 
   
   @Override
@@ -72,7 +72,7 @@ public class RegexRulesPasswordProvider implements PasswordProvider {
    * @param is input stream for the file
    */
   public static LinkedHashMap<Pattern,String> parseRulesFile(InputStream is) {
-    LinkedHashMap<Pattern,String> rules = new LinkedHashMap<Pattern,String>();
+    LinkedHashMap<Pattern,String> rules = new LinkedHashMap<>();
     BufferedReader br = new BufferedReader(IOUtils.getDecodingReader(is, IOUtils.CHARSET_UTF_8));
     String line;
     try {

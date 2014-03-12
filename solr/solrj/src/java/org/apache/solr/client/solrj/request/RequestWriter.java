@@ -44,7 +44,7 @@ public class RequestWriter {
     if (req instanceof UpdateRequest) {
       UpdateRequest updateRequest = (UpdateRequest) req;
       if (isEmpty(updateRequest)) return null;
-      List<ContentStream> l = new ArrayList<ContentStream>();
+      List<ContentStream> l = new ArrayList<>();
       l.add(new LazyContentStream(updateRequest));
       return l;
     }

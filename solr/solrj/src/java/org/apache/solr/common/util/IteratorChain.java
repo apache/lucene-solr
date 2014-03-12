@@ -27,7 +27,7 @@ import java.util.List;
 
 public class IteratorChain<E> implements Iterator<E> {
 
-  private final List<Iterator<E>> iterators = new ArrayList<Iterator<E>>();
+  private final List<Iterator<E>> iterators = new ArrayList<>();
   private Iterator<Iterator<E>> itit;
   private Iterator<E> current;
  

@@ -499,7 +499,7 @@ public class TestBasics extends LuceneTestCase {
     snq = new SpanNearQuery(clauses, 0, true);
     pay = new BytesRef(("pos: " + 0).getBytes("UTF-8"));
     pay2 = new BytesRef(("pos: " + 1).getBytes("UTF-8"));
-    list = new ArrayList<byte[]>();
+    list = new ArrayList<>();
     list.add(pay.bytes);
     list.add(pay2.bytes);
     query = new SpanNearPayloadCheckQuery(snq, list);
@@ -513,7 +513,7 @@ public class TestBasics extends LuceneTestCase {
     pay = new BytesRef(("pos: " + 0).getBytes("UTF-8"));
     pay2 = new BytesRef(("pos: " + 1).getBytes("UTF-8"));
     BytesRef pay3 = new BytesRef(("pos: " + 2).getBytes("UTF-8"));
-    list = new ArrayList<byte[]>();
+    list = new ArrayList<>();
     list.add(pay.bytes);
     list.add(pay2.bytes);
     list.add(pay3.bytes);
@@ -540,7 +540,7 @@ public class TestBasics extends LuceneTestCase {
     query = new SpanPositionRangeQuery(oneThousHunThree, 0, 6);
     checkHits(query, new int[]{1103, 1203,1303,1403,1503,1603,1703,1803,1903});
 
-    Collection<byte[]> payloads = new ArrayList<byte[]>();
+    Collection<byte[]> payloads = new ArrayList<>();
     BytesRef pay = new BytesRef(("pos: " + 0).getBytes("UTF-8"));
     BytesRef pay2 = new BytesRef(("pos: " + 1).getBytes("UTF-8"));
     BytesRef pay3 = new BytesRef(("pos: " + 3).getBytes("UTF-8"));

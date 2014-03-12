@@ -46,18 +46,18 @@ public class QueryFacetTest extends AbstractAnalyticsFacetTest {
   public void queryTest() throws Exception { 
     h.update("<delete><query>*:*</query></delete>");
     //INT
-    ArrayList<ArrayList<Integer>> int1TestStart = new ArrayList<ArrayList<Integer>>(); 
+    ArrayList<ArrayList<Integer>> int1TestStart = new ArrayList<>();
     int1TestStart.add(new ArrayList<Integer>());
-    ArrayList<ArrayList<Integer>> int2TestStart = new ArrayList<ArrayList<Integer>>(); 
+    ArrayList<ArrayList<Integer>> int2TestStart = new ArrayList<>();
     int2TestStart.add(new ArrayList<Integer>());
     
     //LONG
-    ArrayList<ArrayList<Long>> longTestStart = new ArrayList<ArrayList<Long>>(); 
+    ArrayList<ArrayList<Long>> longTestStart = new ArrayList<>();
     longTestStart.add(new ArrayList<Long>());
     longTestStart.add(new ArrayList<Long>());
     
     //FLOAT
-    ArrayList<ArrayList<Float>> floatTestStart = new ArrayList<ArrayList<Float>>(); 
+    ArrayList<ArrayList<Float>> floatTestStart = new ArrayList<>();
     floatTestStart.add(new ArrayList<Float>());
     floatTestStart.add(new ArrayList<Float>());
     floatTestStart.add(new ArrayList<Float>());

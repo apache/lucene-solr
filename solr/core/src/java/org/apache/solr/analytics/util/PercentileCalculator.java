@@ -46,7 +46,7 @@ public class PercentileCalculator {
       throw new IllegalArgumentException();
     }
 
-    List<T> results = new ArrayList<T>(percs.length);
+    List<T> results = new ArrayList<>(percs.length);
 
     distributeAndFind(list, percentiles, 0, percentiles.length - 1);
 

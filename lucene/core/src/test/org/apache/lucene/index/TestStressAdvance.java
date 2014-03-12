@@ -35,7 +35,7 @@ public class TestStressAdvance extends LuceneTestCase {
       }
       Directory dir = newDirectory();
       RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-      final Set<Integer> aDocs = new HashSet<Integer>();
+      final Set<Integer> aDocs = new HashSet<>();
       final Document doc = new Document();
       final Field f = newStringField("field", "", Field.Store.NO);
       doc.add(f);
@@ -61,8 +61,8 @@ public class TestStressAdvance extends LuceneTestCase {
 
       w.forceMerge(1);
 
-      final List<Integer> aDocIDs = new ArrayList<Integer>();
-      final List<Integer> bDocIDs = new ArrayList<Integer>();
+      final List<Integer> aDocIDs = new ArrayList<>();
+      final List<Integer> bDocIDs = new ArrayList<>();
 
       final DirectoryReader r = w.getReader();
       final int[] idToDocID = new int[r.maxDoc()];

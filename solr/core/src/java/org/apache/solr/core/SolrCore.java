@@ -360,8 +360,8 @@ public final class SolrCore implements SolrInfoMBean {
     }
   }
 
-  final List<SolrEventListener> firstSearcherListeners = new ArrayList<SolrEventListener>();
-  final List<SolrEventListener> newSearcherListeners = new ArrayList<SolrEventListener>();
+  final List<SolrEventListener> firstSearcherListeners = new ArrayList<>();
+  final List<SolrEventListener> newSearcherListeners = new ArrayList<>();
 
   /**
    * NOTE: this function is not thread safe.  However, it is safe to call within the
@@ -464,7 +464,7 @@ public final class SolrCore implements SolrInfoMBean {
   }
   
   // protect via synchronized(SolrCore.class)
-  private static Set<String> dirs = new HashSet<String>();
+  private static Set<String> dirs = new HashSet<>();
 
   void initIndex(boolean reload) throws IOException {
  
@@ -716,7 +716,7 @@ public final class SolrCore implements SolrInfoMBean {
       infoRegistry = new JmxMonitoredMap<String, SolrInfoMBean>(name, String.valueOf(this.hashCode()), config.jmxConfig);
     } else  {
       log.info("JMX monitoring not detected for core: " + name);
-      infoRegistry = new ConcurrentHashMap<String, SolrInfoMBean>();
+      infoRegistry = new ConcurrentHashMap<>();
     }
 
     infoRegistry.put("fieldCache", new SolrFieldCacheMBean());
@@ -923,7 +923,7 @@ public final class SolrCore implements SolrInfoMBean {
    * Load the request processors
    */
    private Map<String,UpdateRequestProcessorChain> loadUpdateProcessorChains() {
-    Map<String, UpdateRequestProcessorChain> map = new HashMap<String, UpdateRequestProcessorChain>();
+    Map<String, UpdateRequestProcessorChain> map = new HashMap<>();
     UpdateRequestProcessorChain def = initPlugins(map,UpdateRequestProcessorChain.class, UpdateRequestProcessorChain.class.getName());
     if(def == null){
       def = map.get(null);
@@ -1141,7 +1141,7 @@ public final class SolrCore implements SolrInfoMBean {
    public void addCloseHook( CloseHook hook )
    {
      if( closeHooks == null ) {
-       closeHooks = new ArrayList<CloseHook>();
+       closeHooks = new ArrayList<>();
      }
      closeHooks.add( hook );
    }
@@ -1218,7 +1218,7 @@ public final class SolrCore implements SolrInfoMBean {
    */
   private Map<String, SearchComponent> loadSearchComponents()
   {
-    Map<String, SearchComponent> components = new HashMap<String, SearchComponent>();
+    Map<String, SearchComponent> components = new HashMap<>();
     initPlugins(components,SearchComponent.class);
     for (Map.Entry<String, SearchComponent> e : components.entrySet()) {
       SearchComponent c = e.getValue();
@@ -1303,8 +1303,8 @@ public final class SolrCore implements SolrInfoMBean {
 
   // All of the normal open searchers.  Don't access this directly.
   // protected by synchronizing on searcherLock.
-  private final LinkedList<RefCounted<SolrIndexSearcher>> _searchers = new LinkedList<RefCounted<SolrIndexSearcher>>();
-  private final LinkedList<RefCounted<SolrIndexSearcher>> _realtimeSearchers = new LinkedList<RefCounted<SolrIndexSearcher>>();
+  private final LinkedList<RefCounted<SolrIndexSearcher>> _searchers = new LinkedList<>();
+  private final LinkedList<RefCounted<SolrIndexSearcher>> _realtimeSearchers = new LinkedList<>();
 
   final ExecutorService searcherExecutor = Executors.newSingleThreadExecutor(
       new DefaultSolrThreadFactory("searcherExecutor"));
@@ -1940,7 +1940,7 @@ public final class SolrCore implements SolrInfoMBean {
 
   public static void preDecorateResponse(SolrQueryRequest req, SolrQueryResponse rsp) {
     // setup response header
-    final NamedList<Object> responseHeader = new SimpleOrderedMap<Object>();
+    final NamedList<Object> responseHeader = new SimpleOrderedMap<>();
     rsp.add("responseHeader", responseHeader);
 
     // toLog is a local ref to the same NamedList used by the response
@@ -2010,10 +2010,10 @@ public final class SolrCore implements SolrInfoMBean {
   
   
   private QueryResponseWriter defaultResponseWriter;
-  private final Map<String, QueryResponseWriter> responseWriters = new HashMap<String, QueryResponseWriter>();
+  private final Map<String, QueryResponseWriter> responseWriters = new HashMap<>();
   public static final Map<String ,QueryResponseWriter> DEFAULT_RESPONSE_WRITERS ;
   static{
-    HashMap<String, QueryResponseWriter> m= new HashMap<String, QueryResponseWriter>();
+    HashMap<String, QueryResponseWriter> m= new HashMap<>();
     m.put("xml", new XMLResponseWriter());
     m.put("standard", m.get("xml"));
     m.put("json", new JSONResponseWriter());
@@ -2032,7 +2032,7 @@ public final class SolrCore implements SolrInfoMBean {
    * writers may also be configured. */
   private void initWriters() {
     // use link map so we iterate in the same order
-    Map<PluginInfo,QueryResponseWriter> writers = new LinkedHashMap<PluginInfo,QueryResponseWriter>();
+    Map<PluginInfo,QueryResponseWriter> writers = new LinkedHashMap<>();
     for (PluginInfo info : solrConfig.getPluginInfos(QueryResponseWriter.class.getName())) {
       try {
         QueryResponseWriter writer;
@@ -2112,7 +2112,7 @@ public final class SolrCore implements SolrInfoMBean {
     return getQueryResponseWriter(request.getParams().get(CommonParams.WT)); 
   }
 
-  private final Map<String, QParserPlugin> qParserPlugins = new HashMap<String, QParserPlugin>();
+  private final Map<String, QParserPlugin> qParserPlugins = new HashMap<>();
 
   /** Configure the query parsers. */
   private void initQParsers() {
@@ -2140,7 +2140,7 @@ public final class SolrCore implements SolrInfoMBean {
     throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown query parser '"+parserName+"'");
   }
   
-  private final HashMap<String, ValueSourceParser> valueSourceParsers = new HashMap<String, ValueSourceParser>();
+  private final HashMap<String, ValueSourceParser> valueSourceParsers = new HashMap<>();
   
   /** Configure the ValueSource (function) plugins */
   private void initValueSourceParsers() {
@@ -2161,7 +2161,7 @@ public final class SolrCore implements SolrInfoMBean {
   }
   
 
-  private final HashMap<String, TransformerFactory> transformerFactories = new HashMap<String, TransformerFactory>();
+  private final HashMap<String, TransformerFactory> transformerFactories = new HashMap<>();
   
   /** Configure the TransformerFactory plugins */
   private void initTransformerFactories() {
@@ -2220,7 +2220,7 @@ public final class SolrCore implements SolrInfoMBean {
    */
   public <T> List<T> initPlugins(List<PluginInfo> pluginInfos, Class<T> type, String defClassName) {
     if(pluginInfos.isEmpty()) return Collections.emptyList();
-    List<T> result = new ArrayList<T>();
+    List<T> result = new ArrayList<>();
     for (PluginInfo info : pluginInfos) result.add(createInitInstance(info,type, type.getSimpleName(), defClassName));
     return result;
   }
@@ -2251,10 +2251,10 @@ public final class SolrCore implements SolrInfoMBean {
           "solrconfig.xml uses deprecated <admin/gettableFiles>, Please "+
           "update your config to use the ShowFileRequestHandler." );
       if( getRequestHandler( "/admin/file" ) == null ) {
-        NamedList<String> invariants = new NamedList<String>();
+        NamedList<String> invariants = new NamedList<>();
         
         // Hide everything...
-        Set<String> hide = new HashSet<String>();
+        Set<String> hide = new HashSet<>();
 
         for (String file : solrConfig.getResourceLoader().listConfigDir()) {
           hide.add(file.toUpperCase(Locale.ROOT));
@@ -2269,7 +2269,7 @@ public final class SolrCore implements SolrInfoMBean {
           invariants.add( ShowFileRequestHandler.HIDDEN, s );
         }
         
-        NamedList<Object> args = new NamedList<Object>();
+        NamedList<Object> args = new NamedList<>();
         args.add( "invariants", invariants );
         ShowFileRequestHandler handler = new ShowFileRequestHandler();
         handler.init( args );
@@ -2330,7 +2330,7 @@ public final class SolrCore implements SolrInfoMBean {
 
   @Override
   public NamedList getStatistics() {
-    NamedList<Object> lst = new SimpleOrderedMap<Object>();
+    NamedList<Object> lst = new SimpleOrderedMap<>();
     lst.add("coreName", name==null ? "(null)" : name);
     lst.add("startTime", new Date(startTime));
     lst.add("refCount", getOpenCount());

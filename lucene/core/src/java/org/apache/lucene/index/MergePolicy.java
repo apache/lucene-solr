@@ -122,7 +122,7 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
       if (0 == segments.size())
         throw new RuntimeException("segments must include at least one segment");
       // clone the list, as the in list may be based off original SegmentInfos and may be modified
-      this.segments = new ArrayList<SegmentCommitInfo>(segments);
+      this.segments = new ArrayList<>(segments);
       int count = 0;
       for(SegmentCommitInfo info : segments) {
         count += info.info.getDocCount();
@@ -140,7 +140,7 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
       if (readers == null) {
         throw new IllegalStateException("IndexWriter has not initialized readers from the segment infos yet");
       }
-      final List<AtomicReader> readers = new ArrayList<AtomicReader>(this.readers.size());
+      final List<AtomicReader> readers = new ArrayList<>(this.readers.size());
       for (AtomicReader reader : this.readers) {
         if (reader.numDocs() > 0) {
           readers.add(reader);
@@ -295,7 +295,7 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
      * The subset of segments to be included in the primitive merge.
      */
 
-    public final List<OneMerge> merges = new ArrayList<OneMerge>();
+    public final List<OneMerge> merges = new ArrayList<>();
 
     /** Sole constructor.  Use {@link
      *  #add(MergePolicy.OneMerge)} to add merges. */
@@ -393,7 +393,7 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
       // should not happen
       throw new RuntimeException(e);
     }
-    clone.writer = new SetOnce<IndexWriter>();
+    clone.writer = new SetOnce<>();
     return clone;
   }
 
@@ -412,7 +412,7 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
    * defaults than the {@link MergePolicy}
    */
   protected MergePolicy(double defaultNoCFSRatio, long defaultMaxCFSSegmentSize) {
-    writer = new SetOnce<IndexWriter>();
+    writer = new SetOnce<>();
     this.noCFSRatio = defaultNoCFSRatio;
     this.maxCFSSegmentSize = defaultMaxCFSSegmentSize;
   }

@@ -218,7 +218,7 @@ public class TestBooleanQuery extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("iter=" + iter);
       }
-      final List<String> terms = new ArrayList<String>(Arrays.asList("a", "b", "c", "d", "e", "f"));
+      final List<String> terms = new ArrayList<>(Arrays.asList("a", "b", "c", "d", "e", "f"));
       final int numTerms = TestUtil.nextInt(random(), 1, terms.size());
       while(terms.size() > numTerms) {
         terms.remove(random().nextInt(terms.size()));
@@ -238,7 +238,7 @@ public class TestBooleanQuery extends LuceneTestCase {
       Scorer scorer = weight.scorer(s.leafContexts.get(0), null);
 
       // First pass: just use .nextDoc() to gather all hits
-      final List<ScoreDoc> hits = new ArrayList<ScoreDoc>();
+      final List<ScoreDoc> hits = new ArrayList<>();
       while(scorer.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
         hits.add(new ScoreDoc(scorer.docID(), scorer.score()));
       }

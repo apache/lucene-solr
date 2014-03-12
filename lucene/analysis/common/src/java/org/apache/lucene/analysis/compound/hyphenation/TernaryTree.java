@@ -503,7 +503,7 @@ public class TernaryTree implements Cloneable {
 
     public Iterator() {
       cur = -1;
-      ns = new Stack<Item>();
+      ns = new Stack<>();
       ks = new StringBuilder();
       rewind();
     }

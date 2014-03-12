@@ -387,7 +387,7 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
         }
       }
     };
-    List<Thread> threads = new ArrayList<Thread>();
+    List<Thread> threads = new ArrayList<>();
 
     int nthreads = random().nextInt(TEST_NIGHTLY ? 4 : 2) + 1;
     for (int i = 0; i < nthreads; i++) {

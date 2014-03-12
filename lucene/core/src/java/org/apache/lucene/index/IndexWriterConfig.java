@@ -130,7 +130,7 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
 
   // indicates whether this config instance is already attached to a writer.
   // not final so that it can be cloned properly.
-  private SetOnce<IndexWriter> writer = new SetOnce<IndexWriter>();
+  private SetOnce<IndexWriter> writer = new SetOnce<>();
   
   /**
    * Sets the {@link IndexWriter} this config is attached to.

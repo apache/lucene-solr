@@ -127,7 +127,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       // as it's not supported for recovery
        del("*:*");
       
-      List<StopableThread> threads = new ArrayList<StopableThread>();
+      List<StopableThread> threads = new ArrayList<>();
       int threadCount = 1;
       int i = 0;
       for (i = 0; i < threadCount; i++) {
@@ -247,7 +247,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       } finally {
         client.shutdown();
       }
-      List<Integer> numShardsNumReplicas = new ArrayList<Integer>(2);
+      List<Integer> numShardsNumReplicas = new ArrayList<>(2);
       numShardsNumReplicas.add(1);
       numShardsNumReplicas.add(1);
       checkForCollection("testcollection",numShardsNumReplicas, null);

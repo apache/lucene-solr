@@ -70,7 +70,7 @@ public class TestMixedCodecs extends LuceneTestCase {
     }
 
     // Random delete half the docs:
-    final Set<Integer> deleted = new HashSet<Integer>();
+    final Set<Integer> deleted = new HashSet<>();
     while(deleted.size() < NUM_DOCS/2) {
       final Integer toDelete = random().nextInt(NUM_DOCS);
       if (!deleted.contains(toDelete)) {

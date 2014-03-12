@@ -245,7 +245,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 //
     ArrayList<String> nodesTobePushedBack =  new ArrayList<>();
     //ensure that the node right behind the leader , i.r at position 1 is a Overseer
-    List<String> availableDesignates = new ArrayList<String>();
+    List<String> availableDesignates = new ArrayList<>();
 
     log.info("sorted nodes {}", nodeNames);//TODO to be removed
     for (int i = 0; i < nodeNames.size(); i++) {
@@ -322,7 +322,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       children = zk.getChildren(OverseerElectionContext.PATH + LeaderElector.ELECTION_NODE, null, true);
     } catch (Exception e) {
       log.warn("error ", e);
-      return new ArrayList<String>();
+      return new ArrayList<>();
     }
     LeaderElector.sortSeqs(children);
     ArrayList<String> nodeNames = new ArrayList<>(children.size());
@@ -487,7 +487,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     }
     Replica replica = slice.getReplica(replicaName);
     if(replica == null){
-      ArrayList<String> l = new ArrayList<String>();
+      ArrayList<String> l = new ArrayList<>();
       for (Replica r : slice.getReplicas()) l.add(r.getName());
       throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid replica : " + replicaName + " in shard/collection : "
           + shard + "/"+ collectionName + " available replicas are "+ StrUtils.join(l,','));
@@ -607,8 +607,8 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     String aliasName = message.getStr("name");
     String collections = message.getStr("collections");
     
-    Map<String,Map<String,String>> newAliasesMap = new HashMap<String,Map<String,String>>();
-    Map<String,String> newCollectionAliasesMap = new HashMap<String,String>();
+    Map<String,Map<String,String>> newAliasesMap = new HashMap<>();
+    Map<String,String> newCollectionAliasesMap = new HashMap<>();
     Map<String,String> prevColAliases = aliases.getCollectionAliasMap();
     if (prevColAliases != null) {
       newCollectionAliasesMap.putAll(prevColAliases);
@@ -678,8 +678,8 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   private void deleteAlias(Aliases aliases, ZkNodeProps message) {
     String aliasName = message.getStr("name");
 
-    Map<String,Map<String,String>> newAliasesMap = new HashMap<String,Map<String,String>>();
-    Map<String,String> newCollectionAliasesMap = new HashMap<String,String>();
+    Map<String,Map<String,String>> newAliasesMap = new HashMap<>();
+    Map<String,String> newCollectionAliasesMap = new HashMap<>();
     newCollectionAliasesMap.putAll(aliases.getCollectionAliasMap());
     newCollectionAliasesMap.remove(aliasName);
     newAliasesMap.put("collection", newCollectionAliasesMap);
@@ -839,7 +839,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       if (ranges.length == 0 || ranges.length == 1) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "There must be at least two ranges specified to split a shard");
       } else  {
-        subRanges = new ArrayList<DocRouter.Range>(ranges.length);
+        subRanges = new ArrayList<>(ranges.length);
         for (int i = 0; i < ranges.length; i++) {
           String r = ranges[i];
           try {
@@ -852,7 +852,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
                 "Specified hash range: " + r + " is not a subset of parent shard's range: " + range.toString());
           }
         }
-        List<DocRouter.Range> temp = new ArrayList<DocRouter.Range>(subRanges); // copy to preserve original order
+        List<DocRouter.Range> temp = new ArrayList<>(subRanges); // copy to preserve original order
         Collections.sort(temp);
         if (!range.equals(new DocRouter.Range(temp.get(0).min, temp.get(temp.size() - 1).max)))  {
           throw new SolrException(ErrorCode.BAD_REQUEST,
@@ -894,8 +894,8 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     }
 
     try {
-      List<String> subSlices = new ArrayList<String>(subRanges.size());
-      List<String> subShardNames = new ArrayList<String>(subRanges.size());
+      List<String> subSlices = new ArrayList<>(subRanges.size());
+      List<String> subShardNames = new ArrayList<>(subRanges.size());
       String nodeName = parentShardLeader.getNodeName();
       for (int i = 0; i < subRanges.size(); i++) {
         String subSlice = slice + "_" + i;
@@ -911,7 +911,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
             // delete the shards
             for (String sub : subSlices) {
               log.info("Sub-shard: {} already exists therefore requesting its deletion", sub);
-              Map<String, Object> propMap = new HashMap<String, Object>();
+              Map<String, Object> propMap = new HashMap<>();
               propMap.put(Overseer.QUEUE_OPERATION, "deleteshard");
               propMap.put(COLLECTION_PROP, collectionName);
               propMap.put(SHARD_ID_PROP, sub);
@@ -940,7 +940,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
             + subSlice + " of collection " + collectionName + " on "
             + nodeName);
 
-        Map<String, Object> propMap = new HashMap<String, Object>();
+        Map<String, Object> propMap = new HashMap<>();
         propMap.put(Overseer.QUEUE_OPERATION, "createshard");
         propMap.put(ZkStateReader.SHARD_ID_PROP, subSlice);
         propMap.put(ZkStateReader.COLLECTION_PROP, collectionName);
@@ -1037,7 +1037,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       // node?
       // for now we just go random
       Set<String> nodes = clusterState.getLiveNodes();
-      List<String> nodeList = new ArrayList<String>(nodes.size());
+      List<String> nodeList = new ArrayList<>(nodes.size());
       nodeList.addAll(nodes);
       
       Collections.shuffle(nodeList);
@@ -1101,7 +1101,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         // switch sub shard states to 'active'
         log.info("Replication factor is 1 so switching shard states");
         DistributedQueue inQueue = Overseer.getInQueue(zkStateReader.getZkClient());
-        Map<String, Object> propMap = new HashMap<String, Object>();
+        Map<String, Object> propMap = new HashMap<>();
         propMap.put(Overseer.QUEUE_OPERATION, "updateshardstate");
         propMap.put(slice, Slice.INACTIVE);
         for (String subSlice : subSlices) {
@@ -1113,7 +1113,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       } else  {
         log.info("Requesting shard state be set to 'recovery'");
         DistributedQueue inQueue = Overseer.getInQueue(zkStateReader.getZkClient());
-        Map<String, Object> propMap = new HashMap<String, Object>();
+        Map<String, Object> propMap = new HashMap<>();
         propMap.put(Overseer.QUEUE_OPERATION, "updateshardstate");
         for (String subSlice : subSlices) {
           propMap.put(subSlice, Slice.RECOVERY);
@@ -1576,7 +1576,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       // node?
       // for now we just go random
       Set<String> nodes = clusterState.getLiveNodes();
-      List<String> nodeList = new ArrayList<String>(nodes.size());
+      List<String> nodeList = new ArrayList<>(nodes.size());
       nodeList.addAll(nodes);
       if (createNodeList != null) nodeList.retainAll(createNodeList);
       Collections.shuffle(nodeList);
@@ -1628,7 +1628,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Could not fully createcollection: " + message.getStr("name"));
 
       log.info("Creating SolrCores for new collection, shardNames {} , replicationFactor : {}", shardNames, repFactor);
-      Map<String ,ShardRequest> coresToCreate = new LinkedHashMap<String, ShardRequest>();
+      Map<String ,ShardRequest> coresToCreate = new LinkedHashMap<>();
       for (int i = 1; i <= shardNames.size(); i++) {
         String sliceName = shardNames.get(i-1);
         for (int j = 1; j <= repFactor; j++) {
@@ -1708,7 +1708,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   }
 
   private Map<String, Replica> waitToSeeReplicasInState(String collectionName, Collection<String> coreNames) throws InterruptedException {
-    Map<String, Replica> result = new HashMap<String, Replica>();
+    Map<String, Replica> result = new HashMap<>();
     long endTime = System.nanoTime() + TimeUnit.NANOSECONDS.convert(30, TimeUnit.SECONDS);
     while (true) {
       DocCollection coll = zkStateReader.getClusterState().getCollection(

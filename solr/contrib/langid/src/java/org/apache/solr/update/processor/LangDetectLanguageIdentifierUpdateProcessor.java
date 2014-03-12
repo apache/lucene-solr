@@ -53,7 +53,7 @@ public class LangDetectLanguageIdentifierUpdateProcessor extends LanguageIdentif
       Detector detector = DetectorFactory.create();
       detector.append(content);
       ArrayList<Language> langlist = detector.getProbabilities();
-      ArrayList<DetectedLanguage> solrLangList = new ArrayList<DetectedLanguage>();
+      ArrayList<DetectedLanguage> solrLangList = new ArrayList<>();
       for (Language l: langlist) {
         solrLangList.add(new DetectedLanguage(l.lang, l.prob));
       }

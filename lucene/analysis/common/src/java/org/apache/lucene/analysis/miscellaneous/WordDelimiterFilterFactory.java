@@ -104,7 +104,7 @@ public class WordDelimiterFilterFactory extends TokenFilterFactory implements Re
     }
     if (types != null) {
       List<String> files = splitFileNames( types );
-      List<String> wlist = new ArrayList<String>();
+      List<String> wlist = new ArrayList<>();
       for( String file : files ){
         List<String> lines = getLines(loader, file.trim());
         wlist.addAll( lines );
@@ -124,7 +124,7 @@ public class WordDelimiterFilterFactory extends TokenFilterFactory implements Re
   
   // parses a list of MappingCharFilter style rules into a custom byte[] type table
   private byte[] parseTypes(List<String> rules) {
-    SortedMap<Character,Byte> typeMap = new TreeMap<Character,Byte>();
+    SortedMap<Character,Byte> typeMap = new TreeMap<>();
     for( String rule : rules ){
       Matcher m = typePattern.matcher(rule);
       if( !m.find() )

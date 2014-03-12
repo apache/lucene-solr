@@ -479,7 +479,7 @@ public class SolrDispatchFilter implements Filter
       collectionsList = StrUtils.splitSmart(collection, ",", true);
     }
     if (collectionsList != null) {
-      Set<String> newCollectionsList = new HashSet<String>(
+      Set<String> newCollectionsList = new HashSet<>(
           collectionsList.size());
       for (String col : collectionsList) {
         String al = aliases.getCollectionAlias(col);
@@ -601,7 +601,7 @@ public class SolrDispatchFilter implements Filter
     boolean byCoreName = false;
     
     if (slices == null) {
-      slices = new ArrayList<Slice>();
+      slices = new ArrayList<>();
       // look by core name
       byCoreName = true;
       slices = getSlicesForCollections(clusterState, slices, true);

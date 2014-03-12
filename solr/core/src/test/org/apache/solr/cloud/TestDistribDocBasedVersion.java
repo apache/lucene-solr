@@ -290,7 +290,7 @@ public class TestDistribDocBasedVersion extends AbstractFullDistribZkTestBase {
   void doQuery(String expectedDocs, String... queryParams) throws Exception {
 
     List<String> strs = StrUtils.splitSmart(expectedDocs, ",", true);
-    Map<String, Object> expectedIds = new HashMap<String,Object>();
+    Map<String, Object> expectedIds = new HashMap<>();
     for (int i=0; i<strs.size(); i+=2) {
       String id = strs.get(i);
       String vS = strs.get(i+1);
@@ -299,7 +299,7 @@ public class TestDistribDocBasedVersion extends AbstractFullDistribZkTestBase {
     }
 
     QueryResponse rsp = cloudClient.query(params(queryParams));
-    Map<String, Object> obtainedIds = new HashMap<String,Object>();
+    Map<String, Object> obtainedIds = new HashMap<>();
     for (SolrDocument doc : rsp.getResults()) {
       obtainedIds.put((String) doc.get("id"), doc.get(vfield));
     }
@@ -309,7 +309,7 @@ public class TestDistribDocBasedVersion extends AbstractFullDistribZkTestBase {
 
 
   void doRTG(String ids, String versions) throws Exception {
-    Map<String, Object> expectedIds = new HashMap<String,Object>();
+    Map<String, Object> expectedIds = new HashMap<>();
     List<String> strs = StrUtils.splitSmart(ids, ",", true);
     List<String> verS = StrUtils.splitSmart(versions, ",", true);
     for (int i=0; i<strs.size(); i++) {
@@ -319,7 +319,7 @@ public class TestDistribDocBasedVersion extends AbstractFullDistribZkTestBase {
     ss.query(params("qt","/get", "ids",ids));
 
     QueryResponse rsp = cloudClient.query(params("qt","/get", "ids",ids));
-    Map<String, Object> obtainedIds = new HashMap<String,Object>();
+    Map<String, Object> obtainedIds = new HashMap<>();
     for (SolrDocument doc : rsp.getResults()) {
       obtainedIds.put((String) doc.get("id"), doc.get(vfield));
     }
@@ -330,10 +330,10 @@ public class TestDistribDocBasedVersion extends AbstractFullDistribZkTestBase {
   void doRTG(String ids) throws Exception {
     ss.query(params("qt","/get", "ids",ids));
 
-    Set<String> expectedIds = new HashSet<String>( StrUtils.splitSmart(ids, ",", true) );
+    Set<String> expectedIds = new HashSet<>( StrUtils.splitSmart(ids, ",", true) );
 
     QueryResponse rsp = cloudClient.query(params("qt","/get", "ids",ids));
-    Set<String> obtainedIds = new HashSet<String>();
+    Set<String> obtainedIds = new HashSet<>();
     for (SolrDocument doc : rsp.getResults()) {
       obtainedIds.add((String) doc.get("id"));
     }

@@ -199,8 +199,8 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
 
     final boolean biasContains = (operation == SpatialOperation.Contains);
 
-    Map<String, Shape> indexedShapes = new LinkedHashMap<String, Shape>();
-    Map<String, Shape> indexedShapesGS = new LinkedHashMap<String, Shape>();//grid snapped
+    Map<String, Shape> indexedShapes = new LinkedHashMap<>();
+    Map<String, Shape> indexedShapesGS = new LinkedHashMap<>();//grid snapped
     final int numIndexedShapes = randomIntBetween(1, 6);
     for (int i = 0; i < numIndexedShapes; i++) {
       String id = "" + i;
@@ -257,8 +257,8 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
       // We ensure true-positive matches (if the predicate on the raw shapes match
       //  then the search should find those same matches).
       // approximations, false-positive matches
-      Set<String> expectedIds = new LinkedHashSet<String>();//true-positives
-      Set<String> secondaryIds = new LinkedHashSet<String>();//false-positives (unless disjoint)
+      Set<String> expectedIds = new LinkedHashSet<>();//true-positives
+      Set<String> secondaryIds = new LinkedHashSet<>();//false-positives (unless disjoint)
       for (Map.Entry<String, Shape> entry : indexedShapes.entrySet()) {
         String id = entry.getKey();
         Shape indexedShapeCompare = entry.getValue();
@@ -297,7 +297,7 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
       SpatialArgs args = new SpatialArgs(operation, queryShape);
       Query query = strategy.makeQuery(args);
       SearchResults got = executeQuery(query, 100);
-      Set<String> remainingExpectedIds = new LinkedHashSet<String>(expectedIds);
+      Set<String> remainingExpectedIds = new LinkedHashSet<>(expectedIds);
       for (SearchResult result : got.results) {
         String id = result.getId();
         boolean removed = remainingExpectedIds.remove(id);
@@ -334,11 +334,11 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
     List<Cell> cells = grid.getCells(snapMe, detailLevel, false, true);
 
     //calc bounding box of cells.
-    List<Shape> cellShapes = new ArrayList<Shape>(cells.size());
+    List<Shape> cellShapes = new ArrayList<>(cells.size());
     for (Cell cell : cells) {
       cellShapes.add(cell.getShape());
     }
-    return new ShapeCollection<Shape>(cellShapes, ctx).getBoundingBox();
+    return new ShapeCollection<>(cellShapes, ctx).getBoundingBox();
   }
 
   /**

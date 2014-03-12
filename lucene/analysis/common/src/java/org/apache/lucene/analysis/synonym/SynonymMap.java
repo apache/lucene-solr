@@ -67,7 +67,7 @@ public class SynonymMap {
    * @lucene.experimental
    */
   public static class Builder {
-    private final HashMap<CharsRef,MapEntry> workingSet = new HashMap<CharsRef,MapEntry>();
+    private final HashMap<CharsRef,MapEntry> workingSet = new HashMap<>();
     private final BytesRefHash words = new BytesRefHash();
     private final BytesRef utf8Scratch = new BytesRef(8);
     private int maxHorizontalContext;
@@ -82,7 +82,7 @@ public class SynonymMap {
     private static class MapEntry {
       boolean includeOrig;
       // we could sort for better sharing ultimately, but it could confuse people
-      ArrayList<Integer> ords = new ArrayList<Integer>();
+      ArrayList<Integer> ords = new ArrayList<>();
     }
 
     /** Sugar: just joins the provided terms with {@link
@@ -210,7 +210,7 @@ public class SynonymMap {
       ByteSequenceOutputs outputs = ByteSequenceOutputs.getSingleton();
       // TODO: are we using the best sharing options?
       org.apache.lucene.util.fst.Builder<BytesRef> builder = 
-        new org.apache.lucene.util.fst.Builder<BytesRef>(FST.INPUT_TYPE.BYTE4, outputs);
+        new org.apache.lucene.util.fst.Builder<>(FST.INPUT_TYPE.BYTE4, outputs);
       
       BytesRef scratch = new BytesRef(64);
       ByteArrayDataOutput scratchOutput = new ByteArrayDataOutput();
@@ -218,7 +218,7 @@ public class SynonymMap {
       final Set<Integer> dedupSet;
 
       if (dedup) {
-        dedupSet = new HashSet<Integer>();
+        dedupSet = new HashSet<>();
       } else {
         dedupSet = null;
       }

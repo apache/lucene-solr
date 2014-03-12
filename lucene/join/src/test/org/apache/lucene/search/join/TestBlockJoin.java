@@ -69,7 +69,7 @@ public class TestBlockJoin extends LuceneTestCase {
     // we don't want to merge - since we rely on certain segment setup
     final IndexWriter w = new IndexWriter(dir, config);
 
-    final List<Document> docs = new ArrayList<Document>();
+    final List<Document> docs = new ArrayList<>();
 
     docs.add(makeJob("java", 2007));
     docs.add(makeJob("python", 2010));
@@ -127,7 +127,7 @@ public class TestBlockJoin extends LuceneTestCase {
     final Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
-    final List<Document> docs = new ArrayList<Document>();
+    final List<Document> docs = new ArrayList<>();
 
     docs.add(makeJob("java", 2007));
     docs.add(makeJob("python", 2010));
@@ -217,7 +217,7 @@ public class TestBlockJoin extends LuceneTestCase {
     final Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
-    final List<Document> docs = new ArrayList<Document>();
+    final List<Document> docs = new ArrayList<>();
 
     for (int i=0;i<10;i++) {
       docs.clear();
@@ -1264,7 +1264,7 @@ public class TestBlockJoin extends LuceneTestCase {
     parent.add(newTextField("parentText", "text", Field.Store.NO));
     parent.add(newStringField("isParent", "yes", Field.Store.NO));
 
-    List<Document> docs = new ArrayList<Document>();
+    List<Document> docs = new ArrayList<>();
 
     Document child = new Document();
     docs.add(child);
@@ -1328,7 +1328,7 @@ public class TestBlockJoin extends LuceneTestCase {
     parent.add(newTextField("parentText", "text", Field.Store.NO));
     parent.add(newStringField("isParent", "yes", Field.Store.NO));
 
-    List<Document> docs = new ArrayList<Document>();
+    List<Document> docs = new ArrayList<>();
 
     Document child = new Document();
     docs.add(child);
@@ -1393,7 +1393,7 @@ public class TestBlockJoin extends LuceneTestCase {
     parent.add(newTextField("parentText", "text", Field.Store.NO));
     parent.add(newStringField("isParent", "yes", Field.Store.NO));
 
-    List<Document> docs = new ArrayList<Document>();
+    List<Document> docs = new ArrayList<>();
 
     Document child = new Document();
     docs.add(child);

@@ -49,7 +49,7 @@ public class JdbcDataSource extends
 
   private Connection conn;
 
-  private Map<String, Integer> fieldNameVsType = new HashMap<String, Integer>();
+  private Map<String, Integer> fieldNameVsType = new HashMap<>();
 
   private boolean convertType = false;
 
@@ -245,7 +245,7 @@ public class JdbcDataSource extends
 
   private List<String> readFieldNames(ResultSetMetaData metaData)
           throws SQLException {
-    List<String> colNames = new ArrayList<String>();
+    List<String> colNames = new ArrayList<>();
     int count = metaData.getColumnCount();
     for (int i = 0; i < count; i++) {
       colNames.add(metaData.getColumnLabel(i + 1));
@@ -309,7 +309,7 @@ public class JdbcDataSource extends
     private Map<String, Object> getARow() {
       if (resultSet == null)
         return null;
-      Map<String, Object> result = new HashMap<String, Object>();
+      Map<String, Object> result = new HashMap<>();
       for (String colName : colNames) {
         try {
           if (!convertType) {

@@ -329,7 +329,7 @@ public class HdfsUpdateLog extends UpdateLog {
         return name.getName().startsWith(prefix);
       }
     });
-    List<String> fileList = new ArrayList<String>(files.length);
+    List<String> fileList = new ArrayList<>(files.length);
     for (FileStatus file : files) {
       fileList.add(file.getPath().getName());
     }

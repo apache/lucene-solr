@@ -62,11 +62,11 @@ public class FacetsConfig {
    *  doc values). */
   public static final String DEFAULT_INDEX_FIELD_NAME = "$facets";
 
-  private final Map<String,DimConfig> fieldTypes = new ConcurrentHashMap<String,DimConfig>();
+  private final Map<String,DimConfig> fieldTypes = new ConcurrentHashMap<>();
 
   // Used only for best-effort detection of app mixing
   // int/float/bytes in a single indexed field:
-  private final Map<String,String> assocDimTypes = new ConcurrentHashMap<String,String>();
+  private final Map<String,String> assocDimTypes = new ConcurrentHashMap<>();
 
   /** Holds the configuration for one dimension
    *
@@ -198,15 +198,15 @@ public class FacetsConfig {
    */
   public Document build(TaxonomyWriter taxoWriter, Document doc) throws IOException {
     // Find all FacetFields, collated by the actual field:
-    Map<String,List<FacetField>> byField = new HashMap<String,List<FacetField>>();
+    Map<String,List<FacetField>> byField = new HashMap<>();
 
     // ... and also all SortedSetDocValuesFacetFields:
-    Map<String,List<SortedSetDocValuesFacetField>> dvByField = new HashMap<String,List<SortedSetDocValuesFacetField>>();
+    Map<String,List<SortedSetDocValuesFacetField>> dvByField = new HashMap<>();
 
     // ... and also all AssociationFacetFields
-    Map<String,List<AssociationFacetField>> assocByField = new HashMap<String,List<AssociationFacetField>>();
+    Map<String,List<AssociationFacetField>> assocByField = new HashMap<>();
 
-    Set<String> seenDims = new HashSet<String>();
+    Set<String> seenDims = new HashSet<>();
 
     for (IndexableField field : doc.indexableFields()) {
       if (field.fieldType() == FacetField.TYPE) {
@@ -218,7 +218,7 @@ public class FacetsConfig {
         String indexFieldName = dimConfig.indexFieldName;
         List<FacetField> fields = byField.get(indexFieldName);
         if (fields == null) {
-          fields = new ArrayList<FacetField>();
+          fields = new ArrayList<>();
           byField.put(indexFieldName, fields);
         }
         fields.add(facetField);
@@ -233,7 +233,7 @@ public class FacetsConfig {
         String indexFieldName = dimConfig.indexFieldName;
         List<SortedSetDocValuesFacetField> fields = dvByField.get(indexFieldName);
         if (fields == null) {
-          fields = new ArrayList<SortedSetDocValuesFacetField>();
+          fields = new ArrayList<>();
           dvByField.put(indexFieldName, fields);
         }
         fields.add(facetField);
@@ -255,7 +255,7 @@ public class FacetsConfig {
         String indexFieldName = dimConfig.indexFieldName;
         List<AssociationFacetField> fields = assocByField.get(indexFieldName);
         if (fields == null) {
-          fields = new ArrayList<AssociationFacetField>();
+          fields = new ArrayList<>();
           assocByField.put(indexFieldName, fields);
         }
         fields.add(facetField);
@@ -514,7 +514,7 @@ public class FacetsConfig {
    *  #pathToString}) back into the original {@code
    *  String[]}. */
   public static String[] stringToPath(String s) {
-    List<String> parts = new ArrayList<String>();
+    List<String> parts = new ArrayList<>();
     int length = s.length();
     if (length == 0) {
       return new String[0];

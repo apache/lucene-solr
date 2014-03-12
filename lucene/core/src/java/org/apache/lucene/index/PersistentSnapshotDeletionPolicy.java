@@ -241,13 +241,13 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
   private synchronized void loadPriorSnapshots() throws IOException {
     long genLoaded = -1;
     IOException ioe = null;
-    List<String> snapshotFiles = new ArrayList<String>();
+    List<String> snapshotFiles = new ArrayList<>();
     for(String file : dir.listAll()) {
       if (file.startsWith(SNAPSHOTS_PREFIX)) {
         long gen = Long.parseLong(file.substring(SNAPSHOTS_PREFIX.length()));
         if (genLoaded == -1 || gen > genLoaded) {
           snapshotFiles.add(file);
-          Map<Long,Integer> m = new HashMap<Long,Integer>();    
+          Map<Long,Integer> m = new HashMap<>();
           IndexInput in = dir.openInput(file, IOContext.DEFAULT);
           try {
             CodecUtil.checkHeader(in, CODEC_NAME, VERSION_START, VERSION_START);

@@ -201,7 +201,7 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
     Random random = random();
     
     // collect this number of terms from the left side
-    HashSet<BytesRef> tests = new HashSet<BytesRef>();
+    HashSet<BytesRef> tests = new HashSet<>();
     int numPasses = 0;
     while (numPasses < 10 && tests.size() < numTests) {
       leftEnum = leftTerms.iterator(leftEnum);
@@ -228,7 +228,7 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
       numPasses++;
     }
     
-    ArrayList<BytesRef> shuffledTests = new ArrayList<BytesRef>(tests);
+    ArrayList<BytesRef> shuffledTests = new ArrayList<>(tests);
     Collections.shuffle(shuffledTests, random);
     
     for (BytesRef b : shuffledTests) {

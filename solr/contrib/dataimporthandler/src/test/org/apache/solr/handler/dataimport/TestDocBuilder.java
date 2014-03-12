@@ -95,7 +95,7 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
     di.loadAndInit(dc_singleEntity);
     DIHConfiguration cfg = di.getConfig();
     Entity ent = cfg.getEntities().get(0);
-    List<Map<String, Object>> l = new ArrayList<Map<String, Object>>();
+    List<Map<String, Object>> l = new ArrayList<>();
     l.add(createMap("id", 1, "desc", "one"));
     MockDataSource.setIterator("select * from x", l.iterator());
     RequestInfo rp = new RequestInfo(null, createMap("command", "full-import"), null);
@@ -124,7 +124,7 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
     di.loadAndInit(dc_singleEntity);
     DIHConfiguration cfg = di.getConfig();
     Entity ent = cfg.getEntities().get(0);
-    List<Map<String, Object>> l = new ArrayList<Map<String, Object>>();
+    List<Map<String, Object>> l = new ArrayList<>();
     l.add(createMap("id", 1, "desc", "one"));
     MockDataSource.setIterator("select * from x", l.iterator());
     RequestInfo rp = new RequestInfo(null, createMap("command", "import"), null);
@@ -154,7 +154,7 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
     DIHConfiguration cfg = di.getConfig();
     Entity ent = cfg.getEntities().get(0);
     RequestInfo rp = new RequestInfo(null, createMap("command", "full-import"), null);
-    List<Map<String, Object>> l = new ArrayList<Map<String, Object>>();
+    List<Map<String, Object>> l = new ArrayList<>();
     l.add(createMap("id", 1, "desc", "one"));
     l.add(createMap("id", 2, "desc", "two"));
     l.add(createMap("id", 3, "desc", "three"));
@@ -180,7 +180,7 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
   }
 
   static class SolrWriterImpl extends SolrWriter {
-    List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
+    List<SolrInputDocument> docs = new ArrayList<>();
 
     Boolean deleteAllCalled = Boolean.FALSE;
 

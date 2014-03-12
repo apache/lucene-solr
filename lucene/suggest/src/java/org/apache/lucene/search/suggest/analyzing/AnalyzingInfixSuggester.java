@@ -375,7 +375,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     }
 
     BooleanQuery query;
-    Set<String> matchedTokens = new HashSet<String>();
+    Set<String> matchedTokens = new HashSet<>();
     String prefixToken = null;
 
     try (TokenStream ts = queryAnalyzer.tokenStream("", new StringReader(key.toString()))) {
@@ -386,7 +386,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       String lastToken = null;
       query = new BooleanQuery();
       int maxEndOffset = -1;
-      matchedTokens = new HashSet<String>();
+      matchedTokens = new HashSet<>();
       while (ts.incrementToken()) {
         if (lastToken != null) {  
           matchedTokens.add(lastToken);
@@ -475,7 +475,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     // This will just be null if app didn't pass payloads to build():
     // TODO: maybe just stored fields?  they compress...
     BinaryDocValues payloadsDV = MultiDocValues.getBinaryValues(searcher.getIndexReader(), "payloads");
-    List<LookupResult> results = new ArrayList<LookupResult>();
+    List<LookupResult> results = new ArrayList<>();
     BytesRef scratch = new BytesRef();
     for (int i=0;i<hits.scoreDocs.length;i++) {
       FieldDoc fd = (FieldDoc) hits.scoreDocs[i];

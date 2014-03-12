@@ -48,7 +48,7 @@ public class TestSimilarity2 extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    sims = new ArrayList<Similarity>();
+    sims = new ArrayList<>();
     sims.add(new DefaultSimilarity());
     sims.add(new BM25Similarity());
     // TODO: not great that we dup this all with TestSimilarityBase

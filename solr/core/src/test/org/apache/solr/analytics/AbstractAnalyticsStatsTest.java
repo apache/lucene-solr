@@ -51,7 +51,7 @@ import com.google.common.collect.ObjectArrays;
 public class AbstractAnalyticsStatsTest extends SolrTestCaseJ4 {
   
   protected static final String[] BASEPARMS = new String[]{ "q", "*:*", "indent", "true", "olap", "true", "rows", "0" };
-  protected static final HashMap<String,Object> defaults = new HashMap<String,Object>();
+  protected static final HashMap<String,Object> defaults = new HashMap<>();
 
   public static enum VAL_TYPE {
     INTEGER("int"),
@@ -162,7 +162,7 @@ public class AbstractAnalyticsStatsTest extends SolrTestCaseJ4 {
     } else if (stat.equals("count")) {
       result = Long.valueOf(list.size());
     } else if (stat.equals("unique")) {
-      HashSet<T> set = new HashSet<T>();
+      HashSet<T> set = new HashSet<>();
       set.addAll(list);
       result = Long.valueOf((long)set.size());
     } else if (stat.equals("max")) {
@@ -198,7 +198,7 @@ public class AbstractAnalyticsStatsTest extends SolrTestCaseJ4 {
     if (in == null) throw new FileNotFoundException("Resource not found: " + fileName);
     Scanner file = new Scanner(in, "UTF-8");
     try { 
-      ArrayList<String> strList = new ArrayList<String>();
+      ArrayList<String> strList = new ArrayList<>();
       while (file.hasNextLine()) {
         String line = file.nextLine();
         line = line.trim();

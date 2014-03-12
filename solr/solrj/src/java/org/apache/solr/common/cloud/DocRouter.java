@@ -63,7 +63,7 @@ public abstract class DocRouter {
   }
 
   public static Map<String,Object> getRouterSpec(ZkNodeProps props){
-    Map<String,Object> map =  new LinkedHashMap<String, Object>();
+    Map<String,Object> map =  new LinkedHashMap<>();
     for (String s : props.keySet()) {
       if(s.startsWith("router.")){
         map.put(s.substring(7), props.get(s));
@@ -81,7 +81,7 @@ public abstract class DocRouter {
   // currently just an implementation detail...
   private final static Map<String, DocRouter> routerMap;
   static {
-    routerMap = new HashMap<String, DocRouter>();
+    routerMap = new HashMap<>();
     PlainIdRouter plain = new PlainIdRouter();
     // instead of doing back compat this way, we could always convert the clusterstate on first read to "plain" if it doesn't have any properties.
     routerMap.put(null, plain);     // back compat with 4.0
@@ -174,7 +174,7 @@ public abstract class DocRouter {
     long rangeSize = (long)max - (long)min;
     long rangeStep = Math.max(1, rangeSize / partitions);
 
-    List<Range> ranges = new ArrayList<Range>(partitions);
+    List<Range> ranges = new ArrayList<>(partitions);
 
     long start = min;
     long end = start;
@@ -216,7 +216,7 @@ public abstract class DocRouter {
     }
 
     List<String> shardKeyList = StrUtils.splitSmart(shardKeys, ",", true);
-    HashSet<Slice> allSlices = new HashSet<Slice>();
+    HashSet<Slice> allSlices = new HashSet<>();
     for (String shardKey : shardKeyList) {
       allSlices.addAll( getSearchSlicesSingle(shardKey, params, collection) );
     }

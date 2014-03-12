@@ -67,7 +67,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
 
   private SearcherManager mgr;
   private SearcherLifetimeManager lifetimeMGR;
-  private final List<Long> pastSearchers = new ArrayList<Long>();
+  private final List<Long> pastSearchers = new ArrayList<>();
   private boolean isNRT;
 
   @Override

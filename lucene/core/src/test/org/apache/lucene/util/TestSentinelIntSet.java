@@ -56,7 +56,7 @@ public class TestSentinelIntSet extends LuceneTestCase {
       int num = random().nextInt(30);
       int maxVal = (random().nextBoolean() ? random().nextInt(50) : random().nextInt(Integer.MAX_VALUE)) + 1;
 
-      HashSet<Integer> a = new HashSet<Integer>(initSz);
+      HashSet<Integer> a = new HashSet<>(initSz);
       SentinelIntSet b = new SentinelIntSet(initSz, -1);
       
       for (int j=0; j<num; j++) {

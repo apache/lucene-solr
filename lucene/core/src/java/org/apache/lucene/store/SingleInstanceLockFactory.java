@@ -33,7 +33,7 @@ import java.util.HashSet;
 
 public class SingleInstanceLockFactory extends LockFactory {
 
-  private HashSet<String> locks = new HashSet<String>();
+  private HashSet<String> locks = new HashSet<>();
 
   @Override
   public Lock makeLock(String lockName) {

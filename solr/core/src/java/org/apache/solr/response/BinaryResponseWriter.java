@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
 
 public class BinaryResponseWriter implements BinaryQueryResponseWriter {
   private static final Logger LOG = LoggerFactory.getLogger(BinaryResponseWriter.class);
-  public static final Set<Class> KNOWN_TYPES = new HashSet<Class>();
+  public static final Set<Class> KNOWN_TYPES = new HashSet<>();
 
   @Override
   public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response) throws IOException {

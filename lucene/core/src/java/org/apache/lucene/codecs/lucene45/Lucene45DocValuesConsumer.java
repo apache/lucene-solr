@@ -189,7 +189,7 @@ public class Lucene45DocValuesConsumer extends DocValuesConsumer implements Clos
         break;
       case TABLE_COMPRESSED:
         final Long[] decode = uniqueValues.toArray(new Long[uniqueValues.size()]);
-        final HashMap<Long,Integer> encode = new HashMap<Long,Integer>();
+        final HashMap<Long,Integer> encode = new HashMap<>();
         meta.writeVInt(decode.length);
         for (int i = 0; i < decode.length; i++) {
           meta.writeLong(decode[i]);

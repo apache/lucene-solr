@@ -179,7 +179,7 @@ public class StatelessScriptUpdateProcessorFactory extends UpdateRequestProcesso
                               "StatelessScriptUpdateProcessorFactory must be " +
                               "initialized with at least one " + SCRIPT_ARG);
     }
-    scriptFiles = new ArrayList<ScriptFile>();
+    scriptFiles = new ArrayList<>();
     for (String script : scripts) {
       scriptFiles.add(new ScriptFile(script));
     }
@@ -251,7 +251,7 @@ public class StatelessScriptUpdateProcessorFactory extends UpdateRequestProcesso
                                        SolrQueryResponse rsp) 
     throws SolrException {
     
-    List<EngineInfo> scriptEngines = new ArrayList<EngineInfo>();
+    List<EngineInfo> scriptEngines = new ArrayList<>();
 
     ScriptEngineManager scriptEngineManager 
       = new ScriptEngineManager(resourceLoader.getClassLoader());
@@ -338,7 +338,7 @@ public class StatelessScriptUpdateProcessorFactory extends UpdateRequestProcesso
       List<ScriptEngineFactory> factories = mgr.getEngineFactories();
       if (null == factories) return result;
 
-      Set<String> engines = new LinkedHashSet<String>(factories.size());
+      Set<String> engines = new LinkedHashSet<>(factories.size());
       for (ScriptEngineFactory f : factories) {
         if (ext) {
           engines.addAll(f.getExtensions());

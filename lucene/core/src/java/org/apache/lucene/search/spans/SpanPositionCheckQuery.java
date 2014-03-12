@@ -169,7 +169,7 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
     public Collection<byte[]> getPayload() throws IOException {
       ArrayList<byte[]> result = null;
       if (spans.isPayloadAvailable()) {
-        result = new ArrayList<byte[]>(spans.getPayload());
+        result = new ArrayList<>(spans.getPayload());
       }
       return result;//TODO: any way to avoid the new construction?
     }

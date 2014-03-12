@@ -30,7 +30,7 @@ public class TestFilterDirectory extends LuceneTestCase {
   public void testOverrides() throws Exception {
     // verify that all methods of Directory are overridden by FilterDirectory,
     // except those under the 'exclude' list
-    Set<String> exclude = new HashSet<String>();
+    Set<String> exclude = new HashSet<>();
     exclude.add("copy");
     exclude.add("createSlicer");
     for (Method m : FilterDirectory.class.getMethods()) {

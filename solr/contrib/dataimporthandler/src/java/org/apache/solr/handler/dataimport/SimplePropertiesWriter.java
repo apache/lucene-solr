@@ -171,7 +171,7 @@ public class SimplePropertiesWriter extends DIHProperties {
    * already converted them.
    */
   protected Map<String,Object> propertiesToMap(Properties p) {
-    Map<String,Object> theMap = new HashMap<String,Object>();
+    Map<String,Object> theMap = new HashMap<>();
     for(Map.Entry<Object,Object> entry : p.entrySet()) {
       String key = entry.getKey().toString();
       Object val = entry.getValue().toString();

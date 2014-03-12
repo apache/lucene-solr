@@ -77,7 +77,7 @@ public class QueryTermScorer implements Scorer {
   }
 
   public QueryTermScorer(WeightedTerm[] weightedTerms) {
-    termsToFind = new HashMap<String,WeightedTerm>();
+    termsToFind = new HashMap<>();
     for (int i = 0; i < weightedTerms.length; i++) {
       WeightedTerm existingTerm = termsToFind
           .get(weightedTerms[i].term);
@@ -109,7 +109,7 @@ public class QueryTermScorer implements Scorer {
    */
   @Override
   public void startFragment(TextFragment newFragment) {
-    uniqueTermsInFragment = new HashSet<String>();
+    uniqueTermsInFragment = new HashSet<>();
     currentTextFragment = newFragment;
     totalScore = 0;
 

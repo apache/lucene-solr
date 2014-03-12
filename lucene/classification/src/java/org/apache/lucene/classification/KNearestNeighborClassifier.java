@@ -97,7 +97,7 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
 
   private ClassificationResult<BytesRef> selectClassFromNeighbors(TopDocs topDocs) throws IOException {
     // TODO : improve the nearest neighbor selection
-    Map<BytesRef, Integer> classCounts = new HashMap<BytesRef, Integer>();
+    Map<BytesRef, Integer> classCounts = new HashMap<>();
     for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
       BytesRef cl = new BytesRef(indexSearcher.doc(scoreDoc.doc).getField(classFieldName).stringValue());
       Integer count = classCounts.get(cl);
@@ -117,7 +117,7 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
       }
     }
     double score = max / (double) k;
-    return new ClassificationResult<BytesRef>(assignedClass, score);
+    return new ClassificationResult<>(assignedClass, score);
   }
 
   /**

@@ -74,7 +74,7 @@ public class QueryDriver {
     // validate topics & judgments match each other
     judge.validateData(qqs, logger);
 
-    Set<String> fieldSet = new HashSet<String>();
+    Set<String> fieldSet = new HashSet<>();
     if (fieldSpec.indexOf('T') >= 0) fieldSet.add("title");
     if (fieldSpec.indexOf('D') >= 0) fieldSet.add("description");
     if (fieldSpec.indexOf('N') >= 0) fieldSet.add("narrative");

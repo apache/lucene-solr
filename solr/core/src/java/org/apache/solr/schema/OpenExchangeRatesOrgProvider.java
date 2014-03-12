@@ -203,7 +203,7 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
     
     public OpenExchangeRates(InputStream ratesStream) throws IOException {
       parser = new JSONParser(new InputStreamReader(ratesStream, IOUtils.CHARSET_UTF_8));
-      rates = new HashMap<String, Double>();
+      rates = new HashMap<>();
       
       int ev;
       do {

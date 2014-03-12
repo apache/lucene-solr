@@ -402,7 +402,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     int numDirs;
     final Thread[] threads = new Thread[numThreads];
     IndexWriter mainWriter;
-    final List<Throwable> failures = new ArrayList<Throwable>();
+    final List<Throwable> failures = new ArrayList<>();
     IndexReader[] readers;
     boolean didClose = false;
     AtomicInteger count = new AtomicInteger(0);

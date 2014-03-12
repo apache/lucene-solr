@@ -36,7 +36,7 @@ public class HdfsTestUtil {
   
   private static Locale savedLocale;
   
-  private static Map<MiniDFSCluster,Timer> timers = new ConcurrentHashMap<MiniDFSCluster,Timer>();
+  private static Map<MiniDFSCluster,Timer> timers = new ConcurrentHashMap<>();
 
   public static MiniDFSCluster setupClass(String dataDir) throws Exception {
     LuceneTestCase.assumeFalse("HDFS tests were disabled by -Dtests.disableHdfs",

@@ -255,7 +255,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       if (rangesArr.length == 0) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "There must be at least one range specified to split an index");
       } else  {
-        ranges = new ArrayList<DocRouter.Range>(rangesArr.length);
+        ranges = new ArrayList<>(rangesArr.length);
         for (String r : rangesArr) {
           try {
             ranges.add(DocRouter.DEFAULT.fromString(r));
@@ -304,7 +304,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       }
 
       if (pathsArr == null) {
-        newCores = new ArrayList<SolrCore>(partitions);
+        newCores = new ArrayList<>(partitions);
         for (String newCoreName : newCoreNames) {
           SolrCore newcore = coreContainer.getCore(newCoreName);
           if (newcore != null) {
@@ -705,7 +705,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
     String indexInfo = params.get(CoreAdminParams.INDEX_INFO);
     boolean isIndexInfoNeeded = Boolean.parseBoolean(null == indexInfo ? "true" : indexInfo);
     boolean doPersist = false;
-    NamedList<Object> status = new SimpleOrderedMap<Object>();
+    NamedList<Object> status = new SimpleOrderedMap<>();
     Map<String,Exception> allFailures = coreContainer.getCoreInitFailures();
     try {
       if (cname == null) {
@@ -832,7 +832,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       if (core != null) {
         syncStrategy = new SyncStrategy(core.getCoreDescriptor().getCoreContainer());
         
-        Map<String,Object> props = new HashMap<String,Object>();
+        Map<String,Object> props = new HashMap<>();
         props.put(ZkStateReader.BASE_URL_PROP, zkController.getBaseUrl());
         props.put(ZkStateReader.CORE_NAME_PROP, cname);
         props.put(ZkStateReader.NODE_NAME_PROP, zkController.getNodeName());
@@ -1077,7 +1077,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
    * @throws IOException - LukeRequestHandler can throw an I/O exception
    */
   protected NamedList<Object> getCoreStatus(CoreContainer cores, String cname, boolean isIndexInfoNeeded)  throws IOException {
-    NamedList<Object> info = new SimpleOrderedMap<Object>();
+    NamedList<Object> info = new SimpleOrderedMap<>();
 
     if (!cores.isLoaded(cname)) { // Lazily-loaded core, fill in what we can.
       // It would be a real mistake to load the cores just to get the status

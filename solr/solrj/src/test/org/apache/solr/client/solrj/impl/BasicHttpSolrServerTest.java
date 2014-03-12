@@ -99,7 +99,7 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
     
     private void setHeaders(HttpServletRequest req) {
       Enumeration<String> headerNames = req.getHeaderNames();
-      headers = new HashMap<String,String>();
+      headers = new HashMap<>();
       while (headerNames.hasMoreElements()) {
         final String name = headerNames.nextElement();
         headers.put(name, req.getHeader(name));

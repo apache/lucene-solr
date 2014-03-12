@@ -130,7 +130,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
         }
       }
 
-      List<Thread> threads = new ArrayList<Thread>();
+      List<Thread> threads = new ArrayList<>();
       int numThreads = 4;
       for (int i = 0; i < numThreads; i++) {
         threads.add(new TestThread());

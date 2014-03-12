@@ -43,7 +43,7 @@ public final class TimeZoneUtils {
    * @see TimeZone#getAvailableIDs
    */
   public static final Set<String> KNOWN_TIMEZONE_IDS 
-    = Collections.unmodifiableSet(new HashSet<String>
+    = Collections.unmodifiableSet(new HashSet<>
                                   (Arrays.asList(TimeZone.getAvailableIDs())));
 
   /**

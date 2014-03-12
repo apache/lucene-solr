@@ -88,7 +88,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     String[] dates = {"0299-12-31T23:59:59.999Z","2000-01-01T00:00:00.000Z","2000-01-01T00:00:00.001Z",  "0299-12-31T23:59:59.998Z","2000-01-01T00:00:00.002Z" };
 
     // fields that normal range queries should work on
-    Map<String,String[]> norm_fields = new HashMap<String,String[]>();
+    Map<String,String[]> norm_fields = new HashMap<>();
     norm_fields.put("foo_i", ints);
     norm_fields.put("foo_l", longs);
     norm_fields.put("foo_d", doubles);
@@ -103,7 +103,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
 
 
     // fields that frange queries should work on
-    Map<String,String[]> frange_fields = new HashMap<String,String[]>();
+    Map<String,String[]> frange_fields = new HashMap<>();
     frange_fields.put("foo_i", ints);
     frange_fields.put("foo_l", longs);
     frange_fields.put("foo_d", doubles);
@@ -120,12 +120,12 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     frange_fields.put("foo_s", strings);
     frange_fields.put("foo_dt", dates);
 
-    Map<String,String[]> all_fields = new HashMap<String,String[]>();
+    Map<String,String[]> all_fields = new HashMap<>();
     all_fields.putAll(norm_fields);
     all_fields.putAll(frange_fields);
 
     for (int j=0; j<ints.length-2; j++) {
-      List<String> fields = new ArrayList<String>();
+      List<String> fields = new ArrayList<>();
       fields.add("id");
       fields.add(""+j);
       for (Map.Entry<String,String[]> entry : all_fields.entrySet()) {
@@ -239,7 +239,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
       // lower=2; upper=2; inclusive=true;      
       // inclusive=true; lowerMissing=true; upperMissing=true;    
 
-      List<String> qs = new ArrayList<String>();
+      List<String> qs = new ArrayList<>();
       for (String field : norm_fields) {
         String q = field + ':' + (inclusive?'[':'{')
                 + (lowerMissing?"*":lower)

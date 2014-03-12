@@ -54,7 +54,7 @@ public class FileBasedQueryMaker extends AbstractQueryMaker implements QueryMake
     QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, defaultField, anlzr);
     qp.setAllowLeadingWildcard(true);
 
-    List<Query> qq = new ArrayList<Query>();
+    List<Query> qq = new ArrayList<>();
     String fileName = config.get("file.query.maker.file", null);
     if (fileName != null)
     {

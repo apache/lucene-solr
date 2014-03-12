@@ -39,7 +39,7 @@ public final class FieldFilterAtomicReader extends FilterAtomicReader {
     super(in);
     this.fields = fields;
     this.negate = negate;
-    ArrayList<FieldInfo> filteredInfos = new ArrayList<FieldInfo>();
+    ArrayList<FieldInfo> filteredInfos = new ArrayList<>();
     for (FieldInfo fi : in.getFieldInfos()) {
       if (hasField(fi.name)) {
         filteredInfos.add(fi);

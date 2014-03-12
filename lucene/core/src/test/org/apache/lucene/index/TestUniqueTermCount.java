@@ -39,7 +39,7 @@ public class TestUniqueTermCount extends LuceneTestCase {
   Directory dir;
   IndexReader reader;
   /* expected uniqueTermCount values for our documents */
-  ArrayList<Integer> expected = new ArrayList<Integer>();
+  ArrayList<Integer> expected = new ArrayList<>();
   
   @Override
   public void setUp() throws Exception {
@@ -82,7 +82,7 @@ public class TestUniqueTermCount extends LuceneTestCase {
    */
   private String addValue() {
     StringBuilder sb = new StringBuilder();
-    HashSet<String> terms = new HashSet<String>();
+    HashSet<String> terms = new HashSet<>();
     int num = TestUtil.nextInt(random(), 0, 255);
     for (int i = 0; i < num; i++) {
       sb.append(' ');

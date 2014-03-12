@@ -348,7 +348,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     spellCheck = (NamedList) values.get("spellcheck");
     suggestions = (NamedList) spellCheck.get("suggestions");
     List<NamedList> expandedCollationList = suggestions.getAll("collation");
-    Set<String> usedcollations = new HashSet<String>();
+    Set<String> usedcollations = new HashSet<>();
     assertTrue(expandedCollationList.size() == 2);
     for (NamedList expandedCollation : expandedCollationList) {
       String multipleCollation = (String) expandedCollation.get("collationQuery");

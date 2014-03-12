@@ -31,13 +31,13 @@ public class SystemInfoHandlerTest extends LuceneTestCase {
     OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
 
     // make one directly
-    SimpleOrderedMap<Object> info = new SimpleOrderedMap<Object>();
+    SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
     info.add( "name", os.getName() );
     info.add( "version", os.getVersion() );
     info.add( "arch", os.getArch() );
 
     // make another using addGetterIfAvaliable 
-    SimpleOrderedMap<Object> info2 = new SimpleOrderedMap<Object>();
+    SimpleOrderedMap<Object> info2 = new SimpleOrderedMap<>();
     SystemInfoHandler.addGetterIfAvaliable( os, "name", info2 );
     SystemInfoHandler.addGetterIfAvaliable( os, "version", info2 );
     SystemInfoHandler.addGetterIfAvaliable( os, "arch", info2 );

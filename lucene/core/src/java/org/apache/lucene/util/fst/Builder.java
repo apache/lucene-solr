@@ -160,9 +160,9 @@ public class Builder<T> {
     this.shareMaxTailLength = shareMaxTailLength;
     this.doPackFST = doPackFST;
     this.acceptableOverheadRatio = acceptableOverheadRatio;
-    fst = new FST<T>(inputType, outputs, doPackFST, acceptableOverheadRatio, allowArrayArcs, bytesPageBits);
+    fst = new FST<>(inputType, outputs, doPackFST, acceptableOverheadRatio, allowArrayArcs, bytesPageBits);
     if (doShareSuffix) {
-      dedupHash = new NodeHash<T>(fst, fst.bytes.getReverseReader(false));
+      dedupHash = new NodeHash<>(fst, fst.bytes.getReverseReader(false));
     } else {
       dedupHash = null;
     }
@@ -172,7 +172,7 @@ public class Builder<T> {
         (UnCompiledNode<T>[]) new UnCompiledNode[10];
     frontier = f;
     for(int idx=0;idx<frontier.length;idx++) {
-      frontier[idx] = new UnCompiledNode<T>(this, idx);
+      frontier[idx] = new UnCompiledNode<>(this, idx);
     }
   }
 
@@ -301,7 +301,7 @@ public class Builder<T> {
             // undecided on whether to prune it.  later, it
             // will be either compiled or pruned, so we must
             // allocate a new node:
-            frontier[idx] = new UnCompiledNode<T>(this, idx);
+            frontier[idx] = new UnCompiledNode<>(this, idx);
           }
         }
       }
@@ -384,7 +384,7 @@ public class Builder<T> {
         new UnCompiledNode[ArrayUtil.oversize(input.length+1, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
       System.arraycopy(frontier, 0, next, 0, frontier.length);
       for(int idx=frontier.length;idx<next.length;idx++) {
-        next[idx] = new UnCompiledNode<T>(this, idx);
+        next[idx] = new UnCompiledNode<>(this, idx);
       }
       frontier = next;
     }
@@ -553,7 +553,7 @@ public class Builder<T> {
     public UnCompiledNode(Builder<T> owner, int depth) {
       this.owner = owner;
       arcs = (Arc<T>[]) new Arc[1];
-      arcs[0] = new Arc<T>();
+      arcs[0] = new Arc<>();
       output = owner.NO_OUTPUT;
       this.depth = depth;
     }
@@ -587,7 +587,7 @@ public class Builder<T> {
           new Arc[ArrayUtil.oversize(numArcs+1, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
         System.arraycopy(arcs, 0, newArcs, 0, arcs.length);
         for(int arcIdx=numArcs;arcIdx<newArcs.length;arcIdx++) {
-          newArcs[arcIdx] = new Arc<T>();
+          newArcs[arcIdx] = new Arc<>();
         }
         arcs = newArcs;
       }

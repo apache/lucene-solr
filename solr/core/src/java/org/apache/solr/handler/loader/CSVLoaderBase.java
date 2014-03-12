@@ -164,7 +164,7 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
   CSVLoaderBase(SolrQueryRequest req, UpdateRequestProcessor processor) {
     this.processor = processor;
     this.params = req.getParams();
-    this.literals = new HashMap<String, String>();
+    this.literals = new HashMap<>();
 
     templateAdd = new AddUpdateCommand(req);
     templateAdd.overwrite=params.getBool(OVERWRITE,true);

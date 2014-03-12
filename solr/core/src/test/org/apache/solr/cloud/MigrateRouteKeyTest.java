@@ -141,7 +141,7 @@ public class MigrateRouteKeyTest extends BasicDistributedZkTest {
   }
 
   private void createCollection(String targetCollection) throws Exception {
-    HashMap<String, List<Integer>> collectionInfos = new HashMap<String, List<Integer>>();
+    HashMap<String, List<Integer>> collectionInfos = new HashMap<>();
     CloudSolrServer client = null;
     try {
       client = createCloudClient(null);

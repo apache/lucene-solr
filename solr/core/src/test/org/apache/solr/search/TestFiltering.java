@@ -271,7 +271,7 @@ public class TestFiltering extends SolrTestCaseJ4 {
       int nonZeros=0;
       for (int qiter=0; qiter<queryIter; qiter++) {
         model.clear();
-        List<String> params = new ArrayList<String>();
+        List<String> params = new ArrayList<>();
         params.add("q"); params.add(makeRandomQuery(model, true, false));
 
         int nFilters = random().nextInt(5);

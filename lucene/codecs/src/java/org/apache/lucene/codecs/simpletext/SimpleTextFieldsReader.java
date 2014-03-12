@@ -83,7 +83,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
   
   private TreeMap<String,Long> readFields(IndexInput in) throws IOException {
     BytesRef scratch = new BytesRef(10);
-    TreeMap<String,Long> fields = new TreeMap<String,Long>();
+    TreeMap<String,Long> fields = new TreeMap<>();
     
     while (true) {
       SimpleTextUtil.readLine(in, scratch);
@@ -106,7 +106,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
     public SimpleTextTermsEnum(FST<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>> fst, IndexOptions indexOptions) {
       this.indexOptions = indexOptions;
-      fstEnum = new BytesRefFSTEnum<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>>(fst);
+      fstEnum = new BytesRefFSTEnum<>(fst);
     }
 
     @Override
@@ -513,10 +513,10 @@ class SimpleTextFieldsReader extends FieldsProducer {
     private void loadTerms() throws IOException {
       PositiveIntOutputs posIntOutputs = PositiveIntOutputs.getSingleton();
       final Builder<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>> b;
-      final PairOutputs<Long,Long> outputsInner = new PairOutputs<Long,Long>(posIntOutputs, posIntOutputs);
-      final PairOutputs<Long,PairOutputs.Pair<Long,Long>> outputs = new PairOutputs<Long,PairOutputs.Pair<Long,Long>>(posIntOutputs,
+      final PairOutputs<Long,Long> outputsInner = new PairOutputs<>(posIntOutputs, posIntOutputs);
+      final PairOutputs<Long,PairOutputs.Pair<Long,Long>> outputs = new PairOutputs<>(posIntOutputs,
                                                                                                                       outputsInner);
-      b = new Builder<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>>(FST.INPUT_TYPE.BYTE1, outputs);
+      b = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
       IndexInput in = SimpleTextFieldsReader.this.in.clone();
       in.seek(termsStart);
       final BytesRef lastTerm = new BytesRef(10);
@@ -633,7 +633,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     return Collections.unmodifiableSet(fields.keySet()).iterator();
   }
 
-  private final Map<String,SimpleTextTerms> termsCache = new HashMap<String,SimpleTextTerms>();
+  private final Map<String,SimpleTextTerms> termsCache = new HashMap<>();
 
   @Override
   synchronized public Terms terms(String field) throws IOException {

@@ -398,7 +398,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
         ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
 
         final IndexWriter finalWriter = writer;
-        final ArrayList<Throwable> failure = new ArrayList<Throwable>();
+        final ArrayList<Throwable> failure = new ArrayList<>();
         Thread t1 = new Thread() {
             @Override
             public void run() {

@@ -50,8 +50,8 @@ import org.apache.lucene.util.ToStringUtils;
  */
 public class MultiPhraseQuery extends Query {
   private String field;
-  private ArrayList<Term[]> termArrays = new ArrayList<Term[]>();
-  private ArrayList<Integer> positions = new ArrayList<Integer>();
+  private ArrayList<Term[]> termArrays = new ArrayList<>();
+  private ArrayList<Integer> positions = new ArrayList<>();
 
   private int slop = 0;
 
@@ -141,7 +141,7 @@ public class MultiPhraseQuery extends Query {
   private class MultiPhraseWeight extends Weight {
     private final Similarity similarity;
     private final Similarity.SimWeight stats;
-    private final Map<Term,TermContext> termContexts = new HashMap<Term,TermContext>();
+    private final Map<Term,TermContext> termContexts = new HashMap<>();
 
     public MultiPhraseWeight(IndexSearcher searcher)
       throws IOException {
@@ -149,7 +149,7 @@ public class MultiPhraseQuery extends Query {
       final IndexReaderContext context = searcher.getTopReaderContext();
       
       // compute idf
-      ArrayList<TermStatistics> allTermStats = new ArrayList<TermStatistics>();
+      ArrayList<TermStatistics> allTermStats = new ArrayList<>();
       for(final Term[] terms: termArrays) {
         for (Term term: terms) {
           TermContext termContext = termContexts.get(term);
@@ -479,7 +479,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
   private long cost;
 
   public UnionDocsAndPositionsEnum(Bits liveDocs, AtomicReaderContext context, Term[] terms, Map<Term,TermContext> termContexts, TermsEnum termsEnum) throws IOException {
-    List<DocsAndPositionsEnum> docsEnums = new LinkedList<DocsAndPositionsEnum>();
+    List<DocsAndPositionsEnum> docsEnums = new LinkedList<>();
     for (int i = 0; i < terms.length; i++) {
       final Term term = terms[i];
       TermState termState = termContexts.get(term).get(context.ord);

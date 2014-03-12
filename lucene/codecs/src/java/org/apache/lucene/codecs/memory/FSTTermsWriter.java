@@ -130,7 +130,7 @@ public class FSTTermsWriter extends FieldsConsumer {
   final FieldInfos fieldInfos;
   final IndexOutput out;
   final int maxDoc;
-  final List<FieldMetaData> fields = new ArrayList<FieldMetaData>();
+  final List<FieldMetaData> fields = new ArrayList<>();
 
   public FSTTermsWriter(SegmentWriteState state, PostingsWriterBase postingsWriter) throws IOException {
     final String termsFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TERMS_EXTENSION);
@@ -259,7 +259,7 @@ public class FSTTermsWriter extends FieldsConsumer {
       this.fieldInfo = fieldInfo;
       this.longsSize = postingsWriter.setField(fieldInfo);
       this.outputs = new FSTTermOutputs(fieldInfo, longsSize);
-      this.builder = new Builder<FSTTermOutputs.TermData>(FST.INPUT_TYPE.BYTE1, outputs);
+      this.builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
     }
 
     public void finishTerm(BytesRef text, BlockTermState state) throws IOException {

@@ -497,7 +497,7 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
 
 
   private String[] getAllNodes(InputStream is) throws ParserConfigurationException, IOException, SAXException {
-    List<String> expressions = new ArrayList<String>(); // XPATH and value for all elements in the indicated XML
+    List<String> expressions = new ArrayList<>(); // XPATH and value for all elements in the indicated XML
     DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory
         .newInstance();
     DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();

@@ -163,7 +163,7 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
    * instead it just collects them for asserts!
    */
   static class FakePassageFormatter extends PassageFormatter {
-    HashSet<Pair> seen = new HashSet<Pair>();
+    HashSet<Pair> seen = new HashSet<>();
     
     @Override
     public String format(Passage passages[], String content) {

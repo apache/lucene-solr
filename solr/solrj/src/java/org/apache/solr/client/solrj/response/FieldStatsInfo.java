@@ -85,9 +85,9 @@ public class FieldStatsInfo implements Serializable {
       else if( "facets".equals( entry.getKey() ) ) {
         @SuppressWarnings("unchecked")
         NamedList<Object> fields = (NamedList<Object>)entry.getValue();
-        facets = new HashMap<String, List<FieldStatsInfo>>();
+        facets = new HashMap<>();
         for( Map.Entry<String, Object> ev : fields ) {
-          List<FieldStatsInfo> vals = new ArrayList<FieldStatsInfo>();
+          List<FieldStatsInfo> vals = new ArrayList<>();
           facets.put( ev.getKey(), vals );
           @SuppressWarnings("unchecked")
           NamedList<NamedList<Object>> vnl = (NamedList<NamedList<Object>>) ev.getValue();

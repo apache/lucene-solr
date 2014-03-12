@@ -109,7 +109,7 @@ public class LFUCache<K, V> implements SolrCache<K, V> {
     }
     description += ')';
 
-    cache = new ConcurrentLFUCache<K, V>(limit, minLimit, acceptableSize, initialSize, newThread, false, null, timeDecay);
+    cache = new ConcurrentLFUCache<>(limit, minLimit, acceptableSize, initialSize, newThread, false, null, timeDecay);
     cache.setAlive(false);
 
     statsList = (List<ConcurrentLFUCache.Stats>) persistence;
@@ -117,7 +117,7 @@ public class LFUCache<K, V> implements SolrCache<K, V> {
       // must be the first time a cache of this type is being created
       // Use a CopyOnWriteArrayList since puts are very rare and iteration may be a frequent operation
       // because it is used in getStatistics()
-      statsList = new CopyOnWriteArrayList<ConcurrentLFUCache.Stats>();
+      statsList = new CopyOnWriteArrayList<>();
 
       // the first entry will be for cumulative stats of caches that have been closed.
       statsList.add(new ConcurrentLFUCache.Stats());
@@ -242,7 +242,7 @@ public class LFUCache<K, V> implements SolrCache<K, V> {
 
   @Override
   public NamedList getStatistics() {
-    NamedList<Serializable> lst = new SimpleOrderedMap<Serializable>();
+    NamedList<Serializable> lst = new SimpleOrderedMap<>();
     if (cache == null) return lst;
     ConcurrentLFUCache.Stats stats = cache.getStats();
     long lookups = stats.getCumulativeLookups();

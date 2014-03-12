@@ -78,7 +78,7 @@ public class TestPatternTokenizer extends BaseTokenStreamTestCase
     final String INPUT = "G&uuml;nther G&uuml;nther is here";
 
     // create MappingCharFilter
-    List<String> mappingRules = new ArrayList<String>();
+    List<String> mappingRules = new ArrayList<>();
     mappingRules.add( "\"&uuml;\" => \"ü\"" );
     NormalizeCharMap.Builder builder = new NormalizeCharMap.Builder();
     builder.add("&uuml;", "ü");

@@ -31,7 +31,7 @@ import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState; //javad
  * minimal contended {@link ThreadState}.
  */
 class ThreadAffinityDocumentsWriterThreadPool extends DocumentsWriterPerThreadPool {
-  private Map<Thread, ThreadState> threadBindings = new ConcurrentHashMap<Thread, ThreadState>();
+  private Map<Thread, ThreadState> threadBindings = new ConcurrentHashMap<>();
   
   /**
    * Creates a new {@link ThreadAffinityDocumentsWriterThreadPool} with a given maximum of {@link ThreadState}s.
@@ -78,7 +78,7 @@ class ThreadAffinityDocumentsWriterThreadPool extends DocumentsWriterPerThreadPo
   @Override
   public ThreadAffinityDocumentsWriterThreadPool clone() {
     ThreadAffinityDocumentsWriterThreadPool clone = (ThreadAffinityDocumentsWriterThreadPool) super.clone();
-    clone.threadBindings = new ConcurrentHashMap<Thread, ThreadState>();
+    clone.threadBindings = new ConcurrentHashMap<>();
     return clone;
   }
 }

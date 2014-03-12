@@ -79,7 +79,7 @@ public class QueryTreeBuilder implements QueryBuilder {
   public void setBuilder(CharSequence fieldName, QueryBuilder builder) {
 
     if (this.fieldNameBuilders == null) {
-      this.fieldNameBuilders = new HashMap<String, QueryBuilder>();
+      this.fieldNameBuilders = new HashMap<>();
     }
 
     this.fieldNameBuilders.put(fieldName.toString(), builder);
@@ -97,7 +97,7 @@ public class QueryTreeBuilder implements QueryBuilder {
       QueryBuilder builder) {
 
     if (this.queryNodeBuilders == null) {
-      this.queryNodeBuilders = new HashMap<Class<? extends QueryNode>, QueryBuilder>();
+      this.queryNodeBuilders = new HashMap<>();
     }
 
     this.queryNodeBuilders.put(queryNodeClass, builder);

@@ -104,7 +104,7 @@ public class SpellingQueryConverter extends QueryConverter  {
     if (original == null) { // this can happen with q.alt = and no query
       return Collections.emptyList();
     }
-    Collection<Token> result = new ArrayList<Token>();
+    Collection<Token> result = new ArrayList<>();
     Matcher matcher = QUERY_REGEX.matcher(original);
     String nextWord = null;
     int nextStartIndex = 0;

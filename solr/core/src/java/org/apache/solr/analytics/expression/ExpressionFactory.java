@@ -158,7 +158,7 @@ public class ExpressionFactory {
     String[] strings = new String[1];
     int stack = 0;
     int start = 0;
-    List<String> arguments = new ArrayList<String>();
+    List<String> arguments = new ArrayList<>();
     char[] chars = expression.toCharArray();
     for (int count = 0; count < expression.length(); count++) {
       char c = chars[count];

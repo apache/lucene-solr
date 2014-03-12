@@ -282,7 +282,7 @@ public final class SynonymFilter extends TokenFilter {
 
     //System.out.println("FSTFilt maxH=" + synonyms.maxHorizontalContext);
 
-    scratchArc = new FST.Arc<BytesRef>();
+    scratchArc = new FST.Arc<>();
   }
 
   private void capture() {

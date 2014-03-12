@@ -240,7 +240,7 @@ class JoinQuery extends Query {
         long end = debug ? System.currentTimeMillis() : 0;
 
         if (debug) {
-          SimpleOrderedMap<Object> dbg = new SimpleOrderedMap<Object>();
+          SimpleOrderedMap<Object> dbg = new SimpleOrderedMap<>();
           dbg.add("time", (end-start));
           dbg.add("fromSetSize", fromSetSize);  // the input
           dbg.add("toSetSize", resultSet.size());    // the output
@@ -295,7 +295,7 @@ class JoinQuery extends Query {
       DocSet fromSet = fromSearcher.getDocSet(q);
       fromSetSize = fromSet.size();
 
-      List<DocSet> resultList = new ArrayList<DocSet>(10);
+      List<DocSet> resultList = new ArrayList<>(10);
 
       // make sure we have a set that is fast for random access, if we will use it for that
       DocSet fastForRandomSet = fromSet;

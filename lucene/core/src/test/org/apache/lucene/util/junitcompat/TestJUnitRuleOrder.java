@@ -75,7 +75,7 @@ public class TestJUnitRuleOrder extends WithNestedTests {
 
     @BeforeClass
     public static void beforeClassCleanup() {
-      stack = new Stack<String>();
+      stack = new Stack<>();
     }
 
     @AfterClass

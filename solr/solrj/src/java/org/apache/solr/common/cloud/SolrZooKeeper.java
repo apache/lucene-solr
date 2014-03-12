@@ -31,7 +31,7 @@ import org.apache.zookeeper.ZooKeeper;
 
 // we use this class to expose nasty stuff for tests
 public class SolrZooKeeper extends ZooKeeper {
-  final Set<Thread> spawnedThreads = new CopyOnWriteArraySet<Thread>();
+  final Set<Thread> spawnedThreads = new CopyOnWriteArraySet<>();
   
   // for test debug
   //static Map<SolrZooKeeper,Exception> clients = new ConcurrentHashMap<SolrZooKeeper,Exception>();

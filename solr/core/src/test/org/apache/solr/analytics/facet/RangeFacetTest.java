@@ -53,14 +53,14 @@ public class RangeFacetTest extends AbstractAnalyticsFacetTest {
     h.update("<delete><query>*:*</query></delete>");
     
     //INT
-    intLongTestStart = new ArrayList<ArrayList<Integer>>(); 
-    intDoubleTestStart = new ArrayList<ArrayList<Integer>>(); 
-    intDateTestStart = new ArrayList<ArrayList<Integer>>(); 
+    intLongTestStart = new ArrayList<>();
+    intDoubleTestStart = new ArrayList<>();
+    intDateTestStart = new ArrayList<>();
     
     //FLOAT
-    floatLongTestStart = new ArrayList<ArrayList<Float>>(); 
-    floatDoubleTestStart = new ArrayList<ArrayList<Float>>(); 
-    floatDateTestStart = new ArrayList<ArrayList<Float>>(); 
+    floatLongTestStart = new ArrayList<>();
+    floatDoubleTestStart = new ArrayList<>();
+    floatDateTestStart = new ArrayList<>();
     
     for (int j = 0; j < NUM_LOOPS; ++j) {
       int i = j%INT;
@@ -73,10 +73,10 @@ public class RangeFacetTest extends AbstractAnalyticsFacetTest {
           "double_dd", "" + d,  "date_dtd", (1000+dt) + "-01-01T23:59:59Z", "string_sd", "abc" + s));
       //Longs
       if (j-LONG<0) {
-        ArrayList<Integer> list1 = new ArrayList<Integer>();
+        ArrayList<Integer> list1 = new ArrayList<>();
         list1.add(i);
         intLongTestStart.add(list1);
-        ArrayList<Float> list2 = new ArrayList<Float>();
+        ArrayList<Float> list2 = new ArrayList<>();
         list2.add(f);
         floatLongTestStart.add(list2);
       } else {
@@ -85,10 +85,10 @@ public class RangeFacetTest extends AbstractAnalyticsFacetTest {
       }
       //Doubles
       if (j-DOUBLE<0) {
-        ArrayList<Integer> list1 = new ArrayList<Integer>();
+        ArrayList<Integer> list1 = new ArrayList<>();
         list1.add(i);
         intDoubleTestStart.add(list1);
-        ArrayList<Float> list2 = new ArrayList<Float>();
+        ArrayList<Float> list2 = new ArrayList<>();
         list2.add(f);
         floatDoubleTestStart.add(list2);
       } else {
@@ -97,10 +97,10 @@ public class RangeFacetTest extends AbstractAnalyticsFacetTest {
       }
       //Dates
       if (j-DATE<0) {
-        ArrayList<Integer> list1 = new ArrayList<Integer>();
+        ArrayList<Integer> list1 = new ArrayList<>();
         list1.add(i);
         intDateTestStart.add(list1);
-        ArrayList<Float> list2 = new ArrayList<Float>();
+        ArrayList<Float> list2 = new ArrayList<>();
         list2.add(f);
         floatDateTestStart.add(list2);
       } else {
@@ -235,11 +235,11 @@ public class RangeFacetTest extends AbstractAnalyticsFacetTest {
       end+=gap-off;
     }
 
-    ArrayList<ArrayList<T>> lists = new ArrayList<ArrayList<T>>();
-    ArrayList<T> between = new ArrayList<T>();
+    ArrayList<ArrayList<T>> lists = new ArrayList<>();
+    ArrayList<T> between = new ArrayList<>();
     if (incLow && incUp) {
       for (int i = start; i<end && i<listsStart.size(); i+=gap) {
-        ArrayList<T> list = new ArrayList<T>();
+        ArrayList<T> list = new ArrayList<>();
         for (int j = i; j<=i+gap && j<=end && j<listsStart.size(); j++) {
           list.addAll(listsStart.get(j));
         }
@@ -250,7 +250,7 @@ public class RangeFacetTest extends AbstractAnalyticsFacetTest {
       }
     } else if (incLow && !incUp) {
       for (int i = start; i<end && i<listsStart.size(); i+=gap) {
-        ArrayList<T> list = new ArrayList<T>();
+        ArrayList<T> list = new ArrayList<>();
         for (int j = i; j<i+gap && j<end && j<listsStart.size(); j++) {
           list.addAll(listsStart.get(j));
         }
@@ -261,7 +261,7 @@ public class RangeFacetTest extends AbstractAnalyticsFacetTest {
       }
     } else if (!incLow && incUp) {
       for (int i = start; i<end && i<listsStart.size(); i+=gap) {
-        ArrayList<T> list = new ArrayList<T>();
+        ArrayList<T> list = new ArrayList<>();
         for (int j = i+1; j<=i+gap && j<=end && j<listsStart.size(); j++) {
           list.addAll(listsStart.get(j));
         }
@@ -272,7 +272,7 @@ public class RangeFacetTest extends AbstractAnalyticsFacetTest {
       }
     } else {
       for (int i = start; i<end && i<listsStart.size(); i+=gap) {
-        ArrayList<T> list = new ArrayList<T>();
+        ArrayList<T> list = new ArrayList<>();
         for (int j = i+1; j<i+gap && j<end && j<listsStart.size(); j++) {
           list.addAll(listsStart.get(j));
         }
@@ -291,8 +291,8 @@ public class RangeFacetTest extends AbstractAnalyticsFacetTest {
       lists.get(lists.size()-1).addAll(listsStart.get(end));
       between.addAll(listsStart.get(end));
     }
-    ArrayList<T> before = new ArrayList<T>();
-    ArrayList<T> after = new ArrayList<T>();
+    ArrayList<T> before = new ArrayList<>();
+    ArrayList<T> after = new ArrayList<>();
     if (incOut || !(incLow||incEdge)) {
       for (int i = 0; i<=start; i++) {
         before.addAll(listsStart.get(i));
@@ -341,8 +341,8 @@ public class RangeFacetTest extends AbstractAnalyticsFacetTest {
       end+=last-off;
     }
     
-    ArrayList<ArrayList<T>> lists = new ArrayList<ArrayList<T>>();
-    ArrayList<T> between = new ArrayList<T>();
+    ArrayList<ArrayList<T>> lists = new ArrayList<>();
+    ArrayList<T> between = new ArrayList<>();
     int gap = 0;
     int gapCounter = 0;
     if (incLow && incUp) {
@@ -350,7 +350,7 @@ public class RangeFacetTest extends AbstractAnalyticsFacetTest {
         if (gapCounter<gaps.length) {
           gap = gaps[gapCounter++];
         }
-        ArrayList<T> list = new ArrayList<T>();
+        ArrayList<T> list = new ArrayList<>();
         for (int j = i; j<=i+gap && j<=end && j<listsStart.size(); j++) {
           list.addAll(listsStart.get(j));
         }
@@ -364,7 +364,7 @@ public class RangeFacetTest extends AbstractAnalyticsFacetTest {
         if (gapCounter<gaps.length) {
           gap = gaps[gapCounter++];
         }
-        ArrayList<T> list = new ArrayList<T>();
+        ArrayList<T> list = new ArrayList<>();
         for (int j = i; j<i+gap && j<end && j<listsStart.size(); j++) {
           list.addAll(listsStart.get(j));
         }
@@ -378,7 +378,7 @@ public class RangeFacetTest extends AbstractAnalyticsFacetTest {
         if (gapCounter<gaps.length) {
           gap = gaps[gapCounter++];
         }
-        ArrayList<T> list = new ArrayList<T>();
+        ArrayList<T> list = new ArrayList<>();
         for (int j = i+1; j<=i+gap && j<=end && j<listsStart.size(); j++) {
           list.addAll(listsStart.get(j));
         }
@@ -392,7 +392,7 @@ public class RangeFacetTest extends AbstractAnalyticsFacetTest {
         if (gapCounter<gaps.length) {
           gap = gaps[gapCounter++];
         }
-        ArrayList<T> list = new ArrayList<T>();
+        ArrayList<T> list = new ArrayList<>();
         for (int j = i+1; j<i+gap && j<end && j<listsStart.size(); j++) {
           list.addAll(listsStart.get(j));
         }
@@ -411,8 +411,8 @@ public class RangeFacetTest extends AbstractAnalyticsFacetTest {
       lists.get(lists.size()-1).addAll(listsStart.get(end));
       between.addAll(listsStart.get(end));
     }
-    ArrayList<T> before = new ArrayList<T>();
-    ArrayList<T> after = new ArrayList<T>();
+    ArrayList<T> before = new ArrayList<>();
+    ArrayList<T> after = new ArrayList<>();
     if (incOut || !(incLow||incEdge)) {
       for (int i = 0; i<=start; i++) {
         before.addAll(listsStart.get(i));

@@ -379,7 +379,7 @@ final class SloppyPhraseScorer extends Scorer {
   /** Detect repetition groups. Done once - for first doc */
   private ArrayList<ArrayList<PhrasePositions>> gatherRptGroups(LinkedHashMap<Term,Integer> rptTerms) throws IOException {
     PhrasePositions[] rpp = repeatingPPs(rptTerms); 
-    ArrayList<ArrayList<PhrasePositions>> res = new ArrayList<ArrayList<PhrasePositions>>();
+    ArrayList<ArrayList<PhrasePositions>> res = new ArrayList<>();
     if (!hasMultiTermRpts) {
       // simpler - no multi-terms - can base on positions in first doc
       for (int i=0; i<rpp.length; i++) {
@@ -399,7 +399,7 @@ final class SloppyPhraseScorer extends Scorer {
           if (g < 0) {
             g = res.size();
             pp.rptGroup = g;  
-            ArrayList<PhrasePositions> rl = new ArrayList<PhrasePositions>(2);
+            ArrayList<PhrasePositions> rl = new ArrayList<>(2);
             rl.add(pp);
             res.add(rl); 
           }
@@ -409,11 +409,11 @@ final class SloppyPhraseScorer extends Scorer {
       }
     } else {
       // more involved - has multi-terms
-      ArrayList<HashSet<PhrasePositions>> tmp = new ArrayList<HashSet<PhrasePositions>>();
+      ArrayList<HashSet<PhrasePositions>> tmp = new ArrayList<>();
       ArrayList<FixedBitSet> bb = ppTermsBitSets(rpp, rptTerms);
       unionTermGroups(bb);
       HashMap<Term,Integer> tg = termGroups(rptTerms, bb);
-      HashSet<Integer> distinctGroupIDs = new HashSet<Integer>(tg.values());
+      HashSet<Integer> distinctGroupIDs = new HashSet<>(tg.values());
       for (int i=0; i<distinctGroupIDs.size(); i++) {
         tmp.add(new HashSet<PhrasePositions>());
       }
@@ -428,7 +428,7 @@ final class SloppyPhraseScorer extends Scorer {
         }
       }
       for (HashSet<PhrasePositions> hs : tmp) {
-        res.add(new ArrayList<PhrasePositions>(hs));
+        res.add(new ArrayList<>(hs));
       }
     }
     return res;
@@ -441,8 +441,8 @@ final class SloppyPhraseScorer extends Scorer {
 
   /** find repeating terms and assign them ordinal values */
   private LinkedHashMap<Term,Integer> repeatingTerms() {
-    LinkedHashMap<Term,Integer> tord = new LinkedHashMap<Term,Integer>();
-    HashMap<Term,Integer> tcnt = new HashMap<Term,Integer>();
+    LinkedHashMap<Term,Integer> tord = new LinkedHashMap<>();
+    HashMap<Term,Integer> tcnt = new HashMap<>();
     for (PhrasePositions pp=min,prev=null; prev!=max; pp=(prev=pp).next) { // iterate cyclic list: done once handled max
       for (Term t : pp.terms) {
         Integer cnt0 = tcnt.get(t);
@@ -458,7 +458,7 @@ final class SloppyPhraseScorer extends Scorer {
 
   /** find repeating pps, and for each, if has multi-terms, update this.hasMultiTermRpts */
   private PhrasePositions[] repeatingPPs(HashMap<Term,Integer> rptTerms) {
-    ArrayList<PhrasePositions> rp = new ArrayList<PhrasePositions>(); 
+    ArrayList<PhrasePositions> rp = new ArrayList<>();
     for (PhrasePositions pp=min,prev=null; prev!=max; pp=(prev=pp).next) { // iterate cyclic list: done once handled max
       for (Term t : pp.terms) {
         if (rptTerms.containsKey(t)) {
@@ -473,7 +473,7 @@ final class SloppyPhraseScorer extends Scorer {
   
   /** bit-sets - for each repeating pp, for each of its repeating terms, the term ordinal values is set */
   private ArrayList<FixedBitSet> ppTermsBitSets(PhrasePositions[] rpp, HashMap<Term,Integer> tord) {
-    ArrayList<FixedBitSet> bb = new ArrayList<FixedBitSet>(rpp.length);
+    ArrayList<FixedBitSet> bb = new ArrayList<>(rpp.length);
     for (PhrasePositions pp : rpp) {
       FixedBitSet b = new FixedBitSet(tord.size());
       Integer ord;
@@ -507,7 +507,7 @@ final class SloppyPhraseScorer extends Scorer {
   
   /** map each term to the single group that contains it */ 
   private HashMap<Term,Integer> termGroups(LinkedHashMap<Term,Integer> tord, ArrayList<FixedBitSet> bb) throws IOException {
-    HashMap<Term,Integer> tg = new HashMap<Term,Integer>();
+    HashMap<Term,Integer> tg = new HashMap<>();
     Term[] t = tord.keySet().toArray(new Term[0]);
     for (int i=0; i<bb.size(); i++) { // i is the group no.
       DocIdSetIterator bits = bb.get(i).iterator();

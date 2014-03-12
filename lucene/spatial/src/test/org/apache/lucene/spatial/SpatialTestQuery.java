@@ -38,7 +38,7 @@ public class SpatialTestQuery {
   public String line;
   public int lineNumber = -1;
   public SpatialArgs args;
-  public List<String> ids = new ArrayList<String>();
+  public List<String> ids = new ArrayList<>();
 
   /**
    * Get Test Queries.  The InputStream is closed.
@@ -49,7 +49,7 @@ public class SpatialTestQuery {
       final String name,
       final InputStream in ) throws IOException {
 
-    List<SpatialTestQuery> results = new ArrayList<SpatialTestQuery>();
+    List<SpatialTestQuery> results = new ArrayList<>();
 
     BufferedReader bufInput = new BufferedReader(new InputStreamReader(in,"UTF-8"));
     try {

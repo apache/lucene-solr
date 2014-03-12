@@ -227,7 +227,7 @@ public class PeerSync  {
       }
 
       // let's merge the lists
-      List<Long> newList = new ArrayList<Long>(ourUpdates);
+      List<Long> newList = new ArrayList<>(ourUpdates);
       for (Long ver : startingVersions) {
         if (Math.abs(ver) < smallestNewUpdate) {
           newList.add(ver);
@@ -248,8 +248,8 @@ public class PeerSync  {
       }
     }
 
-    ourUpdateSet = new HashSet<Long>(ourUpdates);
-    requestedUpdateSet = new HashSet<Long>(ourUpdates);
+    ourUpdateSet = new HashSet<>(ourUpdates);
+    requestedUpdateSet = new HashSet<>(ourUpdates);
 
     for(;;) {
       ShardResponse srsp = shardHandler.takeCompletedOrError();
@@ -390,7 +390,7 @@ public class PeerSync  {
       return true;
     }
     
-    List<Long> toRequest = new ArrayList<Long>();
+    List<Long> toRequest = new ArrayList<>();
     for (Long otherVersion : otherVersions) {
       // stop when the entries get old enough that reorders may lead us to see updates we don't need
       if (!completeList && Math.abs(otherVersion) < ourLowThreshold) break;

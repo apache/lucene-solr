@@ -49,12 +49,12 @@ public class LineRandomizerMapperReducerTest extends Assert {
   @Test
   public void testMapReduce2Items() throws IOException {
     mapReduceDriver.withAll(Arrays.asList(
-        new Pair<LongWritable, Text>(new LongWritable(0), new Text("hello")),
-        new Pair<LongWritable, Text>(new LongWritable(1), new Text("world"))
+        new Pair<>(new LongWritable(0), new Text("hello")),
+        new Pair<>(new LongWritable(1), new Text("world"))
         ));
     mapReduceDriver.withAllOutput(Arrays.asList(
-        new Pair<Text, NullWritable>(new Text("world"), NullWritable.get()),
-        new Pair<Text, NullWritable>(new Text("hello"), NullWritable.get())
+        new Pair<>(new Text("world"), NullWritable.get()),
+        new Pair<>(new Text("hello"), NullWritable.get())
         ));
     mapReduceDriver.runTest();
   }
@@ -62,14 +62,14 @@ public class LineRandomizerMapperReducerTest extends Assert {
   @Test
   public void testMapReduce3Items() throws IOException {
     mapReduceDriver.withAll(Arrays.asList(
-        new Pair<LongWritable, Text>(new LongWritable(0), new Text("hello")),
-        new Pair<LongWritable, Text>(new LongWritable(1), new Text("world")),
-        new Pair<LongWritable, Text>(new LongWritable(2), new Text("nadja"))
+        new Pair<>(new LongWritable(0), new Text("hello")),
+        new Pair<>(new LongWritable(1), new Text("world")),
+        new Pair<>(new LongWritable(2), new Text("nadja"))
         ));
     mapReduceDriver.withAllOutput(Arrays.asList(
-        new Pair<Text, NullWritable>(new Text("nadja"), NullWritable.get()),
-        new Pair<Text, NullWritable>(new Text("world"), NullWritable.get()),
-        new Pair<Text, NullWritable>(new Text("hello"), NullWritable.get())
+        new Pair<>(new Text("nadja"), NullWritable.get()),
+        new Pair<>(new Text("world"), NullWritable.get()),
+        new Pair<>(new Text("hello"), NullWritable.get())
         ));
     mapReduceDriver.runTest();
   }
@@ -77,16 +77,16 @@ public class LineRandomizerMapperReducerTest extends Assert {
   @Test
   public void testMapReduce4Items() throws IOException {
     mapReduceDriver.withAll(Arrays.asList(
-        new Pair<LongWritable, Text>(new LongWritable(0), new Text("hello")),
-        new Pair<LongWritable, Text>(new LongWritable(1), new Text("world")),
-        new Pair<LongWritable, Text>(new LongWritable(2), new Text("nadja")),
-        new Pair<LongWritable, Text>(new LongWritable(3), new Text("basti"))
+        new Pair<>(new LongWritable(0), new Text("hello")),
+        new Pair<>(new LongWritable(1), new Text("world")),
+        new Pair<>(new LongWritable(2), new Text("nadja")),
+        new Pair<>(new LongWritable(3), new Text("basti"))
         ));
     mapReduceDriver.withAllOutput(Arrays.asList(
-        new Pair<Text, NullWritable>(new Text("nadja"), NullWritable.get()),
-        new Pair<Text, NullWritable>(new Text("world"), NullWritable.get()),
-        new Pair<Text, NullWritable>(new Text("basti"), NullWritable.get()),
-        new Pair<Text, NullWritable>(new Text("hello"), NullWritable.get())
+        new Pair<>(new Text("nadja"), NullWritable.get()),
+        new Pair<>(new Text("world"), NullWritable.get()),
+        new Pair<>(new Text("basti"), NullWritable.get()),
+        new Pair<>(new Text("hello"), NullWritable.get())
         ));
     mapReduceDriver.runTest();
   }

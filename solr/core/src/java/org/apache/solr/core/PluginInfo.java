@@ -55,7 +55,7 @@ public class PluginInfo {
   }
 
   private List<PluginInfo> loadSubPlugins(Node node) {
-    List<PluginInfo> children = new ArrayList<PluginInfo>();
+    List<PluginInfo> children = new ArrayList<>();
     //if there is another sub tag with a non namedlist tag that has to be another plugin
     NodeList nlst = node.getChildNodes();
     for (int i = 0; i < nlst.getLength(); i++) {
@@ -99,13 +99,13 @@ public class PluginInfo {
    */
   public List<PluginInfo> getChildren(String type){
     if(children.isEmpty()) return children;
-    List<PluginInfo> result = new ArrayList<PluginInfo>();
+    List<PluginInfo> result = new ArrayList<>();
     for (PluginInfo child : children) if(type.equals(child.type)) result.add(child);
     return result;
   }
   public static final PluginInfo EMPTY_INFO = new PluginInfo("",Collections.<String,String>emptyMap(), new NamedList(),Collections.<PluginInfo>emptyList());
 
-  private static final HashSet<String> NL_TAGS = new HashSet<String>
+  private static final HashSet<String> NL_TAGS = new HashSet<>
     (Arrays.asList("lst", "arr",
                    "bool",
                    "str",

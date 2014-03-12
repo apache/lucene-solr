@@ -30,7 +30,7 @@ import java.io.IOException;
 
 public final class IntsRefFSTEnum<T> extends FSTEnum<T> {
   private final IntsRef current = new IntsRef(10);
-  private final InputOutput<T> result = new InputOutput<T>();
+  private final InputOutput<T> result = new InputOutput<>();
   private IntsRef target;
 
   /** Holds a single input (IntsRef) + output pair. */

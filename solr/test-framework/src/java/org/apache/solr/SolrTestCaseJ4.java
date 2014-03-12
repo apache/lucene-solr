@@ -437,7 +437,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   /** Causes an exception matching the regex pattern to not be logged. */
   public static void ignoreException(String pattern) {
     if (SolrException.ignorePatterns == null)
-      SolrException.ignorePatterns = new HashSet<String>();
+      SolrException.ignorePatterns = new HashSet<>();
     SolrException.ignorePatterns.add(pattern);
   }
 
@@ -1374,7 +1374,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
 
     public Map<String,Object> toObject(IndexSchema schema) {
-      Map<String,Object> result = new HashMap<String,Object>();
+      Map<String,Object> result = new HashMap<>();
       for (Fld fld : fields) {
         SchemaField sf = schema.getField(fld.ftype.fname);
         if (!sf.multiValued()) {
@@ -1419,7 +1419,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     public List<Comparable> createValues() {
       int nVals = numValues.getInt();
       if (nVals <= 0) return null;
-      List<Comparable> vals = new ArrayList<Comparable>(nVals);
+      List<Comparable> vals = new ArrayList<>(nVals);
       for (int i=0; i<nVals; i++)
         vals.add(createValue());
       return vals;
@@ -1440,7 +1440,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   public Map<Comparable,Doc> indexDocs(List<FldType> descriptor, Map<Comparable,Doc> model, int nDocs) throws Exception {
     if (model == null) {
-      model = new LinkedHashMap<Comparable,Doc>();
+      model = new LinkedHashMap<>();
     }
 
     // commit an average of 10 times for large sets, or 10% of the time for small sets
@@ -1499,7 +1499,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   public static Doc createDoc(List<FldType> descriptor) {
     Doc doc = new Doc();
-    doc.fields = new ArrayList<Fld>();
+    doc.fields = new ArrayList<>();
     for (FldType ftype : descriptor) {
       Fld fld = ftype.createField();
       if (fld != null) {
@@ -1514,7 +1514,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static Comparator<Doc> createSort(IndexSchema schema, List<FldType> fieldTypes, String[] out) {
     StringBuilder sortSpec = new StringBuilder();
     int nSorts = random().nextInt(4);
-    List<Comparator<Doc>> comparators = new ArrayList<Comparator<Doc>>();
+    List<Comparator<Doc>> comparators = new ArrayList<>();
     for (int i=0; i<nSorts; i++) {
       if (i>0) sortSpec.append(',');
 
@@ -1653,7 +1653,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   /** Return a Map from field value to a list of document ids */
   public Map<Comparable, List<Comparable>> invertField(Map<Comparable, Doc> model, String field) {
-    Map<Comparable, List<Comparable>> value_to_id = new HashMap<Comparable, List<Comparable>>();
+    Map<Comparable, List<Comparable>> value_to_id = new HashMap<>();
 
     // invert field
     for (Comparable key : model.keySet()) {
@@ -1663,7 +1663,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       for (Comparable val : vals) {
         List<Comparable> ids = value_to_id.get(val);
         if (ids == null) {
-          ids = new ArrayList<Comparable>(2);
+          ids = new ArrayList<>(2);
           value_to_id.put(val, ids);
         }
         ids.add(key);

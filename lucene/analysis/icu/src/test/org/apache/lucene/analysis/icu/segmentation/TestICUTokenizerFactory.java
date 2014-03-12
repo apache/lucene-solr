@@ -44,7 +44,7 @@ public class TestICUTokenizerFactory extends BaseTokenStreamTestCase {
     // “ U+201C LEFT DOUBLE QUOTATION MARK; ” U+201D RIGHT DOUBLE QUOTATION MARK
     Reader reader = new StringReader
         ("  Don't,break.at?/(punct)!  \u201Cnice\u201D\r\n\r\n85_At:all; `really\" +2=3$5,&813 !@#%$^)(*@#$   ");
-    final Map<String,String> args = new HashMap<String,String>();
+    final Map<String,String> args = new HashMap<>();
     args.put(ICUTokenizerFactory.RULEFILES, "Latn:Latin-break-only-on-whitespace.rbbi");
     ICUTokenizerFactory factory = new ICUTokenizerFactory(args);
     factory.inform(new ClasspathResourceLoader(this.getClass()));
@@ -58,7 +58,7 @@ public class TestICUTokenizerFactory extends BaseTokenStreamTestCase {
   public void testTokenizeLatinDontBreakOnHyphens() throws Exception {
     Reader reader = new StringReader
         ("One-two punch.  Brang-, not brung-it.  This one--not that one--is the right one, -ish.");
-    final Map<String,String> args = new HashMap<String,String>();
+    final Map<String,String> args = new HashMap<>();
     args.put(ICUTokenizerFactory.RULEFILES, "Latn:Latin-dont-break-on-hyphens.rbbi");
     ICUTokenizerFactory factory = new ICUTokenizerFactory(args);
     factory.inform(new ClasspathResourceLoader(getClass()));
@@ -78,7 +78,7 @@ public class TestICUTokenizerFactory extends BaseTokenStreamTestCase {
   public void testKeywordTokenizeCyrillicAndThai() throws Exception {
     Reader reader = new StringReader
         ("Some English.  Немного русский.  ข้อความภาษาไทยเล็ก ๆ น้อย ๆ  More English.");
-    final Map<String,String> args = new HashMap<String,String>();
+    final Map<String,String> args = new HashMap<>();
     args.put(ICUTokenizerFactory.RULEFILES, "Cyrl:KeywordTokenizer.rbbi,Thai:KeywordTokenizer.rbbi");
     ICUTokenizerFactory factory = new ICUTokenizerFactory(args);
     factory.inform(new ClasspathResourceLoader(getClass()));

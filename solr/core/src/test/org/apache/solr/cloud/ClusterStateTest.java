@@ -41,14 +41,14 @@ import static org.easymock.EasyMock.expectLastCall;
 public class ClusterStateTest extends SolrTestCaseJ4 {
   @Test
   public void testStoreAndRead() throws Exception {
-    Map<String,DocCollection> collectionStates = new HashMap<String,DocCollection>();
-    Set<String> liveNodes = new HashSet<String>();
+    Map<String,DocCollection> collectionStates = new HashMap<>();
+    Set<String> liveNodes = new HashSet<>();
     liveNodes.add("node1");
     liveNodes.add("node2");
     
-    Map<String,Slice> slices = new HashMap<String,Slice>();
-    Map<String,Replica> sliceToProps = new HashMap<String,Replica>();
-    Map<String,Object> props = new HashMap<String,Object>();
+    Map<String,Slice> slices = new HashMap<>();
+    Map<String,Replica> sliceToProps = new HashMap<>();
+    Map<String,Object> props = new HashMap<>();
 
     props.put("prop1", "value");
     props.put("prop2", "value2");

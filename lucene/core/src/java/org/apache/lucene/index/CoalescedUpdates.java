@@ -28,9 +28,9 @@ import org.apache.lucene.index.BufferedUpdatesStream.QueryAndLimit;
 import org.apache.lucene.util.MergedIterator;
 
 class CoalescedUpdates {
-  final Map<Query,Integer> queries = new HashMap<Query,Integer>();
-  final List<Iterable<Term>> iterables = new ArrayList<Iterable<Term>>();
-  final List<NumericUpdate> numericDVUpdates = new ArrayList<NumericUpdate>();
+  final Map<Query,Integer> queries = new HashMap<>();
+  final List<Iterable<Term>> iterables = new ArrayList<>();
+  final List<NumericUpdate> numericDVUpdates = new ArrayList<>();
   
   @Override
   public String toString() {
@@ -62,7 +62,7 @@ class CoalescedUpdates {
        for (int i = 0; i < iterables.size(); i++) {
          subs[i] = iterables.get(i).iterator();
        }
-       return new MergedIterator<Term>(subs);
+       return new MergedIterator<>(subs);
      }
    };
   }

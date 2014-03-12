@@ -52,9 +52,9 @@ import org.apache.solr.util.DateMathParser;
 public class DateFormatEvaluator extends Evaluator {
   
   public static final String DEFAULT_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
-  Map<DateFormatCacheKey, SimpleDateFormat> cache = new WeakHashMap<DateFormatCacheKey, SimpleDateFormat>();
-  Map<String, Locale> availableLocales = new HashMap<String, Locale>();
-  Set<String> availableTimezones = new HashSet<String>();
+  Map<DateFormatCacheKey, SimpleDateFormat> cache = new WeakHashMap<>();
+  Map<String, Locale> availableLocales = new HashMap<>();
+  Set<String> availableTimezones = new HashSet<>();
   
   class DateFormatCacheKey {
     DateFormatCacheKey(Locale l, TimeZone tz, String df) {

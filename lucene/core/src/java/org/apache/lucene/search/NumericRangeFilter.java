@@ -61,7 +61,7 @@ public final class NumericRangeFilter<T extends Number> extends MultiTermQueryWr
   public static NumericRangeFilter<Long> newLongRange(final String field, final int precisionStep,
     Long min, Long max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeFilter<Long>(
+    return new NumericRangeFilter<>(
       NumericRangeQuery.newLongRange(field, precisionStep, min, max, minInclusive, maxInclusive)
     );
   }
@@ -76,7 +76,7 @@ public final class NumericRangeFilter<T extends Number> extends MultiTermQueryWr
   public static NumericRangeFilter<Long> newLongRange(final String field,
     Long min, Long max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeFilter<Long>(
+    return new NumericRangeFilter<>(
       NumericRangeQuery.newLongRange(field, min, max, minInclusive, maxInclusive)
     );
   }
@@ -91,7 +91,7 @@ public final class NumericRangeFilter<T extends Number> extends MultiTermQueryWr
   public static NumericRangeFilter<Integer> newIntRange(final String field, final int precisionStep,
     Integer min, Integer max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeFilter<Integer>(
+    return new NumericRangeFilter<>(
       NumericRangeQuery.newIntRange(field, precisionStep, min, max, minInclusive, maxInclusive)
     );
   }
@@ -106,7 +106,7 @@ public final class NumericRangeFilter<T extends Number> extends MultiTermQueryWr
   public static NumericRangeFilter<Integer> newIntRange(final String field,
     Integer min, Integer max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeFilter<Integer>(
+    return new NumericRangeFilter<>(
       NumericRangeQuery.newIntRange(field, min, max, minInclusive, maxInclusive)
     );
   }
@@ -123,7 +123,7 @@ public final class NumericRangeFilter<T extends Number> extends MultiTermQueryWr
   public static NumericRangeFilter<Double> newDoubleRange(final String field, final int precisionStep,
     Double min, Double max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeFilter<Double>(
+    return new NumericRangeFilter<>(
       NumericRangeQuery.newDoubleRange(field, precisionStep, min, max, minInclusive, maxInclusive)
     );
   }
@@ -140,7 +140,7 @@ public final class NumericRangeFilter<T extends Number> extends MultiTermQueryWr
   public static NumericRangeFilter<Double> newDoubleRange(final String field,
     Double min, Double max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeFilter<Double>(
+    return new NumericRangeFilter<>(
       NumericRangeQuery.newDoubleRange(field, min, max, minInclusive, maxInclusive)
     );
   }
@@ -157,7 +157,7 @@ public final class NumericRangeFilter<T extends Number> extends MultiTermQueryWr
   public static NumericRangeFilter<Float> newFloatRange(final String field, final int precisionStep,
     Float min, Float max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeFilter<Float>(
+    return new NumericRangeFilter<>(
       NumericRangeQuery.newFloatRange(field, precisionStep, min, max, minInclusive, maxInclusive)
     );
   }
@@ -174,7 +174,7 @@ public final class NumericRangeFilter<T extends Number> extends MultiTermQueryWr
   public static NumericRangeFilter<Float> newFloatRange(final String field,
     Float min, Float max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeFilter<Float>(
+    return new NumericRangeFilter<>(
       NumericRangeQuery.newFloatRange(field, min, max, minInclusive, maxInclusive)
     );
   }

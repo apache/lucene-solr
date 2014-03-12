@@ -99,8 +99,8 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
 
     sliceCount = 2;
     shardCount = 4;
-    completionService = new ExecutorCompletionService<Object>(executor);
-    pending = new HashSet<Future<Object>>();
+    completionService = new ExecutorCompletionService<>(executor);
+    pending = new HashSet<>();
     checkCreatedVsState = false;
 
   }
@@ -142,7 +142,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     // env make this pretty fragile
 
     // create new collections rapid fire
-    Map<String,List<Integer>> collectionInfos = new HashMap<String,List<Integer>>();
+    Map<String,List<Integer>> collectionInfos = new HashMap<>();
     int replicationFactor = TestUtil.nextInt(random(), 0, 3) + 2;
 
     int cnt = random().nextInt(6) + 1;
@@ -214,7 +214,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     assertNull("A shard of a Collection configured with implicit router must have null range",
         coll.getSlice("a").getRange());
 
-    List<String> collectionNameList = new ArrayList<String>();
+    List<String> collectionNameList = new ArrayList<>();
     collectionNameList.addAll(collectionInfos.keySet());
     log.info("Collections created : "+collectionNameList );
 
@@ -360,7 +360,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     int maxShardsPerNode = (((numShards * replicationFactor) / getCommonCloudSolrServer()
         .getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
 
-    HashMap<String, List<Integer>> collectionInfos = new HashMap<String, List<Integer>>();
+    HashMap<String, List<Integer>> collectionInfos = new HashMap<>();
     CloudSolrServer client = null;
     String shard_fld = "shard_s";
     try {
@@ -419,7 +419,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
 
   private void testCreateShardRepFactor() throws Exception  {
     String collectionName = "testCreateShardRepFactor";
-    HashMap<String, List<Integer>> collectionInfos = new HashMap<String, List<Integer>>();
+    HashMap<String, List<Integer>> collectionInfos = new HashMap<>();
     CloudSolrServer client = null;
     try {
       client = createCloudClient(null);

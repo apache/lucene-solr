@@ -64,7 +64,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
 
   protected List<String> getDefaultComponents()
   {
-    ArrayList<String> names = new ArrayList<String>(6);
+    ArrayList<String> names = new ArrayList<>(6);
     names.add( QueryComponent.COMPONENT_NAME );
     names.add( FacetComponent.COMPONENT_NAME );
     names.add( MoreLikeThisComponent.COMPONENT_NAME );
@@ -126,7 +126,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
     }
 
     // Build the component list
-    components = new ArrayList<SearchComponent>( list.size() );
+    components = new ArrayList<>( list.size() );
     DebugComponent dbgCmp = null;
     for(String c : list){
       SearchComponent comp = core.getSearchComponent( c );
@@ -237,9 +237,9 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
       // a distributed request
 
       if (rb.outgoing == null) {
-        rb.outgoing = new LinkedList<ShardRequest>();
+        rb.outgoing = new LinkedList<>();
       }
-      rb.finished = new ArrayList<ShardRequest>();
+      rb.finished = new ArrayList<>();
 
       int nextStage = 0;
       do {
@@ -263,7 +263,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
             if (sreq.actualShards==ShardRequest.ALL_SHARDS) {
               sreq.actualShards = rb.shards;
             }
-            sreq.responses = new ArrayList<ShardResponse>();
+            sreq.responses = new ArrayList<>();
 
             // TODO: map from shard to address[]
             for (String shard : sreq.actualShards) {

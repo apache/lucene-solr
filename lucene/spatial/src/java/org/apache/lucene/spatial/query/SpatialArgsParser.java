@@ -129,7 +129,7 @@ public class SpatialArgsParser {
   /** Parses "a=b c=d f" (whitespace separated) into name-value pairs. If there
    * is no '=' as in 'f' above then it's short for f=f. */
   protected static Map<String, String> parseMap(String body) {
-    Map<String, String> map = new HashMap<String, String>();
+    Map<String, String> map = new HashMap<>();
     StringTokenizer st = new StringTokenizer(body, " \n\t");
     while (st.hasMoreTokens()) {
       String a = st.nextToken();

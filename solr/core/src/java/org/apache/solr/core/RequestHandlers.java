@@ -45,7 +45,7 @@ public final class RequestHandlers {
   // Use a synchronized map - since the handlers can be changed at runtime, 
   // the map implementation should be thread safe
   private final Map<String, SolrRequestHandler> handlers =
-      new ConcurrentHashMap<String,SolrRequestHandler>() ;
+      new ConcurrentHashMap<>() ;
 
   /**
    * Trim the trailing '/' if its there, and convert null to empty string.
@@ -80,7 +80,7 @@ public final class RequestHandlers {
    * @return a Map of all registered handlers of the specified type.
    */
   public <T extends SolrRequestHandler> Map<String,T> getAll(Class<T> clazz) {
-    Map<String,T> result = new HashMap<String,T>(7);
+    Map<String,T> result = new HashMap<>(7);
     for (Map.Entry<String,SolrRequestHandler> e : handlers.entrySet()) {
       if(clazz.isInstance(e.getValue())) result.put(e.getKey(), clazz.cast(e.getValue()));
     }
@@ -137,7 +137,7 @@ public final class RequestHandlers {
 
   void initHandlersFromConfig(SolrConfig config ){
     // use link map so we iterate in the same order
-    Map<PluginInfo,SolrRequestHandler> handlers = new LinkedHashMap<PluginInfo,SolrRequestHandler>();
+    Map<PluginInfo,SolrRequestHandler> handlers = new LinkedHashMap<>();
     for (PluginInfo info : config.getPluginInfos(SolrRequestHandler.class.getName())) {
       try {
         SolrRequestHandler requestHandler;
@@ -317,7 +317,7 @@ public final class RequestHandlers {
       if( _handler != null ) {
         return _handler.getStatistics();
       }
-      NamedList<String> lst = new SimpleOrderedMap<String>();
+      NamedList<String> lst = new SimpleOrderedMap<>();
       lst.add("note", "not initialized yet" );
       return lst;
     }

@@ -72,7 +72,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
   public List<StorableField> createFields(SchemaField field, Object value, float boost) {
     String externalVal = value.toString();
     //we could have 3 fields (two for the lat & lon, one for storage)
-    List<StorableField> f = new ArrayList<StorableField>(3);
+    List<StorableField> f = new ArrayList<>(3);
     if (field.indexed()) {
       Point point = SpatialUtils.parsePointSolrException(externalVal, SpatialContext.GEO);
       //latitude
@@ -216,7 +216,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
 
   @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
-    ArrayList<ValueSource> vs = new ArrayList<ValueSource>(2);
+    ArrayList<ValueSource> vs = new ArrayList<>(2);
     for (int i = 0; i < 2; i++) {
       SchemaField sub = subField(field, i, parser.getReq().getSchema());
       vs.add(sub.getType().getValueSource(sub, parser));

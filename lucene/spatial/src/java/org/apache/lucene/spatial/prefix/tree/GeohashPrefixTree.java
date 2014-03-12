@@ -111,7 +111,7 @@ public class GeohashPrefixTree extends SpatialPrefixTree {
     @Override
     public Collection<Cell> getSubCells() {
       String[] hashes = GeohashUtils.getSubGeohashes(getGeohash());//sorted
-      List<Cell> cells = new ArrayList<Cell>(hashes.length);
+      List<Cell> cells = new ArrayList<>(hashes.length);
       for (String hash : hashes) {
         cells.add(new GhCell(hash));
       }

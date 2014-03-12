@@ -42,7 +42,7 @@ public final class RunListenerPrintReproduceInfo extends RunListener {
    * A list of all test suite classes executed so far in this JVM (ehm, 
    * under this class's classloader).
    */
-  private static List<String> testClassesRun = new ArrayList<String>();
+  private static List<String> testClassesRun = new ArrayList<>();
 
   /**
    * The currently executing scope.

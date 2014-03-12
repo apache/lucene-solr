@@ -541,7 +541,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
 
   static List<List<String>> buildShardUrls(List<Object> urls, Integer numShards) {
     if (urls == null) return null;
-    List<List<String>> shardUrls = new ArrayList<List<String>>(urls.size());
+    List<List<String>> shardUrls = new ArrayList<>(urls.size());
     List<String> list = null;
     
     int sz;
@@ -551,7 +551,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
     sz = (int) Math.ceil(urls.size() / (float)numShards);
     for (int i = 0; i < urls.size(); i++) {
       if (i % sz == 0) {
-        list = new ArrayList<String>();
+        list = new ArrayList<>();
         shardUrls.add(list);
       }
       list.add((String) urls.get(i));

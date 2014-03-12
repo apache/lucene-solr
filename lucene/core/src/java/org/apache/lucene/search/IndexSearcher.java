@@ -441,7 +441,7 @@ public class IndexSearcher {
     } else {
       final HitQueue hq = new HitQueue(nDocs, false);
       final Lock lock = new ReentrantLock();
-      final ExecutionHelper<TopDocs> runner = new ExecutionHelper<TopDocs>(executor);
+      final ExecutionHelper<TopDocs> runner = new ExecutionHelper<>(executor);
     
       for (int i = 0; i < leafSlices.length; i++) { // search each sub
         runner.submit(new SearcherCallableNoSort(lock, this, leafSlices[i], weight, after, nDocs, hq));
@@ -532,7 +532,7 @@ public class IndexSearcher {
                                                                       false);
 
       final Lock lock = new ReentrantLock();
-      final ExecutionHelper<TopFieldDocs> runner = new ExecutionHelper<TopFieldDocs>(executor);
+      final ExecutionHelper<TopFieldDocs> runner = new ExecutionHelper<>(executor);
       for (int i = 0; i < leafSlices.length; i++) { // search each leaf slice
         runner.submit(
                       new SearcherCallableWithSort(lock, this, leafSlices[i], weight, after, nDocs, topCollector, sort, doDocScores, doMaxScore));
@@ -810,7 +810,7 @@ public class IndexSearcher {
     private int numTasks;
 
     ExecutionHelper(final Executor executor) {
-      this.service = new ExecutorCompletionService<T>(executor);
+      this.service = new ExecutorCompletionService<>(executor);
     }
 
     @Override

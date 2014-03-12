@@ -46,7 +46,7 @@ public class TestManagedSchemaFieldResource extends RestTestBase {
     tmpConfDir = new File(tmpSolrHome, confDir);
     FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
     
-    final SortedMap<ServletHolder,String> extraServlets = new TreeMap<ServletHolder,String>();
+    final SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
     final ServletHolder solrRestApi = new ServletHolder("SolrRestApi", ServerServlet.class);
     solrRestApi.setInitParameter("org.restlet.application", "org.apache.solr.rest.SolrRestApi");
     extraServlets.put(solrRestApi, "/schema/*");  // '/schema/*' matches '/schema', '/schema/', and '/schema/whatever...'

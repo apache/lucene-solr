@@ -270,7 +270,7 @@ public abstract class SolrParams implements Serializable {
 
   /** Create a Map&lt;String,String&gt; from a NamedList given no keys are repeated */
   public static Map<String,String> toMap(NamedList params) {
-    HashMap<String,String> map = new HashMap<String,String>();
+    HashMap<String,String> map = new HashMap<>();
     for (int i=0; i<params.size(); i++) {
       map.put(params.getName(i), params.getVal(i).toString());
     }
@@ -279,7 +279,7 @@ public abstract class SolrParams implements Serializable {
 
   /** Create a Map&lt;String,String[]&gt; from a NamedList */
   public static Map<String,String[]> toMultiMap(NamedList params) {
-    HashMap<String,String[]> map = new HashMap<String,String[]>();
+    HashMap<String,String[]> map = new HashMap<>();
     for (int i=0; i<params.size(); i++) {
       String name = params.getName(i);
       String val = params.getVal(i).toString();
@@ -291,7 +291,7 @@ public abstract class SolrParams implements Serializable {
   /** Create SolrParams from NamedList. */
   public static SolrParams toSolrParams(NamedList params) {
     // if no keys are repeated use the faster MapSolrParams
-    HashMap<String,String> map = new HashMap<String,String>();
+    HashMap<String,String> map = new HashMap<>();
     for (int i=0; i<params.size(); i++) {
       String prev = map.put(params.getName(i), params.getVal(i).toString());
       if (prev!=null) return new MultiMapSolrParams(toMultiMap(params));
@@ -301,7 +301,7 @@ public abstract class SolrParams implements Serializable {
   
   /** Create filtered SolrParams. */
   public SolrParams toFilteredSolrParams(List<String> names) {
-    NamedList<String> nl = new NamedList<String>();
+    NamedList<String> nl = new NamedList<>();
     for (Iterator<String> it = getParameterNamesIterator(); it.hasNext();) {
       final String name = it.next();
       if (names.contains(name)) {
@@ -316,7 +316,7 @@ public abstract class SolrParams implements Serializable {
   
   /** Convert this to a NamedList */
   public NamedList<Object> toNamedList() {
-    final SimpleOrderedMap<Object> result = new SimpleOrderedMap<Object>();
+    final SimpleOrderedMap<Object> result = new SimpleOrderedMap<>();
     
     for(Iterator<String> it=getParameterNamesIterator(); it.hasNext(); ) {
       final String name = it.next();

@@ -147,7 +147,7 @@ public class DemoHTMLParser implements HTMLParser {
     }
     
     private static final Set<String> createElementNameSet(String... names) {
-      return Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(names)));
+      return Collections.unmodifiableSet(new HashSet<>(Arrays.asList(names)));
     }
     
     /** HTML elements that cause a line break (they are block-elements) */

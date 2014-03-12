@@ -27,7 +27,7 @@ public class PropertyWriter {
   
   public PropertyWriter(String type, Map<String,String> parameters) {
     this.type = type;
-    this.parameters = Collections.unmodifiableMap(new HashMap<String,String>(parameters));
+    this.parameters = Collections.unmodifiableMap(new HashMap<>(parameters));
   }
 
   public Map<String,String> getParameters() {

@@ -72,7 +72,7 @@ public class SimpleQParserPlugin extends QParserPlugin {
   public static final String NAME = "simple";
 
   /** Map of string operators to their int counterparts in SimpleQueryParser. */
-  private static final Map<String, Integer> OPERATORS = new HashMap<String, Integer>();
+  private static final Map<String, Integer> OPERATORS = new HashMap<>();
 
   /* Setup the map of possible operators. */
   static {

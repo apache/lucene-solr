@@ -76,7 +76,7 @@ public class SolrRequestParsers
   private static final byte[] INPUT_ENCODING_BYTES = INPUT_ENCODING_KEY.getBytes(CHARSET_US_ASCII);
 
   private final HashMap<String, SolrRequestParser> parsers =
-      new HashMap<String, SolrRequestParser>();
+      new HashMap<>();
   private final boolean enableRemoteStreams;
   private StandardRequestParser standard;
   private boolean handleSelect = true;
@@ -141,7 +141,7 @@ public class SolrRequestParsers
     // TODO -- in the future, we could pick a different parser based on the request
     
     // Pick the parser from the request...
-    ArrayList<ContentStream> streams = new ArrayList<ContentStream>(1);
+    ArrayList<ContentStream> streams = new ArrayList<>(1);
     SolrParams params = parser.parseParamsAndFillStreams( req, streams );
     SolrQueryRequest sreq = buildRequestFrom( core, params, streams );
 
@@ -213,7 +213,7 @@ public class SolrRequestParsers
    * Given a url-encoded query string (UTF-8), map it into solr params
    */
   public static MultiMapSolrParams parseQueryString(String queryString) {
-    Map<String,String[]> map = new HashMap<String, String[]>();
+    Map<String,String[]> map = new HashMap<>();
     parseQueryString(queryString, map);
     return new MultiMapSolrParams(map);
   }
@@ -261,7 +261,7 @@ public class SolrRequestParsers
   @SuppressWarnings({"fallthrough", "resource"})
   static long parseFormDataContent(final InputStream postContent, final long maxLen, Charset charset, final Map<String,String[]> map, boolean supportCharsetParam) throws IOException {
     CharsetDecoder charsetDecoder = supportCharsetParam ? null : getCharsetDecoder(charset);
-    final LinkedList<Object> buffer = supportCharsetParam ? new LinkedList<Object>() : null;
+    final LinkedList<Object> buffer = supportCharsetParam ? new LinkedList<>() : null;
     long len = 0L, keyPos = 0L, valuePos = 0L;
     final ByteArrayOutputStream keyStream = new ByteArrayOutputStream(),
       valueStream = new ByteArrayOutputStream();
@@ -580,7 +580,7 @@ public class SolrRequestParsers
         throw new SolrException( ErrorCode.BAD_REQUEST, "Not application/x-www-form-urlencoded content: "+req.getContentType() );
       }
 
-      final Map<String,String[]> map = new HashMap<String, String[]>();
+      final Map<String,String[]> map = new HashMap<>();
       
       // also add possible URL parameters and include into the map (parsed using UTF-8):
       final String qs = req.getQueryString();

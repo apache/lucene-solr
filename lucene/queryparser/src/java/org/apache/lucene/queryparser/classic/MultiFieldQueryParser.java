@@ -98,7 +98,7 @@ public class MultiFieldQueryParser extends QueryParser
   @Override
   protected Query getFieldQuery(String field, String queryText, int slop) throws ParseException {
     if (field == null) {
-      List<BooleanClause> clauses = new ArrayList<BooleanClause>();
+      List<BooleanClause> clauses = new ArrayList<>();
       for (int i = 0; i < fields.length; i++) {
         Query q = super.getFieldQuery(fields[i], queryText, true);
         if (q != null) {
@@ -135,7 +135,7 @@ public class MultiFieldQueryParser extends QueryParser
   @Override
   protected Query getFieldQuery(String field, String queryText, boolean quoted) throws ParseException {
     if (field == null) {
-      List<BooleanClause> clauses = new ArrayList<BooleanClause>();
+      List<BooleanClause> clauses = new ArrayList<>();
       for (int i = 0; i < fields.length; i++) {
         Query q = super.getFieldQuery(fields[i], queryText, quoted);
         if (q != null) {
@@ -163,7 +163,7 @@ public class MultiFieldQueryParser extends QueryParser
   protected Query getFuzzyQuery(String field, String termStr, float minSimilarity) throws ParseException
   {
     if (field == null) {
-      List<BooleanClause> clauses = new ArrayList<BooleanClause>();
+      List<BooleanClause> clauses = new ArrayList<>();
       for (int i = 0; i < fields.length; i++) {
         clauses.add(new BooleanClause(getFuzzyQuery(fields[i], termStr, minSimilarity),
             BooleanClause.Occur.SHOULD));
@@ -177,7 +177,7 @@ public class MultiFieldQueryParser extends QueryParser
   protected Query getPrefixQuery(String field, String termStr) throws ParseException
   {
     if (field == null) {
-      List<BooleanClause> clauses = new ArrayList<BooleanClause>();
+      List<BooleanClause> clauses = new ArrayList<>();
       for (int i = 0; i < fields.length; i++) {
         clauses.add(new BooleanClause(getPrefixQuery(fields[i], termStr),
             BooleanClause.Occur.SHOULD));
@@ -190,7 +190,7 @@ public class MultiFieldQueryParser extends QueryParser
   @Override
   protected Query getWildcardQuery(String field, String termStr) throws ParseException {
     if (field == null) {
-      List<BooleanClause> clauses = new ArrayList<BooleanClause>();
+      List<BooleanClause> clauses = new ArrayList<>();
       for (int i = 0; i < fields.length; i++) {
         clauses.add(new BooleanClause(getWildcardQuery(fields[i], termStr),
             BooleanClause.Occur.SHOULD));
@@ -204,7 +204,7 @@ public class MultiFieldQueryParser extends QueryParser
   @Override
   protected Query getRangeQuery(String field, String part1, String part2, boolean startInclusive, boolean endInclusive) throws ParseException {
     if (field == null) {
-      List<BooleanClause> clauses = new ArrayList<BooleanClause>();
+      List<BooleanClause> clauses = new ArrayList<>();
       for (int i = 0; i < fields.length; i++) {
         clauses.add(new BooleanClause(getRangeQuery(fields[i], part1, part2, startInclusive, endInclusive),
             BooleanClause.Occur.SHOULD));
@@ -220,7 +220,7 @@ public class MultiFieldQueryParser extends QueryParser
   protected Query getRegexpQuery(String field, String termStr)
       throws ParseException {
     if (field == null) {
-      List<BooleanClause> clauses = new ArrayList<BooleanClause>();
+      List<BooleanClause> clauses = new ArrayList<>();
       for (int i = 0; i < fields.length; i++) {
         clauses.add(new BooleanClause(getRegexpQuery(fields[i], termStr),
             BooleanClause.Occur.SHOULD));

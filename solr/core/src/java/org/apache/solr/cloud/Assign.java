@@ -86,7 +86,7 @@ public class Assign {
       return "shard1";
     }
 
-    List<String> shardIdNames = new ArrayList<String>(sliceMap.keySet());
+    List<String> shardIdNames = new ArrayList<>(sliceMap.keySet());
 
     if (shardIdNames.size() < numShards) {
       return "shard" + (shardIdNames.size() + 1);
@@ -95,7 +95,7 @@ public class Assign {
     // TODO: don't need to sort to find shard with fewest replicas!
 
     // else figure out which shard needs more replicas
-    final Map<String, Integer> map = new HashMap<String, Integer>();
+    final Map<String, Integer> map = new HashMap<>();
     for (String shardId : shardIdNames) {
       int cnt = sliceMap.get(shardId).getReplicasMap().size();
       map.put(shardId, cnt);
@@ -135,12 +135,12 @@ public class Assign {
 
     Set<String> nodes = clusterState.getLiveNodes();
 
-    List<String> nodeList = new ArrayList<String>(nodes.size());
+    List<String> nodeList = new ArrayList<>(nodes.size());
     nodeList.addAll(nodes);
     if (createNodeList != null) nodeList.retainAll(createNodeList);
 
 
-    HashMap<String,Node> nodeNameVsShardCount =  new HashMap<String, Node>();
+    HashMap<String,Node> nodeNameVsShardCount =  new HashMap<>();
     for (String s : nodeList) nodeNameVsShardCount.put(s,new Node(s));
     for (String s : clusterState.getCollections()) {
       DocCollection c = clusterState.getCollection(s);

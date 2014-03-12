@@ -91,7 +91,7 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
 
     Query q = qp.parse(qString);
 
-    HashSet<String> expecteds = new HashSet<String>();
+    HashSet<String> expecteds = new HashSet<>();
     String[] vals = expectedVals.split(",");
     for (int i = 0; i < vals.length; i++) {
       if (vals[i].length() > 0)

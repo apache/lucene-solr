@@ -57,7 +57,7 @@ public class TestCustomFunctions extends LuceneTestCase {
   
   /** tests a method with no arguments */
   public void testNoArgMethod() throws Exception {
-    Map<String,Method> functions = new HashMap<String,Method>();
+    Map<String,Method> functions = new HashMap<>();
     functions.put("foo", getClass().getMethod("zeroArgMethod"));
     Expression expr = JavascriptCompiler.compile("foo()", functions, getClass().getClassLoader());
     assertEquals(5, expr.evaluate(0, null), DELTA);
@@ -67,7 +67,7 @@ public class TestCustomFunctions extends LuceneTestCase {
   
   /** tests a method with one arguments */
   public void testOneArgMethod() throws Exception {
-    Map<String,Method> functions = new HashMap<String,Method>();
+    Map<String,Method> functions = new HashMap<>();
     functions.put("foo", getClass().getMethod("oneArgMethod", double.class));
     Expression expr = JavascriptCompiler.compile("foo(3)", functions, getClass().getClassLoader());
     assertEquals(6, expr.evaluate(0, null), DELTA);
@@ -77,7 +77,7 @@ public class TestCustomFunctions extends LuceneTestCase {
   
   /** tests a method with three arguments */
   public void testThreeArgMethod() throws Exception {
-    Map<String,Method> functions = new HashMap<String,Method>();
+    Map<String,Method> functions = new HashMap<>();
     functions.put("foo", getClass().getMethod("threeArgMethod", double.class, double.class, double.class));
     Expression expr = JavascriptCompiler.compile("foo(3, 4, 5)", functions, getClass().getClassLoader());
     assertEquals(12, expr.evaluate(0, null), DELTA);
@@ -85,7 +85,7 @@ public class TestCustomFunctions extends LuceneTestCase {
   
   /** tests a map with 2 functions */
   public void testTwoMethods() throws Exception {
-    Map<String,Method> functions = new HashMap<String,Method>();
+    Map<String,Method> functions = new HashMap<>();
     functions.put("foo", getClass().getMethod("zeroArgMethod"));
     functions.put("bar", getClass().getMethod("oneArgMethod", double.class));
     Expression expr = JavascriptCompiler.compile("foo() + bar(3)", functions, getClass().getClassLoader());
@@ -96,7 +96,7 @@ public class TestCustomFunctions extends LuceneTestCase {
   
   /** wrong return type: must be double */
   public void testWrongReturnType() throws Exception {
-    Map<String,Method> functions = new HashMap<String,Method>();
+    Map<String,Method> functions = new HashMap<>();
     functions.put("foo", getClass().getMethod("bogusReturnType"));
     try {
       JavascriptCompiler.compile("foo()", functions, getClass().getClassLoader());
@@ -110,7 +110,7 @@ public class TestCustomFunctions extends LuceneTestCase {
   
   /** wrong param type: must be doubles */
   public void testWrongParameterType() throws Exception {
-    Map<String,Method> functions = new HashMap<String,Method>();
+    Map<String,Method> functions = new HashMap<>();
     functions.put("foo", getClass().getMethod("bogusParameterType", String.class));
     try {
       JavascriptCompiler.compile("foo(2)", functions, getClass().getClassLoader());
@@ -124,7 +124,7 @@ public class TestCustomFunctions extends LuceneTestCase {
   
   /** wrong modifiers: must be static */
   public void testWrongNotStatic() throws Exception {
-    Map<String,Method> functions = new HashMap<String,Method>();
+    Map<String,Method> functions = new HashMap<>();
     functions.put("foo", getClass().getMethod("nonStaticMethod"));
     try {
       JavascriptCompiler.compile("foo()", functions, getClass().getClassLoader());
@@ -138,7 +138,7 @@ public class TestCustomFunctions extends LuceneTestCase {
   
   /** wrong modifiers: must be public */
   public void testWrongNotPublic() throws Exception {
-    Map<String,Method> functions = new HashMap<String,Method>();
+    Map<String,Method> functions = new HashMap<>();
     functions.put("foo", getClass().getDeclaredMethod("nonPublicMethod"));
     try {
       JavascriptCompiler.compile("foo()", functions, getClass().getClassLoader());
@@ -154,7 +154,7 @@ public class TestCustomFunctions extends LuceneTestCase {
   
   /** wrong class modifiers: class containing method is not public */
   public void testWrongNestedNotPublic() throws Exception {
-    Map<String,Method> functions = new HashMap<String,Method>();
+    Map<String,Method> functions = new HashMap<>();
     functions.put("foo", NestedNotPublic.class.getMethod("method"));
     try {
       JavascriptCompiler.compile("foo()", functions, getClass().getClassLoader());
@@ -244,7 +244,7 @@ public class TestCustomFunctions extends LuceneTestCase {
   
   /** the method throws an exception. We should check the stack trace that it contains the source code of the expression as file name. */
   public void testThrowingException() throws Exception {
-    Map<String,Method> functions = new HashMap<String,Method>();
+    Map<String,Method> functions = new HashMap<>();
     functions.put("foo", StaticThrowingException.class.getMethod("method"));
     String source = "3 * foo() / 5";
     Expression expr = JavascriptCompiler.compile(source, functions, getClass().getClassLoader());
@@ -263,7 +263,7 @@ public class TestCustomFunctions extends LuceneTestCase {
 
   /** test that namespaces work with custom expressions. */
   public void testNamespaces() throws Exception {
-    Map<String, Method> functions = new HashMap<String, Method>();
+    Map<String, Method> functions = new HashMap<>();
     functions.put("foo.bar", getClass().getMethod("zeroArgMethod"));
     String source = "foo.bar()";
     Expression expr = JavascriptCompiler.compile(source, functions, getClass().getClassLoader());

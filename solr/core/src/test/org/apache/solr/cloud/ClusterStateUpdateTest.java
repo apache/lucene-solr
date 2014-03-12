@@ -152,7 +152,7 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
     System.setProperty("solrcloud.update.delay", "1");
     
    
-    Map<String,Object> props2 = new HashMap<String,Object>();
+    Map<String,Object> props2 = new HashMap<>();
     props2.put("configName", "conf1");
     ZkNodeProps zkProps2 = new ZkNodeProps(props2);
     

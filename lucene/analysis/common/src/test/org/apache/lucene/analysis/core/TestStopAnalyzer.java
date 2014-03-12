@@ -32,7 +32,7 @@ import java.util.HashSet;
 public class TestStopAnalyzer extends BaseTokenStreamTestCase {
   
   private StopAnalyzer stop = new StopAnalyzer(TEST_VERSION_CURRENT);
-  private Set<Object> inValidTokens = new HashSet<Object>();
+  private Set<Object> inValidTokens = new HashSet<>();
 
   @Override
   public void setUp() throws Exception {

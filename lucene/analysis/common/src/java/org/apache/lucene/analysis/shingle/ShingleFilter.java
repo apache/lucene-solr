@@ -74,7 +74,7 @@ public final class ShingleFilter extends TokenFilter {
    * that will be composed to form output shingles.
    */
   private LinkedList<InputWindowToken> inputWindow
-    = new LinkedList<InputWindowToken>();
+    = new LinkedList<>();
   
   /**
    * The number of input tokens in the next output token.  This is the "n" in

@@ -135,7 +135,7 @@ public class SearchTravRetVectorHighlightTask extends SearchTravTask {
       } else if (splits[i].startsWith("fragSize[") == true){
         fragSize = (int)Float.parseFloat(splits[i].substring("fragSize[".length(),splits[i].length() - 1));
       } else if (splits[i].startsWith("fields[") == true){
-        paramFields = new HashSet<String>();
+        paramFields = new HashSet<>();
         String fieldNames = splits[i].substring("fields[".length(), splits[i].length() - 1);
         String [] fieldSplits = fieldNames.split(";");
         for (int j = 0; j < fieldSplits.length; j++) {

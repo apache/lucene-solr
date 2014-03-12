@@ -33,7 +33,7 @@ public class MapListener<K, V> extends ForwardingMap<K, V> {
 
   public MapListener(Map<K, V> target) {
     this.target = target;
-    seenKeys = new HashSet<K>(target.size());
+    seenKeys = new HashSet<>(target.size());
   }
 
   public Set<K> getSeenKeys() {

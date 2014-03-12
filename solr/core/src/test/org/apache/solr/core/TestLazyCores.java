@@ -251,7 +251,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
   @Test
   public void testRace() throws Exception {
-    final List<SolrCore> theCores = new ArrayList<SolrCore>();
+    final List<SolrCore> theCores = new ArrayList<>();
     final CoreContainer cc = init();
     try {
 
@@ -713,9 +713,9 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     }
     NamedList.NamedListEntry[] entries = new NamedList.NamedListEntry[q.length / 2];
     for (int i = 0; i < q.length; i += 2) {
-      entries[i / 2] = new NamedList.NamedListEntry<String>(q[i], q[i + 1]);
+      entries[i / 2] = new NamedList.NamedListEntry<>(q[i], q[i + 1]);
     }
-    return new LocalSolrQueryRequest(core, new NamedList<Object>(entries));
+    return new LocalSolrQueryRequest(core, new NamedList<>(entries));
   }
 
   private final static String LOTS_SOLR_XML = " <solr persistent=\"false\"> " +

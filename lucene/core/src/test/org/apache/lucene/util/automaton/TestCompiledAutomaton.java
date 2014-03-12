@@ -31,7 +31,7 @@ import org.apache.lucene.util.TestUtil;
 public class TestCompiledAutomaton extends LuceneTestCase {
 
   private CompiledAutomaton build(String... strings) {
-    final List<BytesRef> terms = new ArrayList<BytesRef>();
+    final List<BytesRef> terms = new ArrayList<>();
     for(String s : strings) {
       terms.add(new BytesRef(s));
     }
@@ -95,7 +95,7 @@ public class TestCompiledAutomaton extends LuceneTestCase {
 
   public void testRandom() throws Exception {
     final int numTerms = atLeast(400);
-    final Set<String> terms = new HashSet<String>();
+    final Set<String> terms = new HashSet<>();
     while(terms.size() != numTerms) {
       terms.add(randomString());
     }

@@ -108,11 +108,11 @@ public class LocalReplicator implements Replicator {
   private volatile boolean closed = false;
   
   private final AtomicInteger sessionToken = new AtomicInteger(0);
-  private final Map<String, ReplicationSession> sessions = new HashMap<String, ReplicationSession>();
+  private final Map<String, ReplicationSession> sessions = new HashMap<>();
   
   private void checkExpiredSessions() throws IOException {
     // make a "to-delete" list so we don't risk deleting from the map while iterating it
-    final ArrayList<ReplicationSession> toExpire = new ArrayList<ReplicationSession>();
+    final ArrayList<ReplicationSession> toExpire = new ArrayList<>();
     for (ReplicationSession token : sessions.values()) {
       if (token.isExpired(expirationThresholdMilllis)) {
         toExpire.add(token);

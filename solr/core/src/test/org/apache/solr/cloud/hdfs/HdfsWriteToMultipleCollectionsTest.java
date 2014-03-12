@@ -98,8 +98,8 @@ public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
     for (int i = 0; i < cnt; i++) {
       waitForRecoveriesToFinish(ACOLLECTION + i, false);
     }
-    List<CloudSolrServer> cloudServers = new ArrayList<CloudSolrServer>();
-    List<StopableIndexingThread> threads = new ArrayList<StopableIndexingThread>();
+    List<CloudSolrServer> cloudServers = new ArrayList<>();
+    List<StopableIndexingThread> threads = new ArrayList<>();
     for (int i = 0; i < cnt; i++) {
       CloudSolrServer server = new CloudSolrServer(zkServer.getZkAddress());
       server.setDefaultCollection(ACOLLECTION + i);

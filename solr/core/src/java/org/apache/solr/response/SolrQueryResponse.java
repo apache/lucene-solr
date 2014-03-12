@@ -68,13 +68,13 @@ public class SolrQueryResponse {
    * @see #setAllValues
    * @see <a href="#returnable_data">Note on Returnable Data</a>
    */
-  protected NamedList<Object> values = new SimpleOrderedMap<Object>();
+  protected NamedList<Object> values = new SimpleOrderedMap<>();
   
   
 /**
    * Container for storing information that should be logged by Solr before returning.
    */
-  protected NamedList<Object> toLog = new SimpleOrderedMap<Object>();
+  protected NamedList<Object> toLog = new SimpleOrderedMap<>();
 
   protected ReturnFields returnFields;
 

@@ -31,7 +31,7 @@ public class TestBytesRefArray extends LuceneTestCase {
   public void testAppend() throws IOException {
     Random random = random();
     BytesRefArray list = new BytesRefArray(Counter.newCounter());
-    List<String> stringList = new ArrayList<String>();
+    List<String> stringList = new ArrayList<>();
     for (int j = 0; j < 2; j++) {
       if (j > 0 && random.nextBoolean()) {
         list.clear();
@@ -73,7 +73,7 @@ public class TestBytesRefArray extends LuceneTestCase {
   public void testSort() throws IOException {
     Random random = random();
     BytesRefArray list = new BytesRefArray(Counter.newCounter());
-    List<String> stringList = new ArrayList<String>();
+    List<String> stringList = new ArrayList<>();
 
     for (int j = 0; j < 2; j++) {
       if (j > 0 && random.nextBoolean()) {

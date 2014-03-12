@@ -155,7 +155,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     }
     
     // collect the data dirs
-    List<String> dataDirs = new ArrayList<String>();
+    List<String> dataDirs = new ArrayList<>();
     
     int i = 0;
     for (SolrServer client : clients) {

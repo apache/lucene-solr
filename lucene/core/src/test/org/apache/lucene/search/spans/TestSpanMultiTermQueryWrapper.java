@@ -67,7 +67,7 @@ public class TestSpanMultiTermQueryWrapper extends LuceneTestCase {
   
   public void testWildcard() throws Exception {
     WildcardQuery wq = new WildcardQuery(new Term("field", "bro?n"));
-    SpanQuery swq = new SpanMultiTermQueryWrapper<WildcardQuery>(wq);
+    SpanQuery swq = new SpanMultiTermQueryWrapper<>(wq);
     // will only match quick brown fox
     SpanFirstQuery sfq = new SpanFirstQuery(swq, 2);
     assertEquals(1, searcher.search(sfq, 10).totalHits);
@@ -75,7 +75,7 @@ public class TestSpanMultiTermQueryWrapper extends LuceneTestCase {
   
   public void testPrefix() throws Exception {
     WildcardQuery wq = new WildcardQuery(new Term("field", "extrem*"));
-    SpanQuery swq = new SpanMultiTermQueryWrapper<WildcardQuery>(wq);
+    SpanQuery swq = new SpanMultiTermQueryWrapper<>(wq);
     // will only match "jumps over extremely very lazy broxn dog"
     SpanFirstQuery sfq = new SpanFirstQuery(swq, 3);
     assertEquals(1, searcher.search(sfq, 10).totalHits);
@@ -83,7 +83,7 @@ public class TestSpanMultiTermQueryWrapper extends LuceneTestCase {
   
   public void testFuzzy() throws Exception {
     FuzzyQuery fq = new FuzzyQuery(new Term("field", "broan"));
-    SpanQuery sfq = new SpanMultiTermQueryWrapper<FuzzyQuery>(fq);
+    SpanQuery sfq = new SpanMultiTermQueryWrapper<>(fq);
     // will not match quick brown fox
     SpanPositionRangeQuery sprq = new SpanPositionRangeQuery(sfq, 3, 6);
     assertEquals(2, searcher.search(sprq, 10).totalHits);
@@ -92,7 +92,7 @@ public class TestSpanMultiTermQueryWrapper extends LuceneTestCase {
   public void testFuzzy2() throws Exception {
     // maximum of 1 term expansion
     FuzzyQuery fq = new FuzzyQuery(new Term("field", "broan"), 1, 0, 1, false);
-    SpanQuery sfq = new SpanMultiTermQueryWrapper<FuzzyQuery>(fq);
+    SpanQuery sfq = new SpanMultiTermQueryWrapper<>(fq);
     // will only match jumps over lazy broun dog
     SpanPositionRangeQuery sprq = new SpanPositionRangeQuery(sfq, 0, 100);
     assertEquals(1, searcher.search(sprq, 10).totalHits);
@@ -100,7 +100,7 @@ public class TestSpanMultiTermQueryWrapper extends LuceneTestCase {
   public void testNoSuchMultiTermsInNear() throws Exception {
     //test to make sure non existent multiterms aren't throwing null pointer exceptions  
     FuzzyQuery fuzzyNoSuch = new FuzzyQuery(new Term("field", "noSuch"), 1, 0, 1, false);
-    SpanQuery spanNoSuch = new SpanMultiTermQueryWrapper<FuzzyQuery>(fuzzyNoSuch);
+    SpanQuery spanNoSuch = new SpanMultiTermQueryWrapper<>(fuzzyNoSuch);
     SpanQuery term = new SpanTermQuery(new Term("field", "brown"));
     SpanQuery near = new SpanNearQuery(new SpanQuery[]{term, spanNoSuch}, 1, true);
     assertEquals(0, searcher.search(near, 10).totalHits);
@@ -109,17 +109,17 @@ public class TestSpanMultiTermQueryWrapper extends LuceneTestCase {
     assertEquals(0, searcher.search(near, 10).totalHits);
     
     WildcardQuery wcNoSuch = new WildcardQuery(new Term("field", "noSuch*"));
-    SpanQuery spanWCNoSuch = new SpanMultiTermQueryWrapper<WildcardQuery>(wcNoSuch);
+    SpanQuery spanWCNoSuch = new SpanMultiTermQueryWrapper<>(wcNoSuch);
     near = new SpanNearQuery(new SpanQuery[]{term, spanWCNoSuch}, 1, true);
     assertEquals(0, searcher.search(near, 10).totalHits);
   
     RegexpQuery rgxNoSuch = new RegexpQuery(new Term("field", "noSuch"));
-    SpanQuery spanRgxNoSuch = new SpanMultiTermQueryWrapper<RegexpQuery>(rgxNoSuch);
+    SpanQuery spanRgxNoSuch = new SpanMultiTermQueryWrapper<>(rgxNoSuch);
     near = new SpanNearQuery(new SpanQuery[]{term, spanRgxNoSuch}, 1, true);
     assertEquals(0, searcher.search(near, 10).totalHits);
     
     PrefixQuery prfxNoSuch = new PrefixQuery(new Term("field", "noSuch"));
-    SpanQuery spanPrfxNoSuch = new SpanMultiTermQueryWrapper<PrefixQuery>(prfxNoSuch);
+    SpanQuery spanPrfxNoSuch = new SpanMultiTermQueryWrapper<>(prfxNoSuch);
     near = new SpanNearQuery(new SpanQuery[]{term, spanPrfxNoSuch}, 1, true);
     assertEquals(0, searcher.search(near, 10).totalHits);
 
@@ -136,7 +136,7 @@ public class TestSpanMultiTermQueryWrapper extends LuceneTestCase {
   public void testNoSuchMultiTermsInNotNear() throws Exception {
     //test to make sure non existent multiterms aren't throwing non-matching field exceptions  
     FuzzyQuery fuzzyNoSuch = new FuzzyQuery(new Term("field", "noSuch"), 1, 0, 1, false);
-    SpanQuery spanNoSuch = new SpanMultiTermQueryWrapper<FuzzyQuery>(fuzzyNoSuch);
+    SpanQuery spanNoSuch = new SpanMultiTermQueryWrapper<>(fuzzyNoSuch);
     SpanQuery term = new SpanTermQuery(new Term("field", "brown"));
     SpanNotQuery notNear = new SpanNotQuery(term, spanNoSuch, 0,0);
     assertEquals(1, searcher.search(notNear, 10).totalHits);
@@ -150,17 +150,17 @@ public class TestSpanMultiTermQueryWrapper extends LuceneTestCase {
     assertEquals(0, searcher.search(notNear, 10).totalHits);
 
     WildcardQuery wcNoSuch = new WildcardQuery(new Term("field", "noSuch*"));
-    SpanQuery spanWCNoSuch = new SpanMultiTermQueryWrapper<WildcardQuery>(wcNoSuch);
+    SpanQuery spanWCNoSuch = new SpanMultiTermQueryWrapper<>(wcNoSuch);
     notNear = new SpanNotQuery(term, spanWCNoSuch, 0,0);
     assertEquals(1, searcher.search(notNear, 10).totalHits);
   
     RegexpQuery rgxNoSuch = new RegexpQuery(new Term("field", "noSuch"));
-    SpanQuery spanRgxNoSuch = new SpanMultiTermQueryWrapper<RegexpQuery>(rgxNoSuch);
+    SpanQuery spanRgxNoSuch = new SpanMultiTermQueryWrapper<>(rgxNoSuch);
     notNear = new SpanNotQuery(term, spanRgxNoSuch, 1, 1);
     assertEquals(1, searcher.search(notNear, 10).totalHits);
     
     PrefixQuery prfxNoSuch = new PrefixQuery(new Term("field", "noSuch"));
-    SpanQuery spanPrfxNoSuch = new SpanMultiTermQueryWrapper<PrefixQuery>(prfxNoSuch);
+    SpanQuery spanPrfxNoSuch = new SpanMultiTermQueryWrapper<>(prfxNoSuch);
     notNear = new SpanNotQuery(term, spanPrfxNoSuch, 1, 1);
     assertEquals(1, searcher.search(notNear, 10).totalHits);
     
@@ -169,7 +169,7 @@ public class TestSpanMultiTermQueryWrapper extends LuceneTestCase {
   public void testNoSuchMultiTermsInOr() throws Exception {
     //test to make sure non existent multiterms aren't throwing null pointer exceptions  
     FuzzyQuery fuzzyNoSuch = new FuzzyQuery(new Term("field", "noSuch"), 1, 0, 1, false);
-    SpanQuery spanNoSuch = new SpanMultiTermQueryWrapper<FuzzyQuery>(fuzzyNoSuch);
+    SpanQuery spanNoSuch = new SpanMultiTermQueryWrapper<>(fuzzyNoSuch);
     SpanQuery term = new SpanTermQuery(new Term("field", "brown"));
     SpanOrQuery near = new SpanOrQuery(new SpanQuery[]{term, spanNoSuch});
     assertEquals(1, searcher.search(near, 10).totalHits);
@@ -180,17 +180,17 @@ public class TestSpanMultiTermQueryWrapper extends LuceneTestCase {
 
     
     WildcardQuery wcNoSuch = new WildcardQuery(new Term("field", "noSuch*"));
-    SpanQuery spanWCNoSuch = new SpanMultiTermQueryWrapper<WildcardQuery>(wcNoSuch);
+    SpanQuery spanWCNoSuch = new SpanMultiTermQueryWrapper<>(wcNoSuch);
     near = new SpanOrQuery(new SpanQuery[]{term, spanWCNoSuch});
     assertEquals(1, searcher.search(near, 10).totalHits);
   
     RegexpQuery rgxNoSuch = new RegexpQuery(new Term("field", "noSuch"));
-    SpanQuery spanRgxNoSuch = new SpanMultiTermQueryWrapper<RegexpQuery>(rgxNoSuch);
+    SpanQuery spanRgxNoSuch = new SpanMultiTermQueryWrapper<>(rgxNoSuch);
     near = new SpanOrQuery(new SpanQuery[]{term, spanRgxNoSuch});
     assertEquals(1, searcher.search(near, 10).totalHits);
     
     PrefixQuery prfxNoSuch = new PrefixQuery(new Term("field", "noSuch"));
-    SpanQuery spanPrfxNoSuch = new SpanMultiTermQueryWrapper<PrefixQuery>(prfxNoSuch);
+    SpanQuery spanPrfxNoSuch = new SpanMultiTermQueryWrapper<>(prfxNoSuch);
     near = new SpanOrQuery(new SpanQuery[]{term, spanPrfxNoSuch});
     assertEquals(1, searcher.search(near, 10).totalHits);
     
@@ -206,23 +206,23 @@ public class TestSpanMultiTermQueryWrapper extends LuceneTestCase {
   public void testNoSuchMultiTermsInSpanFirst() throws Exception {
     //this hasn't been a problem  
     FuzzyQuery fuzzyNoSuch = new FuzzyQuery(new Term("field", "noSuch"), 1, 0, 1, false);
-    SpanQuery spanNoSuch = new SpanMultiTermQueryWrapper<FuzzyQuery>(fuzzyNoSuch);
+    SpanQuery spanNoSuch = new SpanMultiTermQueryWrapper<>(fuzzyNoSuch);
     SpanQuery spanFirst = new SpanFirstQuery(spanNoSuch, 10);
  
     assertEquals(0, searcher.search(spanFirst, 10).totalHits);
     
     WildcardQuery wcNoSuch = new WildcardQuery(new Term("field", "noSuch*"));
-    SpanQuery spanWCNoSuch = new SpanMultiTermQueryWrapper<WildcardQuery>(wcNoSuch);
+    SpanQuery spanWCNoSuch = new SpanMultiTermQueryWrapper<>(wcNoSuch);
     spanFirst = new SpanFirstQuery(spanWCNoSuch, 10);
     assertEquals(0, searcher.search(spanFirst, 10).totalHits);
   
     RegexpQuery rgxNoSuch = new RegexpQuery(new Term("field", "noSuch"));
-    SpanQuery spanRgxNoSuch = new SpanMultiTermQueryWrapper<RegexpQuery>(rgxNoSuch);
+    SpanQuery spanRgxNoSuch = new SpanMultiTermQueryWrapper<>(rgxNoSuch);
     spanFirst = new SpanFirstQuery(spanRgxNoSuch, 10);
     assertEquals(0, searcher.search(spanFirst, 10).totalHits);
     
     PrefixQuery prfxNoSuch = new PrefixQuery(new Term("field", "noSuch"));
-    SpanQuery spanPrfxNoSuch = new SpanMultiTermQueryWrapper<PrefixQuery>(prfxNoSuch);
+    SpanQuery spanPrfxNoSuch = new SpanMultiTermQueryWrapper<>(prfxNoSuch);
     spanFirst = new SpanFirstQuery(spanPrfxNoSuch, 10);
     assertEquals(0, searcher.search(spanFirst, 10).totalHits);
   }

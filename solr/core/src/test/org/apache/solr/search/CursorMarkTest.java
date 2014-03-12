@@ -248,7 +248,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
    * a list of the fields in the schema - excluding _version_
    */
   private Collection<String> getAllFieldNames() {
-    ArrayList<String> names = new ArrayList<String>(37);
+    ArrayList<String> names = new ArrayList<>(37);
     for (String f : h.getCore().getLatestSchema().getFields().keySet()) {
       if (! f.equals("_version_")) {
         names.add(f);

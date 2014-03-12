@@ -101,48 +101,48 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
     defaults.put("string", "str0");
 
     //INT
-    intDateTestStart = new ArrayList<ArrayList<Integer>>(); 
-    intDateTestMissing = new ArrayList<Long>(); 
-    intStringTestStart = new ArrayList<ArrayList<Integer>>(); 
-    intStringTestMissing = new ArrayList<Long>(); 
+    intDateTestStart = new ArrayList<>();
+    intDateTestMissing = new ArrayList<>();
+    intStringTestStart = new ArrayList<>();
+    intStringTestMissing = new ArrayList<>();
     
     //LONG
-    longDateTestStart = new ArrayList<ArrayList<Long>>(); 
-    longDateTestMissing = new ArrayList<Long>(); 
-    longStringTestStart = new ArrayList<ArrayList<Long>>(); 
-    longStringTestMissing = new ArrayList<Long>(); 
+    longDateTestStart = new ArrayList<>();
+    longDateTestMissing = new ArrayList<>();
+    longStringTestStart = new ArrayList<>();
+    longStringTestMissing = new ArrayList<>();
     
     //FLOAT
-    floatDateTestStart = new ArrayList<ArrayList<Float>>(); 
-    floatDateTestMissing = new ArrayList<Long>(); 
-    floatStringTestStart = new ArrayList<ArrayList<Float>>(); 
-    floatStringTestMissing = new ArrayList<Long>(); 
+    floatDateTestStart = new ArrayList<>();
+    floatDateTestMissing = new ArrayList<>();
+    floatStringTestStart = new ArrayList<>();
+    floatStringTestMissing = new ArrayList<>();
     
     //DOUBLE
-    doubleDateTestStart = new ArrayList<ArrayList<Double>>(); 
-    doubleDateTestMissing = new ArrayList<Long>(); 
-    doubleStringTestStart = new ArrayList<ArrayList<Double>>(); 
-    doubleStringTestMissing = new ArrayList<Long>(); 
+    doubleDateTestStart = new ArrayList<>();
+    doubleDateTestMissing = new ArrayList<>();
+    doubleStringTestStart = new ArrayList<>();
+    doubleStringTestMissing = new ArrayList<>();
     
     //DATE
-    dateIntTestStart = new ArrayList<ArrayList<String>>(); 
-    dateIntTestMissing = new ArrayList<Long>(); 
-    dateLongTestStart = new ArrayList<ArrayList<String>>(); 
-    dateLongTestMissing = new ArrayList<Long>(); 
+    dateIntTestStart = new ArrayList<>();
+    dateIntTestMissing = new ArrayList<>();
+    dateLongTestStart = new ArrayList<>();
+    dateLongTestMissing = new ArrayList<>();
     
     //String
-    stringIntTestStart = new ArrayList<ArrayList<String>>(); 
-    stringIntTestMissing = new ArrayList<Long>(); 
-    stringLongTestStart = new ArrayList<ArrayList<String>>(); 
-    stringLongTestMissing = new ArrayList<Long>(); 
+    stringIntTestStart = new ArrayList<>();
+    stringIntTestMissing = new ArrayList<>();
+    stringLongTestStart = new ArrayList<>();
+    stringLongTestMissing = new ArrayList<>();
     
     //Multi-Valued
-    multiLongTestStart = new ArrayList<ArrayList<Integer>>(); 
-    multiLongTestMissing = new ArrayList<Long>(); 
-    multiStringTestStart = new ArrayList<ArrayList<Integer>>(); 
-    multiStringTestMissing = new ArrayList<Long>(); 
-    multiDateTestStart = new ArrayList<ArrayList<Integer>>(); 
-    multiDateTestMissing = new ArrayList<Long>(); 
+    multiLongTestStart = new ArrayList<>();
+    multiLongTestMissing = new ArrayList<>();
+    multiStringTestStart = new ArrayList<>();
+    multiStringTestMissing = new ArrayList<>();
+    multiDateTestStart = new ArrayList<>();
+    multiDateTestMissing = new ArrayList<>();
 
     for (int j = 0; j < NUM_LOOPS; ++j) {
       int i = j%INT;
@@ -178,7 +178,7 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
       if( dt != 0 ){
         //Dates
         if (j-DATE<0) {
-          ArrayList<Integer> list1 = new ArrayList<Integer>();
+          ArrayList<Integer> list1 = new ArrayList<>();
           if( i != 0 ){
             list1.add(i);
             intDateTestMissing.add(0l);
@@ -186,7 +186,7 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
             intDateTestMissing.add(1l);
           }
           intDateTestStart.add(list1);
-          ArrayList<Long> list2 = new ArrayList<Long>();
+          ArrayList<Long> list2 = new ArrayList<>();
           if( l != 0l ){
             list2.add(l);
             longDateTestMissing.add(0l);
@@ -194,7 +194,7 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
             longDateTestMissing.add(1l);
           }
           longDateTestStart.add(list2);
-          ArrayList<Float> list3 = new ArrayList<Float>();
+          ArrayList<Float> list3 = new ArrayList<>();
           if ( f != 0.0f ){
             list3.add(f);
             floatDateTestMissing.add(0l);
@@ -203,7 +203,7 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
             
           }
           floatDateTestStart.add(list3);
-          ArrayList<Double> list4 = new ArrayList<Double>();
+          ArrayList<Double> list4 = new ArrayList<>();
           if( d != 0.0d ){
             list4.add(d);
             doubleDateTestMissing.add(0l);
@@ -211,7 +211,7 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
             doubleDateTestMissing.add(1l);
           }
           doubleDateTestStart.add(list4);
-          ArrayList<Integer> list5 = new ArrayList<Integer>();
+          ArrayList<Integer> list5 = new ArrayList<>();
           if( i != 0 ){
             list5.add(i);
             multiDateTestMissing.add(0l);
@@ -230,7 +230,7 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
       }
       
       if (j-DATEM<0 && dtm!=dt && dtm!=0) {
-        ArrayList<Integer> list1 = new ArrayList<Integer>();
+        ArrayList<Integer> list1 = new ArrayList<>();
         if( i != 0 ){
           list1.add(i);
           multiDateTestMissing.add(0l);
@@ -245,7 +245,7 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
       if( s != 0 ){
         //Strings
         if (j-STRING<0) {
-          ArrayList<Integer> list1 = new ArrayList<Integer>();
+          ArrayList<Integer> list1 = new ArrayList<>();
           if( i != 0 ){
             list1.add(i);
             intStringTestMissing.add(0l);
@@ -253,7 +253,7 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
             intStringTestMissing.add(1l);
           }
           intStringTestStart.add(list1);
-          ArrayList<Long> list2 = new ArrayList<Long>();
+          ArrayList<Long> list2 = new ArrayList<>();
           if( l != 0l ){
             list2.add(l);
             longStringTestMissing.add(0l);
@@ -261,7 +261,7 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
             longStringTestMissing.add(1l);
           }
           longStringTestStart.add(list2);
-          ArrayList<Float> list3 = new ArrayList<Float>();
+          ArrayList<Float> list3 = new ArrayList<>();
           if( f != 0.0f ){
             list3.add(f);
             floatStringTestMissing.add(0l);
@@ -269,7 +269,7 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
             floatStringTestMissing.add(1l);
           }
           floatStringTestStart.add(list3);
-          ArrayList<Double> list4 = new ArrayList<Double>();
+          ArrayList<Double> list4 = new ArrayList<>();
           if( d != 0.0d ){
             list4.add(d);
             doubleStringTestMissing.add(0l);
@@ -277,7 +277,7 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
             doubleStringTestMissing.add(1l);
           }
           doubleStringTestStart.add(list4);
-          ArrayList<Integer> list5 = new ArrayList<Integer>();
+          ArrayList<Integer> list5 = new ArrayList<>();
           if( i != 0 ){
             list5.add(i);
             multiStringTestMissing.add(0l);
@@ -297,7 +297,7 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
       //Strings
       if( sm != 0 ){
         if (j-STRINGM<0&&sm!=s) {
-          ArrayList<Integer> list1 = new ArrayList<Integer>();
+          ArrayList<Integer> list1 = new ArrayList<>();
           if( i != 0 ){
             list1.add(i);
             multiStringTestMissing.add(0l);
@@ -313,7 +313,7 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
       //Int
       if( i != 0 ){
         if (j-INT<0) {
-          ArrayList<String> list1 = new ArrayList<String>();
+          ArrayList<String> list1 = new ArrayList<>();
           if( dt != 0 ){
             list1.add((1800+dt) + "-12-31T23:59:59Z");
             dateIntTestMissing.add(0l);
@@ -321,7 +321,7 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
             dateIntTestMissing.add(1l);
           }
           dateIntTestStart.add(list1);
-          ArrayList<String> list2 = new ArrayList<String>();
+          ArrayList<String> list2 = new ArrayList<>();
           if( s != 0 ){
             list2.add("str"+s);
             stringIntTestMissing.add(0l);
@@ -338,7 +338,7 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
       //Long
       if( l != 0 ){
         if (j-LONG<0) {
-          ArrayList<String> list1 = new ArrayList<String>();
+          ArrayList<String> list1 = new ArrayList<>();
           if( dt != 0 ){
             list1.add((1800+dt) + "-12-31T23:59:59Z");
             dateLongTestMissing.add(0l);
@@ -346,7 +346,7 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
             dateLongTestMissing.add(1l);
           }
           dateLongTestStart.add(list1);
-          ArrayList<String> list2 = new ArrayList<String>();
+          ArrayList<String> list2 = new ArrayList<>();
           if( s != 0 ){
             list2.add("str"+s);
             stringLongTestMissing.add(0l);
@@ -354,7 +354,7 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
             stringLongTestMissing.add(1l);
           }
           stringLongTestStart.add(list2);
-          ArrayList<Integer> list3 = new ArrayList<Integer>();
+          ArrayList<Integer> list3 = new ArrayList<>();
           if( i != 0 ){
             list3.add(i);
             multiLongTestMissing.add(0l);
@@ -372,7 +372,7 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
       //Long
       if( lm != 0 ){
         if (j-LONGM<0&&lm!=l) {
-          ArrayList<Integer> list1 = new ArrayList<Integer>();
+          ArrayList<Integer> list1 = new ArrayList<>();
           if( i != 0 ){
             list1.add(i);
             multiLongTestMissing.add(0l);

@@ -77,7 +77,7 @@ public class CopyFieldCollectionResource extends BaseFieldResource implements GE
       if (null != sourceFieldListParam) {
         String[] fields = sourceFieldListParam.trim().split("[,\\s]+");
         if (fields.length > 0) {
-          requestedSourceFields = new HashSet<String>(Arrays.asList(fields));
+          requestedSourceFields = new HashSet<>(Arrays.asList(fields));
           requestedSourceFields.remove(""); // Remove empty values, if any
         }
       }
@@ -85,7 +85,7 @@ public class CopyFieldCollectionResource extends BaseFieldResource implements GE
       if (null != destinationFieldListParam) {
         String[] fields = destinationFieldListParam.trim().split("[,\\s]+");
         if (fields.length > 0) {
-          requestedDestinationFields = new HashSet<String>(Arrays.asList(fields));
+          requestedDestinationFields = new HashSet<>(Arrays.asList(fields));
           requestedDestinationFields.remove(""); // Remove empty values, if any
         }
       }

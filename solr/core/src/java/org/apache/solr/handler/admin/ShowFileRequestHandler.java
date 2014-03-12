@@ -113,7 +113,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
 
   public static Set<String> initHidden(SolrParams invariants) {
 
-    Set<String> hiddenRet = new HashSet<String>();
+    Set<String> hiddenRet = new HashSet<>();
     // Build a list of hidden files
     if (invariants != null) {
       String[] hidden = invariants.getParams(HIDDEN);
@@ -155,13 +155,13 @@ public class ShowFileRequestHandler extends RequestHandlerBase
     List<String> children = zkClient.getChildren(adminFile, null, true);
     if (children.size() > 0) {
       
-      NamedList<SimpleOrderedMap<Object>> files = new SimpleOrderedMap<SimpleOrderedMap<Object>>();
+      NamedList<SimpleOrderedMap<Object>> files = new SimpleOrderedMap<>();
       for (String f : children) {
         if (isHiddenFile(req, rsp, f, false, hiddenFiles)) {
           continue;
         }
 
-        SimpleOrderedMap<Object> fileInfo = new SimpleOrderedMap<Object>();
+        SimpleOrderedMap<Object> fileInfo = new SimpleOrderedMap<>();
         files.add(f, fileInfo);
         List<String> fchildren = zkClient.getChildren(adminFile + "/" + f, null, true);
         if (fchildren.size() > 0) {
@@ -216,7 +216,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
     if( adminFile.isDirectory() ) {
       // it's really a directory, just go for it.
       int basePath = adminFile.getAbsolutePath().length() + 1;
-      NamedList<SimpleOrderedMap<Object>> files = new SimpleOrderedMap<SimpleOrderedMap<Object>>();
+      NamedList<SimpleOrderedMap<Object>> files = new SimpleOrderedMap<>();
       for( File f : adminFile.listFiles() ) {
         String path = f.getAbsolutePath().substring( basePath );
         path = path.replace( '\\', '/' ); // normalize slashes
@@ -225,7 +225,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
           continue;
         }
 
-        SimpleOrderedMap<Object> fileInfo = new SimpleOrderedMap<Object>();
+        SimpleOrderedMap<Object> fileInfo = new SimpleOrderedMap<>();
         files.add( path, fileInfo );
         if( f.isDirectory() ) {
           fileInfo.add( "directory", true ); 

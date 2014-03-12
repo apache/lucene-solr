@@ -409,10 +409,10 @@ public class XMLLoader extends ContentStreamLoader {
             // should I warn in some text has been found too
             Object v = isNull ? null : text.toString();
             if (update != null) {
-              if (updateMap == null) updateMap = new HashMap<String, Map<String, Object>>();
+              if (updateMap == null) updateMap = new HashMap<>();
               Map<String, Object> extendedValues = updateMap.get(name);
               if (extendedValues == null) {
-                extendedValues = new HashMap<String, Object>(1);
+                extendedValues = new HashMap<>(1);
                 updateMap.put(name, extendedValues);
               }
               Object val = extendedValues.get(update);
@@ -424,7 +424,7 @@ public class XMLLoader extends ContentStreamLoader {
                   List list = (List) val;
                   list.add(v);
                 } else {
-                  List<Object> values = new ArrayList<Object>();
+                  List<Object> values = new ArrayList<>();
                   values.add(val);
                   values.add(v);
                   extendedValues.put(update, values);

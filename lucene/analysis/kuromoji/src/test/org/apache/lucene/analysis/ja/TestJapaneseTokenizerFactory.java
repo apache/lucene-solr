@@ -60,7 +60,7 @@ public class TestJapaneseTokenizerFactory extends BaseTokenStreamTestCase {
    * Test mode parameter: specifying normal mode
    */
   public void testMode() throws IOException {
-    Map<String,String> args = new HashMap<String,String>();
+    Map<String,String> args = new HashMap<>();
     args.put("mode", "normal");
     JapaneseTokenizerFactory factory = new JapaneseTokenizerFactory(args);
     factory.inform(new StringMockResourceLoader(""));
@@ -81,7 +81,7 @@ public class TestJapaneseTokenizerFactory extends BaseTokenStreamTestCase {
         "関西国際空港,関西 国際 空港,カンサイ コクサイ クウコウ,テスト名詞\n" +
         "# Custom reading for sumo wrestler\n" +
         "朝青龍,朝青龍,アサショウリュウ,カスタム人名\n";
-    Map<String,String> args = new HashMap<String,String>();
+    Map<String,String> args = new HashMap<>();
     args.put("userDictionary", "userdict.txt");
     JapaneseTokenizerFactory factory = new JapaneseTokenizerFactory(args);
     factory.inform(new StringMockResourceLoader(userDict));
@@ -96,7 +96,7 @@ public class TestJapaneseTokenizerFactory extends BaseTokenStreamTestCase {
    * Test preserving punctuation
    */
   public void testPreservePunctuation() throws IOException {
-    Map<String,String> args = new HashMap<String,String>();
+    Map<String,String> args = new HashMap<>();
     args.put("discardPunctuation", "false");
     JapaneseTokenizerFactory factory = new JapaneseTokenizerFactory(args);
     factory.inform(new StringMockResourceLoader(""));

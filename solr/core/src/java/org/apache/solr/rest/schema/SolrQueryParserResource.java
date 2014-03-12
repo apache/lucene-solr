@@ -43,7 +43,7 @@ public class SolrQueryParserResource extends BaseSchemaResource implements GETab
   @Override
   public Representation get() {
     try {
-      SimpleOrderedMap<Object> props = new SimpleOrderedMap<Object>();
+      SimpleOrderedMap<Object> props = new SimpleOrderedMap<>();
       props.add(IndexSchema.DEFAULT_OPERATOR, getSchema().getQueryParserDefaultOperator());
       getSolrResponse().add(IndexSchema.SOLR_QUERY_PARSER, props);
     } catch (Exception e) {

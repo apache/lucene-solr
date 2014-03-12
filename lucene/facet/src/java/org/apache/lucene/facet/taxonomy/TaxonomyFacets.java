@@ -85,7 +85,7 @@ public abstract class TaxonomyFacets extends Facets {
   @Override
   public List<FacetResult> getAllDims(int topN) throws IOException {
     int ord = children[TaxonomyReader.ROOT_ORDINAL];
-    List<FacetResult> results = new ArrayList<FacetResult>();
+    List<FacetResult> results = new ArrayList<>();
     while (ord != TaxonomyReader.INVALID_ORDINAL) {
       String dim = taxoReader.getPath(ord).components[0];
       FacetsConfig.DimConfig dimConfig = config.getDimConfig(dim);

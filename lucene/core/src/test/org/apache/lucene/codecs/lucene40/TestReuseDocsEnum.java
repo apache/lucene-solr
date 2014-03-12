@@ -62,7 +62,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
       AtomicReader indexReader = ctx.reader();
       Terms terms = indexReader.terms("body");
       TermsEnum iterator = terms.iterator(null);
-      IdentityHashMap<DocsEnum, Boolean> enums = new IdentityHashMap<DocsEnum, Boolean>();
+      IdentityHashMap<DocsEnum, Boolean> enums = new IdentityHashMap<>();
       MatchNoBits bits = new Bits.MatchNoBits(indexReader.maxDoc());
       while ((iterator.next()) != null) {
         DocsEnum docs = iterator.docs(random().nextBoolean() ? bits : new Bits.MatchNoBits(indexReader.maxDoc()), null, random().nextBoolean() ? DocsEnum.FLAG_FREQS : DocsEnum.FLAG_NONE);
@@ -88,7 +88,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
     for (AtomicReaderContext ctx : open.leaves()) {
       Terms terms = ctx.reader().terms("body");
       TermsEnum iterator = terms.iterator(null);
-      IdentityHashMap<DocsEnum, Boolean> enums = new IdentityHashMap<DocsEnum, Boolean>();
+      IdentityHashMap<DocsEnum, Boolean> enums = new IdentityHashMap<>();
       MatchNoBits bits = new Bits.MatchNoBits(open.maxDoc());
       DocsEnum docs = null;
       while ((iterator.next()) != null) {
@@ -139,7 +139,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
     for (AtomicReaderContext ctx : leaves) {
       Terms terms = ctx.reader().terms("body");
       TermsEnum iterator = terms.iterator(null);
-      IdentityHashMap<DocsEnum, Boolean> enums = new IdentityHashMap<DocsEnum, Boolean>();
+      IdentityHashMap<DocsEnum, Boolean> enums = new IdentityHashMap<>();
       MatchNoBits bits = new Bits.MatchNoBits(firstReader.maxDoc());
       iterator = terms.iterator(null);
       DocsEnum docs = null;

@@ -533,7 +533,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
           token( "red", 0, 0, 3 )
         ), matched ) );
 
-    final Map<String, Analyzer> fieldAnalyzers = new TreeMap<String, Analyzer>();
+    final Map<String, Analyzer> fieldAnalyzers = new TreeMap<>();
     fieldAnalyzers.put( "field", new MockAnalyzer( random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET ) );
     fieldAnalyzers.put( "field_exact", new MockAnalyzer( random() ) );
     fieldAnalyzers.put( "field_super_exact", new MockAnalyzer( random(), MockTokenizer.WHITESPACE, false ) );
@@ -566,7 +566,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     FieldQuery fieldQuery = new FieldQuery( query, reader, true, fieldMatch );
     String[] bestFragments;
     if ( useMatchedFields ) {
-      Set< String > matchedFields = new HashSet< String >();
+      Set< String > matchedFields = new HashSet<>();
       matchedFields.add( "field" );
       matchedFields.add( "field_exact" );
       matchedFields.add( "field_super_exact" );

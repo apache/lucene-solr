@@ -103,7 +103,7 @@ public class BasicAccumulator extends ValueAccumulator {
   }
   
   public NamedList<?> export(){
-    NamedList<Object> base = new NamedList<Object>();
+    NamedList<Object> base = new NamedList<>();
     for (int count = 0; count < expressions.length; count++) {
       if (!hiddenExpressions.contains(expressionNames[count])) {
         base.add(expressionNames[count], expressions[count].getValue());

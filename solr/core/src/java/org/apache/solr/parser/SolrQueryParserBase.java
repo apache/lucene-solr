@@ -114,7 +114,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
       return field;
     }
     private final static Map<String,MagicFieldName> lookup
-        = new HashMap<String,MagicFieldName>();
+        = new HashMap<>();
     static {
       for(MagicFieldName s : EnumSet.allOf(MagicFieldName.class))
         lookup.put(s.toString(), s);
@@ -671,7 +671,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
 
 
   protected ReversedWildcardFilterFactory getReversedWildcardFilterFactory(FieldType fieldType) {
-    if (leadingWildcards == null) leadingWildcards = new HashMap<FieldType, ReversedWildcardFilterFactory>();
+    if (leadingWildcards == null) leadingWildcards = new HashMap<>();
     ReversedWildcardFilterFactory fac = leadingWildcards.get(fieldType);
     if (fac != null || leadingWildcards.containsKey(fac)) {
       return fac;

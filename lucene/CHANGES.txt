@@ -184,6 +184,9 @@ Build
 * LUCENE-5511: "ant precommit" / "ant check-svn-working-copy" now work again
   with any working copy format (thanks to svnkit 1.8.4).  (Uwe Schindler)
 
+* LUCENE-5512: Remove redundant typing (use diamond operator) throughout
+  the codebase.  (Furkan KAMACI via Robert Muir)
+
 ======================= Lucene 4.7.0 =======================
 
 New Features

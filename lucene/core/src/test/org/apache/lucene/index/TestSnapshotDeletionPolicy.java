@@ -63,7 +63,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     }
   }
 
-  protected List<IndexCommit> snapshots = new ArrayList<IndexCommit>();
+  protected List<IndexCommit> snapshots = new ArrayList<>();
 
   protected void prepareIndexAndSnapshots(SnapshotDeletionPolicy sdp,
       IndexWriter writer, int numSnapshots)

@@ -57,7 +57,7 @@ public class CachedOrdinalsReader extends OrdinalsReader {
 
   private final OrdinalsReader source;
 
-  private final Map<Object,CachedOrds> ordsCache = new WeakHashMap<Object,CachedOrds>();
+  private final Map<Object,CachedOrds> ordsCache = new WeakHashMap<>();
 
   /** Sole constructor. */
   public CachedOrdinalsReader(OrdinalsReader source) {

@@ -78,7 +78,7 @@ final public class TrivialLookaheadFilter extends LookaheadTokenFilter<TestPosit
   }
 
   private void peekSentence() throws IOException {
-    List<String> facts = new ArrayList<String>();
+    List<String> facts = new ArrayList<>();
     boolean haveSentence = false;
     do {
       if (peekToken()) {

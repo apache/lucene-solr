@@ -76,8 +76,8 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     public boolean closeCacheValueCalled = false;
     public boolean doneWithDir = false;
     private boolean deleteAfterCoreClose = false;
-    public Set<CacheValue> removeEntries = new HashSet<CacheValue>();
-    public Set<CacheValue> closeEntries = new HashSet<CacheValue>();
+    public Set<CacheValue> removeEntries = new HashSet<>();
+    public Set<CacheValue> closeEntries = new HashSet<>();
 
     public void setDeleteOnClose(boolean deleteOnClose, boolean deleteAfterCoreClose) {
       if (deleteOnClose) {
@@ -96,13 +96,13 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   private static Logger log = LoggerFactory
       .getLogger(CachingDirectoryFactory.class);
   
-  protected Map<String,CacheValue> byPathCache = new HashMap<String,CacheValue>();
+  protected Map<String,CacheValue> byPathCache = new HashMap<>();
   
-  protected Map<Directory,CacheValue> byDirectoryCache = new IdentityHashMap<Directory,CacheValue>();
+  protected Map<Directory,CacheValue> byDirectoryCache = new IdentityHashMap<>();
   
-  protected Map<Directory,List<CloseListener>> closeListeners = new HashMap<Directory,List<CloseListener>>();
+  protected Map<Directory,List<CloseListener>> closeListeners = new HashMap<>();
   
-  protected Set<CacheValue> removeEntries = new HashSet<CacheValue>();
+  protected Set<CacheValue> removeEntries = new HashSet<>();
 
   private Double maxWriteMBPerSecFlush;
 
@@ -129,7 +129,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       }
       List<CloseListener> listeners = closeListeners.get(dir);
       if (listeners == null) {
-        listeners = new ArrayList<CloseListener>();
+        listeners = new ArrayList<>();
         closeListeners.put(dir, listeners);
       }
       listeners.add(closeListener);
@@ -192,7 +192,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       }
       
       values = byDirectoryCache.values();
-      Set<CacheValue> closedDirs = new HashSet<CacheValue>();
+      Set<CacheValue> closedDirs = new HashSet<>();
       for (CacheValue val : values) {
         try {
           for (CacheValue v : val.closeEntries) {
@@ -248,7 +248,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       // see if we are a subpath
       Collection<CacheValue> values = byPathCache.values();
       
-      Collection<CacheValue> cacheValues = new ArrayList<CacheValue>(values);
+      Collection<CacheValue> cacheValues = new ArrayList<>(values);
       cacheValues.remove(cacheValue);
       for (CacheValue otherCacheValue : cacheValues) {
         // if we are a parent path and a sub path is not already closed, get a sub path to close us later
@@ -556,7 +556,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
    * @lucene.internal
    */
   public synchronized Set<String> getLivePaths() {
-    HashSet<String> livePaths = new HashSet<String>();
+    HashSet<String> livePaths = new HashSet<>();
     for (CacheValue val : byPathCache.values()) {
       if (!val.doneWithDir) {
         livePaths.add(val.path);

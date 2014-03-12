@@ -98,7 +98,7 @@ public class LibVersionsCheckTask extends Task {
    * All /org/name version keys found in ivy-versions.properties, and whether they
    * are referenced in any ivy.xml file.
    */
-  private Map<String,Boolean> referencedCoordinateKeys = new LinkedHashMap<String,Boolean>();
+  private Map<String,Boolean> referencedCoordinateKeys = new LinkedHashMap<>();
 
   /**
    * Adds a set of ivy.xml resources to check.
@@ -320,7 +320,7 @@ public class LibVersionsCheckTask extends Task {
 
   private class DependencyRevChecker extends DefaultHandler {
     private final File ivyXmlFile;
-    private final Stack<String> tags = new Stack<String>();
+    private final Stack<String> tags = new Stack<>();
     
     public boolean fail = false;
 

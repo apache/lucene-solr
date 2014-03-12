@@ -86,7 +86,7 @@ public class TestOfflineSorter extends LuceneTestCase {
   }
 
   private byte[][] generateRandom(int howMuchData) {
-    ArrayList<byte[]> data = new ArrayList<byte[]>(); 
+    ArrayList<byte[]> data = new ArrayList<>();
     while (howMuchData > 0) {
       byte [] current = new byte [random().nextInt(256)];
       random().nextBytes(current);

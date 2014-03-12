@@ -166,7 +166,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     assertU(adoc("id", "4"));
     assertU(commit());
 
-    Map<String, String> args = new HashMap<String, String>();
+    Map<String, String> args = new HashMap<>();
     args.put(CommonParams.Q, "*:*");
     args.put(StatsParams.STATS, "true");
     args.put(StatsParams.STATS_FIELD, "active_s");
@@ -197,7 +197,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     assertU(adoc("id", "3"));
     assertU(commit());
 
-    Map<String, String> args = new HashMap<String, String>();
+    Map<String, String> args = new HashMap<>();
     args.put(CommonParams.Q, "*:*");
     args.put(StatsParams.STATS, "true");
     args.put(StatsParams.STATS_FIELD, "active_dt");
@@ -322,7 +322,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     assertU(adoc("id", "4"));
     assertU(commit());
 
-    Map<String, String> args = new HashMap<String, String>();
+    Map<String, String> args = new HashMap<>();
     args.put(CommonParams.Q, "*:*");
     args.put(StatsParams.STATS, "true");
     args.put(StatsParams.STATS_FIELD, "active_i");
@@ -342,7 +342,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     assertU(adoc("id", "4"));
     assertU(commit());
 
-    Map<String, String> args = new HashMap<String, String>();
+    Map<String, String> args = new HashMap<>();
     args.put(CommonParams.Q, "*:*");
     args.put(StatsParams.STATS, "true");
     args.put(StatsParams.STATS_FIELD, "active_s");
@@ -363,7 +363,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     assertU(adoc("id", "3"));
     assertU(commit());
 
-    Map<String, String> args = new HashMap<String, String>();
+    Map<String, String> args = new HashMap<>();
     args.put(CommonParams.Q, "*:*");
     args.put(StatsParams.STATS, "true");
     args.put(StatsParams.STATS_FIELD, "active_dt");

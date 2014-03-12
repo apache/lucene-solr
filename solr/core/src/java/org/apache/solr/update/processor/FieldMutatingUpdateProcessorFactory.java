@@ -125,7 +125,7 @@ public abstract class FieldMutatingUpdateProcessorFactory
 
   private SelectorParams inclusions = new SelectorParams();
   private Collection<SelectorParams> exclusions 
-    = new ArrayList<SelectorParams>();
+    = new ArrayList<>();
 
   private FieldMutatingUpdateProcessor.FieldNameSelector selector = null;
   
@@ -139,13 +139,13 @@ public abstract class FieldMutatingUpdateProcessorFactory
   public static SelectorParams parseSelectorParams(NamedList args) {
     SelectorParams params = new SelectorParams();
     
-    params.fieldName = new HashSet<String>(args.removeConfigArgs("fieldName"));
-    params.typeName = new HashSet<String>(args.removeConfigArgs("typeName"));
+    params.fieldName = new HashSet<>(args.removeConfigArgs("fieldName"));
+    params.typeName = new HashSet<>(args.removeConfigArgs("typeName"));
 
     // we can compile the patterns now
     Collection<String> patterns = args.removeConfigArgs("fieldRegex");
     if (! patterns.isEmpty()) {
-      params.fieldRegex = new ArrayList<Pattern>(patterns.size());
+      params.fieldRegex = new ArrayList<>(patterns.size());
       for (String s : patterns) {
         try {
           params.fieldRegex.add(Pattern.compile(s));
@@ -167,7 +167,7 @@ public abstract class FieldMutatingUpdateProcessorFactory
   }
                                
   public static Collection<SelectorParams> parseSelectorExclusionParams(NamedList args) {
-    Collection<SelectorParams> exclusions = new ArrayList<SelectorParams>();
+    Collection<SelectorParams> exclusions = new ArrayList<>();
     List<Object> excList = args.getAll("exclude");
     for (Object excObj : excList) {
       if (null == excObj) {

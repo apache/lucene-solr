@@ -71,7 +71,7 @@ public class SpanNearClauseFactory { // FIXME: rename to SpanClauseFactory
   public SpanNearClauseFactory(IndexReader reader, String fieldName, BasicQueryFactory qf) {
     this.reader = reader;
     this.fieldName = fieldName;
-    this.weightBySpanQuery = new HashMap<SpanQuery, Float>(); 
+    this.weightBySpanQuery = new HashMap<>();
     this.qf = qf;
   }
   private IndexReader reader;

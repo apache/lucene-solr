@@ -88,7 +88,7 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
   
   /** fork ourselves in a new jvm. sets -Dtests.crashmode=true */
   public void forkTest() throws Exception {
-    List<String> cmd = new ArrayList<String>();
+    List<String> cmd = new ArrayList<>();
     cmd.add(System.getProperty("java.home") 
         + System.getProperty("file.separator")
         + "bin"

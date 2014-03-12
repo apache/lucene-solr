@@ -187,7 +187,7 @@ final class DaciukMihovAutomatonBuilder {
   /**
    * A "registry" for state interning.
    */
-  private HashMap<State,State> stateRegistry = new HashMap<State,State>();
+  private HashMap<State,State> stateRegistry = new HashMap<>();
   
   /**
    * Root automaton state.

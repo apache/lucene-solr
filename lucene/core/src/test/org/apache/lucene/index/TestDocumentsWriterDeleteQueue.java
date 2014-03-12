@@ -47,7 +47,7 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
     BufferedUpdates bd2 = new BufferedUpdates();
     int last1 = 0;
     int last2 = 0;
-    Set<Term> uniqueValues = new HashSet<Term>();
+    Set<Term> uniqueValues = new HashSet<>();
     for (int j = 0; j < ids.length; j++) {
       Integer i = ids[j];
       // create an array here since we compare identity below against tailItem
@@ -72,7 +72,7 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
     }
     assertEquals(uniqueValues, bd1.terms.keySet());
     assertEquals(uniqueValues, bd2.terms.keySet());
-    HashSet<Term> frozenSet = new HashSet<Term>();
+    HashSet<Term> frozenSet = new HashSet<>();
     for (Term t : queue.freezeGlobalBuffer(null).termsIterable()) {
       BytesRef bytesRef = new BytesRef();
       bytesRef.copyBytes(t.bytes);
@@ -173,7 +173,7 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
 
   public void testStressDeleteQueue() throws InterruptedException {
     DocumentsWriterDeleteQueue queue = new DocumentsWriterDeleteQueue();
-    Set<Term> uniqueValues = new HashSet<Term>();
+    Set<Term> uniqueValues = new HashSet<>();
     final int size = 10000 + random().nextInt(500) * RANDOM_MULTIPLIER;
     Integer[] ids = new Integer[size];
     for (int i = 0; i < ids.length; i++) {
@@ -201,7 +201,7 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
       assertEquals(uniqueValues, deletes.terms.keySet());
     }
     queue.tryApplyGlobalSlice();
-    Set<Term> frozenSet = new HashSet<Term>();
+    Set<Term> frozenSet = new HashSet<>();
     for (Term t : queue.freezeGlobalBuffer(null).termsIterable()) {
       BytesRef bytesRef = new BytesRef();
       bytesRef.copyBytes(t.bytes);

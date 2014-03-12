@@ -40,7 +40,7 @@ public class AssertingScorer extends Scorer {
       return other;
     }
     final AssertingScorer assertScorer = new AssertingScorer(random, other);
-    ASSERTING_INSTANCES.put(other, new WeakReference<AssertingScorer>(assertScorer));
+    ASSERTING_INSTANCES.put(other, new WeakReference<>(assertScorer));
     return assertScorer;
   }
 

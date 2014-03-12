@@ -33,7 +33,7 @@ import java.util.Map;
  * 
  * <pre class="prettyprint">
  * {@code
- * Map<String,Analyzer> analyzerPerField = new HashMap<String,Analyzer>();
+ * Map<String,Analyzer> analyzerPerField = new HashMap<>();
  * analyzerPerField.put("firstname", new KeywordAnalyzer());
  * analyzerPerField.put("lastname", new KeywordAnalyzer());
  *

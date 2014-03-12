@@ -141,7 +141,7 @@ public class ZkContainer {
 
               @Override
               public List<CoreDescriptor> getCurrentDescriptors() {
-                List<CoreDescriptor> descriptors = new ArrayList<CoreDescriptor>(
+                List<CoreDescriptor> descriptors = new ArrayList<>(
                     cc.getCoreNames().size());
                 Collection<SolrCore> cores = cc.getCores();
                 for (SolrCore core : cores) {

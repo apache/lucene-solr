@@ -93,7 +93,7 @@ final class DocumentsWriterDeleteQueue {
      * we use a sentinel instance as our initial tail. No slice will ever try to
      * apply this tail since the head is always omitted.
      */
-    tail = new Node<Object>(null); // sentinel
+    tail = new Node<>(null); // sentinel
     globalSlice = new DeleteSlice(tail);
   }
 

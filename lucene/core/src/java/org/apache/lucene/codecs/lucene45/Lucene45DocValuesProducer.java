@@ -73,8 +73,8 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
   private final int version;
 
   // memory-resident structures
-  private final Map<Integer,MonotonicBlockPackedReader> addressInstances = new HashMap<Integer,MonotonicBlockPackedReader>();
-  private final Map<Integer,MonotonicBlockPackedReader> ordIndexInstances = new HashMap<Integer,MonotonicBlockPackedReader>();
+  private final Map<Integer,MonotonicBlockPackedReader> addressInstances = new HashMap<>();
+  private final Map<Integer,MonotonicBlockPackedReader> ordIndexInstances = new HashMap<>();
   
   /** expert: instantiates a new reader */
   protected Lucene45DocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
@@ -87,11 +87,11 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
       version = CodecUtil.checkHeader(in, metaCodec, 
                                       Lucene45DocValuesFormat.VERSION_START,
                                       Lucene45DocValuesFormat.VERSION_CURRENT);
-      numerics = new HashMap<Integer,NumericEntry>();
-      ords = new HashMap<Integer,NumericEntry>();
-      ordIndexes = new HashMap<Integer,NumericEntry>();
-      binaries = new HashMap<Integer,BinaryEntry>();
-      sortedSets = new HashMap<Integer,SortedSetEntry>();
+      numerics = new HashMap<>();
+      ords = new HashMap<>();
+      ordIndexes = new HashMap<>();
+      binaries = new HashMap<>();
+      sortedSets = new HashMap<>();
       readFields(in, state.fieldInfos);
 
       success = true;

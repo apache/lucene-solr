@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
  * @since solr 1.3
  */
 public class DateFormatTransformer extends Transformer {
-  private Map<String, SimpleDateFormat> fmtCache = new HashMap<String, SimpleDateFormat>();
+  private Map<String, SimpleDateFormat> fmtCache = new HashMap<>();
   private static final Logger LOG = LoggerFactory
           .getLogger(DateFormatTransformer.class);
 
@@ -66,7 +66,7 @@ public class DateFormatTransformer extends Transformer {
         Object o = aRow.get(srcCol);
         if (o instanceof List) {
           List inputs = (List) o;
-          List<Date> results = new ArrayList<Date>();
+          List<Date> results = new ArrayList<>();
           for (Object input : inputs) {
             results.add(process(input, fmt, locale));
           }

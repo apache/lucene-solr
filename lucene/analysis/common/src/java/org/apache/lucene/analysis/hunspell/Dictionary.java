@@ -189,7 +189,7 @@ public class Dictionary {
       
       // read dictionary entries
       IntSequenceOutputs o = IntSequenceOutputs.getSingleton();
-      Builder<IntsRef> b = new Builder<IntsRef>(FST.INPUT_TYPE.BYTE4, o);
+      Builder<IntsRef> b = new Builder<>(FST.INPUT_TYPE.BYTE4, o);
       readDictionaryFiles(dictionaries, decoder, b);
       words = b.finish();
       aliases = null; // no longer needed
@@ -502,7 +502,7 @@ public class Dictionary {
       
       List<Character> list = affixes.get(affixArg);
       if (list == null) {
-        list = new ArrayList<Character>();
+        list = new ArrayList<>();
         affixes.put(affixArg, list);
       }
       

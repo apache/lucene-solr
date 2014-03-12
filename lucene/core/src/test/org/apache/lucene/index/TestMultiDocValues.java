@@ -241,7 +241,7 @@ public class TestMultiDocValues extends LuceneTestCase {
       // check ord list
       for (int i = 0; i < numDocs; i++) {
         single.setDocument(i);
-        ArrayList<Long> expectedList = new ArrayList<Long>();
+        ArrayList<Long> expectedList = new ArrayList<>();
         long ord;
         while ((ord = single.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
           expectedList.add(ord);
@@ -306,7 +306,7 @@ public class TestMultiDocValues extends LuceneTestCase {
       // check ord list
       for (int i = 0; i < numDocs; i++) {
         single.setDocument(i);
-        ArrayList<Long> expectedList = new ArrayList<Long>();
+        ArrayList<Long> expectedList = new ArrayList<>();
         long ord;
         while ((ord = single.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
           expectedList.add(ord);

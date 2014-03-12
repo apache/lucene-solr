@@ -47,7 +47,7 @@ public class DocNameExtractor {
    * @throws IOException if cannot extract the doc name from the index.
    */
   public String docName(IndexSearcher searcher, int docid) throws IOException {
-    final List<String> name = new ArrayList<String>();
+    final List<String> name = new ArrayList<>();
     searcher.getIndexReader().document(docid, new StoredFieldVisitor() {
         @Override
         public void stringField(FieldInfo fieldInfo, String value) {

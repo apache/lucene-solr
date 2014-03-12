@@ -278,7 +278,7 @@ public class TestFieldCache extends LuceneTestCase {
     for (int i = 0; i < NUM_DOCS; i++) {
       termOrds.setDocument(i);
       // This will remove identical terms. A DocTermOrds doesn't return duplicate ords for a docId
-      List<BytesRef> values = new ArrayList<BytesRef>(new LinkedHashSet<BytesRef>(Arrays.asList(multiValued[i])));
+      List<BytesRef> values = new ArrayList<>(new LinkedHashSet<>(Arrays.asList(multiValued[i])));
       for (BytesRef v : values) {
         if (v == null) {
           // why does this test use null values... instead of an empty list: confusing

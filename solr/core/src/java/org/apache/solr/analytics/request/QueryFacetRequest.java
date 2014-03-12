@@ -31,13 +31,13 @@ public class QueryFacetRequest implements FacetRequest {
   private Set<String> dependencies;
   
   public QueryFacetRequest() {
-    dependencies = new HashSet<String>();
+    dependencies = new HashSet<>();
   }
 
   public QueryFacetRequest(String name) {
     this.name = name;
-    this.queries = new ArrayList<String>();
-    dependencies = new HashSet<String>();
+    this.queries = new ArrayList<>();
+    dependencies = new HashSet<>();
   }
  
   public List<String> getQueries() {

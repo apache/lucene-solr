@@ -135,7 +135,7 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
 
     fragInfos = getWeightedFragInfoList(fragInfos);
     int limitFragments = maxNumFragments < fragInfos.size() ? maxNumFragments : fragInfos.size();
-    List<String> fragments = new ArrayList<String>( limitFragments );
+    List<String> fragments = new ArrayList<>( limitFragments );
 
     StringBuilder buffer = new StringBuilder();
     int[] nextValueIndex = { 0 };
@@ -148,7 +148,7 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
   
   protected Field[] getFields( IndexReader reader, int docId, final String fieldName) throws IOException {
     // according to javadoc, doc.getFields(fieldName) cannot be used with lazy loaded field???
-    final List<Field> fields = new ArrayList<Field>();
+    final List<Field> fields = new ArrayList<>();
     reader.document(docId, new StoredFieldVisitor() {
         
         @Override
@@ -215,7 +215,7 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
   }
 
   protected List<WeightedFragInfo> discreteMultiValueHighlighting(List<WeightedFragInfo> fragInfos, Field[] fields) {
-    Map<String, List<WeightedFragInfo>> fieldNameToFragInfos = new HashMap<String, List<WeightedFragInfo>>();
+    Map<String, List<WeightedFragInfo>> fieldNameToFragInfos = new HashMap<>();
     for (Field field : fields) {
       fieldNameToFragInfos.put(field.name(), new ArrayList<WeightedFragInfo>());
     }
@@ -257,12 +257,12 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
         }
 
 
-        List<SubInfo> subInfos = new ArrayList<SubInfo>();
+        List<SubInfo> subInfos = new ArrayList<>();
         Iterator<SubInfo> subInfoIterator = fragInfo.getSubInfos().iterator();
         float boost = 0.0f;  //  The boost of the new info will be the sum of the boosts of its SubInfos
         while (subInfoIterator.hasNext()) {
           SubInfo subInfo = subInfoIterator.next();
-          List<Toffs> toffsList = new ArrayList<Toffs>();
+          List<Toffs> toffsList = new ArrayList<>();
           Iterator<Toffs> toffsIterator = subInfo.getTermsOffsets().iterator();
           while (toffsIterator.hasNext()) {
             Toffs toffs = toffsIterator.next();
@@ -286,7 +286,7 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
       }
     }
 
-    List<WeightedFragInfo> result = new ArrayList<WeightedFragInfo>();
+    List<WeightedFragInfo> result = new ArrayList<>();
     for (List<WeightedFragInfo> weightedFragInfos : fieldNameToFragInfos.values()) {
       result.addAll(weightedFragInfos);
     }

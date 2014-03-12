@@ -61,7 +61,7 @@ final class ExpressionValueSource extends ValueSource {
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     Map<String, FunctionValues> valuesCache = (Map<String, FunctionValues>)context.get("valuesCache");
     if (valuesCache == null) {
-      valuesCache = new HashMap<String, FunctionValues>();
+      valuesCache = new HashMap<>();
       context = new HashMap(context);
       context.put("valuesCache", valuesCache);
     }

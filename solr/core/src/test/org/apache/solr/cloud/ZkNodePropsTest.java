@@ -30,7 +30,7 @@ public class ZkNodePropsTest extends SolrTestCaseJ4 {
   @Test
   public void testBasic() throws IOException {
     
-    Map<String,Object> props = new HashMap<String,Object>();
+    Map<String,Object> props = new HashMap<>();
     props.put("prop1", "value1");
     props.put("prop2", "value2");
     props.put("prop3", "value3");

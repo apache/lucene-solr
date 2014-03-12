@@ -390,7 +390,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   /*
    * A static map of short class name to fully qualified class name 
    */
-  private static final Map<String, String> classNameCache = new ConcurrentHashMap<String, String>();
+  private static final Map<String, String> classNameCache = new ConcurrentHashMap<>();
 
   // Using this pattern, legacy analysis components from previous Solr versions are identified and delegated to SPI loader:
   private static final Pattern legacyAnalysisPattern = 
@@ -742,7 +742,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
    */
   private static final Map<Class, Class[]> awareCompatibility;
   static {
-    awareCompatibility = new HashMap<Class, Class[]>();
+    awareCompatibility = new HashMap<>();
     awareCompatibility.put( 
       SolrCoreAware.class, new Class[] {
         CodecFactory.class,

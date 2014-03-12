@@ -125,7 +125,7 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
    *  for this term) is <= maxPositions, then the postings are
    *  inlined into terms dict */
   public PulsingPostingsWriter(SegmentWriteState state, int maxPositions, PostingsWriterBase wrappedPostingsWriter) {
-    fields = new ArrayList<FieldMetaData>();
+    fields = new ArrayList<>();
     this.maxPositions = maxPositions;
     // We simply wrap another postings writer, but only call
     // on it when tot positions is >= the cutoff:

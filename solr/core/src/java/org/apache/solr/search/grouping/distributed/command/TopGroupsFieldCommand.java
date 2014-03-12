@@ -125,7 +125,7 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
       return Collections.emptyList();
     }
 
-    List<Collector> collectors = new ArrayList<Collector>();
+    List<Collector> collectors = new ArrayList<>();
     secondPassCollector = new TermSecondPassGroupingCollector(
           field.getName(), firstPhaseGroups, groupSort, sortWithinGroup, maxDocPerGroup, needScores, needMaxScore, true
     );
@@ -137,7 +137,7 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
   @SuppressWarnings("unchecked")
   public TopGroups<BytesRef> result() {
     if (firstPhaseGroups.isEmpty()) {
-      return new TopGroups<BytesRef>(groupSort.getSort(), sortWithinGroup.getSort(), 0, 0, new GroupDocs[0], Float.NaN);
+      return new TopGroups<>(groupSort.getSort(), sortWithinGroup.getSort(), 0, 0, new GroupDocs[0], Float.NaN);
     }
 
     return secondPassCollector.getTopGroups(0);

@@ -77,7 +77,7 @@ public class TestDocIdSet extends LuceneTestCase {
       };
 
     DocIdSetIterator iter = filteredSet.iterator();
-    ArrayList<Integer> list = new ArrayList<Integer>();
+    ArrayList<Integer> list = new ArrayList<>();
     int doc = iter.advance(3);
     if (doc != DocIdSetIterator.NO_MORE_DOCS) {
       list.add(Integer.valueOf(doc));

@@ -194,7 +194,7 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
   
   /** test next with giant bq of all terms with varying minShouldMatch */
   public void testNextAllTerms() throws Exception {
-    List<String> termsList = new ArrayList<String>();
+    List<String> termsList = new ArrayList<>();
     termsList.addAll(Arrays.asList(commonTerms));
     termsList.addAll(Arrays.asList(mediumTerms));
     termsList.addAll(Arrays.asList(rareTerms));
@@ -209,7 +209,7 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
   
   /** test advance with giant bq of all terms with varying minShouldMatch */
   public void testAdvanceAllTerms() throws Exception {
-    List<String> termsList = new ArrayList<String>();
+    List<String> termsList = new ArrayList<>();
     termsList.addAll(Arrays.asList(commonTerms));
     termsList.addAll(Arrays.asList(mediumTerms));
     termsList.addAll(Arrays.asList(rareTerms));
@@ -226,7 +226,7 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
   
   /** test next with varying numbers of terms with varying minShouldMatch */
   public void testNextVaryingNumberOfTerms() throws Exception {
-    List<String> termsList = new ArrayList<String>();
+    List<String> termsList = new ArrayList<>();
     termsList.addAll(Arrays.asList(commonTerms));
     termsList.addAll(Arrays.asList(mediumTerms));
     termsList.addAll(Arrays.asList(rareTerms));
@@ -243,7 +243,7 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
   
   /** test advance with varying numbers of terms with varying minShouldMatch */
   public void testAdvanceVaryingNumberOfTerms() throws Exception {
-    List<String> termsList = new ArrayList<String>();
+    List<String> termsList = new ArrayList<>();
     termsList.addAll(Arrays.asList(commonTerms));
     termsList.addAll(Arrays.asList(mediumTerms));
     termsList.addAll(Arrays.asList(rareTerms));
@@ -273,7 +273,7 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
     final SortedSetDocValues dv;
     final int maxDoc;
 
-    final Set<Long> ords = new HashSet<Long>();
+    final Set<Long> ords = new HashSet<>();
     final SimScorer[] sims;
     final int minNrShouldMatch;
     

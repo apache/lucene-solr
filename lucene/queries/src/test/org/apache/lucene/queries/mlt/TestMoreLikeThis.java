@@ -108,7 +108,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
   }
   
   private Map<String,Float> getOriginalValues() throws IOException {
-    Map<String,Float> originalValues = new HashMap<String,Float>();
+    Map<String,Float> originalValues = new HashMap<>();
     MoreLikeThis mlt = new MoreLikeThis(reader);
     mlt.setAnalyzer(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false));
     mlt.setMinDocFreq(1);

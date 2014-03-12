@@ -70,13 +70,13 @@ public class FSTUtil {
   public static <T> List<Path<T>> intersectPrefixPaths(Automaton a, FST<T> fst)
       throws IOException {
     assert a.isDeterministic();
-    final List<Path<T>> queue = new ArrayList<Path<T>>();
-    final List<Path<T>> endNodes = new ArrayList<Path<T>>();
-    queue.add(new Path<T>(a.getInitialState(), fst
+    final List<Path<T>> queue = new ArrayList<>();
+    final List<Path<T>> endNodes = new ArrayList<>();
+    queue.add(new Path<>(a.getInitialState(), fst
         .getFirstArc(new FST.Arc<T>()), fst.outputs.getNoOutput(),
         new IntsRef()));
     
-    final FST.Arc<T> scratchArc = new FST.Arc<T>();
+    final FST.Arc<T> scratchArc = new FST.Arc<>();
     final FST.BytesReader fstReader = fst.getBytesReader();
     
     while (queue.size() != 0) {
@@ -100,7 +100,7 @@ public class FSTUtil {
             newInput.copyInts(currentInput);
             newInput.ints[currentInput.length] = t.getMin();
             newInput.length = currentInput.length + 1;
-            queue.add(new Path<T>(t.getDest(), new FST.Arc<T>()
+            queue.add(new Path<>(t.getDest(), new FST.Arc<T>()
                 .copyFrom(nextArc), fst.outputs
                 .add(path.output, nextArc.output), newInput));
           }
@@ -122,7 +122,7 @@ public class FSTUtil {
             newInput.copyInts(currentInput);
             newInput.ints[currentInput.length] = nextArc.label;
             newInput.length = currentInput.length + 1;
-            queue.add(new Path<T>(t.getDest(), new FST.Arc<T>()
+            queue.add(new Path<>(t.getDest(), new FST.Arc<T>()
                 .copyFrom(nextArc), fst.outputs
                 .add(path.output, nextArc.output), newInput));
             final int label = nextArc.label; // used in assert

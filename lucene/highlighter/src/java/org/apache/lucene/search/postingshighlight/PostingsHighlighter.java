@@ -299,7 +299,7 @@ public class PostingsHighlighter {
    *         {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}
    */
   public Map<String,String[]> highlightFields(String fieldsIn[], Query query, IndexSearcher searcher, int[] docidsIn, int maxPassagesIn[]) throws IOException {
-    Map<String,String[]> snippets = new HashMap<String,String[]>();
+    Map<String,String[]> snippets = new HashMap<>();
     for(Map.Entry<String,Object[]> ent : highlightFieldsAsObjects(fieldsIn, query, searcher, docidsIn, maxPassagesIn).entrySet()) {
       Object[] snippetObjects = ent.getValue();
       String[] snippetStrings = new String[snippetObjects.length];
@@ -346,7 +346,7 @@ public class PostingsHighlighter {
     }
     final IndexReader reader = searcher.getIndexReader();
     Query rewritten = rewrite(query);
-    SortedSet<Term> queryTerms = new TreeSet<Term>();
+    SortedSet<Term> queryTerms = new TreeSet<>();
     rewritten.extractTerms(queryTerms);
 
     IndexReaderContext readerContext = reader.getContext();
@@ -384,7 +384,7 @@ public class PostingsHighlighter {
     // pull stored data:
     String[][] contents = loadFieldValues(searcher, fields, docids, maxLength);
     
-    Map<String,Object[]> highlights = new HashMap<String,Object[]>();
+    Map<String,Object[]> highlights = new HashMap<>();
     for (int i = 0; i < fields.length; i++) {
       String field = fields[i];
       int numPassages = maxPassages[i];
@@ -454,7 +454,7 @@ public class PostingsHighlighter {
   }
     
   private Map<Integer,Object> highlightField(String field, String contents[], BreakIterator bi, BytesRef terms[], int[] docids, List<AtomicReaderContext> leaves, int maxPassages, Query query) throws IOException {  
-    Map<Integer,Object> highlights = new HashMap<Integer,Object>();
+    Map<Integer,Object> highlights = new HashMap<>();
     
     PassageFormatter fieldFormatter = getFormatter(field);
     if (fieldFormatter == null) {
@@ -539,7 +539,7 @@ public class PostingsHighlighter {
     if (scorer == null) {
       throw new NullPointerException("PassageScorer cannot be null");
     }
-    PriorityQueue<OffsetsEnum> pq = new PriorityQueue<OffsetsEnum>();
+    PriorityQueue<OffsetsEnum> pq = new PriorityQueue<>();
     float weights[] = new float[terms.length];
     // initialize postings
     for (int i = 0; i < terms.length; i++) {
@@ -574,7 +574,7 @@ public class PostingsHighlighter {
     
     pq.add(new OffsetsEnum(EMPTY, Integer.MAX_VALUE)); // a sentinel for termination
     
-    PriorityQueue<Passage> passageQueue = new PriorityQueue<Passage>(n, new Comparator<Passage>() {
+    PriorityQueue<Passage> passageQueue = new PriorityQueue<>(n, new Comparator<Passage>() {
       @Override
       public int compare(Passage left, Passage right) {
         if (left.score < right.score) {
@@ -678,7 +678,7 @@ public class PostingsHighlighter {
    *  to customize. */
   protected Passage[] getEmptyHighlight(String fieldName, BreakIterator bi, int maxPassages) {
     // BreakIterator should be un-next'd:
-    List<Passage> passages = new ArrayList<Passage>();
+    List<Passage> passages = new ArrayList<>();
     int pos = bi.current();
     assert pos == 0;
     while (passages.size() < maxPassages) {

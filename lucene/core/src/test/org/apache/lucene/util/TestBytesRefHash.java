@@ -95,7 +95,7 @@ public class TestBytesRefHash extends LuceneTestCase {
     BytesRef scratch = new BytesRef();
     int num = atLeast(2);
     for (int j = 0; j < num; j++) {
-      Map<String, Integer> strings = new HashMap<String, Integer>();
+      Map<String, Integer> strings = new HashMap<>();
       int uniqueCount = 0;
       for (int i = 0; i < 797; i++) {
         String str;
@@ -175,7 +175,7 @@ public class TestBytesRefHash extends LuceneTestCase {
     BytesRef ref = new BytesRef();
     int num = atLeast(2);
     for (int j = 0; j < num; j++) {
-      SortedSet<String> strings = new TreeSet<String>();
+      SortedSet<String> strings = new TreeSet<>();
       for (int i = 0; i < 797; i++) {
         String str;
         do {
@@ -213,7 +213,7 @@ public class TestBytesRefHash extends LuceneTestCase {
     BytesRef scratch = new BytesRef();
     int num = atLeast(2);
     for (int j = 0; j < num; j++) {
-      Set<String> strings = new HashSet<String>();
+      Set<String> strings = new HashSet<>();
       int uniqueCount = 0;
       for (int i = 0; i < 797; i++) {
         String str;
@@ -250,7 +250,7 @@ public class TestBytesRefHash extends LuceneTestCase {
     BytesRef scratch = new BytesRef();
     int num = atLeast(2);
     for (int j = 0; j < num; j++) {
-      Set<String> strings = new HashSet<String>();
+      Set<String> strings = new HashSet<>();
       int uniqueCount = 0;
       for (int i = 0; i < 797; i++) {
         String str;
@@ -313,7 +313,7 @@ public class TestBytesRefHash extends LuceneTestCase {
     BytesRefHash offsetHash = newHash(pool);
     int num = atLeast(2);
     for (int j = 0; j < num; j++) {
-      Set<String> strings = new HashSet<String>();
+      Set<String> strings = new HashSet<>();
       int uniqueCount = 0;
       for (int i = 0; i < 797; i++) {
         String str;

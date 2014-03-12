@@ -261,7 +261,7 @@ public final class UTF32ToUTF8 {
     }
 
     State[] map = new State[utf32.getNumberedStates().length];
-    List<State> pending = new ArrayList<State>();
+    List<State> pending = new ArrayList<>();
     State utf32State = utf32.getInitialState();
     pending.add(utf32State);
     Automaton utf8 = new Automaton();

@@ -52,7 +52,7 @@ import org.apache.lucene.util.Version;
  */
 public class CharArrayMap<V> extends AbstractMap<Object,V> {
   // private only because missing generics
-  private static final CharArrayMap<?> EMPTY_MAP = new EmptyCharArrayMap<Object>();
+  private static final CharArrayMap<?> EMPTY_MAP = new EmptyCharArrayMap<>();
 
   private final static int INIT_SIZE = 8;
   private final CharacterUtils charUtils;
@@ -559,7 +559,7 @@ public class CharArrayMap<V> extends AbstractMap<Object,V> {
       return emptyMap();
     if (map instanceof UnmodifiableCharArrayMap)
       return map;
-    return new UnmodifiableCharArrayMap<V>(map);
+    return new UnmodifiableCharArrayMap<>(map);
   }
 
   /**
@@ -595,12 +595,12 @@ public class CharArrayMap<V> extends AbstractMap<Object,V> {
       System.arraycopy(m.keys, 0, keys, 0, keys.length);
       final V[] values = (V[]) new Object[m.values.length];
       System.arraycopy(m.values, 0, values, 0, values.length);
-      m = new CharArrayMap<V>(m);
+      m = new CharArrayMap<>(m);
       m.keys = keys;
       m.values = values;
       return m;
     }
-    return new CharArrayMap<V>(matchVersion, map, false);
+    return new CharArrayMap<>(matchVersion, map, false);
   }
   
   /** Returns an empty, unmodifiable map. */

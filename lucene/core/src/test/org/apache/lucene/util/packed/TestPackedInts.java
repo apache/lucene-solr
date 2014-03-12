@@ -355,7 +355,7 @@ public class TestPackedInts extends LuceneTestCase {
 
   private static List<PackedInts.Mutable> createPackedInts(
           int valueCount, int bitsPerValue) {
-    List<PackedInts.Mutable> packedInts = new ArrayList<PackedInts.Mutable>();
+    List<PackedInts.Mutable> packedInts = new ArrayList<>();
     if (bitsPerValue <= 8) {
       packedInts.add(new Direct8(valueCount));
     }

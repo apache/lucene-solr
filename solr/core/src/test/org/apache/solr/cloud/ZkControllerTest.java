@@ -175,7 +175,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
       zkClient.makePath(ZkController.CONFIGS_ZKNODE + "/" + actualConfigName, true);
       
-      Map<String,Object> props = new HashMap<String,Object>();
+      Map<String,Object> props = new HashMap<>();
       props.put("configName", actualConfigName);
       ZkNodeProps zkProps = new ZkNodeProps(props);
       zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/"

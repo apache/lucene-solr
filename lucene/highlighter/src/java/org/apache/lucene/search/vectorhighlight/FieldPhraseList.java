@@ -34,7 +34,7 @@ public class FieldPhraseList {
   /**
    * List of non-overlapping WeightedPhraseInfo objects.
    */
-  LinkedList<WeightedPhraseInfo> phraseList = new LinkedList<WeightedPhraseInfo>();
+  LinkedList<WeightedPhraseInfo> phraseList = new LinkedList<>();
   
   /**
    * create a FieldPhraseList that has no limit on the number of phrases to analyze
@@ -65,7 +65,7 @@ public class FieldPhraseList {
   public FieldPhraseList( FieldTermStack fieldTermStack, FieldQuery fieldQuery, int phraseLimit ){
     final String field = fieldTermStack.getFieldName();
 
-    LinkedList<TermInfo> phraseCandidate = new LinkedList<TermInfo>();
+    LinkedList<TermInfo> phraseCandidate = new LinkedList<>();
     QueryPhraseMap currMap = null;
     QueryPhraseMap nextMap = null;
     while( !fieldTermStack.isEmpty() && (phraseList.size() < phraseLimit) )
@@ -125,13 +125,13 @@ public class FieldPhraseList {
     for ( FieldPhraseList fplToMerge : toMerge ) {
       allInfos[ index++ ] = fplToMerge.phraseList.iterator();
     }
-    MergedIterator< WeightedPhraseInfo > itr = new MergedIterator< WeightedPhraseInfo >( false, allInfos );
+    MergedIterator< WeightedPhraseInfo > itr = new MergedIterator<>( false, allInfos );
     // Step 2.  Walk the sorted list merging infos that overlap
-    phraseList = new LinkedList< WeightedPhraseInfo >();
+    phraseList = new LinkedList<>();
     if ( !itr.hasNext() ) {
       return;
     }
-    List< WeightedPhraseInfo > work = new ArrayList< WeightedPhraseInfo >();
+    List< WeightedPhraseInfo > work = new ArrayList<>();
     WeightedPhraseInfo first = itr.next();
     work.add( first );
     int workEndOffset = first.getEndOffset();
@@ -225,9 +225,9 @@ public class FieldPhraseList {
       this.seqnum = seqnum;
       
       // We keep TermInfos for further operations
-      termsInfos = new ArrayList<TermInfo>( terms );
+      termsInfos = new ArrayList<>( terms );
       
-      termsOffsets = new ArrayList<Toffs>( terms.size() );
+      termsOffsets = new ArrayList<>( terms.size() );
       TermInfo ti = terms.get( 0 );
       termsOffsets.add( new Toffs( ti.getStartOffset(), ti.getEndOffset() ) );
       if( terms.size() == 1 ){
@@ -261,7 +261,7 @@ public class FieldPhraseList {
       WeightedPhraseInfo first = toMergeItr.next();
       @SuppressWarnings( { "rawtypes", "unchecked" } )
       Iterator< Toffs >[] allToffs = new Iterator[ toMerge.size() ];
-      termsInfos = new ArrayList< TermInfo >();
+      termsInfos = new ArrayList<>();
       seqnum = first.seqnum;
       boost = first.boost;
       allToffs[ 0 ] = first.termsOffsets.iterator();
@@ -273,8 +273,8 @@ public class FieldPhraseList {
         allToffs[ index++ ] = info.termsOffsets.iterator();
       }
       // Step 2.  Walk the sorted list merging overlaps
-      MergedIterator< Toffs > itr = new MergedIterator< Toffs >( false, allToffs );
-      termsOffsets = new ArrayList< Toffs >();
+      MergedIterator< Toffs > itr = new MergedIterator<>( false, allToffs );
+      termsOffsets = new ArrayList<>();
       if ( !itr.hasNext() ) {
         return;
       }

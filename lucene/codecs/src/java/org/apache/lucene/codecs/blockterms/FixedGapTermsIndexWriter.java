@@ -58,7 +58,7 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
   final private int termIndexInterval;
   public static final int DEFAULT_TERM_INDEX_INTERVAL = 32;
 
-  private final List<SimpleFieldWriter> fields = new ArrayList<SimpleFieldWriter>();
+  private final List<SimpleFieldWriter> fields = new ArrayList<>();
   
   public FixedGapTermsIndexWriter(SegmentWriteState state) throws IOException {
     this(state, DEFAULT_TERM_INDEX_INTERVAL);

@@ -56,7 +56,7 @@ public class MorfologikFilter extends TokenFilter {
   private final IStemmer stemmer;
   
   private List<WordData> lemmaList;
-  private final ArrayList<StringBuilder> tagsList = new ArrayList<StringBuilder>();
+  private final ArrayList<StringBuilder> tagsList = new ArrayList<>();
 
   private int lemmaListIndex;
 

@@ -269,7 +269,7 @@ public abstract class ConfigSolr {
   }
 
   protected Config config;
-  protected Map<CfgProp, String> propMap = new HashMap<CfgProp, String>();
+  protected Map<CfgProp, String> propMap = new HashMap<>();
 
   public ConfigSolr(Config config) {
     this.config = config;

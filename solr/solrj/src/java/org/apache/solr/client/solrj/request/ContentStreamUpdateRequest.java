@@ -45,7 +45,7 @@ public class ContentStreamUpdateRequest extends AbstractUpdateRequest {
    */
   public ContentStreamUpdateRequest(String url) {
     super(METHOD.POST, url);
-    contentStreams = new ArrayList<ContentStream>();
+    contentStreams = new ArrayList<>();
   }
 
   @Override

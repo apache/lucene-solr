@@ -66,7 +66,7 @@ public class PairOutputs<A,B> extends Outputs<PairOutputs.Pair<A,B>> {
   public PairOutputs(Outputs<A> outputs1, Outputs<B> outputs2) {
     this.outputs1 = outputs1;
     this.outputs2 = outputs2;
-    NO_OUTPUT = new Pair<A,B>(outputs1.getNoOutput(), outputs2.getNoOutput());
+    NO_OUTPUT = new Pair<>(outputs1.getNoOutput(), outputs2.getNoOutput());
   }
 
   /** Create a new Pair */
@@ -81,7 +81,7 @@ public class PairOutputs<A,B> extends Outputs<PairOutputs.Pair<A,B>> {
     if (a == outputs1.getNoOutput() && b == outputs2.getNoOutput()) {
       return NO_OUTPUT;
     } else {
-      final Pair<A,B> p = new Pair<A,B>(a, b);
+      final Pair<A,B> p = new Pair<>(a, b);
       assert valid(p);
       return p;
     }

@@ -96,7 +96,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     waitForThingsToLevelOut(30);
 
     del("*:*");
-    List<CloudJettyRunner> skipServers = new ArrayList<CloudJettyRunner>();
+    List<CloudJettyRunner> skipServers = new ArrayList<>();
     int docId = 0;
     indexDoc(skipServers, id, docId++, i1, 50, tlong, 50, t1,
         "to come to the aid of their country.");
@@ -156,7 +156,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
         "to come to the aid of their country.");
     
     
-    Set<CloudJettyRunner> jetties = new HashSet<CloudJettyRunner>();
+    Set<CloudJettyRunner> jetties = new HashSet<>();
     jetties.addAll(shardToJetty.get("shard1"));
     jetties.remove(leaderJetty);
     assertEquals(shardCount - 1, jetties.size());
@@ -217,7 +217,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
         "Test Setup Failure: shard1 should have just been set up to be inconsistent - but it's still consistent. Leader:"
             + leaderJetty.url + " Dead Guy:" + deadJetty.url + "skip list:" + skipServers, shardFailMessage);
     
-    jetties = new HashSet<CloudJettyRunner>();
+    jetties = new HashSet<>();
     jetties.addAll(shardToJetty.get("shard1"));
     jetties.remove(leaderJetty);
     assertEquals(shardCount - 1, jetties.size());
@@ -292,8 +292,8 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
   }
   
   private List<CloudJettyRunner> getRandomOtherJetty(CloudJettyRunner leader, CloudJettyRunner down) {
-    List<CloudJettyRunner> skipServers = new ArrayList<CloudJettyRunner>();
-    List<CloudJettyRunner> candidates = new ArrayList<CloudJettyRunner>();
+    List<CloudJettyRunner> skipServers = new ArrayList<>();
+    List<CloudJettyRunner> candidates = new ArrayList<>();
     candidates.addAll(shardToJetty.get("shard1"));
 
     if (leader != null) {

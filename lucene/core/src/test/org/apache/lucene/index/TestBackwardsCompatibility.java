@@ -222,10 +222,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     assertFalse("test infra is broken!", LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE);
-    List<String> names = new ArrayList<String>(oldNames.length + oldSingleSegmentNames.length);
+    List<String> names = new ArrayList<>(oldNames.length + oldSingleSegmentNames.length);
     names.addAll(Arrays.asList(oldNames));
     names.addAll(Arrays.asList(oldSingleSegmentNames));
-    oldIndexDirs = new HashMap<String,Directory>();
+    oldIndexDirs = new HashMap<>();
     for (String name : names) {
       File dir = TestUtil.getTempDir(name);
       File dataFile = new File(TestBackwardsCompatibility.class.getResource("index." + name + ".zip").toURI());
@@ -935,7 +935,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
   public void testUpgradeOldIndex() throws Exception {
-    List<String> names = new ArrayList<String>(oldNames.length + oldSingleSegmentNames.length);
+    List<String> names = new ArrayList<>(oldNames.length + oldSingleSegmentNames.length);
     names.addAll(Arrays.asList(oldNames));
     names.addAll(Arrays.asList(oldSingleSegmentNames));
     for(String name : names) {
@@ -961,7 +961,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
       String path = dir.getAbsolutePath();
       
-      List<String> args = new ArrayList<String>();
+      List<String> args = new ArrayList<>();
       if (random().nextBoolean()) {
         args.add("-verbose");
       }

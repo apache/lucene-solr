@@ -73,7 +73,7 @@ import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
  */
 public abstract class QueryNodeProcessorImpl implements QueryNodeProcessor {
 
-  private ArrayList<ChildrenList> childrenListPool = new ArrayList<ChildrenList>();
+  private ArrayList<ChildrenList> childrenListPool = new ArrayList<>();
 
   private QueryConfigHandler queryConfig;
 

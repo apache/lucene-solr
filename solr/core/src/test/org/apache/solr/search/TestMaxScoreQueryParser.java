@@ -135,7 +135,7 @@ public class TestMaxScoreQueryParser extends AbstractSolrTestCase {
   private Query parse(String q, String... params) {
     try {
       ModifiableSolrParams p = new ModifiableSolrParams();
-      ArrayList<String> al = new ArrayList<String>(Arrays.asList(params));
+      ArrayList<String> al = new ArrayList<>(Arrays.asList(params));
       while(al.size() >= 2) {
         p.add(al.remove(0), al.remove(0));
       }

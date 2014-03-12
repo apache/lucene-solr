@@ -131,7 +131,7 @@ class Lucene42NormsConsumer extends DocValuesConsumer {
       } else {
         meta.writeByte(TABLE_COMPRESSED); // table-compressed
         Long[] decode = uniqueValues.toArray(new Long[uniqueValues.size()]);
-        final HashMap<Long,Integer> encode = new HashMap<Long,Integer>();
+        final HashMap<Long,Integer> encode = new HashMap<>();
         data.writeVInt(decode.length);
         for (int i = 0; i < decode.length; i++) {
           data.writeLong(decode[i]);

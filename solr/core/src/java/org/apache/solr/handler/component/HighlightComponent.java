@@ -182,7 +182,7 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
             String id = hl.getName(i);
             ShardDoc sdoc = rb.resultIds.get(id);
             int idx = sdoc.positionInResponse;
-            arr[idx] = new NamedList.NamedListEntry<Object>(id, hl.getVal(i));
+            arr[idx] = new NamedList.NamedListEntry<>(id, hl.getVal(i));
           }
         }
       }

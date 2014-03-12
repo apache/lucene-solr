@@ -30663,7 +30663,7 @@ public final class HTMLStripCharFilter extends BaseCharFilter {
 
   /* user code: */
   private static final Map<String,String> upperCaseVariantsAccepted
-      = new HashMap<String,String>();
+      = new HashMap<>();
   static {
     upperCaseVariantsAccepted.put("quot", "QUOT");
     upperCaseVariantsAccepted.put("copy", "COPY");
@@ -30673,7 +30673,7 @@ public final class HTMLStripCharFilter extends BaseCharFilter {
     upperCaseVariantsAccepted.put("amp", "AMP");
   }
   private static final CharArrayMap<Character> entityValues
-      = new CharArrayMap<Character>(Version.LUCENE_CURRENT, 253, false);
+      = new CharArrayMap<>(Version.LUCENE_CURRENT, 253, false);
   static {
     String[] entities = {
       "AElig", "\u00C6", "Aacute", "\u00C1", "Acirc", "\u00C2",

@@ -309,7 +309,7 @@ public class ToParentBlockJoinCollector extends Collector {
     }
     Arrays.fill(joinScorers, null);
 
-    Queue<Scorer> queue = new LinkedList<Scorer>();
+    Queue<Scorer> queue = new LinkedList<>();
     //System.out.println("\nqueue: add top scorer=" + scorer);
     queue.add(scorer);
     while ((scorer = queue.poll()) != null) {

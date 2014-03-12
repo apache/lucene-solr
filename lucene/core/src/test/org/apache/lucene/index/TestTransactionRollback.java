@@ -69,7 +69,7 @@ public class TestTransactionRollback extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random())).setIndexDeletionPolicy(
         new RollbackDeletionPolicy(id)).setIndexCommit(last));
-    Map<String,String> data = new HashMap<String,String>();
+    Map<String,String> data = new HashMap<>();
     data.put("index", "Rolled back to 1-"+id);
     w.setCommitData(data);
     w.close();
@@ -139,7 +139,7 @@ public class TestTransactionRollback extends LuceneTestCase {
       w.addDocument(doc);
 
       if (currentRecordId%10 == 0) {
-        Map<String,String> data = new HashMap<String,String>();
+        Map<String,String> data = new HashMap<>();
         data.put("index", "records 1-"+currentRecordId);
         w.setCommitData(data);
         w.commit();

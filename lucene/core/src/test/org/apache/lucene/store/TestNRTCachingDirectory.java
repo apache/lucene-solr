@@ -55,7 +55,7 @@ public class TestNRTCachingDirectory extends LuceneTestCase {
       System.out.println("TEST: numDocs=" + numDocs);
     }
 
-    final List<BytesRef> ids = new ArrayList<BytesRef>();
+    final List<BytesRef> ids = new ArrayList<>();
     DirectoryReader r = null;
     for(int docCount=0;docCount<numDocs;docCount++) {
       final Document doc = docs.nextDoc();

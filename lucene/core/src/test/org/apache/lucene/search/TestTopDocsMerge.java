@@ -145,7 +145,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
       }
     }
 
-    final List<SortField> sortFields = new ArrayList<SortField>();
+    final List<SortField> sortFields = new ArrayList<>();
     sortFields.add(new SortField("string", SortField.Type.STRING, true));
     sortFields.add(new SortField("string", SortField.Type.STRING, false));
     sortFields.add(new SortField("int", SortField.Type.INT, true));

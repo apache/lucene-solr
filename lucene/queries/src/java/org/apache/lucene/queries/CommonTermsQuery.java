@@ -67,7 +67,7 @@ public class CommonTermsQuery extends Query {
    * rewrite to dismax rather than boolean. Yet, this can already be subclassed
    * to do so.
    */
-  protected final List<Term> terms = new ArrayList<Term>();
+  protected final List<Term> terms = new ArrayList<>();
   protected final boolean disableCoord;
   protected final float maxTermFrequency;
   protected final Occur lowFreqOccur;

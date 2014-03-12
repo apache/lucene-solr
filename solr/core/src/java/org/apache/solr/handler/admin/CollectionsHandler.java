@@ -401,7 +401,7 @@ public class CollectionsHandler extends RequestHandlerBase {
   }
 
   private static void copyIfNotNull(SolrParams params, Map<String, Object> props, String... keys) {
-    ArrayList<String> prefixes = new ArrayList<String>(1);
+    ArrayList<String> prefixes = new ArrayList<>(1);
     if(keys !=null){
       for (String key : keys) {
         if(key.endsWith(".")) {
@@ -444,7 +444,7 @@ public class CollectionsHandler extends RequestHandlerBase {
     String name = req.getParams().required().get(ZkStateReader.COLLECTION_PROP);
     String shard = req.getParams().required().get(ZkStateReader.SHARD_ID_PROP);
     
-    Map<String,Object> props = new HashMap<String,Object>();
+    Map<String,Object> props = new HashMap<>();
     props.put(ZkStateReader.COLLECTION_PROP, name);
     props.put(Overseer.QUEUE_OPERATION, OverseerCollectionProcessor.DELETESHARD);
     props.put(ZkStateReader.SHARD_ID_PROP, shard);
@@ -473,7 +473,7 @@ public class CollectionsHandler extends RequestHandlerBase {
           "Only one of 'ranges' or 'split.key' should be specified");
     }
 
-    Map<String,Object> props = new HashMap<String,Object>();
+    Map<String,Object> props = new HashMap<>();
     props.put(Overseer.QUEUE_OPERATION, OverseerCollectionProcessor.SPLITSHARD);
     props.put("collection", name);
     if (shard != null)  {
@@ -495,7 +495,7 @@ public class CollectionsHandler extends RequestHandlerBase {
   private void handleMigrate(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
     log.info("Migrate action invoked: " + req.getParamString());
     req.getParams().required().check("collection", "split.key", "target.collection");
-    Map<String,Object> props = new HashMap<String,Object>();
+    Map<String,Object> props = new HashMap<>();
     props.put(Overseer.QUEUE_OPERATION, OverseerCollectionProcessor.MIGRATE);
     copyIfNotNull(req.getParams(), props, "collection", "split.key", "target.collection", "forward.timeout");
     ZkNodeProps m = new ZkNodeProps(props);
@@ -504,7 +504,7 @@ public class CollectionsHandler extends RequestHandlerBase {
 
   private void handleAddReplica(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException  {
     log.info("Add replica action invoked: " + req.getParamString());
-    Map<String,Object> props = new HashMap<String,Object>();
+    Map<String,Object> props = new HashMap<>();
     props.put(Overseer.QUEUE_OPERATION, CollectionAction.ADDREPLICA.toString());
     copyIfNotNull(req.getParams(), props, COLLECTION_PROP, "node", SHARD_ID_PROP, ShardParams._ROUTE_,
         CoreAdminParams.NAME, CoreAdminParams.INSTANCE_DIR, CoreAdminParams.DATA_DIR);

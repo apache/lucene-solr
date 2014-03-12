@@ -86,8 +86,8 @@ public class WriteLineDocTask extends PerfTask {
   protected final String fname;
   private final PrintWriter lineFileOut;
   private final DocMaker docMaker;
-  private final ThreadLocal<StringBuilder> threadBuffer = new ThreadLocal<StringBuilder>();
-  private final ThreadLocal<Matcher> threadNormalizer = new ThreadLocal<Matcher>();
+  private final ThreadLocal<StringBuilder> threadBuffer = new ThreadLocal<>();
+  private final ThreadLocal<Matcher> threadNormalizer = new ThreadLocal<>();
   private final String[] fieldsToWrite;
   private final boolean[] sufficientFields;
   private final boolean checkSufficientFields;
@@ -122,7 +122,7 @@ public class WriteLineDocTask extends PerfTask {
       checkSufficientFields = false;
     } else {
       checkSufficientFields = true;
-      HashSet<String> sf = new HashSet<String>(Arrays.asList(suff.split(",")));
+      HashSet<String> sf = new HashSet<>(Arrays.asList(suff.split(",")));
       for (int i=0; i<fieldsToWrite.length; i++) {
         if (sf.contains(fieldsToWrite[i])) {
           sufficientFields[i] = true;

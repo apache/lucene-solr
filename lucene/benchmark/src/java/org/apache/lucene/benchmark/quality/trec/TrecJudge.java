@@ -49,7 +49,7 @@ public class TrecJudge implements Judge {
    * @throws IOException If there is a low-level I/O error.
    */
   public TrecJudge (BufferedReader reader) throws IOException {
-    judgements = new HashMap<String,QRelJudgement>();
+    judgements = new HashMap<>();
     QRelJudgement curr = null;
     String zero = "0";
     String line;
@@ -96,7 +96,7 @@ public class TrecJudge implements Judge {
     
     QRelJudgement(String queryID) {
       this.queryID = queryID;
-      relevantDocs = new HashMap<String,String>();
+      relevantDocs = new HashMap<>();
     }
     
     public void addRelevandDoc(String docName) {
@@ -115,8 +115,8 @@ public class TrecJudge implements Judge {
   // inherit javadocs
   @Override
   public boolean validateData(QualityQuery[] qq, PrintWriter logger) {
-    HashMap<String,QRelJudgement> missingQueries = new HashMap<String, QRelJudgement>(judgements);
-    ArrayList<String> missingJudgements = new ArrayList<String>();
+    HashMap<String,QRelJudgement> missingQueries = new HashMap<>(judgements);
+    ArrayList<String> missingJudgements = new ArrayList<>();
     for (int i=0; i<qq.length; i++) {
       String id = qq[i].getQueryID();
       if (missingQueries.containsKey(id)) {

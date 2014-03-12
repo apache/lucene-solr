@@ -675,7 +675,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
       int indexSize = random().nextInt(25 * RANDOM_MULTIPLIER);
 //indexSize=2;
-      List<FldType> types = new ArrayList<FldType>();
+      List<FldType> types = new ArrayList<>();
       types.add(new FldType("id",ONE_ONE, new SVal('A','Z',4,4)));
       types.add(new FldType("score_f",ONE_ONE, new FVal(1,100)));  // field used to score
       types.add(new FldType("foo_i",ZERO_ONE, new IRange(0,indexSize)));
@@ -774,14 +774,14 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
           for (Grp grp : groups.values()) grp.setMaxDoc(sortComparator); 
         }
 
-        List<Grp> sortedGroups = new ArrayList<Grp>(groups.values());
+        List<Grp> sortedGroups = new ArrayList<>(groups.values());
         Collections.sort(sortedGroups,  groupComparator==sortComparator ? createFirstDocComparator(sortComparator) : createMaxDocComparator(sortComparator));
 
         boolean includeNGroups = random().nextBoolean();
         Object modelResponse = buildGroupedResult(schema, sortedGroups, start, rows, group_offset, group_limit, includeNGroups);
 
         boolean truncateGroups = random().nextBoolean();
-        Map<String, Integer> facetCounts = new TreeMap<String, Integer>();
+        Map<String, Integer> facetCounts = new TreeMap<>();
         if (truncateGroups) {
           for (Grp grp : sortedGroups) {
             Doc doc = grp.docs.get(0);
@@ -808,7 +808,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
             }
           }
         }
-        List<Comparable> expectedFacetResponse = new ArrayList<Comparable>();
+        List<Comparable> expectedFacetResponse = new ArrayList<>();
         for (Map.Entry<String, Integer> stringIntegerEntry : facetCounts.entrySet()) {
           expectedFacetResponse.add(stringIntegerEntry.getKey());
           expectedFacetResponse.add(stringIntegerEntry.getValue());
@@ -862,7 +862,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
   }
 
   public static Object buildGroupedResult(IndexSchema schema, List<Grp> sortedGroups, int start, int rows, int group_offset, int group_limit, boolean includeNGroups) {
-    Map<String,Object> result = new LinkedHashMap<String,Object>();
+    Map<String,Object> result = new LinkedHashMap<>();
 
     long matches = 0;
     for (Grp grp : sortedGroups) {
@@ -877,13 +877,13 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
     for (int i=start; i<sortedGroups.size(); i++) {
       if (rows != -1 && groupList.size() >= rows) break;  // directly test rather than calculating, so we can catch any calc errors in the real code
-      Map<String,Object> group = new LinkedHashMap<String,Object>();
+      Map<String,Object> group = new LinkedHashMap<>();
       groupList.add(group);
 
       Grp grp = sortedGroups.get(i);
       group.put("groupValue", grp.groupValue);
 
-      Map<String,Object> resultSet = new LinkedHashMap<String,Object>();
+      Map<String,Object> resultSet = new LinkedHashMap<>();
       group.put("doclist", resultSet);
       resultSet.put("numFound", grp.docs.size());
       resultSet.put("start", group_offset);
@@ -924,7 +924,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
   }
 
   public static Map<Comparable, Grp> groupBy(Collection<Doc> docs, String field) {
-    Map<Comparable, Grp> groups = new HashMap<Comparable, Grp>();
+    Map<Comparable, Grp> groups = new HashMap<>();
     for (Doc doc : docs) {
       List<Comparable> vals = doc.getValues(field);
       if (vals == null) {
@@ -932,7 +932,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         if (grp == null) {
           grp = new Grp();
           grp.groupValue = null;
-          grp.docs = new ArrayList<Doc>();
+          grp.docs = new ArrayList<>();
           groups.put(null, grp);
         }
         grp.docs.add(doc);
@@ -943,7 +943,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
           if (grp == null) {
             grp = new Grp();
             grp.groupValue = val;
-            grp.docs = new ArrayList<Doc>();
+            grp.docs = new ArrayList<>();
             groups.put(grp.groupValue, grp);
           }
           grp.docs.add(doc);

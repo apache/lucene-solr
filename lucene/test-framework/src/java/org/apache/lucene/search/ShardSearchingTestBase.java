@@ -178,7 +178,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
   // term stats from remote node
   Map<Term,TermStatistics> getNodeTermStats(Set<Term> terms, int nodeID, long version) throws IOException {
     final NodeState node = nodes[nodeID];
-    final Map<Term,TermStatistics> stats = new HashMap<Term,TermStatistics>();
+    final Map<Term,TermStatistics> stats = new HashMap<>();
     final IndexSearcher s = node.searchers.acquire(version);
     if (s == null) {
       throw new SearcherExpiredException("node=" + nodeID + " version=" + version);
@@ -207,8 +207,8 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
     // local cache...?  And still LRU otherwise (for the
     // still-live searchers).
 
-    private final Map<FieldAndShardVersion,CollectionStatistics> collectionStatsCache = new ConcurrentHashMap<FieldAndShardVersion,CollectionStatistics>();
-    private final Map<TermAndShardVersion,TermStatistics> termStatsCache = new ConcurrentHashMap<TermAndShardVersion,TermStatistics>();
+    private final Map<FieldAndShardVersion,CollectionStatistics> collectionStatsCache = new ConcurrentHashMap<>();
+    private final Map<TermAndShardVersion,TermStatistics> termStatsCache = new ConcurrentHashMap<>();
 
     /** Matches docs in the local shard but scores based on
      *  aggregated stats ("mock distributed scoring") from all
@@ -229,7 +229,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
       @Override
       public Query rewrite(Query original) throws IOException {
         final Query rewritten = super.rewrite(original);
-        final Set<Term> terms = new HashSet<Term>();
+        final Set<Term> terms = new HashSet<>();
         rewritten.extractTerms(terms);
 
         // Make a single request to remote nodes for term
@@ -239,7 +239,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
             continue;
           }
 
-          final Set<Term> missing = new HashSet<Term>();
+          final Set<Term> missing = new HashSet<>();
           for(Term term : terms) {
             final TermAndShardVersion key = new TermAndShardVersion(nodeID, nodeVersions[nodeID], term);
             if (!termStatsCache.containsKey(key)) {

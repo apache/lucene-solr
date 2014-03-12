@@ -100,7 +100,7 @@ public class UnInvertedField extends DocTermOrds {
 
   int[] maxTermCounts = new int[1024];
 
-  final Map<Integer,TopTerm> bigTerms = new LinkedHashMap<Integer,TopTerm>();
+  final Map<Integer,TopTerm> bigTerms = new LinkedHashMap<>();
 
   private SolrIndexSearcher.DocsEnumState deState;
   private final SolrIndexSearcher searcher;
@@ -220,7 +220,7 @@ public class UnInvertedField extends DocTermOrds {
 
     FieldType ft = searcher.getSchema().getFieldType(field);
 
-    NamedList<Integer> res = new NamedList<Integer>();  // order is important
+    NamedList<Integer> res = new NamedList<>();  // order is important
 
     DocSet docs = baseDocs;
     int baseSize = docs.size();

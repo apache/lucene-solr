@@ -343,7 +343,7 @@ public class FreeTextSuggester extends Lookup {
       TermsEnum termsEnum = terms.iterator(null);
 
       Outputs<Long> outputs = PositiveIntOutputs.getSingleton();
-      Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, outputs);
+      Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
 
       IntsRef scratchInts = new IntsRef();
       while (true) {
@@ -424,7 +424,7 @@ public class FreeTextSuggester extends Lookup {
     }
     totTokens = input.readVLong();
 
-    fst = new FST<Long>(input, PositiveIntOutputs.getSingleton());
+    fst = new FST<>(input, PositiveIntOutputs.getSingleton());
 
     return true;
   }
@@ -527,7 +527,7 @@ public class FreeTextSuggester extends Lookup {
         lastTokens[0] = new BytesRef();
       }
       
-      Arc<Long> arc = new Arc<Long>();
+      Arc<Long> arc = new Arc<>();
       
       BytesReader bytesReader = fst.getBytesReader();
       
@@ -535,12 +535,12 @@ public class FreeTextSuggester extends Lookup {
       // results, return that; else, fallback:
       double backoff = 1.0;
       
-      List<LookupResult> results = new ArrayList<LookupResult>(num);
+      List<LookupResult> results = new ArrayList<>(num);
       
       // We only add a given suffix once, from the highest
       // order model that saw it; for subsequent lower order
       // models we skip it:
-      final Set<BytesRef> seen = new HashSet<BytesRef>();
+      final Set<BytesRef> seen = new HashSet<>();
       
       for(int gram=grams-1;gram>=0;gram--) {
         BytesRef token = lastTokens[gram];

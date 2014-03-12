@@ -51,7 +51,7 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
             new VariableResolver(), null, Context.FULL_DUMP, Collections.EMPTY_LIST, attrs);
     FileListEntityProcessor fileListEntityProcessor = new FileListEntityProcessor();
     fileListEntityProcessor.init(c);
-    List<String> fList = new ArrayList<String>();
+    List<String> fList = new ArrayList<>();
     while (true) {
       Map<String, Object> f = fileListEntityProcessor.nextRow();
       if (f == null)
@@ -93,10 +93,10 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
             FileListEntityProcessor.BIGGER_THAN, String.valueOf(minLength));
     List<String> fList = getFiles(null, attrs);
     assertEquals(2, fList.size());
-    Set<String> l = new HashSet<String>();
+    Set<String> l = new HashSet<>();
     l.add(new File(tmpdir, "a.xml").getAbsolutePath());
     l.add(new File(tmpdir, "b.xml").getAbsolutePath());
-    assertEquals(l, new HashSet<String>(fList));
+    assertEquals(l, new HashSet<>(fList));
     attrs = createMap(
             FileListEntityProcessor.FILE_NAME, ".*",
             FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath(),
@@ -104,7 +104,7 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
     fList = getFiles(null, attrs);
     l.clear();
     l.add(new File(tmpdir, smallestFile).getAbsolutePath());
-    assertEquals(l, new HashSet<String>(fList));
+    assertEquals(l, new HashSet<>(fList));
     attrs = createMap(
             FileListEntityProcessor.FILE_NAME, ".*",
             FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath(),
@@ -112,7 +112,7 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
     VariableResolver resolver = new VariableResolver();
     resolver.addNamespace("a", createMap("x", "4"));
     fList = getFiles(resolver, attrs);
-    assertEquals(l, new HashSet<String>(fList));
+    assertEquals(l, new HashSet<>(fList));
   }
 
   @SuppressWarnings("unchecked")
@@ -121,7 +121,7 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
             resolver, null, Context.FULL_DUMP, Collections.EMPTY_LIST, attrs);
     FileListEntityProcessor fileListEntityProcessor = new FileListEntityProcessor();
     fileListEntityProcessor.init(c);
-    List<String> fList = new ArrayList<String>();
+    List<String> fList = new ArrayList<>();
     while (true) {
       Map<String, Object> f = fileListEntityProcessor.nextRow();
       if (f == null)

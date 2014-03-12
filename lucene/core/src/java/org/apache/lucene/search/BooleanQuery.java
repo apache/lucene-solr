@@ -68,7 +68,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     BooleanQuery.maxClauseCount = maxClauseCount;
   }
 
-  private ArrayList<BooleanClause> clauses = new ArrayList<BooleanClause>();
+  private ArrayList<BooleanClause> clauses = new ArrayList<>();
   private final boolean disableCoord;
 
   /** Constructs an empty boolean query. */
@@ -179,7 +179,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       throws IOException {
       this.similarity = searcher.getSimilarity();
       this.disableCoord = disableCoord;
-      weights = new ArrayList<Weight>(clauses.size());
+      weights = new ArrayList<>(clauses.size());
       for (int i = 0 ; i < clauses.size(); i++) {
         BooleanClause c = clauses.get(i);
         Weight w = c.getQuery().createWeight(searcher);
@@ -343,9 +343,9 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     @Override
     public Scorer scorer(AtomicReaderContext context, Bits acceptDocs)
         throws IOException {
-      List<Scorer> required = new ArrayList<Scorer>();
-      List<Scorer> prohibited = new ArrayList<Scorer>();
-      List<Scorer> optional = new ArrayList<Scorer>();
+      List<Scorer> required = new ArrayList<>();
+      List<Scorer> prohibited = new ArrayList<>();
+      List<Scorer> optional = new ArrayList<>();
       Iterator<BooleanClause> cIter = clauses.iterator();
       for (Weight w  : weights) {
         BooleanClause c =  cIter.next();

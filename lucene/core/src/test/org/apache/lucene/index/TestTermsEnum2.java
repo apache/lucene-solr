@@ -58,7 +58,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
     Document doc = new Document();
     Field field = newStringField("field", "", Field.Store.YES);
     doc.add(field);
-    terms = new TreeSet<BytesRef>();
+    terms = new TreeSet<>();
  
     int num = atLeast(200);
     for (int i = 0; i < num; i++) {
@@ -87,7 +87,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
     for (int i = 0; i < numIterations; i++) {
       String reg = AutomatonTestUtil.randomRegexp(random());
       Automaton automaton = new RegExp(reg, RegExp.NONE).toAutomaton();
-      final List<BytesRef> matchedTerms = new ArrayList<BytesRef>();
+      final List<BytesRef> matchedTerms = new ArrayList<>();
       for(BytesRef t : terms) {
         if (BasicOperations.run(automaton, t.utf8ToString())) {
           matchedTerms.add(t);
@@ -110,7 +110,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
       String reg = AutomatonTestUtil.randomRegexp(random());
       Automaton automaton = new RegExp(reg, RegExp.NONE).toAutomaton();
       TermsEnum te = MultiFields.getTerms(reader, "field").iterator(null);
-      ArrayList<BytesRef> unsortedTerms = new ArrayList<BytesRef>(terms);
+      ArrayList<BytesRef> unsortedTerms = new ArrayList<>(terms);
       Collections.shuffle(unsortedTerms, random());
 
       for (BytesRef term : unsortedTerms) {
@@ -156,7 +156,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
       CompiledAutomaton ca = new CompiledAutomaton(automaton, SpecialOperations.isFinite(automaton), false);
       TermsEnum te = MultiFields.getTerms(reader, "field").intersect(ca, null);
       Automaton expected = BasicOperations.intersection(termsAutomaton, automaton);
-      TreeSet<BytesRef> found = new TreeSet<BytesRef>();
+      TreeSet<BytesRef> found = new TreeSet<>();
       while (te.next() != null) {
         found.add(BytesRef.deepCopyOf(te.term()));
       }

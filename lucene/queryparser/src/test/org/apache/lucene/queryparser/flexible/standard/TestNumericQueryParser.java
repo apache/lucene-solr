@@ -103,7 +103,7 @@ public class TestNumericQueryParser extends LuceneTestCase {
     
     qp = new StandardQueryParser(ANALYZER);
     
-    final HashMap<String,Number> randomNumberMap = new HashMap<String,Number>();
+    final HashMap<String,Number> randomNumberMap = new HashMap<>();
     
     SimpleDateFormat dateFormat;
     long randomDate;
@@ -194,8 +194,8 @@ public class TestNumericQueryParser extends LuceneTestCase {
             .setMergePolicy(newLogMergePolicy()));
     
     Document doc = new Document();
-    HashMap<String,NumericConfig> numericConfigMap = new HashMap<String,NumericConfig>();
-    HashMap<String,Field> numericFieldMap = new HashMap<String,Field>();
+    HashMap<String,NumericConfig> numericConfigMap = new HashMap<>();
+    HashMap<String,Field> numericFieldMap = new HashMap<>();
     qp.setNumericConfigMap(numericConfigMap);
     
     for (NumericType type : NumericType.values()) {

@@ -82,7 +82,7 @@ public class DistributedQueue {
    */
   private TreeMap<Long,String> orderedChildren(Watcher watcher)
       throws KeeperException, InterruptedException {
-    TreeMap<Long,String> orderedChildren = new TreeMap<Long,String>();
+    TreeMap<Long,String> orderedChildren = new TreeMap<>();
     
     List<String> childNames = null;
     try {

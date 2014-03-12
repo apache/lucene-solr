@@ -419,7 +419,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   }
   
   public void testSpanRegexQuery() throws Exception {
-    query = new SpanOrQuery(new SpanMultiTermQueryWrapper<RegexpQuery>(new RegexpQuery(new Term(FIELD_NAME, "ken.*"))));
+    query = new SpanOrQuery(new SpanMultiTermQueryWrapper<>(new RegexpQuery(new Term(FIELD_NAME, "ken.*"))));
     searcher = newSearcher(reader);
     hits = searcher.search(query, 100);
     int maxNumFragmentsRequired = 2;
@@ -1173,12 +1173,12 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         WeightedSpanTerm[] wTerms = new WeightedSpanTerm[2];
         wTerms[0] = new WeightedSpanTerm(10f, "hello");
 
-        List<PositionSpan> positionSpans = new ArrayList<PositionSpan>();
+        List<PositionSpan> positionSpans = new ArrayList<>();
         positionSpans.add(new PositionSpan(0, 0));
         wTerms[0].addPositionSpans(positionSpans);
 
         wTerms[1] = new WeightedSpanTerm(1f, "kennedy");
-        positionSpans = new ArrayList<PositionSpan>();
+        positionSpans = new ArrayList<>();
         positionSpans.add(new PositionSpan(14, 14));
         wTerms[1].addPositionSpans(positionSpans);
 
@@ -1216,7 +1216,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
       @Override
       public void run() throws Exception {
-        HashMap<String,String> synonyms = new HashMap<String,String>();
+        HashMap<String,String> synonyms = new HashMap<>();
         synonyms.put("football", "soccer,footie");
         Analyzer analyzer = new SynonymAnalyzer(synonyms);
 
@@ -1578,7 +1578,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
       private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
       {
-        lst = new ArrayList<Token>();
+        lst = new ArrayList<>();
         Token t;
         t = createToken("hi", 0, 2);
         t.setPositionIncrement(1);
@@ -1629,7 +1629,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
       private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
       {
-        lst = new ArrayList<Token>();
+        lst = new ArrayList<>();
         Token t;
         t = createToken("hispeed", 0, 8);
         t.setPositionIncrement(1);

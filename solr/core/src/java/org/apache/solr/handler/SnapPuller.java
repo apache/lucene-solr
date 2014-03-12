@@ -558,7 +558,7 @@ public class SnapPuller {
    * @throws IOException on IO error
    */
   private void logReplicationTimeAndConfFiles(Collection<Map<String, Object>> modifiedConfFiles, boolean successfulInstall) throws IOException {
-    List<String> confFiles = new ArrayList<String>();
+    List<String> confFiles = new ArrayList<>();
     if (modifiedConfFiles != null && !modifiedConfFiles.isEmpty())
       for (Map<String, Object> map1 : modifiedConfFiles)
         confFiles.add((String) map1.get(NAME));
@@ -641,7 +641,7 @@ public class SnapPuller {
 
   private StringBuilder readToStringBuilder(long replicationTime, String str) {
     StringBuilder sb = new StringBuilder();
-    List<String> l = new ArrayList<String>();
+    List<String> l = new ArrayList<>();
     if (str != null && str.length() != 0) {
       String[] ss = str.split(",");
       for (int i = 0; i < ss.length; i++) {
@@ -737,7 +737,7 @@ public class SnapPuller {
         localFileFetcher = new LocalFsFileFetcher(tmpconfDir, file, saveAs, true, latestGeneration);
         currentFile = file;
         localFileFetcher.fetchFile();
-        confFilesDownloaded.add(new HashMap<String, Object>(file));
+        confFilesDownloaded.add(new HashMap<>(file));
       }
       // this is called before copying the files to the original conf dir
       // so that if there is an exception avoid corrupting the original files.
@@ -769,7 +769,7 @@ public class SnapPuller {
             (String) file.get(NAME), false, latestGeneration);
         currentFile = file;
         dirFileFetcher.fetchFile();
-        filesDownloaded.add(new HashMap<String,Object>(file));
+        filesDownloaded.add(new HashMap<>(file));
       } else {
         LOG.info("Skipping download for " + file.get(NAME)
             + " because it already exists");
@@ -836,7 +836,7 @@ public class SnapPuller {
       }
     }
     String segmentsFile = null;
-    List<String> movedfiles = new ArrayList<String>();
+    List<String> movedfiles = new ArrayList<>();
     for (Map<String, Object> f : filesDownloaded) {
       String fname = (String) f.get(NAME);
       // the segments file must be copied last
@@ -973,7 +973,7 @@ public class SnapPuller {
     
   }
 
-  private final Map<String, FileInfo> confFileInfoCache = new HashMap<String, FileInfo>();
+  private final Map<String, FileInfo> confFileInfoCache = new HashMap<>();
 
   /**
    * The local conf files are compared with the conf files in the master. If they are same (by checksum) do not copy.
@@ -986,7 +986,7 @@ public class SnapPuller {
     if (confFilesToDownload == null || confFilesToDownload.isEmpty())
       return Collections.EMPTY_LIST;
     //build a map with alias/name as the key
-    Map<String, Map<String, Object>> nameVsFile = new HashMap<String, Map<String, Object>>();
+    Map<String, Map<String, Object>> nameVsFile = new HashMap<>();
     NamedList names = new NamedList();
     for (Map<String, Object> map : confFilesToDownload) {
       //if alias is present that is the name the file may have in the slave
@@ -1063,25 +1063,25 @@ public class SnapPuller {
     //make a copy first because it can be null later
     List<Map<String, Object>> tmp = confFilesToDownload;
     //create a new instance. or else iterator may fail
-    return tmp == null ? Collections.EMPTY_LIST : new ArrayList<Map<String, Object>>(tmp);
+    return tmp == null ? Collections.EMPTY_LIST : new ArrayList<>(tmp);
   }
 
   List<Map<String, Object>> getConfFilesDownloaded() {
     //make a copy first because it can be null later
     List<Map<String, Object>> tmp = confFilesDownloaded;
     // NOTE: it's safe to make a copy of a SynchronizedCollection(ArrayList)
-    return tmp == null ? Collections.EMPTY_LIST : new ArrayList<Map<String, Object>>(tmp);
+    return tmp == null ? Collections.EMPTY_LIST : new ArrayList<>(tmp);
   }
 
   List<Map<String, Object>> getFilesToDownload() {
     //make a copy first because it can be null later
     List<Map<String, Object>> tmp = filesToDownload;
-    return tmp == null ? Collections.EMPTY_LIST : new ArrayList<Map<String, Object>>(tmp);
+    return tmp == null ? Collections.EMPTY_LIST : new ArrayList<>(tmp);
   }
 
   List<Map<String, Object>> getFilesDownloaded() {
     List<Map<String, Object>> tmp = filesDownloaded;
-    return tmp == null ? Collections.EMPTY_LIST : new ArrayList<Map<String, Object>>(tmp);
+    return tmp == null ? Collections.EMPTY_LIST : new ArrayList<>(tmp);
   }
 
   // TODO: currently does not reflect conf files
@@ -1090,7 +1090,7 @@ public class SnapPuller {
     DirectoryFileFetcher tmpFileFetcher = dirFileFetcher;
     if (tmp == null)
       return null;
-    tmp = new HashMap<String, Object>(tmp);
+    tmp = new HashMap<>(tmp);
     if (tmpFileFetcher != null)
       tmp.put("bytesDownloaded", tmpFileFetcher.bytesDownloaded);
     return tmp;

@@ -43,7 +43,7 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
 
-    AYE = new LinkedHashMap<String, Integer>();
+    AYE = new LinkedHashMap<>();
     AYE.put("I", 0);
     AYE.put("II", 0);
     AYE.put("III", 0);
@@ -53,7 +53,7 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
     AYE.put("VII", 0);
     AYE.put("VIII", 0);
 
-    BEE = new LinkedHashMap<String, Integer>();
+    BEE = new LinkedHashMap<>();
     BEE.put("alpha", 0);
     BEE.put("beta", 0);
     BEE.put("gamma", 0);
@@ -64,7 +64,7 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
     BEE.put("theta", 0);
     BEE.put("iota", 0);
 
-    AYE_BEE = new LinkedHashMap<String, Integer>();
+    AYE_BEE = new LinkedHashMap<>();
     AYE_BEE.put("one-alpha", 0);
     AYE_BEE.put("two-beta", 0);
     AYE_BEE.put("three-gamma", 0);
@@ -76,7 +76,7 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
     AYE_BEE.put("nine-iota", 0);
 
 
-    CEE = new LinkedHashMap<String, Integer>();
+    CEE = new LinkedHashMap<>();
     CEE.put("one", 0);
     CEE.put("two", 0);
     CEE.put("three", 0);
@@ -91,7 +91,7 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
 
   @Test
   public void testScalability() throws Exception {
-    Map<Token, LinkedHashMap<String, Integer>> lotsaSuggestions = new LinkedHashMap<Token, LinkedHashMap<String, Integer>>();
+    Map<Token, LinkedHashMap<String, Integer>> lotsaSuggestions = new LinkedHashMap<>();
     lotsaSuggestions.put(TOKEN_AYE , AYE);
     lotsaSuggestions.put(TOKEN_BEE , BEE);
     lotsaSuggestions.put(TOKEN_CEE , CEE);
@@ -135,7 +135,7 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSpellPossibilityIterator() throws Exception {
-    Map<Token, LinkedHashMap<String, Integer>> suggestions = new LinkedHashMap<Token, LinkedHashMap<String, Integer>>();
+    Map<Token, LinkedHashMap<String, Integer>> suggestions = new LinkedHashMap<>();
     suggestions.put(TOKEN_AYE , AYE);
     suggestions.put(TOKEN_BEE , BEE);
     suggestions.put(TOKEN_CEE , CEE);
@@ -185,7 +185,7 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
 
   @Test
   public void testOverlappingTokens() throws Exception {
-    Map<Token, LinkedHashMap<String, Integer>> overlappingSuggestions = new LinkedHashMap<Token, LinkedHashMap<String, Integer>>();
+    Map<Token, LinkedHashMap<String, Integer>> overlappingSuggestions = new LinkedHashMap<>();
     overlappingSuggestions.put(TOKEN_AYE, AYE);
     overlappingSuggestions.put(TOKEN_BEE, BEE);
     overlappingSuggestions.put(TOKEN_AYE_BEE, AYE_BEE);
@@ -194,7 +194,7 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
     PossibilityIterator iter = new PossibilityIterator(overlappingSuggestions, Integer.MAX_VALUE, Integer.MAX_VALUE, true);
     int aCount = 0;
     int abCount = 0;
-    Set<PossibilityIterator.RankedSpellPossibility> dupChecker = new HashSet<PossibilityIterator.RankedSpellPossibility>();
+    Set<PossibilityIterator.RankedSpellPossibility> dupChecker = new HashSet<>();
     while (iter.hasNext()) {
       PossibilityIterator.RankedSpellPossibility rsp = iter.next();
       Token a = null;

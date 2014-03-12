@@ -59,7 +59,7 @@ public class TestJapaneseIterationMarkCharFilterFactory extends BaseTokenStreamT
     JapaneseTokenizerFactory tokenizerFactory = new JapaneseTokenizerFactory(new HashMap<String,String>());
     tokenizerFactory.inform(new StringMockResourceLoader(""));
 
-    Map<String, String> filterArgs = new HashMap<String, String>();
+    Map<String, String> filterArgs = new HashMap<>();
     filterArgs.put("normalizeKanji", "true");
     filterArgs.put("normalizeKana", "false");
     JapaneseIterationMarkCharFilterFactory filterFactory = new JapaneseIterationMarkCharFilterFactory(filterArgs);
@@ -76,7 +76,7 @@ public class TestJapaneseIterationMarkCharFilterFactory extends BaseTokenStreamT
     JapaneseTokenizerFactory tokenizerFactory = new JapaneseTokenizerFactory(new HashMap<String,String>());
     tokenizerFactory.inform(new StringMockResourceLoader(""));
 
-    Map<String, String> filterArgs = new HashMap<String, String>();
+    Map<String, String> filterArgs = new HashMap<>();
     filterArgs.put("normalizeKanji", "false");
     filterArgs.put("normalizeKana", "true");
     JapaneseIterationMarkCharFilterFactory filterFactory = new JapaneseIterationMarkCharFilterFactory(filterArgs);

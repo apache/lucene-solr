@@ -287,7 +287,7 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
     BufferedReader bufferedReader = null;
     String[] urls;
     try {
-      List<String> urlList = new ArrayList<String>();
+      List<String> urlList = new ArrayList<>();
       bufferedReader = new BufferedReader(new InputStreamReader
         (getClass().getResourceAsStream("LuceneResourcesWikiPageURLs.txt"), "UTF-8"));
       String line;
@@ -331,7 +331,7 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
     BufferedReader bufferedReader = null;
     String[] emails;
     try {
-      List<String> emailList = new ArrayList<String>();
+      List<String> emailList = new ArrayList<>();
       bufferedReader = new BufferedReader(new InputStreamReader
         (getClass().getResourceAsStream
           ("email.addresses.from.random.text.with.email.addresses.txt"), "UTF-8"));
@@ -401,7 +401,7 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
     BufferedReader bufferedReader = null;
     String[] urls;
     try {
-      List<String> urlList = new ArrayList<String>();
+      List<String> urlList = new ArrayList<>();
       bufferedReader = new BufferedReader(new InputStreamReader
         (getClass().getResourceAsStream
           ("urls.from.random.text.with.urls.txt"), "UTF-8"));

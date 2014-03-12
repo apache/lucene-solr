@@ -477,7 +477,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       
       TopDocs verifySearch = searcher.search(verifyQuery, reader.maxDoc());
       assertEquals(verifySearch.totalHits, cqSearch.totalHits);
-      Set<Integer> hits = new HashSet<Integer>();
+      Set<Integer> hits = new HashSet<>();
       for (ScoreDoc doc : verifySearch.scoreDocs) {
         hits.add(doc.doc);
       }
@@ -508,7 +508,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
   }
   
   private static List<TermAndFreq> queueToList(PriorityQueue<TermAndFreq> queue) {
-    List<TermAndFreq> terms = new ArrayList<CommonTermsQueryTest.TermAndFreq>();
+    List<TermAndFreq> terms = new ArrayList<>();
     while (queue.size() > 0) {
       terms.add(queue.pop());
     }

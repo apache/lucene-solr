@@ -98,7 +98,7 @@ public class TestBooleanScorer extends LuceneTestCase {
     
     BooleanScorer bs = new BooleanScorer(weight, false, 1, Arrays.asList(scorers), Collections.<BulkScorer>emptyList(), scorers.length);
 
-    final List<Integer> hits = new ArrayList<Integer>();
+    final List<Integer> hits = new ArrayList<>();
     bs.score(new Collector() {
       int docBase;
       @Override

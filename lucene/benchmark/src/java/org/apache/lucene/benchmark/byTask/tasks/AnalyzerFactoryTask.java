@@ -88,9 +88,9 @@ public class AnalyzerFactoryTask extends PerfTask {
   String factoryName = null;
   Integer positionIncrementGap = null;
   Integer offsetGap = null;
-  private List<CharFilterFactory> charFilterFactories = new ArrayList<CharFilterFactory>();
+  private List<CharFilterFactory> charFilterFactories = new ArrayList<>();
   private TokenizerFactory tokenizerFactory = null;
-  private List<TokenFilterFactory> tokenFilterFactories = new ArrayList<TokenFilterFactory>();
+  private List<TokenFilterFactory> tokenFilterFactories = new ArrayList<>();
 
   public AnalyzerFactoryTask(PerfRunData runData) {
     super(runData);
@@ -287,7 +287,7 @@ public class AnalyzerFactoryTask extends PerfTask {
    */
   private void createAnalysisPipelineComponent
       (StreamTokenizer stok, Class<? extends AbstractAnalysisFactory> clazz) {
-    Map<String,String> argMap = new HashMap<String,String>();
+    Map<String,String> argMap = new HashMap<>();
     boolean parenthetical = false;
     try {
       WHILE_LOOP: while (stok.nextToken() != StreamTokenizer.TT_EOF) {

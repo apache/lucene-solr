@@ -47,7 +47,7 @@ public class SimpleBoundaryScanner implements BoundaryScanner {
   
   public SimpleBoundaryScanner( int maxScan, Character[] boundaryChars ){
     this.maxScan = maxScan;
-    this.boundaryChars = new HashSet<Character>();
+    this.boundaryChars = new HashSet<>();
     this.boundaryChars.addAll(Arrays.asList(boundaryChars));
   }
   

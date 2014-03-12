@@ -137,7 +137,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
 
     BytesRef last = new BytesRef();
 
-    Set<String> seenTerms = new HashSet<String>();
+    Set<String> seenTerms = new HashSet<>();
 
     while(true) {
       final BytesRef term = terms.next();
@@ -279,7 +279,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
     Field f = newStringField("f", "", Field.Store.NO);
     d.add(f);
     char[] chars = new char[2];
-    final Set<String> allTerms = new HashSet<String>();
+    final Set<String> allTerms = new HashSet<>();
 
     int num = atLeast(200);
     for (int i = 0; i < num; i++) {

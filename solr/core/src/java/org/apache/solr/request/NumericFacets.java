@@ -235,13 +235,13 @@ final class NumericFacets {
 
     // 4. build the NamedList
     final ValueSource vs = ft.getValueSource(sf, null);
-    final NamedList<Integer> result = new NamedList<Integer>();
+    final NamedList<Integer> result = new NamedList<>();
 
     // This stuff is complicated because if facet.mincount=0, the counts needs
     // to be merged with terms from the terms dict
     if (!zeros || FacetParams.FACET_SORT_COUNT.equals(sort) || FacetParams.FACET_SORT_COUNT_LEGACY.equals(sort)) {
       // Only keep items we're interested in
-      final Deque<Entry> counts = new ArrayDeque<Entry>();
+      final Deque<Entry> counts = new ArrayDeque<>();
       while (pq.size() > offset) {
         counts.addFirst(pq.pop());
       }
@@ -258,7 +258,7 @@ final class NumericFacets {
           throw new IllegalStateException("Cannot use " + FacetParams.FACET_MINCOUNT + "=0 on field " + sf.getName() + " which is not indexed");
         }
         // Add zeros until there are limit results
-        final Set<String> alreadySeen = new HashSet<String>();
+        final Set<String> alreadySeen = new HashSet<>();
         while (pq.size() > 0) {
           Entry entry = pq.pop();
           final int readerIdx = ReaderUtil.subIndex(entry.docID, leaves);
@@ -314,7 +314,7 @@ final class NumericFacets {
       if (!sf.indexed()) {
         throw new IllegalStateException("Cannot use " + FacetParams.FACET_SORT + "=" + FacetParams.FACET_SORT_INDEX + " on a field which is not indexed");
       }
-      final Map<String, Integer> counts = new HashMap<String, Integer>();
+      final Map<String, Integer> counts = new HashMap<>();
       while (pq.size() > 0) {
         final Entry entry = pq.pop();
         final int readerIdx = ReaderUtil.subIndex(entry.docID, leaves);

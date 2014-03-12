@@ -634,7 +634,7 @@ public class TrieField extends PrimitiveFieldType {
   @Override
   public List<StorableField> createFields(SchemaField sf, Object value, float boost) {
     if (sf.hasDocValues()) {
-      List<StorableField> fields = new ArrayList<StorableField>();
+      List<StorableField> fields = new ArrayList<>();
       final StorableField field = createField(sf, value, boost);
       fields.add(field);
       

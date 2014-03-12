@@ -96,7 +96,7 @@ public class JaspellLookup extends Lookup {
 
   @Override
   public List<LookupResult> lookup(CharSequence key, boolean onlyMorePopular, int num) {
-    List<LookupResult> res = new ArrayList<LookupResult>();
+    List<LookupResult> res = new ArrayList<>();
     List<String> list;
     int count = onlyMorePopular ? num * 2 : num;
     if (usePrefix) {

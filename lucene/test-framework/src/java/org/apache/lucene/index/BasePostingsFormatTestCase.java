@@ -341,7 +341,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
   public static void createPostings() throws IOException {
     totalPostings = 0;
     totalPayloadBytes = 0;
-    fields = new TreeMap<String,SortedMap<BytesRef,Long>>();
+    fields = new TreeMap<>();
 
     final int numFields = TestUtil.nextInt(random(), 1, 5);
     if (VERBOSE) {
@@ -362,9 +362,9 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
                                                 null, DocValuesType.NUMERIC, null);
       fieldUpto++;
 
-      SortedMap<BytesRef,Long> postings = new TreeMap<BytesRef,Long>();
+      SortedMap<BytesRef,Long> postings = new TreeMap<>();
       fields.put(field, postings);
-      Set<String> seenTerms = new HashSet<String>();
+      Set<String> seenTerms = new HashSet<>();
 
       int numTerms;
       if (random().nextInt(10) == 7) {
@@ -422,7 +422,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
       }
     }
 
-    allTerms = new ArrayList<FieldAndTerm>();
+    allTerms = new ArrayList<>();
     for(Map.Entry<String,SortedMap<BytesRef,Long>> fieldEnt : fields.entrySet()) {
       String field = fieldEnt.getKey();
       for(Map.Entry<BytesRef,Long> termEnt : fieldEnt.getValue().entrySet()) {
@@ -1103,8 +1103,8 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
     ThreadState threadState = new ThreadState();
 
     // Test random terms/fields:
-    List<TermState> termStates = new ArrayList<TermState>();
-    List<FieldAndTerm> termStateTerms = new ArrayList<FieldAndTerm>();
+    List<TermState> termStates = new ArrayList<>();
+    List<FieldAndTerm> termStateTerms = new ArrayList<>();
     
     Collections.shuffle(allTerms, random());
     int upto = 0;
@@ -1387,7 +1387,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
     // while up to one thread flushes, and each of those
     // threads iterates over the map while the flushing
     // thread might be adding to it:
-    final Map<String,TermFreqs> termFreqs = new ConcurrentHashMap<String,TermFreqs>();
+    final Map<String,TermFreqs> termFreqs = new ConcurrentHashMap<>();
 
     final AtomicLong sumDocFreq = new AtomicLong();
     final AtomicLong sumTotalTermFreq = new AtomicLong();

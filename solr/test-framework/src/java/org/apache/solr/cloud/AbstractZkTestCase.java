@@ -92,7 +92,7 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
 
     zkClient = new SolrZkClient(zkAddress, AbstractZkTestCase.TIMEOUT);
 
-    Map<String,Object> props = new HashMap<String,Object>();
+    Map<String,Object> props = new HashMap<>();
     props.put("configName", "conf1");
     final ZkNodeProps zkProps = new ZkNodeProps(props);
     

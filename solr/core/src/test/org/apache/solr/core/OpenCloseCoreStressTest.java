@@ -69,8 +69,8 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
 
   File solrHomeDirectory;
 
-  List<HttpSolrServer> indexingServers = new ArrayList<HttpSolrServer>(indexingThreads);
-  List<HttpSolrServer> queryServers = new ArrayList<HttpSolrServer>(queryThreads);
+  List<HttpSolrServer> indexingServers = new ArrayList<>(indexingThreads);
+  List<HttpSolrServer> queryServers = new ArrayList<>(queryThreads);
 
   static String savedFactory;
   
@@ -81,8 +81,8 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
   
   @Before
   public void setupServer() throws Exception {
-    coreCounts = new TreeMap<String, Long>();
-    coreNames = new ArrayList<String>();
+    coreCounts = new TreeMap<>();
+    coreNames = new ArrayList<>();
     cumulativeDocs = 0;
 
     solrHomeDirectory = new File(TEMP_DIR, "OpenCloseCoreStressTest_");
@@ -328,7 +328,7 @@ class Indexer {
   static volatile int lastCount;
   static volatile long nextTime;
 
-  ArrayList<OneIndexer> _threads = new ArrayList<OneIndexer>();
+  ArrayList<OneIndexer> _threads = new ArrayList<>();
 
   public Indexer(OpenCloseCoreStressTest OCCST, String url, List<HttpSolrServer> servers, int numThreads, int secondsToRun, Random random) {
     stopTime = System.currentTimeMillis() + (secondsToRun * 1000);
@@ -436,7 +436,7 @@ class OneIndexer extends Thread {
 class Queries {
   static AtomicBoolean _keepon = new AtomicBoolean(true);
 
-  List<Thread> _threads = new ArrayList<Thread>();
+  List<Thread> _threads = new ArrayList<>();
   static AtomicInteger _errors = new AtomicInteger(0);
   String baseUrl;
 

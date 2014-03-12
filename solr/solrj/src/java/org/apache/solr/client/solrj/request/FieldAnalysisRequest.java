@@ -212,7 +212,7 @@ public class FieldAnalysisRequest extends SolrRequest {
    */
   public FieldAnalysisRequest addFieldName(String fieldName) {
     if (fieldNames == null) {
-      fieldNames = new LinkedList<String>();
+      fieldNames = new LinkedList<>();
     }
     fieldNames.add(fieldName);
     return this;
@@ -249,7 +249,7 @@ public class FieldAnalysisRequest extends SolrRequest {
    */
   public FieldAnalysisRequest addFieldType(String fieldTypeName) {
     if (fieldTypes == null) {
-      fieldTypes = new LinkedList<String>();
+      fieldTypes = new LinkedList<>();
     }
     fieldTypes.add(fieldTypeName);
     return this;

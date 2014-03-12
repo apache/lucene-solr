@@ -67,8 +67,8 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
     @Override
     public void run() {
       try {
-        Set<String> seen = new HashSet<String>();
-        List<String> paths = new ArrayList<String>();
+        Set<String> seen = new HashSet<>();
+        List<String> paths = new ArrayList<>();
         while (true) {
           Document doc = new Document();
           int numPaths = TestUtil.nextInt(random(), 1, 5);

@@ -121,9 +121,9 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
       HttpClient client, int queueSize, int threadCount, ExecutorService es, boolean streamDeletes) {
     this.server = new HttpSolrServer(solrServerUrl, client);
     this.server.setFollowRedirects(false);
-    queue = new LinkedBlockingQueue<UpdateRequest>(queueSize);
+    queue = new LinkedBlockingQueue<>(queueSize);
     this.threadCount = threadCount;
-    runners = new LinkedList<Runner>();
+    runners = new LinkedList<>();
     scheduler = es;
     this.streamDeletes = streamDeletes;
   }
@@ -364,7 +364,7 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
     }
 
     // RETURN A DUMMY result
-    NamedList<Object> dummy = new NamedList<Object>();
+    NamedList<Object> dummy = new NamedList<>();
     dummy.add("NOTE", "the request is processed in a background stream");
     return dummy;
   }

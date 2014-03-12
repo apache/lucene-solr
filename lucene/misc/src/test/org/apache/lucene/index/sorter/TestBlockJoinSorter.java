@@ -73,7 +73,7 @@ public class TestBlockJoinSorter extends LuceneTestCase {
     final StringField parent = new StringField("parent", "true", Store.YES);
     parentDoc.add(parent);
     for (int i = 0; i < numParents; ++i) {
-      List<Document> documents = new ArrayList<Document>();
+      List<Document> documents = new ArrayList<>();
       final int numChildren = random().nextInt(10);
       for (int j = 0; j < numChildren; ++j) {
         final Document childDoc = new Document();

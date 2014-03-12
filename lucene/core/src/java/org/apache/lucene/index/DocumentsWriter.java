@@ -135,7 +135,7 @@ final class DocumentsWriter {
     this.perThreadPool = config.getIndexerThreadPool();
     flushPolicy = config.getFlushPolicy();
     this.writer = writer;
-    this.events = new ConcurrentLinkedQueue<Event>();
+    this.events = new ConcurrentLinkedQueue<>();
     flushControl = new DocumentsWriterFlushControl(this, config, writer.bufferedUpdatesStream);
   }
   
@@ -207,7 +207,7 @@ final class DocumentsWriter {
   synchronized void abort(IndexWriter writer) {
     assert !Thread.holdsLock(writer) : "IndexWriter lock should never be hold when aborting";
     boolean success = false;
-    final Set<String> newFilesSet = new HashSet<String>();
+    final Set<String> newFilesSet = new HashSet<>();
     try {
       deleteQueue.clear();
       if (infoStream.isEnabled("DW")) {
@@ -243,7 +243,7 @@ final class DocumentsWriter {
     try {
       deleteQueue.clear();
       final int limit = perThreadPool.getMaxThreadStates();
-      final Set<String> newFilesSet = new HashSet<String>();
+      final Set<String> newFilesSet = new HashSet<>();
       for (int i = 0; i < limit; i++) {
         final ThreadState perThread = perThreadPool.getThreadState(i);
         perThread.lock();

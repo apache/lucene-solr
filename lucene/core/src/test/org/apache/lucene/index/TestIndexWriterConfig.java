@@ -82,7 +82,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     assertEquals(InfoStream.getDefault(), conf.getInfoStream());
     assertEquals(IndexWriterConfig.DEFAULT_USE_COMPOUND_FILE_SYSTEM, conf.getUseCompoundFile());
     // Sanity check - validate that all getters are covered.
-    Set<String> getters = new HashSet<String>();
+    Set<String> getters = new HashSet<>();
     getters.add("getAnalyzer");
     getters.add("getIndexCommit");
     getters.add("getIndexDeletionPolicy");
@@ -117,8 +117,8 @@ public class TestIndexWriterConfig extends LuceneTestCase {
   @Test
   public void testSettersChaining() throws Exception {
     // Ensures that every setter returns IndexWriterConfig to allow chaining.
-    HashSet<String> liveSetters = new HashSet<String>();
-    HashSet<String> allSetters = new HashSet<String>();
+    HashSet<String> liveSetters = new HashSet<>();
+    HashSet<String> allSetters = new HashSet<>();
     for (Method m : IndexWriterConfig.class.getDeclaredMethods()) {
       if (m.getName().startsWith("set") && !Modifier.isStatic(m.getModifiers())) {
         allSetters.add(m.getName());
@@ -175,7 +175,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     // Test that IndexWriterConfig overrides all getters, so that javadocs
     // contain all methods for the users. Also, ensures that IndexWriterConfig
     // doesn't declare getters that are not declared on LiveIWC.
-    HashSet<String> liveGetters = new HashSet<String>();
+    HashSet<String> liveGetters = new HashSet<>();
     for (Method m : LiveIndexWriterConfig.class.getDeclaredMethods()) {
       if (m.getName().startsWith("get") && !Modifier.isStatic(m.getModifiers())) {
         liveGetters.add(m.getName());

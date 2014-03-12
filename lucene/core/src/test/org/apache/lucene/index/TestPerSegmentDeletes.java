@@ -234,7 +234,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
   }
 
   public static int[] toArray(DocsEnum docsEnum) throws IOException {
-    List<Integer> docs = new ArrayList<Integer>();
+    List<Integer> docs = new ArrayList<>();
     while (docsEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
       int docID = docsEnum.docID();
       docs.add(docID);

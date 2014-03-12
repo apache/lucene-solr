@@ -645,7 +645,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
 
     final boolean prune_dv = ! defaultCodecSupportsMissingDocValues();
 
-    ArrayList<String> names = new ArrayList<String>(37);
+    ArrayList<String> names = new ArrayList<>(37);
     for (String f : raw) {
       if (f.equals("_version_")) {
         continue;
@@ -760,7 +760,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     assertNotNull("facet.field param not specified", facetField);
     assertFalse("facet.field param contains multiple values", facetField.contains(","));
     assertEquals("facet.limit param not set to -1", "-1", params.get("facet.limit"));
-    final Map<String,MutableValueInt> facetCounts = new HashMap<String,MutableValueInt>();
+    final Map<String,MutableValueInt> facetCounts = new HashMap<>();
     SentinelIntSet ids = new SentinelIntSet(maxSize, -1);
     String cursorMark = CURSOR_MARK_START;
     int docsOnThisPage = Integer.MAX_VALUE;
@@ -945,7 +945,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
    */
   public static String buildRandomSort(final Collection<String> fieldNames) {
 
-    ArrayList<String> shuffledNames = new ArrayList<String>(fieldNames);
+    ArrayList<String> shuffledNames = new ArrayList<>(fieldNames);
     Collections.replaceAll(shuffledNames, "id", "score");
     Collections.shuffle(shuffledNames, random());
 

@@ -56,7 +56,7 @@ public class SegmentCommitInfo {
   private long nextWriteFieldInfosGen;
 
   // Track the per-generation updates files
-  private final Map<Long,Set<String>> genUpdatesFiles = new HashMap<Long,Set<String>>();
+  private final Map<Long,Set<String>> genUpdatesFiles = new HashMap<>();
   
   private volatile long sizeInBytes = -1;
 
@@ -147,7 +147,7 @@ public class SegmentCommitInfo {
   /** Returns all files in use by this segment. */
   public Collection<String> files() throws IOException {
     // Start from the wrapped info's files:
-    Collection<String> files = new HashSet<String>(info.files());
+    Collection<String> files = new HashSet<>(info.files());
 
     // TODO we could rely on TrackingDir.getCreatedFiles() (like we do for
     // updates) and then maybe even be able to remove LiveDocsFormat.files().
@@ -257,7 +257,7 @@ public class SegmentCommitInfo {
     
     // deep clone
     for (Entry<Long,Set<String>> e : genUpdatesFiles.entrySet()) {
-      other.genUpdatesFiles.put(e.getKey(), new HashSet<String>(e.getValue()));
+      other.genUpdatesFiles.put(e.getKey(), new HashSet<>(e.getValue()));
     }
     
     return other;

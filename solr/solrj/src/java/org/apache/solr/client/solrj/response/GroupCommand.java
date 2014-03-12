@@ -45,7 +45,7 @@ import java.util.List;
 public class GroupCommand implements Serializable {
 
   private final String _name;
-  private final List<Group> _values = new ArrayList<Group>();
+  private final List<Group> _values = new ArrayList<>();
   private final int _matches;
   private final Integer _ngroups;
 
