@@ -83,7 +83,7 @@ public class JavascriptCompiler {
     }
   }
   
-  private static final int CLASSFILE_VERSION = Opcodes.V1_6;
+  private static final int CLASSFILE_VERSION = Opcodes.V1_7;
   
   // We use the same class name for all generated classes as they all have their own class loader.
   // The source code is displayed as "source file name" in stack trace.
