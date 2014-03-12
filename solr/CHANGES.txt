@@ -116,6 +116,9 @@ New Features
 * SOLR-5720: Add ExpandComponent to expand results collapsed by the 
   CollapsingQParserPlugin. (Joel Bernstein)
 
+* SOLR-5653: Create a RestManager to provide REST API endpoints for
+  reconfigurable plugins. (Tim Potter, Steve Rowe)
+
 
 Bug Fixes
 ----------------------
