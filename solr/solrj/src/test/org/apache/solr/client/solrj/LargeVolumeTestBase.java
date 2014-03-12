@@ -87,12 +87,12 @@ public abstract class LargeVolumeTestBase extends SolrJettyTestBase
     public void run() {
       try {
         UpdateResponse resp = null;
-        List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
+        List<SolrInputDocument> docs = new ArrayList<>();
         for (int i = 0; i < numdocs; i++) {
           if (i > 0 && i % 200 == 0) {
             resp = tserver.add(docs);
             assertEquals(0, resp.getStatus());
-            docs = new ArrayList<SolrInputDocument>();
+            docs = new ArrayList<>();
           }
           if (i > 0 && i % 5000 == 0) {
             log.info(getName() + " - Committing " + i);

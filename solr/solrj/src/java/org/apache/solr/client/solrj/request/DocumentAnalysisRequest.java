@@ -42,7 +42,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class DocumentAnalysisRequest extends SolrRequest {
 
-  private List<SolrInputDocument> documents = new ArrayList<SolrInputDocument>();
+  private List<SolrInputDocument> documents = new ArrayList<>();
   private String query;
   private boolean showMatch = false;
 

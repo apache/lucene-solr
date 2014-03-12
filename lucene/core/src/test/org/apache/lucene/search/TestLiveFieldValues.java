@@ -78,7 +78,7 @@ public class TestLiveFieldValues extends LuceneTestCase {
     }
 
     final CountDownLatch startingGun = new CountDownLatch(1);
-    List<Thread> threads = new ArrayList<Thread>();
+    List<Thread> threads = new ArrayList<>();
 
     final int iters = atLeast(1000);
     final int idCount = TestUtil.nextInt(random(), 100, 10000);
@@ -95,7 +95,7 @@ public class TestLiveFieldValues extends LuceneTestCase {
           @Override
           public void run() {
             try {
-              Map<String,Integer> values = new HashMap<String,Integer>();
+              Map<String,Integer> values = new HashMap<>();
               List<String> allIDs = Collections.synchronizedList(new ArrayList<String>());
 
               startingGun.await();

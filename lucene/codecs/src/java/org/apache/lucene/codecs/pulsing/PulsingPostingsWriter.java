@@ -129,7 +129,7 @@ public final class PulsingPostingsWriter extends PostingsWriterBase {
     for(int i=0;i<maxPositions;i++) {
       pending[i] = new Position();
     }
-    fields = new ArrayList<FieldMetaData>();
+    fields = new ArrayList<>();
 
     // We simply wrap another postings writer, but only call
     // on it when tot positions is >= the cutoff:

@@ -58,7 +58,7 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
     model = null;
     indexSize = rand.nextBoolean() ? (rand.nextInt(10) + 1) : (rand.nextInt(100) + 10);
 
-    types = new ArrayList<FldType>();
+    types = new ArrayList<>();
     types.add(new FldType("id",ONE_ONE, new SVal('A','Z',4,4)));
     types.add(new FldType("score_f",ONE_ONE, new FVal(1,100)));
     types.add(new FldType("foo_i",ZERO_ONE, new IRange(0,indexSize)));
@@ -88,7 +88,7 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
     Random rand = random();
     int percent = rand.nextInt(100);
     if (model == null) return;
-    ArrayList<String> ids = new ArrayList<String>(model.size());
+    ArrayList<String> ids = new ArrayList<>(model.size());
     for (Comparable id : model.keySet()) {
       if (rand.nextInt(100) < percent) {
         ids.add(id.toString());
@@ -216,7 +216,7 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
       String facet_field = ftype.fname;
 
       List<String> methods = multiValued ? multiValuedMethods : singleValuedMethods;
-      List<String> responses = new ArrayList<String>(methods.size());
+      List<String> responses = new ArrayList<>(methods.size());
       for (String method : methods) {
         if (method.equals("dv")) {
           params.set("facet.field", "{!key="+facet_field+"}"+facet_field+"_dv");

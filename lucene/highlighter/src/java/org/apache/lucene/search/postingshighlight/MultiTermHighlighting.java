@@ -60,7 +60,7 @@ class MultiTermHighlighting {
    * automata that will match terms.
    */
   static CharacterRunAutomaton[] extractAutomata(Query query, String field) {
-    List<CharacterRunAutomaton> list = new ArrayList<CharacterRunAutomaton>();
+    List<CharacterRunAutomaton> list = new ArrayList<>();
     if (query instanceof BooleanQuery) {
       BooleanClause clauses[] = ((BooleanQuery) query).getClauses();
       for (BooleanClause clause : clauses) {

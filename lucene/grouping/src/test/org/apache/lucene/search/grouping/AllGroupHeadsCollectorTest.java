@@ -192,7 +192,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
         System.out.println("TEST: numDocs=" + numDocs + " numGroups=" + numGroups);
       }
 
-      final List<BytesRef> groups = new ArrayList<BytesRef>();
+      final List<BytesRef> groups = new ArrayList<>();
       for (int i = 0; i < numGroups; i++) {
         String randomValue;
         do {
@@ -449,14 +449,14 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
   }
 
   private int[] createExpectedGroupHeads(String searchTerm, GroupDoc[] groupDocs, Sort docSort, boolean sortByScoreOnly, int[] fieldIdToDocID) {
-    Map<BytesRef, List<GroupDoc>> groupHeads = new HashMap<BytesRef, List<GroupDoc>>();
+    Map<BytesRef, List<GroupDoc>> groupHeads = new HashMap<>();
     for (GroupDoc groupDoc : groupDocs) {
       if (!groupDoc.content.startsWith(searchTerm)) {
         continue;
       }
 
       if (!groupHeads.containsKey(groupDoc.group)) {
-        List<GroupDoc> list = new ArrayList<GroupDoc>();
+        List<GroupDoc> list = new ArrayList<>();
         list.add(groupDoc);
         groupHeads.put(groupDoc.group, list);
         continue;
@@ -476,7 +476,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
   }
 
   private Sort getRandomSort(boolean scoreOnly) {
-    final List<SortField> sortFields = new ArrayList<SortField>();
+    final List<SortField> sortFields = new ArrayList<>();
     if (random().nextInt(7) == 2 || scoreOnly) {
       sortFields.add(SortField.FIELD_SCORE);
     } else {
@@ -541,7 +541,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     AbstractAllGroupHeadsCollector<? extends AbstractAllGroupHeadsCollector.GroupHead> collector;
     if (random().nextBoolean()) {
       ValueSource vs = new BytesRefFieldSource(groupField);
-      collector =  new FunctionAllGroupHeadsCollector(vs, new HashMap<Object, Object>(), sortWithinGroup);
+      collector =  new FunctionAllGroupHeadsCollector(vs, new HashMap<>(), sortWithinGroup);
     } else {
       collector =  TermAllGroupHeadsCollector.create(groupField, sortWithinGroup);
     }

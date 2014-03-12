@@ -337,7 +337,7 @@ public class Overseer {
         return clusterState;
       }
 
-      ArrayList<String> shardNames = new ArrayList<String>();
+      ArrayList<String> shardNames = new ArrayList<>();
 
       if(ImplicitDocRouter.NAME.equals( message.getStr("router.name",DocRouter.DEFAULT_NAME))){
         getShardNames(shardNames,message.getStr("shards",DocRouter.DEFAULT_NAME));
@@ -392,10 +392,10 @@ public class Overseer {
 
       Map<String, RoutingRule> routingRules = slice.getRoutingRules();
       if (routingRules == null)
-        routingRules = new HashMap<String, RoutingRule>();
+        routingRules = new HashMap<>();
       RoutingRule r = routingRules.get(routeKey);
       if (r == null) {
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
         map.put("routeRanges", range);
         map.put("targetCollection", targetCollection);
         map.put("expireAt", expireAt);
@@ -463,7 +463,7 @@ public class Overseer {
       Slice slice = clusterState.getSlice(collection, shardId);
       if (slice == null)  {
         Map<String, Replica> replicas = Collections.EMPTY_MAP;
-        Map<String, Object> sliceProps = new HashMap<String, Object>();
+        Map<String, Object> sliceProps = new HashMap<>();
         String shardRange = message.getStr(ZkStateReader.SHARD_RANGE_PROP);
         String shardState = message.getStr(ZkStateReader.SHARD_STATE_PROP);
         String shardParent = message.getStr(ZkStateReader.SHARD_PARENT_PROP);
@@ -530,7 +530,7 @@ public class Overseer {
         Integer numShards = message.getInt(ZkStateReader.NUM_SHARDS_PROP, null);
         log.info("Update state numShards={} message={}", numShards, message);
 
-        List<String> shardNames  = new ArrayList<String>();
+        List<String> shardNames  = new ArrayList<>();
 
         //collection does not yet exist, create placeholders if num shards is specified
         boolean collectionExists = clusterState.hasCollection(collection);
@@ -574,7 +574,7 @@ public class Overseer {
 
         Slice slice = clusterState.getSlice(collection, sliceName);
         
-        Map<String,Object> replicaProps = new LinkedHashMap<String,Object>();
+        Map<String,Object> replicaProps = new LinkedHashMap<>();
 
         replicaProps.putAll(message.getProperties());
         // System.out.println("########## UPDATE MESSAGE: " + JSONUtil.toJSON(message));
@@ -594,7 +594,7 @@ public class Overseer {
           
           // remove any props with null values
           Set<Entry<String,Object>> entrySet = replicaProps.entrySet();
-          List<String> removeKeys = new ArrayList<String>();
+          List<String> removeKeys = new ArrayList<>();
           for (Entry<String,Object> entry : entrySet) {
             if (entry.getValue() == null) {
               removeKeys.add(entry.getKey());
@@ -624,8 +624,8 @@ public class Overseer {
             sliceProps = slice.getProperties();
             replicas = slice.getReplicasCopy();
           } else {
-            replicas = new HashMap<String, Replica>(1);
-            sliceProps = new HashMap<String, Object>();
+            replicas = new HashMap<>(1);
+            sliceProps = new HashMap<>();
             sliceProps.put(Slice.RANGE, shardRange);
             sliceProps.put(Slice.STATE, shardState);
             sliceProps.put(Slice.PARENT, shardParent);
@@ -661,8 +661,8 @@ public class Overseer {
           if (allActive)  {
             log.info("Shard: {} - all replicas are active. Finding status of fellow sub-shards", sliceName);
             // find out about other sub shards
-            Map<String, Slice> allSlicesCopy = new HashMap<String, Slice>(state.getSlicesMap(collection));
-            List<Slice> subShardSlices = new ArrayList<Slice>();
+            Map<String, Slice> allSlicesCopy = new HashMap<>(state.getSlicesMap(collection));
+            List<Slice> subShardSlices = new ArrayList<>();
             outer:
             for (Entry<String, Slice> entry : allSlicesCopy.entrySet()) {
               if (sliceName.equals(entry.getKey()))
@@ -688,7 +688,7 @@ public class Overseer {
               log.info("Shard: {} - All replicas across all fellow sub-shards are now ACTIVE. Preparing to switch shard states.", sliceName);
               String parentSliceName = (String) sliceProps.remove(Slice.PARENT);
 
-              Map<String, Object> propMap = new HashMap<String, Object>();
+              Map<String, Object> propMap = new HashMap<>();
               propMap.put(Overseer.QUEUE_OPERATION, "updateshardstate");
               propMap.put(parentSliceName, Slice.INACTIVE);
               propMap.put(sliceName, Slice.ACTIVE);
@@ -717,7 +717,7 @@ public class Overseer {
 //        Map<String, DocCollection> newCollections = new LinkedHashMap<String,DocCollection>();
 
 
-        Map<String, Slice> newSlices = new LinkedHashMap<String,Slice>();
+        Map<String, Slice> newSlices = new LinkedHashMap<>();
 //        newCollections.putAll(state.getCollectionStates());
         for (int i = 0; i < shards.size(); i++) {
           String sliceName = shards.get(i);
@@ -725,14 +725,14 @@ public class Overseer {
         for (int i = 0; i < numShards; i++) {
           final String sliceName = "shard" + (i+1);*/
 
-          Map<String, Object> sliceProps = new LinkedHashMap<String, Object>(1);
+          Map<String, Object> sliceProps = new LinkedHashMap<>(1);
           sliceProps.put(Slice.RANGE, ranges == null? null: ranges.get(i));
 
           newSlices.put(sliceName, new Slice(sliceName, null, sliceProps));
         }
 
         // TODO: fill in with collection properties read from the /collections/<collectionName> node
-        Map<String,Object> collectionProps = new HashMap<String,Object>();
+        Map<String,Object> collectionProps = new HashMap<>();
 
         for (Entry<String, Object> e : OverseerCollectionProcessor.COLL_PROPS.entrySet()) {
           Object val = message.get(e.getKey());
@@ -791,7 +791,7 @@ public class Overseer {
       private ClusterState updateSlice(ClusterState state, String collectionName, Slice slice) {
         // System.out.println("###!!!### OLD CLUSTERSTATE: " + JSONUtil.toJSON(state.getCollectionStates()));
         // System.out.println("Updating slice:" + slice);
-        Map<String, DocCollection> newCollections = new LinkedHashMap<String,DocCollection>(state.getCollectionStates());  // make a shallow copy
+        Map<String, DocCollection> newCollections = new LinkedHashMap<>(state.getCollectionStates());  // make a shallow copy
         DocCollection coll = newCollections.get(collectionName);
         Map<String,Slice> slices;
         Map<String,Object> props;
@@ -800,14 +800,14 @@ public class Overseer {
         if (coll == null) {
           //  when updateSlice is called on a collection that doesn't exist, it's currently when a core is publishing itself
           // without explicitly creating a collection.  In this current case, we assume custom sharding with an "implicit" router.
-          slices = new HashMap<String, Slice>(1);
-          props = new HashMap<String,Object>(1);
+          slices = new HashMap<>(1);
+          props = new HashMap<>(1);
           props.put(DocCollection.DOC_ROUTER, ZkNodeProps.makeMap("name",ImplicitDocRouter.NAME));
           router = new ImplicitDocRouter();
         } else {
           props = coll.getProperties();
           router = coll.getRouter();
-          slices = new LinkedHashMap<String, Slice>(coll.getSlicesMap()); // make a shallow copy
+          slices = new LinkedHashMap<>(coll.getSlicesMap()); // make a shallow copy
         }
         slices.put(slice.getName(), slice);
         DocCollection newCollection = new DocCollection(collectionName, slices, props, router);
@@ -820,7 +820,7 @@ public class Overseer {
       
       private ClusterState setShardLeader(ClusterState state, String collectionName, String sliceName, String leaderUrl) {
 
-        final Map<String, DocCollection> newCollections = new LinkedHashMap<String,DocCollection>(state.getCollectionStates());
+        final Map<String, DocCollection> newCollections = new LinkedHashMap<>(state.getCollectionStates());
         DocCollection coll = newCollections.get(collectionName);
         if(coll == null) {
           log.error("Could not mark shard leader for non existing collection:" + collectionName);
@@ -829,7 +829,7 @@ public class Overseer {
 
         Map<String, Slice> slices = coll.getSlicesMap();
         // make a shallow copy and add it to the new collection
-        slices = new LinkedHashMap<String,Slice>(slices);
+        slices = new LinkedHashMap<>(slices);
 
         Slice slice = slices.get(sliceName);
         if (slice == null) {
@@ -844,7 +844,7 @@ public class Overseer {
 
           Replica oldLeader = slice.getLeader();
 
-          final Map<String,Replica> newReplicas = new LinkedHashMap<String,Replica>();
+          final Map<String,Replica> newReplicas = new LinkedHashMap<>();
 
           for (Replica replica : slice.getReplicas()) {
 
@@ -852,11 +852,11 @@ public class Overseer {
             String coreURL = ZkCoreNodeProps.getCoreUrl(replica.getStr(ZkStateReader.BASE_URL_PROP), replica.getStr(ZkStateReader.CORE_NAME_PROP));
 
             if (replica == oldLeader && !coreURL.equals(leaderUrl)) {
-              Map<String,Object> replicaProps = new LinkedHashMap<String,Object>(replica.getProperties());
+              Map<String,Object> replicaProps = new LinkedHashMap<>(replica.getProperties());
               replicaProps.remove(Slice.LEADER);
               replica = new Replica(replica.getName(), replicaProps);
             } else if (coreURL.equals(leaderUrl)) {
-              Map<String,Object> replicaProps = new LinkedHashMap<String,Object>(replica.getProperties());
+              Map<String,Object> replicaProps = new LinkedHashMap<>(replica.getProperties());
               replicaProps.put(Slice.LEADER, "true");  // TODO: allow booleans instead of strings
               replica = new Replica(replica.getName(), replicaProps);
             }
@@ -901,7 +901,7 @@ public class Overseer {
 
       DocCollection coll = clusterState.getCollection(collection);
 
-      Map<String, Slice> newSlices = new LinkedHashMap<String, Slice>(coll.getSlicesMap());
+      Map<String, Slice> newSlices = new LinkedHashMap<>(coll.getSlicesMap());
       newSlices.remove(sliceId);
 
       DocCollection newCollection = new DocCollection(coll.getName(), newSlices, coll.getProperties(), coll.getRouter());
@@ -916,7 +916,7 @@ public class Overseer {
         final String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
         if (!checkCollectionKeyExistence(message)) return clusterState;
 
-//        final Map<String, DocCollection> newCollections = new LinkedHashMap<String,DocCollection>(clusterState.getCollectionStates()); // shallow copy
+//        final Map<String, DocCollection> newCollections = new LinkedHashMap<>(clusterState.getCollectionStates()); // shallow copy
 //        DocCollection coll = newCollections.get(collection);
         DocCollection coll = clusterState.getCollectionOrNull(collection) ;
         if (coll == null) {
@@ -933,7 +933,7 @@ public class Overseer {
           return clusterState;
         }
 
-        Map<String, Slice> newSlices = new LinkedHashMap<String, Slice>();
+        Map<String, Slice> newSlices = new LinkedHashMap<>();
         boolean lastSlice = false;
         for (Slice slice : coll.getSlices()) {
           Replica replica = slice.getReplica(cnn);

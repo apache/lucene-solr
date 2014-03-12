@@ -56,8 +56,8 @@ public class ParallelAtomicReader extends AtomicReader {
   private final boolean closeSubReaders;
   private final int maxDoc, numDocs;
   private final boolean hasDeletions;
-  private final SortedMap<String,AtomicReader> fieldToReader = new TreeMap<String,AtomicReader>();
-  private final SortedMap<String,AtomicReader> tvFieldToReader = new TreeMap<String,AtomicReader>();
+  private final SortedMap<String,AtomicReader> fieldToReader = new TreeMap<>();
+  private final SortedMap<String,AtomicReader> tvFieldToReader = new TreeMap<>();
   
   /** Create a ParallelAtomicReader based on the provided
    *  readers; auto-closes the given readers on {@link #close()}. */
@@ -151,7 +151,7 @@ public class ParallelAtomicReader extends AtomicReader {
   
   // Single instance of this, per ParallelReader instance
   private final class ParallelFields extends Fields {
-    final Map<String,Terms> fields = new TreeMap<String,Terms>();
+    final Map<String,Terms> fields = new TreeMap<>();
     
     ParallelFields() {
     }

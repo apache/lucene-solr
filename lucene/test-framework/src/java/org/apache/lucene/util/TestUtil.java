@@ -799,7 +799,7 @@ public final class TestUtil {
    * @param reflectedValues contains a map with "AttributeClass#key" as values
    */
   public static <T> void assertAttributeReflection(final AttributeImpl att, Map<String,T> reflectedValues) {
-    final Map<String,Object> map = new HashMap<String,Object>();
+    final Map<String,Object> map = new HashMap<>();
     att.reflectWith(new AttributeReflector() {
       @Override
       public void reflect(Class<? extends Attribute> attClass, String key, Object value) {

@@ -87,7 +87,7 @@ public abstract class AllValuesOrNoneFieldMutatingUpdateProcessor extends FieldM
       if (DELETE_VALUE_SINGLETON == destVal) {
         if (log.isDebugEnabled()) {
           if (null == messages) {
-            messages = new ArrayList<String>();
+            messages = new ArrayList<>();
           }
           messages.add(String.format(Locale.ROOT, "removing value from field '%s': %s '%s'", 
                                      srcField.getName(), srcVal.getClass().getSimpleName(), srcVal));
@@ -95,7 +95,7 @@ public abstract class AllValuesOrNoneFieldMutatingUpdateProcessor extends FieldM
       } else {
         if (log.isDebugEnabled()) {
           if (null == messages) {
-            messages = new ArrayList<String>();
+            messages = new ArrayList<>();
           }
           messages.add(String.format(Locale.ROOT, "replace value from field '%s': %s '%s' with %s '%s'", 
                                      srcField.getName(), srcVal.getClass().getSimpleName(), srcVal, 

@@ -88,7 +88,7 @@ public class SearchGroupsFieldCommand implements Command<Pair<Integer, Collectio
 
   @Override
   public List<Collector> create() throws IOException {
-    List<Collector> collectors = new ArrayList<Collector>();
+    List<Collector> collectors = new ArrayList<>();
     if (topNGroups > 0) {
       firstPassGroupingCollector = new TermFirstPassGroupingCollector(field.getName(), groupSort, topNGroups);
       collectors.add(firstPassGroupingCollector);
@@ -114,7 +114,7 @@ public class SearchGroupsFieldCommand implements Command<Pair<Integer, Collectio
     } else {
       groupCount = null;
     }
-    return new Pair<Integer, Collection<SearchGroup<BytesRef>>>(groupCount, topGroups);
+    return new Pair<>(groupCount, topGroups);
   }
 
   @Override

@@ -81,7 +81,7 @@ public class TestTermScorer extends LuceneTestCase {
     BulkScorer ts = weight.bulkScorer(context, true, context.reader().getLiveDocs());
     // we have 2 documents with the term all in them, one document for all the
     // other values
-    final List<TestHit> docs = new ArrayList<TestHit>();
+    final List<TestHit> docs = new ArrayList<>();
     // must call next first
     
     ts.score(new Collector() {

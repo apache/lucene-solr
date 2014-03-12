@@ -150,7 +150,7 @@ public class TestJoin extends SolrTestCaseJ4 {
     while (--indexIter >= 0) {
       int indexSize = random().nextInt(20 * RANDOM_MULTIPLIER);
 
-      List<FldType> types = new ArrayList<FldType>();
+      List<FldType> types = new ArrayList<>();
       types.add(new FldType("id",ONE_ONE, new SVal('A','Z',4,4)));
       types.add(new FldType("score_f",ONE_ONE, new FVal(1,100)));  // field used to score
       types.add(new FldType("small_s",ZERO_ONE, new SVal('a',(char)('c'+indexSize/3),1,1)));
@@ -164,7 +164,7 @@ public class TestJoin extends SolrTestCaseJ4 {
 
       clearIndex();
       Map<Comparable, Doc> model = indexDocs(types, null, indexSize);
-      Map<String, Map<Comparable, Set<Comparable>>> pivots = new HashMap<String, Map<Comparable, Set<Comparable>>>();
+      Map<String, Map<Comparable, Set<Comparable>>> pivots = new HashMap<>();
 
       for (int qiter=0; qiter<queryIter; qiter++) {
         String fromField;
@@ -189,7 +189,7 @@ public class TestJoin extends SolrTestCaseJ4 {
 
         Collection<Doc> fromDocs = model.values();
         Set<Comparable> docs = join(fromDocs, pivot);
-        List<Doc> docList = new ArrayList<Doc>(docs.size());
+        List<Doc> docList = new ArrayList<>(docs.size());
         for (Comparable id : docs) docList.add(model.get(id));
         Collections.sort(docList, createComparator("_docid_",true,false,false,false));
         List sortedDocs = new ArrayList();
@@ -198,7 +198,7 @@ public class TestJoin extends SolrTestCaseJ4 {
           sortedDocs.add(doc.toObject(h.getCore().getLatestSchema()));
         }
 
-        Map<String,Object> resultSet = new LinkedHashMap<String,Object>();
+        Map<String,Object> resultSet = new LinkedHashMap<>();
         resultSet.put("numFound", docList.size());
         resultSet.put("start", 0);
         resultSet.put("docs", sortedDocs);
@@ -235,7 +235,7 @@ public class TestJoin extends SolrTestCaseJ4 {
 
 
   Map<Comparable, Set<Comparable>> createJoinMap(Map<Comparable, Doc> model, String fromField, String toField) {
-    Map<Comparable, Set<Comparable>> id_to_id = new HashMap<Comparable, Set<Comparable>>();
+    Map<Comparable, Set<Comparable>> id_to_id = new HashMap<>();
 
     Map<Comparable, List<Comparable>> value_to_id = invertField(model, toField);
 
@@ -248,7 +248,7 @@ public class TestJoin extends SolrTestCaseJ4 {
         if (toIds == null) continue;
         Set<Comparable> ids = id_to_id.get(fromId);
         if (ids == null) {
-          ids = new HashSet<Comparable>();
+          ids = new HashSet<>();
           id_to_id.put(fromId, ids);
         }
         for (Comparable toId : toIds)
@@ -261,7 +261,7 @@ public class TestJoin extends SolrTestCaseJ4 {
 
 
   Set<Comparable> join(Collection<Doc> input, Map<Comparable, Set<Comparable>> joinMap) {
-    Set<Comparable> ids = new HashSet<Comparable>();
+    Set<Comparable> ids = new HashSet<>();
     for (Doc doc : input) {
       Collection<Comparable> output = joinMap.get(doc.id);
       if (output == null) continue;

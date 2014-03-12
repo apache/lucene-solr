@@ -70,7 +70,7 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
 
   TermGroupFacetCollector(String groupField, String facetField, BytesRef facetPrefix, int initialSize) {
     super(groupField, facetField, facetPrefix);
-    groupedFacetHits = new ArrayList<GroupedFacetHit>(initialSize);
+    groupedFacetHits = new ArrayList<>(initialSize);
     segmentGroupedFacetHits = new SentinelIntSet(initialSize, Integer.MIN_VALUE);
   }
 

@@ -68,7 +68,7 @@ public class QualityStats {
   public QualityStats(double maxGoodPoints, long searchTime) {
     this.maxGoodPoints = maxGoodPoints;
     this.searchTime = searchTime;
-    this.recallPoints = new ArrayList<RecallPoint>();
+    this.recallPoints = new ArrayList<>();
     pAt = new double[MAX_POINTS+1]; // pAt[0] unused. 
   }
 

@@ -60,7 +60,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
 
   /** Creates an empty instance */
   public NamedList() {
-    nvPairs = new ArrayList<Object>();
+    nvPairs = new ArrayList<>();
   }
 
   /**
@@ -109,7 +109,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    */
   @Deprecated
   private List<Object> nameValueMapToList(Map.Entry<String, ? extends T>[] nameValuePairs) {
-    List<Object> result = new ArrayList<Object>();
+    List<Object> result = new ArrayList<>();
     for (Map.Entry<String, ?> ent : nameValuePairs) {
       result.add(ent.getKey());
       result.add(ent.getValue());
@@ -251,7 +251,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    * @return List of values
    */
   public List<T> getAll(String name) {
-    List<T> result = new ArrayList<T>();
+    List<T> result = new ArrayList<>();
     int sz = size();
     for (int i = 0; i < sz; i++) {
       String n = getName(i);
@@ -418,9 +418,9 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    */
   @Override
   public NamedList<T> clone() {
-    ArrayList<Object> newList = new ArrayList<Object>(nvPairs.size());
+    ArrayList<Object> newList = new ArrayList<>(nvPairs.size());
     newList.addAll(nvPairs);
-    return new NamedList<T>(newList);
+    return new NamedList<>(newList);
   }
 
   //----------------------------------------------------------------------------
@@ -501,7 +501,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    * @return List of values
    */
   public List<T> removeAll(String name) {
-    List<T> result = new ArrayList<T>();
+    List<T> result = new ArrayList<>();
     result = getAll(name);
     if (result.size() > 0 ) {
       killAll(name);
@@ -575,7 +575,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   public Collection<String> removeConfigArgs(final String name)
       throws SolrException {
     List<T> objects = getAll(name);
-    List<String> collection = new ArrayList<String>(size() / 2);
+    List<String> collection = new ArrayList<>(size() / 2);
     final String err = "init arg '" + name + "' must be a string "
         + "(ie: 'str'), or an array (ie: 'arr') containing strings; found: ";
     

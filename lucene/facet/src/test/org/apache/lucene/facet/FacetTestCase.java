@@ -86,7 +86,7 @@ public abstract class FacetTestCase extends LuceneTestCase {
   }
 
   protected List<TestDoc> getRandomDocs(String[] tokens, int count, int numDims) {
-    List<TestDoc> docs = new ArrayList<TestDoc>();
+    List<TestDoc> docs = new ArrayList<>();
     for(int i=0;i<count;i++) {
       TestDoc doc = new TestDoc();
       docs.add(doc);
@@ -179,14 +179,14 @@ public abstract class FacetTestCase extends LuceneTestCase {
   protected void assertFloatValuesEquals(List<FacetResult> a, List<FacetResult> b) {
     assertEquals(a.size(), b.size());
     float lastValue = Float.POSITIVE_INFINITY;
-    Map<String,FacetResult> aByDim = new HashMap<String,FacetResult>();
+    Map<String,FacetResult> aByDim = new HashMap<>();
     for(int i=0;i<a.size();i++) {
       assertTrue(a.get(i).value.floatValue() <= lastValue);
       lastValue = a.get(i).value.floatValue();
       aByDim.put(a.get(i).dim, a.get(i));
     }
     lastValue = Float.POSITIVE_INFINITY;
-    Map<String,FacetResult> bByDim = new HashMap<String,FacetResult>();
+    Map<String,FacetResult> bByDim = new HashMap<>();
     for(int i=0;i<b.size();i++) {
       bByDim.put(b.get(i).dim, b.get(i));
       assertTrue(b.get(i).value.floatValue() <= lastValue);

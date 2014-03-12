@@ -112,7 +112,7 @@ public class TestLucene40PostingsReader extends LuceneTestCase {
   }
   
   String fieldValue(int maxTF) {
-    ArrayList<String> shuffled = new ArrayList<String>();
+    ArrayList<String> shuffled = new ArrayList<>();
     StringBuilder sb = new StringBuilder();
     int i = random().nextInt(terms.length);
     while (i < terms.length) {

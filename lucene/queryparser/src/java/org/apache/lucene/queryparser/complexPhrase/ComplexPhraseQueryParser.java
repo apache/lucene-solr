@@ -104,7 +104,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
 
     // First pass - parse the top-level query recording any PhraseQuerys
     // which will need to be resolved
-    complexPhrases = new ArrayList<ComplexPhraseQuery>();
+    complexPhrases = new ArrayList<>();
     Query q = super.parse(query);
 
     // Perform second pass, using this QueryParser to parse any nested
@@ -254,7 +254,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
         }
 
         if (qc instanceof BooleanQuery) {
-          ArrayList<SpanQuery> sc = new ArrayList<SpanQuery>();
+          ArrayList<SpanQuery> sc = new ArrayList<>();
           addComplexPhraseClause(sc, (BooleanQuery) qc);
           if (sc.size() > 0) {
             allSpanClauses[i] = sc.get(0);
@@ -285,7 +285,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
       // Complex case - we have mixed positives and negatives in the
       // sequence.
       // Need to return a SpanNotQuery
-      ArrayList<SpanQuery> positiveClauses = new ArrayList<SpanQuery>();
+      ArrayList<SpanQuery> positiveClauses = new ArrayList<>();
       for (int j = 0; j < allSpanClauses.length; j++) {
         if (!bclauses[j].getOccur().equals(BooleanClause.Occur.MUST_NOT)) {
           positiveClauses.add(allSpanClauses[j]);
@@ -312,8 +312,8 @@ public class ComplexPhraseQueryParser extends QueryParser {
     }
 
     private void addComplexPhraseClause(List<SpanQuery> spanClauses, BooleanQuery qc) {
-      ArrayList<SpanQuery> ors = new ArrayList<SpanQuery>();
-      ArrayList<SpanQuery> nots = new ArrayList<SpanQuery>();
+      ArrayList<SpanQuery> ors = new ArrayList<>();
+      ArrayList<SpanQuery> nots = new ArrayList<>();
       BooleanClause[] bclauses = qc.getClauses();
 
       // For all clauses e.g. one* two~

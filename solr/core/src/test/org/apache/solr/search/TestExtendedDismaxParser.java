@@ -1146,7 +1146,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
       public FuzzyQueryParser(QParser parser, String defaultField) {
         super(parser, defaultField);
-        frequentlyMisspelledWords = new HashSet<String>();
+        frequentlyMisspelledWords = new HashSet<>();
         frequentlyMisspelledWords.add("absence");
       }
       

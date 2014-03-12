@@ -47,7 +47,7 @@ public abstract class ReferenceManager<G> implements Closeable {
   
   private final Lock refreshLock = new ReentrantLock();
 
-  private final List<RefreshListener> refreshListeners = new CopyOnWriteArrayList<RefreshListener>();
+  private final List<RefreshListener> refreshListeners = new CopyOnWriteArrayList<>();
 
   private void ensureOpen() {
     if (current == null) {

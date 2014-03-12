@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class CountUsageValueSourceParser extends ValueSourceParser {
 
   private static final ConcurrentMap<String,AtomicInteger> counters 
-    = new ConcurrentHashMap<String,AtomicInteger>();
+    = new ConcurrentHashMap<>();
 
   public static void clearCounters() {
     counters.clear();

@@ -206,7 +206,7 @@ public class CoreContainer {
     shareSchema = cfg.hasSchemaCache();
 
     if (shareSchema) {
-      indexSchemaCache = new ConcurrentHashMap<String,IndexSchema>();
+      indexSchemaCache = new ConcurrentHashMap<>();
     }
     
     hostName = cfg.getHost();
@@ -227,10 +227,10 @@ public class CoreContainer {
         new DefaultSolrThreadFactory("coreLoadExecutor") );
 
     try {
-      CompletionService<SolrCore> completionService = new ExecutorCompletionService<SolrCore>(
+      CompletionService<SolrCore> completionService = new ExecutorCompletionService<>(
           coreLoadExecutor);
 
-      Set<Future<SolrCore>> pending = new HashSet<Future<SolrCore>>();
+      Set<Future<SolrCore>> pending = new HashSet<>();
 
       List<CoreDescriptor> cds = coresLocator.discover(this);
       checkForDuplicateCoreNames(cds);
@@ -657,7 +657,7 @@ public class CoreContainer {
    */
   public Map<String,Exception> getCoreInitFailures() {
     synchronized ( coreInitFailures ) {
-      return Collections.unmodifiableMap(new LinkedHashMap<String,Exception>
+      return Collections.unmodifiableMap(new LinkedHashMap<>
                                          (coreInitFailures));
     }
   }

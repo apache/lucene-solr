@@ -309,7 +309,7 @@ public final class SegmentInfo {
   @Deprecated
   public String putAttribute(String key, String value) {
     if (attributes == null) {
-      attributes = new HashMap<String,String>();
+      attributes = new HashMap<>();
     }
     return attributes.put(key, value);
   }

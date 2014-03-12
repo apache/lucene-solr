@@ -120,7 +120,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
     int numOnCommit;
     int numToKeep;
     int numDelete;
-    Set<String> seen = new HashSet<String>();
+    Set<String> seen = new HashSet<>();
 
     public KeepLastNDeletionPolicy(int numToKeep) {
       this.numToKeep = numToKeep;
@@ -228,7 +228,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
     mp.setNoCFSRatio(1.0);
     IndexWriter writer = new IndexWriter(dir, conf);
     ExpirationTimeDeletionPolicy policy = (ExpirationTimeDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
-    Map<String,String> commitData = new HashMap<String,String>();
+    Map<String,String> commitData = new HashMap<>();
     commitData.put("commitTime", String.valueOf(System.currentTimeMillis()));
     writer.setCommitData(commitData);
     writer.commit();
@@ -250,7 +250,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
       for(int j=0;j<17;j++) {
         addDoc(writer);
       }
-      commitData = new HashMap<String,String>();
+      commitData = new HashMap<>();
       commitData.put("commitTime", String.valueOf(System.currentTimeMillis()));
       writer.setCommitData(commitData);
       writer.commit();

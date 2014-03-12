@@ -269,7 +269,7 @@ public class HttpSolrServer extends SolrServer {
               }
             }
             
-            LinkedList<NameValuePair> postParams = new LinkedList<NameValuePair>();
+            LinkedList<NameValuePair> postParams = new LinkedList<>();
             if (streams == null || isMultipart) {
               HttpPost post = new HttpPost(url + ClientUtils.toQueryString( queryParams, false ));
               post.setHeader("Content-Charset", "UTF-8");
@@ -278,7 +278,7 @@ public class HttpSolrServer extends SolrServer {
                     "application/x-www-form-urlencoded; charset=UTF-8");
               }
 
-              List<FormBodyPart> parts = new LinkedList<FormBodyPart>();
+              List<FormBodyPart> parts = new LinkedList<>();
               Iterator<String> iter = wparams.getParameterNamesIterator();
               while (iter.hasNext()) {
                 String p = iter.next();
@@ -436,7 +436,7 @@ public class HttpSolrServer extends SolrServer {
       if (processor == null) {
         
         // no processor specified, return raw stream
-        NamedList<Object> rsp = new NamedList<Object>();
+        NamedList<Object> rsp = new NamedList<>();
         rsp.add("stream", respBody);
         // Only case where stream should not be closed
         shouldClose = false;

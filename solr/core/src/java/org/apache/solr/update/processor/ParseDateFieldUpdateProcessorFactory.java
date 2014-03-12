@@ -102,7 +102,7 @@ public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdatePro
   private static final String DEFAULT_TIME_ZONE_PARAM = "defaultTimeZone";
   private static final String LOCALE_PARAM = "locale";
 
-  private Map<String,DateTimeFormatter> formats = new LinkedHashMap<String,DateTimeFormatter>();
+  private Map<String,DateTimeFormatter> formats = new LinkedHashMap<>();
 
   @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req,

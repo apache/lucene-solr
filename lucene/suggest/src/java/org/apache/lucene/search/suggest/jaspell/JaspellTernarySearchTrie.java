@@ -682,7 +682,7 @@ public class JaspellTernarySearchTrie {
    *@return A <code>List</code> with the results
    */
   public List<String> matchPrefix(CharSequence prefix, int numReturnValues) {
-    Vector<String> sortKeysResult = new Vector<String>();
+    Vector<String> sortKeysResult = new Vector<>();
     TSTNode startNode = getNode(prefix);
     if (startNode == null) {
       return sortKeysResult;

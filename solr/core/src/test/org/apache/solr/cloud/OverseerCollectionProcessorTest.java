@@ -81,7 +81,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   private OverseerCollectionProcessorToBeTested underTest;
   
   private Thread thread;
-  private Queue<QueueEvent> queue = new BlockingArrayQueue<QueueEvent>();
+  private Queue<QueueEvent> queue = new BlockingArrayQueue<>();
 
   private class OverseerCollectionProcessorToBeTested extends
       OverseerCollectionProcessor {
@@ -202,7 +202,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
         return collectionsSet;
       }
     }).anyTimes();
-    final Set<String> liveNodes = new HashSet<String>();
+    final Set<String> liveNodes = new HashSet<>();
     for (int i = 0; i < liveNodesCount; i++) {
       final String address = "localhost:" + (8963 + i) + "_solr";
       liveNodes.add(address);
@@ -316,14 +316,14 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   }
   
   private class SubmitCapture {
-    public Capture<ShardRequest> shardRequestCapture = new Capture<ShardRequest>();
-    public Capture<String> nodeUrlsWithoutProtocolPartCapture = new Capture<String>();
-    public Capture<ModifiableSolrParams> params = new Capture<ModifiableSolrParams>();
+    public Capture<ShardRequest> shardRequestCapture = new Capture<>();
+    public Capture<String> nodeUrlsWithoutProtocolPartCapture = new Capture<>();
+    public Capture<ModifiableSolrParams> params = new Capture<>();
   }
   
   protected List<SubmitCapture> mockShardHandlerForCreateJob(
       Integer numberOfSlices, Integer numberOfReplica) {
-    List<SubmitCapture> submitCaptures = new ArrayList<SubmitCapture>();
+    List<SubmitCapture> submitCaptures = new ArrayList<>();
     for (int i = 0; i < (numberOfSlices * numberOfReplica); i++) {
       SubmitCapture submitCapture = new SubmitCapture();
       shardHandlerMock.submit(capture(submitCapture.shardRequestCapture),
@@ -370,9 +370,9 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   
   protected void verifySubmitCaptures(List<SubmitCapture> submitCaptures,
       Integer numberOfSlices, Integer numberOfReplica, Collection<String> createNodes) {
-    List<String> coreNames = new ArrayList<String>();
-    Map<String,Map<String,Integer>> sliceToNodeUrlsWithoutProtocolPartToNumberOfShardsRunningMapMap = new HashMap<String,Map<String,Integer>>();
-    List<String> nodeUrlWithoutProtocolPartForLiveNodes = new ArrayList<String>(
+    List<String> coreNames = new ArrayList<>();
+    Map<String,Map<String,Integer>> sliceToNodeUrlsWithoutProtocolPartToNumberOfShardsRunningMapMap = new HashMap<>();
+    List<String> nodeUrlWithoutProtocolPartForLiveNodes = new ArrayList<>(
         createNodes.size());
     for (String nodeName : createNodes) {
       String nodeUrlWithoutProtocolPart = nodeName.replaceAll("_", "/");
@@ -510,7 +510,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
     assertTrue("Wrong usage of testTemplage. createNodeListOption has to be " + CreateNodeListOptions.SEND + " when numberOfNodes and numberOfNodesToCreateOn are unequal", ((createNodeListOption == CreateNodeListOptions.SEND) || (numberOfNodes.intValue() == numberOfNodesToCreateOn.intValue())));
     
     Set<String> liveNodes = commonMocks(numberOfNodes);
-    List<String> createNodeList = new ArrayList<String>();
+    List<String> createNodeList = new ArrayList<>();
     int i = 0;
     for (String node : liveNodes) {
       if (i++ < numberOfNodesToCreateOn) {

@@ -137,7 +137,7 @@ public class DisMaxQParser extends QParser {
     //List<Query> boostQueries = SolrPluginUtils.parseQueryStrings(req, boostParams);
     boostQueries = null;
     if (boostParams != null && boostParams.length > 0) {
-      boostQueries = new ArrayList<Query>();
+      boostQueries = new ArrayList<>();
       for (String qs : boostParams) {
         if (qs.trim().length() == 0) continue;
         Query q = subQuery(qs, null).getQuery();

@@ -115,7 +115,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     Slice shard1 = clusterState.getSlice(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1);
     DocRouter.Range shard1Range = shard1.getRange() != null ? shard1.getRange() : router.fullRange();
 
-    List<DocRouter.Range> subRanges = new ArrayList<DocRouter.Range>();
+    List<DocRouter.Range> subRanges = new ArrayList<>();
     List<DocRouter.Range> ranges = router.partitionRange(4, shard1Range);
 
     // test with only one range
@@ -158,7 +158,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     final DocRouter router = clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION).getRouter();
     Slice shard1 = clusterState.getSlice(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1);
     DocRouter.Range shard1Range = shard1.getRange() != null ? shard1.getRange() : router.fullRange();
-    List<DocRouter.Range> subRanges = new ArrayList<DocRouter.Range>();
+    List<DocRouter.Range> subRanges = new ArrayList<>();
     if (usually())  {
       List<DocRouter.Range> ranges = router.partitionRange(4, shard1Range);
       // 75% of range goes to shard1_0 and the rest to shard1_1
@@ -185,7 +185,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
         int max = atLeast(random, 401);
         int sleep = atLeast(random, 25);
         log.info("SHARDSPLITTEST: Going to add " + max + " number of docs at 1 doc per " + sleep + "ms");
-        Set<String> deleted = new HashSet<String>();
+        Set<String> deleted = new HashSet<>();
         for (int id = 101; id < max; id++) {
           try {
             indexAndUpdateCount(router, ranges, docCounts, String.valueOf(id), id);
@@ -246,7 +246,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     int maxShardsPerNode = (((numShards * replicationFactor) / getCommonCloudSolrServer()
         .getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
 
-    HashMap<String, List<Integer>> collectionInfos = new HashMap<String, List<Integer>>();
+    HashMap<String, List<Integer>> collectionInfos = new HashMap<>();
     CloudSolrServer client = null;
     String shard_fld = "shard_s";
     try {
@@ -324,7 +324,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     int maxShardsPerNode = (((numShards * replicationFactor) / getCommonCloudSolrServer()
         .getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
 
-    HashMap<String, List<Integer>> collectionInfos = new HashMap<String, List<Integer>>();
+    HashMap<String, List<Integer>> collectionInfos = new HashMap<>();
     CloudSolrServer client = null;
     try {
       client = createCloudClient(null);
@@ -566,9 +566,9 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
     log.info("Actual docCount for shard1_0 = {}", shard10Count);
     log.info("Actual docCount for shard1_1 = {}", shard11Count);
-    Map<String, String> idVsVersion = new HashMap<String, String>();
-    Map<String, SolrDocument> shard10Docs = new HashMap<String, SolrDocument>();
-    Map<String, SolrDocument> shard11Docs = new HashMap<String, SolrDocument>();
+    Map<String, String> idVsVersion = new HashMap<>();
+    Map<String, SolrDocument> shard10Docs = new HashMap<>();
+    Map<String, SolrDocument> shard11Docs = new HashMap<>();
     for (int i = 0; i < response.getResults().size(); i++) {
       SolrDocument document = response.getResults().get(i);
       idVsVersion.put(document.getFieldValue("id").toString(), document.getFieldValue("_version_").toString());

@@ -141,7 +141,7 @@ public class TestSurrogates extends LuceneTestCase {
   // from there
   private void doTestSeekExists(Random r, List<Term> fieldTerms, IndexReader reader) throws IOException {
 
-    final Map<String,TermsEnum> tes = new HashMap<String,TermsEnum>();
+    final Map<String,TermsEnum> tes = new HashMap<>();
 
     // Test random seek to existing term, then enum:
     if (VERBOSE) {
@@ -204,7 +204,7 @@ public class TestSurrogates extends LuceneTestCase {
 
   private void doTestSeekDoesNotExist(Random r, int numField, List<Term> fieldTerms, Term[] fieldTermsArray, IndexReader reader) throws IOException {
 
-    final Map<String,TermsEnum> tes = new HashMap<String,TermsEnum>();
+    final Map<String,TermsEnum> tes = new HashMap<>();
 
     if (VERBOSE) {
       System.out.println("TEST: top random seeks");
@@ -297,13 +297,13 @@ public class TestSurrogates extends LuceneTestCase {
 
     int tc = 0;
 
-    List<Term> fieldTerms = new ArrayList<Term>();
+    List<Term> fieldTerms = new ArrayList<>();
 
     for(int f=0;f<numField;f++) {
       String field = "f" + f;
       final int numTerms = atLeast(200);
 
-      final Set<String> uniqueTerms = new HashSet<String>();
+      final Set<String> uniqueTerms = new HashSet<>();
 
       for(int i=0;i<numTerms;i++) {
         String term = getRandomString(random()) + "_ " + (tc++);

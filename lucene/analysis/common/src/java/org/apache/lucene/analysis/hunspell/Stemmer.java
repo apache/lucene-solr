@@ -84,7 +84,7 @@ final class Stemmer {
       word = scratchBuffer;
     }
     
-    List<CharsRef> stems = new ArrayList<CharsRef>();
+    List<CharsRef> stems = new ArrayList<>();
     IntsRef forms = dictionary.lookupWord(word, 0, length);
     if (forms != null) {
       // TODO: some forms should not be added, e.g. ONLYINCOMPOUND
@@ -109,7 +109,7 @@ final class Stemmer {
       return stems;
     }
     CharArraySet terms = new CharArraySet(Version.LUCENE_CURRENT, 8, dictionary.ignoreCase);
-    List<CharsRef> deduped = new ArrayList<CharsRef>();
+    List<CharsRef> deduped = new ArrayList<>();
     for (CharsRef s : stems) {
       if (!terms.contains(s)) {
         deduped.add(s);
@@ -158,7 +158,7 @@ final class Stemmer {
   private List<CharsRef> stem(char word[], int length, int previous, int prevFlag, int prefixFlag, int recursionDepth, boolean doPrefix, boolean doSuffix, boolean previousWasPrefix, boolean circumfix) {
     
     // TODO: allow this stuff to be reused by tokenfilter
-    List<CharsRef> stems = new ArrayList<CharsRef>();
+    List<CharsRef> stems = new ArrayList<>();
     
     if (doPrefix && dictionary.prefixes != null) {
       for (int i = length - 1; i >= 0; i--) {
@@ -323,7 +323,7 @@ final class Stemmer {
     condition >>>= 1;
     char append = (char) (affixReader.readShort() & 0xffff);
 
-    List<CharsRef> stems = new ArrayList<CharsRef>();
+    List<CharsRef> stems = new ArrayList<>();
 
     IntsRef forms = dictionary.lookupWord(strippedWord, 0, length);
     if (forms != null) {

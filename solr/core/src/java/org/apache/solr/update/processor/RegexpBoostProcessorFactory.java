@@ -33,7 +33,7 @@ import org.apache.solr.response.SolrQueryResponse;
 public class RegexpBoostProcessorFactory extends UpdateRequestProcessorFactory {
 
     private SolrParams params;
-    private final Map<Object, Object> sharedObjectCache = new HashMap<Object, Object>();
+    private final Map<Object, Object> sharedObjectCache = new HashMap<>();
 
     @Override
     public void init(@SuppressWarnings("rawtypes") final NamedList args) {

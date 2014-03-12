@@ -82,7 +82,7 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase implement
       }
       NamedList configDateFormats = (NamedList) initArgs.get(DATE_FORMATS);
       if (configDateFormats != null && configDateFormats.size() > 0) {
-        dateFormats = new HashSet<String>();
+        dateFormats = new HashSet<>();
         Iterator<Map.Entry> it = configDateFormats.iterator();
         while (it.hasNext()) {
           String format = (String) it.next().getValue();

@@ -245,7 +245,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
   public void testBuildShardUrls() throws Exception {
     // 2x3
     Integer numShards = 2;
-    List<Object> urls = new ArrayList<Object>();
+    List<Object> urls = new ArrayList<>();
     urls.add("shard1");
     urls.add("shard2");
     urls.add("shard3");
@@ -303,7 +303,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     // null shards 3x1
     numShards = null;
     
-    urls = new ArrayList<Object>();
+    urls = new ArrayList<>();
     urls.add("shard1");
     urls.add("shard2");
     urls.add("shard3");
@@ -318,7 +318,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     
     // 2x(2,3) off balance
     numShards = 2;
-    urls = new ArrayList<Object>();
+    urls = new ArrayList<>();
     urls.add("shard1");
     urls.add("shard2");
     urls.add("shard3");
@@ -328,7 +328,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
 
     assertEquals(shardUrls.toString(), 2, shardUrls.size());
     
-    Set<Integer> counts = new HashSet<Integer>();
+    Set<Integer> counts = new HashSet<>();
     counts.add(shardUrls.get(0).size());
     counts.add(shardUrls.get(1).size());
     
@@ -388,7 +388,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
         "--go-live"
     };
     args = prependInitialArgs(args);
-    List<String> argList = new ArrayList<String>();
+    List<String> argList = new ArrayList<>();
     getShardUrlArgs(argList);
     args = concat(args, argList.toArray(new String[0]));
     
@@ -418,7 +418,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
         "--go-live-threads", Integer.toString(random().nextInt(15) + 1)
     };
     args = prependInitialArgs(args);
-    argList = new ArrayList<String>();
+    argList = new ArrayList<>();
     getShardUrlArgs(argList);
     args = concat(args, argList.toArray(new String[0]));
     
@@ -608,7 +608,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     };
     args = prependInitialArgs(args);
 
-    argList = new ArrayList<String>();
+    argList = new ArrayList<>();
     getShardUrlArgs(argList, replicatedCollection);
     args = concat(args, argList.toArray(new String[0]));
     

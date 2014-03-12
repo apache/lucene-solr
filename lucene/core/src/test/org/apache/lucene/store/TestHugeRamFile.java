@@ -31,7 +31,7 @@ public class TestHugeRamFile extends LuceneTestCase {
    * buffers under maxint. */
   private static class DenseRAMFile extends RAMFile {
     private long capacity = 0;
-    private HashMap<Integer,byte[]> singleBuffers = new HashMap<Integer,byte[]>();
+    private HashMap<Integer,byte[]> singleBuffers = new HashMap<>();
     @Override
     protected byte[] newBuffer(int size) {
       capacity += size;

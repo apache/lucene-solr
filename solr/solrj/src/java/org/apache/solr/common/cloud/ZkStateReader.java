@@ -313,7 +313,7 @@ public class ZkStateReader {
                   List<String> liveNodes = zkClient.getChildren(
                       LIVE_NODES_ZKNODE, this, true);
                   log.info("Updating live nodes... ({})", liveNodes.size());
-                  Set<String> liveNodesSet = new HashSet<String>();
+                  Set<String> liveNodesSet = new HashSet<>();
                   liveNodesSet.addAll(liveNodes);
                   ClusterState clusterState = new ClusterState(
                       ZkStateReader.this.clusterState.getZkClusterStateVersion(),
@@ -340,7 +340,7 @@ public class ZkStateReader {
             
           }, true);
     
-      Set<String> liveNodeSet = new HashSet<String>();
+      Set<String> liveNodeSet = new HashSet<>();
       liveNodeSet.addAll(liveNodes);
       ClusterState clusterState = ClusterState.load(zkClient, liveNodeSet, ZkStateReader.this);
       this.clusterState = clusterState;
@@ -403,7 +403,7 @@ public class ZkStateReader {
       synchronized (getUpdateLock()) {
         List<String> liveNodes = zkClient.getChildren(LIVE_NODES_ZKNODE, null,
             true);
-        Set<String> liveNodesSet = new HashSet<String>();
+        Set<String> liveNodesSet = new HashSet<>();
         liveNodesSet.addAll(liveNodes);
         
         if (!onlyLiveNodes) {
@@ -439,7 +439,7 @@ public class ZkStateReader {
             try {
               List<String> liveNodes = zkClient.getChildren(LIVE_NODES_ZKNODE,
                   null, true);
-              Set<String> liveNodesSet = new HashSet<String>();
+              Set<String> liveNodesSet = new HashSet<>();
               liveNodesSet.addAll(liveNodes);
               
               if (!onlyLiveNodes) {
@@ -575,7 +575,7 @@ public class ZkStateReader {
     }
     
     Map<String,Replica> shardMap = replicas.getReplicasMap();
-    List<ZkCoreNodeProps> nodes = new ArrayList<ZkCoreNodeProps>(shardMap.size());
+    List<ZkCoreNodeProps> nodes = new ArrayList<>(shardMap.size());
     for (Entry<String,Replica> entry : shardMap.entrySet()) {
       ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(entry.getValue());
       

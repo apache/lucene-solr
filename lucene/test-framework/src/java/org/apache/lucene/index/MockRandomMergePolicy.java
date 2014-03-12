@@ -46,7 +46,7 @@ public class MockRandomMergePolicy extends MergePolicy {
 
     int numSegments = segmentInfos.size();
 
-    List<SegmentCommitInfo> segments = new ArrayList<SegmentCommitInfo>();
+    List<SegmentCommitInfo> segments = new ArrayList<>();
     final Collection<SegmentCommitInfo> merging = writer.get().getMergingSegments();
 
     for(SegmentCommitInfo sipc : segmentInfos) {
@@ -75,7 +75,7 @@ public class MockRandomMergePolicy extends MergePolicy {
        SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge)
     throws IOException {
 
-    final List<SegmentCommitInfo> eligibleSegments = new ArrayList<SegmentCommitInfo>();
+    final List<SegmentCommitInfo> eligibleSegments = new ArrayList<>();
     for(SegmentCommitInfo info : segmentInfos) {
       if (segmentsToMerge.containsKey(info)) {
         eligibleSegments.add(info);

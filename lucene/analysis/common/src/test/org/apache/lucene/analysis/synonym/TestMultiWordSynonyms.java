@@ -38,7 +38,7 @@ public class TestMultiWordSynonyms extends BaseTokenStreamFactoryTestCase {
    */
   @Deprecated
   public void testMultiWordSynonymsOld() throws IOException {
-    List<String> rules = new ArrayList<String>();
+    List<String> rules = new ArrayList<>();
     rules.add("a b c,d");
     SlowSynonymMap synMap = new SlowSynonymMap(true);
     SlowSynonymFilterFactory.parseRules(rules, synMap, "=>", ",", true, null);

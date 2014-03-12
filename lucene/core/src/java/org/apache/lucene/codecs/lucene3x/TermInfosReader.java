@@ -45,7 +45,7 @@ final class TermInfosReader implements Closeable {
   private final String segment;
   private final FieldInfos fieldInfos;
 
-  private final CloseableThreadLocal<ThreadResources> threadResources = new CloseableThreadLocal<ThreadResources>();
+  private final CloseableThreadLocal<ThreadResources> threadResources = new CloseableThreadLocal<>();
   private final SegmentTermEnum origEnum;
   private final long size;
 
@@ -89,7 +89,7 @@ final class TermInfosReader implements Closeable {
     }
   }
 
-  private final DoubleBarrelLRUCache<CloneableTerm,TermInfoAndOrd> termsCache = new DoubleBarrelLRUCache<CloneableTerm,TermInfoAndOrd>(DEFAULT_CACHE_SIZE);
+  private final DoubleBarrelLRUCache<CloneableTerm,TermInfoAndOrd> termsCache = new DoubleBarrelLRUCache<>(DEFAULT_CACHE_SIZE);
 
   /**
    * Per-thread resources managed by ThreadLocal

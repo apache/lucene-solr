@@ -39,7 +39,7 @@ public class TestDoubleMetaphoneFilterFactory extends BaseTokenStreamTestCase {
   }
 
   public void testSettingSizeAndInject() throws Exception {
-    Map<String,String> parameters = new HashMap<String,String>();
+    Map<String,String> parameters = new HashMap<>();
     parameters.put("inject", "false");
     parameters.put("maxCodeLength", "8");
     DoubleMetaphoneFilterFactory factory = new DoubleMetaphoneFilterFactory(parameters);

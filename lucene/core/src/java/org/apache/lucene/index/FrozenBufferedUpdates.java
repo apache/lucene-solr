@@ -83,7 +83,7 @@ class FrozenBufferedUpdates {
     // so that it maps to all fields it affects, sorted by their docUpto, and traverse
     // that Term only once, applying the update to all fields that still need to be
     // updated. 
-    List<NumericUpdate> allUpdates = new ArrayList<NumericUpdate>();
+    List<NumericUpdate> allUpdates = new ArrayList<>();
     int numericUpdatesSize = 0;
     for (LinkedHashMap<Term,NumericUpdate> fieldUpdates : deletes.numericUpdates.values()) {
       for (NumericUpdate update : fieldUpdates.values()) {

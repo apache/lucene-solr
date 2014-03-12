@@ -97,7 +97,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
   
   @Override
   public Fields get(int doc) throws IOException {
-    SortedMap<String,SimpleTVTerms> fields = new TreeMap<String,SimpleTVTerms>();
+    SortedMap<String,SimpleTVTerms> fields = new TreeMap<>();
     in.seek(offsets[doc]);
     readLine();
     assert StringHelper.startsWith(scratch, NUMFIELDS);
@@ -262,7 +262,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
       this.hasOffsets = hasOffsets;
       this.hasPositions = hasPositions;
       this.hasPayloads = hasPayloads;
-      terms = new TreeMap<BytesRef,SimpleTVPostings>();
+      terms = new TreeMap<>();
     }
     
     @Override

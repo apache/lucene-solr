@@ -61,8 +61,8 @@ class Lucene3xFields extends FieldsProducer {
   public final IndexInput proxStream;
   final private FieldInfos fieldInfos;
   private final SegmentInfo si;
-  final TreeMap<String,FieldInfo> fields = new TreeMap<String,FieldInfo>();
-  final Map<String,Terms> preTerms = new HashMap<String,Terms>();
+  final TreeMap<String,FieldInfo> fields = new TreeMap<>();
+  final Map<String,Terms> preTerms = new HashMap<>();
   private final Directory dir;
   private final IOContext context;
   private Directory cfsReader;

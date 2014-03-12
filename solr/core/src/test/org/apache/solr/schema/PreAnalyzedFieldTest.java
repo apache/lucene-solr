@@ -85,7 +85,7 @@ public class PreAnalyzedFieldTest extends SolrTestCaseJ4 {
   public void testValidSimple() {
     PreAnalyzedField paf = new PreAnalyzedField();
     // use Simple format
-    HashMap<String,String> args = new HashMap<String,String>();
+    HashMap<String,String> args = new HashMap<>();
     args.put(PreAnalyzedField.PARSER_IMPL, SimplePreAnalyzedParser.class.getName());
     paf.init(h.getCore().getLatestSchema(), args);
     PreAnalyzedParser parser = new SimplePreAnalyzedParser();
@@ -128,7 +128,7 @@ public class PreAnalyzedFieldTest extends SolrTestCaseJ4 {
   public void testParsers() {
     PreAnalyzedField paf = new PreAnalyzedField();
     // use Simple format
-    HashMap<String,String> args = new HashMap<String,String>();
+    HashMap<String,String> args = new HashMap<>();
     args.put(PreAnalyzedField.PARSER_IMPL, SimplePreAnalyzedParser.class.getName());
     paf.init(h.getCore().getLatestSchema(), args);
     try {

@@ -84,7 +84,7 @@ public final class MultiTerms extends Terms {
 
   @Override
   public TermsEnum intersect(CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
-    final List<MultiTermsEnum.TermsEnumIndex> termsEnums = new ArrayList<MultiTermsEnum.TermsEnumIndex>();
+    final List<MultiTermsEnum.TermsEnumIndex> termsEnums = new ArrayList<>();
     for(int i=0;i<subs.length;i++) {
       final TermsEnum termsEnum = subs[i].intersect(compiled, startTerm);
       if (termsEnum != null) {
@@ -102,7 +102,7 @@ public final class MultiTerms extends Terms {
   @Override
   public TermsEnum iterator(TermsEnum reuse) throws IOException {
 
-    final List<MultiTermsEnum.TermsEnumIndex> termsEnums = new ArrayList<MultiTermsEnum.TermsEnumIndex>();
+    final List<MultiTermsEnum.TermsEnumIndex> termsEnums = new ArrayList<>();
     for(int i=0;i<subs.length;i++) {
       final TermsEnum termsEnum = subs[i].iterator(null);
       if (termsEnum != null) {

@@ -39,7 +39,7 @@ public class TestMaxTermFrequency extends LuceneTestCase {
   Directory dir;
   IndexReader reader;
   /* expected maxTermFrequency values for our documents */
-  ArrayList<Integer> expected = new ArrayList<Integer>();
+  ArrayList<Integer> expected = new ArrayList<>();
   
   @Override
   public void setUp() throws Exception {
@@ -81,7 +81,7 @@ public class TestMaxTermFrequency extends LuceneTestCase {
    * puts the max-frequency term into expected, to be checked against the norm.
    */
   private String addValue() {
-    List<String> terms = new ArrayList<String>();
+    List<String> terms = new ArrayList<>();
     int maxCeiling = TestUtil.nextInt(random(), 0, 255);
     int max = 0;
     for (char ch = 'a'; ch <= 'z'; ch++) {

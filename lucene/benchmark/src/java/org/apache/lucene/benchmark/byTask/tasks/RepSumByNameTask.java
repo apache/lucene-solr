@@ -54,7 +54,7 @@ public class RepSumByNameTask extends ReportTask {
   protected Report reportSumByName(List<TaskStats> taskStats) {
     // aggregate by task name
     int reported = 0;
-    LinkedHashMap<String,TaskStats> p2 = new LinkedHashMap<String,TaskStats>();
+    LinkedHashMap<String,TaskStats> p2 = new LinkedHashMap<>();
     for (final TaskStats stat1: taskStats) {
       if (stat1.getElapsed()>=0) { // consider only tasks that ended
         reported++;

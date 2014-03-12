@@ -158,7 +158,7 @@ public class SyncStrategy {
       return true;
     }
     
-    List<String> syncWith = new ArrayList<String>();
+    List<String> syncWith = new ArrayList<>();
     for (ZkCoreNodeProps node : nodes) {
       syncWith.add(node.getCoreUrl());
     }

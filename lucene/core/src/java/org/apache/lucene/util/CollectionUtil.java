@@ -134,7 +134,7 @@ public final class CollectionUtil {
   public static <T> void introSort(List<T> list, Comparator<? super T> comp) {
     final int size = list.size();
     if (size <= 1) return;
-    new ListIntroSorter<T>(list, comp).sort(0, size);
+    new ListIntroSorter<>(list, comp).sort(0, size);
   }
   
   /**
@@ -160,7 +160,7 @@ public final class CollectionUtil {
   public static <T> void timSort(List<T> list, Comparator<? super T> comp) {
     final int size = list.size();
     if (size <= 1) return;
-    new ListTimSorter<T>(list, comp, list.size() / 64).sort(0, size);
+    new ListTimSorter<>(list, comp, list.size() / 64).sort(0, size);
   }
   
   /**

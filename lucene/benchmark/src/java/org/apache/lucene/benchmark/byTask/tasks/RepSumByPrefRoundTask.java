@@ -50,7 +50,7 @@ public class RepSumByPrefRoundTask extends RepSumByPrefTask {
   protected Report reportSumByPrefixRound(List<TaskStats> taskStats) {
     // aggregate by task name and by round
     int reported = 0;
-    LinkedHashMap<String,TaskStats> p2 = new LinkedHashMap<String,TaskStats>();
+    LinkedHashMap<String,TaskStats> p2 = new LinkedHashMap<>();
     for (final TaskStats stat1 : taskStats) {
       if (stat1.getElapsed()>=0 && stat1.getTask().getName().startsWith(prefix)) { // only ended tasks with proper name
         reported++;

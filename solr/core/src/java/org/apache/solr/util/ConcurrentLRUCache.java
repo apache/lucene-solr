@@ -64,7 +64,7 @@ public class ConcurrentLRUCache<K,V> {
     if (upperWaterMark < 1) throw new IllegalArgumentException("upperWaterMark must be > 0");
     if (lowerWaterMark >= upperWaterMark)
       throw new IllegalArgumentException("lowerWaterMark must be  < upperWaterMark");
-    map = new ConcurrentHashMap<Object, CacheEntry<K,V>>(initialSize);
+    map = new ConcurrentHashMap<>(initialSize);
     newThreadForCleanup = runNewThreadForCleanup;
     this.upperWaterMark = upperWaterMark;
     this.lowerWaterMark = lowerWaterMark;
@@ -106,7 +106,7 @@ public class ConcurrentLRUCache<K,V> {
 
   public V put(K key, V val) {
     if (val == null) return null;
-    CacheEntry<K,V> e = new CacheEntry<K,V>(key, val, stats.accessCounter.incrementAndGet());
+    CacheEntry<K,V> e = new CacheEntry<>(key, val, stats.accessCounter.incrementAndGet());
     CacheEntry<K,V> oldCacheEntry = map.put(key, e);
     int currentSize;
     if (oldCacheEntry == null) {
@@ -284,7 +284,7 @@ public class ConcurrentLRUCache<K,V> {
         wantToKeep = lowerWaterMark - numKept;
         wantToRemove = sz - lowerWaterMark - numRemoved;
 
-        PQueue<K,V> queue = new PQueue<K,V>(wantToRemove);
+        PQueue<K,V> queue = new PQueue<>(wantToRemove);
 
         for (int i=eSize-1; i>=0; i--) {
           CacheEntry<K,V> ce = eset[i];
@@ -408,10 +408,10 @@ public class ConcurrentLRUCache<K,V> {
    * @return a LinkedHashMap containing 'n' or less than 'n' entries
    */
   public Map<K, V> getOldestAccessedItems(int n) {
-    Map<K, V> result = new LinkedHashMap<K, V>();
+    Map<K, V> result = new LinkedHashMap<>();
     if (n <= 0)
       return result;
-    TreeSet<CacheEntry<K,V>> tree = new TreeSet<CacheEntry<K,V>>();
+    TreeSet<CacheEntry<K,V>> tree = new TreeSet<>();
     markAndSweepLock.lock();
     try {
       for (Map.Entry<Object, CacheEntry<K,V>> entry : map.entrySet()) {
@@ -436,10 +436,10 @@ public class ConcurrentLRUCache<K,V> {
   }
 
   public Map<K,V> getLatestAccessedItems(int n) {
-    Map<K,V> result = new LinkedHashMap<K,V>();
+    Map<K,V> result = new LinkedHashMap<>();
     if (n <= 0)
       return result;
-    TreeSet<CacheEntry<K,V>> tree = new TreeSet<CacheEntry<K,V>>();
+    TreeSet<CacheEntry<K,V>> tree = new TreeSet<>();
     // we need to grab the lock since we are changing lastAccessedCopy
     markAndSweepLock.lock();
     try {
@@ -587,7 +587,7 @@ public class ConcurrentLRUCache<K,V> {
     private boolean stop = false;
 
     public CleanupThread(ConcurrentLRUCache c) {
-      cache = new WeakReference<ConcurrentLRUCache>(c);
+      cache = new WeakReference<>(c);
     }
 
     @Override

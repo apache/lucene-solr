@@ -80,7 +80,7 @@ public class ToParentBlockJoinCollector extends Collector {
 
   // Maps each BlockJoinQuery instance to its "slot" in
   // joinScorers and in OneGroup's cached doc/scores/count:
-  private final Map<Query,Integer> joinQueryID = new HashMap<Query,Integer>();
+  private final Map<Query,Integer> joinQueryID = new HashMap<>();
   private final int numParentHits;
   private final FieldValueHitQueue<OneGroup> queue;
   private final FieldComparator[] comparators;
@@ -309,7 +309,7 @@ public class ToParentBlockJoinCollector extends Collector {
     }
     Arrays.fill(joinScorers, null);
 
-    Queue<Scorer> queue = new LinkedList<Scorer>();
+    Queue<Scorer> queue = new LinkedList<>();
     //System.out.println("\nqueue: add top scorer=" + scorer);
     queue.add(scorer);
     while ((scorer = queue.poll()) != null) {
@@ -446,7 +446,7 @@ public class ToParentBlockJoinCollector extends Collector {
 
       final TopDocs topDocs = collector.topDocs(withinGroupOffset, numDocsInGroup);
 
-      groups[groupIDX-offset] = new GroupDocs<Integer>(og.score,
+      groups[groupIDX-offset] = new GroupDocs<>(og.score,
                                                        topDocs.getMaxScore(),
                                                        numChildDocs,
                                                        topDocs.scoreDocs,
@@ -454,7 +454,7 @@ public class ToParentBlockJoinCollector extends Collector {
                                                        groupSortValues);
     }
 
-    return new TopGroups<Integer>(new TopGroups<Integer>(sort.getSort(),
+    return new TopGroups<>(new TopGroups<>(sort.getSort(),
                                                          withinGroupSort == null ? null : withinGroupSort.getSort(),
                                                          0, totalGroupedHitCount, groups, maxScore),
                                   totalHitCount);

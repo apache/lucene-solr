@@ -328,7 +328,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
   public static void createPostings() throws IOException {
     totalPostings = 0;
     totalPayloadBytes = 0;
-    fields = new TreeMap<String,Map<BytesRef,Long>>();
+    fields = new TreeMap<>();
 
     final int numFields = TestUtil.nextInt(random(), 1, 5);
     if (VERBOSE) {
@@ -349,9 +349,9 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
                                                 null, DocValuesType.NUMERIC, null);
       fieldUpto++;
 
-      Map<BytesRef,Long> postings = new TreeMap<BytesRef,Long>();
+      Map<BytesRef,Long> postings = new TreeMap<>();
       fields.put(field, postings);
-      Set<String> seenTerms = new HashSet<String>();
+      Set<String> seenTerms = new HashSet<>();
 
       int numTerms;
       if (random().nextInt(10) == 7) {
@@ -409,7 +409,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
       }
     }
 
-    allTerms = new ArrayList<FieldAndTerm>();
+    allTerms = new ArrayList<>();
     for(Map.Entry<String,Map<BytesRef,Long>> fieldEnt : fields.entrySet()) {
       String field = fieldEnt.getKey();
       for(Map.Entry<BytesRef,Long> termEnt : fieldEnt.getValue().entrySet()) {
@@ -956,8 +956,8 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
     ThreadState threadState = new ThreadState();
 
     // Test random terms/fields:
-    List<TermState> termStates = new ArrayList<TermState>();
-    List<FieldAndTerm> termStateTerms = new ArrayList<FieldAndTerm>();
+    List<TermState> termStates = new ArrayList<>();
+    List<FieldAndTerm> termStateTerms = new ArrayList<>();
     
     Collections.shuffle(allTerms, random());
     int upto = 0;

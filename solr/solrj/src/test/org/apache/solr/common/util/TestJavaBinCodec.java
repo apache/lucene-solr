@@ -58,7 +58,7 @@ private final String BIN_FILE_LOCATION = "./solr/solrj/src/test-files/solrj/java
   }
 
   private List<Object> generateAllDataTypes() {
-    List<Object> types = new ArrayList<Object>();
+    List<Object> types = new ArrayList<>();
 
     types.add(null); //NULL
     types.add(true);
@@ -78,7 +78,7 @@ private final String BIN_FILE_LOCATION = "./solr/solrj/src/test-files/solrj/java
     types.add((float) 6);
     types.add(new Date(0));
 
-    Map<Integer, Integer> map = new HashMap<Integer, Integer>();
+    Map<Integer, Integer> map = new HashMap<>();
     map.put(1, 2);
     types.add(map);
 
@@ -127,7 +127,7 @@ private final String BIN_FILE_LOCATION = "./solr/solrj/src/test-files/solrj/java
     simpleOrderedMap.add("bar", "barbar");
     types.add(simpleOrderedMap);
 
-    NamedList<String> nl = new NamedList<String>();
+    NamedList<String> nl = new NamedList<>();
     nl.add("foo", "barbar");
     types.add(nl);
 

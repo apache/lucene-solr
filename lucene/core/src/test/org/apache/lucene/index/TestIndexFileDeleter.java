@@ -141,9 +141,9 @@ public class TestIndexFileDeleter extends LuceneTestCase {
   }
 
   private static Set<String> difFiles(String[] files1, String[] files2) {
-    Set<String> set1 = new HashSet<String>();
-    Set<String> set2 = new HashSet<String>();
-    Set<String> extra = new HashSet<String>();
+    Set<String> set1 = new HashSet<>();
+    Set<String> set2 = new HashSet<>();
+    Set<String> extra = new HashSet<>();
     
     for (int x=0; x < files1.length; x++) {
       set1.add(files1[x]);

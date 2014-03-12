@@ -88,7 +88,7 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
     final RandomIndexWriter w = new RandomIndexWriter(random(), d);
     w.w.getConfig().setMaxBufferedDocs(17);
     final int numDocs = atLeast(100);
-    final Set<String> aDocs = new HashSet<String>();
+    final Set<String> aDocs = new HashSet<>();
     for(int i=0;i<numDocs;i++) {
       final Document doc = new Document();
       final String v;

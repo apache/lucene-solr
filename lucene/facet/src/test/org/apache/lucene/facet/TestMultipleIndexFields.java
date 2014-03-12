@@ -120,7 +120,7 @@ public class TestMultipleIndexFields extends FacetTestCase {
 
     FacetsCollector sfc = performSearch(tr, ir, searcher);
 
-    Map<String,Facets> facetsMap = new HashMap<String,Facets>();
+    Map<String,Facets> facetsMap = new HashMap<>();
     facetsMap.put("Author", getTaxonomyFacetCounts(tr, config, sfc, "$author"));
     Facets facets = new MultiFacets(facetsMap, getTaxonomyFacetCounts(tr, config, sfc));
 
@@ -160,7 +160,7 @@ public class TestMultipleIndexFields extends FacetTestCase {
 
     FacetsCollector sfc = performSearch(tr, ir, searcher);
 
-    Map<String,Facets> facetsMap = new HashMap<String,Facets>();
+    Map<String,Facets> facetsMap = new HashMap<>();
     Facets facets2 = getTaxonomyFacetCounts(tr, config, sfc, "$music");
     facetsMap.put("Band", facets2);
     facetsMap.put("Composer", facets2);
@@ -213,7 +213,7 @@ public class TestMultipleIndexFields extends FacetTestCase {
 
     FacetsCollector sfc = performSearch(tr, ir, searcher);
 
-    Map<String,Facets> facetsMap = new HashMap<String,Facets>();
+    Map<String,Facets> facetsMap = new HashMap<>();
     facetsMap.put("Band", getTaxonomyFacetCounts(tr, config, sfc, "$bands"));
     facetsMap.put("Composer", getTaxonomyFacetCounts(tr, config, sfc, "$composers"));
     Facets facets = new MultiFacets(facetsMap, getTaxonomyFacetCounts(tr, config, sfc));
@@ -255,7 +255,7 @@ public class TestMultipleIndexFields extends FacetTestCase {
 
     FacetsCollector sfc = performSearch(tr, ir, searcher);
 
-    Map<String,Facets> facetsMap = new HashMap<String,Facets>();
+    Map<String,Facets> facetsMap = new HashMap<>();
     Facets facets2 = getTaxonomyFacetCounts(tr, config, sfc, "$music");
     facetsMap.put("Band", facets2);
     facetsMap.put("Composer", facets2);

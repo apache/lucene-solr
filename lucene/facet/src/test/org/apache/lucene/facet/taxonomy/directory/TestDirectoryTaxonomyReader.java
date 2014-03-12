@@ -504,7 +504,7 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
     assertEquals(TaxonomyReader.INVALID_ORDINAL, it.next());
 
     // root's children
-    Set<String> roots = new HashSet<String>(Arrays.asList("a", "b", "c"));
+    Set<String> roots = new HashSet<>(Arrays.asList("a", "b", "c"));
     it = taxoReader.getChildren(TaxonomyReader.ROOT_ORDINAL);
     while (!roots.isEmpty()) {
       FacetLabel root = taxoReader.getPath(it.next());

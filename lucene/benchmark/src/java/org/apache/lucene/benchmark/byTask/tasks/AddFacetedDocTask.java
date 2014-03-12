@@ -74,7 +74,7 @@ public class AddFacetedDocTask extends AddDocTask {
   @Override
   public int doLogic() throws Exception {
     if (config != null) {
-      List<FacetField> facets = new ArrayList<FacetField>();
+      List<FacetField> facets = new ArrayList<>();
       getRunData().getFacetSource().getNextFacets(facets);
       for(FacetField ff : facets) {
         doc.add(ff);

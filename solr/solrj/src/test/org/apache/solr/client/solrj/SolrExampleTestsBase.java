@@ -202,7 +202,7 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
     assertNumFound("*:*", 3); // make sure it got in
     
     // should be able to handle multiple delete commands in a single go
-    List<String> ids = new ArrayList<String>();
+    List<String> ids = new ArrayList<>();
     for (SolrInputDocument d : doc) {
       ids.add(d.getFieldValue("id").toString());
     }

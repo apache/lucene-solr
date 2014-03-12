@@ -647,7 +647,7 @@ public final class ArrayUtil {
    */
   public static <T> void introSort(T[] a, int fromIndex, int toIndex, Comparator<? super T> comp) {
     if (toIndex-fromIndex <= 1) return;
-    new ArrayIntroSorter<T>(a, comp).sort(fromIndex, toIndex);
+    new ArrayIntroSorter<>(a, comp).sort(fromIndex, toIndex);
   }
   
   /**
@@ -687,7 +687,7 @@ public final class ArrayUtil {
    */
   public static <T> void timSort(T[] a, int fromIndex, int toIndex, Comparator<? super T> comp) {
     if (toIndex-fromIndex <= 1) return;
-    new ArrayTimSorter<T>(a, comp, a.length / 64).sort(fromIndex, toIndex);
+    new ArrayTimSorter<>(a, comp, a.length / 64).sort(fromIndex, toIndex);
   }
   
   /**

@@ -97,7 +97,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
   // produce DocsEnum on demand
   private final PostingsReaderBase postingsReader;
 
-  private final TreeMap<String,FieldReader> fields = new TreeMap<String,FieldReader>();
+  private final TreeMap<String,FieldReader> fields = new TreeMap<>();
 
   /** File offset where the directory starts in the terms file. */
   private long dirOffset;
@@ -481,7 +481,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
         final IndexInput clone = indexIn.clone();
         //System.out.println("start=" + indexStartFP + " field=" + fieldInfo.name);
         clone.seek(indexStartFP);
-        index = new FST<BytesRef>(clone, ByteSequenceOutputs.getSingleton());
+        index = new FST<>(clone, ByteSequenceOutputs.getSingleton());
         
         /*
         if (false) {
@@ -860,7 +860,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
           stack[idx] = new Frame(idx);
         }
         for(int arcIdx=0;arcIdx<arcs.length;arcIdx++) {
-          arcs[arcIdx] = new FST.Arc<BytesRef>();
+          arcs[arcIdx] = new FST.Arc<>();
         }
 
         if (index == null) {
@@ -929,7 +929,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
             new FST.Arc[ArrayUtil.oversize(1+ord, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
           System.arraycopy(arcs, 0, next, 0, arcs.length);
           for(int arcOrd=arcs.length;arcOrd<next.length;arcOrd++) {
-            next[arcOrd] = new FST.Arc<BytesRef>();
+            next[arcOrd] = new FST.Arc<>();
           }
           arcs = next;
         }
@@ -1316,7 +1316,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
         // Init w/ root block; don't use index since it may
         // not (and need not) have been loaded
         for(int arcIdx=0;arcIdx<arcs.length;arcIdx++) {
-          arcs[arcIdx] = new FST.Arc<BytesRef>();
+          arcs[arcIdx] = new FST.Arc<>();
         }
 
         currentFrame = staticFrame;
@@ -1458,7 +1458,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
               new FST.Arc[ArrayUtil.oversize(1+ord, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
           System.arraycopy(arcs, 0, next, 0, arcs.length);
           for(int arcOrd=arcs.length;arcOrd<next.length;arcOrd++) {
-            next[arcOrd] = new FST.Arc<BytesRef>();
+            next[arcOrd] = new FST.Arc<>();
           }
           arcs = next;
         }

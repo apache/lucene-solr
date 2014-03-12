@@ -235,8 +235,8 @@ public class LicenseCheckTask extends Task {
     }
     
     // Get the expected license path base from the mapper and search for license files.
-    Map<File, LicenseType> foundLicenses = new LinkedHashMap<File, LicenseType>();
-    List<File> expectedLocations = new ArrayList<File>();
+    Map<File, LicenseType> foundLicenses = new LinkedHashMap<>();
+    List<File> expectedLocations = new ArrayList<>();
 outer:
     for (String mappedPath : licenseMapper.mapFileName(jarFile.getName())) {
       for (LicenseType licenseType : LicenseType.values()) {

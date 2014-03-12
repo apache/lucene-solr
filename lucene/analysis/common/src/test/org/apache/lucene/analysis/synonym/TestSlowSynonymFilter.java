@@ -333,7 +333,7 @@ public class TestSlowSynonymFilter extends BaseTokenStreamTestCase {
   @Deprecated
   private List<Token> tokens(String str) {
     String[] arr = str.split(" ");
-    List<Token> result = new ArrayList<Token>();
+    List<Token> result = new ArrayList<>();
     for (int i=0; i<arr.length; i++) {
       String[] toks = arr[i].split("/");
       String[] params = toks[0].split(",");

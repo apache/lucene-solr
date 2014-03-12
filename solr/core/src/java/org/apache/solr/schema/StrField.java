@@ -45,7 +45,7 @@ public class StrField extends PrimitiveFieldType {
   public List<IndexableField> createFields(SchemaField field, Object value,
       float boost) {
     if (field.hasDocValues()) {
-      List<IndexableField> fields = new ArrayList<IndexableField>();
+      List<IndexableField> fields = new ArrayList<>();
       fields.add(createField(field, value, boost));
       final BytesRef bytes = new BytesRef(value.toString());
       if (field.multiValued()) {

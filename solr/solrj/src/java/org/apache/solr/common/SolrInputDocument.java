@@ -42,7 +42,7 @@ public class SolrInputDocument implements Map<String,SolrInputField>, Iterable<S
   private List<SolrInputDocument> _childDocuments;
   
   public SolrInputDocument() {
-    _fields = new LinkedHashMap<String,SolrInputField>();
+    _fields = new LinkedHashMap<>();
   }
   
   public SolrInputDocument(Map<String,SolrInputField> fields) {
@@ -208,7 +208,7 @@ public class SolrInputDocument implements Map<String,SolrInputField>, Iterable<S
     clone._documentBoost = _documentBoost;
 
     if (_childDocuments != null) {
-      clone._childDocuments = new ArrayList<SolrInputDocument>(_childDocuments.size());
+      clone._childDocuments = new ArrayList<>(_childDocuments.size());
       for (SolrInputDocument child : _childDocuments) {
         clone._childDocuments.add(child.deepCopy());
       }
@@ -322,7 +322,7 @@ public class SolrInputDocument implements Map<String,SolrInputField>, Iterable<S
 
   public void addChildDocument(SolrInputDocument child) {
    if (_childDocuments == null) {
-     _childDocuments = new ArrayList<SolrInputDocument>();
+     _childDocuments = new ArrayList<>();
    }
     _childDocuments.add(child);
   }

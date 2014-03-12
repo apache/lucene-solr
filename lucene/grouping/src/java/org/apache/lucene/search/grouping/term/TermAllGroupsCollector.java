@@ -66,7 +66,7 @@ public class TermAllGroupsCollector extends AbstractAllGroupsCollector<BytesRef>
    */
   public TermAllGroupsCollector(String groupField, int initialSize) {
     ordSet = new SentinelIntSet(initialSize, -2);
-    groups = new ArrayList<BytesRef>(initialSize);
+    groups = new ArrayList<>(initialSize);
     this.groupField = groupField;
   }
 

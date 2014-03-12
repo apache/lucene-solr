@@ -69,14 +69,14 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
     super(args);
     assureMatchVersion();
     if (luceneMatchVersion.onOrAfter(Version.LUCENE_34)) {
-      delegator = new FSTSynonymFilterFactory(new HashMap<String,String>(getOriginalArgs()));
+      delegator = new FSTSynonymFilterFactory(new HashMap<>(getOriginalArgs()));
     } else {
       // check if you use the new optional arg "format". this makes no sense for the old one, 
       // as its wired to solr's synonyms format only.
       if (args.containsKey("format") && !args.get("format").equals("solr")) {
         throw new IllegalArgumentException("You must specify luceneMatchVersion >= 3.4 to use alternate synonyms formats");
       }
-      delegator = new SlowSynonymFilterFactory(new HashMap<String,String>(getOriginalArgs()));
+      delegator = new SlowSynonymFilterFactory(new HashMap<>(getOriginalArgs()));
     }
   }
 

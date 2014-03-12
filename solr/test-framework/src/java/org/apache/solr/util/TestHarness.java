@@ -388,7 +388,7 @@ public class TestHarness extends BaseTestHarness {
     public String qtype = null;
     public int start = 0;
     public int limit = 1000;
-    public Map<String,String> args = new HashMap<String,String>();
+    public Map<String,String> args = new HashMap<>();
     public LocalRequestFactory() {
     }
     /**
@@ -423,7 +423,7 @@ public class TestHarness extends BaseTestHarness {
       }
       Map.Entry<String, String> [] entries = new NamedListEntry[q.length / 2];
       for (int i = 0; i < q.length; i += 2) {
-        entries[i/2] = new NamedListEntry<String>(q[i], q[i+1]);
+        entries[i/2] = new NamedListEntry<>(q[i], q[i+1]);
       }
       return new LocalSolrQueryRequest(TestHarness.this.getCore(), new NamedList(entries));
     }

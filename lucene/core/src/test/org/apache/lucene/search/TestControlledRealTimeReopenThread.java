@@ -65,7 +65,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
   private ControlledRealTimeReopenThread<IndexSearcher> nrtDeletesThread;
   private ControlledRealTimeReopenThread<IndexSearcher> nrtNoDeletesThread;
 
-  private final ThreadLocal<Long> lastGens = new ThreadLocal<Long>();
+  private final ThreadLocal<Long> lastGens = new ThreadLocal<>();
   private boolean warmCalled;
 
   public void testControlledRealTimeReopenThread() throws Exception {
@@ -232,13 +232,13 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
     nrtNoDeletes = new SearcherManager(writer, false, sf);
     nrtDeletes = new SearcherManager(writer, true, sf);
                          
-    nrtDeletesThread = new ControlledRealTimeReopenThread<IndexSearcher>(genWriter, nrtDeletes, maxReopenSec, minReopenSec);
+    nrtDeletesThread = new ControlledRealTimeReopenThread<>(genWriter, nrtDeletes, maxReopenSec, minReopenSec);
     nrtDeletesThread.setName("NRTDeletes Reopen Thread");
     nrtDeletesThread.setPriority(Math.min(Thread.currentThread().getPriority()+2, Thread.MAX_PRIORITY));
     nrtDeletesThread.setDaemon(true);
     nrtDeletesThread.start();
 
-    nrtNoDeletesThread = new ControlledRealTimeReopenThread<IndexSearcher>(genWriter, nrtNoDeletes, maxReopenSec, minReopenSec);
+    nrtNoDeletesThread = new ControlledRealTimeReopenThread<>(genWriter, nrtNoDeletes, maxReopenSec, minReopenSec);
     nrtNoDeletesThread.setName("NRTNoDeletes Reopen Thread");
     nrtNoDeletesThread.setPriority(Math.min(Thread.currentThread().getPriority()+2, Thread.MAX_PRIORITY));
     nrtNoDeletesThread.setDaemon(true);
@@ -343,7 +343,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
     } finally {
       manager.release(searcher);
     }
-    final ControlledRealTimeReopenThread<IndexSearcher> thread = new ControlledRealTimeReopenThread<IndexSearcher>(writer, manager, 0.01, 0.01);
+    final ControlledRealTimeReopenThread<IndexSearcher> thread = new ControlledRealTimeReopenThread<>(writer, manager, 0.01, 0.01);
     thread.start(); // start reopening
     if (VERBOSE) {
       System.out.println("waiting now for generation " + lastGen);
@@ -482,12 +482,12 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
     SearcherManager sm = new SearcherManager(iw, true, new SearcherFactory());
     final TrackingIndexWriter tiw = new TrackingIndexWriter(iw);
     ControlledRealTimeReopenThread<IndexSearcher> controlledRealTimeReopenThread =
-      new ControlledRealTimeReopenThread<IndexSearcher>(tiw, sm, maxStaleSecs, 0);
+      new ControlledRealTimeReopenThread<>(tiw, sm, maxStaleSecs, 0);
 
     controlledRealTimeReopenThread.setDaemon(true);
     controlledRealTimeReopenThread.start();
 
-    List<Thread> commitThreads = new ArrayList<Thread>();
+    List<Thread> commitThreads = new ArrayList<>();
 
     for (int i = 0; i < 500; i++) {
       if (i > 0 && i % 50 == 0) {

@@ -43,7 +43,7 @@ public class MappingCharFilter extends BaseCharFilter {
   private final FST<CharsRef> map;
   private final FST.BytesReader fstReader;
   private final RollingCharBuffer buffer = new RollingCharBuffer();
-  private final FST.Arc<CharsRef> scratchArc = new FST.Arc<CharsRef>();
+  private final FST.Arc<CharsRef> scratchArc = new FST.Arc<>();
   private final Map<Character,FST.Arc<CharsRef>> cachedRootArcs;
 
   private CharsRef replacement;

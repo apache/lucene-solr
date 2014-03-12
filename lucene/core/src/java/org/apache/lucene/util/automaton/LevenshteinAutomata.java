@@ -63,7 +63,7 @@ public class LevenshteinAutomata {
     this.alphaMax = alphaMax;
 
     // calculate the alphabet
-    SortedSet<Integer> set = new TreeSet<Integer>();
+    SortedSet<Integer> set = new TreeSet<>();
     for (int i = 0; i < word.length; i++) {
       int v = word[i];
       if (v > alphaMax) {

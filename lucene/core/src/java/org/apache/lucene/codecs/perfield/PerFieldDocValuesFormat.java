@@ -92,8 +92,8 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
     
   private class FieldsWriter extends DocValuesConsumer {
 
-    private final Map<DocValuesFormat,ConsumerAndSuffix> formats = new HashMap<DocValuesFormat,ConsumerAndSuffix>();
-    private final Map<String,Integer> suffixes = new HashMap<String,Integer>();
+    private final Map<DocValuesFormat,ConsumerAndSuffix> formats = new HashMap<>();
+    private final Map<String,Integer> suffixes = new HashMap<>();
     
     private final SegmentWriteState segmentWriteState;
     
@@ -209,8 +209,8 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
 
   private class FieldsReader extends DocValuesProducer {
 
-    private final Map<String,DocValuesProducer> fields = new TreeMap<String,DocValuesProducer>();
-    private final Map<String,DocValuesProducer> formats = new HashMap<String,DocValuesProducer>();
+    private final Map<String,DocValuesProducer> fields = new TreeMap<>();
+    private final Map<String,DocValuesProducer> formats = new HashMap<>();
 
     public FieldsReader(final SegmentReadState readState) throws IOException {
 
@@ -245,7 +245,7 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
 
     private FieldsReader(FieldsReader other) {
 
-      Map<DocValuesProducer,DocValuesProducer> oldToNew = new IdentityHashMap<DocValuesProducer,DocValuesProducer>();
+      Map<DocValuesProducer,DocValuesProducer> oldToNew = new IdentityHashMap<>();
       // First clone all formats
       for(Map.Entry<String,DocValuesProducer> ent : other.formats.entrySet()) {
         DocValuesProducer values = ent.getValue();

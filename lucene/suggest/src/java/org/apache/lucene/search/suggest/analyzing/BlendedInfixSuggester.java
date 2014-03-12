@@ -148,7 +148,7 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
     // TODO: maybe just stored fields?  they compress...
     BinaryDocValues payloadsDV = MultiDocValues.getBinaryValues(searcher.getIndexReader(), "payloads");
 
-    TreeSet<Lookup.LookupResult> results = new TreeSet<Lookup.LookupResult>(LOOKUP_COMP);
+    TreeSet<Lookup.LookupResult> results = new TreeSet<>(LOOKUP_COMP);
 
     // we reduce the num to the one initially requested
     int actualNum = num / numFactor;
@@ -190,7 +190,7 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
       boundedTreeAdd(results, result, actualNum);
     }
 
-    return new ArrayList<Lookup.LookupResult>(results.descendingSet());
+    return new ArrayList<>(results.descendingSet());
   }
 
   /**

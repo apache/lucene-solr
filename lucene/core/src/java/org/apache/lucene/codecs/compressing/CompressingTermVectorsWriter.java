@@ -93,7 +93,7 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
     final int posStart, offStart, payStart;
     DocData(int numFields, int posStart, int offStart, int payStart) {
       this.numFields = numFields;
-      this.fields = new ArrayDeque<FieldData>(numFields);
+      this.fields = new ArrayDeque<>(numFields);
       this.posStart = posStart;
       this.offStart = offStart;
       this.payStart = payStart;
@@ -215,7 +215,7 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
     this.chunkSize = chunkSize;
 
     numDocs = 0;
-    pendingDocs = new ArrayDeque<DocData>();
+    pendingDocs = new ArrayDeque<>();
     termSuffixes = new GrowableByteArrayDataOutput(ArrayUtil.oversize(chunkSize, 1));
     payloadBytes = new GrowableByteArrayDataOutput(ArrayUtil.oversize(1, 1));
     lastTerm = new BytesRef(ArrayUtil.oversize(30, 1));
@@ -394,7 +394,7 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
 
   /** Returns a sorted array containing unique field numbers */
   private int[] flushFieldNums() throws IOException {
-    SortedSet<Integer> fieldNums = new TreeSet<Integer>();
+    SortedSet<Integer> fieldNums = new TreeSet<>();
     for (DocData dd : pendingDocs) {
       for (FieldData fd : dd.fields) {
         fieldNums.add(fd.fieldNum);

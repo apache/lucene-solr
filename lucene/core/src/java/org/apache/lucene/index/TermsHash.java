@@ -96,11 +96,11 @@ final class TermsHash extends InvertedDocConsumer {
 
   @Override
   void flush(Map<String,InvertedDocConsumerPerField> fieldsToFlush, final SegmentWriteState state) throws IOException {
-    Map<String,TermsHashConsumerPerField> childFields = new HashMap<String,TermsHashConsumerPerField>();
+    Map<String,TermsHashConsumerPerField> childFields = new HashMap<>();
     Map<String,InvertedDocConsumerPerField> nextChildFields;
 
     if (nextTermsHash != null) {
-      nextChildFields = new HashMap<String,InvertedDocConsumerPerField>();
+      nextChildFields = new HashMap<>();
     } else {
       nextChildFields = null;
     }

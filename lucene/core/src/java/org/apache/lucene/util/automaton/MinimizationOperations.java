@@ -83,13 +83,13 @@ final public class MinimizationOperations {
     final int[] block = new int[statesLen];
     final StateList[][] active = new StateList[statesLen][sigmaLen];
     final StateListNode[][] active2 = new StateListNode[statesLen][sigmaLen];
-    final LinkedList<IntPair> pending = new LinkedList<IntPair>();
+    final LinkedList<IntPair> pending = new LinkedList<>();
     final BitSet pending2 = new BitSet(sigmaLen*statesLen);
     final BitSet split = new BitSet(statesLen), 
       refine = new BitSet(statesLen), refine2 = new BitSet(statesLen);
     for (int q = 0; q < statesLen; q++) {
-      splitblock[q] = new ArrayList<State>();
-      partition[q] = new HashSet<State>();
+      splitblock[q] = new ArrayList<>();
+      partition[q] = new HashSet<>();
       for (int x = 0; x < sigmaLen; x++) {
         active[q][x] = new StateList();
       }
@@ -104,7 +104,7 @@ final public class MinimizationOperations {
         final ArrayList<State>[] r =
           reverse[qq.step(sigma[x]).number];
         if (r[x] == null)
-          r[x] = new ArrayList<State>();
+          r[x] = new ArrayList<>();
         r[x].add(qq);
       }
     }

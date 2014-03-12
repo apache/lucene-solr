@@ -102,7 +102,7 @@ public class WFSTCompletionLookup extends Lookup {
     IntsRef scratchInts = new IntsRef();
     BytesRef previous = null;
     PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
-    Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, outputs);
+    Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
     while ((scratch = iter.next()) != null) {
       long cost = iter.weight();
       
@@ -134,7 +134,7 @@ public class WFSTCompletionLookup extends Lookup {
   @Override
   public boolean load(DataInput input) throws IOException {
     count = input.readVLong();
-    this.fst = new FST<Long>(input, PositiveIntOutputs.getSingleton());
+    this.fst = new FST<>(input, PositiveIntOutputs.getSingleton());
     return true;
   }
 
@@ -152,7 +152,7 @@ public class WFSTCompletionLookup extends Lookup {
 
     BytesRef scratch = new BytesRef(key);
     int prefixLength = scratch.length;
-    Arc<Long> arc = new Arc<Long>();
+    Arc<Long> arc = new Arc<>();
     
     // match the prefix portion exactly
     Long prefixOutput = null;
@@ -161,10 +161,10 @@ public class WFSTCompletionLookup extends Lookup {
     } catch (IOException bogus) { throw new RuntimeException(bogus); }
     
     if (prefixOutput == null) {
-      return Collections.<LookupResult>emptyList();
+      return Collections.emptyList();
     }
     
-    List<LookupResult> results = new ArrayList<LookupResult>(num);
+    List<LookupResult> results = new ArrayList<>(num);
     CharsRef spare = new CharsRef();
     if (exactFirst && arc.isFinal()) {
       spare.grow(scratch.length);
@@ -225,7 +225,7 @@ public class WFSTCompletionLookup extends Lookup {
     if (fst == null) {
       return null;
     }
-    Arc<Long> arc = new Arc<Long>();
+    Arc<Long> arc = new Arc<>();
     Long result = null;
     try {
       result = lookupPrefix(new BytesRef(key), arc);

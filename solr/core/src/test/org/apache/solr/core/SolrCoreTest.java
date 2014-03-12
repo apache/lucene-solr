@@ -172,7 +172,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     final int LOOP = 100;
     final int MT = 16;
     ExecutorService service = Executors.newFixedThreadPool(MT, new DefaultSolrThreadFactory("refCountMT"));
-    List<Callable<Integer>> callees = new ArrayList<Callable<Integer>>(MT);
+    List<Callable<Integer>> callees = new ArrayList<>(MT);
     final CoreContainer cores = h.getCoreContainer();
     for (int i = 0; i < MT; ++i) {
       Callable<Integer> call = new Callable<Integer>() {

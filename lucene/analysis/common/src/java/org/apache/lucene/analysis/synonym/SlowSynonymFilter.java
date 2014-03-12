@@ -102,7 +102,7 @@ final class SlowSynonymFilter extends TokenFilter {
         firstTok = cloneAttributes();
       // OK, we matched a token, so find the longest match.
 
-      matched = new LinkedList<AttributeSource>();
+      matched = new LinkedList<>();
 
       result = match(result);
 
@@ -113,7 +113,7 @@ final class SlowSynonymFilter extends TokenFilter {
       }
 
       // reuse, or create new one each time?
-      ArrayList<AttributeSource> generated = new ArrayList<AttributeSource>(result.synonyms.length + matched.size() + 1);
+      ArrayList<AttributeSource> generated = new ArrayList<>(result.synonyms.length + matched.size() + 1);
 
       //
       // there was a match... let's generate the new tokens, merging
@@ -208,7 +208,7 @@ final class SlowSynonymFilter extends TokenFilter {
   }
 
   private void pushTok(AttributeSource t) {
-    if (buffer==null) buffer=new LinkedList<AttributeSource>();
+    if (buffer==null) buffer=new LinkedList<>();
     buffer.addFirst(t);
   }
 

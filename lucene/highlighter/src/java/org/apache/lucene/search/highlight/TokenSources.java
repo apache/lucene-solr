@@ -258,7 +258,7 @@ public class TokenSources {
           // tokens NOT stored with positions or not guaranteed contiguous - must
           // add to list and sort later
           if (unsortedTokens == null) {
-            unsortedTokens = new ArrayList<Token>();
+            unsortedTokens = new ArrayList<>();
           }
           unsortedTokens.add(token);
         }

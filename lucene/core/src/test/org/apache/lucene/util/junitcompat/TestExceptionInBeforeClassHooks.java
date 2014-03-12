@@ -117,7 +117,7 @@ public class TestExceptionInBeforeClassHooks extends WithNestedTests {
     Assert.assertEquals(3, runClasses.getFailureCount());
     Assert.assertEquals(3, runClasses.getRunCount());
     
-    ArrayList<String> foobars = new ArrayList<String>();
+    ArrayList<String> foobars = new ArrayList<>();
     for (Failure f : runClasses.getFailures()) {
       Matcher m = Pattern.compile("foobar[0-9]+").matcher(f.getTrace());
       while (m.find()) {

@@ -82,10 +82,10 @@ public class HunspellStemFilterFactory extends TokenFilterFactory implements Res
     String dicts[] = dictionaryFiles.split(",");
 
     InputStream affix = null;
-    List<InputStream> dictionaries = new ArrayList<InputStream>();
+    List<InputStream> dictionaries = new ArrayList<>();
 
     try {
-      dictionaries = new ArrayList<InputStream>();
+      dictionaries = new ArrayList<>();
       for (String file : dicts) {
         dictionaries.add(loader.openResource(file));
       }

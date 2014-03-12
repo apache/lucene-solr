@@ -54,9 +54,9 @@ class NameIntCacheLRU {
 
   private void createCache (int maxSize) {
     if (maxSize<Integer.MAX_VALUE) {
-      cache = new LinkedHashMap<Object, Integer>(1000,(float)0.7,true); //for LRU
+      cache = new LinkedHashMap<>(1000,(float)0.7,true); //for LRU
     } else {
-      cache = new HashMap<Object, Integer>(1000,(float)0.7); //no need for LRU
+      cache = new HashMap<>(1000,(float)0.7); //no need for LRU
     }
   }
 

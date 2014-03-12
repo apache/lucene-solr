@@ -50,7 +50,7 @@ public class SpanOrTermsBuilder extends SpanBuilderBase {
     String fieldName = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
     String value = DOMUtils.getNonBlankTextOrFail(e);
 
-    List<SpanQuery> clausesList = new ArrayList<SpanQuery>();
+    List<SpanQuery> clausesList = new ArrayList<>();
 
     TokenStream ts = null;
     try {

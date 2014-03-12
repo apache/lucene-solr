@@ -40,8 +40,8 @@ import java.util.Map;
  */
 public abstract class SpatialOperation implements Serializable {
   // Private registry
-  private static final Map<String, SpatialOperation> registry = new HashMap<String, SpatialOperation>();
-  private static final List<SpatialOperation> list = new ArrayList<SpatialOperation>();
+  private static final Map<String, SpatialOperation> registry = new HashMap<>();
+  private static final List<SpatialOperation> list = new ArrayList<>();
 
   // Geometry Operations
 

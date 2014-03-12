@@ -49,7 +49,7 @@ final class SlowSynonymFilterFactory extends TokenFilterFactory implements Resou
   private final boolean ignoreCase;
   private final boolean expand;
   private final String tf;
-  private final Map<String, String> tokArgs = new HashMap<String, String>();
+  private final Map<String, String> tokArgs = new HashMap<>();
   
   public SlowSynonymFilterFactory(Map<String,String> args) {
     super(args);
@@ -94,7 +94,7 @@ final class SlowSynonymFilterFactory extends TokenFilterFactory implements Resou
       wlist = getLines(loader, synonyms);
     } else  {
       List<String> files = splitFileNames(synonyms);
-      wlist = new ArrayList<String>();
+      wlist = new ArrayList<>();
       for (String file : files) {
         List<String> lines = getLines(loader, file.trim());
         wlist.addAll(lines);
@@ -131,7 +131,7 @@ final class SlowSynonymFilterFactory extends TokenFilterFactory implements Resou
           target = source;
         } else {
           // reduce to first argument
-          target = new ArrayList<List<String>>(1);
+          target = new ArrayList<>(1);
           target.add(source.get(0));
         }
       }
@@ -154,7 +154,7 @@ final class SlowSynonymFilterFactory extends TokenFilterFactory implements Resou
   private static List<List<String>> getSynList(String str, String separator, TokenizerFactory tokFactory) throws IOException {
     List<String> strList = splitSmart(str, separator, false);
     // now split on whitespace to get a list of token strings
-    List<List<String>> synList = new ArrayList<List<String>>();
+    List<List<String>> synList = new ArrayList<>();
     for (String toks : strList) {
       List<String> tokList = tokFactory == null ?
         splitWS(toks, true) : splitByTokenizer(toks, tokFactory);
@@ -166,7 +166,7 @@ final class SlowSynonymFilterFactory extends TokenFilterFactory implements Resou
   private static List<String> splitByTokenizer(String source, TokenizerFactory tokFactory) throws IOException{
     StringReader reader = new StringReader( source );
     TokenStream ts = loadTokenizer(tokFactory, reader);
-    List<String> tokList = new ArrayList<String>();
+    List<String> tokList = new ArrayList<>();
     try {
       CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
       ts.reset();
@@ -206,7 +206,7 @@ final class SlowSynonymFilterFactory extends TokenFilterFactory implements Resou
   }
   
   public static List<String> splitWS(String s, boolean decode) {
-    ArrayList<String> lst = new ArrayList<String>(2);
+    ArrayList<String> lst = new ArrayList<>(2);
     StringBuilder sb = new StringBuilder();
     int pos=0, end=s.length();
     while (pos < end) {
@@ -255,7 +255,7 @@ final class SlowSynonymFilterFactory extends TokenFilterFactory implements Resou
    * @param decode decode backslash escaping
    */
   public static List<String> splitSmart(String s, String separator, boolean decode) {
-    ArrayList<String> lst = new ArrayList<String>(2);
+    ArrayList<String> lst = new ArrayList<>(2);
     StringBuilder sb = new StringBuilder();
     int pos=0, end=s.length();
     while (pos < end) {

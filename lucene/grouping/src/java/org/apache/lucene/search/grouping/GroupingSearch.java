@@ -173,7 +173,7 @@ public class GroupingSearch {
 
     final Collector firstRound;
     if (allGroupHeads || allGroups) {
-      List<Collector> collectors = new ArrayList<Collector>();
+      List<Collector> collectors = new ArrayList<>();
       collectors.add(firstPassCollector);
       if (allGroups) {
         collectors.add(allGroupsCollector);

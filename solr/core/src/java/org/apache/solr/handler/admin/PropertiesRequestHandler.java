@@ -36,7 +36,7 @@ public class PropertiesRequestHandler extends RequestHandlerBase
     Object props = null;
     String name = req.getParams().get( "name" );
     if( name != null ) {
-      NamedList<String> p = new SimpleOrderedMap<String>();
+      NamedList<String> p = new SimpleOrderedMap<>();
       p.add( name, System.getProperty(name) );
       props = p;
     }

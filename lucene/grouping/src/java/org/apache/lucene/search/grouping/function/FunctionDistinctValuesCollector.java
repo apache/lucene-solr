@@ -48,7 +48,7 @@ public class FunctionDistinctValuesCollector extends AbstractDistinctValuesColle
     this.vsContext = vsContext;
     this.groupSource = groupSource;
     this.countSource = countSource;
-    groupMap = new LinkedHashMap<MutableValue, GroupCount>();
+    groupMap = new LinkedHashMap<>();
     for (SearchGroup<MutableValue> group : groups) {
       groupMap.put(group.groupValue, new GroupCount(group.groupValue));
     }
@@ -56,7 +56,7 @@ public class FunctionDistinctValuesCollector extends AbstractDistinctValuesColle
 
   @Override
   public List<GroupCount> getGroups() {
-    return new ArrayList<GroupCount>(groupMap.values());
+    return new ArrayList<>(groupMap.values());
   }
 
   @Override

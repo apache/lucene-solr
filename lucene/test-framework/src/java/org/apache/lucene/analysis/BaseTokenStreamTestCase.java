@@ -154,8 +154,8 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     }
     
     // Maps position to the start/end offset:
-    final Map<Integer,Integer> posToStartOffset = new HashMap<Integer,Integer>();
-    final Map<Integer,Integer> posToEndOffset = new HashMap<Integer,Integer>();
+    final Map<Integer,Integer> posToStartOffset = new HashMap<>();
+    final Map<Integer,Integer> posToEndOffset = new HashMap<>();
 
     ts.reset();
     int pos = -1;
@@ -682,12 +682,12 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     PositionIncrementAttribute posIncAtt = ts.hasAttribute(PositionIncrementAttribute.class) ? ts.getAttribute(PositionIncrementAttribute.class) : null;
     PositionLengthAttribute posLengthAtt = ts.hasAttribute(PositionLengthAttribute.class) ? ts.getAttribute(PositionLengthAttribute.class) : null;
     TypeAttribute typeAtt = ts.hasAttribute(TypeAttribute.class) ? ts.getAttribute(TypeAttribute.class) : null;
-    List<String> tokens = new ArrayList<String>();
-    List<String> types = new ArrayList<String>();
-    List<Integer> positions = new ArrayList<Integer>();
-    List<Integer> positionLengths = new ArrayList<Integer>();
-    List<Integer> startOffsets = new ArrayList<Integer>();
-    List<Integer> endOffsets = new ArrayList<Integer>();
+    List<String> tokens = new ArrayList<>();
+    List<String> types = new ArrayList<>();
+    List<Integer> positions = new ArrayList<>();
+    List<Integer> positionLengths = new ArrayList<>();
+    List<Integer> startOffsets = new ArrayList<>();
+    List<Integer> endOffsets = new ArrayList<>();
     ts.reset();
 
     // First pass: save away "correct" tokens

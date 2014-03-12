@@ -327,7 +327,7 @@ public class TestCharArraySet extends LuceneTestCase {
     CharArraySet setCaseSensitive = new CharArraySet(TEST_VERSION_CURRENT, 10, false);
 
     List<String> stopwords = Arrays.asList(TEST_STOP_WORDS);
-    List<String> stopwordsUpper = new ArrayList<String>();
+    List<String> stopwordsUpper = new ArrayList<>();
     for (String string : stopwords) {
       stopwordsUpper.add(string.toUpperCase(Locale.ROOT));
     }
@@ -349,7 +349,7 @@ public class TestCharArraySet extends LuceneTestCase {
       assertFalse(copyCaseSens.contains(string));
     }
     // test adding terms to the copy
-    List<String> newWords = new ArrayList<String>();
+    List<String> newWords = new ArrayList<>();
     for (String string : stopwords) {
       newWords.add(string+"_1");
     }
@@ -374,7 +374,7 @@ public class TestCharArraySet extends LuceneTestCase {
     CharArraySet setCaseSensitive = new CharArraySet(TEST_VERSION_CURRENT, 10, false);
 
     List<String> stopwords = Arrays.asList(TEST_STOP_WORDS);
-    List<String> stopwordsUpper = new ArrayList<String>();
+    List<String> stopwordsUpper = new ArrayList<>();
     for (String string : stopwords) {
       stopwordsUpper.add(string.toUpperCase(Locale.ROOT));
     }
@@ -396,7 +396,7 @@ public class TestCharArraySet extends LuceneTestCase {
       assertFalse(copyCaseSens.contains(string));
     }
     // test adding terms to the copy
-    List<String> newWords = new ArrayList<String>();
+    List<String> newWords = new ArrayList<>();
     for (String string : stopwords) {
       newWords.add(string+"_1");
     }
@@ -417,10 +417,10 @@ public class TestCharArraySet extends LuceneTestCase {
    * Test the static #copy() function with a JDK {@link Set} as a source
    */
   public void testCopyJDKSet() {
-    Set<String> set = new HashSet<String>();
+    Set<String> set = new HashSet<>();
 
     List<String> stopwords = Arrays.asList(TEST_STOP_WORDS);
-    List<String> stopwordsUpper = new ArrayList<String>();
+    List<String> stopwordsUpper = new ArrayList<>();
     for (String string : stopwords) {
       stopwordsUpper.add(string.toUpperCase(Locale.ROOT));
     }
@@ -436,7 +436,7 @@ public class TestCharArraySet extends LuceneTestCase {
       assertFalse(copy.contains(string));
     }
     
-    List<String> newWords = new ArrayList<String>();
+    List<String> newWords = new ArrayList<>();
     for (String string : stopwords) {
       newWords.add(string+"_1");
     }

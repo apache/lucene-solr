@@ -154,7 +154,7 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
   }
 
   private static List<Term> sample(Random random, IndexReader reader, int size) throws IOException {
-    List<Term> sample = new ArrayList<Term>();
+    List<Term> sample = new ArrayList<>();
     Fields fields = MultiFields.getFields(reader);
     for (String field : fields) {
       Terms terms = fields.terms(field);

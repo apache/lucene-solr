@@ -147,7 +147,7 @@ public class LukeRequestHandler extends RequestHandlerBase
 
       SimpleOrderedMap<Object> info = getDocumentFieldsInfo( doc, docId, reader, schema );
 
-      SimpleOrderedMap<Object> docinfo = new SimpleOrderedMap<Object>();
+      SimpleOrderedMap<Object> docinfo = new SimpleOrderedMap<>();
       docinfo.add( "docId", docId );
       docinfo.add( "lucene", info );
       docinfo.add( "solr", doc );
@@ -161,7 +161,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     }
 
     // Add some generally helpful information
-    NamedList<Object> info = new SimpleOrderedMap<Object>();
+    NamedList<Object> info = new SimpleOrderedMap<>();
     info.add( "key", getFieldFlagsKey() );
     info.add( "NOTE", "Document Frequency (df) is not updated when a document is marked for deletion.  df values include deleted documents." );
     rsp.add( "info", info );
@@ -241,7 +241,7 @@ public class LukeRequestHandler extends RequestHandlerBase
    * @return a key to what each character means
    */
   public static SimpleOrderedMap<String> getFieldFlagsKey() {
-    SimpleOrderedMap<String> key = new SimpleOrderedMap<String>();
+    SimpleOrderedMap<String> key = new SimpleOrderedMap<>();
     for (FieldFlag f : FieldFlag.values()) {
       key.add(String.valueOf(f.getAbbreviation()), f.getDisplay() );
     }
@@ -252,10 +252,10 @@ public class LukeRequestHandler extends RequestHandlerBase
                                                                  IndexSchema schema ) throws IOException
   {
     final CharsRef spare = new CharsRef();
-    SimpleOrderedMap<Object> finfo = new SimpleOrderedMap<Object>();
+    SimpleOrderedMap<Object> finfo = new SimpleOrderedMap<>();
     for( Object o : doc.getFields() ) {
       Field field = (Field)o;
-      SimpleOrderedMap<Object> f = new SimpleOrderedMap<Object>();
+      SimpleOrderedMap<Object> f = new SimpleOrderedMap<>();
 
       SchemaField sfield = schema.getFieldOrNull( field.name() );
       FieldType ftype = (sfield==null)?null:sfield.getType();
@@ -283,7 +283,7 @@ public class LukeRequestHandler extends RequestHandlerBase
         try {
           Terms v = reader.getTermVector( docId, field.name() );
           if( v != null ) {
-            SimpleOrderedMap<Integer> tfv = new SimpleOrderedMap<Integer>();
+            SimpleOrderedMap<Integer> tfv = new SimpleOrderedMap<>();
             final TermsEnum termsEnum = v.iterator(null);
             BytesRef text;
             while((text = termsEnum.next()) != null) {
@@ -313,27 +313,27 @@ public class LukeRequestHandler extends RequestHandlerBase
     Set<String> fields = null;
     String fl = params.get(CommonParams.FL);
     if (fl != null) {
-      fields = new TreeSet<String>(Arrays.asList(fl.split( "[,\\s]+" )));
+      fields = new TreeSet<>(Arrays.asList(fl.split( "[,\\s]+" )));
     }
 
     AtomicReader reader = searcher.getAtomicReader();
     IndexSchema schema = searcher.getSchema();
 
     // Don't be tempted to put this in the loop below, the whole point here is to alphabetize the fields!
-    Set<String> fieldNames = new TreeSet<String>();
+    Set<String> fieldNames = new TreeSet<>();
     for(FieldInfo fieldInfo : reader.getFieldInfos()) {
       fieldNames.add(fieldInfo.name);
     }
 
     // Walk the term enum and keep a priority queue for each map in our set
-    SimpleOrderedMap<Object> finfo = new SimpleOrderedMap<Object>();
+    SimpleOrderedMap<Object> finfo = new SimpleOrderedMap<>();
 
     for (String fieldName : fieldNames) {
       if (fields != null && ! fields.contains(fieldName) && ! fields.contains("*")) {
         continue; //we're not interested in this field Still an issue here
       }
 
-      SimpleOrderedMap<Object> fieldMap = new SimpleOrderedMap<Object>();
+      SimpleOrderedMap<Object> fieldMap = new SimpleOrderedMap<>();
 
       SchemaField sfield = schema.getFieldOrNull( fieldName );
       FieldType ftype = (sfield==null)?null:sfield.getType();
@@ -408,21 +408,21 @@ public class LukeRequestHandler extends RequestHandlerBase
    * Return info from the index
    */
   private static SimpleOrderedMap<Object> getSchemaInfo( IndexSchema schema ) {
-    Map<String, List<String>> typeusemap = new TreeMap<String, List<String>>();
-    Map<String, Object> fields = new TreeMap<String, Object>();
+    Map<String, List<String>> typeusemap = new TreeMap<>();
+    Map<String, Object> fields = new TreeMap<>();
     SchemaField uniqueField = schema.getUniqueKeyField();
     for( SchemaField f : schema.getFields().values() ) {
       populateFieldInfo(schema, typeusemap, fields, uniqueField, f);
     }
 
-    Map<String, Object> dynamicFields = new TreeMap<String, Object>();
+    Map<String, Object> dynamicFields = new TreeMap<>();
     for (SchemaField f : schema.getDynamicFieldPrototypes()) {
       populateFieldInfo(schema, typeusemap, dynamicFields, uniqueField, f);
     }
-    SimpleOrderedMap<Object> types = new SimpleOrderedMap<Object>();
-    Map<String, FieldType> sortedTypes = new TreeMap<String, FieldType>(schema.getFieldTypes());
+    SimpleOrderedMap<Object> types = new SimpleOrderedMap<>();
+    Map<String, FieldType> sortedTypes = new TreeMap<>(schema.getFieldTypes());
     for( FieldType ft : sortedTypes.values() ) {
-      SimpleOrderedMap<Object> field = new SimpleOrderedMap<Object>();
+      SimpleOrderedMap<Object> field = new SimpleOrderedMap<>();
       field.add("fields", typeusemap.get( ft.getTypeName() ) );
       field.add("tokenized", ft.isTokenized() );
       field.add("className", ft.getClass().getName());
@@ -433,15 +433,15 @@ public class LukeRequestHandler extends RequestHandlerBase
     }
 
     // Must go through this to maintain binary compatbility. Putting a TreeMap into a resp leads to casting errors
-    SimpleOrderedMap<Object> finfo = new SimpleOrderedMap<Object>();
+    SimpleOrderedMap<Object> finfo = new SimpleOrderedMap<>();
 
-    SimpleOrderedMap<Object> fieldsSimple = new SimpleOrderedMap<Object>();
+    SimpleOrderedMap<Object> fieldsSimple = new SimpleOrderedMap<>();
     for (Map.Entry<String, Object> ent : fields.entrySet()) {
       fieldsSimple.add(ent.getKey(), ent.getValue());
     }
     finfo.add("fields", fieldsSimple);
 
-    SimpleOrderedMap<Object> dynamicSimple = new SimpleOrderedMap<Object>();
+    SimpleOrderedMap<Object> dynamicSimple = new SimpleOrderedMap<>();
     for (Map.Entry<String, Object> ent : dynamicFields.entrySet()) {
       dynamicSimple.add(ent.getKey(), ent.getValue());
     }
@@ -455,7 +455,7 @@ public class LukeRequestHandler extends RequestHandlerBase
   }
 
   private static SimpleOrderedMap<Object> getSimilarityInfo(Similarity similarity) {
-    SimpleOrderedMap<Object> toReturn = new SimpleOrderedMap<Object>();
+    SimpleOrderedMap<Object> toReturn = new SimpleOrderedMap<>();
     if (similarity != null) {
       toReturn.add("className", similarity.getClass().getName());
       toReturn.add("details", similarity.toString());
@@ -464,16 +464,16 @@ public class LukeRequestHandler extends RequestHandlerBase
   }
 
   private static SimpleOrderedMap<Object> getAnalyzerInfo(Analyzer analyzer) {
-    SimpleOrderedMap<Object> aninfo = new SimpleOrderedMap<Object>();
+    SimpleOrderedMap<Object> aninfo = new SimpleOrderedMap<>();
     aninfo.add("className", analyzer.getClass().getName());
     if (analyzer instanceof TokenizerChain) {
 
       TokenizerChain tchain = (TokenizerChain)analyzer;
 
       CharFilterFactory[] cfiltfacs = tchain.getCharFilterFactories();
-      SimpleOrderedMap<Map<String, Object>> cfilters = new SimpleOrderedMap<Map<String, Object>>();
+      SimpleOrderedMap<Map<String, Object>> cfilters = new SimpleOrderedMap<>();
       for (CharFilterFactory cfiltfac : cfiltfacs) {
-        Map<String, Object> tok = new HashMap<String, Object>();
+        Map<String, Object> tok = new HashMap<>();
         String className = cfiltfac.getClass().getName();
         tok.put("className", className);
         tok.put("args", cfiltfac.getOriginalArgs());
@@ -483,16 +483,16 @@ public class LukeRequestHandler extends RequestHandlerBase
         aninfo.add("charFilters", cfilters);
       }
 
-      SimpleOrderedMap<Object> tokenizer = new SimpleOrderedMap<Object>();
+      SimpleOrderedMap<Object> tokenizer = new SimpleOrderedMap<>();
       TokenizerFactory tfac = tchain.getTokenizerFactory();
       tokenizer.add("className", tfac.getClass().getName());
       tokenizer.add("args", tfac.getOriginalArgs());
       aninfo.add("tokenizer", tokenizer);
 
       TokenFilterFactory[] filtfacs = tchain.getTokenFilterFactories();
-      SimpleOrderedMap<Map<String, Object>> filters = new SimpleOrderedMap<Map<String, Object>>();
+      SimpleOrderedMap<Map<String, Object>> filters = new SimpleOrderedMap<>();
       for (TokenFilterFactory filtfac : filtfacs) {
-        Map<String, Object> tok = new HashMap<String, Object>();
+        Map<String, Object> tok = new HashMap<>();
         String className = filtfac.getClass().getName();
         tok.put("className", className);
         tok.put("args", filtfac.getOriginalArgs());
@@ -509,7 +509,7 @@ public class LukeRequestHandler extends RequestHandlerBase
                                         Map<String, List<String>> typeusemap, Map<String, Object> fields,
                                         SchemaField uniqueField, SchemaField f) {
     FieldType ft = f.getType();
-    SimpleOrderedMap<Object> field = new SimpleOrderedMap<Object>();
+    SimpleOrderedMap<Object> field = new SimpleOrderedMap<>();
     field.add( "type", ft.getTypeName() );
     field.add( "flags", getFieldFlags(f) );
     if( f.isRequired() ) {
@@ -532,7 +532,7 @@ public class LukeRequestHandler extends RequestHandlerBase
 
     List<String> v = typeusemap.get( ft.getTypeName() );
     if( v == null ) {
-      v = new ArrayList<String>();
+      v = new ArrayList<>();
     }
     v.add( f.getName() );
     typeusemap.put( ft.getTypeName(), v );
@@ -550,7 +550,7 @@ public class LukeRequestHandler extends RequestHandlerBase
 
   public static SimpleOrderedMap<Object> getIndexInfo(DirectoryReader reader) throws IOException {
     Directory dir = reader.directory();
-    SimpleOrderedMap<Object> indexInfo = new SimpleOrderedMap<Object>();
+    SimpleOrderedMap<Object> indexInfo = new SimpleOrderedMap<>();
 
     indexInfo.add("numDocs", reader.numDocs());
     indexInfo.add("maxDoc", reader.maxDoc());
@@ -638,14 +638,14 @@ public class LukeRequestHandler extends RequestHandlerBase
   }
 
   private static List<String> toListOfStrings(SchemaField[] raw) {
-    List<String> result = new ArrayList<String>(raw.length);
+    List<String> result = new ArrayList<>(raw.length);
     for (SchemaField f : raw) {
       result.add(f.getName());
     }
     return result;
   }
   private static List<String> toListOfStringDests(List<CopyField> raw) {
-    List<String> result = new ArrayList<String>(raw.size());
+    List<String> result = new ArrayList<>(raw.size());
     for (CopyField f : raw) {
       result.add(f.getDestination().getName());
     }
@@ -689,7 +689,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     // TODO? should this be a list or a map?
     public NamedList<Integer> toNamedList()
     {
-      NamedList<Integer> nl = new NamedList<Integer>();
+      NamedList<Integer> nl = new NamedList<>();
       for( int bucket = 0; bucket <= _maxBucket; bucket++ ) {
         nl.add( ""+ (1 << bucket), _buckets[bucket] );
       }
@@ -733,12 +733,12 @@ public class LukeRequestHandler extends RequestHandlerBase
     public NamedList<Integer> toNamedList( IndexSchema schema )
     {
       // reverse the list..
-      List<TermInfo> aslist = new LinkedList<TermInfo>();
+      List<TermInfo> aslist = new LinkedList<>();
       while( size() > 0 ) {
         aslist.add( 0, (TermInfo)pop() );
       }
 
-      NamedList<Integer> list = new NamedList<Integer>();
+      NamedList<Integer> list = new NamedList<>();
       for (TermInfo i : aslist) {
         String txt = i.term.text();
         SchemaField ft = schema.getFieldOrNull( i.term.field() );

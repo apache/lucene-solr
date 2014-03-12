@@ -103,7 +103,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   void singleTest(String field, String funcTemplate, List<String> args, float... results) {
     String parseableQuery = func(field, funcTemplate);
 
-    List<String> nargs = new ArrayList<String>(Arrays.asList("q", parseableQuery
+    List<String> nargs = new ArrayList<>(Arrays.asList("q", parseableQuery
             ,"fl", "*,score"
             ,"indent","on"
             ,"rows","100"));
@@ -114,7 +114,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
       }
     }
 
-    List<String> tests = new ArrayList<String>();
+    List<String> tests = new ArrayList<>();
 
     // Construct xpaths like the following:
     // "//doc[./float[@name='foo_pf']='10.0' and ./float[@name='score']='10.0']"

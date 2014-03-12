@@ -35,7 +35,7 @@ public class TestKeepWordFilter extends BaseTokenStreamTestCase {
   
   public void testStopAndGo() throws Exception 
   {  
-    Set<String> words = new HashSet<String>();
+    Set<String> words = new HashSet<>();
     words.add( "aaa" );
     words.add( "bbb" );
     
@@ -64,7 +64,7 @@ public class TestKeepWordFilter extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    final Set<String> words = new HashSet<String>();
+    final Set<String> words = new HashSet<>();
     words.add( "a" );
     words.add( "b" );
     

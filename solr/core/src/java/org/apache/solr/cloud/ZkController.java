@@ -578,7 +578,7 @@ public final class ZkController {
     
     ClusterState clusterState = zkStateReader.getClusterState();
     Set<String> collections = clusterState.getCollections();
-    List<String> updatedNodes = new ArrayList<String>();
+    List<String> updatedNodes = new ArrayList<>();
     for (String collectionName : collections) {
       DocCollection collection = clusterState.getCollection(collectionName);
       Collection<Slice> slices = collection.getSlices();
@@ -755,7 +755,7 @@ public final class ZkController {
     
     String shardId = cloudDesc.getShardId();
 
-    Map<String,Object> props = new HashMap<String,Object>();
+    Map<String,Object> props = new HashMap<>();
  // we only put a subset of props into the leader node
     props.put(ZkStateReader.BASE_URL_PROP, baseUrl);
     props.put(ZkStateReader.CORE_NAME_PROP, coreName);
@@ -948,7 +948,7 @@ public final class ZkController {
     
     String shardId = cd.getCloudDescriptor().getShardId();
     
-    Map<String,Object> props = new HashMap<String,Object>();
+    Map<String,Object> props = new HashMap<>();
     // we only put a subset of props into the leader node
     props.put(ZkStateReader.BASE_URL_PROP, getBaseUrl());
     props.put(ZkStateReader.CORE_NAME_PROP, cd.getName());
@@ -1131,7 +1131,7 @@ public final class ZkController {
        SolrParams params = cd.getParams();
 
         try {
-          Map<String,Object> collectionProps = new HashMap<String,Object>();
+          Map<String,Object> collectionProps = new HashMap<>();
 
           // TODO: if collection.configName isn't set, and there isn't already a conf in zk, just use that?
           String defaultConfigName = System.getProperty(COLLECTION_PARAM_PREFIX+CONFIGNAME_PROP, collection);
@@ -1540,7 +1540,7 @@ public final class ZkController {
     ZkNodeProps props = null;
     if(data != null) {
       props = ZkNodeProps.load(data);
-      Map<String,Object> newProps = new HashMap<String,Object>();
+      Map<String,Object> newProps = new HashMap<>();
       newProps.putAll(props.getProperties());
       newProps.put(CONFIGNAME_PROP, confSetName);
       props = new ZkNodeProps(newProps);

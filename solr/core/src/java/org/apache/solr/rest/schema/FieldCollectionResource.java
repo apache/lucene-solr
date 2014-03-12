@@ -79,9 +79,9 @@ public class FieldCollectionResource extends BaseFieldResource implements GETabl
   @Override
   public Representation get() {
     try {
-      final List<SimpleOrderedMap<Object>> props = new ArrayList<SimpleOrderedMap<Object>>();
+      final List<SimpleOrderedMap<Object>> props = new ArrayList<>();
       if (null == getRequestedFields()) {
-        SortedSet<String> fieldNames = new TreeSet<String>(getSchema().getFields().keySet());
+        SortedSet<String> fieldNames = new TreeSet<>(getSchema().getFields().keySet());
         for (String fieldName : fieldNames) {
           props.add(getFieldProperties(getSchema().getFields().get(fieldName)));
         }
@@ -138,10 +138,10 @@ public class FieldCollectionResource extends BaseFieldResource implements GETabl
             throw new SolrException(ErrorCode.BAD_REQUEST, message);
           } else {
             List<Map<String, Object>> list = (List<Map<String, Object>>) object;
-            List<SchemaField> newFields = new ArrayList<SchemaField>();
+            List<SchemaField> newFields = new ArrayList<>();
             IndexSchema oldSchema = getSchema();
-            Map<String, Collection<String>> copyFields = new HashMap<String, Collection<String>>();
-            Set<String> malformed = new HashSet<String>();
+            Map<String, Collection<String>> copyFields = new HashMap<>();
+            Set<String> malformed = new HashSet<>();
             for (Map<String, Object> map : list) {
               String fieldName = (String) map.remove(IndexSchema.NAME);
               if (null == fieldName) {

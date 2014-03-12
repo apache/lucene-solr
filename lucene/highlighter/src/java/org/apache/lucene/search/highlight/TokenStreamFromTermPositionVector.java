@@ -39,7 +39,7 @@ import org.apache.lucene.util.CollectionUtil;
  */
 public final class TokenStreamFromTermPositionVector extends TokenStream {
 
-  private final List<Token> positionedTokens = new ArrayList<Token>();
+  private final List<Token> positionedTokens = new ArrayList<>();
 
   private Iterator<Token> tokensAtCurrentPosition;
 

@@ -56,7 +56,7 @@ public class TestDocTermOrdsRewriteMethod extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
         .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000)));
-    List<String> terms = new ArrayList<String>();
+    List<String> terms = new ArrayList<>();
     int num = atLeast(200);
     for (int i = 0; i < num; i++) {
       Document doc = new Document();

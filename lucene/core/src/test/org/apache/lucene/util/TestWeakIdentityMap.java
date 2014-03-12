@@ -167,7 +167,7 @@ public class TestWeakIdentityMap extends LuceneTestCase {
       WeakIdentityMap.newConcurrentHashMap(random().nextBoolean());
     // we keep strong references to the keys,
     // so WeakIdentityMap will not forget about them:
-    final AtomicReferenceArray<Object> keys = new AtomicReferenceArray<Object>(keyCount);
+    final AtomicReferenceArray<Object> keys = new AtomicReferenceArray<>(keyCount);
     for (int j = 0; j < keyCount; j++) {
       keys.set(j, new Object());
     }

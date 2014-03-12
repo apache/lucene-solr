@@ -70,8 +70,8 @@ import java.util.List;
  * for which a Trie is constructed.
  */
 public class Trie {
-  List<Row> rows = new ArrayList<Row>();
-  List<CharSequence> cmds = new ArrayList<CharSequence>();
+  List<Row> rows = new ArrayList<>();
+  List<CharSequence> cmds = new ArrayList<>();
   int root;
   
   boolean forward = false;

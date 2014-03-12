@@ -113,7 +113,7 @@ public abstract class AbstractDataImportHandlerTestCase extends
    * @throws Exception in case of any error
    */
   protected void runFullImport(String dataConfig, Map<String, String> extraParams) throws Exception {
-    HashMap<String, String> params = new HashMap<String, String>();
+    HashMap<String, String> params = new HashMap<>();
     params.put("command", "full-import");
     params.put("debug", "on");
     params.put("dataConfig", dataConfig);
@@ -174,7 +174,7 @@ public abstract class AbstractDataImportHandlerTestCase extends
   
   public static Map<String, String> getField(String col, String type,
                                              String re, String srcCol, String splitBy) {
-    HashMap<String, String> vals = new HashMap<String, String>();
+    HashMap<String, String> vals = new HashMap<>();
     vals.put("column", col);
     vals.put("type", type);
     vals.put("regex", re);

@@ -28,11 +28,11 @@ import java.util.List;
  */
 public class WeightedSpanTerm extends WeightedTerm{
   boolean positionSensitive;
-  private List<PositionSpan> positionSpans = new ArrayList<PositionSpan>();
+  private List<PositionSpan> positionSpans = new ArrayList<>();
 
   public WeightedSpanTerm(float weight, String term) {
     super(weight, term);
-    this.positionSpans = new ArrayList<PositionSpan>();
+    this.positionSpans = new ArrayList<>();
   }
 
   public WeightedSpanTerm(float weight, String term, boolean positionSensitive) {

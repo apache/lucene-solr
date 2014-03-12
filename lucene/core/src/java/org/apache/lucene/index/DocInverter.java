@@ -41,8 +41,8 @@ final class DocInverter extends DocFieldConsumer {
   @Override
   void flush(Map<String, DocFieldConsumerPerField> fieldsToFlush, SegmentWriteState state) throws IOException {
 
-    Map<String, InvertedDocConsumerPerField> childFieldsToFlush = new HashMap<String, InvertedDocConsumerPerField>();
-    Map<String, InvertedDocEndConsumerPerField> endChildFieldsToFlush = new HashMap<String, InvertedDocEndConsumerPerField>();
+    Map<String, InvertedDocConsumerPerField> childFieldsToFlush = new HashMap<>();
+    Map<String, InvertedDocEndConsumerPerField> endChildFieldsToFlush = new HashMap<>();
 
     for (Map.Entry<String, DocFieldConsumerPerField> fieldToFlush : fieldsToFlush.entrySet()) {
       DocInverterPerField perField = (DocInverterPerField) fieldToFlush.getValue();

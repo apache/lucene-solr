@@ -146,10 +146,10 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     assertFalse("test infra is broken!", LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE);
-    List<String> names = new ArrayList<String>(oldNames.length + oldSingleSegmentNames.length);
+    List<String> names = new ArrayList<>(oldNames.length + oldSingleSegmentNames.length);
     names.addAll(Arrays.asList(oldNames));
     names.addAll(Arrays.asList(oldSingleSegmentNames));
-    oldIndexDirs = new HashMap<String,Directory>();
+    oldIndexDirs = new HashMap<>();
     for (String name : names) {
       File dir = TestUtil.getTempDir(name);
       File dataFile = new File(TestBackwardsCompatibility3x.class.getResource("index." + name + ".zip").toURI());
@@ -890,7 +890,7 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
   }
 
   public void testUpgradeOldIndex() throws Exception {
-    List<String> names = new ArrayList<String>(oldNames.length + oldSingleSegmentNames.length);
+    List<String> names = new ArrayList<>(oldNames.length + oldSingleSegmentNames.length);
     names.addAll(Arrays.asList(oldNames));
     names.addAll(Arrays.asList(oldSingleSegmentNames));
     for(String name : names) {

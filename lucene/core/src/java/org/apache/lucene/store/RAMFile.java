@@ -23,7 +23,7 @@ import java.util.ArrayList;
  * Represents a file in RAM as a list of byte[] buffers.
  * @lucene.internal */
 public class RAMFile {
-  protected ArrayList<byte[]> buffers = new ArrayList<byte[]>();
+  protected ArrayList<byte[]> buffers = new ArrayList<>();
   long length;
   RAMDirectory directory;
   protected long sizeInBytes;

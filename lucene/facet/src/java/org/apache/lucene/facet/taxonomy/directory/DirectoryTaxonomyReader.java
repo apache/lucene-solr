@@ -102,8 +102,8 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
 
     // These are the default cache sizes; they can be configured after
     // construction with the cache's setMaxSize() method
-    ordinalCache = new LRUHashMap<FacetLabel, Integer>(DEFAULT_CACHE_VALUE);
-    categoryCache = new LRUHashMap<Integer, FacetLabel>(DEFAULT_CACHE_VALUE);
+    ordinalCache = new LRUHashMap<>(DEFAULT_CACHE_VALUE);
+    categoryCache = new LRUHashMap<>(DEFAULT_CACHE_VALUE);
   }
   
   /**
@@ -121,8 +121,8 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
     
     // These are the default cache sizes; they can be configured after
     // construction with the cache's setMaxSize() method
-    ordinalCache = new LRUHashMap<FacetLabel, Integer>(DEFAULT_CACHE_VALUE);
-    categoryCache = new LRUHashMap<Integer, FacetLabel>(DEFAULT_CACHE_VALUE);
+    ordinalCache = new LRUHashMap<>(DEFAULT_CACHE_VALUE);
+    categoryCache = new LRUHashMap<>(DEFAULT_CACHE_VALUE);
   }
   
   private synchronized void initTaxoArrays() throws IOException {

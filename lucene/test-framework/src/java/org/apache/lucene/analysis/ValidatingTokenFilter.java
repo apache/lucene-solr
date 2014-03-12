@@ -44,8 +44,8 @@ public final class ValidatingTokenFilter extends TokenFilter {
   private int lastStartOffset;
 
   // Maps position to the start/end offset:
-  private final Map<Integer,Integer> posToStartOffset = new HashMap<Integer,Integer>();
-  private final Map<Integer,Integer> posToEndOffset = new HashMap<Integer,Integer>();
+  private final Map<Integer,Integer> posToStartOffset = new HashMap<>();
+  private final Map<Integer,Integer> posToEndOffset = new HashMap<>();
 
   private final PositionIncrementAttribute posIncAtt = getAttrIfExists(PositionIncrementAttribute.class);
   private final PositionLengthAttribute posLenAtt = getAttrIfExists(PositionLengthAttribute.class);

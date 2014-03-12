@@ -118,7 +118,7 @@ public class DirectSolrConnection
       params = new MapSolrParams( new HashMap<String, String>() );
 
     // Make a stream for the 'body' content
-    List<ContentStream> streams = new ArrayList<ContentStream>( 1 );
+    List<ContentStream> streams = new ArrayList<>( 1 );
     if( body != null && body.length() > 0 ) {
       streams.add( new ContentStreamBase.StringStream( body ) );
     }

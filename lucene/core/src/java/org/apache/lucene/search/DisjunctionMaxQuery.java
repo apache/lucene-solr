@@ -45,7 +45,7 @@ import org.apache.lucene.util.Bits;
 public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
 
   /* The subqueries */
-  private ArrayList<Query> disjuncts = new ArrayList<Query>();
+  private ArrayList<Query> disjuncts = new ArrayList<>();
 
   /* Multiple of the non-max disjunct scores added into our final score.  Non-zero values support tie-breaking. */
   private float tieBreakerMultiplier = 0.0f;
@@ -115,7 +115,7 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
   protected class DisjunctionMaxWeight extends Weight {
 
     /** The Weights for our subqueries, in 1-1 correspondence with disjuncts */
-    protected ArrayList<Weight> weights = new ArrayList<Weight>();  // The Weight's for our subqueries, in 1-1 correspondence with disjuncts
+    protected ArrayList<Weight> weights = new ArrayList<>();  // The Weight's for our subqueries, in 1-1 correspondence with disjuncts
 
     /** Construct the Weight for this Query searched by searcher.  Recursively construct subquery weights. */
     public DisjunctionMaxWeight(IndexSearcher searcher) throws IOException {
@@ -154,7 +154,7 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
     /** Create the scorer used to score our associated DisjunctionMaxQuery */
     @Override
     public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException {
-      List<Scorer> scorers = new ArrayList<Scorer>();
+      List<Scorer> scorers = new ArrayList<>();
       for (Weight w : weights) {
         // we will advance() subscorers
         Scorer subScorer = w.scorer(context, acceptDocs);

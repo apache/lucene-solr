@@ -80,7 +80,7 @@ public class TestNeverDelete extends LuceneTestCase {
       indexThreads[x].start();
     }
 
-    final Set<String> allFiles = new HashSet<String>();
+    final Set<String> allFiles = new HashSet<>();
 
     DirectoryReader r = DirectoryReader.open(d);
     while(System.currentTimeMillis() < stopTime) {

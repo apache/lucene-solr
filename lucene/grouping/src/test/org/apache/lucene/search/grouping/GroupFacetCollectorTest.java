@@ -473,11 +473,11 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
       System.out.println("TEST: numDocs=" + numDocs + " numGroups=" + numGroups);
     }
 
-    final List<String> groups = new ArrayList<String>();
+    final List<String> groups = new ArrayList<>();
     for (int i = 0; i < numGroups; i++) {
       groups.add(generateRandomNonEmptyString());
     }
-    final List<String> facetValues = new ArrayList<String>();
+    final List<String> facetValues = new ArrayList<>();
     for (int i = 0; i < numFacets; i++) {
       facetValues.add(generateRandomNonEmptyString());
     }
@@ -540,7 +540,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     docNoFacet.add(content);
     docNoGroupNoFacet.add(content);
 
-    NavigableSet<String> uniqueFacetValues = new TreeSet<String>(new Comparator<String>() {
+    NavigableSet<String> uniqueFacetValues = new TreeSet<>(new Comparator<String>() {
 
       @Override
       public int compare(String a, String b) {
@@ -556,7 +556,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
       }
 
     });
-    Map<String, Map<String, Set<String>>> searchTermToFacetToGroups = new HashMap<String, Map<String, Set<String>>>();
+    Map<String, Map<String, Set<String>>> searchTermToFacetToGroups = new HashMap<>();
     int facetWithMostGroups = 0;
     for (int i = 0; i < numDocs; i++) {
       final String groupValue;
@@ -578,7 +578,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
       }
       Map<String, Set<String>> facetToGroups = searchTermToFacetToGroups.get(contentStr);
 
-      List<String> facetVals = new ArrayList<String>();
+      List<String> facetVals = new ArrayList<>();
       if (useDv || random.nextInt(24) != 18) {
         if (useDv) {
           String facetValue = facetValues.get(random.nextInt(facetValues.size()));
@@ -656,14 +656,14 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
   private GroupedFacetResult createExpectedFacetResult(String searchTerm, IndexContext context, int offset, int limit, int minCount, final boolean orderByCount, String facetPrefix) {
     Map<String, Set<String>> facetGroups = context.searchTermToFacetGroups.get(searchTerm);
     if (facetGroups == null) {
-      facetGroups = new HashMap<String, Set<String>>();
+      facetGroups = new HashMap<>();
     }
 
     int totalCount = 0;
     int totalMissCount = 0;
     Set<String> facetValues;
     if (facetPrefix != null) {
-      facetValues = new HashSet<String>();
+      facetValues = new HashSet<>();
       for (String facetValue : context.facetValues) {
         if (facetValue != null && facetValue.startsWith(facetPrefix)) {
           facetValues.add(facetValue);
@@ -673,7 +673,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
       facetValues = context.facetValues;
     }
 
-    List<TermGroupFacetCollector.FacetEntry> entries = new ArrayList<TermGroupFacetCollector.FacetEntry>(facetGroups.size());
+    List<TermGroupFacetCollector.FacetEntry> entries = new ArrayList<>(facetGroups.size());
     // also includes facets with count 0
     for (String facetValue : facetValues) {
       if (facetValue == null) {

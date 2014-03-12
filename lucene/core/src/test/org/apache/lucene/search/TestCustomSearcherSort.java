@@ -112,7 +112,7 @@ public class TestCustomSearcherSort extends LuceneTestCase {
     // make a query without sorting first
     ScoreDoc[] hitsByRank = searcher.search(query, null, Integer.MAX_VALUE).scoreDocs;
     checkHits(hitsByRank, "Sort by rank: "); // check for duplicates
-    Map<Integer,Integer> resultMap = new TreeMap<Integer,Integer>();
+    Map<Integer,Integer> resultMap = new TreeMap<>();
     // store hits in TreeMap - TreeMap does not allow duplicates; existing
     // entries are silently overwritten
     for (int hitid = 0; hitid < hitsByRank.length; ++hitid) {
@@ -155,7 +155,7 @@ public class TestCustomSearcherSort extends LuceneTestCase {
    */
   private void checkHits(ScoreDoc[] hits, String prefix) {
     if (hits != null) {
-      Map<Integer,Integer> idMap = new TreeMap<Integer,Integer>();
+      Map<Integer,Integer> idMap = new TreeMap<>();
       for (int docnum = 0; docnum < hits.length; ++docnum) {
         Integer luceneId = null;
         

@@ -90,7 +90,7 @@ public class JettySolrRunner {
   private String coreNodeName;
 
   /** Maps servlet holders (i.e. factories: class + init params) to path specs */
-  private SortedMap<ServletHolder,String> extraServlets = new TreeMap<ServletHolder,String>();
+  private SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
   private SortedMap<Class,String> extraRequestFilters;
   private LinkedList<FilterHolder> extraFilters;
 
@@ -106,7 +106,7 @@ public class JettySolrRunner {
     }
 
     // TODO: keep track of certain number of last requests
-    private LinkedList<HttpServletRequest> requests = new LinkedList<HttpServletRequest>();
+    private LinkedList<HttpServletRequest> requests = new LinkedList<>();
 
 
     @Override
@@ -188,7 +188,7 @@ public class JettySolrRunner {
       SortedMap<Class,String> extraRequestFilters) {
     if (null != extraServlets) { this.extraServlets.putAll(extraServlets); }
     if (null != extraRequestFilters) {
-      this.extraRequestFilters = new TreeMap<Class,String>(extraRequestFilters.comparator());
+      this.extraRequestFilters = new TreeMap<>(extraRequestFilters.comparator());
       this.extraRequestFilters.putAll(extraRequestFilters);
     }
     this.solrConfigFilename = solrConfigFilename;
@@ -316,7 +316,7 @@ public class JettySolrRunner {
 //        FilterHolder fh = new FilterHolder(filter);
         debugFilter = root.addFilter(DebugFilter.class, "*", EnumSet.of(DispatcherType.REQUEST) );
         if (extraRequestFilters != null) {
-          extraFilters = new LinkedList<FilterHolder>();
+          extraFilters = new LinkedList<>();
           for (Class filterClass : extraRequestFilters.keySet()) {
             extraFilters.add(root.addFilter(filterClass, extraRequestFilters.get(filterClass),
               EnumSet.of(DispatcherType.REQUEST)));

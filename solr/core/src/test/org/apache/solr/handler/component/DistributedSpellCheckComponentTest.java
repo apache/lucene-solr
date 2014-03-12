@@ -187,7 +187,7 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
         collate, "true", maxCollationTries, "0", maxCollations, "1", collateExtended, "true"));
   }
   private Object[] buildRequest(String q, boolean useSpellcheckQ, String handlerName, boolean useGrouping, String... addlParams) {
-    List<Object> params = new ArrayList<Object>();
+    List<Object> params = new ArrayList<>();
     
     params.add("q");
     params.add(useSpellcheckQ ? "*:*" : q);

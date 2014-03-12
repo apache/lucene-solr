@@ -66,7 +66,7 @@ public class RegexpBoostProcessor extends UpdateRequestProcessor {
   private String inputFieldname = DEFAULT_INPUT_FIELDNAME;
   private String boostFieldname = DEFAULT_BOOST_FIELDNAME;
   private String boostFilename;
-  private List<BoostEntry> boostEntries = new ArrayList<BoostEntry>();
+  private List<BoostEntry> boostEntries = new ArrayList<>();
   private static final String BOOST_ENTRIES_CACHE_KEY = "boost-entries";
 
   RegexpBoostProcessor(SolrParams parameters,
@@ -119,7 +119,7 @@ public class RegexpBoostProcessor extends UpdateRequestProcessor {
   }
 
   private List<BoostEntry> initBoostEntries(InputStream is) throws IOException {
-    List<BoostEntry> newBoostEntries = new ArrayList<BoostEntry>();
+    List<BoostEntry> newBoostEntries = new ArrayList<>();
     
     BufferedReader reader = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
     try {

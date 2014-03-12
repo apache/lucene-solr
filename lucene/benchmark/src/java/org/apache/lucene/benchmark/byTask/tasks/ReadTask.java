@@ -298,7 +298,7 @@ public abstract class ReadTask extends PerfTask {
    */
   protected Collection<String> getFieldsToHighlight(Document document) {
     List<IndexableField> fields = document.getFields();
-    Set<String> result = new HashSet<String>(fields.size());
+    Set<String> result = new HashSet<>(fields.size());
     for (final IndexableField f : fields) {
       result.add(f.name());
     }

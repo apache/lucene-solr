@@ -232,7 +232,7 @@ public class TestICUCollationKeyFilterFactory extends BaseTokenStreamTestCase {
     //
     String germanUmlaut = "Töne";
     String germanOE = "Toene";
-    Map<String,String> args = new HashMap<String,String>();
+    Map<String,String> args = new HashMap<>();
     args.put("custom", "rules.txt");
     args.put("strength", "primary");
     ICUCollationKeyFilterFactory factory = new ICUCollationKeyFilterFactory(args);
@@ -293,7 +293,7 @@ public class TestICUCollationKeyFilterFactory extends BaseTokenStreamTestCase {
     if (keysAndValues.length % 2 == 1) {
       throw new IllegalArgumentException("invalid keysAndValues map");
     }
-    Map<String,String> args = new HashMap<String,String>();
+    Map<String,String> args = new HashMap<>();
     for (int i = 0; i < keysAndValues.length; i += 2) {
       String previous = args.put(keysAndValues[i], keysAndValues[i+1]);
       assertNull("duplicate values for key: " + keysAndValues[i], previous);

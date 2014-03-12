@@ -69,7 +69,7 @@ public class TokenInfoDictionaryBuilder {
         return name.endsWith(".csv");
       }
     };
-    ArrayList<File> csvFiles = new ArrayList<File>();
+    ArrayList<File> csvFiles = new ArrayList<>();
     for (File file : new File(dirname).listFiles(filter)) {
       csvFiles.add(file);
     }
@@ -82,7 +82,7 @@ public class TokenInfoDictionaryBuilder {
     
     // all lines in the file
     System.out.println("  parse...");
-    List<String[]> lines = new ArrayList<String[]>(400000);
+    List<String[]> lines = new ArrayList<>(400000);
     for (File file : csvFiles){
       FileInputStream inputStream = new FileInputStream(file);
       Charset cs = Charset.forName(encoding);
@@ -132,7 +132,7 @@ public class TokenInfoDictionaryBuilder {
     System.out.println("  encode...");
 
     PositiveIntOutputs fstOutput = PositiveIntOutputs.getSingleton();
-    Builder<Long> fstBuilder = new Builder<Long>(FST.INPUT_TYPE.BYTE2, 0, 0, true, true, Integer.MAX_VALUE, fstOutput, null, true, PackedInts.DEFAULT, true, 15);
+    Builder<Long> fstBuilder = new Builder<>(FST.INPUT_TYPE.BYTE2, 0, 0, true, true, Integer.MAX_VALUE, fstOutput, null, true, PackedInts.DEFAULT, true, 15);
     IntsRef scratch = new IntsRef();
     long ord = -1; // first ord will be 0
     String lastValue = null;

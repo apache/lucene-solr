@@ -60,22 +60,22 @@ public final class SegmentReader extends AtomicReader {
   final CloseableThreadLocal<Map<String,Object>> docValuesLocal = new CloseableThreadLocal<Map<String,Object>>() {
     @Override
     protected Map<String,Object> initialValue() {
-      return new HashMap<String,Object>();
+      return new HashMap<>();
     }
   };
 
   final CloseableThreadLocal<Map<String,Bits>> docsWithFieldLocal = new CloseableThreadLocal<Map<String,Bits>>() {
     @Override
     protected Map<String,Bits> initialValue() {
-      return new HashMap<String,Bits>();
+      return new HashMap<>();
     }
   };
 
-  final Map<String,DocValuesProducer> dvProducers = new HashMap<String,DocValuesProducer>();
+  final Map<String,DocValuesProducer> dvProducers = new HashMap<>();
   
   final FieldInfos fieldInfos;
 
-  private final List<Long> dvGens = new ArrayList<Long>();
+  private final List<Long> dvGens = new ArrayList<>();
   
   /**
    * Constructs a new SegmentReader with a new core.
@@ -221,7 +221,7 @@ public final class SegmentReader extends AtomicReader {
   
   // returns a gen->List<FieldInfo> mapping. Fields without DV updates have gen=-1
   private Map<Long,List<FieldInfo>> getGenInfos() {
-    final Map<Long,List<FieldInfo>> genInfos = new HashMap<Long,List<FieldInfo>>();
+    final Map<Long,List<FieldInfo>> genInfos = new HashMap<>();
     for (FieldInfo fi : fieldInfos) {
       if (fi.getDocValuesType() == null) {
         continue;
@@ -229,7 +229,7 @@ public final class SegmentReader extends AtomicReader {
       long gen = fi.getDocValuesGen();
       List<FieldInfo> infos = genInfos.get(gen);
       if (infos == null) {
-        infos = new ArrayList<FieldInfo>();
+        infos = new ArrayList<>();
         genInfos.put(gen, infos);
       }
       infos.add(fi);

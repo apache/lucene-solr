@@ -68,12 +68,12 @@ public class XsltUpdateRequestHandlerTest extends SolrTestCaseJ4 {
       " </document>" +
       "</random>";
 
-    Map<String,String> args = new HashMap<String, String>();
+    Map<String,String> args = new HashMap<>();
     args.put(CommonParams.TR, "xsl-update-handler-test.xsl");
       
     SolrCore core = h.getCore();
     LocalSolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
-    ArrayList<ContentStream> streams = new ArrayList<ContentStream>();
+    ArrayList<ContentStream> streams = new ArrayList<>();
     streams.add(new ContentStreamBase.StringStream(xml));
     req.setContentStreams(streams);
     SolrQueryResponse rsp = new SolrQueryResponse();

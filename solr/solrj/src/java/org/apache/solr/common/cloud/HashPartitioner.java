@@ -97,7 +97,7 @@ public class HashPartitioner {
     long range = (long)max - (long)min;
     long srange = Math.max(1, range / partitions);
 
-    List<Range> ranges = new ArrayList<Range>(partitions);
+    List<Range> ranges = new ArrayList<>(partitions);
 
     long start = min;
     long end = start;

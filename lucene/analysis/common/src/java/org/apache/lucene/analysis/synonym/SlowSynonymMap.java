@@ -57,7 +57,7 @@ class SlowSynonymMap {
       if (currMap.submap==null) {
         // for now hardcode at 4.0, as its what the old code did.
         // would be nice to fix, but shouldn't store a version in each submap!!!
-        currMap.submap = new CharArrayMap<SlowSynonymMap>(Version.LUCENE_CURRENT, 1, ignoreCase());
+        currMap.submap = new CharArrayMap<>(Version.LUCENE_CURRENT, 1, ignoreCase());
       }
 
       SlowSynonymMap map = currMap.submap.get(str);
@@ -103,7 +103,7 @@ class SlowSynonymMap {
 
   /** Produces a List<Token> from a List<String> */
   public static List<Token> makeTokens(List<String> strings) {
-    List<Token> ret = new ArrayList<Token>(strings.size());
+    List<Token> ret = new ArrayList<>(strings.size());
     for (String str : strings) {
       //Token newTok = new Token(str,0,0,"SYNONYM");
       Token newTok = new Token(str, 0,0,"SYNONYM");
@@ -122,7 +122,7 @@ class SlowSynonymMap {
    *
    */
   public static List<Token> mergeTokens(List<Token> lst1, List<Token> lst2) {
-    ArrayList<Token> result = new ArrayList<Token>();
+    ArrayList<Token> result = new ArrayList<>();
     if (lst1 ==null || lst2 ==null) {
       if (lst2 != null) result.addAll(lst2);
       if (lst1 != null) result.addAll(lst1);

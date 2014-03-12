@@ -291,7 +291,7 @@ public class ICUCollationField extends FieldType {
   @Override
   public List<IndexableField> createFields(SchemaField field, Object value, float boost) {
     if (field.hasDocValues()) {
-      List<IndexableField> fields = new ArrayList<IndexableField>();
+      List<IndexableField> fields = new ArrayList<>();
       fields.add(createField(field, value, boost));
       final BytesRef bytes = getCollationKey(field.getName(), value.toString());
       if (field.multiValued()) {

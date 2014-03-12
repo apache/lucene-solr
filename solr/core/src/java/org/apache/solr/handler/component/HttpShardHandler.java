@@ -68,12 +68,12 @@ public class HttpShardHandler extends ShardHandler {
     this.httpClient = httpClient;
     this.httpShardHandlerFactory = httpShardHandlerFactory;
     completionService = httpShardHandlerFactory.newCompletionService();
-    pending = new HashSet<Future<ShardResponse>>();
+    pending = new HashSet<>();
 
     // maps "localhost:8983|localhost:7574" to a shuffled List("http://localhost:8983","http://localhost:7574")
     // This is primarily to keep track of what order we should use to query the replicas of a shard
     // so that we use the same replica for all phases of a distributed request.
-    shardToURLs = new HashMap<String,List<String>>();
+    shardToURLs = new HashMap<>();
 
   }
 
@@ -285,7 +285,7 @@ public class HttpShardHandler extends ShardHandler {
         if(shardKeys == null) shardKeys = params.get(ShardParams.SHARD_KEYS);//eprecated
 
         // This will be the complete list of slices we need to query for this request.
-        slices = new HashMap<String,Slice>();
+        slices = new HashMap<>();
 
         // we need to find out what collections this request is for.
 

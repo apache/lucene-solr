@@ -104,7 +104,7 @@ public final class Util {
     // TODO: would be nice not to alloc this on every lookup
     FST.Arc<Long> arc = fst.getFirstArc(new FST.Arc<Long>());
     
-    FST.Arc<Long> scratchArc = new FST.Arc<Long>();
+    FST.Arc<Long> scratchArc = new FST.Arc<>();
 
     final IntsRef result = new IntsRef();
     
@@ -288,7 +288,7 @@ public final class Util {
     private final int topN;
     private final int maxQueueDepth;
 
-    private final FST.Arc<T> scratchArc = new FST.Arc<T>();
+    private final FST.Arc<T> scratchArc = new FST.Arc<>();
     
     final Comparator<T> comparator;
 
@@ -301,7 +301,7 @@ public final class Util {
       this.maxQueueDepth = maxQueueDepth;
       this.comparator = comparator;
 
-      queue = new TreeSet<FSTPath<T>>(new TieBreakByInputComparator<T>(comparator));
+      queue = new TreeSet<>(new TieBreakByInputComparator<>(comparator));
     }
 
     // If back plus this arc is competitive then add to queue:
@@ -344,7 +344,7 @@ public final class Util {
       System.arraycopy(path.input.ints, 0, newInput.ints, 0, path.input.length);
       newInput.ints[path.input.length] = path.arc.label;
       newInput.length = path.input.length+1;
-      final FSTPath<T> newPath = new FSTPath<T>(cost, path.arc, newInput);
+      final FSTPath<T> newPath = new FSTPath<>(cost, path.arc, newInput);
 
       queue.add(newPath);
 
@@ -362,7 +362,7 @@ public final class Util {
         startOutput = fst.outputs.getNoOutput();
       }
 
-      FSTPath<T> path = new FSTPath<T>(startOutput, node, input);
+      FSTPath<T> path = new FSTPath<>(startOutput, node, input);
       fst.readFirstTargetArc(node, path.arc, bytesReader);
 
       //System.out.println("add start paths");
@@ -381,7 +381,7 @@ public final class Util {
 
     public MinResult<T>[] search() throws IOException {
 
-      final List<MinResult<T>> results = new ArrayList<MinResult<T>>();
+      final List<MinResult<T>> results = new ArrayList<>();
 
       //System.out.println("search topN=" + topN);
 
@@ -422,7 +422,7 @@ public final class Util {
           //System.out.println("    empty string!  cost=" + path.cost);
           // Empty string!
           path.input.length--;
-          results.add(new MinResult<T>(path.input, path.cost));
+          results.add(new MinResult<>(path.input, path.cost));
           continue;
         }
 
@@ -486,7 +486,7 @@ public final class Util {
             T finalOutput = fst.outputs.add(path.cost, path.arc.output);
             if (acceptResult(path.input, finalOutput)) {
               //System.out.println("    add result: " + path);
-              results.add(new MinResult<T>(path.input, finalOutput));
+              results.add(new MinResult<>(path.input, finalOutput));
             } else {
               rejectCount++;
               assert rejectCount + topN <= maxQueueDepth: "maxQueueDepth (" + maxQueueDepth + ") is too small for topN (" + topN + "): rejected " + rejectCount + " paths";
@@ -529,7 +529,7 @@ public final class Util {
 
     // All paths are kept, so we can pass topN for
     // maxQueueDepth and the pruning is admissible:
-    TopNSearcher<T> searcher = new TopNSearcher<T>(fst, topN, topN, comparator);
+    TopNSearcher<T> searcher = new TopNSearcher<>(fst, topN, topN, comparator);
 
     // since this search is initialized with a single start node 
     // it is okay to start with an empty input path here
@@ -578,15 +578,15 @@ public final class Util {
     final FST.Arc<T> startArc = fst.getFirstArc(new FST.Arc<T>());
 
     // A queue of transitions to consider for the next level.
-    final List<FST.Arc<T>> thisLevelQueue = new ArrayList<FST.Arc<T>>();
+    final List<FST.Arc<T>> thisLevelQueue = new ArrayList<>();
 
     // A queue of transitions to consider when processing the next level.
-    final List<FST.Arc<T>> nextLevelQueue = new ArrayList<FST.Arc<T>>();
+    final List<FST.Arc<T>> nextLevelQueue = new ArrayList<>();
     nextLevelQueue.add(startArc);
     //System.out.println("toDot: startArc: " + startArc);
     
     // A list of states on the same level (for ranking).
-    final List<Integer> sameLevelStates = new ArrayList<Integer>();
+    final List<Integer> sameLevelStates = new ArrayList<>();
 
     // A bitset of already seen states (target offset).
     final BitSet seen = new BitSet();
@@ -609,7 +609,7 @@ public final class Util {
     final T NO_OUTPUT = fst.outputs.getNoOutput();
     final BytesReader r = fst.getBytesReader();
 
-    // final FST.Arc<T> scratchArc = new FST.Arc<T>();
+    // final FST.Arc<T> scratchArc = new FST.Arc<>();
 
     {
       final String stateColor;

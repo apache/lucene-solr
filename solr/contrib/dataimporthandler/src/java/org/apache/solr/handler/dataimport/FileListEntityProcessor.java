@@ -200,7 +200,7 @@ public class FileListEntityProcessor extends EntityProcessorBase {
   public Map<String, Object> nextRow() {
     if (rowIterator != null)
       return getNext();
-    List<Map<String, Object>> fileDetails = new ArrayList<Map<String, Object>>();
+    List<Map<String, Object>> fileDetails = new ArrayList<>();
     File dir = new File(baseDir);
 
     String dateStr = context.getEntityAttribute(NEWER_THAN);
@@ -243,7 +243,7 @@ public class FileListEntityProcessor extends EntityProcessorBase {
   }
 
   private void addDetails(List<Map<String, Object>> files, File dir, String name) {
-    Map<String, Object> details = new HashMap<String, Object>();
+    Map<String, Object> details = new HashMap<>();
     File aFile = new File(dir, name);
     if (aFile.isDirectory()) return;
     long sz = aFile.length();

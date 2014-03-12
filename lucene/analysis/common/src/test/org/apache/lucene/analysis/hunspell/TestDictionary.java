@@ -185,7 +185,7 @@ public class TestDictionary extends LuceneTestCase {
   
   public void testReplacements() throws Exception {
     Outputs<CharsRef> outputs = CharSequenceOutputs.getSingleton();
-    Builder<CharsRef> builder = new Builder<CharsRef>(FST.INPUT_TYPE.BYTE2, outputs);
+    Builder<CharsRef> builder = new Builder<>(FST.INPUT_TYPE.BYTE2, outputs);
     IntsRef scratchInts = new IntsRef();
     
     // a -> b

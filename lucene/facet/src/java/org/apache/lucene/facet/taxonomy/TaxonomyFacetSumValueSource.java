@@ -86,7 +86,7 @@ public class TaxonomyFacetSumValueSource extends FloatTaxonomyFacets {
 
   private final void sumValues(List<MatchingDocs> matchingDocs, boolean keepScores, ValueSource valueSource) throws IOException {
     final FakeScorer scorer = new FakeScorer();
-    Map<String, Scorer> context = new HashMap<String, Scorer>();
+    Map<String, Scorer> context = new HashMap<>();
     if (keepScores) {
       context.put("scorer", scorer);
     }

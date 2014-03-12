@@ -55,7 +55,7 @@ final class FSTSynonymFilterFactory extends TokenFilterFactory implements Resour
   private final String synonyms;
   private final String format;
   private final boolean expand;
-  private final Map<String, String> tokArgs = new HashMap<String, String>();
+  private final Map<String, String> tokArgs = new HashMap<>();
 
   private SynonymMap map;
   

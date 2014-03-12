@@ -145,7 +145,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   /** Opaque Map&lt;String, String&gt; that user can specify during IndexWriter.commit */
   public Map<String,String> userData = Collections.<String,String>emptyMap();
   
-  private List<SegmentCommitInfo> segments = new ArrayList<SegmentCommitInfo>();
+  private List<SegmentCommitInfo> segments = new ArrayList<>();
   
   /**
    * If non-null, information about loading segments_N files
@@ -355,7 +355,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
             if (numGensUpdatesFiles == 0) {
               genUpdatesFiles = Collections.emptyMap();
             } else {
-              genUpdatesFiles = new HashMap<Long,Set<String>>(numGensUpdatesFiles);
+              genUpdatesFiles = new HashMap<>(numGensUpdatesFiles);
               for (int i = 0; i < numGensUpdatesFiles; i++) {
                 genUpdatesFiles.put(input.readLong(), input.readStringSet());
               }
@@ -428,7 +428,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     ChecksumIndexOutput segnOutput = null;
     boolean success = false;
 
-    final Set<String> upgradedSIFiles = new HashSet<String>();
+    final Set<String> upgradedSIFiles = new HashSet<>();
 
     try {
       segnOutput = new ChecksumIndexOutput(directory.createOutput(segmentsFileName, IOContext.DEFAULT));
@@ -586,13 +586,13 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     try {
       final SegmentInfos sis = (SegmentInfos) super.clone();
       // deep clone, first recreate all collections:
-      sis.segments = new ArrayList<SegmentCommitInfo>(size());
+      sis.segments = new ArrayList<>(size());
       for(final SegmentCommitInfo info : this) {
         assert info.info.getCodec() != null;
         // dont directly access segments, use add method!!!
         sis.add(info.clone());
       }
-      sis.userData = new HashMap<String,String>(userData);
+      sis.userData = new HashMap<>(userData);
       return sis;
     } catch (CloneNotSupportedException e) {
       throw new RuntimeException("should not happen", e);
@@ -947,7 +947,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
    *  The returned collection is recomputed on each
    *  invocation.  */
   public Collection<String> files(Directory dir, boolean includeSegmentsFile) throws IOException {
-    HashSet<String> files = new HashSet<String>();
+    HashSet<String> files = new HashSet<>();
     if (includeSegmentsFile) {
       final String segmentFileName = getSegmentsFileName();
       if (segmentFileName != null) {
@@ -1093,7 +1093,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   
   /** applies all changes caused by committing a merge to this SegmentInfos */
   void applyMergeChanges(MergePolicy.OneMerge merge, boolean dropSegment) {
-    final Set<SegmentCommitInfo> mergedAway = new HashSet<SegmentCommitInfo>(merge.segments);
+    final Set<SegmentCommitInfo> mergedAway = new HashSet<>(merge.segments);
     boolean inserted = false;
     int newSegIdx = 0;
     for (int segIdx = 0, cnt = segments.size(); segIdx < cnt; segIdx++) {
@@ -1125,7 +1125,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   }
 
   List<SegmentCommitInfo> createBackupSegmentInfos() {
-    final List<SegmentCommitInfo> list = new ArrayList<SegmentCommitInfo>(size());
+    final List<SegmentCommitInfo> list = new ArrayList<>(size());
     for(final SegmentCommitInfo info : this) {
       assert info.info.getCodec() != null;
       list.add(info.clone());

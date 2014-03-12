@@ -44,7 +44,7 @@ import org.apache.lucene.util.TestUtil;
                                                   // Lucene3x doesnt have totalTermFreq, so the test isn't interesting there.
 public class TestBagOfPositions extends LuceneTestCase {
   public void test() throws Exception {
-    List<String> postingsList = new ArrayList<String>();
+    List<String> postingsList = new ArrayList<>();
     int numTerms = atLeast(300);
     final int maxTermsPerDoc = TestUtil.nextInt(random(), 10, 20);
     boolean isSimpleText = "SimpleText".equals(TestUtil.getPostingsFormat("field"));
@@ -67,7 +67,7 @@ public class TestBagOfPositions extends LuceneTestCase {
     }
     Collections.shuffle(postingsList, random());
 
-    final ConcurrentLinkedQueue<String> postings = new ConcurrentLinkedQueue<String>(postingsList);
+    final ConcurrentLinkedQueue<String> postings = new ConcurrentLinkedQueue<>(postingsList);
 
     Directory dir = newFSDirectory(TestUtil.getTempDir("bagofpositions"));
 

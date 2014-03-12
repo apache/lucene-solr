@@ -178,7 +178,7 @@ public class QueryResultKeyTest extends SolrTestCaseJ4 {
    * specified ints
    */
   private List<Query> buildFiltersFromNumbers(int[] values) {
-    ArrayList<Query> filters = new ArrayList<Query>(values.length);
+    ArrayList<Query> filters = new ArrayList<>(values.length);
     for (int val : values) {
       filters.add(new FlatHashTermQuery(String.valueOf(val)));
     }

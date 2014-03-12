@@ -28,7 +28,7 @@ import java.util.Random;
 
 
 class MemWriter extends FastWriter {
-  public List<char[]> buffers = new LinkedList<char[]>();
+  public List<char[]> buffers = new LinkedList<>();
 
   Random r;
   public MemWriter(char[] tempBuffer, Random r) {

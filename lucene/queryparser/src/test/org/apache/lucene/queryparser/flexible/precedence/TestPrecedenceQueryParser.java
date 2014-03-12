@@ -431,7 +431,7 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
     final String hourField = "hour";
     PrecedenceQueryParser qp = new PrecedenceQueryParser(new MockAnalyzer(random()));
 
-    Map<CharSequence, DateTools.Resolution> fieldMap = new HashMap<CharSequence,DateTools.Resolution>();
+    Map<CharSequence, DateTools.Resolution> fieldMap = new HashMap<>();
     // set a field specific date resolution
     fieldMap.put(monthField, DateTools.Resolution.MONTH);
     qp.setDateResolution(fieldMap);

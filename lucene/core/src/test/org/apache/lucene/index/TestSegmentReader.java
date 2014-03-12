@@ -75,11 +75,11 @@ public class TestSegmentReader extends LuceneTestCase {
   }
   
   public void testGetFieldNameVariations() {
-    Collection<String> allFieldNames = new HashSet<String>();
-    Collection<String> indexedFieldNames = new HashSet<String>();
-    Collection<String> notIndexedFieldNames = new HashSet<String>();
-    Collection<String> tvFieldNames = new HashSet<String>();
-    Collection<String> noTVFieldNames = new HashSet<String>();
+    Collection<String> allFieldNames = new HashSet<>();
+    Collection<String> indexedFieldNames = new HashSet<>();
+    Collection<String> notIndexedFieldNames = new HashSet<>();
+    Collection<String> tvFieldNames = new HashSet<>();
+    Collection<String> noTVFieldNames = new HashSet<>();
 
     for(FieldInfo fieldInfo : reader.getFieldInfos()) {
       final String name = fieldInfo.name;

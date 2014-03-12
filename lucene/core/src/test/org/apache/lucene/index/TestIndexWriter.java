@@ -1390,7 +1390,7 @@ public class TestIndexWriter extends LuceneTestCase {
         r = DirectoryReader.open(dir);
       }
 
-      List<String> files = new ArrayList<String>(Arrays.asList(dir.listAll()));
+      List<String> files = new ArrayList<>(Arrays.asList(dir.listAll()));
 
       // RAMDir won't have a write.lock, but fs dirs will:
       files.remove("write.lock");
@@ -1868,7 +1868,7 @@ public class TestIndexWriter extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir,
                                     new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
 
-    final List<Document> docs = new ArrayList<Document>();
+    final List<Document> docs = new ArrayList<>();
     docs.add(new Document());
     w.updateDocuments(new Term("foo", "bar"),
                       docs);
@@ -2183,9 +2183,9 @@ public class TestIndexWriter extends LuceneTestCase {
     int iters = atLeast(100);
     int docCount = 0;
     int docId = 0;
-    Set<String> liveIds = new HashSet<String>();
+    Set<String> liveIds = new HashSet<>();
     for (int i = 0; i < iters; i++) {
-      List<Iterable<IndexableField>> docs = new ArrayList<Iterable<IndexableField>>();
+      List<Iterable<IndexableField>> docs = new ArrayList<>();
       FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
       FieldType idFt = new FieldType(TextField.TYPE_STORED);
       
@@ -2364,7 +2364,7 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testMergeAllDeleted() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    final SetOnce<IndexWriter> iwRef = new SetOnce<IndexWriter>();
+    final SetOnce<IndexWriter> iwRef = new SetOnce<>();
     iwc.setInfoStream(new RandomIndexWriter.TestPointInfoStream(iwc.getInfoStream(), new RandomIndexWriter.TestPoint() {
       @Override
       public void apply(String message) {

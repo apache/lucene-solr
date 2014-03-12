@@ -55,7 +55,7 @@ public class TermDistinctValuesCollector extends AbstractDistinctValuesCollector
   public TermDistinctValuesCollector(String groupField, String countField, Collection<SearchGroup<BytesRef>> groups) {
     this.groupField = groupField;
     this.countField = countField;
-    this.groups = new ArrayList<GroupCount>(groups.size());
+    this.groups = new ArrayList<>(groups.size());
     for (SearchGroup<BytesRef> group : groups) {
       this.groups.add(new GroupCount(group.groupValue));
     }

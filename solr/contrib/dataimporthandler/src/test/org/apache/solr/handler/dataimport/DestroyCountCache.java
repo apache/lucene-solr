@@ -25,7 +25,7 @@ import java.util.Map;
 import org.junit.Assert;
 
 public class DestroyCountCache extends SortedMapBackedCache {
-  static Map<DIHCache,DIHCache> destroyed = new IdentityHashMap<DIHCache,DIHCache>();
+  static Map<DIHCache,DIHCache> destroyed = new IdentityHashMap<>();
   
   @Override
   public void destroy() {

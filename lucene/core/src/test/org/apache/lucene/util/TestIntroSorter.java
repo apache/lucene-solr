@@ -26,7 +26,7 @@ public class TestIntroSorter extends BaseSortTestCase {
 
   @Override
   public Sorter newSorter(Entry[] arr) {
-    return new ArrayIntroSorter<Entry>(arr, ArrayUtil.<Entry>naturalComparator());
+    return new ArrayIntroSorter<>(arr, ArrayUtil.<Entry>naturalComparator());
   }
 
 }

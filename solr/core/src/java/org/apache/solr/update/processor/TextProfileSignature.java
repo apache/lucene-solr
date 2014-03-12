@@ -65,7 +65,7 @@ public class TextProfileSignature extends MD5Signature {
 
   @Override
   public void add(String content) {
-    HashMap<String, Token> tokens = new HashMap<String, Token>();
+    HashMap<String, Token> tokens = new HashMap<>();
 
     StringBuilder curToken = new StringBuilder();
     int maxFreq = 0;
@@ -105,7 +105,7 @@ public class TextProfileSignature extends MD5Signature {
         maxFreq = tok.cnt;
     }
     Iterator<Token> it = tokens.values().iterator();
-    ArrayList<Token> profile = new ArrayList<Token>();
+    ArrayList<Token> profile = new ArrayList<>();
     // calculate the QUANT value
     int quant = Math.round(maxFreq * quantRate);
     if (quant < 2) {

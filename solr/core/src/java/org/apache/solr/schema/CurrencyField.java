@@ -130,7 +130,7 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
     // Initialize field type for amount
     fieldTypeAmountRaw = new TrieLongField();
     fieldTypeAmountRaw.setTypeName("amount_raw_type_tlong");
-    Map<String,String> map = new HashMap<String,String>(1);
+    Map<String,String> map = new HashMap<>(1);
     map.put("precisionStep", precisionStepString);
     fieldTypeAmountRaw.init(schema, map);
     
@@ -171,7 +171,7 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
   public List<IndexableField> createFields(SchemaField field, Object externalVal, float boost) {
     CurrencyValue value = CurrencyValue.parse(externalVal.toString(), defaultCurrency);
 
-    List<IndexableField> f = new ArrayList<IndexableField>();
+    List<IndexableField> f = new ArrayList<>();
     SchemaField amountField = getAmountField(field);
     f.add(amountField.createField(String.valueOf(value.getAmount()), amountField.indexed() && !amountField.omitNorms() ? boost : 1F));
     SchemaField currencyField = getCurrencyField(field);
@@ -201,7 +201,7 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
 
   private void createDynamicCurrencyField(String suffix, FieldType type) {
     String name = "*" + POLY_FIELD_SEPARATOR + suffix;
-    Map<String, String> props = new HashMap<String, String>();
+    Map<String, String> props = new HashMap<>();
     props.put("indexed", "true");
     props.put("stored", "false");
     props.put("multiValued", "false");
@@ -671,7 +671,7 @@ class FileExchangeRateProvider implements ExchangeRateProvider {
   protected static final String PARAM_CURRENCY_CONFIG       = "currencyConfig";
 
   // Exchange rate map, maps Currency Code -> Currency Code -> Rate
-  private Map<String, Map<String, Double>> rates = new HashMap<String, Map<String, Double>>();
+  private Map<String, Map<String, Double>> rates = new HashMap<>();
 
   private String currencyConfigFile;
   private ResourceLoader loader;
@@ -740,7 +740,7 @@ class FileExchangeRateProvider implements ExchangeRateProvider {
     Map<String, Double> rhs = ratesMap.get(sourceCurrencyCode);
 
     if (rhs == null) {
-      rhs = new HashMap<String, Double>();
+      rhs = new HashMap<>();
       ratesMap.put(sourceCurrencyCode, rhs);
     }
 
@@ -769,7 +769,7 @@ class FileExchangeRateProvider implements ExchangeRateProvider {
 
   @Override
   public Set<String> listAvailableCurrencies() {
-    Set<String> currencies = new HashSet<String>();
+    Set<String> currencies = new HashSet<>();
     for(String from : rates.keySet()) {
       currencies.add(from);
       for(String to : rates.get(from).keySet()) {
@@ -782,7 +782,7 @@ class FileExchangeRateProvider implements ExchangeRateProvider {
   @Override
   public boolean reload() throws SolrException {
     InputStream is = null;
-    Map<String, Map<String, Double>> tmpRates = new HashMap<String, Map<String, Double>>();
+    Map<String, Map<String, Double>> tmpRates = new HashMap<>();
     try {
       log.info("Reloading exchange rates from file "+this.currencyConfigFile);
 

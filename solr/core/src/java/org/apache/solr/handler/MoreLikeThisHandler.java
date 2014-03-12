@@ -98,7 +98,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
 
       String[] fqs = req.getParams().getParams(CommonParams.FQ);
       if (fqs!=null && fqs.length!=0) {
-          filters = new ArrayList<Query>();
+          filters = new ArrayList<>();
         for (String fq : fqs) {
           if (fq != null && fq.trim().length()!=0) {
             QParser fqp = QParser.getParser(fq, null, req);
@@ -186,14 +186,14 @@ public class MoreLikeThisHandler extends RequestHandlerBase
   
     if( interesting != null ) {
       if( termStyle == TermStyle.DETAILS ) {
-        NamedList<Float> it = new NamedList<Float>();
+        NamedList<Float> it = new NamedList<>();
         for( InterestingTerm t : interesting ) {
           it.add( t.term.toString(), t.boost );
         }
         rsp.add( "interestingTerms", it );
       }
       else {
-        List<String> it = new ArrayList<String>( interesting.size() );
+        List<String> it = new ArrayList<>( interesting.size() );
         for( InterestingTerm t : interesting ) {
           it.add( t.term.text());
         }
@@ -236,7 +236,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
         if (null != dbgInfo) {
           if (null != filters) {
             dbgInfo.add("filter_queries",req.getParams().getParams(CommonParams.FQ));
-            List<String> fqs = new ArrayList<String>(filters.size());
+            List<String> fqs = new ArrayList<>(filters.size());
             for (Query fq : filters) {
               fqs.add(QueryParsing.toString(fq, req.getSchema()));
             }
@@ -388,7 +388,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
     public NamedList<DocList> getMoreLikeThese( DocList docs, int rows, int flags ) throws IOException
     {
       IndexSchema schema = searcher.getSchema();
-      NamedList<DocList> mlt = new SimpleOrderedMap<DocList>();
+      NamedList<DocList> mlt = new SimpleOrderedMap<>();
       DocIterator iterator = docs.iterator();
       while( iterator.hasNext() ) {
         int id = iterator.nextDoc();
@@ -404,7 +404,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
     public NamedList<BooleanQuery> getMoreLikeTheseQuery(DocList docs)
         throws IOException {
       IndexSchema schema = searcher.getSchema();
-      NamedList<BooleanQuery> result = new NamedList<BooleanQuery>();
+      NamedList<BooleanQuery> result = new NamedList<>();
       DocIterator iterator = docs.iterator();
       while (iterator.hasNext()) {
         int id = iterator.nextDoc();

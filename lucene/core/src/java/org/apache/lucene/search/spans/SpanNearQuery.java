@@ -61,7 +61,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
   public SpanNearQuery(SpanQuery[] clauses, int slop, boolean inOrder, boolean collectPayloads) {
 
     // copy clauses array into an ArrayList
-    this.clauses = new ArrayList<SpanQuery>(clauses.length);
+    this.clauses = new ArrayList<>(clauses.length);
     for (int i = 0; i < clauses.length; i++) {
       SpanQuery clause = clauses[i];
       if (field == null) {                               // check field

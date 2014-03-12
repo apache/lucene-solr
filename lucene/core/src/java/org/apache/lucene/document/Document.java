@@ -40,7 +40,7 @@ import org.apache.lucene.util.BytesRef;
 
 public final class Document implements Iterable<IndexableField> {
 
-  private final List<IndexableField> fields = new ArrayList<IndexableField>();
+  private final List<IndexableField> fields = new ArrayList<>();
 
   /** Constructs a new document with no fields. */
   public Document() {}
@@ -115,7 +115,7 @@ public final class Document implements Iterable<IndexableField> {
   * @return a <code>BytesRef[]</code> of binary field values
   */
   public final BytesRef[] getBinaryValues(String name) {
-    final List<BytesRef> result = new ArrayList<BytesRef>();
+    final List<BytesRef> result = new ArrayList<>();
     for (IndexableField field : fields) {
       if (field.name().equals(name)) {
         final BytesRef bytes = field.binaryValue();
@@ -171,7 +171,7 @@ public final class Document implements Iterable<IndexableField> {
    * @return a <code>IndexableField[]</code> array
    */
   public IndexableField[] getFields(String name) {
-    List<IndexableField> result = new ArrayList<IndexableField>();
+    List<IndexableField> result = new ArrayList<>();
     for (IndexableField field : fields) {
       if (field.name().equals(name)) {
         result.add(field);
@@ -204,7 +204,7 @@ public final class Document implements Iterable<IndexableField> {
    * @return a <code>String[]</code> of field values
    */
   public final String[] getValues(String name) {
-    List<String> result = new ArrayList<String>();
+    List<String> result = new ArrayList<>();
     for (IndexableField field : fields) {
       if (field.name().equals(name) && field.stringValue() != null) {
         result.add(field.stringValue());

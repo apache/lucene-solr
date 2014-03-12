@@ -196,7 +196,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 
   @Override
   public NamedList<Object> getStatistics() {
-    NamedList<Object> lst = new SimpleOrderedMap<Object>();
+    NamedList<Object> lst = new SimpleOrderedMap<>();
     Snapshot snapshot = requestTimes.getSnapshot();
     lst.add("handlerStart",handlerStart);
     lst.add("requests", numRequests.longValue());

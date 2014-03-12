@@ -145,7 +145,7 @@ public class Lucene3xSegmentInfoReader extends SegmentInfoReader {
     final long delGen = input.readLong();
     
     final int docStoreOffset = input.readInt();
-    final Map<String,String> attributes = new HashMap<String,String>();
+    final Map<String,String> attributes = new HashMap<>();
     
     // parse the docstore stuff and shove it into attributes
     final String docStoreSegment;
@@ -172,7 +172,7 @@ public class Lucene3xSegmentInfoReader extends SegmentInfoReader {
     if (numNormGen == SegmentInfo.NO) {
       normGen = null;
     } else {
-      normGen = new HashMap<Integer, Long>();
+      normGen = new HashMap<>();
       for(int j=0;j<numNormGen;j++) {
         normGen.put(j, input.readLong());
       }
@@ -192,7 +192,7 @@ public class Lucene3xSegmentInfoReader extends SegmentInfoReader {
     }
 
     // Replicate logic from 3.x's SegmentInfo.files():
-    final Set<String> files = new HashSet<String>();
+    final Set<String> files = new HashSet<>();
     if (isCompoundFile) {
       files.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
     } else {

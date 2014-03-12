@@ -37,7 +37,7 @@ public class RoutingRule extends ZkNodeProps {
     this.routeRangesStr = (String) propMap.get("routeRanges");
     String[] rangesArr = this.routeRangesStr.split(",");
     if (rangesArr != null && rangesArr.length > 0)  {
-      this.routeRanges = new ArrayList<DocRouter.Range>();
+      this.routeRanges = new ArrayList<>();
       for (String r : rangesArr) {
         routeRanges.add(DocRouter.DEFAULT.fromString(r));
       }

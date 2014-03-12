@@ -47,11 +47,11 @@ public final class SPIClassIterator<S> implements Iterator<Class<? extends S>> {
   private Iterator<String> linesIterator;
   
   public static <S> SPIClassIterator<S> get(Class<S> clazz) {
-    return new SPIClassIterator<S>(clazz, Thread.currentThread().getContextClassLoader());
+    return new SPIClassIterator<>(clazz, Thread.currentThread().getContextClassLoader());
   }
   
   public static <S> SPIClassIterator<S> get(Class<S> clazz, ClassLoader loader) {
-    return new SPIClassIterator<S>(clazz, loader);
+    return new SPIClassIterator<>(clazz, loader);
   }
   
   /** Utility method to check if some class loader is a (grand-)parent of or the same as another one.
@@ -84,7 +84,7 @@ public final class SPIClassIterator<S> implements Iterator<Class<? extends S>> {
       if (lines != null) {
         lines.clear();
       } else {
-        lines = new ArrayList<String>();
+        lines = new ArrayList<>();
       }
       final URL url = profilesEnum.nextElement();
       try {

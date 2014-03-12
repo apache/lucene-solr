@@ -101,7 +101,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   /**
    * Key is the dictionary, value is the SpellChecker for that dictionary name
    */
-  protected Map<String, SolrSpellChecker> spellCheckers = new ConcurrentHashMap<String, SolrSpellChecker>();
+  protected Map<String, SolrSpellChecker> spellCheckers = new ConcurrentHashMap<>();
 
   protected QueryConverter queryConverter;
 
@@ -381,7 +381,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
       mergeData.origVsSuggestion.put(suggestion.getToken(), suggestion);
       HashSet<String> suggested = mergeData.origVsSuggested.get(suggestion.getToken());
       if (suggested == null) {
-        suggested = new HashSet<String>();
+        suggested = new HashSet<>();
         mergeData.origVsSuggested.put(suggestion.getToken(), suggested);
       }
 
@@ -471,7 +471,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   }
 
   private Collection<Token> getTokens(String q, Analyzer analyzer) throws IOException {
-    Collection<Token> result = new ArrayList<Token>();
+    Collection<Token> result = new ArrayList<>();
     assert analyzer != null;
     TokenStream ts = analyzer.tokenStream("", q);
     try {
@@ -559,7 +559,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
       Token inputToken = entry.getKey();
       String tokenString = new String(inputToken.buffer(), 0, inputToken
           .length());
-      Map<String,Integer> theSuggestions = new LinkedHashMap<String,Integer>(
+      Map<String,Integer> theSuggestions = new LinkedHashMap<>(
           entry.getValue());
       Iterator<String> sugIter = theSuggestions.keySet().iterator();
       while (sugIter.hasNext()) {
@@ -589,7 +589,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
           suggestionList.add("origFreq", spellingResult
               .getTokenFrequency(inputToken));
           
-          ArrayList<SimpleOrderedMap> sugs = new ArrayList<SimpleOrderedMap>();
+          ArrayList<SimpleOrderedMap> sugs = new ArrayList<>();
           suggestionList.add("suggestion", sugs);
           for (Map.Entry<String,Integer> suggEntry : theSuggestions.entrySet()) {
             SimpleOrderedMap sugEntry = new SimpleOrderedMap();
@@ -664,7 +664,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         }
      }
 
-      Map<String, QueryConverter> queryConverters = new HashMap<String, QueryConverter>();
+      Map<String, QueryConverter> queryConverters = new HashMap<>();
       core.initPlugins(queryConverters,QueryConverter.class);
 
       //ensure that there is at least one query converter defined

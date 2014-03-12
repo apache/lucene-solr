@@ -125,8 +125,8 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
           @Override
           public void run() {
             // TODO: would be better if this were cross thread, so that we make sure one thread deleting anothers added docs works:
-            final List<String> toDeleteIDs = new ArrayList<String>();
-            final List<SubDocs> toDeleteSubDocs = new ArrayList<SubDocs>();
+            final List<String> toDeleteIDs = new ArrayList<>();
+            final List<SubDocs> toDeleteSubDocs = new ArrayList<>();
             while(System.currentTimeMillis() < stopTime && !failed.get()) {
               try {
 
@@ -180,9 +180,9 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
                     }
 
                     final Field packIDField = newStringField("packID", packID, Field.Store.YES);
-                    final List<String> docIDs = new ArrayList<String>();
+                    final List<String> docIDs = new ArrayList<>();
                     final SubDocs subDocs = new SubDocs(packID, docIDs);
-                    final List<Document> docsList = new ArrayList<Document>();
+                    final List<Document> docsList = new ArrayList<>();
 
                     allSubDocs.add(subDocs);
                     doc.add(packIDField);

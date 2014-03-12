@@ -119,7 +119,7 @@ class MinShouldMatchSumScorer extends Scorer {
 
   @Override
   public final Collection<ChildScorer> getChildren() {
-    ArrayList<ChildScorer> children = new ArrayList<ChildScorer>(numScorers);
+    ArrayList<ChildScorer> children = new ArrayList<>(numScorers);
     for (int i = 0; i < numScorers; i++) {
       children.add(new ChildScorer(subScorers[i], "SHOULD"));
     }

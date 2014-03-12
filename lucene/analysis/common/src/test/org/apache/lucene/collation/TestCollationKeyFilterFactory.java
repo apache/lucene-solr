@@ -128,7 +128,7 @@ public class TestCollationKeyFilterFactory extends BaseTokenStreamFactoryTestCas
     //
     String germanUmlaut = "Töne";
     String germanOE = "Toene";
-    Map<String,String> args = new HashMap<String,String>();
+    Map<String,String> args = new HashMap<>();
     args.put("custom", "rules.txt");
     args.put("strength", "primary");
     CollationKeyFilterFactory factory = new CollationKeyFilterFactory(args);

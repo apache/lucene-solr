@@ -287,8 +287,8 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       assertEquals("0", r.document(search.scoreDocs[0].doc).get("id"));
       // doc 2 and 3 only get a score from low freq terms
       assertEquals(
-          new HashSet<String>(Arrays.asList("2", "3")),
-          new HashSet<String>(Arrays.asList(
+          new HashSet<>(Arrays.asList("2", "3")),
+          new HashSet<>(Arrays.asList(
               r.document(search.scoreDocs[1].doc).get("id"),
               r.document(search.scoreDocs[2].doc).get("id"))));
     }
@@ -318,8 +318,8 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       TopDocs search = s.search(query, 10);
       assertEquals(search.totalHits, 2);
       assertEquals(
-          new HashSet<String>(Arrays.asList("0", "2")),
-          new HashSet<String>(Arrays.asList(
+          new HashSet<>(Arrays.asList("0", "2")),
+          new HashSet<>(Arrays.asList(
               r.document(search.scoreDocs[0].doc).get("id"),
               r.document(search.scoreDocs[1].doc).get("id"))));
     }
@@ -477,7 +477,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       
       TopDocs verifySearch = searcher.search(verifyQuery, reader.maxDoc());
       assertEquals(verifySearch.totalHits, cqSearch.totalHits);
-      Set<Integer> hits = new HashSet<Integer>();
+      Set<Integer> hits = new HashSet<>();
       for (ScoreDoc doc : verifySearch.scoreDocs) {
         hits.add(doc.doc);
       }
@@ -508,7 +508,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
   }
   
   private static List<TermAndFreq> queueToList(PriorityQueue<TermAndFreq> queue) {
-    List<TermAndFreq> terms = new ArrayList<CommonTermsQueryTest.TermAndFreq>();
+    List<TermAndFreq> terms = new ArrayList<>();
     while (queue.size() > 0) {
       terms.add(queue.pop());
     }

@@ -33,7 +33,7 @@ final class DocValuesProcessor extends StoredFieldsConsumer {
   // TODO: somewhat wasteful we also keep a map here; would
   // be more efficient if we could "reuse" the map/hash
   // lookup DocFieldProcessor already did "above"
-  private final Map<String,DocValuesWriter> writers = new HashMap<String,DocValuesWriter>();
+  private final Map<String,DocValuesWriter> writers = new HashMap<>();
   private final Counter bytesUsed;
 
   public DocValuesProcessor(Counter bytesUsed) {

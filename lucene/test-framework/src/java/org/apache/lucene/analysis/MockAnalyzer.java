@@ -48,7 +48,7 @@ public final class MockAnalyzer extends Analyzer {
   private int positionIncrementGap;
   private Integer offsetGap;
   private final Random random;
-  private Map<String,Integer> previousMappings = new HashMap<String,Integer>();
+  private Map<String,Integer> previousMappings = new HashMap<>();
   private boolean enableChecks = true;
   private int maxTokenLength = MockTokenizer.DEFAULT_MAX_TOKEN_LENGTH;
 

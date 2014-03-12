@@ -208,7 +208,7 @@ public class JsonPreAnalyzedParser implements PreAnalyzedParser {
 
   @Override
   public String toFormattedString(Field f) throws IOException {
-    Map<String,Object> map = new LinkedHashMap<String,Object>();
+    Map<String,Object> map = new LinkedHashMap<>();
     map.put(VERSION_KEY, VERSION);
     if (f.fieldType().stored()) {
       String stringValue = f.stringValue();
@@ -222,12 +222,12 @@ public class JsonPreAnalyzedParser implements PreAnalyzedParser {
     }
     TokenStream ts = f.tokenStreamValue();
     if (ts != null) {
-      List<Map<String,Object>> tokens = new LinkedList<Map<String,Object>>();
+      List<Map<String,Object>> tokens = new LinkedList<>();
       while (ts.incrementToken()) {
         Iterator<Class<? extends Attribute>> it = ts.getAttributeClassesIterator();
         String cTerm = null;
         String tTerm = null;
-        Map<String,Object> tok = new TreeMap<String,Object>();
+        Map<String,Object> tok = new TreeMap<>();
         while (it.hasNext()) {
           Class<? extends Attribute> cl = it.next();
           if (!ts.hasAttribute(cl)) {

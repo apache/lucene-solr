@@ -59,7 +59,7 @@ class Lucene3xNormsProducer extends DocValuesProducer {
   /** Extension of separate norms file */
   static final String SEPARATE_NORMS_EXTENSION = "s";
   
-  final Map<String,NormsDocValues> norms = new HashMap<String,NormsDocValues>();
+  final Map<String,NormsDocValues> norms = new HashMap<>();
   // any .nrm or .sNN files we have open at any time.
   // TODO: just a list, and double-close() separate norms files?
   final Set<IndexInput> openFiles = Collections.newSetFromMap(new IdentityHashMap<IndexInput,Boolean>());

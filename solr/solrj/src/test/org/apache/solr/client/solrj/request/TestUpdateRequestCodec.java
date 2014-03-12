@@ -73,7 +73,7 @@ public class TestUpdateRequestCodec extends LuceneTestCase {
     updateRequest.add(doc);
 
     doc = new SolrInputDocument();
-    Collection<String> foobar = new HashSet<String>();
+    Collection<String> foobar = new HashSet<>();
     foobar.add("baz1");
     foobar.add("baz2");
     doc.addField("foobar",foobar);
@@ -85,7 +85,7 @@ public class TestUpdateRequestCodec extends LuceneTestCase {
     JavaBinUpdateRequestCodec codec = new JavaBinUpdateRequestCodec();
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     codec.marshal(updateRequest, baos);
-    final List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
+    final List<SolrInputDocument> docs = new ArrayList<>();
     JavaBinUpdateRequestCodec.StreamingUpdateHandler handler = new JavaBinUpdateRequestCodec.StreamingUpdateHandler() {
       @Override
       public void update(SolrInputDocument document, UpdateRequest req, Integer commitWithin, Boolean overwrite) {
@@ -114,7 +114,7 @@ public class TestUpdateRequestCodec extends LuceneTestCase {
 
   @Test
   public void testIteratable() throws IOException {
-    final List<String> values = new ArrayList<String>();
+    final List<String> values = new ArrayList<>();
     values.add("iterItem1");
     values.add("iterItem2");
 
@@ -136,7 +136,7 @@ public class TestUpdateRequestCodec extends LuceneTestCase {
     JavaBinUpdateRequestCodec codec = new JavaBinUpdateRequestCodec();
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     codec.marshal(updateRequest, baos);
-    final List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
+    final List<SolrInputDocument> docs = new ArrayList<>();
     JavaBinUpdateRequestCodec.StreamingUpdateHandler handler = new JavaBinUpdateRequestCodec.StreamingUpdateHandler() {
       @Override
       public void update(SolrInputDocument document, UpdateRequest req, Integer commitWithin, Boolean overwrite) {
@@ -191,7 +191,7 @@ public class TestUpdateRequestCodec extends LuceneTestCase {
     updateRequest.add(doc);
 
     doc = new SolrInputDocument();
-    Collection<String> foobar = new HashSet<String>();
+    Collection<String> foobar = new HashSet<>();
     foobar.add("baz1");
     foobar.add("baz2");
     doc.addField("foobar",foobar);

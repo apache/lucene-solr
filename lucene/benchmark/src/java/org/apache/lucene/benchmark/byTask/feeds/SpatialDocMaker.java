@@ -50,7 +50,7 @@ public class SpatialDocMaker extends DocMaker {
   public static final String SPATIAL_FIELD = "spatial";
 
   //cache spatialStrategy by round number
-  private static Map<Integer,SpatialStrategy> spatialStrategyCache = new HashMap<Integer,SpatialStrategy>();
+  private static Map<Integer,SpatialStrategy> spatialStrategyCache = new HashMap<>();
 
   private SpatialStrategy strategy;
   private ShapeConverter shapeConverter;

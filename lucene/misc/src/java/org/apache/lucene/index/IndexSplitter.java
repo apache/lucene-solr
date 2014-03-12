@@ -73,14 +73,14 @@ public class IndexSplitter {
     if (args[1].equals("-l")) {
       is.listSegments();
     } else if (args[1].equals("-d")) {
-      List<String> segs = new ArrayList<String>();
+      List<String> segs = new ArrayList<>();
       for (int x = 2; x < args.length; x++) {
         segs.add(args[x]);
       }
       is.remove(segs.toArray(new String[0]));
     } else {
       File targetDir = new File(args[1]);
-      List<String> segs = new ArrayList<String>();
+      List<String> segs = new ArrayList<>();
       for (int x = 2; x < args.length; x++) {
         segs.add(args[x]);
       }

@@ -1138,7 +1138,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, cfg);
     int numDocs = atLeast(100);
     BytesRefHash hash = new BytesRefHash();
-    Map<String, String> docToString = new HashMap<String, String>();
+    Map<String, String> docToString = new HashMap<>();
     int maxLength = TestUtil.nextInt(random(), 1, 50);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
@@ -2086,7 +2086,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
       }
       int numValues = TestUtil.nextInt(random(), 0, maxValuesPerDoc);
       // create a random set of strings
-      Set<String> values = new TreeSet<String>();
+      Set<String> values = new TreeSet<>();
       for (int v = 0; v < numValues; v++) {
         values.add(TestUtil.randomSimpleString(random(), length));
       }
@@ -2097,7 +2097,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
       }
 
       // add in any order to the dv field
-      ArrayList<String> unordered = new ArrayList<String>(values);
+      ArrayList<String> unordered = new ArrayList<>(values);
       Collections.shuffle(unordered, random());
       for (String v : unordered) {
         doc.add(new SortedSetDocValuesField("dv", new BytesRef(v)));
@@ -2303,20 +2303,20 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
       }
       int numValues = random().nextInt(17);
       // create a random list of strings
-      List<String> values = new ArrayList<String>();
+      List<String> values = new ArrayList<>();
       for (int v = 0; v < numValues; v++) {
         values.add(TestUtil.randomSimpleString(random(), length));
       }
       
       // add in any order to the indexed field
-      ArrayList<String> unordered = new ArrayList<String>(values);
+      ArrayList<String> unordered = new ArrayList<>(values);
       Collections.shuffle(unordered, random());
       for (String v : values) {
         doc.add(newStringField("indexed", v, Field.Store.NO));
       }
 
       // add in any order to the dv field
-      ArrayList<String> unordered2 = new ArrayList<String>(values);
+      ArrayList<String> unordered2 = new ArrayList<>(values);
       Collections.shuffle(unordered2, random());
       for (String v : unordered2) {
         doc.add(new SortedSetDocValuesField("dv", new BytesRef(v)));
@@ -2628,7 +2628,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
       numDocs = TestUtil.nextInt(random(), 100, 200);
     }
     IndexWriter w = new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
-    List<byte[]> docBytes = new ArrayList<byte[]>();
+    List<byte[]> docBytes = new ArrayList<>();
     long totalBytes = 0;
     for(int docID=0;docID<numDocs;docID++) {
       // we don't use RandomIndexWriter because it might add
@@ -2726,7 +2726,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
       numDocs = TestUtil.nextInt(random(), 100, 200);
     }
     IndexWriter w = new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
-    List<byte[]> docBytes = new ArrayList<byte[]>();
+    List<byte[]> docBytes = new ArrayList<>();
     long totalBytes = 0;
     for(int docID=0;docID<numDocs;docID++) {
       // we don't use RandomIndexWriter because it might add
@@ -2905,7 +2905,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
         doc.add(dvNumericField);
       }
       int numSortedSetFields = random().nextInt(3);
-      Set<String> values = new TreeSet<String>();
+      Set<String> values = new TreeSet<>();
       for (int j = 0; j < numSortedSetFields; j++) {
         values.add(TestUtil.randomSimpleString(random()));
       }

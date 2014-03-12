@@ -54,7 +54,7 @@ import org.apache.lucene.util.fst.Util;
 public class FuzzySuggesterTest extends LuceneTestCase {
   
   public void testRandomEdits() throws IOException {
-    List<Input> keys = new ArrayList<Input>();
+    List<Input> keys = new ArrayList<>();
     int numTerms = atLeast(100);
     for (int i = 0; i < numTerms; i++) {
       keys.add(new Input("boo" + TestUtil.randomSimpleString(random()), 1 + random().nextInt(100)));
@@ -75,7 +75,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
   }
   
   public void testNonLatinRandomEdits() throws IOException {
-    List<Input> keys = new ArrayList<Input>();
+    List<Input> keys = new ArrayList<>();
     int numTerms = atLeast(100);
     for (int i = 0; i < numTerms; i++) {
       keys.add(new Input("буу" + TestUtil.randomSimpleString(random()), 1 + random().nextInt(100)));
@@ -596,9 +596,9 @@ public class FuzzySuggesterTest extends LuceneTestCase {
 
     int numQueries = atLeast(100);
     
-    final List<TermFreqPayload2> slowCompletor = new ArrayList<TermFreqPayload2>();
-    final TreeSet<String> allPrefixes = new TreeSet<String>();
-    final Set<String> seen = new HashSet<String>();
+    final List<TermFreqPayload2> slowCompletor = new ArrayList<>();
+    final TreeSet<String> allPrefixes = new TreeSet<>();
+    final Set<String> seen = new HashSet<>();
     
     Input[] keys = new Input[numQueries];
 
@@ -674,7 +674,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     if (VERBOSE) {
       // Don't just sort original list, to avoid VERBOSE
       // altering the test:
-      List<TermFreqPayload2> sorted = new ArrayList<TermFreqPayload2>(slowCompletor);
+      List<TermFreqPayload2> sorted = new ArrayList<>(slowCompletor);
       Collections.sort(sorted);
       for(TermFreqPayload2 ent : sorted) {
         System.out.println("  surface='" + ent.surfaceForm + " analyzed='" + ent.analyzedForm + "' weight=" + ent.weight);
@@ -696,7 +696,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
       List<LookupResult> r = suggester.lookup(TestUtil.stringToCharSequence(prefix, random()), false, topN);
 
       // 2. go thru whole set to find suggestions:
-      List<LookupResult> matches = new ArrayList<LookupResult>();
+      List<LookupResult> matches = new ArrayList<>();
 
       // "Analyze" the key:
       String[] tokens = prefix.split(" ");
@@ -929,8 +929,8 @@ public class FuzzySuggesterTest extends LuceneTestCase {
 
   public void testRandom2() throws Throwable {
     final int NUM = atLeast(200);
-    final List<Input> answers = new ArrayList<Input>();
-    final Set<String> seen = new HashSet<String>();
+    final List<Input> answers = new ArrayList<>();
+    final Set<String> seen = new HashSet<>();
     for(int i=0;i<NUM;i++) {
       final String s = randomSimpleString(8);
       if (!seen.contains(s)) {
@@ -1005,7 +1005,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
   }
 
   private List<LookupResult> slowFuzzyMatch(int prefixLen, int maxEdits, boolean allowTransposition, List<Input> answers, String frag) {
-    final List<LookupResult> results = new ArrayList<LookupResult>();
+    final List<LookupResult> results = new ArrayList<>();
     final int fragLen = frag.length();
     for(Input tf : answers) {
       //System.out.println("  check s=" + tf.term.utf8ToString());

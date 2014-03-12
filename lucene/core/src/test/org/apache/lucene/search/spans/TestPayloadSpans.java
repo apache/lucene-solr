@@ -270,7 +270,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     Spans spans = MultiSpansWrapper.wrap(is.getTopReaderContext(), snq);
 
     TopDocs topDocs = is.search(snq, 1);
-    Set<String> payloadSet = new HashSet<String>();
+    Set<String> payloadSet = new HashSet<>();
     for (int i = 0; i < topDocs.scoreDocs.length; i++) {
       while (spans.next()) {
         Collection<byte[]> payloads = spans.getPayload();
@@ -306,7 +306,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     Spans spans =  MultiSpansWrapper.wrap(is.getTopReaderContext(), snq);
 
     TopDocs topDocs = is.search(snq, 1);
-    Set<String> payloadSet = new HashSet<String>();
+    Set<String> payloadSet = new HashSet<>();
     for (int i = 0; i < topDocs.scoreDocs.length; i++) {
       while (spans.next()) {
         Collection<byte[]> payloads = spans.getPayload();
@@ -341,7 +341,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     Spans spans =  MultiSpansWrapper.wrap(is.getTopReaderContext(), snq);
 
     TopDocs topDocs = is.search(snq, 1);
-    Set<String> payloadSet = new HashSet<String>();
+    Set<String> payloadSet = new HashSet<>();
     for (int i = 0; i < topDocs.scoreDocs.length; i++) {
       while (spans.next()) {
         Collection<byte[]> payloads = spans.getPayload();
@@ -479,8 +479,8 @@ public class TestPayloadSpans extends LuceneTestCase {
   }
 
   final class PayloadFilter extends TokenFilter {
-    Set<String> entities = new HashSet<String>();
-    Set<String> nopayload = new HashSet<String>();
+    Set<String> entities = new HashSet<>();
+    Set<String> nopayload = new HashSet<>();
     int pos;
     PayloadAttribute payloadAtt;
     CharTermAttribute termAtt;

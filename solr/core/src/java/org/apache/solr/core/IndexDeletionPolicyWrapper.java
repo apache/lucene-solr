@@ -44,10 +44,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
   private final IndexDeletionPolicy deletionPolicy;
-  private volatile Map<Long, IndexCommit> solrVersionVsCommits = new ConcurrentHashMap<Long, IndexCommit>();
-  private final Map<Long, Long> reserves = new ConcurrentHashMap<Long,Long>();
+  private volatile Map<Long, IndexCommit> solrVersionVsCommits = new ConcurrentHashMap<>();
+  private final Map<Long, Long> reserves = new ConcurrentHashMap<>();
   private volatile IndexCommit latestCommit;
-  private final ConcurrentHashMap<Long, AtomicInteger> savedCommits = new ConcurrentHashMap<Long, AtomicInteger>();
+  private final ConcurrentHashMap<Long, AtomicInteger> savedCommits = new ConcurrentHashMap<>();
 
   public IndexDeletionPolicyWrapper(IndexDeletionPolicy deletionPolicy) {
     this.deletionPolicy = deletionPolicy;
@@ -102,7 +102,7 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
   }
 
   private List<IndexCommitWrapper> wrap(List<? extends IndexCommit> list) {
-    List<IndexCommitWrapper> result = new ArrayList<IndexCommitWrapper>();
+    List<IndexCommitWrapper> result = new ArrayList<>();
     for (IndexCommit indexCommit : list) result.add(new IndexCommitWrapper(indexCommit));
     return result;
   }
@@ -232,7 +232,7 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
   }
 
   private void updateCommitPoints(List<IndexCommitWrapper> list) {
-    Map<Long, IndexCommit> map = new ConcurrentHashMap<Long, IndexCommit>();
+    Map<Long, IndexCommit> map = new ConcurrentHashMap<>();
     for (IndexCommitWrapper wrapper : list) {
       if (!wrapper.isDeleted())
         map.put(wrapper.delegate.getGeneration(), wrapper.delegate);

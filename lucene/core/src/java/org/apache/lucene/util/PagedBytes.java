@@ -35,9 +35,9 @@ import org.apache.lucene.store.IndexInput;
 // TODO: refactor this, byteblockpool, fst.bytestore, and any
 // other "shift/mask big arrays". there are too many of these classes!
 public final class PagedBytes {
-  private final List<byte[]> blocks = new ArrayList<byte[]>();
+  private final List<byte[]> blocks = new ArrayList<>();
   // TODO: these are unused?
-  private final List<Integer> blockEnd = new ArrayList<Integer>();
+  private final List<Integer> blockEnd = new ArrayList<>();
   private final int blockSize;
   private final int blockBits;
   private final int blockMask;

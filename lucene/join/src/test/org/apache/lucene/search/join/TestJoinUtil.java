@@ -485,7 +485,7 @@ public class TestJoinUtil extends LuceneTestCase {
     IndexIterationContext context = new IndexIterationContext();
     int numRandomValues = nDocs / 2;
     context.randomUniqueValues = new String[numRandomValues];
-    Set<String> trackSet = new HashSet<String>();
+    Set<String> trackSet = new HashSet<>();
     context.randomFrom = new boolean[numRandomValues];
     for (int i = 0; i < numRandomValues; i++) {
       String uniqueRandomValue;
@@ -573,7 +573,7 @@ public class TestJoinUtil extends LuceneTestCase {
         toField = "from";
         queryVals = context.toHitsToJoinScore;
       }
-      final Map<BytesRef, JoinScore> joinValueToJoinScores = new HashMap<BytesRef, JoinScore>();
+      final Map<BytesRef, JoinScore> joinValueToJoinScores = new HashMap<>();
       if (multipleValuesPerDocument) {
         fromSearcher.search(new TermQuery(new Term("value", uniqueRandomValue)), new Collector() {
 
@@ -651,7 +651,7 @@ public class TestJoinUtil extends LuceneTestCase {
         });
       }
 
-      final Map<Integer, JoinScore> docToJoinScore = new HashMap<Integer, JoinScore>();
+      final Map<Integer, JoinScore> docToJoinScore = new HashMap<>();
       if (multipleValuesPerDocument) {
         if (scoreDocsInOrder) {
           AtomicReader slowCompositeReader = SlowCompositeReaderWrapper.wrap(toSearcher.getIndexReader());
@@ -659,7 +659,7 @@ public class TestJoinUtil extends LuceneTestCase {
           if (terms != null) {
             DocsEnum docsEnum = null;
             TermsEnum termsEnum = null;
-            SortedSet<BytesRef> joinValues = new TreeSet<BytesRef>(BytesRef.getUTF8SortedAsUnicodeComparator());
+            SortedSet<BytesRef> joinValues = new TreeSet<>(BytesRef.getUTF8SortedAsUnicodeComparator());
             joinValues.addAll(joinValueToJoinScores.keySet());
             for (BytesRef joinValue : joinValues) {
               termsEnum = terms.iterator(termsEnum);
@@ -764,7 +764,7 @@ public class TestJoinUtil extends LuceneTestCase {
     } else {
       hitsToJoinScores = context.toHitsToJoinScore.get(queryValue);
     }
-    List<Map.Entry<Integer,JoinScore>> hits = new ArrayList<Map.Entry<Integer, JoinScore>>(hitsToJoinScores.entrySet());
+    List<Map.Entry<Integer,JoinScore>> hits = new ArrayList<>(hitsToJoinScores.entrySet());
     Collections.sort(hits, new Comparator<Map.Entry<Integer, JoinScore>>() {
 
       @Override
@@ -827,13 +827,13 @@ public class TestJoinUtil extends LuceneTestCase {
 
     String[] randomUniqueValues;
     boolean[] randomFrom;
-    Map<String, List<RandomDoc>> fromDocuments = new HashMap<String, List<RandomDoc>>();
-    Map<String, List<RandomDoc>> toDocuments = new HashMap<String, List<RandomDoc>>();
-    Map<String, List<RandomDoc>> randomValueFromDocs = new HashMap<String, List<RandomDoc>>();
-    Map<String, List<RandomDoc>> randomValueToDocs = new HashMap<String, List<RandomDoc>>();
+    Map<String, List<RandomDoc>> fromDocuments = new HashMap<>();
+    Map<String, List<RandomDoc>> toDocuments = new HashMap<>();
+    Map<String, List<RandomDoc>> randomValueFromDocs = new HashMap<>();
+    Map<String, List<RandomDoc>> randomValueToDocs = new HashMap<>();
 
-    Map<String, Map<Integer, JoinScore>> fromHitsToJoinScore = new HashMap<String, Map<Integer, JoinScore>>();
-    Map<String, Map<Integer, JoinScore>> toHitsToJoinScore = new HashMap<String, Map<Integer, JoinScore>>();
+    Map<String, Map<Integer, JoinScore>> fromHitsToJoinScore = new HashMap<>();
+    Map<String, Map<Integer, JoinScore>> toHitsToJoinScore = new HashMap<>();
 
   }
 
@@ -847,7 +847,7 @@ public class TestJoinUtil extends LuceneTestCase {
     private RandomDoc(String id, int numberOfLinkValues, String value, boolean from) {
       this.id = id;
       this.from = from;
-      linkValues = new ArrayList<String>(numberOfLinkValues);
+      linkValues = new ArrayList<>(numberOfLinkValues);
       this.value = value;
     }
   }

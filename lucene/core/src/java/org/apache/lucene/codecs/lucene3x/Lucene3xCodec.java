@@ -124,7 +124,7 @@ public class Lucene3xCodec extends Codec {
   public static Set<String> getDocStoreFiles(SegmentInfo info) {
     if (Lucene3xSegmentInfoFormat.getDocStoreOffset(info) != -1) {
       final String dsName = Lucene3xSegmentInfoFormat.getDocStoreSegment(info);
-      Set<String> files = new HashSet<String>();
+      Set<String> files = new HashSet<>();
       if (Lucene3xSegmentInfoFormat.getDocStoreIsCompoundFile(info)) {
         files.add(IndexFileNames.segmentFileName(dsName, "", COMPOUND_FILE_STORE_EXTENSION));
       } else {

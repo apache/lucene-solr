@@ -96,7 +96,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
   // Chooses random IntStreamFactory depending on file's extension
   private static class MockIntStreamFactory extends IntStreamFactory {
     private final int salt;
-    private final List<IntStreamFactory> delegates = new ArrayList<IntStreamFactory>();
+    private final List<IntStreamFactory> delegates = new ArrayList<>();
 
     public MockIntStreamFactory(Random random) {
       salt = random.nextInt();

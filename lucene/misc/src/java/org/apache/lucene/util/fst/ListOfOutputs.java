@@ -90,7 +90,7 @@ public final class ListOfOutputs<T> extends Outputs<Object> {
       return outputs.add((T) prefix, (T) output);
     } else {
       List<T> outputList = (List<T>) output;
-      List<T> addedList = new ArrayList<T>(outputList.size());
+      List<T> addedList = new ArrayList<>(outputList.size());
       for(T _output : outputList) {
         addedList.add(outputs.add((T) prefix, _output));
       }
@@ -129,7 +129,7 @@ public final class ListOfOutputs<T> extends Outputs<Object> {
     if (count == 1) {
       return outputs.read(in);
     } else {
-      List<T> outputList = new ArrayList<T>(count);
+      List<T> outputList = new ArrayList<>(count);
       for(int i=0;i<count;i++) {
         outputList.add(outputs.read(in));
       }
@@ -165,7 +165,7 @@ public final class ListOfOutputs<T> extends Outputs<Object> {
 
   @Override
   public Object merge(Object first, Object second) {
-    List<T> outputList = new ArrayList<T>();
+    List<T> outputList = new ArrayList<>();
     if (!(first instanceof List)) {
       outputList.add((T) first);
     } else {
@@ -188,7 +188,7 @@ public final class ListOfOutputs<T> extends Outputs<Object> {
 
   public List<T> asList(Object output) { 
     if (!(output instanceof List)) {
-      List<T> result = new ArrayList<T>(1);
+      List<T> result = new ArrayList<>(1);
       result.add((T) output);
       return result;
     } else {

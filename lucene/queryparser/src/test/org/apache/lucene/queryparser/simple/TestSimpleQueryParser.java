@@ -490,7 +490,7 @@ public class TestSimpleQueryParser extends LuceneTestCase {
 
   /** test a term with field weights */
   public void testWeightedTerm() throws Exception {
-    Map<String,Float> weights = new LinkedHashMap<String,Float>();
+    Map<String,Float> weights = new LinkedHashMap<>();
     weights.put("field0", 5f);
     weights.put("field1", 10f);
 
@@ -509,7 +509,7 @@ public class TestSimpleQueryParser extends LuceneTestCase {
 
   /** test a more complex query with field weights */
   public void testWeightedOR() throws Exception {
-    Map<String,Float> weights = new LinkedHashMap<String,Float>();
+    Map<String,Float> weights = new LinkedHashMap<>();
     weights.put("field0", 5f);
     weights.put("field1", 10f);
 

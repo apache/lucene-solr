@@ -207,7 +207,7 @@ public class QueryParsing {
     if (txt == null || !txt.startsWith(LOCALPARAM_START)) {
       return null;
     }
-    Map<String, String> localParams = new HashMap<String, String>();
+    Map<String, String> localParams = new HashMap<>();
     int start = QueryParsing.parseLocalParams(txt, 0, localParams, params);
 
     String val = localParams.get(V);
@@ -255,8 +255,8 @@ public class QueryParsing {
   public static SortSpec parseSortSpec(String sortSpec, SolrQueryRequest req) {
     if (sortSpec == null || sortSpec.length() == 0) return newEmptySortSpec();
 
-    List<SortField> sorts = new ArrayList<SortField>(4);
-    List<SchemaField> fields = new ArrayList<SchemaField>(4);
+    List<SortField> sorts = new ArrayList<>(4);
+    List<SchemaField> fields = new ArrayList<>(4);
 
     try {
 
@@ -920,7 +920,7 @@ public class QueryParsing {
    * Builds a list of String which are stringified versions of a list of Queries
    */
   public static List<String> toString(List<Query> queries, IndexSchema schema) {
-    List<String> out = new ArrayList<String>(queries.size());
+    List<String> out = new ArrayList<>(queries.size());
     for (Query q : queries) {
       out.add(QueryParsing.toString(q, schema));
     }

@@ -46,10 +46,10 @@ public class PluginInfoHandler extends RequestHandlerBase
   
   private static SimpleOrderedMap<Object> getSolrInfoBeans( SolrCore core, boolean stats )
   {
-    SimpleOrderedMap<Object> list = new SimpleOrderedMap<Object>();
+    SimpleOrderedMap<Object> list = new SimpleOrderedMap<>();
     for (SolrInfoMBean.Category cat : SolrInfoMBean.Category.values()) 
     {
-      SimpleOrderedMap<Object> category = new SimpleOrderedMap<Object>();
+      SimpleOrderedMap<Object> category = new SimpleOrderedMap<>();
       list.add( cat.name(), category );
       Map<String, SolrInfoMBean> reg = core.getInfoRegistry();
       for (Map.Entry<String,SolrInfoMBean> entry : reg.entrySet()) {
@@ -57,7 +57,7 @@ public class PluginInfoHandler extends RequestHandlerBase
         if (m.getCategory() != cat) continue;
 
         String na = "Not Declared";
-        SimpleOrderedMap<Object> info = new SimpleOrderedMap<Object>();
+        SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
         category.add( entry.getKey(), info );
 
         info.add( "name",        (m.getName()       !=null ? m.getName()        : na) );
@@ -67,7 +67,7 @@ public class PluginInfoHandler extends RequestHandlerBase
 
         URL[] urls = m.getDocs();
         if ((urls != null) && (urls.length > 0)) {
-          ArrayList<String> docs = new ArrayList<String>(urls.length);
+          ArrayList<String> docs = new ArrayList<>(urls.length);
           for( URL u : urls ) {
             docs.add( u.toExternalForm() );
           }

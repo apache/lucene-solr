@@ -155,7 +155,7 @@ public final class CompoundFileDirectory extends BaseDirectory {
         entriesStream = dir.openInput(entriesFileName, IOContext.READONCE);
         CodecUtil.checkHeader(entriesStream, CompoundFileWriter.ENTRY_CODEC, CompoundFileWriter.VERSION_START, CompoundFileWriter.VERSION_START);
         final int numEntries = entriesStream.readVInt();
-        mapping = new HashMap<String,FileEntry>(numEntries);
+        mapping = new HashMap<>(numEntries);
         for (int i = 0; i < numEntries; i++) {
           final FileEntry fileEntry = new FileEntry();
           final String id = entriesStream.readString();
@@ -182,7 +182,7 @@ public final class CompoundFileDirectory extends BaseDirectory {
 
   private static Map<String, FileEntry> readLegacyEntries(IndexInput stream,
       int firstInt) throws CorruptIndexException, IOException {
-    final Map<String,FileEntry> entries = new HashMap<String,FileEntry>();
+    final Map<String,FileEntry> entries = new HashMap<>();
     final int count;
     final boolean stripSegmentName;
     if (firstInt < CompoundFileWriter.FORMAT_PRE_VERSION) {

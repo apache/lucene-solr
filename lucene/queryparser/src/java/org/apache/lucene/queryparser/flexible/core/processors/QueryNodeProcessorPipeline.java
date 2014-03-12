@@ -40,7 +40,7 @@ import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 public class QueryNodeProcessorPipeline implements QueryNodeProcessor,
     List<QueryNodeProcessor> {
 
-  private LinkedList<QueryNodeProcessor> processors = new LinkedList<QueryNodeProcessor>();
+  private LinkedList<QueryNodeProcessor> processors = new LinkedList<>();
 
   private QueryConfigHandler queryConfig;
 

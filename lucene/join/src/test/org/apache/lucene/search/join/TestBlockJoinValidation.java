@@ -140,11 +140,11 @@ public class TestBlockJoinValidation extends LuceneTestCase {
   }
 
   private static List<Document> createDocsForSegment(int segmentNumber) {
-    List<List<Document>> blocks = new ArrayList<List<Document>>(AMOUNT_OF_PARENT_DOCS);
+    List<List<Document>> blocks = new ArrayList<>(AMOUNT_OF_PARENT_DOCS);
     for (int i = 0; i < AMOUNT_OF_PARENT_DOCS; i++) {
       blocks.add(createParentDocWithChildren(segmentNumber, i));
     }
-    List<Document> result = new ArrayList<Document>(AMOUNT_OF_DOCS_IN_SEGMENT);
+    List<Document> result = new ArrayList<>(AMOUNT_OF_DOCS_IN_SEGMENT);
     for (List<Document> block : blocks) {
       result.addAll(block);
     }
@@ -152,7 +152,7 @@ public class TestBlockJoinValidation extends LuceneTestCase {
   }
 
   private static List<Document> createParentDocWithChildren(int segmentNumber, int parentNumber) {
-    List<Document> result = new ArrayList<Document>(AMOUNT_OF_CHILD_DOCS + 1);
+    List<Document> result = new ArrayList<>(AMOUNT_OF_CHILD_DOCS + 1);
     for (int i = 0; i < AMOUNT_OF_CHILD_DOCS; i++) {
       result.add(createChildDoc(segmentNumber, parentNumber, i));
     }

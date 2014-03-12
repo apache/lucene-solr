@@ -195,7 +195,7 @@ import org.apache.lucene.util.RecyclingIntBlockAllocator;
 public class MemoryIndex {
 
   /** info for each field: Map<String fieldName, Info field> */
-  private final HashMap<String,Info> fields = new HashMap<String,Info>();
+  private final HashMap<String,Info> fields = new HashMap<>();
   
   /** fields sorted ascending by fieldName; lazily computed on demand */
   private transient Map.Entry<String,Info>[] sortedFields; 
@@ -209,7 +209,7 @@ public class MemoryIndex {
 //  private final IntBlockPool.SliceReader postingsReader;
   private final IntBlockPool.SliceWriter postingsWriter;
   
-  private HashMap<String,FieldInfo> fieldInfos = new HashMap<String,FieldInfo>();
+  private HashMap<String,FieldInfo> fieldInfos = new HashMap<>();
 
   private Counter bytesUsed;
   

@@ -116,7 +116,7 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
   private static final ResourceLoader loader = new StringMockResourceLoader("");
   
   public void test() throws Exception {
-    List<Class<?>> analysisClasses = new ArrayList<Class<?>>();
+    List<Class<?>> analysisClasses = new ArrayList<>();
     analysisClasses.addAll(TestRandomChains.getClassesForPackage("org.apache.lucene.analysis"));
     analysisClasses.addAll(TestRandomChains.getClassesForPackage("org.apache.lucene.collation"));
     
@@ -135,7 +135,7 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
         continue;
       }
       
-      Map<String,String> args = new HashMap<String,String>();
+      Map<String,String> args = new HashMap<>();
       args.put("luceneMatchVersion", TEST_VERSION_CURRENT.toString());
       
       if (Tokenizer.class.isAssignableFrom(c)) {

@@ -140,7 +140,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
   }
 
   private Map<String, Object> getDocumentFromMail(Message mail) {
-    Map<String, Object> row = new HashMap<String, Object>();
+    Map<String, Object> row = new HashMap<>();
     try {
       addPartToDocument(mail, row, true);
       return row;
@@ -201,7 +201,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
     if ((adresses = mail.getFrom()) != null && adresses.length > 0)
       row.put(FROM, adresses[0].toString());
 
-    List<String> to = new ArrayList<String>();
+    List<String> to = new ArrayList<>();
     if ((adresses = mail.getRecipients(Message.RecipientType.TO)) != null)
       addAddressToList(adresses, to);
     if ((adresses = mail.getRecipients(Message.RecipientType.CC)) != null)
@@ -219,7 +219,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
       row.put(SENT_DATE, d);
     }
 
-    List<String> flags = new ArrayList<String>();
+    List<String> flags = new ArrayList<>();
     for (Flags.Flag flag : mail.getFlags().getSystemFlags()) {
       if (flag == Flags.Flag.ANSWERED)
         flags.add(FLAG_ANSWERED);
@@ -319,7 +319,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
 
     public FolderIterator(Store mailBox) {
       this.mailbox = mailBox;
-      folders = new ArrayList<Folder>();
+      folders = new ArrayList<>();
       getTopLevelFolders(mailBox);
     }
 
@@ -529,8 +529,8 @@ public class MailEntityProcessor extends EntityProcessorBase {
   private String protocol;
 
   private String folderNames;
-  private List<String> exclude = new ArrayList<String>();
-  private List<String> include = new ArrayList<String>();
+  private List<String> exclude = new ArrayList<>();
+  private List<String> include = new ArrayList<>();
   private boolean recurse;
 
   private int batchSize;
@@ -550,7 +550,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
   private boolean connected = false;
   private FolderIterator folderIter;
   private MessageIterator msgIter;
-  private List<CustomFilter> filters = new ArrayList<CustomFilter>();
+  private List<CustomFilter> filters = new ArrayList<>();
   private static FetchProfile fp = new FetchProfile();
   private static final Logger LOG = LoggerFactory.getLogger(DataImporter.class);
 

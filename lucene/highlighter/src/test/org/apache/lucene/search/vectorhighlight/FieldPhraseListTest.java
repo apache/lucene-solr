@@ -269,7 +269,7 @@ public class FieldPhraseListTest extends AbstractTestCase {
   }
 
   private WeightedPhraseInfo newInfo( int startOffset, int endOffset, float boost ) {
-    LinkedList< TermInfo > infos = new LinkedList< TermInfo >();
+    LinkedList< TermInfo > infos = new LinkedList<>();
     infos.add( new TermInfo( TestUtil.randomUnicodeString(random()), startOffset, endOffset, 0, 0 ) );
     return new WeightedPhraseInfo( infos, boost );
   }

@@ -72,7 +72,7 @@ public class TestSameScoresWithThreads extends LuceneTestCase {
     // Target ~10 terms to search:
     double chance = 10.0 / termCount;
     termsEnum = terms.iterator(termsEnum);
-    final Map<BytesRef,TopDocs> answers = new HashMap<BytesRef,TopDocs>();
+    final Map<BytesRef,TopDocs> answers = new HashMap<>();
     while(termsEnum.next() != null) {
       if (random().nextDouble() <= chance) {
         BytesRef term = BytesRef.deepCopyOf(termsEnum.term());
@@ -92,7 +92,7 @@ public class TestSameScoresWithThreads extends LuceneTestCase {
               try {
                 startingGun.await();
                 for(int i=0;i<20;i++) {
-                  List<Map.Entry<BytesRef,TopDocs>> shuffled = new ArrayList<Map.Entry<BytesRef,TopDocs>>(answers.entrySet());
+                  List<Map.Entry<BytesRef,TopDocs>> shuffled = new ArrayList<>(answers.entrySet());
                   Collections.shuffle(shuffled);
                   for(Map.Entry<BytesRef,TopDocs> ent : shuffled) {
                     TopDocs actual = s.search(new TermQuery(new Term("body", ent.getKey())), 100);

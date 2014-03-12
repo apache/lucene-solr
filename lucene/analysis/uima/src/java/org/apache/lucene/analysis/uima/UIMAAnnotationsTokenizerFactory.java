@@ -31,7 +31,7 @@ public class UIMAAnnotationsTokenizerFactory extends TokenizerFactory {
 
   private String descriptorPath;
   private String tokenType;
-  private final Map<String,Object> configurationParameters = new HashMap<String,Object>();
+  private final Map<String,Object> configurationParameters = new HashMap<>();
 
   /** Creates a new UIMAAnnotationsTokenizerFactory */
   public UIMAAnnotationsTokenizerFactory(Map<String,String> args) {

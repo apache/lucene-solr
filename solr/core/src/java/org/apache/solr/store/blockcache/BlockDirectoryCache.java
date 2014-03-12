@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class BlockDirectoryCache implements Cache {
   private final BlockCache blockCache;
   private AtomicInteger counter = new AtomicInteger();
-  private Map<String,Integer> names = new ConcurrentHashMap<String,Integer>();
+  private Map<String,Integer> names = new ConcurrentHashMap<>();
   private String path;
   private Metrics metrics;
   

@@ -616,7 +616,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     try {
       // TODO: stop using locally defined streams once stream.file and
       // stream.body work everywhere
-      List<ContentStream> cs = new ArrayList<ContentStream>();
+      List<ContentStream> cs = new ArrayList<>();
       cs.add(new ContentStreamBase.FileStream(getFile(filename)));
       req.setContentStreams(cs);
       return h.queryAndResponse("/update/extract", req);

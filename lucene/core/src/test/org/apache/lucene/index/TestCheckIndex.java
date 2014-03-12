@@ -90,7 +90,7 @@ public class TestCheckIndex extends LuceneTestCase {
     assertEquals(18, seg.termVectorStatus.totVectors);
 
     assertTrue(seg.diagnostics.size() > 0);
-    final List<String> onlySegments = new ArrayList<String>();
+    final List<String> onlySegments = new ArrayList<>();
     onlySegments.add("_0");
     
     assertTrue(checker.checkIndex(onlySegments).clean == true);

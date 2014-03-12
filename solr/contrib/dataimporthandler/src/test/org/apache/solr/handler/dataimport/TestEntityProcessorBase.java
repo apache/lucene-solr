@@ -35,8 +35,8 @@ public class TestEntityProcessorBase extends AbstractDataImportHandlerTestCase {
 
   @Test
   public void multiTransformer() {
-    List<Map<String, String>> fields = new ArrayList<Map<String, String>>();
-    Map<String, String> entity = new HashMap<String, String>();
+    List<Map<String, String>> fields = new ArrayList<>();
+    Map<String, String> entity = new HashMap<>();
     entity.put("transformer", T1.class.getName() + "," + T2.class.getName()
             + "," + T3.class.getName());
     fields.add(getField("A", null, null, null, null));
@@ -44,7 +44,7 @@ public class TestEntityProcessorBase extends AbstractDataImportHandlerTestCase {
 
     Context context = getContext(null, null, new MockDataSource(), Context.FULL_DUMP,
             fields, entity);
-    Map<String, Object> src = new HashMap<String, Object>();
+    Map<String, Object> src = new HashMap<>();
     src.put("A", "NA");
     src.put("B", "NA");
     EntityProcessorWrapper sep = new EntityProcessorWrapper(new SqlEntityProcessor(), null, null);

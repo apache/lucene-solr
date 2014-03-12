@@ -53,10 +53,10 @@ class SolrRecordWriter<K, V> extends RecordWriter<K, V> {
   
   private static final Logger LOG = LoggerFactory.getLogger(SolrRecordWriter.class);
 
-  public final static List<String> allowedConfigDirectories = new ArrayList<String>(
+  public final static List<String> allowedConfigDirectories = new ArrayList<>(
       Arrays.asList(new String[] { "conf", "lib", "solr.xml" }));
 
-  public final static Set<String> requiredConfigDirectories = new HashSet<String>();
+  public final static Set<String> requiredConfigDirectories = new HashSet<>();
   
   static {
     requiredConfigDirectories.add("conf");
@@ -101,7 +101,7 @@ class SolrRecordWriter<K, V> extends RecordWriter<K, V> {
   private long numDocsWritten = 0;
   private long nextLogTime = System.nanoTime();
 
-  private static HashMap<TaskID, Reducer<?,?,?,?>.Context> contextMap = new HashMap<TaskID, Reducer<?,?,?,?>.Context>();
+  private static HashMap<TaskID, Reducer<?,?,?,?>.Context> contextMap = new HashMap<>();
   
   public SolrRecordWriter(TaskAttemptContext context, Path outputShardDir, int batchSize) {
     this.batchSize = batchSize;

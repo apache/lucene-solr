@@ -72,8 +72,8 @@ public class ParseBooleanFieldUpdateProcessorFactory extends FieldMutatingUpdate
   private static final String FALSE_VALUES_PARAM = "falseValue";
   private static final String CASE_SENSITIVE_PARAM = "caseSensitive";
   
-  private Set<String> trueValues = new HashSet<String>(Arrays.asList(new String[] { "true" }));
-  private Set<String> falseValues = new HashSet<String>(Arrays.asList(new String[] { "false" }));
+  private Set<String> trueValues = new HashSet<>(Arrays.asList(new String[] { "true" }));
+  private Set<String> falseValues = new HashSet<>(Arrays.asList(new String[] { "false" }));
   private boolean caseSensitive = false;
 
   @Override

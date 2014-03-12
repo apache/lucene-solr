@@ -140,7 +140,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private String includeConfFiles;
 
-  private NamedList<String> confFileNameAlias = new NamedList<String>();
+  private NamedList<String> confFileNameAlias = new NamedList<>();
 
   private boolean isMaster = false;
 
@@ -156,7 +156,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private int numTimesReplicated = 0;
 
-  private final Map<String, FileInfo> confFileInfoCache = new HashMap<String, FileInfo>();
+  private final Map<String, FileInfo> confFileInfoCache = new HashMap<>();
 
   private Integer reserveCommitDuration = SnapPuller.readInterval("00:00:10");
 
@@ -270,14 +270,14 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private List<NamedList<Object>> getCommits() {
     Map<Long, IndexCommit> commits = core.getDeletionPolicy().getCommits();
-    List<NamedList<Object>> l = new ArrayList<NamedList<Object>>();
+    List<NamedList<Object>> l = new ArrayList<>();
 
     for (IndexCommit c : commits.values()) {
       try {
-        NamedList<Object> nl = new NamedList<Object>();
+        NamedList<Object> nl = new NamedList<>();
         nl.add("indexVersion", IndexDeletionPolicyWrapper.getCommitTimestamp(c));
         nl.add(GENERATION, c.getGeneration());
-        List<String> commitList = new ArrayList<String>(c.getFileNames().size());
+        List<String> commitList = new ArrayList<>(c.getFileNames().size());
         commitList.addAll(c.getFileNames());
         Collections.sort(commitList);
         nl.add(CMD_GET_FILE_LIST, commitList);
@@ -404,19 +404,19 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
     // reserve the indexcommit for sometime
     core.getDeletionPolicy().setReserveDuration(gen, reserveCommitDuration);
-    List<Map<String, Object>> result = new ArrayList<Map<String, Object>>();
+    List<Map<String, Object>> result = new ArrayList<>();
     Directory dir = null;
     try {
       // get all the files in the commit
       // use a set to workaround possible Lucene bug which returns same file
       // name multiple times
-      Collection<String> files = new HashSet<String>(commit.getFileNames());
+      Collection<String> files = new HashSet<>(commit.getFileNames());
       dir = core.getDirectoryFactory().get(core.getNewIndexDir(), DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
       try {
         
         for (String fileName : files) {
           if (fileName.endsWith(".lock")) continue;
-          Map<String,Object> fileMeta = new HashMap<String,Object>();
+          Map<String,Object> fileMeta = new HashMap<>();
           fileMeta.put(NAME, fileName);
           fileMeta.put(SIZE, dir.fileLength(fileName));
           result.add(fileMeta);
@@ -446,7 +446,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
    */
   List<Map<String, Object>> getConfFileInfoFromCache(NamedList<String> nameAndAlias,
                                                      final Map<String, FileInfo> confFileInfoCache) {
-    List<Map<String, Object>> confFiles = new ArrayList<Map<String, Object>>();
+    List<Map<String, Object>> confFiles = new ArrayList<>();
     synchronized (confFileInfoCache) {
       File confDir = new File(core.getResourceLoader().getConfigDir());
       Checksum checksum = null;
@@ -482,7 +482,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
 
     Map<String, Object> getAsMap() {
-      Map<String, Object> map = new HashMap<String, Object>();
+      Map<String, Object> map = new HashMap<>();
       map.put(NAME, name);
       map.put(SIZE, size);
       map.put(CHECKSUM, checksum);
@@ -608,9 +608,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
    * Used for showing statistics and progress information.
    */
   private NamedList<Object> getReplicationDetails(boolean showSlaveDetails) {
-    NamedList<Object> details = new SimpleOrderedMap<Object>();
-    NamedList<Object> master = new SimpleOrderedMap<Object>();
-    NamedList<Object> slave = new SimpleOrderedMap<Object>();
+    NamedList<Object> details = new SimpleOrderedMap<>();
+    NamedList<Object> master = new SimpleOrderedMap<>();
+    NamedList<Object> slave = new SimpleOrderedMap<>();
 
     details.add("indexSize", NumberUtils.readableSize(getIndexSize()));
     details.add("indexPath", core.getIndexDir());
@@ -677,7 +677,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       if (isReplicating) {
         try {
           long bytesToDownload = 0;
-          List<String> filesToDownload = new ArrayList<String>();
+          List<String> filesToDownload = new ArrayList<>();
           for (Map<String, Object> file : snapPuller.getFilesToDownload()) {
             filesToDownload.add((String) file.get(NAME));
             bytesToDownload += (Long) file.get(SIZE);
@@ -694,7 +694,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           slave.add("bytesToDownload", NumberUtils.readableSize(bytesToDownload));
 
           long bytesDownloaded = 0;
-          List<String> filesDownloaded = new ArrayList<String>();
+          List<String> filesDownloaded = new ArrayList<>();
           for (Map<String, Object> file : snapPuller.getFilesDownloaded()) {
             filesDownloaded.add((String) file.get(NAME));
             bytesDownloaded += (Long) file.get(SIZE);
@@ -776,7 +776,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       } catch (NumberFormatException e) {/*no op*/ }
     } else if (clzz == List.class) {
       String ss[] = s.split(",");
-      List<String> l = new ArrayList<String>();
+      List<String> l = new ArrayList<>();
       for (int i = 0; i < ss.length; i++) {
         l.add(new Date(Long.valueOf(ss[i])).toString());
       }
@@ -788,7 +788,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   private List<String> getReplicateAfterStrings() {
-    List<String> replicateAfter = new ArrayList<String>();
+    List<String> replicateAfter = new ArrayList<>();
     if (replicateOnCommit)
       replicateAfter.add("commit");
     if (replicateOnOptimize)
@@ -873,7 +873,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     
     if (!enableSlave && !enableMaster) {
       enableMaster = true;
-      master = new NamedList<Object>();
+      master = new NamedList<>();
     }
     
     if (enableMaster) {

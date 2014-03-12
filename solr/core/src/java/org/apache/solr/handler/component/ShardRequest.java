@@ -48,7 +48,7 @@ public class ShardRequest {
 
 
   /** list of responses... filled out by framework */
-  public List<ShardResponse> responses = new ArrayList<ShardResponse>();
+  public List<ShardResponse> responses = new ArrayList<>();
 
   /** actual shards to send the request to, filled out by framework */
   public String[] actualShards;

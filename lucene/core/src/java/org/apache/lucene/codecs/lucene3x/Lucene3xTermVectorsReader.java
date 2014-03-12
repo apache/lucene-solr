@@ -201,7 +201,7 @@ class Lucene3xTermVectorsReader extends TermVectorsReader {
   private class TVFields extends Fields {
     private final int[] fieldNumbers;
     private final long[] fieldFPs;
-    private final Map<Integer,Integer> fieldNumberToIndex = new HashMap<Integer,Integer>();
+    private final Map<Integer,Integer> fieldNumberToIndex = new HashMap<>();
 
     public TVFields(int docID) throws IOException {
       seekTvx(docID);

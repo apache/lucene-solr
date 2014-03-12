@@ -44,7 +44,7 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
   public SpanOrQuery(SpanQuery... clauses) {
 
     // copy clauses array into an ArrayList
-    this.clauses = new ArrayList<SpanQuery>(clauses.length);
+    this.clauses = new ArrayList<>(clauses.length);
     for (int i = 0; i < clauses.length; i++) {
       addClause(clauses[i]);
     }
@@ -242,7 +242,7 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
         ArrayList<byte[]> result = null;
         Spans theTop = top();
         if (theTop != null && theTop.isPayloadAvailable()) {
-          result = new ArrayList<byte[]>(theTop.getPayload());
+          result = new ArrayList<>(theTop.getPayload());
         }
         return result;
       }

@@ -46,7 +46,7 @@ public class CollectionAdminResponse extends SolrResponseBase
   @SuppressWarnings("unchecked")
   public Map<String, NamedList<Integer>> getCollectionCoresStatus()
   {
-    Map<String, NamedList<Integer>> res = new HashMap<String, NamedList<Integer>>();
+    Map<String, NamedList<Integer>> res = new HashMap<>();
     NamedList<NamedList<Object>> cols = getCollectionStatus();
     if( cols != null ) {
       for (Map.Entry<String, NamedList<Object>> e : cols) {
@@ -64,7 +64,7 @@ public class CollectionAdminResponse extends SolrResponseBase
   @SuppressWarnings("unchecked")
   public Map<String, NamedList<Integer>> getCollectionNodesStatus()
   {
-    Map<String, NamedList<Integer>> res = new HashMap<String, NamedList<Integer>>();
+    Map<String, NamedList<Integer>> res = new HashMap<>();
     NamedList<NamedList<Object>> cols = getCollectionStatus();
     if( cols != null ) {
       for (Map.Entry<String,NamedList<Object>> e : cols) {

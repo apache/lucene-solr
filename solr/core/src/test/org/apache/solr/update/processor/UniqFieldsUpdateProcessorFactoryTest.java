@@ -106,7 +106,7 @@ public class UniqFieldsUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
   }
 
   private void addDoc(String doc) throws Exception {
-    Map<String, String[]> params = new HashMap<String, String[]>();
+    Map<String, String[]> params = new HashMap<>();
     MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
     params.put(UpdateParams.UPDATE_CHAIN, new String[] { "uniq-fields" });
     SolrQueryRequestBase req = new SolrQueryRequestBase(h.getCore(),
@@ -115,7 +115,7 @@ public class UniqFieldsUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 
     UpdateRequestHandler handler = new UpdateRequestHandler();
     handler.init(null);
-    ArrayList<ContentStream> streams = new ArrayList<ContentStream>(2);
+    ArrayList<ContentStream> streams = new ArrayList<>(2);
     streams.add(new ContentStreamBase.StringStream(doc));
     req.setContentStreams(streams);
     handler.handleRequestBody(req, new SolrQueryResponse());

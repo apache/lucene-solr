@@ -238,7 +238,7 @@ class BooleanScorer2 extends Scorer {
 
   private Scorer makeCountingSumScorerSomeReq(boolean disableCoord) throws IOException { // At least one required scorer.
     if (optionalScorers.size() == minNrShouldMatch) { // all optional scorers also required.
-      ArrayList<Scorer> allReq = new ArrayList<Scorer>(requiredScorers);
+      ArrayList<Scorer> allReq = new ArrayList<>(requiredScorers);
       allReq.addAll(optionalScorers);
       return addProhibitedScorers(countingConjunctionSumScorer(disableCoord, allReq));
     } else { // optionalScorers.size() > minNrShouldMatch, and at least one required scorer
@@ -313,7 +313,7 @@ class BooleanScorer2 extends Scorer {
 
   @Override
   public Collection<ChildScorer> getChildren() {
-    ArrayList<ChildScorer> children = new ArrayList<ChildScorer>();
+    ArrayList<ChildScorer> children = new ArrayList<>();
     for (Scorer s : optionalScorers) {
       children.add(new ChildScorer(s, "SHOULD"));
     }

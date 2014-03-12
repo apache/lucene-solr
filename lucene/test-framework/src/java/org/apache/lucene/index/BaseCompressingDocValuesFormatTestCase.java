@@ -48,7 +48,7 @@ public abstract class BaseCompressingDocValuesFormatTestCase extends BaseDocValu
     final IndexWriter iwriter = new IndexWriter(dir, iwc);
 
     final int uniqueValueCount = TestUtil.nextInt(random(), 1, 256);
-    final List<Long> values = new ArrayList<Long>();
+    final List<Long> values = new ArrayList<>();
 
     final Document doc = new Document();
     final NumericDocValuesField dvf = new NumericDocValuesField("dv", 0);

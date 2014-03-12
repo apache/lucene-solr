@@ -131,7 +131,7 @@ public class AllGroupsCollectorTest extends LuceneTestCase {
       selected = new TermAllGroupsCollector(groupField);
     } else {
       ValueSource vs = new BytesRefFieldSource(groupField);
-      selected = new FunctionAllGroupsCollector(vs, new HashMap<Object, Object>());
+      selected = new FunctionAllGroupsCollector(vs, new HashMap<>());
     }
 
     if (VERBOSE) {

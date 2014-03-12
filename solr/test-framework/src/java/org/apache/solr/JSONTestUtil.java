@@ -118,7 +118,7 @@ class CollectionTester {
     this.val = val;
     this.valRoot = val;
     this.delta = delta;
-    path = new ArrayList<Object>();
+    path = new ArrayList<>();
   }
   public CollectionTester(Object val) {
     this(val, JSONTestUtil.DEFAULT_DELTA);
@@ -259,7 +259,7 @@ class CollectionTester {
     return true;
   }
 
-  private static Set<String> reserved = new HashSet<String>(Arrays.asList("_SKIP_","_MATCH_","_ORDERED_","_UNORDERED_"));
+  private static Set<String> reserved = new HashSet<>(Arrays.asList("_SKIP_","_MATCH_","_ORDERED_","_UNORDERED_"));
 
   boolean matchMap() {
     Map<String,Object> expectedMap = (Map<String,Object>)expected;
@@ -286,7 +286,7 @@ class CollectionTester {
     }
 
     Set<String> keys = match != null ? match : expectedMap.keySet();
-    Set<String> visited = new HashSet<String>();
+    Set<String> visited = new HashSet<>();
 
     Iterator<Map.Entry<String,Object>> iter = ordered ? v.entrySet().iterator() : null;
 
@@ -346,7 +346,7 @@ class CollectionTester {
           if (v.containsKey(skipStr)) skipped++;
       }
       if (numExpected != (v.size() - skipped)) {
-        HashSet<String> set = new HashSet<String>(v.keySet());
+        HashSet<String> set = new HashSet<>(v.keySet());
         set.removeAll(expectedMap.keySet());
         setErr("unexpected map keys " + set); 
         return false;

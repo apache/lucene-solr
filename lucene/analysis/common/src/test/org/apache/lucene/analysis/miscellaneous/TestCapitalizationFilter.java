@@ -78,7 +78,7 @@ public class TestCapitalizationFilter extends BaseTokenStreamTestCase {
         true, keep, true, null, 0, DEFAULT_MAX_WORD_COUNT, DEFAULT_MAX_TOKEN_LENGTH);
     
     // Now try some prefixes
-    List<char[]> okPrefix = new ArrayList<char[]>();
+    List<char[]> okPrefix = new ArrayList<>();
     okPrefix.add("McK".toCharArray());
     
     assertCapitalizesTo("McKinley", 

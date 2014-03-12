@@ -464,7 +464,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
       // Slow, yet hopefully bug-free, faceting:
       @SuppressWarnings({"rawtypes","unchecked"}) Map<String,Float>[] expectedValues = new HashMap[numDims];
       for(int i=0;i<numDims;i++) {
-        expectedValues[i] = new HashMap<String,Float>();
+        expectedValues[i] = new HashMap<>();
       }
 
       for(TestDoc doc : testDocs) {
@@ -482,9 +482,9 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
         }
       }
 
-      List<FacetResult> expected = new ArrayList<FacetResult>();
+      List<FacetResult> expected = new ArrayList<>();
       for(int i=0;i<numDims;i++) {
-        List<LabelAndValue> labelValues = new ArrayList<LabelAndValue>();
+        List<LabelAndValue> labelValues = new ArrayList<>();
         double totValue = 0;
         for(Map.Entry<String,Float> ent : expectedValues[i].entrySet()) {
           labelValues.add(new LabelAndValue(ent.getKey(), ent.getValue()));

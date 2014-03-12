@@ -56,7 +56,7 @@ public final class DrillDownQuery extends Query {
 
   private final FacetsConfig config;
   private final BooleanQuery query;
-  private final Map<String,Integer> drillDownDims = new LinkedHashMap<String,Integer>();
+  private final Map<String,Integer> drillDownDims = new LinkedHashMap<>();
 
   /** Used by clone() */
   DrillDownQuery(FacetsConfig config, BooleanQuery query, Map<String,Integer> drillDownDims) {
@@ -233,8 +233,8 @@ public final class DrillDownQuery extends Query {
       return new MatchAllDocsQuery();
     }
 
-    List<Filter> filters = new ArrayList<Filter>();
-    List<Query> queries = new ArrayList<Query>();
+    List<Filter> filters = new ArrayList<>();
+    List<Query> queries = new ArrayList<>();
     List<BooleanClause> clauses = query.clauses();
     Query baseQuery;
     int startIndex;

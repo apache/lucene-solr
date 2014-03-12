@@ -26,7 +26,7 @@ import com.carrotsearch.randomizedtesting.generators.RandomInts;
 public class TestBasicOperations extends LuceneTestCase {
   /** Test string union. */
   public void testStringUnion() {
-    List<BytesRef> strings = new ArrayList<BytesRef>();
+    List<BytesRef> strings = new ArrayList<>();
     for (int i = RandomInts.randomIntBetween(random(), 0, 1000); --i >= 0;) {
       strings.add(new BytesRef(TestUtil.randomUnicodeString(random())));
     }

@@ -54,7 +54,7 @@ import org.apache.lucene.util.InfoStream;
 class BufferedUpdatesStream {
 
   // TODO: maybe linked list?
-  private final List<FrozenBufferedUpdates> updates = new ArrayList<FrozenBufferedUpdates>();
+  private final List<FrozenBufferedUpdates> updates = new ArrayList<>();
 
   // Starts at 1 so that SegmentInfos that have never had
   // deletes applied (whose bufferedDelGen defaults to 0)
@@ -174,7 +174,7 @@ class BufferedUpdatesStream {
 
     final long gen = nextGen++;
 
-    List<SegmentCommitInfo> infos2 = new ArrayList<SegmentCommitInfo>();
+    List<SegmentCommitInfo> infos2 = new ArrayList<>();
     infos2.addAll(infos);
     Collections.sort(infos2, sortSegInfoByDelGen);
 
@@ -247,7 +247,7 @@ class BufferedUpdatesStream {
 
         if (segAllDeletes) {
           if (allDeleted == null) {
-            allDeleted = new ArrayList<SegmentCommitInfo>();
+            allDeleted = new ArrayList<>();
           }
           allDeleted.add(info);
         }
@@ -297,7 +297,7 @@ class BufferedUpdatesStream {
 
           if (segAllDeletes) {
             if (allDeleted == null) {
-              allDeleted = new ArrayList<SegmentCommitInfo>();
+              allDeleted = new ArrayList<>();
             }
             allDeleted.add(info);
           }

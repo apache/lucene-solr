@@ -59,8 +59,8 @@ class GoLive {
         new LinkedBlockingQueue<Runnable>());
     
     try {
-      CompletionService<Request> completionService = new ExecutorCompletionService<Request>(executor);
-      Set<Future<Request>> pending = new HashSet<Future<Request>>();
+      CompletionService<Request> completionService = new ExecutorCompletionService<>(executor);
+      Set<Future<Request>> pending = new HashSet<>();
       int cnt = -1;
       for (final FileStatus dir : outDirs) {
         

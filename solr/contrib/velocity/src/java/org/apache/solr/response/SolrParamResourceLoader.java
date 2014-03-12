@@ -31,7 +31,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 public class SolrParamResourceLoader extends ResourceLoader {
-  private Map<String,String> templates = new HashMap<String,String>();
+  private Map<String,String> templates = new HashMap<>();
   public SolrParamResourceLoader(SolrQueryRequest request) {
     super();
 

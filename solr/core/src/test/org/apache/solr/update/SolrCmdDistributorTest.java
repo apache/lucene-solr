@@ -133,7 +133,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     
     ModifiableSolrParams params = new ModifiableSolrParams();
 
-    List<Node> nodes = new ArrayList<Node>();
+    List<Node> nodes = new ArrayList<>();
 
     ZkNodeProps nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP,
         ((HttpSolrServer) controlClient).getBaseURL(),
@@ -325,7 +325,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     final MockStreamingSolrServers ss = new MockStreamingSolrServers(updateShardHandler);
     SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(ss, 5, 0);
     ss.setExp(Exp.CONNECT_EXCEPTION);
-    ArrayList<Node> nodes = new ArrayList<Node>();
+    ArrayList<Node> nodes = new ArrayList<>();
     final HttpSolrServer solrclient1 = (HttpSolrServer) clients.get(0);
     
     final AtomicInteger retries = new AtomicInteger();
@@ -359,7 +359,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     final MockStreamingSolrServers ss = new MockStreamingSolrServers(updateShardHandler);
     SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(ss, 5, 0);
     ss.setExp(Exp.CONNECT_EXCEPTION);
-    ArrayList<Node> nodes = new ArrayList<Node>();
+    ArrayList<Node> nodes = new ArrayList<>();
 
     ZkNodeProps nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, solrclient.getBaseURL(),
         ZkStateReader.CORE_NAME_PROP, "");
@@ -405,7 +405,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     final MockStreamingSolrServers ss = new MockStreamingSolrServers(updateShardHandler);
     SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(ss, 5, 0);
     ss.setExp(Exp.SOCKET_EXCEPTION);
-    ArrayList<Node> nodes = new ArrayList<Node>();
+    ArrayList<Node> nodes = new ArrayList<>();
 
     ZkNodeProps nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, solrclient.getBaseURL(),
         ZkStateReader.CORE_NAME_PROP, "");
@@ -453,7 +453,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     long numFoundBefore = solrclient.query(new SolrQuery("*:*")).getResults()
         .getNumFound();
     
-    ArrayList<Node> nodes = new ArrayList<Node>();
+    ArrayList<Node> nodes = new ArrayList<>();
 
     ZkNodeProps nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, "[ff01::114]:33332" + context, ZkStateReader.CORE_NAME_PROP, "");
     RetryNode retryNode = new RetryNode(new ZkCoreNodeProps(nodeProps), null, "collection1", "shard1") {

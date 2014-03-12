@@ -31,7 +31,7 @@ import org.apache.lucene.analysis.TokenStream;
 public class TestMorfologikFilterFactory extends BaseTokenStreamTestCase {
   public void testCreateDictionary() throws Exception {
     StringReader reader = new StringReader("rowery bilety");
-    Map<String,String> initParams = new HashMap<String,String>();
+    Map<String,String> initParams = new HashMap<>();
     initParams.put(MorfologikFilterFactory.DICTIONARY_SCHEMA_ATTRIBUTE, "morfologik");
     initParams.put("luceneMatchVersion", TEST_VERSION_CURRENT.toString());
     MorfologikFilterFactory factory = new MorfologikFilterFactory(initParams);

@@ -190,7 +190,7 @@ public class DocumentDictionary implements Dictionary {
     }
     
     private Set<String> getRelevantFields(String... fields) {
-      Set<String> relevantFields = new HashSet<String>();
+      Set<String> relevantFields = new HashSet<>();
       for (String relevantField : fields) {
         if (relevantField != null) {
           relevantFields.add(relevantField);

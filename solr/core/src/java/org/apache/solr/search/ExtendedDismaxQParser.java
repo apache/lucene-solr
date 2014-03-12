@@ -204,7 +204,7 @@ public class ExtendedDismaxQParser extends QParser {
     
     if (allPhraseFields.size() > 0) {
       // find non-field clauses
-      List<Clause> normalClauses = new ArrayList<Clause>(clauses.size());
+      List<Clause> normalClauses = new ArrayList<>(clauses.size());
       for (Clause clause : clauses) {
         if (clause.field != null || clause.isPhrase) continue;
         // check for keywords "AND,OR,TO"
@@ -218,7 +218,7 @@ public class ExtendedDismaxQParser extends QParser {
       
       // full phrase and shingles
       for (FieldParams phraseField: allPhraseFields) {
-        Map<String,Float> pf = new HashMap<String,Float>(1);
+        Map<String,Float> pf = new HashMap<>(1);
         pf.put(phraseField.getField(),phraseField.getBoost());
         addShingledPhraseQueries(query, normalClauses, pf,   
             phraseField.getWordGrams(),config.tiebreaker, phraseField.getSlop());
@@ -407,7 +407,7 @@ public class ExtendedDismaxQParser extends QParser {
    * Parses all multiplicative boosts
    */
   protected List<ValueSource> getMultiplicativeBoosts() throws SyntaxError {
-    List<ValueSource> boosts = new ArrayList<ValueSource>();
+    List<ValueSource> boosts = new ArrayList<>();
     if (config.hasMultiplicativeBoosts()) {
       for (String boostStr : config.multBoosts) {
         if (boostStr==null || boostStr.length()==0) continue;
@@ -428,7 +428,7 @@ public class ExtendedDismaxQParser extends QParser {
    * Parses all function queries
    */
   protected List<Query> getBoostFunctions() throws SyntaxError {
-    List<Query> boostFunctions = new LinkedList<Query>();
+    List<Query> boostFunctions = new LinkedList<>();
     if (config.hasBoostFunctions()) {
       for (String boostFunc : config.boostFuncs) {
         if(null == boostFunc || "".equals(boostFunc)) continue;
@@ -450,7 +450,7 @@ public class ExtendedDismaxQParser extends QParser {
    * Parses all boost queries
    */
   protected List<Query> getBoostQueries() throws SyntaxError {
-    List<Query> boostQueries = new LinkedList<Query>();
+    List<Query> boostQueries = new LinkedList<>();
     if (config.hasBoostParams()) {
       for (String qs : config.boostParams) {
         if (qs.trim().length()==0) continue;
@@ -676,7 +676,7 @@ public class ExtendedDismaxQParser extends QParser {
   }
   
   public List<Clause> splitIntoClauses(String s, boolean ignoreQuote) {
-    ArrayList<Clause> lst = new ArrayList<Clause>(4);
+    ArrayList<Clause> lst = new ArrayList<>(4);
     Clause clause;
     
     int pos=0;
@@ -859,7 +859,7 @@ public class ExtendedDismaxQParser extends QParser {
   }
   
   public static List<String> split(String s, boolean ignoreQuote) {
-    ArrayList<String> lst = new ArrayList<String>(4);
+    ArrayList<String> lst = new ArrayList<>(4);
     int pos=0, start=0, end=s.length();
     char inString=0;
     char ch=0;
@@ -937,7 +937,7 @@ public class ExtendedDismaxQParser extends QParser {
      * string, to Alias object containing the fields to use in our
      * DisjunctionMaxQuery and the tiebreaker to use.
      */
-    protected Map<String,Alias> aliases = new HashMap<String,Alias>(3);
+    protected Map<String,Alias> aliases = new HashMap<>(3);
     
     private QType type;
     private String field;
@@ -1029,7 +1029,7 @@ public class ExtendedDismaxQParser extends QParser {
       Analyzer actualAnalyzer;
       if (removeStopFilter) {
         if (nonStopFilterAnalyzerPerField == null) {
-          nonStopFilterAnalyzerPerField = new HashMap<String, Analyzer>();
+          nonStopFilterAnalyzerPerField = new HashMap<>();
         }
         actualAnalyzer = nonStopFilterAnalyzerPerField.get(field);
         if (actualAnalyzer == null) {
@@ -1127,7 +1127,7 @@ public class ExtendedDismaxQParser extends QParser {
      * Validate there is no cyclic referencing in the aliasing
      */
     private void validateCyclicAliasing(String field) throws SyntaxError {
-      Set<String> set = new HashSet<String>();
+      Set<String> set = new HashSet<>();
       set.add(field);
       if(validateField(field, set)) {
         throw new SyntaxError("Field aliases lead to a cycle");
@@ -1155,7 +1155,7 @@ public class ExtendedDismaxQParser extends QParser {
     protected List<Query> getQueries(Alias a) throws SyntaxError {
       if (a == null) return null;
       if (a.fields.size()==0) return null;
-      List<Query> lst= new ArrayList<Query>(4);
+      List<Query> lst= new ArrayList<>(4);
       
       for (String f : a.fields.keySet()) {
         this.field = f;
@@ -1289,8 +1289,8 @@ public class ExtendedDismaxQParser extends QParser {
       }
       
       // Process dynamic patterns in userFields
-      ArrayList<DynamicField> dynUserFields = new ArrayList<DynamicField>();
-      ArrayList<DynamicField> negDynUserFields = new ArrayList<DynamicField>();
+      ArrayList<DynamicField> dynUserFields = new ArrayList<>();
+      ArrayList<DynamicField> negDynUserFields = new ArrayList<>();
       for(String f : userFieldsMap.keySet()) {
         if(f.contains("*")) {
           if(f.startsWith("-"))
@@ -1459,7 +1459,7 @@ public class ExtendedDismaxQParser extends QParser {
       List<FieldParams> phraseFields2 = U.parseFieldBoostsAndSlop(solrParams.getParams(DMP.PF2),2,pslop[2]);
       List<FieldParams> phraseFields3 = U.parseFieldBoostsAndSlop(solrParams.getParams(DMP.PF3),3,pslop[3]);
       
-      allPhraseFields = new ArrayList<FieldParams>(phraseFields.size() + phraseFields2.size() + phraseFields3.size());
+      allPhraseFields = new ArrayList<>(phraseFields.size() + phraseFields2.size() + phraseFields3.size());
       allPhraseFields.addAll(phraseFields);
       allPhraseFields.addAll(phraseFields2);
       allPhraseFields.addAll(phraseFields3);

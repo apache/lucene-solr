@@ -64,7 +64,7 @@ abstract class BaseFieldResource extends BaseSchemaResource {
       if (null != flParam) {
         String[] fields = flParam.trim().split("[,\\s]+");
         if (fields.length > 0) {
-          requestedFields = new LinkedHashSet<String>();
+          requestedFields = new LinkedHashSet<>();
           for (String field : fields) {
             if ( ! field.trim().isEmpty()) {
               requestedFields.add(field.trim());

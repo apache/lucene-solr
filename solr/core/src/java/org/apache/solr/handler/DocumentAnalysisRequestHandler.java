@@ -198,11 +198,11 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
   NamedList<Object> handleAnalysisRequest(DocumentAnalysisRequest request, IndexSchema schema) {
 
     SchemaField uniqueKeyField = schema.getUniqueKeyField();
-    NamedList<Object> result = new SimpleOrderedMap<Object>();
+    NamedList<Object> result = new SimpleOrderedMap<>();
 
     for (SolrInputDocument document : request.getDocuments()) {
 
-      NamedList<NamedList> theTokens = new SimpleOrderedMap<NamedList>();
+      NamedList<NamedList> theTokens = new SimpleOrderedMap<>();
       result.add(document.getFieldValue(uniqueKeyField.getName()).toString(), theTokens);
       for (String name : document.getFieldNames()) {
 
@@ -212,7 +212,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
           continue;
         }
 
-        NamedList<Object> fieldTokens = new SimpleOrderedMap<Object>();
+        NamedList<Object> fieldTokens = new SimpleOrderedMap<>();
         theTokens.add(name, fieldTokens);
 
         FieldType fieldType = schema.getFieldType(name);
@@ -241,7 +241,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
         AnalysisContext analysisContext = new AnalysisContext(fieldType, analyzer, termsToMatch);
         Collection<Object> fieldValues = document.getFieldValues(name);
         NamedList<NamedList<? extends Object>> indexTokens 
-          = new SimpleOrderedMap<NamedList<? extends Object>>();
+          = new SimpleOrderedMap<>();
         for (Object fieldValue : fieldValues) {
           indexTokens.add(String.valueOf(fieldValue), 
                           analyzeValue(fieldValue.toString(), analysisContext));

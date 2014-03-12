@@ -61,7 +61,7 @@ public class FuzzyLikeThisQuery extends Query
     // provided to TermQuery, so that the general idea is agnostic to any scoring system...
     static TFIDFSimilarity sim=new DefaultSimilarity();
     Query rewrittenQuery=null;
-    ArrayList<FieldVals> fieldVals=new ArrayList<FieldVals>();
+    ArrayList<FieldVals> fieldVals=new ArrayList<>();
     Analyzer analyzer;
     
     ScoreTermQueue q;
@@ -203,7 +203,7 @@ public class FuzzyLikeThisQuery extends Query
       CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
 
       int corpusNumDocs = reader.numDocs();
-      HashSet<String> processedTerms = new HashSet<String>();
+      HashSet<String> processedTerms = new HashSet<>();
       ts.reset();
       while (ts.incrementToken()) {
         String term = termAtt.toString();
@@ -281,7 +281,7 @@ public class FuzzyLikeThisQuery extends Query
         //create BooleanQueries to hold the variants for each token/field pair and ensure it
         // has no coord factor
         //Step 1: sort the termqueries by term/field
-        HashMap<Term,ArrayList<ScoreTerm>> variantQueries=new HashMap<Term,ArrayList<ScoreTerm>>();
+        HashMap<Term,ArrayList<ScoreTerm>> variantQueries=new HashMap<>();
         int size = q.size();
         for(int i = 0; i < size; i++)
         {
@@ -289,7 +289,7 @@ public class FuzzyLikeThisQuery extends Query
           ArrayList<ScoreTerm> l= variantQueries.get(st.fuzziedSourceTerm);
           if(l==null)
           {
-              l=new ArrayList<ScoreTerm>();
+              l=new ArrayList<>();
               variantQueries.put(st.fuzziedSourceTerm,l);
           }
           l.add(st);

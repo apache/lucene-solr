@@ -254,7 +254,7 @@ public class EnwikiContentSource extends ContentSource {
 
   }
 
-  private static final Map<String,Integer> ELEMENTS = new HashMap<String,Integer>();
+  private static final Map<String,Integer> ELEMENTS = new HashMap<>();
   private static final int TITLE = 0;
   private static final int DATE = TITLE + 1;
   private static final int BODY = DATE + 1;

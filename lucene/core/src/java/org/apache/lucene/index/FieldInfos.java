@@ -41,8 +41,8 @@ public class FieldInfos implements Iterable<FieldInfo> {
   private final boolean hasNorms;
   private final boolean hasDocValues;
   
-  private final SortedMap<Integer,FieldInfo> byNumber = new TreeMap<Integer,FieldInfo>();
-  private final HashMap<String,FieldInfo> byName = new HashMap<String,FieldInfo>();
+  private final SortedMap<Integer,FieldInfo> byNumber = new TreeMap<>();
+  private final HashMap<String,FieldInfo> byName = new HashMap<>();
   private final Collection<FieldInfo> values; // for an unmodifiable iterator
   
   /**
@@ -174,9 +174,9 @@ public class FieldInfos implements Iterable<FieldInfo> {
     private int lowestUnassignedFieldNumber = -1;
     
     FieldNumbers() {
-      this.nameToNumber = new HashMap<String, Integer>();
-      this.numberToName = new HashMap<Integer, String>();
-      this.docValuesType = new HashMap<String,DocValuesType>();
+      this.nameToNumber = new HashMap<>();
+      this.numberToName = new HashMap<>();
+      this.docValuesType = new HashMap<>();
     }
     
     /**
@@ -250,7 +250,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
   }
   
   static final class Builder {
-    private final HashMap<String,FieldInfo> byName = new HashMap<String,FieldInfo>();
+    private final HashMap<String,FieldInfo> byName = new HashMap<>();
     final FieldNumbers globalFieldNumbers;
 
     Builder() {

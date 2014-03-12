@@ -36,7 +36,7 @@ class AssertingSubDocsAtOnceCollector extends Collector {
   @Override
   public void setScorer(Scorer s) {
     // Gathers all scorers, including s and "under":
-    allScorers = new ArrayList<Scorer>();
+    allScorers = new ArrayList<>();
     allScorers.add(s);
     int upto = 0;
     while(upto < allScorers.size()) {

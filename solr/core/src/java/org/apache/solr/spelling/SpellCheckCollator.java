@@ -50,7 +50,7 @@ public class SpellCheckCollator {
 
   public List<SpellCheckCollation> collate(SpellingResult result,
       String originalQuery, ResponseBuilder ultimateResponse) {
-  List<SpellCheckCollation> collations = new ArrayList<SpellCheckCollation>();
+  List<SpellCheckCollation> collations = new ArrayList<>();
 
     QueryComponent queryComponent = null;
     if (ultimateResponse.components != null) {
@@ -169,7 +169,7 @@ public class SpellCheckCollator {
         collation.setHits(hits);
         collation.setInternalRank(suggestionsMayOverlap ? ((possibility.rank * 1000) + possibility.index) : possibility.rank);
 
-        NamedList<String> misspellingsAndCorrections = new NamedList<String>();
+        NamedList<String> misspellingsAndCorrections = new NamedList<>();
         for (SpellCheckCorrection corr : possibility.corrections) {
           misspellingsAndCorrections.add(corr.getOriginal().toString(), corr.getCorrection());
         }

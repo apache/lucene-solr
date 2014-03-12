@@ -61,8 +61,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
   static final int TIMEOUT = 10000;
   private static final boolean DEBUG = false;
   
-  private List<Overseer> overseers = new ArrayList<Overseer>();
-  private List<ZkStateReader> readers = new ArrayList<ZkStateReader>();
+  private List<Overseer> overseers = new ArrayList<>();
+  private List<ZkStateReader> readers = new ArrayList<>();
   
   private String collection = "collection1";
   
@@ -435,7 +435,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       assertEquals("Unable to verify all cores have been returned an id", 
                    coreCount, assignedCount);
       
-      final HashMap<String, AtomicInteger> counters = new HashMap<String,AtomicInteger>();
+      final HashMap<String, AtomicInteger> counters = new HashMap<>();
       for (int i = 1; i < sliceCount+1; i++) {
         counters.put("shard" + i, new AtomicInteger());
       }

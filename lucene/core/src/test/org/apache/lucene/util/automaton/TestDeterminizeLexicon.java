@@ -29,8 +29,8 @@ import org.apache.lucene.util.TestUtil;
  * somewhat randomly, by determinizing a huge random lexicon.
  */
 public class TestDeterminizeLexicon extends LuceneTestCase {
-  private List<Automaton> automata = new ArrayList<Automaton>();
-  private List<String> terms = new ArrayList<String>();
+  private List<Automaton> automata = new ArrayList<>();
+  private List<String> terms = new ArrayList<>();
   
   public void testLexicon() throws Exception {
     int num = atLeast(1);

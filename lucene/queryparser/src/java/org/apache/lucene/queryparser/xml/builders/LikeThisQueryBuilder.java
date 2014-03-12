@@ -72,7 +72,7 @@ public class LikeThisQueryBuilder implements QueryBuilder {
     String stopWords = e.getAttribute("stopWords");
     Set<String> stopWordsSet = null;
     if ((stopWords != null) && (fields != null)) {
-      stopWordsSet = new HashSet<String>();
+      stopWordsSet = new HashSet<>();
       for (String field : fields) {
         TokenStream ts = null;
         try {

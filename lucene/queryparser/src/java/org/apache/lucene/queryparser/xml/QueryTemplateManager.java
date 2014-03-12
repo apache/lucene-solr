@@ -48,7 +48,7 @@ public class QueryTemplateManager {
   static final DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
   static final TransformerFactory tFactory = TransformerFactory.newInstance();
 
-  HashMap<String, Templates> compiledTemplatesCache = new HashMap<String, Templates>();
+  HashMap<String, Templates> compiledTemplatesCache = new HashMap<>();
   Templates defaultCompiledTemplates = null;
 
 

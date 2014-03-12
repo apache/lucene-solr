@@ -51,7 +51,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
   private IndexInput in;
   private volatile boolean indexLoaded;
 
-  final HashMap<FieldInfo,FieldIndexData> fields = new HashMap<FieldInfo,FieldIndexData>();
+  final HashMap<FieldInfo,FieldIndexData> fields = new HashMap<>();
   
   // start of the field info data
   private long dirOffset;
@@ -119,7 +119,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
     private BytesRefFSTEnum.InputOutput<Long> current;
 
     public IndexEnum(FST<Long> fst) {
-      fstEnum = new BytesRefFSTEnum<Long>(fst);
+      fstEnum = new BytesRefFSTEnum<>(fst);
     }
 
     @Override
@@ -185,7 +185,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
       if (fst == null) {
         IndexInput clone = in.clone();
         clone.seek(indexStart);
-        fst = new FST<Long>(clone, fstOutputs);
+        fst = new FST<>(clone, fstOutputs);
         clone.close();
 
         /*
@@ -200,8 +200,8 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
           // subsample
           final IntsRef scratchIntsRef = new IntsRef();
           final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
-          final Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, outputs);
-          final BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<Long>(fst);
+          final Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
+          final BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<>(fst);
           BytesRefFSTEnum.InputOutput<Long> result;
           int count = indexDivisor;
           while((result = fstEnum.next()) != null) {

@@ -46,7 +46,7 @@ import java.util.ResourceBundle;
 public class NLS {
 
   private static Map<String, Class<? extends NLS>> bundles = 
-    new HashMap<String, Class<? extends NLS>>(0);
+    new HashMap<>(0);
 
   protected NLS() {
     // Do not instantiate
@@ -129,7 +129,7 @@ public class NLS {
 
     // build a map of field names to Field objects
     final int len = fieldArray.length;
-    Map<String, Field> fields = new HashMap<String, Field>(len * 2);
+    Map<String, Field> fields = new HashMap<>(len * 2);
     for (int i = 0; i < len; i++) {
       fields.put(fieldArray[i].getName(), fieldArray[i]);
       loadfieldValue(fieldArray[i], isFieldAccessible, clazz);

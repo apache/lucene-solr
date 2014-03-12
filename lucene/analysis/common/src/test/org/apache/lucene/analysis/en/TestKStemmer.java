@@ -73,7 +73,7 @@ public class TestKStemmer extends BaseTokenStreamTestCase {
     // tf = new KStemFilter(tf);
 
     KStemmer kstem = new KStemmer();
-    Map<String,String> map = new TreeMap<String,String>();
+    Map<String,String> map = new TreeMap<>();
     for(;;) {
       Token t = tf.next();
       if (t==null) break;

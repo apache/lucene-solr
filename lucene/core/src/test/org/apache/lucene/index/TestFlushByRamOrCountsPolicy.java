@@ -342,8 +342,8 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
 
     @Override
     public void onDelete(DocumentsWriterFlushControl control, ThreadState state) {
-      final ArrayList<ThreadState> pending = new ArrayList<DocumentsWriterPerThreadPool.ThreadState>();
-      final ArrayList<ThreadState> notPending = new ArrayList<DocumentsWriterPerThreadPool.ThreadState>();
+      final ArrayList<ThreadState> pending = new ArrayList<>();
+      final ArrayList<ThreadState> notPending = new ArrayList<>();
       findPending(control, pending, notPending);
       final boolean flushCurrent = state.flushPending;
       final ThreadState toFlush;
@@ -374,8 +374,8 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
 
     @Override
     public void onInsert(DocumentsWriterFlushControl control, ThreadState state) {
-      final ArrayList<ThreadState> pending = new ArrayList<DocumentsWriterPerThreadPool.ThreadState>();
-      final ArrayList<ThreadState> notPending = new ArrayList<DocumentsWriterPerThreadPool.ThreadState>();
+      final ArrayList<ThreadState> pending = new ArrayList<>();
+      final ArrayList<ThreadState> notPending = new ArrayList<>();
       findPending(control, pending, notPending);
       final boolean flushCurrent = state.flushPending;
       long activeBytes = control.activeBytes();

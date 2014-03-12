@@ -88,7 +88,7 @@ class ReadersAndUpdates {
   // updates on the merged segment too.
   private boolean isMerging = false;
   
-  private final Map<String,NumericFieldUpdates> mergingNumericUpdates = new HashMap<String,NumericFieldUpdates>();
+  private final Map<String,NumericFieldUpdates> mergingNumericUpdates = new HashMap<>();
   
   public ReadersAndUpdates(IndexWriter writer, SegmentCommitInfo info) {
     this.info = info;
@@ -501,7 +501,7 @@ class ReadersAndUpdates {
     
     // create a new map, keeping only the gens that are in use
     Map<Long,Set<String>> genUpdatesFiles = info.getUpdatesFiles();
-    Map<Long,Set<String>> newGenUpdatesFiles = new HashMap<Long,Set<String>>();
+    Map<Long,Set<String>> newGenUpdatesFiles = new HashMap<>();
     final long fieldInfosGen = info.getFieldInfosGen();
     for (FieldInfo fi : fieldInfos) {
       long dvGen = fi.getDocValuesGen();

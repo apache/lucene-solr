@@ -53,8 +53,8 @@ public class DocumentDictionaryTest extends LuceneTestCase {
   
   /** Returns Pair(list of invalid document terms, Map of document term -> document) */
   private Map.Entry<List<String>, Map<String, Document>> generateIndexDocuments(int ndocs, boolean requiresPayload) {
-    Map<String, Document> docs = new HashMap<String,Document>();
-    List<String> invalidDocTerms = new ArrayList<String>();
+    Map<String, Document> docs = new HashMap<>();
+    List<String> invalidDocTerms = new ArrayList<>();
     for(int i = 0; i < ndocs ; i++) {
       Document doc = new Document();
       boolean invalidDoc = false;
@@ -96,7 +96,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
       
       docs.put(term, doc);
     }
-    return new SimpleEntry<List<String>, Map<String, Document>>(invalidDocTerms, docs);
+    return new SimpleEntry<>(invalidDocTerms, docs);
   }
   
   @Test
@@ -201,7 +201,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     Map<String, Document> docs = res.getValue();
     List<String> invalidDocTerms = res.getKey();
     Random rand = random();
-    List<String> termsToDel = new ArrayList<String>();
+    List<String> termsToDel = new ArrayList<>();
     for(Document doc : docs.values()) {
       IndexableField f = doc.getField(FIELD_NAME);
       if(rand.nextBoolean() && f != null && !invalidDocTerms.contains(f.stringValue())) {

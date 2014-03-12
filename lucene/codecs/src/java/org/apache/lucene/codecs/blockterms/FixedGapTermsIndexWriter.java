@@ -54,7 +54,7 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
 
   final private int termIndexInterval;
 
-  private final List<SimpleFieldWriter> fields = new ArrayList<SimpleFieldWriter>();
+  private final List<SimpleFieldWriter> fields = new ArrayList<>();
   
   @SuppressWarnings("unused") private final FieldInfos fieldInfos; // unread
 

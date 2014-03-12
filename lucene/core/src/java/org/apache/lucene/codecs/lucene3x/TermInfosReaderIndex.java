@@ -78,7 +78,7 @@ class TermInfosReaderIndex {
     GrowableWriter indexToTerms = new GrowableWriter(bitEstimate, indexSize, PackedInts.DEFAULT);
 
     String currentField = null;
-    List<String> fieldStrs = new ArrayList<String>();
+    List<String> fieldStrs = new ArrayList<>();
     int fieldCounter = -1;
     for (int i = 0; indexEnum.next(); i++) {
       Term term = indexEnum.term();

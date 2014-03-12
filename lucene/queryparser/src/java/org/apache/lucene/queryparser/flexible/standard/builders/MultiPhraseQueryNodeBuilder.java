@@ -49,7 +49,7 @@ public class MultiPhraseQueryNodeBuilder implements StandardQueryBuilder {
     List<QueryNode> children = phraseNode.getChildren();
 
     if (children != null) {
-      TreeMap<Integer, List<Term>> positionTermMap = new TreeMap<Integer, List<Term>>();
+      TreeMap<Integer, List<Term>> positionTermMap = new TreeMap<>();
 
       for (QueryNode child : children) {
         FieldQueryNode termNode = (FieldQueryNode) child;
@@ -59,7 +59,7 @@ public class MultiPhraseQueryNodeBuilder implements StandardQueryBuilder {
             .getPositionIncrement());
 
         if (termList == null) {
-          termList = new LinkedList<Term>();
+          termList = new LinkedList<>();
           positionTermMap.put(termNode.getPositionIncrement(), termList);
 
         }

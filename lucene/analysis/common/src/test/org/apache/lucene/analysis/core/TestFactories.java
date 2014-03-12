@@ -122,7 +122,7 @@ public class TestFactories extends BaseTokenStreamTestCase {
   
   /** tries to initialize a factory with no arguments */
   private AbstractAnalysisFactory initialize(Class<? extends AbstractAnalysisFactory> factoryClazz) throws IOException {
-    Map<String,String> args = new HashMap<String,String>();
+    Map<String,String> args = new HashMap<>();
     args.put("luceneMatchVersion", TEST_VERSION_CURRENT.toString());
     Constructor<? extends AbstractAnalysisFactory> ctor;
     try {

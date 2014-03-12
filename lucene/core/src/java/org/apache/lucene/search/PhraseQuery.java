@@ -46,8 +46,8 @@ import org.apache.lucene.util.ToStringUtils;
  */
 public class PhraseQuery extends Query {
   private String field;
-  private ArrayList<Term> terms = new ArrayList<Term>(4);
-  private ArrayList<Integer> positions = new ArrayList<Integer>(4);
+  private ArrayList<Term> terms = new ArrayList<>(4);
+  private ArrayList<Integer> positions = new ArrayList<>(4);
   private int maxPosition = 0;
   private int slop = 0;
 

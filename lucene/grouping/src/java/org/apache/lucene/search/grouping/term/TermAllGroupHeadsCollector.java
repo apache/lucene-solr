@@ -115,7 +115,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
     GeneralAllGroupHeadsCollector(String groupField, Sort sortWithinGroup) {
       super(groupField, sortWithinGroup.getSort().length);
       this.sortWithinGroup = sortWithinGroup;
-      groups = new HashMap<BytesRef, GroupHead>();
+      groups = new HashMap<>();
 
       final SortField[] sortFields = sortWithinGroup.getSort();
       for (int i = 0; i < sortFields.length; i++) {
@@ -219,7 +219,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
     OrdScoreAllGroupHeadsCollector(String groupField, Sort sortWithinGroup, int initialSize) {
       super(groupField, sortWithinGroup.getSort().length);
       ordSet = new SentinelIntSet(initialSize, -2);
-      collectedGroups = new ArrayList<GroupHead>(initialSize);
+      collectedGroups = new ArrayList<>(initialSize);
 
       final SortField[] sortFields = sortWithinGroup.getSort();
       fields = new SortField[sortFields.length];
@@ -388,7 +388,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
     OrdAllGroupHeadsCollector(String groupField, Sort sortWithinGroup, int initialSize) {
       super(groupField, sortWithinGroup.getSort().length);
       ordSet = new SentinelIntSet(initialSize, -2);
-      collectedGroups = new ArrayList<GroupHead>(initialSize);
+      collectedGroups = new ArrayList<>(initialSize);
 
       final SortField[] sortFields = sortWithinGroup.getSort();
       fields = new SortField[sortFields.length];
@@ -531,7 +531,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
     ScoreAllGroupHeadsCollector(String groupField, Sort sortWithinGroup, int initialSize) {
       super(groupField, sortWithinGroup.getSort().length);
       ordSet = new SentinelIntSet(initialSize, -2);
-      collectedGroups = new ArrayList<GroupHead>(initialSize);
+      collectedGroups = new ArrayList<>(initialSize);
 
       final SortField[] sortFields = sortWithinGroup.getSort();
       fields = new SortField[sortFields.length];

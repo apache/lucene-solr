@@ -341,10 +341,10 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
 
   // TODO: refactor some of this stuff up into a base class for use by other tests
   void doQuery(String expectedDocs, String... queryParams) throws Exception {
-    Set<String> expectedIds = new HashSet<String>( StrUtils.splitSmart(expectedDocs, ",", true) );
+    Set<String> expectedIds = new HashSet<>( StrUtils.splitSmart(expectedDocs, ",", true) );
 
     QueryResponse rsp = cloudClient.query(params(queryParams));
-    Set<String> obtainedIds = new HashSet<String>();
+    Set<String> obtainedIds = new HashSet<>();
     for (SolrDocument doc : rsp.getResults()) {
       obtainedIds.add((String) doc.get("id"));
     }
@@ -355,10 +355,10 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
   void doRTG(String ids) throws Exception {
     cloudClient.query(params("qt","/get", "ids",ids));
 
-    Set<String> expectedIds = new HashSet<String>( StrUtils.splitSmart(ids, ",", true) );
+    Set<String> expectedIds = new HashSet<>( StrUtils.splitSmart(ids, ",", true) );
 
     QueryResponse rsp = cloudClient.query(params("qt","/get", "ids",ids));
-    Set<String> obtainedIds = new HashSet<String>();
+    Set<String> obtainedIds = new HashSet<>();
     for (SolrDocument doc : rsp.getResults()) {
       obtainedIds.add((String) doc.get("id"));
     }

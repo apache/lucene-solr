@@ -128,7 +128,7 @@ public class TestNamedListCodec  extends LuceneTestCase {
 
     NamedList r = new NamedList();
 
-    Map<String, String> map = new HashMap<String, String>();
+    Map<String, String> map = new HashMap<>();
     map.put("foo", "bar");
     map.put("junk", "funk");
     map.put("ham", "burger");

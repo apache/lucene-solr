@@ -43,8 +43,8 @@ public class TestInputIterator extends LuceneTestCase {
     int num = atLeast(10000);
     
     Comparator<BytesRef> comparator = random.nextBoolean() ? BytesRef.getUTF8SortedAsUnicodeComparator() : BytesRef.getUTF8SortedAsUTF16Comparator();
-    TreeMap<BytesRef, SimpleEntry<Long, BytesRef>> sorted = new TreeMap<BytesRef,SimpleEntry<Long,BytesRef>>(comparator);
-    TreeMap<BytesRef, Long> sortedWithoutPayload = new TreeMap<BytesRef,Long>(comparator);
+    TreeMap<BytesRef, SimpleEntry<Long, BytesRef>> sorted = new TreeMap<>(comparator);
+    TreeMap<BytesRef, Long> sortedWithoutPayload = new TreeMap<>(comparator);
     Input[] unsorted = new Input[num];
     Input[] unsortedWithoutPayload = new Input[num];
 
@@ -57,7 +57,7 @@ public class TestInputIterator extends LuceneTestCase {
       } while (sorted.containsKey(key));
       long value = random.nextLong();
       sortedWithoutPayload.put(key, value);
-      sorted.put(key, new SimpleEntry<Long,BytesRef>(value, payload));
+      sorted.put(key, new SimpleEntry<>(value, payload));
       unsorted[i] = new Input(key, value, payload);
       unsortedWithoutPayload[i] = new Input(key, value);
     }
@@ -76,12 +76,12 @@ public class TestInputIterator extends LuceneTestCase {
     
     // test the unsorted iterator wrapper with payloads
     wrapper = new UnsortedInputIterator(new InputArrayIterator(unsorted));
-    TreeMap<BytesRef, SimpleEntry<Long, BytesRef>> actual = new TreeMap<BytesRef,SimpleEntry<Long,BytesRef>>();
+    TreeMap<BytesRef, SimpleEntry<Long, BytesRef>> actual = new TreeMap<>();
     BytesRef key;
     while ((key = wrapper.next()) != null) {
       long value = wrapper.weight();
       BytesRef payload = wrapper.payload();
-      actual.put(BytesRef.deepCopyOf(key), new SimpleEntry<Long,BytesRef>(value, BytesRef.deepCopyOf(payload)));
+      actual.put(BytesRef.deepCopyOf(key), new SimpleEntry<>(value, BytesRef.deepCopyOf(payload)));
     }
     assertEquals(sorted, actual);
 
@@ -99,7 +99,7 @@ public class TestInputIterator extends LuceneTestCase {
     
     // test the unsorted iterator wrapper without payloads
     wrapperWithoutPayload = new UnsortedInputIterator(new InputArrayIterator(unsortedWithoutPayload));
-    TreeMap<BytesRef, Long> actualWithoutPayload = new TreeMap<BytesRef,Long>();
+    TreeMap<BytesRef, Long> actualWithoutPayload = new TreeMap<>();
     while ((key = wrapperWithoutPayload.next()) != null) {
       long value = wrapperWithoutPayload.weight();
       assertNull(wrapperWithoutPayload.payload());

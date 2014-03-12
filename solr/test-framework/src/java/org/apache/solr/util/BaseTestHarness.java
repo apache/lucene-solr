@@ -33,8 +33,8 @@ import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 
 abstract public class BaseTestHarness {
-  private static final ThreadLocal<DocumentBuilder> builderTL = new ThreadLocal<DocumentBuilder>();
-  private static final ThreadLocal<XPath> xpathTL = new ThreadLocal<XPath>();
+  private static final ThreadLocal<DocumentBuilder> builderTL = new ThreadLocal<>();
+  private static final ThreadLocal<XPath> xpathTL = new ThreadLocal<>();
 
   public static DocumentBuilder getXmlDocumentBuilder() {
     try {

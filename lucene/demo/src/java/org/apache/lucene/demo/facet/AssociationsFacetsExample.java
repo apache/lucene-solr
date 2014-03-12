@@ -107,7 +107,7 @@ public class AssociationsFacetsExample {
     Facets genre = new TaxonomyFacetSumFloatAssociations("$genre", taxoReader, config, fc);
 
     // Retrieve results
-    List<FacetResult> results = new ArrayList<FacetResult>();
+    List<FacetResult> results = new ArrayList<>();
     results.add(tags.getTopChildren(10, "tags"));
     results.add(genre.getTopChildren(10, "genre"));
 

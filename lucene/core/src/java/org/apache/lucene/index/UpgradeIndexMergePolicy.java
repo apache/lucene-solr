@@ -82,7 +82,7 @@ public class UpgradeIndexMergePolicy extends MergePolicy {
   @Override
   public MergeSpecification findForcedMerges(SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge) throws IOException {
     // first find all old segments
-    final Map<SegmentCommitInfo,Boolean> oldSegments = new HashMap<SegmentCommitInfo,Boolean>();
+    final Map<SegmentCommitInfo,Boolean> oldSegments = new HashMap<>();
     for (final SegmentCommitInfo si : segmentInfos) {
       final Boolean v = segmentsToMerge.get(si);
       if (v != null && shouldUpgradeSegment(si)) {
@@ -113,7 +113,7 @@ public class UpgradeIndexMergePolicy extends MergePolicy {
         message("findForcedMerges: " +  base.getClass().getSimpleName() +
         " does not want to merge all old segments, merge remaining ones into new segment: " + oldSegments);
       }
-      final List<SegmentCommitInfo> newInfos = new ArrayList<SegmentCommitInfo>();
+      final List<SegmentCommitInfo> newInfos = new ArrayList<>();
       for (final SegmentCommitInfo si : segmentInfos) {
         if (oldSegments.containsKey(si)) {
           newInfos.add(si);

@@ -82,7 +82,7 @@ public class TestShardSearching extends ShardSearchingTestBase {
           maxSearcherAgeSeconds
           );
 
-    final List<PreviousSearchState> priorSearches = new ArrayList<PreviousSearchState>();
+    final List<PreviousSearchState> priorSearches = new ArrayList<>();
     List<BytesRef> terms = null;
     while (System.nanoTime() < endTimeNanos) {
 
@@ -175,7 +175,7 @@ public class TestShardSearching extends ShardSearchingTestBase {
             // TODO: try to "focus" on high freq terms sometimes too
             // TODO: maybe also periodically reset the terms...?
             final TermsEnum termsEnum = MultiFields.getTerms(mockReader, "body").iterator(null);
-            terms = new ArrayList<BytesRef>();
+            terms = new ArrayList<>();
             while(termsEnum.next() != null) {
               terms.add(BytesRef.deepCopyOf(termsEnum.term()));
             }

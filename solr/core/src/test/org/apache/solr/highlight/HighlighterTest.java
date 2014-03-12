@@ -83,7 +83,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
 
   @Test
   public void testMergeContiguous() throws Exception {
-    HashMap<String,String> args = new HashMap<String,String>();
+    HashMap<String,String> args = new HashMap<>();
     args.put(HighlightParams.HIGHLIGHT, "true");
     args.put("df", "t_text");
     args.put(HighlightParams.FIELDS, "");
@@ -132,7 +132,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   public void testTermVecHighlight() {
 
     // do summarization using term vectors
-    HashMap<String,String> args = new HashMap<String,String>();
+    HashMap<String,String> args = new HashMap<>();
     args.put("hl", "true");
     args.put("hl.fl", "tv_text");
     args.put("hl.snippets", "2");
@@ -154,7 +154,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   @Test
   public void testTermVectorWithoutOffsetsHighlight() {
 
-    HashMap<String,String> args = new HashMap<String, String>();
+    HashMap<String,String> args = new HashMap<>();
     args.put("hl", "true");
     args.put("hl.fl", "tv_no_off_text");
 
@@ -197,7 +197,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   public void testTermVecMultiValuedHighlight() throws Exception {
 
     // do summarization using term vectors on multivalued field
-    HashMap<String,String> args = new HashMap<String,String>();
+    HashMap<String,String> args = new HashMap<>();
     args.put("hl", "true");
     args.put("hl.fl", "tv_mv_text");
     args.put("hl.snippets", "2");
@@ -224,7 +224,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   public void testTermVecMultiValuedHighlight2() throws Exception {
 
     // do summarization using term vectors on multivalued field
-    HashMap<String,String> args = new HashMap<String,String>();
+    HashMap<String,String> args = new HashMap<>();
     args.put("hl", "true");
     args.put("hl.fl", "tv_mv_text");
     args.put("hl.snippets", "2");
@@ -249,7 +249,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   public void testDisMaxHighlight() {
 
     // same test run through dismax handler
-    HashMap<String,String> args = new HashMap<String,String>();
+    HashMap<String,String> args = new HashMap<>();
     args.put("hl", "true");
     args.put("hl.fl", "tv_text");
     args.put("qf", "tv_text");
@@ -277,7 +277,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   public void testMultiValueAnalysisHighlight() {
 
     // do summarization using re-analysis of the field
-    HashMap<String,String> args = new HashMap<String,String>();
+    HashMap<String,String> args = new HashMap<>();
     args.put("hl", "true");
     args.put("hl.fl", "textgap");
     args.put("df", "textgap");
@@ -299,7 +299,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   
   @Test
   public void testMultiValueBestFragmentHighlight() {
-    HashMap<String,String> args = new HashMap<String,String>();
+    HashMap<String,String> args = new HashMap<>();
     args.put("hl", "true");
     args.put("hl.fl", "textgap");
     args.put("df", "textgap");
@@ -338,7 +338,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   public void testDefaultFieldHighlight() {
 
     // do summarization using re-analysis of the field
-    HashMap<String,String> args = new HashMap<String,String>();
+    HashMap<String,String> args = new HashMap<>();
     args.put("hl", "true");
     args.put("df", "t_text");
     args.put("hl.fl", "");
@@ -361,7 +361,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   public void testHighlightDisabled() {
 
     // ensure highlighting can be explicitly disabled
-    HashMap<String,String> args = new HashMap<String,String>();
+    HashMap<String,String> args = new HashMap<>();
     args.put("hl", "false");
     args.put("hl.fl", "t_text");
     TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
@@ -379,7 +379,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   public void testTwoFieldHighlight() {
 
     // do summarization using re-analysis of the field
-    HashMap<String,String> args = new HashMap<String,String>();
+    HashMap<String,String> args = new HashMap<>();
     args.put("hl", "true");
     args.put("hl.fl", "t_text tv_text");
     TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
@@ -405,7 +405,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
      assertU(commit());
      assertU(optimize());
      
-     HashMap<String,String> args = new HashMap<String,String>();
+     HashMap<String,String> args = new HashMap<>();
      args.put("hl", "true");
      args.put("hl.fl", "t_text1 t_text2");
      
@@ -449,7 +449,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   public void testCustomSimpleFormatterHighlight() {
 
     // do summarization using a custom formatter
-    HashMap<String,String> args = new HashMap<String,String>();
+    HashMap<String,String> args = new HashMap<>();
     args.put("hl", "true");
     args.put("hl.fl", "t_text");
     args.put("hl.simple.pre","<B>");
@@ -482,7 +482,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   @Test
   public void testLongFragment() {
 
-    HashMap<String,String> args = new HashMap<String,String>();
+    HashMap<String,String> args = new HashMap<>();
     args.put("hl", "true");
     args.put("hl.fl", "tv_text");
     TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
@@ -503,7 +503,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
 
   @Test
   public void testMaxChars() {
-    HashMap<String,String> args = new HashMap<String,String>();
+    HashMap<String,String> args = new HashMap<>();
     args.put("fl", "id score");
     args.put("hl", "true");
     args.put("hl.snippets", "10");
@@ -538,7 +538,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   
   @Test
   public void testRegexFragmenter() {
-    HashMap<String,String> args = new HashMap<String,String>();
+    HashMap<String,String> args = new HashMap<>();
     args.put("fl", "id score");
     args.put("hl", "true");
     args.put("hl.snippets", "10");
@@ -585,7 +585,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
      assertU(optimize());
 
      // default length
-     HashMap<String,String> args = new HashMap<String,String>();
+     HashMap<String,String> args = new HashMap<>();
      args.put("hl", "true");
      args.put("hl.fl", "tv_text");
      TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
@@ -628,7 +628,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
      assertU(optimize());
 
     // do summarization
-    HashMap<String,String> args = new HashMap<String,String>();
+    HashMap<String,String> args = new HashMap<>();
     args.put("hl", "true");
     args.put("hl.fragsize","0");
     args.put("hl.fl", "t_text");
@@ -674,7 +674,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   
   @Test
   public void testPhraseHighlighter() {
-    HashMap<String,String> args = new HashMap<String,String>();
+    HashMap<String,String> args = new HashMap<>();
     args.put("hl", "true");
     args.put("hl.fl", "t_text");
     args.put("hl.fragsize", "40");
@@ -731,7 +731,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   
   @Test
   public void testGetHighlightFields() {
-    HashMap<String, String> args = new HashMap<String, String>();
+    HashMap<String, String> args = new HashMap<>();
     args.put("fl", "id score");
     args.put("hl", "true");
     args.put("hl.fl", "t*");
@@ -776,7 +776,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   public void testDefaultFieldPrefixWildcardHighlight() {
 
     // do summarization using re-analysis of the field
-    HashMap<String,String> args = new HashMap<String,String>();
+    HashMap<String,String> args = new HashMap<>();
     args.put("hl", "true");
     args.put("df", "t_text");
     args.put("hl.fl", "");
@@ -800,7 +800,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   public void testDefaultFieldNonPrefixWildcardHighlight() {
 
     // do summarization using re-analysis of the field
-    HashMap<String,String> args = new HashMap<String,String>();
+    HashMap<String,String> args = new HashMap<>();
     args.put("hl", "true");
     args.put("df", "t_text");
     args.put("hl.fl", "");

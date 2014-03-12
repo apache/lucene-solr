@@ -81,7 +81,7 @@ public abstract class AbstractSqlEntityProcessorTestCase extends
   }
   
   protected void logPropertiesFile() {
-    Map<String,String> init = new HashMap<String,String>();
+    Map<String,String> init = new HashMap<>();
     init.put("filename", fileName);
     init.put("directory", fileLocation);
     SimplePropertiesWriter spw = new SimplePropertiesWriter();
@@ -339,7 +339,7 @@ public abstract class AbstractSqlEntityProcessorTestCase extends
       conn = newConnection();
       s = conn.createStatement();
       rs = s.executeQuery(query);
-      List<String> results = new ArrayList<String>();
+      List<String> results = new ArrayList<>();
       while (rs.next()) {
         results.add(rs.getString(1));
       }
@@ -409,9 +409,9 @@ public abstract class AbstractSqlEntityProcessorTestCase extends
   public IntChanges modifySomePeople() throws Exception {
     underlyingDataModified = true;
     int numberToChange = random().nextInt(people.length + 1);
-    Set<Integer> changeSet = new HashSet<Integer>();
-    Set<Integer> deleteSet = new HashSet<Integer>();
-    Set<Integer> addSet = new HashSet<Integer>();
+    Set<Integer> changeSet = new HashSet<>();
+    Set<Integer> deleteSet = new HashSet<>();
+    Set<Integer> addSet = new HashSet<>();
     Connection conn = null;
     PreparedStatement change = null;
     PreparedStatement delete = null;
@@ -484,7 +484,7 @@ public abstract class AbstractSqlEntityProcessorTestCase extends
   public String[] modifySomeCountries() throws Exception {
     underlyingDataModified = true;
     int numberToChange = random().nextInt(countries.length + 1);
-    Set<String> changeSet = new HashSet<String>();
+    Set<String> changeSet = new HashSet<>();
     Connection conn = null;
     PreparedStatement change = null;
     // One second in the future ensures a change time after the last import (DIH

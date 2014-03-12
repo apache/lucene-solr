@@ -34,7 +34,7 @@ public class OpenExchangeRatesOrgProviderTest extends SolrTestCaseJ4 {
 
   OpenExchangeRatesOrgProvider oerp;
   ResourceLoader loader;
-  private final Map<String,String> mockParams = new HashMap<String,String>();
+  private final Map<String,String> mockParams = new HashMap<>();
 
 
   @Override
@@ -59,7 +59,7 @@ public class OpenExchangeRatesOrgProviderTest extends SolrTestCaseJ4 {
                  "open-exchange-rates.json", oerp.ratesFileLocation);
     assertEquals("Wrong default interval", (1440*60), oerp.refreshIntervalSeconds);
 
-    Map<String,String> params = new HashMap<String,String>();
+    Map<String,String> params = new HashMap<>();
     params.put(OpenExchangeRatesOrgProvider.PARAM_RATES_FILE_LOCATION, 
                "http://foo.bar/baz");
     params.put(OpenExchangeRatesOrgProvider.PARAM_REFRESH_INTERVAL, "100");

@@ -77,7 +77,7 @@ public class CopyFieldCollectionResource extends BaseFieldResource implements GE
       if (null != sourceFieldListParam) {
         String[] fields = sourceFieldListParam.trim().split("[,\\s]+");
         if (fields.length > 0) {
-          requestedSourceFields = new HashSet<String>(Arrays.asList(fields));
+          requestedSourceFields = new HashSet<>(Arrays.asList(fields));
           requestedSourceFields.remove(""); // Remove empty values, if any
         }
       }
@@ -85,7 +85,7 @@ public class CopyFieldCollectionResource extends BaseFieldResource implements GE
       if (null != destinationFieldListParam) {
         String[] fields = destinationFieldListParam.trim().split("[,\\s]+");
         if (fields.length > 0) {
-          requestedDestinationFields = new HashSet<String>(Arrays.asList(fields));
+          requestedDestinationFields = new HashSet<>(Arrays.asList(fields));
           requestedDestinationFields.remove(""); // Remove empty values, if any
         }
       }
@@ -127,9 +127,9 @@ public class CopyFieldCollectionResource extends BaseFieldResource implements GE
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
           } else {
             List<Map<String, Object>> list = (List<Map<String, Object>>) object;
-            Map<String, Collection<String>> fieldsToCopy = new HashMap<String, Collection<String>>();
+            Map<String, Collection<String>> fieldsToCopy = new HashMap<>();
             ManagedIndexSchema oldSchema = (ManagedIndexSchema) getSchema();
-            Set<String> malformed = new HashSet<String>();
+            Set<String> malformed = new HashSet<>();
             for (Map<String,Object> map : list) {
               String fieldName = (String)map.get(IndexSchema.SOURCE);
               if (null == fieldName) {

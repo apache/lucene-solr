@@ -155,7 +155,7 @@ public class CachingWrapperFilter extends Filter {
     // Sync only to pull the current set of values:
     List<DocIdSet> docIdSets;
     synchronized(cache) {
-      docIdSets = new ArrayList<DocIdSet>(cache.values());
+      docIdSets = new ArrayList<>(cache.values());
     }
 
     long total = 0;

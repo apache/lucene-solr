@@ -45,8 +45,8 @@ public class SpanWeight extends Weight {
     this.similarity = searcher.getSimilarity();
     this.query = query;
     
-    termContexts = new HashMap<Term,TermContext>();
-    TreeSet<Term> terms = new TreeSet<Term>();
+    termContexts = new HashMap<>();
+    TreeSet<Term> terms = new TreeSet<>();
     query.extractTerms(terms);
     final IndexReaderContext context = searcher.getTopReaderContext();
     final TermStatistics termStats[] = new TermStatistics[terms.size()];

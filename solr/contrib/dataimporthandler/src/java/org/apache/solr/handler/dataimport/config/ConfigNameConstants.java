@@ -49,7 +49,7 @@ public class ConfigNameConstants {
 
   public static final Set<String> RESERVED_WORDS;
   static{
-    Set<String> rw =  new HashSet<String>();
+    Set<String> rw =  new HashSet<>();
     rw.add(IMPORTER_NS);
     rw.add(IMPORTER_NS_SHORT);
     rw.add("request");

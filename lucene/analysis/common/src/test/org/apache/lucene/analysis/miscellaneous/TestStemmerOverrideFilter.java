@@ -70,7 +70,7 @@ public class TestStemmerOverrideFilter extends BaseTokenStreamTestCase {
   }
   
   public void testRandomRealisticWhiteSpace() throws IOException {
-    Map<String,String> map = new HashMap<String,String>();
+    Map<String,String> map = new HashMap<>();
     int numTerms = atLeast(50);
     for (int i = 0; i < numTerms; i++) {
       String randomRealisticUnicodeString = TestUtil
@@ -97,7 +97,7 @@ public class TestStemmerOverrideFilter extends BaseTokenStreamTestCase {
     StemmerOverrideFilter.Builder builder = new StemmerOverrideFilter.Builder(random().nextBoolean());
     Set<Entry<String,String>> entrySet = map.entrySet();
     StringBuilder input = new StringBuilder();
-    List<String> output = new ArrayList<String>();
+    List<String> output = new ArrayList<>();
     for (Entry<String,String> entry : entrySet) {
       builder.add(entry.getKey(), entry.getValue());
       if (random().nextBoolean() || output.isEmpty()) {
@@ -113,7 +113,7 @@ public class TestStemmerOverrideFilter extends BaseTokenStreamTestCase {
   }
   
   public void testRandomRealisticKeyword() throws IOException {
-    Map<String,String> map = new HashMap<String,String>();
+    Map<String,String> map = new HashMap<>();
     int numTerms = atLeast(50);
     for (int i = 0; i < numTerms; i++) {
       String randomRealisticUnicodeString = TestUtil

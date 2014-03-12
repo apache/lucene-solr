@@ -240,7 +240,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNull(schema.getFieldOrNull("not_in_schema"));
     DateTimeFormatter dateTimeFormatter = ISODateTimeFormat.dateOptionalTimeParser().withZoneUTC();
-    Map<Object,Object> mixed = new HashMap<Object,Object>();
+    Map<Object,Object> mixed = new HashMap<>();
     String[] dateStrings = { "2020-05-13T18:47", "1989-12-14", "1682-07-22T18:33:00.000Z" };
     for (String dateString : dateStrings) {
       mixed.put(dateTimeFormatter.parseDateTime(dateString).toDate(), dateString);
@@ -339,7 +339,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
   public void testFailedParseMixedInt() throws Exception {
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNull(schema.getFieldOrNull("not_in_schema"));
-    Map<Object,Object> mixed = new HashMap<Object,Object>();
+    Map<Object,Object> mixed = new HashMap<>();
     Float floatVal = 294423.0f;
     mixed.put(85, "85");
     mixed.put(floatVal, floatVal); // Float-typed field value
@@ -422,7 +422,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
   public void testFailedParseMixedLong() throws Exception {
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNull(schema.getFieldOrNull("not_in_schema"));
-    Map<Object,Object> mixed = new HashMap<Object,Object>();
+    Map<Object,Object> mixed = new HashMap<>();
     Float floatVal = 294423.0f;
     mixed.put(85L, "85");
     mixed.put(floatVal, floatVal); // Float-typed field value
@@ -506,7 +506,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
   public void testMixedFloats() throws Exception {
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull("float_tf")); // should match dynamic field "*_tf"
-    Map<Float,Object> mixedFloats = new HashMap<Float,Object>();
+    Map<Float,Object> mixedFloats = new HashMap<>();
     mixedFloats.put(85.0f, "85");
     mixedFloats.put(2894518.0f, "2,894,518");
     mixedFloats.put(2.94423E-9f, 2.94423E-9f); // Float-typed field value
@@ -524,7 +524,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
   public void testFailedParseMixedFloat() throws Exception {
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNull(schema.getFieldOrNull("not_in_schema"));
-    Map<Object,Object> mixed = new HashMap<Object,Object>();
+    Map<Object,Object> mixed = new HashMap<>();
     Long longVal = 294423L;
     mixed.put(85L, "85");
     mixed.put(longVal, longVal); // Float-typed field value
@@ -608,7 +608,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
   public void testFailedParseMixedDouble() throws Exception {
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNull(schema.getFieldOrNull("not_in_schema"));
-    Map<Object,Object> mixed = new HashMap<Object,Object>();
+    Map<Object,Object> mixed = new HashMap<>();
     Long longVal = 294423L;
     mixed.put(85, "85.0");
     mixed.put(longVal, longVal); // Float-typed field value
@@ -710,7 +710,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
   public void testFailedParseMixedBoolean() throws Exception {
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNull(schema.getFieldOrNull("not_in_schema"));
-    Map<Object,Object> mixed = new HashMap<Object,Object>();
+    Map<Object,Object> mixed = new HashMap<>();
     Long longVal = 294423L;
     mixed.put(true, "true");
     mixed.put(longVal, longVal); // Float-typed field value
@@ -739,7 +739,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     SolrInputDocument d = null;
     String chain = "cascading-parsers-no-run-processor";
     
-    Map<Boolean,String> booleans = new HashMap<Boolean,String>();
+    Map<Boolean,String> booleans = new HashMap<>();
     booleans.put(true, "truE");
     booleans.put(false, "False");
     d = processAdd(chain, doc(f("id", "341"), f(fieldName, booleans.values())));
@@ -750,7 +750,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     }
     assertTrue(booleans.isEmpty());
 
-    Map<Integer,String> ints = new HashMap<Integer,String>();
+    Map<Integer,String> ints = new HashMap<>();
     ints.put(2, "2");
     ints.put(50928, "50928");
     ints.put(86942008, "86,942,008");
@@ -762,7 +762,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     }
     assertTrue(ints.isEmpty());
 
-    Map<Long,String> longs = new HashMap<Long,String>();
+    Map<Long,String> longs = new HashMap<>();
     longs.put(2L, "2");
     longs.put(50928L, "50928");
     longs.put(86942008987654L, "86,942,008,987,654");
@@ -789,7 +789,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     }
     */
 
-    Map<Double,String> doubles = new HashMap<Double,String>();
+    Map<Double,String> doubles = new HashMap<>();
     doubles.put(2.0, "2.");
     doubles.put(509.28, "509.28");
     doubles.put(86942.008, "86,942.008");
@@ -801,7 +801,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     }
 
     DateTimeFormatter dateTimeFormatter = ISODateTimeFormat.dateOptionalTimeParser().withZoneUTC();
-    Map<Date,String> dates = new HashMap<Date,String>();
+    Map<Date,String> dates = new HashMap<>();
     String[] dateStrings = { "2020-05-13T18:47", "1989-12-14", "1682-07-22T18:33:00.000Z" };
     for (String dateString : dateStrings) {
       dates.put(dateTimeFormatter.parseDateTime(dateString).toDate(), dateString);
@@ -814,7 +814,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     }
     assertTrue(dates.isEmpty());
     
-    Map<Double,String> mixedLongsAndDoubles = new LinkedHashMap<Double,String>(); // preserve order
+    Map<Double,String> mixedLongsAndDoubles = new LinkedHashMap<>(); // preserve order
     mixedLongsAndDoubles.put(85.0, "85");
     mixedLongsAndDoubles.put(2.94423E-9, "2.94423E-9");
     mixedLongsAndDoubles.put(2894518.0, "2,894,518");
@@ -827,7 +827,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     }
     assertTrue(mixedLongsAndDoubles.isEmpty());
     
-    Set<String> mixed = new HashSet<String>();
+    Set<String> mixed = new HashSet<>();
     mixed.add("true");
     mixed.add("1682-07-22T18:33:00.000Z");
     mixed.add("2,894,518");
@@ -839,7 +839,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
       assertTrue(o instanceof String);
     }
 
-    Map<Double,Object> mixedDoubles = new LinkedHashMap<Double,Object>(); // preserve order
+    Map<Double,Object> mixedDoubles = new LinkedHashMap<>(); // preserve order
     mixedDoubles.put(85.0, "85");
     mixedDoubles.put(2.94423E-9, 2.94423E-9); // Double-typed field value
     mixedDoubles.put(2894518.0, "2,894,518");
@@ -852,7 +852,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     }
     assertTrue(mixedDoubles.isEmpty());
 
-    Map<Integer,Object> mixedInts = new LinkedHashMap<Integer,Object>(); // preserve order
+    Map<Integer,Object> mixedInts = new LinkedHashMap<>(); // preserve order
     mixedInts.put(85, "85");
     mixedInts.put(294423, 294423); // Integer-typed field value
     mixedInts.put(-2894518, "-2,894,518");
@@ -865,7 +865,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     }
     assertTrue(mixedInts.isEmpty());
 
-    Map<Long,Object> mixedLongs = new LinkedHashMap<Long,Object>(); // preserve order
+    Map<Long,Object> mixedLongs = new LinkedHashMap<>(); // preserve order
     mixedLongs.put(85L, "85");
     mixedLongs.put(42944233L, 42944233L); // Long-typed field value
     mixedLongs.put(2894518L, "2,894,518");
@@ -878,7 +878,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     }
     assertTrue(mixedLongs.isEmpty());
 
-    Map<Boolean,Object> mixedBooleans = new LinkedHashMap<Boolean,Object>(); // preserve order
+    Map<Boolean,Object> mixedBooleans = new LinkedHashMap<>(); // preserve order
     mixedBooleans.put(true, "true");
     mixedBooleans.put(false, false); // Boolean-typed field value
     mixedBooleans.put(false, "false");
@@ -892,7 +892,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertTrue(mixedBooleans.isEmpty());
 
     dateTimeFormatter = ISODateTimeFormat.dateOptionalTimeParser().withZoneUTC();
-    Map<Date,Object> mixedDates = new HashMap<Date,Object>();
+    Map<Date,Object> mixedDates = new HashMap<>();
     dateStrings = new String[] { "2020-05-13T18:47", "1989-12-14", "1682-07-22T18:33:00.000Z" };
     for (String dateString : dateStrings) {
       mixedDates.put(dateTimeFormatter.parseDateTime(dateString).toDate(), dateString);

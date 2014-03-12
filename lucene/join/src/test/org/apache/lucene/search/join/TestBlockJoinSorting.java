@@ -55,7 +55,7 @@ public class TestBlockJoinSorting extends LuceneTestCase {
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.COMPOUND_FILES));
 
-    List<Document> docs = new ArrayList<Document>();
+    List<Document> docs = new ArrayList<>();
     Document document = new Document();
     document.add(new StringField("field2", "a", Field.Store.NO));
     document.add(new StringField("filter_1", "T", Field.Store.NO));

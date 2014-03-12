@@ -25,7 +25,7 @@ import java.util.Properties;
 import org.junit.Test;
 
 public class TestURLDataSource extends AbstractDataImportHandlerTestCase {
-  private List<Map<String, String>> fields = new ArrayList<Map<String, String>>();
+  private List<Map<String, String>> fields = new ArrayList<>();
   private URLDataSource dataSource = new URLDataSource();
   private VariableResolver variableResolver = new VariableResolver();
   private Context context = AbstractDataImportHandlerTestCase.getContext(null, variableResolver,

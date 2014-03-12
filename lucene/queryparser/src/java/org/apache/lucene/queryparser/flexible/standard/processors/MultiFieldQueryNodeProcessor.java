@@ -93,7 +93,7 @@ public class MultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
             return fieldNode;
 
           } else {
-            LinkedList<QueryNode> children = new LinkedList<QueryNode>();
+            LinkedList<QueryNode> children = new LinkedList<>();
             children.add(fieldNode);
 
             for (int i = 1; i < fields.length; i++) {

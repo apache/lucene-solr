@@ -55,14 +55,14 @@ final class ZooKeeperInspector {
 
     DocCollection docCollection = extractDocCollection(zkHost, collection);
     List<Slice> slices = getSortedSlices(docCollection.getSlices());
-    List<List<String>> solrUrls = new ArrayList<List<String>>(slices.size());
+    List<List<String>> solrUrls = new ArrayList<>(slices.size());
     for (Slice slice : slices) {
       if (slice.getLeader() == null) {
         throw new IllegalArgumentException("Cannot find SolrCloud slice leader. " +
             "It looks like not all of your shards are registered in ZooKeeper yet");
       }
       Collection<Replica> replicas = slice.getReplicas();
-      List<String> urls = new ArrayList<String>(replicas.size());
+      List<String> urls = new ArrayList<>(replicas.size());
       for (Replica replica : replicas) {
         ZkCoreNodeProps props = new ZkCoreNodeProps(replica);
         urls.add(props.getCoreUrl());

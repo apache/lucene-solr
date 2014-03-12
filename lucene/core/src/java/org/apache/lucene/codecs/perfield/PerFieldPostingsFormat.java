@@ -89,8 +89,8 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
     
   private class FieldsWriter extends FieldsConsumer {
 
-    private final Map<PostingsFormat,FieldsConsumerAndSuffix> formats = new HashMap<PostingsFormat,FieldsConsumerAndSuffix>();
-    private final Map<String,Integer> suffixes = new HashMap<String,Integer>();
+    private final Map<PostingsFormat,FieldsConsumerAndSuffix> formats = new HashMap<>();
+    private final Map<String,Integer> suffixes = new HashMap<>();
     
     private final SegmentWriteState segmentWriteState;
 
@@ -172,8 +172,8 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
   private class FieldsReader extends FieldsProducer {
 
-    private final Map<String,FieldsProducer> fields = new TreeMap<String,FieldsProducer>();
-    private final Map<String,FieldsProducer> formats = new HashMap<String,FieldsProducer>();
+    private final Map<String,FieldsProducer> fields = new TreeMap<>();
+    private final Map<String,FieldsProducer> formats = new HashMap<>();
 
     public FieldsReader(final SegmentReadState readState) throws IOException {
 

@@ -159,7 +159,7 @@ public class TestSearch extends LuceneTestCase {
   }
 
   private List<Query> buildQueries() {
-    List<Query> queries = new ArrayList<Query>();
+    List<Query> queries = new ArrayList<>();
 
     BooleanQuery booleanAB = new BooleanQuery();
     booleanAB.add(new TermQuery(new Term("contents", "a")), BooleanClause.Occur.SHOULD);

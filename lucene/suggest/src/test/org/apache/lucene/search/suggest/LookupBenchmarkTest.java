@@ -98,7 +98,7 @@ public class LookupBenchmarkTest extends LuceneTestCase {
    * Collect the multilingual input for benchmarks/ tests.
    */
   public static List<Input> readTop50KWiki() throws Exception {
-    List<Input> input = new ArrayList<Input>();
+    List<Input> input = new ArrayList<>();
     URL resource = LookupBenchmarkTest.class.getResource("Top50KWiki.utf8");
     assert resource != null : "Resource missing: Top50KWiki.utf8";
 
@@ -211,7 +211,7 @@ public class LookupBenchmarkTest extends LuceneTestCase {
     for (Class<? extends Lookup> cls : benchmarkClasses) {
       final Lookup lookup = buildLookup(cls, dictionaryInput);
 
-      final List<String> input = new ArrayList<String>(benchmarkInput.size());
+      final List<String> input = new ArrayList<>(benchmarkInput.size());
       for (Input tf : benchmarkInput) {
         String s = tf.term.utf8ToString();
         String sub = s.substring(0, Math.min(s.length(), 
@@ -246,7 +246,7 @@ public class LookupBenchmarkTest extends LuceneTestCase {
     final double NANOS_PER_MS = 1000000;
 
     try {
-      List<Double> times = new ArrayList<Double>();
+      List<Double> times = new ArrayList<>();
       for (int i = 0; i < warmup + rounds; i++) {
           final long start = System.nanoTime();
           guard = callable.call().intValue();

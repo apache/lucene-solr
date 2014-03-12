@@ -107,7 +107,7 @@ public abstract class CachingCollector extends Collector {
       super(other, maxRAMMB, true);
 
       cachedScorer = new CachedScorer();
-      cachedScores = new ArrayList<float[]>();
+      cachedScores = new ArrayList<>();
       curScores = new float[INITIAL_ARRAY_SIZE];
       cachedScores.add(curScores);
     }
@@ -116,7 +116,7 @@ public abstract class CachingCollector extends Collector {
       super(other, maxDocsToCache);
 
       cachedScorer = new CachedScorer();
-      cachedScores = new ArrayList<float[]>();
+      cachedScores = new ArrayList<>();
       curScores = new float[INITIAL_ARRAY_SIZE];
       cachedScores.add(curScores);
     }
@@ -315,7 +315,7 @@ public abstract class CachingCollector extends Collector {
   protected final Collector other;
   
   protected final int maxDocsToCache;
-  protected final List<SegStart> cachedSegs = new ArrayList<SegStart>();
+  protected final List<SegStart> cachedSegs = new ArrayList<>();
   protected final List<int[]> cachedDocs;
   
   private AtomicReaderContext lastReaderContext;
@@ -393,7 +393,7 @@ public abstract class CachingCollector extends Collector {
   private CachingCollector(Collector other, double maxRAMMB, boolean cacheScores) {
     this.other = other;
     
-    cachedDocs = new ArrayList<int[]>();
+    cachedDocs = new ArrayList<>();
     curDocs = new int[INITIAL_ARRAY_SIZE];
     cachedDocs.add(curDocs);
 
@@ -407,7 +407,7 @@ public abstract class CachingCollector extends Collector {
   private CachingCollector(Collector other, int maxDocsToCache) {
     this.other = other;
 
-    cachedDocs = new ArrayList<int[]>();
+    cachedDocs = new ArrayList<>();
     curDocs = new int[INITIAL_ARRAY_SIZE];
     cachedDocs.add(curDocs);
     this.maxDocsToCache = maxDocsToCache;

@@ -154,7 +154,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       clearIndex();
       assertU(commit());
 
-      Deque<Long> versions = new ArrayDeque<Long>();
+      Deque<Long> versions = new ArrayDeque<>();
       versions.addFirst(addAndGetVersion(sdoc("id", "A1"), null));
       versions.addFirst(addAndGetVersion(sdoc("id", "A11"), null));
       versions.addFirst(addAndGetVersion(sdoc("id", "A12"), null));
@@ -768,7 +768,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       int start = 0;
       int maxReq = 50;
 
-      LinkedList<Long> versions = new LinkedList<Long>();
+      LinkedList<Long> versions = new LinkedList<>();
       addDocs(10, start, versions); start+=10;
       assertJQ(req("qt","/get", "getVersions",""+maxReq), "/versions==" + versions.subList(0,Math.min(maxReq,start)));
       assertU(commit());

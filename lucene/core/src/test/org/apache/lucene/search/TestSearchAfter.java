@@ -59,7 +59,7 @@ public class TestSearchAfter extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
 
-    allSortFields = new ArrayList<SortField>(Arrays.asList(new SortField[] {
+    allSortFields = new ArrayList<>(Arrays.asList(new SortField[] {
           new SortField("byte", SortField.Type.BYTE, false),
           new SortField("short", SortField.Type.SHORT, false),
           new SortField("int", SortField.Type.INT, false),
@@ -134,7 +134,7 @@ public class TestSearchAfter extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     int numDocs = atLeast(200);
     for (int i = 0; i < numDocs; i++) {
-      List<Field> fields = new ArrayList<Field>();
+      List<Field> fields = new ArrayList<>();
       fields.add(newTextField("english", English.intToEnglish(i), Field.Store.NO));
       fields.add(newTextField("oddeven", (i % 2 == 0) ? "even" : "odd", Field.Store.NO));
       fields.add(newStringField("byte", "" + ((byte) random().nextInt()), Field.Store.NO));

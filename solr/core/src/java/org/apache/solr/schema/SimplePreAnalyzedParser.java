@@ -141,7 +141,7 @@ public final class SimplePreAnalyzedParser implements PreAnalyzedParser {
   
   private static class Tok {
     StringBuilder token = new StringBuilder();
-    Map<String, String> attr = new HashMap<String, String>();
+    Map<String, String> attr = new HashMap<>();
     
     public boolean isEmpty() {
       return token.length() == 0 && attr.size() == 0;

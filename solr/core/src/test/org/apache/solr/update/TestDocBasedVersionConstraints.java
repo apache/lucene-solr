@@ -367,7 +367,7 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
         final int winner = TestUtil.nextInt(random(), 0, numAdds - 1);
         final int winnerVersion = atLeast(100);
         final boolean winnerIsDeleted = (0 == TestUtil.nextInt(random(), 0, 4));
-        List<Callable<Object>> tasks = new ArrayList<Callable<Object>>(numAdds);
+        List<Callable<Object>> tasks = new ArrayList<>(numAdds);
         for (int variant = 0; variant < numAdds; variant++) {
           final boolean iShouldWin = (variant==winner);
           final long version = (iShouldWin ? winnerVersion 

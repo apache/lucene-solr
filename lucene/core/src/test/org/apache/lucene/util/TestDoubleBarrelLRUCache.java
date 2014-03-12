@@ -118,7 +118,7 @@ public class TestDoubleBarrelLRUCache extends LuceneTestCase {
     final int CACHE_SIZE = 512;
     final int OBJ_COUNT = 3*CACHE_SIZE;
 
-    DoubleBarrelLRUCache<CloneableObject,Object> c = new DoubleBarrelLRUCache<CloneableObject,Object>(1024);
+    DoubleBarrelLRUCache<CloneableObject,Object> c = new DoubleBarrelLRUCache<>(1024);
 
     CloneableObject[] objs = new CloneableObject[OBJ_COUNT];
     for(int i=0;i<OBJ_COUNT;i++) {

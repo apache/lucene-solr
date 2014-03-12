@@ -72,7 +72,7 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
   /**
    * Restore these system property values.
    */
-  private HashMap<String, String> restoreProperties = new HashMap<String,String>();
+  private HashMap<String, String> restoreProperties = new HashMap<>();
 
   private Codec savedCodec;
   private Locale savedLocale;
@@ -149,7 +149,7 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
     }
 
     Class<?> targetClass = RandomizedContext.current().getTargetClass();
-    avoidCodecs = new HashSet<String>();
+    avoidCodecs = new HashSet<>();
     if (targetClass.isAnnotationPresent(SuppressCodecs.class)) {
       SuppressCodecs a = targetClass.getAnnotation(SuppressCodecs.class);
       avoidCodecs.addAll(Arrays.asList(a.value()));

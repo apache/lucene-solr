@@ -42,7 +42,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
 
     // Gather all FieldData's that have postings, across all
     // ThreadStates
-    List<FreqProxTermsWriterPerField> allFields = new ArrayList<FreqProxTermsWriterPerField>();
+    List<FreqProxTermsWriterPerField> allFields = new ArrayList<>();
 
     for (TermsHashConsumerPerField f : fieldsToFlush.values()) {
       final FreqProxTermsWriterPerField perField = (FreqProxTermsWriterPerField) f;

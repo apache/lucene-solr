@@ -38,7 +38,7 @@ public class TestBeiderMorseFilterFactory extends BaseTokenStreamTestCase {
   }
   
   public void testLanguageSet() throws Exception {
-    Map<String,String> args = new HashMap<String,String>();
+    Map<String,String> args = new HashMap<>();
     args.put("languageSet", "polish");
     BeiderMorseFilterFactory factory = new BeiderMorseFilterFactory(args);
     TokenStream ts = factory.create(new MockTokenizer(new StringReader("Weinberg"), MockTokenizer.WHITESPACE, false));
@@ -50,7 +50,7 @@ public class TestBeiderMorseFilterFactory extends BaseTokenStreamTestCase {
   }
   
   public void testOptions() throws Exception {
-    Map<String,String> args = new HashMap<String,String>();
+    Map<String,String> args = new HashMap<>();
     args.put("nameType", "ASHKENAZI");
     args.put("ruleType", "EXACT");
     BeiderMorseFilterFactory factory = new BeiderMorseFilterFactory(args);

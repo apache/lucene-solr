@@ -168,9 +168,9 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
     }
 
     if (fields.length == 1) {
-      return new OneComparatorFieldValueHitQueue<T>(fields, size);
+      return new OneComparatorFieldValueHitQueue<>(fields, size);
     } else {
-      return new MultiComparatorsFieldValueHitQueue<T>(fields, size);
+      return new MultiComparatorsFieldValueHitQueue<>(fields, size);
     }
   }
   

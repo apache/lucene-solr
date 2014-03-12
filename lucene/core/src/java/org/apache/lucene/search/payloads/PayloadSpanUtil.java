@@ -74,7 +74,7 @@ public class PayloadSpanUtil {
    * @throws IOException if there is a low-level I/O error
    */
   public Collection<byte[]> getPayloadsForQuery(Query query) throws IOException {
-    Collection<byte[]> payloads = new ArrayList<byte[]>();
+    Collection<byte[]> payloads = new ArrayList<>();
     queryToSpanQuery(query, payloads);
     return payloads;
   }
@@ -143,7 +143,7 @@ public class PayloadSpanUtil {
           final Term[] termArray = termArrays.get(i);
           List<Query> disjuncts = disjunctLists[positions[i]];
           if (disjuncts == null) {
-            disjuncts = (disjunctLists[positions[i]] = new ArrayList<Query>(
+            disjuncts = (disjunctLists[positions[i]] = new ArrayList<>(
                 termArray.length));
             ++distinctPositions;
           }
@@ -178,8 +178,8 @@ public class PayloadSpanUtil {
 
   private void getPayloads(Collection<byte []> payloads, SpanQuery query)
       throws IOException {
-    Map<Term,TermContext> termContexts = new HashMap<Term,TermContext>();
-    TreeSet<Term> terms = new TreeSet<Term>();
+    Map<Term,TermContext> termContexts = new HashMap<>();
+    TreeSet<Term> terms = new TreeSet<>();
     query.extractTerms(terms);
     for (Term term : terms) {
       termContexts.put(term, TermContext.build(context, term));

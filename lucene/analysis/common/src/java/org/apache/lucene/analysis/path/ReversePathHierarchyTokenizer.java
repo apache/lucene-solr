@@ -98,7 +98,7 @@ public class ReversePathHierarchyTokenizer extends Tokenizer {
     this.skip = skip;
     resultToken = new StringBuilder(bufferSize);
     resultTokenBuffer = new char[bufferSize];
-    delimiterPositions = new ArrayList<Integer>(bufferSize/10);
+    delimiterPositions = new ArrayList<>(bufferSize/10);
   }
 
   private static final int DEFAULT_BUFFER_SIZE = 1024;

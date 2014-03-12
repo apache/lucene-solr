@@ -61,8 +61,8 @@ public class TestAnalyzingQueryParser extends LuceneTestCase {
   private String[] fuzzyInput;
   private String[] fuzzyExpected;
 
-  private Map<String, String> wildcardEscapeHits = new TreeMap<String, String>();
-  private Map<String, String> wildcardEscapeMisses = new TreeMap<String, String>();
+  private Map<String, String> wildcardEscapeHits = new TreeMap<>();
+  private Map<String, String> wildcardEscapeMisses = new TreeMap<>();
 
   @Override
   public void setUp() throws Exception {

@@ -56,7 +56,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
   static final String PAYLOAD_FIELD_NAME = "p1";
 
   private Map<String, Document> generateIndexDocuments(int ndocs) {
-    Map<String, Document> docs = new HashMap<String, Document>();
+    Map<String, Document> docs = new HashMap<>();
     for(int i = 0; i < ndocs ; i++) {
       Field field = new TextField(FIELD_NAME, "field_" + i, Field.Store.YES);
       Field payload = new StoredField(PAYLOAD_FIELD_NAME, new BytesRef("payload_" + i));
@@ -167,7 +167,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
     Map<String, Document> docs = generateIndexDocuments(atLeast(100));
     Random rand = random();
-    List<String> termsToDel = new ArrayList<String>();
+    List<String> termsToDel = new ArrayList<>();
     for(Document doc : docs.values()) {
       if(rand.nextBoolean() && termsToDel.size() < docs.size()-1) {
         termsToDel.add(doc.get(FIELD_NAME));

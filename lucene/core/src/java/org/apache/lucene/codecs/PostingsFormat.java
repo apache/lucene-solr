@@ -42,7 +42,7 @@ import org.apache.lucene.util.NamedSPILoader;
 public abstract class PostingsFormat implements NamedSPILoader.NamedSPI {
 
   private static final NamedSPILoader<PostingsFormat> loader =
-    new NamedSPILoader<PostingsFormat>(PostingsFormat.class);
+    new NamedSPILoader<>(PostingsFormat.class);
 
   /** Zero-length {@code PostingsFormat} array. */
   public static final PostingsFormat[] EMPTY = new PostingsFormat[0];

@@ -178,7 +178,7 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
 
   private ObjectName getObjectName(String key, SolrInfoMBean infoBean)
           throws MalformedObjectNameException {
-    Hashtable<String, String> map = new Hashtable<String, String>();
+    Hashtable<String, String> map = new Hashtable<>();
     map.put("type", key);
     map.put("id", infoBean.getName());
     String coreName = h.getCore().getName();

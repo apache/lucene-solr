@@ -57,7 +57,7 @@ public class NoOpResponseParser extends ResponseParser {
       StringWriter writer = new StringWriter();
       IOUtils.copy(reader, writer);
       String output = writer.toString();
-      NamedList<Object> list = new NamedList<Object>();
+      NamedList<Object> list = new NamedList<>();
       list.add("response", output);
       return list;
     } catch (IOException e) {
@@ -71,7 +71,7 @@ public class NoOpResponseParser extends ResponseParser {
       StringWriter writer = new StringWriter();
       IOUtils.copy(body, writer, encoding);
       String output = writer.toString();
-      NamedList<Object> list = new NamedList<Object>();
+      NamedList<Object> list = new NamedList<>();
       list.add("response", output);
       return list;
     } catch (IOException e) {

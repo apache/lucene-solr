@@ -111,7 +111,7 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
         SimpleTextUtil.readLine(input, scratch);
         assert StringHelper.startsWith(scratch, NUM_ATTS);
         int numAtts = Integer.parseInt(readString(NUM_ATTS.length, scratch));
-        Map<String,String> atts = new HashMap<String,String>();
+        Map<String,String> atts = new HashMap<>();
 
         for (int j = 0; j < numAtts; j++) {
           SimpleTextUtil.readLine(input, scratch);

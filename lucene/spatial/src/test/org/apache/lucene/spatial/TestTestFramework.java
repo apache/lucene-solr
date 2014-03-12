@@ -45,7 +45,7 @@ public class TestTestFramework extends LuceneTestCase {
     SpatialContext ctx = SpatialContext.GEO;
     Iterator<SpatialTestQuery> iter = SpatialTestQuery.getTestQueries(
         new SpatialArgsParser(), ctx, name, in );//closes the InputStream
-    List<SpatialTestQuery> tests = new ArrayList<SpatialTestQuery>();
+    List<SpatialTestQuery> tests = new ArrayList<>();
     while( iter.hasNext() ) {
       tests.add( iter.next() );
     }

@@ -141,7 +141,7 @@ public class QuadPrefixTree extends SpatialPrefixTree {
 
   @Override
   public Cell getCell(Point p, int level) {
-    List<Cell> cells = new ArrayList<Cell>(1);
+    List<Cell> cells = new ArrayList<>(1);
     build(xmid, ymid, 0, cells, new StringBuilder(), ctx.makePoint(p.getX(),p.getY()), level);
     return cells.get(0);//note cells could be longer if p on edge
   }
@@ -240,7 +240,7 @@ public class QuadPrefixTree extends SpatialPrefixTree {
 
     @Override
     public Collection<Cell> getSubCells() {
-      List<Cell> cells = new ArrayList<Cell>(4);
+      List<Cell> cells = new ArrayList<>(4);
       cells.add(new QuadCell(getTokenString()+"A"));
       cells.add(new QuadCell(getTokenString()+"B"));
       cells.add(new QuadCell(getTokenString()+"C"));

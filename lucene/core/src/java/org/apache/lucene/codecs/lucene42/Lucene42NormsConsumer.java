@@ -85,7 +85,7 @@ class Lucene42NormsConsumer extends DocValuesConsumer {
     // TODO: more efficient?
     HashSet<Long> uniqueValues = null;
     if (true) {
-      uniqueValues = new HashSet<Long>();
+      uniqueValues = new HashSet<>();
 
       long count = 0;
       for (Number nv : values) {
@@ -131,7 +131,7 @@ class Lucene42NormsConsumer extends DocValuesConsumer {
       } else {
         meta.writeByte(TABLE_COMPRESSED); // table-compressed
         Long[] decode = uniqueValues.toArray(new Long[uniqueValues.size()]);
-        final HashMap<Long,Integer> encode = new HashMap<Long,Integer>();
+        final HashMap<Long,Integer> encode = new HashMap<>();
         data.writeVInt(decode.length);
         for (int i = 0; i < decode.length; i++) {
           data.writeLong(decode[i]);

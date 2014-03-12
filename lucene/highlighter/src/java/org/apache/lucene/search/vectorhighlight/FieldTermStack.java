@@ -38,7 +38,7 @@ import org.apache.lucene.util.UnicodeUtil;
 public class FieldTermStack {
   
   private final String fieldName;
-  LinkedList<TermInfo> termList = new LinkedList<TermInfo>();
+  LinkedList<TermInfo> termList = new LinkedList<>();
   
   //public static void main( String[] args ) throws Exception {
   //  Analyzer analyzer = new WhitespaceAnalyzer(Version.LUCENE_CURRENT);

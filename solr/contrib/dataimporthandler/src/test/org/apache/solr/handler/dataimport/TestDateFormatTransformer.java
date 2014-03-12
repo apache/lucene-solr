@@ -34,7 +34,7 @@ public class TestDateFormatTransformer extends AbstractDataImportHandlerTestCase
   @Test
   @SuppressWarnings("unchecked")
   public void testTransformRow_SingleRow() throws Exception {
-    List<Map<String, String>> fields = new ArrayList<Map<String, String>>();
+    List<Map<String, String>> fields = new ArrayList<>();
     fields.add(createMap(DataImporter.COLUMN, "lastModified"));
     fields.add(createMap(DataImporter.COLUMN,
             "dateAdded", RegexTransformer.SRC_COL_NAME, "lastModified",
@@ -57,7 +57,7 @@ public class TestDateFormatTransformer extends AbstractDataImportHandlerTestCase
   @Test
   @SuppressWarnings("unchecked")
   public void testTransformRow_MultipleRows() throws Exception {
-    List<Map<String, String>> fields = new ArrayList<Map<String, String>>();
+    List<Map<String, String>> fields = new ArrayList<>();
     fields.add(createMap(DataImporter.COLUMN, "lastModified"));
     fields.add(createMap(DataImporter.COLUMN,
             "dateAdded", RegexTransformer.SRC_COL_NAME, "lastModified",
@@ -67,8 +67,8 @@ public class TestDateFormatTransformer extends AbstractDataImportHandlerTestCase
     Date now1 = format.parse(format.format(new Date()));
     Date now2 = format.parse(format.format(new Date()));
 
-    Map<String,Object> row = new HashMap<String,Object>();
-    List<String> list = new ArrayList<String>();
+    Map<String,Object> row = new HashMap<>();
+    List<String> list = new ArrayList<>();
     list.add(format.format(now1));
     list.add(format.format(now2));
     row.put("lastModified", list);
@@ -79,7 +79,7 @@ public class TestDateFormatTransformer extends AbstractDataImportHandlerTestCase
     Context context = getContext(null, resolver,
             null, Context.FULL_DUMP, fields, null);
     new DateFormatTransformer().transformRow(row, context);
-    List<Object> output = new ArrayList<Object>();
+    List<Object> output = new ArrayList<>();
     output.add(now1);
     output.add(now2);
     assertEquals(output, row.get("dateAdded"));

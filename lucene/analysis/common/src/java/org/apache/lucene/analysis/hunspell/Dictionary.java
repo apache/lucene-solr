@@ -189,7 +189,7 @@ public class Dictionary {
       
       // read dictionary entries
       IntSequenceOutputs o = IntSequenceOutputs.getSingleton();
-      Builder<IntsRef> b = new Builder<IntsRef>(FST.INPUT_TYPE.BYTE4, o);
+      Builder<IntsRef> b = new Builder<>(FST.INPUT_TYPE.BYTE4, o);
       readDictionaryFiles(dictionaries, decoder, b);
       words = b.finish();
       aliases = null; // no longer needed
@@ -272,9 +272,9 @@ public class Dictionary {
    * @throws IOException Can be thrown while reading from the InputStream
    */
   private void readAffixFile(InputStream affixStream, CharsetDecoder decoder) throws IOException, ParseException {
-    TreeMap<String, List<Character>> prefixes = new TreeMap<String, List<Character>>();
-    TreeMap<String, List<Character>> suffixes = new TreeMap<String, List<Character>>();
-    Map<String,Integer> seenPatterns = new HashMap<String,Integer>();
+    TreeMap<String, List<Character>> prefixes = new TreeMap<>();
+    TreeMap<String, List<Character>> suffixes = new TreeMap<>();
+    Map<String,Integer> seenPatterns = new HashMap<>();
     
     // zero condition -> 0 ord
     seenPatterns.put(".*", 0);
@@ -357,7 +357,7 @@ public class Dictionary {
   
   private FST<IntsRef> affixFST(TreeMap<String,List<Character>> affixes) throws IOException {
     IntSequenceOutputs outputs = IntSequenceOutputs.getSingleton();
-    Builder<IntsRef> builder = new Builder<IntsRef>(FST.INPUT_TYPE.BYTE4, outputs);
+    Builder<IntsRef> builder = new Builder<>(FST.INPUT_TYPE.BYTE4, outputs);
     
     IntsRef scratch = new IntsRef();
     for (Map.Entry<String,List<Character>> entry : affixes.entrySet()) {
@@ -502,7 +502,7 @@ public class Dictionary {
       
       List<Character> list = affixes.get(affixArg);
       if (list == null) {
-        list = new ArrayList<Character>();
+        list = new ArrayList<>();
         affixes.put(affixArg, list);
       }
       
@@ -512,7 +512,7 @@ public class Dictionary {
   }
   
   private FST<CharsRef> parseConversions(LineNumberReader reader, int num) throws IOException, ParseException {
-    Map<String,String> mappings = new TreeMap<String,String>();
+    Map<String,String> mappings = new TreeMap<>();
     
     for (int i = 0; i < num; i++) {
       String line = reader.readLine();
@@ -526,7 +526,7 @@ public class Dictionary {
     }
     
     Outputs<CharsRef> outputs = CharSequenceOutputs.getSingleton();
-    Builder<CharsRef> builder = new Builder<CharsRef>(FST.INPUT_TYPE.BYTE2, outputs);
+    Builder<CharsRef> builder = new Builder<>(FST.INPUT_TYPE.BYTE2, outputs);
     IntsRef scratchInts = new IntsRef();
     for (Map.Entry<String,String> entry : mappings.entrySet()) {
       Util.toUTF16(entry.getKey(), scratchInts);
@@ -580,7 +580,7 @@ public class Dictionary {
 
   static final Map<String,String> CHARSET_ALIASES;
   static {
-    Map<String,String> m = new HashMap<String,String>();
+    Map<String,String> m = new HashMap<>();
     m.put("microsoft-cp1251", "windows-1251");
     m.put("TIS620-2533", "TIS-620");
     CHARSET_ALIASES = Collections.unmodifiableMap(m);
@@ -1003,7 +1003,7 @@ public class Dictionary {
     final CharsRef NO_OUTPUT = fst.outputs.getNoOutput();
     
     // temporary stuff
-    final FST.Arc<CharsRef> arc = new FST.Arc<CharsRef>();
+    final FST.Arc<CharsRef> arc = new FST.Arc<>();
     int longestMatch;
     CharsRef longestOutput;
     

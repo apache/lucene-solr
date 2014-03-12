@@ -40,7 +40,7 @@ import java.util.HashSet;
 public class NearSpansUnordered extends Spans {
   private SpanNearQuery query;
 
-  private List<SpansCell> ordered = new ArrayList<SpansCell>();         // spans in query order
+  private List<SpansCell> ordered = new ArrayList<>();         // spans in query order
   private Spans[] subSpans;  
   private int slop;                               // from query
 
@@ -121,7 +121,7 @@ public class NearSpansUnordered extends Spans {
                     // TODO: Remove warning after API has been finalized
     @Override
     public Collection<byte[]> getPayload() throws IOException {
-      return new ArrayList<byte[]>(spans.getPayload());
+      return new ArrayList<>(spans.getPayload());
     }
 
     // TODO: Remove warning after API has been finalized
@@ -250,7 +250,7 @@ public class NearSpansUnordered extends Spans {
    */
   @Override
   public Collection<byte[]> getPayload() throws IOException {
-    Set<byte[]> matchPayload = new HashSet<byte[]>();
+    Set<byte[]> matchPayload = new HashSet<>();
     for (SpansCell cell = first; cell != null; cell = cell.next) {
       if (cell.isPayloadAvailable()) {
         matchPayload.addAll(cell.getPayload());

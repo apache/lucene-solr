@@ -62,8 +62,8 @@ public class TSTLookup extends Lookup {
       tfit = new SortedInputIterator(tfit, BytesRef.getUTF8SortedAsUTF16Comparator());
     }
 
-    ArrayList<String> tokens = new ArrayList<String>();
-    ArrayList<Number> vals = new ArrayList<Number>();
+    ArrayList<String> tokens = new ArrayList<>();
+    ArrayList<Number> vals = new ArrayList<>();
     BytesRef spare;
     CharsRef charsSpare = new CharsRef();
     while ((spare = tfit.next()) != null) {
@@ -120,7 +120,7 @@ public class TSTLookup extends Lookup {
   @Override
   public List<LookupResult> lookup(CharSequence key, boolean onlyMorePopular, int num) {
     List<TernaryTreeNode> list = autocomplete.prefixCompletion(root, key, 0);
-    List<LookupResult> res = new ArrayList<LookupResult>();
+    List<LookupResult> res = new ArrayList<>();
     if (list == null || list.size() == 0) {
       return res;
     }

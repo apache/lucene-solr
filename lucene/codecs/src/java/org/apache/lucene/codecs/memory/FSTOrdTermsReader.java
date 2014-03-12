@@ -70,7 +70,7 @@ import org.apache.lucene.util.fst.Util;
  */
 public class FSTOrdTermsReader extends FieldsProducer {
   static final int INTERVAL = FSTOrdTermsWriter.SKIP_INTERVAL;
-  final TreeMap<String, TermsReader> fields = new TreeMap<String, TermsReader>();
+  final TreeMap<String, TermsReader> fields = new TreeMap<>();
   final PostingsReaderBase postingsReader;
   IndexInput indexIn = null;
   IndexInput blockIn = null;
@@ -99,7 +99,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
         long sumDocFreq = blockIn.readVLong();
         int docCount = blockIn.readVInt();
         int longsSize = blockIn.readVInt();
-        FST<Long> index = new FST<Long>(indexIn, PositiveIntOutputs.getSingleton());
+        FST<Long> index = new FST<>(indexIn, PositiveIntOutputs.getSingleton());
 
         TermsReader current = new TermsReader(fieldInfo, numTerms, sumTotalTermFreq, sumDocFreq, docCount, longsSize, index);
         TermsReader previous = fields.put(fieldInfo.name, current);
@@ -439,7 +439,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
       boolean seekPending;
 
       SegmentTermsEnum() throws IOException {
-        this.fstEnum = new BytesRefFSTEnum<Long>(index);
+        this.fstEnum = new BytesRefFSTEnum<>(index);
         this.decoded = false;
         this.seekPending = false;
       }
@@ -533,7 +533,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
         int state;
 
         Frame() {
-          this.arc = new FST.Arc<Long>();
+          this.arc = new FST.Arc<>();
           this.state = -1;
         }
 
@@ -793,7 +793,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
   }
 
   static<T> void walk(FST<T> fst) throws IOException {
-    final ArrayList<FST.Arc<T>> queue = new ArrayList<FST.Arc<T>>();
+    final ArrayList<FST.Arc<T>> queue = new ArrayList<>();
     final BitSet seen = new BitSet();
     final FST.BytesReader reader = fst.getBytesReader();
     final FST.Arc<T> startArc = fst.getFirstArc(new FST.Arc<T>());

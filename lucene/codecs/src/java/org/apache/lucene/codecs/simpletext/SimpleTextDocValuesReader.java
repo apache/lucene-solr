@@ -67,7 +67,7 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
   final int maxDoc;
   final IndexInput data;
   final BytesRef scratch = new BytesRef();
-  final Map<String,OneField> fields = new HashMap<String,OneField>();
+  final Map<String,OneField> fields = new HashMap<>();
   
   public SimpleTextDocValuesReader(SegmentReadState state, String ext) throws IOException {
     // System.out.println("dir=" + state.directory + " seg=" + state.segmentInfo.name + " file=" + IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, ext));

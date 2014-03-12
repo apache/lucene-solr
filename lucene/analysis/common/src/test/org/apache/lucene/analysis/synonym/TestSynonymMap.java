@@ -40,7 +40,7 @@ public class TestSynonymMap extends LuceneTestCase {
 
   public void testInvalidMappingRules() throws Exception {
     SlowSynonymMap synMap = new SlowSynonymMap( true );
-    List<String> rules = new ArrayList<String>( 1 );
+    List<String> rules = new ArrayList<>( 1 );
     rules.add( "a=>b=>c" );
     try{
         SlowSynonymFilterFactory.parseRules( rules, synMap, "=>", ",", true, null);
@@ -53,7 +53,7 @@ public class TestSynonymMap extends LuceneTestCase {
     SlowSynonymMap synMap;
 
     // (a)->[b]
-    List<String> rules = new ArrayList<String>();
+    List<String> rules = new ArrayList<>();
     rules.add( "a=>b" );
     synMap = new SlowSynonymMap( true );
     SlowSynonymFilterFactory.parseRules( rules, synMap, "=>", ",", true, null);
@@ -131,7 +131,7 @@ public class TestSynonymMap extends LuceneTestCase {
 
     // (a)->[a]
     // (b)->[a]
-    List<String> rules = new ArrayList<String>();
+    List<String> rules = new ArrayList<>();
     rules.add( "a,b" );
     synMap = new SlowSynonymMap( true );
     SlowSynonymFilterFactory.parseRules( rules, synMap, "=>", ",", false, null);
@@ -181,7 +181,7 @@ public class TestSynonymMap extends LuceneTestCase {
 
     // (a)->[a][b]
     // (b)->[a][b]
-    List<String> rules = new ArrayList<String>();
+    List<String> rules = new ArrayList<>();
     rules.add( "a,b" );
     synMap = new SlowSynonymMap( true );
     SlowSynonymFilterFactory.parseRules( rules, synMap, "=>", ",", true, null);
@@ -248,14 +248,14 @@ public class TestSynonymMap extends LuceneTestCase {
     SlowSynonymMap synMap;
 
     // prepare bi-gram tokenizer factory
-    Map<String, String> args = new HashMap<String, String>();
+    Map<String, String> args = new HashMap<>();
     args.put(AbstractAnalysisFactory.LUCENE_MATCH_VERSION_PARAM, "4.4");
     args.put("minGramSize","2");
     args.put("maxGramSize","2");
     TokenizerFactory tf = new NGramTokenizerFactory(args);
     
     // (ab)->(bc)->(cd)->[ef][fg][gh]
-    List<String> rules = new ArrayList<String>();
+    List<String> rules = new ArrayList<>();
     rules.add( "abcd=>efgh" );
     synMap = new SlowSynonymMap( true );
     SlowSynonymFilterFactory.parseRules( rules, synMap, "=>", ",", true, tf);
@@ -269,7 +269,7 @@ public class TestSynonymMap extends LuceneTestCase {
   
 
   public void testLoadRules() throws Exception {
-    Map<String, String> args = new HashMap<String, String>();
+    Map<String, String> args = new HashMap<>();
     args.put( "synonyms", "something.txt" );
     SlowSynonymFilterFactory ff = new SlowSynonymFilterFactory(args);
     ff.inform( new ResourceLoader() {

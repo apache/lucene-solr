@@ -119,12 +119,12 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected CloudSolrServer controlClientCloud;  // cloud version of the control client
   protected volatile CloudSolrServer cloudClient;
   
-  protected List<CloudJettyRunner> cloudJettys = new ArrayList<CloudJettyRunner>();
-  protected Map<String,List<CloudJettyRunner>> shardToJetty = new HashMap<String,List<CloudJettyRunner>>();
+  protected List<CloudJettyRunner> cloudJettys = new ArrayList<>();
+  protected Map<String,List<CloudJettyRunner>> shardToJetty = new HashMap<>();
   private AtomicInteger jettyIntCntr = new AtomicInteger(0);
   protected ChaosMonkey chaosMonkey;
   
-  protected Map<String,CloudJettyRunner> shardToLeaderJetty = new HashMap<String,CloudJettyRunner>();
+  protected Map<String,CloudJettyRunner> shardToLeaderJetty = new HashMap<>();
   private boolean cloudInit;
   protected boolean checkCreatedVsState;
   protected boolean useJettyDataDir = true;
@@ -354,8 +354,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
    *          be the case
    */
   protected List<JettySolrRunner> createJettys(int numJettys, boolean checkCreatedVsState) throws Exception {
-    List<JettySolrRunner> jettys = new ArrayList<JettySolrRunner>();
-    List<SolrServer> clients = new ArrayList<SolrServer>();
+    List<JettySolrRunner> jettys = new ArrayList<>();
+    List<SolrServer> clients = new ArrayList<>();
     StringBuilder sb = new StringBuilder();
     for (int i = 1; i <= numJettys; i++) {
       if (sb.length() > 0) sb.append(',');
@@ -531,7 +531,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     ClusterState clusterState = zkStateReader.getClusterState();
     DocCollection coll = clusterState.getCollection(DEFAULT_COLLECTION);
 
-    List<CloudSolrServerClient> theClients = new ArrayList<CloudSolrServerClient>();
+    List<CloudSolrServerClient> theClients = new ArrayList<>();
     for (SolrServer client : clients) {
       // find info for this client in zk 
       nextClient:
@@ -570,7 +570,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           if (replica.getStr(ZkStateReader.BASE_URL_PROP).contains(":" + port)) {
             List<CloudJettyRunner> list = shardToJetty.get(slice.getName());
             if (list == null) {
-              list = new ArrayList<CloudJettyRunner>();
+              list = new ArrayList<>();
               shardToJetty.put(slice.getName(), list);
             }
             boolean isLeader = slice.getLeader() == replica;
@@ -915,7 +915,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   public QueryResponse queryAndCompareReplicas(SolrParams params, String shard) 
     throws Exception {
 
-    ArrayList<SolrServer> shardClients = new ArrayList<SolrServer>(7);
+    ArrayList<SolrServer> shardClients = new ArrayList<>(7);
 
     updateMappingsFromZk(jettys, clients);
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
@@ -947,7 +947,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   public void queryAndCompareShards(SolrParams params) throws Exception {
 
     updateMappingsFromZk(jettys, clients);
-    List<String> shards = new ArrayList<String>(shardToJetty.keySet());
+    List<String> shards = new ArrayList<>(shardToJetty.keySet());
     for (String shard : shards) {
       queryAndCompareReplicas(params, shard);
     }
@@ -1121,19 +1121,19 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     //  System.err.println("######"+bName+ ": " + toStr(b,10));
     //System.err.println("###### sizes=" + a.size() + "," + b.size());
     boolean legal = true;
-    Set<SolrDocument> setA = new HashSet<SolrDocument>();
+    Set<SolrDocument> setA = new HashSet<>();
     for (SolrDocument sdoc : a) {
       setA.add(sdoc);
     }
 
-    Set<SolrDocument> setB = new HashSet<SolrDocument>();
+    Set<SolrDocument> setB = new HashSet<>();
     for (SolrDocument sdoc : b) {
       setB.add(sdoc);
     }
 
-    Set<SolrDocument> onlyInA = new HashSet<SolrDocument>(setA);
+    Set<SolrDocument> onlyInA = new HashSet<>(setA);
     onlyInA.removeAll(setB);
-    Set<SolrDocument> onlyInB = new HashSet<SolrDocument>(setB);
+    Set<SolrDocument> onlyInB = new HashSet<>(setB);
     onlyInB.removeAll(setA);
 
     if (onlyInA.size() > 0) {
@@ -1168,19 +1168,19 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     System.err.println("######"+bName+ ": " + toStr(b,10));
     System.err.println("###### sizes=" + a.size() + "," + b.size());
     
-    Set<Map> setA = new HashSet<Map>();
+    Set<Map> setA = new HashSet<>();
     for (SolrDocument sdoc : a) {
       setA.add(new HashMap(sdoc));
     }
 
-    Set<Map> setB = new HashSet<Map>();
+    Set<Map> setB = new HashSet<>();
     for (SolrDocument sdoc : b) {
       setB.add(new HashMap(sdoc));
     }
 
-    Set<Map> onlyInA = new HashSet<Map>(setA);
+    Set<Map> onlyInA = new HashSet<>(setA);
     onlyInA.removeAll(setB);
-    Set<Map> onlyInB = new HashSet<Map>(setB);
+    Set<Map> onlyInB = new HashSet<>(setB);
     onlyInB.removeAll(setA);
 
     if (onlyInA.size() > 0) {
@@ -1590,7 +1590,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
     
     int clientIndex = random().nextInt(2);
-    List<Integer> list = new ArrayList<Integer>();
+    List<Integer> list = new ArrayList<>();
     list.add(numShards);
     list.add(numReplicas);
     if (collectionInfos != null) {

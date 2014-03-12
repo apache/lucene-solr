@@ -60,8 +60,8 @@ public class SimpleOrderedMap<T> extends NamedList<T> {
 
   @Override
   public SimpleOrderedMap<T> clone() {
-    ArrayList<Object> newList = new ArrayList<Object>(nvPairs.size());
+    ArrayList<Object> newList = new ArrayList<>(nvPairs.size());
     newList.addAll(nvPairs);
-    return new SimpleOrderedMap<T>(newList);
+    return new SimpleOrderedMap<>(newList);
   }
 }

@@ -101,7 +101,7 @@ public class DrillSideways {
   protected Facets buildFacetsResult(FacetsCollector drillDowns, FacetsCollector[] drillSideways, String[] drillSidewaysDims) throws IOException {
 
     Facets drillDownFacets;
-    Map<String,Facets> drillSidewaysFacets = new HashMap<String,Facets>();
+    Map<String,Facets> drillSidewaysFacets = new HashMap<>();
 
     if (taxoReader != null) {
       drillDownFacets = new FastTaxonomyFacetCounts(taxoReader, config, drillDowns);

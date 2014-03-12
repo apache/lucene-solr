@@ -35,7 +35,7 @@ import org.junit.Test;
 public class FileDictionaryTest extends LuceneTestCase {
   
   private Map.Entry<List<String>, String> generateFileEntry(String fieldDelimiter, boolean hasWeight, boolean hasPayload) {
-    List<String> entryValues = new ArrayList<String>();
+    List<String> entryValues = new ArrayList<>();
     StringBuilder sb = new StringBuilder();
     String term = TestUtil.randomSimpleString(random(), 1, 300);
     sb.append(term);
@@ -53,11 +53,11 @@ public class FileDictionaryTest extends LuceneTestCase {
       entryValues.add(payload);
     }
     sb.append("\n");
-    return new SimpleEntry<List<String>, String>(entryValues, sb.toString());
+    return new SimpleEntry<>(entryValues, sb.toString());
   }
   
   private Map.Entry<List<List<String>>,String> generateFileInput(int count, String fieldDelimiter, boolean hasWeights, boolean hasPayloads) {
-    List<List<String>> entries = new ArrayList<List<String>>();
+    List<List<String>> entries = new ArrayList<>();
     StringBuilder sb = new StringBuilder();
     boolean hasPayload = hasPayloads;
     for (int i = 0; i < count; i++) {
@@ -68,7 +68,7 @@ public class FileDictionaryTest extends LuceneTestCase {
       entries.add(entrySet.getKey());
       sb.append(entrySet.getValue());
     }
-    return new SimpleEntry<List<List<String>>, String>(entries, sb.toString());
+    return new SimpleEntry<>(entries, sb.toString());
   }
   
   @Test

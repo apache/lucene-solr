@@ -49,9 +49,9 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   protected final SchemaField idField;
   protected final FieldType idFieldType;
 
-  protected Vector<SolrEventListener> commitCallbacks = new Vector<SolrEventListener>();
-  protected Vector<SolrEventListener> softCommitCallbacks = new Vector<SolrEventListener>();
-  protected Vector<SolrEventListener> optimizeCallbacks = new Vector<SolrEventListener>();
+  protected Vector<SolrEventListener> commitCallbacks = new Vector<>();
+  protected Vector<SolrEventListener> softCommitCallbacks = new Vector<>();
+  protected Vector<SolrEventListener> optimizeCallbacks = new Vector<>();
 
   protected final UpdateLog ulog;
 

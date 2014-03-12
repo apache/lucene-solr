@@ -132,7 +132,7 @@ public class TestIndexWriterOutOfFileDescriptors extends LuceneTestCase {
         dir.setRandomIOExceptionRateOnOpen(0.0);
         r = DirectoryReader.open(dir);
         dirCopy = newMockFSDirectory(TestUtil.getTempDir("TestIndexWriterOutOfFileDescriptors.copy"));
-        Set<String> files = new HashSet<String>();
+        Set<String> files = new HashSet<>();
         for (String file : dir.listAll()) {
           dir.copy(dirCopy, file, file, IOContext.DEFAULT);
           files.add(file);
