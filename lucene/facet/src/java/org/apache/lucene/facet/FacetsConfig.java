@@ -403,6 +403,12 @@ public class FacetsConfig {
         }
         System.arraycopy(field.assoc.bytes, field.assoc.offset, bytes, upto, field.assoc.length);
         upto += field.assoc.length;
+        
+        // Drill down:
+        FacetLabel cp = new FacetLabel(field.dim, field.path);
+        for (int i = 1; i <= cp.length; i++) {
+          doc.add(new StringField(indexFieldName, pathToString(cp.components, i), Field.Store.NO));
+        }
       }
       doc.add(new BinaryDocValuesField(indexFieldName, new BytesRef(bytes, 0, upto)));
     }
