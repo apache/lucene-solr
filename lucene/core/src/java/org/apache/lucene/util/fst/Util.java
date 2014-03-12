@@ -17,13 +17,19 @@ package org.apache.lucene.util.fst;
  * limitations under the License.
  */
 
-import java.io.*;
-import java.util.*;
-
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.fst.FST.Arc;
 import org.apache.lucene.util.fst.FST.BytesReader;
+
+import java.io.IOException;
+import java.io.Writer;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
+import java.util.TreeSet;
 
 /** Static helper methods.
  *
@@ -294,6 +300,13 @@ public final class Util {
 
     TreeSet<FSTPath<T>> queue = null;
 
+    /**
+     * Creates an unbounded TopNSearcher
+     * @param fst the {@link org.apache.lucene.util.fst.FST} to search on
+     * @param topN the number of top scoring entries to retrieve
+     * @param maxQueueDepth the maximum size of the queue of possible top entries
+     * @param comparator the comparator to select the top N
+     */
     public TopNSearcher(FST<T> fst, int topN, int maxQueueDepth, Comparator<T> comparator) {
       this.fst = fst;
       this.bytesReader = fst.getBytesReader();
@@ -379,9 +392,9 @@ public final class Util {
       }
     }
 
-    public MinResult<T>[] search() throws IOException {
+    public TopResults<T> search() throws IOException {
 
-      final List<MinResult<T>> results = new ArrayList<>();
+      final List<Result<T>> results = new ArrayList<>();
 
       //System.out.println("search topN=" + topN);
 
@@ -422,7 +435,7 @@ public final class Util {
           //System.out.println("    empty string!  cost=" + path.cost);
           // Empty string!
           path.input.length--;
-          results.add(new MinResult<>(path.input, path.cost));
+          results.add(new Result<>(path.input, path.cost));
           continue;
         }
 
@@ -486,10 +499,9 @@ public final class Util {
             T finalOutput = fst.outputs.add(path.cost, path.arc.output);
             if (acceptResult(path.input, finalOutput)) {
               //System.out.println("    add result: " + path);
-              results.add(new MinResult<>(path.input, finalOutput));
+              results.add(new Result(path.input, finalOutput));
             } else {
               rejectCount++;
-              assert rejectCount + topN <= maxQueueDepth: "maxQueueDepth (" + maxQueueDepth + ") is too small for topN (" + topN + "): rejected " + rejectCount + " paths";
             }
             break;
           } else {
@@ -500,10 +512,7 @@ public final class Util {
           }
         }
       }
-    
-      @SuppressWarnings({"rawtypes","unchecked"}) final MinResult<T>[] arr =
-        (MinResult<T>[]) new MinResult[results.size()];
-      return results.toArray(arr);
+      return new TopResults(rejectCount + topN <= maxQueueDepth, results);
     }
 
     protected boolean acceptResult(IntsRef input, T output) {
@@ -513,18 +522,47 @@ public final class Util {
 
   /** Holds a single input (IntsRef) + output, returned by
    *  {@link #shortestPaths shortestPaths()}. */
-  public final static class MinResult<T> {
+  public final static class Result<T> {
     public final IntsRef input;
     public final T output;
-    public MinResult(IntsRef input, T output) {
+    public Result(IntsRef input, T output) {
       this.input = input;
       this.output = output;
     }
   }
 
+
+  /**
+   * Holds the results for a top N search using {@link TopNSearcher}
+   */
+  public static final class TopResults<T> implements Iterable<Result<T>> {
+
+    /**
+     * <code>true</code> iff this is a complete result ie. if
+     * the specified queue size was large enough to find the complete list of results. This might
+     * be <code>false</code> if the {@link TopNSearcher} rejected too many results.
+     */
+    public final boolean isComplete;
+    /**
+     * The top results
+     */
+    public final List<Result<T>> topN;
+
+    TopResults(boolean isComplete, List<Result<T>> topN) {
+      this.topN = topN;
+      this.isComplete = isComplete;
+    }
+
+    @Override
+    public Iterator<Result<T>> iterator() {
+      return topN.iterator();
+    }
+  }
+
+
   /** Starting from node, find the top N min cost 
    *  completions to a final node. */
-  public static <T> MinResult<T>[] shortestPaths(FST<T> fst, FST.Arc<T> fromNode, T startOutput, Comparator<T> comparator, int topN,
+  public static <T> TopResults<T> shortestPaths(FST<T> fst, FST.Arc<T> fromNode, T startOutput, Comparator<T> comparator, int topN,
                                                  boolean allowEmptyString) throws IOException {
 
     // All paths are kept, so we can pass topN for

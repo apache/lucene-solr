@@ -17,15 +17,6 @@ package org.apache.lucene.search.suggest.analyzing;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenStreamToAutomaton;
@@ -40,6 +31,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.BasicOperations;
@@ -48,14 +40,23 @@ import org.apache.lucene.util.automaton.State;
 import org.apache.lucene.util.automaton.Transition;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
-import org.apache.lucene.util.fst.FST.BytesReader;
 import org.apache.lucene.util.fst.FST;
-import org.apache.lucene.util.fst.PairOutputs.Pair;
+import org.apache.lucene.util.fst.FST.BytesReader;
 import org.apache.lucene.util.fst.PairOutputs;
+import org.apache.lucene.util.fst.PairOutputs.Pair;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
-import org.apache.lucene.util.fst.Util.MinResult;
 import org.apache.lucene.util.fst.Util;
-import org.apache.lucene.util.OfflineSorter;
+import org.apache.lucene.util.fst.Util.Result;
+import org.apache.lucene.util.fst.Util.TopResults;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Suggester that first analyzes the surface form, adds the
@@ -709,7 +710,8 @@ public class AnalyzingSuggester extends Lookup {
           }
         }
 
-        MinResult<Pair<Long,BytesRef>> completions[] = searcher.search();
+        TopResults<Pair<Long,BytesRef>> completions = searcher.search();
+        assert completions.isComplete;
 
         // NOTE: this is rather inefficient: we enumerate
         // every matching "exactly the same analyzed form"
@@ -723,7 +725,7 @@ public class AnalyzingSuggester extends Lookup {
         // seach: it's bounded by how many prefix start
         // nodes we have and the
         // maxSurfaceFormsPerAnalyzedForm:
-        for(MinResult<Pair<Long,BytesRef>> completion : completions) {
+        for(Result<Pair<Long,BytesRef>> completion : completions) {
           BytesRef output2 = completion.output.output2;
           if (sameSurfaceForm(utf8Key, output2)) {
             results.add(getLookupResult(completion.output.output1, output2, spare));
@@ -778,9 +780,10 @@ public class AnalyzingSuggester extends Lookup {
         searcher.addStartPaths(path.fstNode, path.output, true, path.input);
       }
 
-      MinResult<Pair<Long,BytesRef>> completions[] = searcher.search();
+      TopResults<Pair<Long,BytesRef>> completions = searcher.search();
+      assert completions.isComplete;
 
-      for(MinResult<Pair<Long,BytesRef>> completion : completions) {
+      for(Result<Pair<Long,BytesRef>> completion : completions) {
 
         LookupResult result = getLookupResult(completion.output.output1, completion.output.output2, spare);
 
