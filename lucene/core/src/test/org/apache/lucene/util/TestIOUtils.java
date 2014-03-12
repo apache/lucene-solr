@@ -59,12 +59,10 @@ public class TestIOUtils extends LuceneTestCase {
         System.out.println("TestIOUtils.testSuppressedExceptions: Thrown Exception stack trace:");
         System.out.println(trace);
       }
-      if (Constants.JRE_IS_MINIMUM_JAVA7) {
-        assertTrue("Stack trace does not contain first suppressed Exception: " + trace,
-          trace.contains("java.io.IOException: TEST-IO-EXCEPTION-1"));
-        assertTrue("Stack trace does not contain second suppressed Exception: " + trace,
-          trace.contains("java.io.IOException: TEST-IO-EXCEPTION-2"));
-      }
+      assertTrue("Stack trace does not contain first suppressed Exception: " + trace,
+        trace.contains("java.io.IOException: TEST-IO-EXCEPTION-1"));
+      assertTrue("Stack trace does not contain second suppressed Exception: " + trace,
+        trace.contains("java.io.IOException: TEST-IO-EXCEPTION-2"));
     } catch (IOException e2) {
       fail("IOException should not be thrown here");
     }
@@ -85,10 +83,8 @@ public class TestIOUtils extends LuceneTestCase {
         System.out.println("TestIOUtils.testSuppressedExceptions: Thrown Exception stack trace:");
         System.out.println(trace);
       }
-      if (Constants.JRE_IS_MINIMUM_JAVA7) {
-        assertTrue("Stack trace does not contain suppressed Exception: " + trace,
-          trace.contains("java.io.IOException: TEST-IO-EXCEPTION-2"));
-      }
+      assertTrue("Stack trace does not contain suppressed Exception: " + trace,
+        trace.contains("java.io.IOException: TEST-IO-EXCEPTION-2"));
     }
   }
   

@@ -53,11 +53,6 @@ public final class Constants {
   public static final String OS_VERSION = System.getProperty("os.version");
   public static final String JAVA_VENDOR = System.getProperty("java.vendor");
 
-  /** @deprecated With Lucene 5.0, we are always on Java 7 */
-  @Deprecated
-  public static final boolean JRE_IS_MINIMUM_JAVA7 =
-    new Boolean(true).booleanValue(); // prevent inlining in foreign class files
-
   public static final boolean JRE_IS_MINIMUM_JAVA8;
   
   /** True iff running on a 64bit JVM */
