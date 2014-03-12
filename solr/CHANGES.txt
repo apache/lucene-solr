@@ -39,9 +39,22 @@ Upgrading from Solr 4.7
   that is too large.  If you wish to continue to have large terms ignored,
   use "solr.LengthFilterFactory" in all of your Analyzers.  See LUCENE-5472 for
   more details.
+  
+* Solr 4.8 needs Java 7 as minimum requirement.  If you not have done already,
+  update the underlying JDK/JRE versions to at least Oracle Java 7u1 or OpenJDK
+  7u1.  Please review the list of known JVM bugs at:
+  http://wiki.apache.org/lucene-java/JavaBugs
+  Solr 4.8 was also tested to work with Java 8, so give it a try!
 
 Detailed Change List
 ----------------------
+
+System Requirements
+----------------------
+
+* LUCENE-4747, LUCENE-5514: Move to Java 7 as minimum Java version.
+  (Robert Muir, Uwe Schindler)
+
 
 New Features
 ----------------------

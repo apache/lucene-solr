@@ -5,6 +5,11 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 4.8.0 =======================
 
+System Requirements
+
+* LUCENE-4747, LUCENE-5514: Move to Java 7 as minimum Java version.
+  (Robert Muir, Uwe Schindler)
+
 Changes in Runtime Behavior
 
 * LUCENE-5472: IndexWriter.addDocument will now throw an IllegalArgumentException 
@@ -68,6 +73,11 @@ Optimizations
 * LUCENE-5468: HunspellStemFilter uses 10 to 100x less RAM. It also loads
   all known openoffice dictionaries without error, and supports an additional 
   longestOnly option for a less aggressive approach.  (Robert Muir)
+
+* LUCENE-4848: Use Java 7 NIO2-FileChannel instead of RandomAccessFile
+  for NIOFSDirectory and MMapDirectory. This allows to delete open files
+  on Windows if NIOFSDirectory is used, mmapped files are still locked.
+  (Michael Poindexter, Robert Muir, Uwe Schindler)
 
 Bug fixes
 
