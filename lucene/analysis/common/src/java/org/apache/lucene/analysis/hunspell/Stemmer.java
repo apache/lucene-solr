@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.store.ByteArrayDataInput;
@@ -31,6 +30,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.Version;
+import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
  * Stemmer uses the affix rules declared in the Dictionary to generate one or more stems for a word.  It
@@ -160,7 +160,7 @@ final class Stemmer {
     // TODO: allow this stuff to be reused by tokenfilter
     List<CharsRef> stems = new ArrayList<CharsRef>();
     
-    if (doPrefix) {
+    if (doPrefix && dictionary.prefixes != null) {
       for (int i = length - 1; i >= 0; i--) {
         IntsRef prefixes = dictionary.lookupPrefix(word, 0, i);
         if (prefixes == null) {
@@ -197,12 +197,19 @@ final class Stemmer {
             int deAffixedStart = i;
             int deAffixedLength = length - deAffixedStart;
             
-            dictionary.stripLookup.get(stripOrd, scratch);
-            String strippedWord = new StringBuilder().append(scratch.utf8ToString())
-                .append(word, deAffixedStart, deAffixedLength)
-                .toString();
+            int stripStart = dictionary.stripOffsets[stripOrd];
+            int stripEnd = dictionary.stripOffsets[stripOrd+1];
+            int stripLength = stripEnd - stripStart;
             
-            List<CharsRef> stemList = applyAffix(strippedWord.toCharArray(), strippedWord.length(), prefix, -1, recursionDepth, true, circumfix);
+            if (!checkCondition(condition, dictionary.stripData, stripStart, stripLength, word, deAffixedStart, deAffixedLength)) {
+              continue;
+            }
+            
+            char strippedWord[] = new char[stripLength + deAffixedLength];
+            System.arraycopy(dictionary.stripData, stripStart, strippedWord, 0, stripLength);
+            System.arraycopy(word, deAffixedStart, strippedWord, stripLength, deAffixedLength);
+
+            List<CharsRef> stemList = applyAffix(strippedWord, strippedWord.length, prefix, -1, recursionDepth, true, circumfix);
             
             stems.addAll(stemList);
           }
@@ -210,7 +217,7 @@ final class Stemmer {
       }
     } 
     
-    if (doSuffix) {
+    if (doSuffix && dictionary.suffixes != null) {
       for (int i = 0; i < length; i++) {
         IntsRef suffixes = dictionary.lookupSuffix(word, i, length - i);
         if (suffixes == null) {
@@ -246,11 +253,20 @@ final class Stemmer {
           if (compatible) {
             int appendLength = length - i;
             int deAffixedLength = length - appendLength;
-            // TODO: can we do this in-place?
-            dictionary.stripLookup.get(stripOrd, scratch);
-            String strippedWord = new StringBuilder().append(word, 0, deAffixedLength).append(scratch.utf8ToString()).toString();
             
-            List<CharsRef> stemList = applyAffix(strippedWord.toCharArray(), strippedWord.length(), suffix, prefixFlag, recursionDepth, false, circumfix);
+            int stripStart = dictionary.stripOffsets[stripOrd];
+            int stripEnd = dictionary.stripOffsets[stripOrd+1];
+            int stripLength = stripEnd - stripStart;
+            
+            if (!checkCondition(condition, word, 0, deAffixedLength, dictionary.stripData, stripStart, stripLength)) {
+              continue;
+            }
+
+            char strippedWord[] = new char[stripLength + deAffixedLength];
+            System.arraycopy(word, 0, strippedWord, 0, deAffixedLength);
+            System.arraycopy(dictionary.stripData, stripStart, strippedWord, deAffixedLength, stripLength);
+            
+            List<CharsRef> stemList = applyAffix(strippedWord, strippedWord.length, suffix, prefixFlag, recursionDepth, false, circumfix);
             
             stems.addAll(stemList);
           }
@@ -259,6 +275,30 @@ final class Stemmer {
     }
 
     return stems;
+  }
+  
+  /** checks condition of the concatenation of two strings */
+  // note: this is pretty stupid, we really should subtract strip from the condition up front and just check the stem
+  // but this is a little bit more complicated.
+  private boolean checkCondition(int condition, char c1[], int c1off, int c1len, char c2[], int c2off, int c2len) {
+    if (condition != 0) {
+      CharacterRunAutomaton pattern = dictionary.patterns.get(condition);
+      int state = pattern.getInitialState();
+      for (int i = c1off; i < c1off + c1len; i++) {
+        state = pattern.step(state, c1[i]);
+        if (state == -1) {
+          return false;
+        }
+      }
+      for (int i = c2off; i < c2off + c2len; i++) {
+        state = pattern.step(state, c2[i]);
+        if (state == -1) {
+          return false;
+        }
+      }
+      return pattern.isAccept(state);
+    }
+    return true;
   }
 
   /**
@@ -273,10 +313,7 @@ final class Stemmer {
    * @param prefix true if we are removing a prefix (false if its a suffix)
    * @return List of stems for the word, or an empty list if none are found
    */
-  List<CharsRef> applyAffix(char strippedWord[], int length, int affix, int prefixFlag, int recursionDepth, boolean prefix, boolean circumfix) {
-    segment.setLength(0);
-    segment.append(strippedWord, 0, length);
-    
+  List<CharsRef> applyAffix(char strippedWord[], int length, int affix, int prefixFlag, int recursionDepth, boolean prefix, boolean circumfix) {    
     // TODO: just pass this in from before, no need to decode it twice
     affixReader.setPosition(8 * affix);
     char flag = (char) (affixReader.readShort() & 0xffff);
@@ -285,11 +322,6 @@ final class Stemmer {
     boolean crossProduct = (condition & 1) == 1;
     condition >>>= 1;
     char append = (char) (affixReader.readShort() & 0xffff);
-    
-    Pattern pattern = dictionary.patterns.get(condition);
-    if (!pattern.matcher(segment).matches()) {
-      return Collections.emptyList();
-    }
 
     List<CharsRef> stems = new ArrayList<CharsRef>();
 
@@ -338,9 +370,9 @@ final class Stemmer {
         if (prefix) {
           // we took away the first prefix.
           // COMPLEXPREFIXES = true:  combine with a second prefix and another suffix 
-          // COMPLEXPREFIXES = false: combine with another suffix
-          stems.addAll(stem(strippedWord, length, affix, flag, flag, ++recursionDepth, dictionary.complexPrefixes, true, true, circumfix));
-        } else if (!dictionary.complexPrefixes) {
+          // COMPLEXPREFIXES = false: combine with a suffix
+          stems.addAll(stem(strippedWord, length, affix, flag, flag, ++recursionDepth, dictionary.complexPrefixes && dictionary.twoStageAffix, true, true, circumfix));
+        } else if (dictionary.complexPrefixes == false && dictionary.twoStageAffix) {
           // we took away a suffix.
           // COMPLEXPREFIXES = true: we don't recurse! only one suffix allowed
           // COMPLEXPREFIXES = false: combine with another suffix
@@ -350,7 +382,7 @@ final class Stemmer {
         if (prefix && dictionary.complexPrefixes) {
           // we took away the second prefix: go look for another suffix
           stems.addAll(stem(strippedWord, length, affix, flag, flag, ++recursionDepth, false, true, true, circumfix));
-        } else if (prefix == false && dictionary.complexPrefixes == false) {
+        } else if (prefix == false && dictionary.complexPrefixes == false && dictionary.twoStageAffix) {
           // we took away a prefix, then a suffix: go look for another suffix
           stems.addAll(stem(strippedWord, length, affix, flag, prefixFlag, ++recursionDepth, false, true, false, circumfix));
         }
