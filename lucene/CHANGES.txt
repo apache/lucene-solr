@@ -121,6 +121,14 @@ API Changes
   also simplified the Weight.scorer API by removing the two confusing
   booleans.  (Robert Muir, Uwe Schindler, Mike McCandless)
 
+* LUCENE-5519: TopNSearcher now allows to retrieve incomplete results if the max
+  size of the candidate queue is unknown. The queue can still be bound in order
+  to apply pruning while retrieving the top N but will not throw an exception if
+  too many results are rejected to guarantee an absolutely correct top N result.
+  The TopNSearcher now returns a struct like class that indicates if the result
+  is complete in the sense of the top N or not. Consumers of this API should assert
+  on the completness if the bounded queue size is know ahead of time. (Simon Willnauer)
+
 Optimizations
 
 * LUCENE-5468: HunspellStemFilter uses 10 to 100x less RAM. It also loads

@@ -17,12 +17,6 @@ package org.apache.lucene.search.suggest.fst;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-
 import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.SortedInputIterator;
@@ -34,15 +28,22 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FST.Arc;
 import org.apache.lucene.util.fst.FST.BytesReader;
-import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
-import org.apache.lucene.util.fst.Util.MinResult;
+import org.apache.lucene.util.fst.Util.Result;
+import org.apache.lucene.util.fst.Util.TopResults;
 import org.apache.lucene.util.fst.Util;
-import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 /**
  * Suggester based on a weighted FST: it first traverses the prefix, 
@@ -176,15 +177,16 @@ public class WFSTCompletionLookup extends Lookup {
     }
 
     // complete top-N
-    MinResult<Long> completions[] = null;
+    TopResults<Long> completions = null;
     try {
       completions = Util.shortestPaths(fst, arc, prefixOutput, weightComparator, num, !exactFirst);
+      assert completions.isComplete;
     } catch (IOException bogus) {
       throw new RuntimeException(bogus);
     }
     
     BytesRef suffix = new BytesRef(8);
-    for (MinResult<Long> completion : completions) {
+    for (Result<Long> completion : completions) {
       scratch.length = prefixLength;
       // append suffix
       Util.toBytesRef(completion.input, suffix);
