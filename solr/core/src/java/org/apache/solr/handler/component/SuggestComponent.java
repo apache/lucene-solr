@@ -247,7 +247,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
       return;
     int count = params.getInt(SUGGEST_COUNT, 1);
     
-    List<SuggesterResult> suggesterResults = new ArrayList<SuggesterResult>();
+    List<SuggesterResult> suggesterResults = new ArrayList<>();
     
     // Collect Shard responses
     for (ShardRequest sreq : rb.finished) {
@@ -280,7 +280,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
    * */
   private static SuggesterResult merge(List<SuggesterResult> suggesterResults, int count) {
     SuggesterResult result = new SuggesterResult();
-    Set<String> allTokens = new HashSet<String>();
+    Set<String> allTokens = new HashSet<>();
     Set<String> suggesterNames = new HashSet<String>();
     
     // collect all tokens
@@ -415,7 +415,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
       for (Iterator<Map.Entry<String, NamedList<Object>>> suggestionsIter = entry.getValue().iterator(); suggestionsIter.hasNext();) {
         Map.Entry<String, NamedList<Object>> suggestions = suggestionsIter.next(); 
         String tokenString = suggestions.getKey();
-        List<LookupResult> lookupResults = new ArrayList<LookupResult>();
+        List<LookupResult> lookupResults = new ArrayList<>();
         NamedList<Object> suggestion = suggestions.getValue();
         // for each suggestion
         for (int j = 0; j < suggestion.size(); j++) {

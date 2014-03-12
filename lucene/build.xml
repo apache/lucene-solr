@@ -235,6 +235,7 @@
     <check-missing-javadocs dir="build/docs/analyzers-stempel" level="method"/>
     <!-- analyzers-uima: problems -->
     <!-- benchmark: problems -->
+    <check-missing-javadocs dir="build/docs/classification" level="method"/>
     <!-- codecs: problems -->
     <!-- core: problems -->
     <check-missing-javadocs dir="build/docs/demo" level="method"/>
@@ -258,7 +259,6 @@
     <check-missing-javadocs dir="build/docs/core/org/apache/lucene/search/similarities" level="method"/>
     <check-missing-javadocs dir="build/docs/core/org/apache/lucene/index" level="method"/>
     <check-missing-javadocs dir="build/docs/core/org/apache/lucene/codecs" level="method"/>
-    <check-missing-javadocs dir="build/docs/classification" level="method"/>
   </target>
   
   <target name="-ecj-javadoc-lint" depends="compile,compile-test,-ecj-javadoc-lint-unsupported,-ecj-resolve" if="ecj-javadoc-lint.supported">
@@ -423,7 +423,7 @@
     <svn-export-source source.dir="."/>
 
     <!-- Exclude javadoc package-list files under licenses incompatible with the ASL -->
-    <delete dir="${svn.export.dir}/tools/javadoc/java6"/>
+    <delete dir="${svn.export.dir}/tools/javadoc/java7"/>
     <!-- Exclude clover license files incompatible with the ASL -->
     <delete dir="${svn.export.dir}/tools/clover"/>
 

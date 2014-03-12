@@ -43,7 +43,7 @@
     <vc-browse-base-url>http://svn.apache.org/viewvc/lucene/dev/branches/branch_4x</vc-browse-base-url>
     <base.specification.version>4.8.0</base.specification.version>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
-    <java.compat.version>1.6</java.compat.version>
+    <java.compat.version>1.7</java.compat.version>
     <jetty.version>8.1.10.v20130312</jetty.version>
 
     <!-- RandomizedTesting library system properties -->

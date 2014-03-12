@@ -191,7 +191,7 @@ public class Assign {
           + " shards to be created (higher than the allowed number)");
     }
 
-    ArrayList<Node> sortedNodeList = new ArrayList<Node>(nodeNameVsShardCount.values());
+    ArrayList<Node> sortedNodeList = new ArrayList<>(nodeNameVsShardCount.values());
     Collections.sort(sortedNodeList, new Comparator<Node>() {
       @Override
       public int compare(Node x, Node y) {

@@ -235,7 +235,7 @@ final class Sorter {
               return comp;
             }
           }
-          return docID1 - docID2; // docid order tiebreak
+          return Integer.compare(docID1, docID2); // docid order tiebreak
         } catch (IOException e) {
           throw new RuntimeException(e);
         }

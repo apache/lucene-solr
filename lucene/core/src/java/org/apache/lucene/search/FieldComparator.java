@@ -268,7 +268,7 @@ public abstract class FieldComparator<T> {
 
     @Override
     public int compare(int slot1, int slot2) {
-      return values[slot1] - values[slot2];
+      return Byte.compare(values[slot1], values[slot2]);
     }
 
     @Override
@@ -280,7 +280,7 @@ public abstract class FieldComparator<T> {
         v2 = missingValue;
       }
 
-      return bottom - v2;
+      return Byte.compare(bottom, v2);
     }
 
     @Override
@@ -325,7 +325,7 @@ public abstract class FieldComparator<T> {
       if (docsWithField != null && docValue == 0 && !docsWithField.get(doc)) {
         docValue = missingValue;
       }
-      return topValue - docValue;
+      return Byte.compare(topValue, docValue);
     }
   }
 
@@ -506,7 +506,7 @@ public abstract class FieldComparator<T> {
 
     @Override
     public int compare(int slot1, int slot2) {
-      return values[slot1] - values[slot2];
+      return Short.compare(values[slot1], values[slot2]);
     }
 
     @Override
@@ -518,7 +518,7 @@ public abstract class FieldComparator<T> {
         v2 = missingValue;
       }
 
-      return bottom - v2;
+      return Short.compare(bottom, v2);
     }
 
     @Override
@@ -564,7 +564,7 @@ public abstract class FieldComparator<T> {
       if (docsWithField != null && docValue == 0 && !docsWithField.get(doc)) {
         docValue = missingValue;
       }
-      return topValue - docValue;
+      return Short.compare(topValue, docValue);
     }
   }
 
@@ -585,27 +585,11 @@ public abstract class FieldComparator<T> {
         
     @Override
     public int compare(int slot1, int slot2) {
-      // TODO: there are sneaky non-branch ways to compute
-      // -1/+1/0 sign
-      // Cannot return values[slot1] - values[slot2] because that
-      // may overflow
-      final int v1 = values[slot1];
-      final int v2 = values[slot2];
-      if (v1 > v2) {
-        return 1;
-      } else if (v1 < v2) {
-        return -1;
-      } else {
-        return 0;
-      }
+      return Integer.compare(values[slot1], values[slot2]);
     }
 
     @Override
     public int compareBottom(int doc) {
-      // TODO: there are sneaky non-branch ways to compute
-      // -1/+1/0 sign
-      // Cannot return bottom - values[slot2] because that
-      // may overflow
       int v2 = currentReaderValues.get(doc);
       // Test for v2 == 0 to save Bits.get method call for
       // the common case (doc has value and value is non-zero):
@@ -613,13 +597,7 @@ public abstract class FieldComparator<T> {
         v2 = missingValue;
       }
 
-      if (bottom > v2) {
-        return 1;
-      } else if (bottom < v2) {
-        return -1;
-      } else {
-        return 0;
-      }
+      return Integer.compare(bottom, v2);
     }
 
     @Override
@@ -665,14 +643,7 @@ public abstract class FieldComparator<T> {
       if (docsWithField != null && docValue == 0 && !docsWithField.get(doc)) {
         docValue = missingValue;
       }
-      // Cannot use Integer.compare (it's java 7)
-      if (topValue < docValue) {
-        return -1;
-      } else if (topValue > docValue) {
-        return 1;
-      } else {
-        return 0;
-      }
+      return Integer.compare(topValue, docValue);
     }
   }
 
@@ -693,16 +664,7 @@ public abstract class FieldComparator<T> {
 
     @Override
     public int compare(int slot1, int slot2) {
-      // In Java 6 there is no Long#compare(long,long):
-      final long v1 = values[slot1];
-      final long v2 = values[slot2];
-      if (v1 > v2) {
-        return 1;
-      } else if (v1 < v2) {
-        return -1;
-      } else {
-        return 0;
-      }
+      return Long.compare(values[slot1], values[slot2]);
     }
 
     @Override
@@ -716,14 +678,7 @@ public abstract class FieldComparator<T> {
         v2 = missingValue;
       }
 
-      // In Java 6 there is no Long#compare(long,long):
-      if (bottom > v2) {
-        return 1;
-      } else if (bottom < v2) {
-        return -1;
-      } else {
-        return 0;
-      }
+      return Long.compare(bottom, v2);
     }
 
     @Override
@@ -769,14 +724,7 @@ public abstract class FieldComparator<T> {
       if (docsWithField != null && docValue == 0 && !docsWithField.get(doc)) {
         docValue = missingValue;
       }
-      // Cannot use Long.compare (it's java 7)
-      if (topValue < docValue) {
-        return -1;
-      } else if (topValue > docValue) {
-        return 1;
-      } else {
-        return 0;
-      }
+      return Long.compare(topValue, docValue);
     }
   }
 
@@ -917,14 +865,7 @@ public abstract class FieldComparator<T> {
     @Override
     public int compareTop(int doc) {
       int docValue = docBase + doc;
-      // Cannot use Integer.compare (it's java 7)
-      if (topValue < docValue) {
-        return -1;
-      } else if (topValue > docValue) {
-        return 1;
-      } else {
-        return 0;
-      }
+      return Integer.compare(topValue, docValue);
     }
   }
   

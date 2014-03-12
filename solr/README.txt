@@ -62,10 +62,10 @@ docs/index.html
 Instructions for Building Apache Solr from Source
 -------------------------------------------------
 
-1. Download the Java SE 6 JDK (Java Development Kit) or later from http://java.sun.com/
+1. Download the Java SE 7 JDK (Java Development Kit) or later from http://java.sun.com/
    You will need the JDK installed, and the $JAVA_HOME/bin (Windows: %JAVA_HOME%\bin) 
    folder included on your command path. To test this, issue a "java -version" command 
-   from your shell (command prompt) and verify that the Java version is 1.6 or later.
+   from your shell (command prompt) and verify that the Java version is 1.7 or later.
 
 2. Download the Apache Ant binary distribution (1.8.2+) from 
    http://ant.apache.org/  You will need Ant installed and the $ANT_HOME/bin (Windows: 

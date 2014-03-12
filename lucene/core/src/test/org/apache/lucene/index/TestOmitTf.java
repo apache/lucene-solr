@@ -315,7 +315,9 @@ public class TestOmitTf extends LuceneTestCase {
       while (cause.getCause() != null) {
         cause = cause.getCause();
       }
-      assertTrue("Expected an IAE, got " + cause, cause instanceof IllegalStateException);
+      if (!(cause instanceof IllegalStateException)) {
+        throw new AssertionError("Expected an IAE", e);
+      } // else OK because positions are not indexed
     }
         
     searcher.search(q1,

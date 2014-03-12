@@ -44,10 +44,6 @@ public class TestIOUtils extends LuceneTestCase {
   }
 
   public void testSuppressedExceptions() {
-    if (!Constants.JRE_IS_MINIMUM_JAVA7) {
-      System.err.println("WARNING: TestIOUtils.testSuppressedExceptions: Full test coverage only with Java 7, as suppressed exception recording is not supported before.");
-    }
-    
     // test with prior exception
     try {
       final TestException t = new TestException();

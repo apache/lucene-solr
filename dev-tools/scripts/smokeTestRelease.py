@@ -59,9 +59,7 @@ def unshortenURL(url):
   return url  
 
 def javaExe(version):
-  if version == '1.6':
-    path = JAVA6_HOME
-  elif version == '1.7':
+  if version == '1.7':
     path = JAVA7_HOME
   else:
     raise RuntimeError("unknown Java version '%s'" % version)
@@ -77,18 +75,11 @@ def verifyJavaVersion(version):
 # http://s.apache.org/lusolr32rc2
 env = os.environ
 try:
-  JAVA6_HOME = env['JAVA6_HOME']
-except KeyError:
-  raise RuntimeError('please set JAVA6_HOME in the env before running smokeTestRelease')
-print('JAVA6_HOME is %s' % JAVA6_HOME)
-
-try:
   JAVA7_HOME = env['JAVA7_HOME']
 except KeyError:
   raise RuntimeError('please set JAVA7_HOME in the env before running smokeTestRelease')
 print('JAVA7_HOME is %s' % JAVA7_HOME)
 
-verifyJavaVersion('1.6')
 verifyJavaVersion('1.7')
 
 # TODO
@@ -201,15 +192,15 @@ def checkJARMetaData(desc, jarFile, svnRevision, version):
     for verify in (
       'Specification-Vendor: The Apache Software Foundation',
       'Implementation-Vendor: The Apache Software Foundation',
-      # Make sure 1.6 compiler was used to build release bits:
-      'X-Compile-Source-JDK: 1.6',
+      # Make sure 1.7 compiler was used to build release bits:
+      'X-Compile-Source-JDK: 1.7',
       # Make sure 1.8 ant was used to build release bits: (this will match 1.8+)
       'Ant-Version: Apache Ant 1.8',
-      # Make sure .class files are 1.6 format:
-      'X-Compile-Target-JDK: 1.6',
+      # Make sure .class files are 1.7 format:
+      'X-Compile-Target-JDK: 1.7',
       'Specification-Version: %s' % version,
-      # Make sure the release was compiled with 1.6:
-      'Created-By: 1.6'):
+      # Make sure the release was compiled with 1.7:
+      'Created-By: 1.7'):
       if s.find(verify) == -1:
         raise RuntimeError('%s is missing "%s" inside its META-INF/MANIFEST.MF' % \
                            (desc, verify))
@@ -293,7 +284,7 @@ def checkAllJARs(topDir, project, svnRevision, version, tmpDir, baseURL):
           if not identical:
             raise RuntimeError('Artifact %s is not identical to %s in Lucene binary distribution'
                                % (fullPath, luceneDistFilenames[jarFilename]))
-  
+
 
 def checkSolrWAR(warFileName, svnRevision, version, tmpDir, baseURL):
 
@@ -331,8 +322,9 @@ def checkSolrWAR(warFileName, svnRevision, version, tmpDir, baseURL):
             distJarContents = distJarFile.readall()
           if jarInsideWarContents != distJarContents:
             raise RuntimeError('Artifact %s in %s is not identical to %s in Lucene binary distribution'
-                              % (name, warFileName, distJarName)) 
-       
+                              % (name, warFileName, distJarName))
+          
+        
 def checkSigs(project, urlString, version, tmpDir, isSigned):
 
   print('  test basics...')
@@ -726,15 +718,6 @@ def verifyUnpacked(project, artifact, unpackPath, svnRevision, version, testArgs
     run('%s; ant validate' % javaExe('1.7'), '%s/validate.log' % unpackPath)
 
     if project == 'lucene':
-      print("    run tests w/ Java 6 and testArgs='%s'..." % testArgs)
-      run('%s; ant test %s' % (javaExe('1.6'), testArgs), '%s/test.log' % unpackPath)
-      run('%s; ant jar' % javaExe('1.6'), '%s/compile.log' % unpackPath)
-      testDemo(isSrc, version, '1.6')
-      # test javadocs
-      print('    generate javadocs w/ Java 6...')
-      run('%s; ant javadocs' % javaExe('1.6'), '%s/javadocs.log' % unpackPath)
-      checkJavadocpath('%s/build/docs' % unpackPath)
-
       print("    run tests w/ Java 7 and testArgs='%s'..." % testArgs)
       run('%s; ant clean test %s' % (javaExe('1.7'), testArgs), '%s/test.log' % unpackPath)
       run('%s; ant jar' % javaExe('1.7'), '%s/compile.log' % unpackPath)
@@ -747,14 +730,6 @@ def verifyUnpacked(project, artifact, unpackPath, svnRevision, version, testArgs
     else:
       os.chdir('solr')
 
-      print("    run tests w/ Java 6 and testArgs='%s'..." % testArgs)
-      run('%s; ant test -Dtests.slow=false %s' % (javaExe('1.6'), testArgs), '%s/test.log' % unpackPath)
-
-      # test javadocs
-      print('    generate javadocs w/ Java 6...')
-      run('%s; ant javadocs' % javaExe('1.6'), '%s/javadocs.log' % unpackPath)
-      checkJavadocpath('%s/solr/build/docs' % unpackPath, False)
-
       print("    run tests w/ Java 7 and testArgs='%s'..." % testArgs)
       run('%s; ant clean test -Dtests.slow=false %s' % (javaExe('1.7'), testArgs), '%s/test.log' % unpackPath)
  
@@ -762,10 +737,6 @@ def verifyUnpacked(project, artifact, unpackPath, svnRevision, version, testArgs
       print('    generate javadocs w/ Java 7...')
       run('%s; ant clean javadocs' % javaExe('1.7'), '%s/javadocs.log' % unpackPath)
       checkJavadocpathFull('%s/solr/build/docs' % unpackPath, False)
-
-      print('    test solr example w/ Java 6...')
-      run('%s; ant clean example' % javaExe('1.6'), '%s/antexample.log' % unpackPath)
-      testSolrExample(unpackPath, JAVA6_HOME, True)
 
       print('    test solr example w/ Java 7...')
       run('%s; ant clean example' % javaExe('1.7'), '%s/antexample.log' % unpackPath)
@@ -780,20 +751,10 @@ def verifyUnpacked(project, artifact, unpackPath, svnRevision, version, testArgs
     checkAllJARs(os.getcwd(), project, svnRevision, version, tmpDir, baseURL)
     
     if project == 'lucene':
-      testDemo(isSrc, version, '1.6')
       testDemo(isSrc, version, '1.7')
 
     else:
       checkSolrWAR('%s/example/webapps/solr.war' % unpackPath, svnRevision, version, tmpDir, baseURL)
-
-      print('    copying unpacked distribution for Java 6 ...')
-      java6UnpackPath = '%s-java6' %unpackPath
-      if os.path.exists(java6UnpackPath):
-        shutil.rmtree(java6UnpackPath)
-      shutil.copytree(unpackPath, java6UnpackPath)
-      os.chdir(java6UnpackPath)
-      print('    test solr example w/ Java 6...')
-      testSolrExample(java6UnpackPath, JAVA6_HOME, False)
 
       print('    copying unpacked distribution for Java 7 ...')
       java7UnpackPath = '%s-java7' %unpackPath

@@ -366,61 +366,6 @@ public abstract class FSDirectory extends BaseDirectory {
     return chunkSize;
   }
 
-  /** Base class for reading input from a RandomAccessFile */
-  protected abstract static class FSIndexInput extends BufferedIndexInput {
-    /** the underlying RandomAccessFile */
-    protected final RandomAccessFile file;
-    boolean isClone = false;
-    /** start offset: non-zero in the slice case */
-    protected final long off;
-    /** end offset (start+length) */
-    protected final long end;
-    
-    /** Create a new FSIndexInput, reading the entire file from <code>path</code> */
-    protected FSIndexInput(String resourceDesc, File path, IOContext context) throws IOException {
-      super(resourceDesc, context);
-      this.file = new RandomAccessFile(path, "r"); 
-      this.off = 0L;
-      this.end = file.length();
-    }
-    
-    /** Create a new FSIndexInput, representing a slice of an existing open <code>file</code> */
-    protected FSIndexInput(String resourceDesc, RandomAccessFile file, long off, long length, int bufferSize) {
-      super(resourceDesc, bufferSize);
-      this.file = file;
-      this.off = off;
-      this.end = off + length;
-      this.isClone = true; // well, we are sorta?
-    }
-    
-    @Override
-    public void close() throws IOException {
-      // only close the file if this is not a clone
-      if (!isClone) {
-        file.close();
-      }
-    }
-    
-    @Override
-    public FSIndexInput clone() {
-      FSIndexInput clone = (FSIndexInput)super.clone();
-      clone.isClone = true;
-      return clone;
-    }
-    
-    @Override
-    public final long length() {
-      return end - off;
-    }
-    
-    /** Method used for testing. Returns true if the underlying
-     *  file descriptor is valid.
-     */
-    boolean isFDValid() throws IOException {
-      return file.getFD().valid();
-    }
-  }
-  
   /**
    * Writes output with {@link RandomAccessFile#write(byte[], int, int)}
    */

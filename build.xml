@@ -221,7 +221,7 @@
       <outputproperty name="indent" value="yes"/>
       <param name="netbeans.fileset.sourcefolders" expression="${netbeans.fileset.sourcefolders}"/>
       <param name="netbeans.path.libs" expression="${netbeans.path.libs}"/>
-      <param name="netbeans.source-level" expression="1.6"/>
+      <param name="netbeans.source-level" expression="1.7"/>
     </xslt>
   </target>
 
@@ -261,7 +261,7 @@
 
     <echo>
       SUCCESS: You must right-click your project and choose Refresh.
-               Your project must use a Java 6 JRE.
+               Your project must use a Java 7 JRE.
     </echo>
   </target>
 
@@ -300,7 +300,7 @@ following two XML attributes/values (adjust values according to
 JDKs you have defined locally - see 
 File | Project Structure | Platform Settings | SDKs):
 
-    idea.jdk = project-jdk-name="1.6" project-jdk-type="JavaSDK"
+    idea.jdk = project-jdk-name="1.7" project-jdk-type="JavaSDK"
     </echo>
   </target>
 
@@ -359,16 +359,11 @@ File | Project Structure | Platform Settings | SDKs):
      <property environment="env"/>
   </target>
   
-  <target name="-env-JAVA6_HOME" depends="-load-env" if="env.JAVA6_HOME">
-     <property name="JAVA6_HOME" value="${env.JAVA6_HOME}"/>
-  </target>
-  
   <target name="-env-JAVA7_HOME" depends="-load-env" if="env.JAVA7_HOME">
      <property name="JAVA7_HOME" value="${env.JAVA7_HOME}"/>
   </target>
   
-  <target name="nightly-smoke" description="Builds an unsigned release and smoke tests it" depends="clean,-env-JAVA6_HOME,-env-JAVA7_HOME">
-   <fail unless="JAVA6_HOME">JAVA6_HOME property or environment variable is not defined.</fail>
+  <target name="nightly-smoke" description="Builds an unsigned release and smoke tests it" depends="clean,-env-JAVA7_HOME">
    <fail unless="JAVA7_HOME">JAVA7_HOME property or environment variable is not defined.</fail>
    <exec executable="${python32.exe}" failonerror="true">
       <arg value="-V"/>
@@ -401,7 +396,6 @@ File | Project Structure | Platform Settings | SDKs):
      <arg value="false"/>
      <arg value="-testArgs"/>
      <arg value="${smokeTestRelease.testArgs}"/>
-     <env key="JAVA6_HOME" file="${JAVA6_HOME}"/>
      <env key="JAVA7_HOME" file="${JAVA7_HOME}"/>
    </exec>
    <delete dir="${fakeRelease}"/>

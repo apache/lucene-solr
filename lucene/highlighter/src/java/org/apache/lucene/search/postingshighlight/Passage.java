@@ -82,8 +82,7 @@ public final class Passage {
 
       @Override
       protected int compare(int i, int j) {
-        // TODO: java7 use Integer.compare(starts[i], starts[j])
-        return Long.signum(((long)starts[i]) - starts[j]);
+        return Integer.compare(starts[i], starts[j]);
       }
 
     }.sort(0, numMatches);

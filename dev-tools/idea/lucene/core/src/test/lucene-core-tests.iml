@@ -11,8 +11,8 @@
     <orderEntry type="module" scope="TEST" module-name="lucene-test-framework" />
     <orderEntry type="sourceFolder" forTests="true" />
     <orderEntry type="library" scope="TEST" name="JUnit" level="project" />
-    <orderEntry type="module" scope="TEST" module-name="lucene-core" />
     <orderEntry type="module" scope="TEST" module-name="codecs" />
+    <orderEntry type="module" scope="TEST" module-name="lucene-core" />
   </component>
 </module>
 

@@ -57,8 +57,12 @@ public final class Constants {
   @Deprecated
   public static final boolean JRE_IS_MINIMUM_JAVA6 =
     new Boolean(true).booleanValue(); // prevent inlining in foreign class files
-  
-  public static final boolean JRE_IS_MINIMUM_JAVA7;
+
+  /** @deprecated With Lucene 4.8, we are always on Java 7 */
+  @Deprecated
+  public static final boolean JRE_IS_MINIMUM_JAVA7 =
+    new Boolean(true).booleanValue(); // prevent inlining in foreign class files
+
   public static final boolean JRE_IS_MINIMUM_JAVA8;
   
   /** True iff running on a 64bit JVM */
@@ -89,27 +93,14 @@ public final class Constants {
     }
     JRE_IS_64BIT = is64Bit;
     
-    // this method only exists in Java 7:
-    boolean v7 = true;
+    // this method only exists in Java 8:
+    boolean v8 = true;
     try {
-      Throwable.class.getMethod("getSuppressed");
+      Collections.class.getMethod("emptySortedSet");
     } catch (NoSuchMethodException nsme) {
-      v7 = false;
+      v8 = false;
     }
-    JRE_IS_MINIMUM_JAVA7 = v7;
-    
-    if (JRE_IS_MINIMUM_JAVA7) {
-      // this method only exists in Java 8:
-      boolean v8 = true;
-      try {
-        Collections.class.getMethod("emptySortedSet");
-      } catch (NoSuchMethodException nsme) {
-        v8 = false;
-      }
-      JRE_IS_MINIMUM_JAVA8 = v8;
-    } else {
-      JRE_IS_MINIMUM_JAVA8 = false;
-    }
+    JRE_IS_MINIMUM_JAVA8 = v8;
   }
 
   // this method prevents inlining the final version constant in compiled classes,

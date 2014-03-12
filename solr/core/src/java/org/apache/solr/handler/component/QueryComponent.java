@@ -525,16 +525,7 @@ public class QueryComponent extends SearchComponent
 
         @Override
         protected int compare(int i, int j) {
-          // In Java 6 there is no Long#compare(long,long):
-          final long v1 = sortedIds[i];
-          final long v2 = sortedIds[j];
-          if (v1 > v2) {
-            return 1;
-          } else if (v1 < v2) {
-            return -1;
-          } else {
-            return 0;
-          }
+          return Long.compare(sortedIds[i], sortedIds[j]);
         }
       }.sort(0, sortedIds.length);
 

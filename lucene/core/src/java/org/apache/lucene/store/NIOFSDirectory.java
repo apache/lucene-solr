@@ -24,6 +24,7 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException; // javadoc @link
 import java.nio.channels.FileChannel;
+import java.nio.file.StandardOpenOption;
 import java.util.concurrent.Future; // javadoc
 
 /**
@@ -77,7 +78,9 @@ public class NIOFSDirectory extends FSDirectory {
   @Override
   public IndexInput openInput(String name, IOContext context) throws IOException {
     ensureOpen();
-    return new NIOFSIndexInput(new File(getDirectory(), name), context);
+    File path = new File(getDirectory(), name);
+    FileChannel fc = FileChannel.open(path.toPath(), StandardOpenOption.READ);
+    return new NIOFSIndexInput("NIOFSIndexInput(path=\"" + path + "\")", fc, context);
   }
   
   @Override
@@ -85,7 +88,7 @@ public class NIOFSDirectory extends FSDirectory {
       final IOContext context) throws IOException {
     ensureOpen();
     final File path = new File(getDirectory(), name);
-    final RandomAccessFile descriptor = new RandomAccessFile(path, "r");
+    final FileChannel descriptor = FileChannel.open(path.toPath(), StandardOpenOption.READ);
     return new Directory.IndexInputSlicer() {
 
       @Override
@@ -95,14 +98,14 @@ public class NIOFSDirectory extends FSDirectory {
 
       @Override
       public IndexInput openSlice(String sliceDescription, long offset, long length) {
-        return new NIOFSIndexInput(sliceDescription, path, descriptor, descriptor.getChannel(), offset,
+        return new NIOFSIndexInput("NIOFSIndexInput(" + sliceDescription + " in path=\"" + path + "\" slice=" + offset + ":" + (offset+length) + ")", descriptor, offset,
             length, BufferedIndexInput.bufferSize(context));
       }
 
       @Override
       public IndexInput openFullSlice() {
         try {
-          return openSlice("full-slice", 0, descriptor.length());
+          return openSlice("full-slice", 0, descriptor.size());
         } catch (IOException ex) {
           throw new RuntimeException(ex);
         }
@@ -113,25 +116,55 @@ public class NIOFSDirectory extends FSDirectory {
   /**
    * Reads bytes with {@link FileChannel#read(ByteBuffer, long)}
    */
-  protected static class NIOFSIndexInput extends FSIndexInput {
+  protected static class NIOFSIndexInput extends BufferedIndexInput {
     /**
      * The maximum chunk size for reads of 16384 bytes.
      */
     private static final int CHUNK_SIZE = 16384;
     
+    /** the file channel we will read from */
+    protected final FileChannel channel;
+    /** is this instance a clone and hence does not own the file to close it */
+    boolean isClone = false;
+    /** start offset: non-zero in the slice case */
+    protected final long off;
+    /** end offset (start+length) */
+    protected final long end;
+    
     private ByteBuffer byteBuf; // wraps the buffer for NIO
 
-    final FileChannel channel;
-
-    public NIOFSIndexInput(File path, IOContext context) throws IOException {
-      super("NIOFSIndexInput(path=\"" + path + "\")", path, context);
-      channel = file.getChannel();
+    public NIOFSIndexInput(String resourceDesc, FileChannel fc, IOContext context) throws IOException {
+      super(resourceDesc, context);
+      this.channel = fc; 
+      this.off = 0L;
+      this.end = fc.size();
     }
     
-    public NIOFSIndexInput(String sliceDescription, File path, RandomAccessFile file, FileChannel fc, long off, long length, int bufferSize) {
-      super("NIOFSIndexInput(" + sliceDescription + " in path=\"" + path + "\" slice=" + off + ":" + (off+length) + ")", file, off, length, bufferSize);
-      channel = fc;
-      isClone = true;
+    public NIOFSIndexInput(String resourceDesc, FileChannel fc, long off, long length, int bufferSize) {
+      super(resourceDesc, bufferSize);
+      this.channel = fc;
+      this.off = off;
+      this.end = off + length;
+      this.isClone = true;
+    }
+    
+    @Override
+    public void close() throws IOException {
+      if (!isClone) {
+        channel.close();
+      }
+    }
+    
+    @Override
+    public NIOFSIndexInput clone() {
+      NIOFSIndexInput clone = (NIOFSIndexInput)super.clone();
+      clone.isClone = true;
+      return clone;
+    }
+    
+    @Override
+    public final long length() {
+      return end - off;
     }
 
     @Override
@@ -183,5 +216,4 @@ public class NIOFSDirectory extends FSDirectory {
     @Override
     protected void seekInternal(long pos) throws IOException {}
   }
-
 }
