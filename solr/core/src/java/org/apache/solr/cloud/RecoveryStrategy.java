@@ -218,7 +218,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
       prepCmd.setState(ZkStateReader.RECOVERING);
       prepCmd.setCheckLive(true);
       prepCmd.setOnlyIfLeader(true);
-      if (!Slice.CONSTRUCTION.equals(slice.getState())) {
+      if (!Slice.CONSTRUCTION.equals(slice.getState()) && !Slice.RECOVERY.equals(slice.getState())) {
         prepCmd.setOnlyIfLeaderActive(true);
       }
       server.request(prepCmd);
