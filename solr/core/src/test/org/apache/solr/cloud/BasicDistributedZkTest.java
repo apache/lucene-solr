@@ -51,6 +51,7 @@ import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Unload;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
@@ -593,8 +594,9 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     return url2;
   }
 
-  protected void createCollection(Map<String,List<Integer>> collectionInfos,
-      String collectionName, int numShards, int numReplicas, int maxShardsPerNode, SolrServer client, String createNodeSetStr) throws SolrServerException, IOException {
+  protected CollectionAdminResponse createCollection(Map<String, List<Integer>> collectionInfos,
+                                                     String collectionName, int numShards, int numReplicas, int maxShardsPerNode, SolrServer client, String createNodeSetStr) throws SolrServerException, IOException {
+    // TODO: Use CollectionAdminRequest for this test
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionAction.CREATE.toString());
 
@@ -613,7 +615,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     params.set("name", collectionName);
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
-  
+
+    CollectionAdminResponse res = new CollectionAdminResponse();
     if (client == null) {
       final String baseUrl = ((HttpSolrServer) clients.get(clientIndex)).getBaseURL().substring(
           0,
@@ -621,11 +624,12 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
               - DEFAULT_COLLECTION.length() - 1);
       
       SolrServer aClient = createNewSolrServer("", baseUrl);
-      aClient.request(request);
+      res.setResponse(aClient.request(request));
       aClient.shutdown();
     } else {
-      client.request(request);
+      res.setResponse(client.request(request));
     }
+    return res;
   }
   
   protected ZkCoreNodeProps getLeaderUrlFromZk(String collection, String slice) {

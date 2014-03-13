@@ -940,7 +940,8 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     collectionInfos = new HashMap<>();
     client = createCloudClient("awholynewcollection_" + (cnt+1));
     try {
-      createCollection(collectionInfos, "awholynewcollection_" + (cnt+1), numShards, replicationFactor, maxShardsPerNode, client, StrUtils.join(createNodeList, ','), "conf1");
+      CollectionAdminResponse res = createCollection(collectionInfos, "awholynewcollection_" + (cnt+1), numShards, replicationFactor, maxShardsPerNode, client, StrUtils.join(createNodeList, ','), "conf1");
+      assertTrue(res.isSuccess());
     } finally {
       client.shutdown();
     }

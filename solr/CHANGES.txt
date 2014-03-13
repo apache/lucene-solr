@@ -214,6 +214,9 @@ Other Changes
   and SolrInputField for testing purposes. (Varun Thacker, Noble Paul,
   Mark Miller)
 
+* SOLR-5853: The createCollection methods in the test framework now reports
+  result of operation in the returned CollectionAdminResponse (janhoy)
+
 ==================  4.7.0 ==================
 
 Versions of Major Components

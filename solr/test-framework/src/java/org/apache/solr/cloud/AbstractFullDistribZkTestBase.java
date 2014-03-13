@@ -50,6 +50,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -1562,14 +1563,16 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     jettys.clear();
   }
   
-  protected void createCollection(String collectionName, int numShards, int numReplicas, int maxShardsPerNode) throws SolrServerException, IOException {
-    createCollection(null, collectionName, numShards, numReplicas, maxShardsPerNode, null, null);
+  protected CollectionAdminResponse createCollection(String collectionName, int numShards, int replicationFactor, int maxShardsPerNode) throws SolrServerException, IOException {
+    return createCollection(null, collectionName, numShards, replicationFactor, maxShardsPerNode, null, null);
   }
 
-  protected void createCollection(Map<String,List<Integer>> collectionInfos, String collectionName, Map<String,Object> collectionProps, SolrServer client)  throws SolrServerException, IOException{
-    createCollection(collectionInfos, collectionName, collectionProps, client, null);
+  protected CollectionAdminResponse createCollection(Map<String,List<Integer>> collectionInfos, String collectionName, Map<String,Object> collectionProps, SolrServer client)  throws SolrServerException, IOException{
+    return createCollection(collectionInfos, collectionName, collectionProps, client, null);
   }
-  protected void createCollection(Map<String,List<Integer>> collectionInfos, String collectionName, Map<String,Object> collectionProps, SolrServer client, String confSetName)  throws SolrServerException, IOException{
+
+  // TODO: Use CollectionAdminRequest#createCollection() instead of a raw request
+  protected CollectionAdminResponse createCollection(Map<String, List<Integer>> collectionInfos, String collectionName, Map<String, Object> collectionProps, SolrServer client, String confSetName)  throws SolrServerException, IOException{
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionAction.CREATE.toString());
     for (Map.Entry<String, Object> entry : collectionProps.entrySet()) {
@@ -1580,19 +1583,19 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       String shardNames = (String) collectionProps.get(SHARDS_PROP);
       numShards = StrUtils.splitSmart(shardNames,',').size();
     }
-    Integer numReplicas = (Integer) collectionProps.get(REPLICATION_FACTOR);
+    Integer replicationFactor = (Integer) collectionProps.get(REPLICATION_FACTOR);
     if(numShards==null){
       numShards = (Integer) OverseerCollectionProcessor.COLL_PROPS.get(REPLICATION_FACTOR);
     }
-    
+
     if (confSetName != null) {
       params.set("collection.configName", confSetName);
     }
-    
+
     int clientIndex = random().nextInt(2);
     List<Integer> list = new ArrayList<>();
     list.add(numShards);
-    list.add(numReplicas);
+    list.add(replicationFactor);
     if (collectionInfos != null) {
       collectionInfos.put(collectionName, list);
     }
@@ -1600,14 +1603,15 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
+    CollectionAdminResponse res = new CollectionAdminResponse();
     if (client == null) {
       final String baseUrl = getBaseUrl((HttpSolrServer) clients.get(clientIndex));
 
-      createNewSolrServer("", baseUrl).request(request);
+      res.setResponse(createNewSolrServer("", baseUrl).request(request));
     } else {
-      client.request(request);
+      res.setResponse(client.request(request));
     }
-
+    return res;
   }
 
   protected void runCollectionAdminCommand(ModifiableSolrParams params){
@@ -1616,25 +1620,25 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
   }
 
-  protected void createCollection(Map<String,List<Integer>> collectionInfos,
-      String collectionName, int numShards, int numReplicas, int maxShardsPerNode, SolrServer client, String createNodeSetStr) throws SolrServerException, IOException {
+  protected CollectionAdminResponse createCollection(Map<String,List<Integer>> collectionInfos,
+      String collectionName, int numShards, int replicationFactor, int maxShardsPerNode, SolrServer client, String createNodeSetStr) throws SolrServerException, IOException {
 
-    createCollection(collectionInfos, collectionName,
+    return createCollection(collectionInfos, collectionName,
         ZkNodeProps.makeMap(
         NUM_SLICES, numShards,
-        REPLICATION_FACTOR, numReplicas,
+        REPLICATION_FACTOR, replicationFactor,
         CREATE_NODE_SET, createNodeSetStr,
         MAX_SHARDS_PER_NODE, maxShardsPerNode),
         client);
   }
   
-  protected void createCollection(Map<String,List<Integer>> collectionInfos,
-      String collectionName, int numShards, int numReplicas, int maxShardsPerNode, SolrServer client, String createNodeSetStr, String configName) throws SolrServerException, IOException {
+  protected CollectionAdminResponse createCollection(Map<String, List<Integer>> collectionInfos,
+                                                     String collectionName, int numShards, int replicationFactor, int maxShardsPerNode, SolrServer client, String createNodeSetStr, String configName) throws SolrServerException, IOException {
 
-    createCollection(collectionInfos, collectionName,
+    return createCollection(collectionInfos, collectionName,
         ZkNodeProps.makeMap(
         NUM_SLICES, numShards,
-        REPLICATION_FACTOR, numReplicas,
+        REPLICATION_FACTOR, replicationFactor,
         CREATE_NODE_SET, createNodeSetStr,
         MAX_SHARDS_PER_NODE, maxShardsPerNode),
         client, configName);
