@@ -127,7 +127,7 @@ API Changes
   too many results are rejected to guarantee an absolutely correct top N result.
   The TopNSearcher now returns a struct like class that indicates if the result
   is complete in the sense of the top N or not. Consumers of this API should assert
-  on the completness if the bounded queue size is know ahead of time. (Simon Willnauer)
+  on the completeness if the bounded queue size is know ahead of time. (Simon Willnauer)
 
 Optimizations
 
