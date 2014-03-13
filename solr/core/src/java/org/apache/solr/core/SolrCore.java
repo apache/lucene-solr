@@ -1477,7 +1477,7 @@ public final class SolrCore implements SolrInfoMBean {
             newestSearcher.incref();
             return newestSearcher;
 
-          } else if (newestSearcher.get().getSchema() == getLatestSchema()) {
+          } else if (newestSearcher.get().isCachingEnabled() && newestSearcher.get().getSchema() == getLatestSchema()) {
             // absolutely nothing has changed, can use the same searcher
             // but log a message about it to minimize confusion
 
@@ -1872,6 +1872,13 @@ public final class SolrCore implements SolrInfoMBean {
   private void registerSearcher(RefCounted<SolrIndexSearcher> newSearcherHolder) {
     synchronized (searcherLock) {
       try {
+        if (_searcher == newSearcherHolder) {
+          // trying to re-register the same searcher... this can now happen when a commit has been done but
+          // there were no changes to the index.
+          newSearcherHolder.decref();  // decref since the caller should have still incref'd (since they didn't know the searcher was the same)
+          return;  // still execute the finally block to notify anyone waiting.
+        }
+
         if (_searcher != null) {
           _searcher.decref();   // dec refcount for this._searcher
           _searcher=null;

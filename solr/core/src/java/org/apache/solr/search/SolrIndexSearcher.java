@@ -272,7 +272,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     // do this at the end since an exception in the constructor means we won't close    
     numOpens.incrementAndGet();
   }
-  
+
+  public boolean isCachingEnabled() { return cachingEnabled; }
+
   public String getPath() {
     return path;
   }
