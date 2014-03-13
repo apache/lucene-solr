@@ -499,7 +499,7 @@ public final class Util {
             T finalOutput = fst.outputs.add(path.cost, path.arc.output);
             if (acceptResult(path.input, finalOutput)) {
               //System.out.println("    add result: " + path);
-              results.add(new Result(path.input, finalOutput));
+              results.add(new Result<>(path.input, finalOutput));
             } else {
               rejectCount++;
             }
@@ -512,7 +512,7 @@ public final class Util {
           }
         }
       }
-      return new TopResults(rejectCount + topN <= maxQueueDepth, results);
+      return new TopResults<>(rejectCount + topN <= maxQueueDepth, results);
     }
 
     protected boolean acceptResult(IntsRef input, T output) {
