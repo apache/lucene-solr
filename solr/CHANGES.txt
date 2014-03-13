@@ -163,6 +163,9 @@ Bug Fixes
 * SOLR-5800: Admin UI - Analysis form doesn't render results correctly when a
   CharFilter is used. (steffkes)
 
+* SOLR-5861: Recovery should not set onlyIfLeaderActive=true for slice in 'recovery'
+  state. (shalin)
+
 Optimizations
 ----------------------
 * SOLR-1880: Distributed Search skips GET_FIELDS stage if EXECUTE_QUERY
