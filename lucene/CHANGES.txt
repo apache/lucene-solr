@@ -180,6 +180,10 @@ Bug fixes
 * LUCENE-5522: FacetsConfig didn't add drill-down terms for association facet 
   fields labels. (Shai Erera)
 
+* LUCENE-5520: ToChildBlockJoinQuery would hit
+  ArrayIndexOutOfBoundsException if a parent document had no children
+  (Sally Ang via Mike McCandless)
+
 Test Framework
 
 * LUCENE-5449: Rename _TestUtil and _TestHelper to remove the leading _.
