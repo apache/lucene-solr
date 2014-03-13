@@ -165,8 +165,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
    * Expert: the Weight for BooleanQuery, used to
    * normalize, score and explain these queries.
    *
-   * <p>NOTE: this API and implementation is subject to
-   * change suddenly in the next release.</p>
+   * @lucene.experimental
    */
   protected class BooleanWeight extends Weight {
     /** The Similarity implementation. */
