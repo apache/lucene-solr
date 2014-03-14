@@ -34,9 +34,11 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -1855,6 +1857,145 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       properties.setProperty(CoreDescriptor.CORE_LOADONSTARTUP, Boolean.toString(loadOnStartup));
       return this;
     }
+  }
+
+  public boolean assertSolrDocumentEquals(Object expected, Object actual) {
+
+    if (!(expected instanceof SolrDocument)  || !(actual instanceof SolrDocument)) {
+      return false;
+    }
+
+    if (expected == actual) {
+      return true;
+    }
+
+    SolrDocument solrDocument1 = (SolrDocument) expected;
+    SolrDocument solrDocument2 = (SolrDocument) actual;
+
+    if(solrDocument1.getFieldNames().size() != solrDocument1.getFieldNames().size()) {
+      return false;
+    }
+
+    Iterator<String> iter1 = solrDocument1.getFieldNames().iterator();
+    Iterator<String> iter2 = solrDocument2.getFieldNames().iterator();
+
+    if(iter1.hasNext()) {
+      String key1 = iter1.next();
+      String key2 = iter2.next();
+
+      Object val1 = solrDocument1.getFieldValues(key1);
+      Object val2 = solrDocument2.getFieldValues(key2);
+
+      if(!key1.equals(key2) || !val1.equals(val2)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  public boolean assertSolrDocumentList(Object expected, Object actual) {
+    if (!(expected instanceof SolrDocumentList)  || !(actual instanceof SolrDocumentList)) {
+      return false;
+    }
+
+    if (expected == actual) {
+      return true;
+    }
+
+    SolrDocumentList list1 = (SolrDocumentList) expected;
+    SolrDocumentList list2 = (SolrDocumentList) actual;
+
+    if(Float.compare(list1.getMaxScore(), list2.getMaxScore()) != 0 || list1.getNumFound() != list2.getNumFound() ||
+        list1.getStart() != list2.getStart()) {
+      return false;
+    }
+    for(int i=0; i<list1.getNumFound(); i++) {
+      if(!assertSolrDocumentEquals(list1.get(i), list2.get(i))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  public boolean assertSolrInputDocumentEquals(Object expected, Object actual) {
+
+    if (!(expected instanceof SolrInputDocument) || !(actual instanceof SolrInputDocument)) {
+      return false;
+    }
+
+    if (expected == actual) {
+      return true;
+    }
+
+    SolrInputDocument sdoc1 = (SolrInputDocument) expected;
+    SolrInputDocument sdoc2 = (SolrInputDocument) actual;
+    if (Float.compare(sdoc1.getDocumentBoost(), sdoc2.getDocumentBoost()) != 0) {
+      return false;
+    }
+
+    if(sdoc1.getFieldNames().size() != sdoc2.getFieldNames().size()) {
+      return false;
+    }
+
+    Iterator<String> iter1 = sdoc1.getFieldNames().iterator();
+    Iterator<String> iter2 = sdoc2.getFieldNames().iterator();
+
+    if(iter1.hasNext()) {
+      String key1 = iter1.next();
+      String key2 = iter2.next();
+
+      Object val1 = sdoc1.getFieldValues(key1);
+      Object val2 = sdoc2.getFieldValues(key2);
+
+      if(!key1.equals(key2) || !val1.equals(val2)) {
+        return false;
+      }
+    }
+    if(sdoc1.getChildDocuments() == null && sdoc2.getChildDocuments() == null) {
+      return true;
+    }
+    if(sdoc1.getChildDocuments() == null || sdoc2.getChildDocuments() == null) {
+      return false;
+    } else if(sdoc1.getChildDocuments().size() != sdoc2.getChildDocuments().size()) {
+      return false;
+    } else {
+      Iterator<SolrInputDocument> childDocsIter1 = sdoc1.getChildDocuments().iterator();
+      Iterator<SolrInputDocument> childDocsIter2 = sdoc2.getChildDocuments().iterator();
+      while(childDocsIter1.hasNext()) {
+        if(!assertSolrInputDocumentEquals(childDocsIter1.next(), childDocsIter2.next())) {
+          return false;
+        }
+      }
+      return true;
+    }
+  }
+
+  public boolean assertSolrInputFieldEquals(Object expected, Object actual) {
+    if (!(expected instanceof SolrInputField) || !(actual instanceof  SolrInputField)) {
+      return false;
+    }
+
+    if (expected == actual) {
+      return true;
+    }
+
+    SolrInputField sif1 = (SolrInputField) expected;
+    SolrInputField sif2 = (SolrInputField) actual;
+
+    if (!sif1.getName().equals(sif2.getName())) {
+      return false;
+    }
+
+    if (!sif1.getValue().equals(sif2.getValue())) {
+      return false;
+    }
+
+    if (Float.compare(sif1.getBoost(), sif2.getBoost()) != 0) {
+      return false;
+    }
+
+    return true;
   }
 
 

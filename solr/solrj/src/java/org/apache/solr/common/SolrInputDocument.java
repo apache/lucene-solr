@@ -276,50 +276,6 @@ public class SolrInputDocument implements Map<String,SolrInputField>, Iterable<S
     return _fields.values();
   }
 
-  /**
-   * This method is implemented for tests and should not be counted
-   * on in production code.
-   * 
-   * @lucene.experimental
-   */
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (!(o instanceof SolrInputDocument)) {
-      return false;
-    }
-
-    SolrInputDocument sdoc = (SolrInputDocument) o;
-
-    if (!_fields.equals(sdoc._fields)) {
-      return false;
-    }
-    if (Float.compare(sdoc._documentBoost, _documentBoost) != 0) {
-      return false;
-    }
-    if (_childDocuments != null ? !_childDocuments.equals(sdoc._childDocuments) : sdoc._childDocuments != null) {
-      return false;
-    }
-
-    return true;
-  }
-
-  /**
-   * This method is implemented for tests and should not be counted
-   * on in production code.
-   * 
-   * @lucene.experimental
-   */
-  @Override
-  public int hashCode() {
-    int result = _fields.hashCode();
-    result = 31 * result + (_documentBoost != +0.0f ? Float.floatToIntBits(_documentBoost) : 0);
-    result = 31 * result + (_childDocuments != null ? _childDocuments.hashCode() : 0);
-    return result;
-  }
-
   public void addChildDocument(SolrInputDocument child) {
    if (_childDocuments == null) {
      _childDocuments = new ArrayList<>();

@@ -34,13 +34,15 @@ import java.util.Map;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrInputField;
 import org.junit.Test;
 
-public class TestJavaBinCodec extends LuceneTestCase {
+public class TestJavaBinCodec extends SolrTestCaseJ4 {
 
  private static final String SOLRJ_JAVABIN_BACKCOMPAT_BIN = "/solrj/javabin_backcompat.bin";
 private final String BIN_FILE_LOCATION = "./solr/solrj/src/test-files/solrj/javabin_backcompat.bin";
@@ -136,7 +138,6 @@ private final String BIN_FILE_LOCATION = "./solr/solrj/src/test-files/solrj/java
 
   @Test
   public void testBackCompat() {
-    List iteratorAsList = null;
     JavaBinCodec javabin = new JavaBinCodec(){
       @Override
       public List<Object> readIterator(DataInputInputStream fis) throws IOException {
@@ -155,7 +156,14 @@ private final String BIN_FILE_LOCATION = "./solr/solrj/src/test-files/solrj/java
           byte[] b1 = (byte[]) unmarshaledObj.get(i);
           byte[] b2 = (byte[]) matchObj.get(i);
           assertTrue(Arrays.equals(b1, b2));
-
+        } else if(unmarshaledObj.get(i) instanceof SolrDocument && matchObj.get(i) instanceof SolrDocument ) {
+          assertSolrDocumentEquals(unmarshaledObj.get(i), matchObj.get(i));
+        } else if(unmarshaledObj.get(i) instanceof SolrDocumentList && matchObj.get(i) instanceof SolrDocumentList ) {
+          assertSolrDocumentEquals(unmarshaledObj.get(i), matchObj.get(i));
+        } else if(unmarshaledObj.get(i) instanceof SolrInputDocument && matchObj.get(i) instanceof SolrInputDocument) {
+          assertSolrInputDocumentEquals(unmarshaledObj.get(i), matchObj.get(i));
+        } else if(unmarshaledObj.get(i) instanceof SolrInputField && matchObj.get(i) instanceof SolrInputField) {
+          assertSolrInputFieldEquals(unmarshaledObj.get(i), matchObj.get(i));
         } else {
           assertEquals(unmarshaledObj.get(i), matchObj.get(i));
         }
