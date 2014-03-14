@@ -91,7 +91,9 @@ public abstract class CoreAdminParams
   public final static String RANGES = "ranges";
   
   public static final String ROLES = "roles";
-  
+
+  public static final String REQUESTID = "requestid";
+
   public static final String CORE_NODE_NAME = "coreNodeName";
   
   /** Prefix for core property name=value pair **/
@@ -128,7 +130,8 @@ public abstract class CoreAdminParams
     REQUESTAPPLYUPDATES,
     LOAD_ON_STARTUP,
     TRANSIENT,
-    OVERSEEROP;
+    OVERSEEROP,
+    REQUESTSTATUS;
     
     public static CoreAdminAction get( String p )
     {

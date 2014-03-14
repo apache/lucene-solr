@@ -114,7 +114,7 @@ public class MigrateRouteKeyTest extends BasicDistributedZkTest {
     return ruleRemoved;
   }
 
-  private void invokeMigrateApi(String sourceCollection, String splitKey, String targetCollection) throws SolrServerException, IOException {
+  protected void invokeMigrateApi(String sourceCollection, String splitKey, String targetCollection) throws SolrServerException, IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionParams.CollectionAction.MIGRATE.toString());
     params.set("collection", sourceCollection);
@@ -125,7 +125,7 @@ public class MigrateRouteKeyTest extends BasicDistributedZkTest {
     invoke(params);
   }
 
-  private void invoke(ModifiableSolrParams params) throws SolrServerException, IOException {
+  protected void invoke(ModifiableSolrParams params) throws SolrServerException, IOException {
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
@@ -161,7 +161,7 @@ public class MigrateRouteKeyTest extends BasicDistributedZkTest {
     waitForRecoveriesToFinish(targetCollection, false);
   }
 
-  private void multipleShardMigrateTest() throws Exception  {
+  protected void multipleShardMigrateTest() throws Exception  {
     del("*:*");
     commit();
     assertTrue(cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound() == 0);

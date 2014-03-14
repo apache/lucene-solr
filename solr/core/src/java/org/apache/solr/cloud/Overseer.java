@@ -81,6 +81,13 @@ public class Overseer {
     //Internal queue where overseer stores events that have not yet been published into cloudstate
     //If Overseer dies while extracting the main queue a new overseer will start from this queue 
     private final DistributedQueue workQueue;
+    // Internal map which holds the information about running tasks.
+    private final DistributedMap runningMap;
+    // Internal map which holds the information about successfully completed tasks.
+    private final DistributedMap completedMap;
+    // Internal map which holds the information about failed tasks.
+    private final DistributedMap failureMap;
+
     private Map clusterProps;
     private boolean isClosed = false;
 
@@ -88,6 +95,9 @@ public class Overseer {
       this.zkClient = reader.getZkClient();
       this.stateUpdateQueue = getInQueue(zkClient);
       this.workQueue = getInternalQueue(zkClient);
+      this.failureMap = getFailureMap(zkClient);
+      this.runningMap = getRunningMap(zkClient);
+      this.completedMap = getCompletedMap(zkClient);
       this.myId = myId;
       this.reader = reader;
       clusterProps = reader.getClusterProps();
@@ -135,7 +145,7 @@ public class Overseer {
                   }
                   zkClient.setData(ZkStateReader.CLUSTER_STATE,
                       ZkStateReader.toJSON(clusterState), true);
-                  
+
                   workQueue.poll(); // poll-ing removes the element we got by peek-ing
                 }
                 else {
@@ -1134,6 +1144,24 @@ public class Overseer {
   static DistributedQueue getInternalQueue(final SolrZkClient zkClient) {
     createOverseerNode(zkClient);
     return new DistributedQueue(zkClient, "/overseer/queue-work", null);
+  }
+
+  /* Internal map for failed tasks, not to be used outside of the Overseer */
+  static DistributedMap getRunningMap(final SolrZkClient zkClient) {
+    createOverseerNode(zkClient);
+    return new DistributedMap(zkClient, "/overseer/collection-map-running", null);
+  }
+
+  /* Internal map for successfully completed tasks, not to be used outside of the Overseer */
+  static DistributedMap getCompletedMap(final SolrZkClient zkClient) {
+    createOverseerNode(zkClient);
+    return new DistributedMap(zkClient, "/overseer/collection-map-completed", null);
+  }
+
+  /* Internal map for failed tasks, not to be used outside of the Overseer */
+  static DistributedMap getFailureMap(final SolrZkClient zkClient) {
+    createOverseerNode(zkClient);
+    return new DistributedMap(zkClient, "/overseer/collection-map-failure", null);
   }
   
   /* Collection creation queue */

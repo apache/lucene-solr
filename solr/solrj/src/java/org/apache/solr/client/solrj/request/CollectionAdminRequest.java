@@ -17,20 +17,20 @@
 
 package org.apache.solr.client.solrj.request;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
+
+import java.io.IOException;
+import java.util.Collection;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class is experimental and subject to change.
@@ -41,6 +41,7 @@ public class CollectionAdminRequest extends SolrRequest
 {
   protected String collection = null;
   protected CollectionAction action = null;
+  protected String asyncId = null;
 
   protected static class CollectionShardAdminRequest extends CollectionAdminRequest {
     protected String shardName = null;
@@ -53,6 +54,7 @@ public class CollectionAdminRequest extends SolrRequest
       params.remove( "name" );
       params.set( "collection", collection );
       params.set( "shard", shardName);
+      params.set( "async", asyncId);
       return params;
     }
 
@@ -124,6 +126,9 @@ public class CollectionAdminRequest extends SolrRequest
         // OverseerCollectionProcessor.REPLICATION_FACTOR
         params.set( "replicationFactor", replicationFactor);
       }
+      if (asyncId != null) {
+        params.set("async", asyncId);
+      }
 
       return params;
     }
@@ -188,6 +193,25 @@ public class CollectionAdminRequest extends SolrRequest
     }
   }
 
+  //a request status collection request
+  public static class RequestStatus extends CollectionAdminRequest {
+    protected  String requestId = null;
+
+    public RequestStatus() {
+      action = CollectionAction.REQUESTSTATUS;
+    }
+
+    public void setRequestId(String requestId) {this.requestId = requestId; }
+    public String getRequestId() { return this.requestId; }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+      params.set("requestid", requestId);
+      return params;
+    }
+  }
+
   //a collection alias create request
   public static class CreateAlias extends CollectionAdminRequest {
     protected String aliasedCollections = null;
@@ -239,6 +263,10 @@ public class CollectionAdminRequest extends SolrRequest
     this.action = action;
   }
 
+  public void setAsyncId(String asyncId) {
+    this.asyncId = asyncId;
+  }
+
   //---------------------------------------------------------------------------------------
   //
   //---------------------------------------------------------------------------------------
@@ -285,7 +313,19 @@ public class CollectionAdminRequest extends SolrRequest
                                                           String nodeSet,
                                                           String conf,
                                                           String routerField,
-                                                          SolrServer server ) throws SolrServerException, IOException
+                                                          SolrServer server) throws SolrServerException, IOException
+  {
+    return createCollection(name, shards, repl, maxShards, nodeSet, conf, routerField, server, null);
+  }
+
+  // creates collection using a compositeId router
+  public static CollectionAdminResponse createCollection( String name,
+                                                          Integer shards, Integer repl, Integer maxShards,
+                                                          String nodeSet,
+                                                          String conf,
+                                                          String routerField,
+                                                          SolrServer server,
+                                                          String asyncId) throws SolrServerException, IOException
   {
     Create req = new Create();
     req.setCollectionName(name);
@@ -296,18 +336,37 @@ public class CollectionAdminRequest extends SolrRequest
     req.setCreateNodeSet(nodeSet);
     req.setConfigName(conf);
     req.setRouterField(routerField);
+    req.setAsyncId(asyncId);
     return req.process( server );
   }
+
+  public static CollectionAdminResponse createCollection(String name, Integer shards,
+                                                        String conf,
+                                                        SolrServer server) throws SolrServerException, IOException {
+    return createCollection(name, shards, conf, server, null);
+  }
+
   public static CollectionAdminResponse createCollection( String name,
                                                           Integer shards, String conf,
-                                                          SolrServer server ) throws SolrServerException, IOException
+                                                          SolrServer server,
+                                                          String asyncId) throws SolrServerException, IOException
   {
     Create req = new Create();
     req.setCollectionName(name);
     req.setRouterName("compositeId");
     req.setNumShards(shards);
     req.setConfigName(conf);
+    req.setAsyncId(asyncId);
     return req.process( server );
+  }
+
+  public static CollectionAdminResponse createCollection(String name,
+                                                         String shards,
+                                                         Integer repl, Integer maxShards,
+                                                         String conf,
+                                                         String routerField,
+                                                         SolrServer server) throws SolrServerException, IOException {
+    return createCollection(name, shards, repl, maxShards, conf, routerField, null);
   }
 
   // creates a collection using an implicit router
@@ -316,7 +375,8 @@ public class CollectionAdminRequest extends SolrRequest
                                                           String nodeSet,
                                                           String conf,
                                                           String routerField,
-                                                          SolrServer server ) throws SolrServerException, IOException
+                                                          SolrServer server,
+                                                          String asyncId) throws SolrServerException, IOException
   {
     Create req = new Create();
     req.setCollectionName(name);
@@ -327,32 +387,66 @@ public class CollectionAdminRequest extends SolrRequest
     req.setCreateNodeSet(nodeSet);
     req.setConfigName(conf);
     req.setRouterField(routerField);
+    req.setAsyncId(asyncId);
     return req.process( server );
   }
+
   public static CollectionAdminResponse createCollection( String name,
                                                           String shards, String conf,
-                                                          SolrServer server ) throws SolrServerException, IOException
+                                                          SolrServer server) throws SolrServerException, IOException
+  {
+    return createCollection(name, shards, conf, server, null);
+  }
+
+  public static CollectionAdminResponse createCollection( String name,
+                                                          String shards, String conf,
+                                                          SolrServer server, String asyncId ) throws SolrServerException, IOException
   {
     Create req = new Create();
     req.setCollectionName(name);
     req.setRouterName("implicit");
     req.setShards(shards);
     req.setConfigName(conf);
+    req.setAsyncId(asyncId);
     return req.process( server );
   }
 
-  public static CollectionAdminResponse reloadCollection( String name, SolrServer server ) throws SolrServerException, IOException
+  public static CollectionAdminResponse reloadCollection( String name, SolrServer server)
+      throws SolrServerException, IOException {
+    return reloadCollection(name, server, null);
+  }
+
+  public static CollectionAdminResponse reloadCollection( String name, SolrServer server, String asyncId )
+      throws SolrServerException, IOException
   {
     CollectionAdminRequest req = new Reload();
     req.setCollectionName(name);
+    req.setAsyncId(asyncId);
     return req.process( server );
   }
 
-  public static CollectionAdminResponse deleteCollection( String name, SolrServer server ) throws SolrServerException, IOException
+  public static CollectionAdminResponse deleteCollection( String name, SolrServer server)
+      throws SolrServerException, IOException
+  {
+    return deleteCollection(name, server, null);
+  }
+
+  public static CollectionAdminResponse deleteCollection( String name, SolrServer server,
+                                                          String asyncId)
+      throws SolrServerException, IOException
   {
     CollectionAdminRequest req = new Delete();
     req.setCollectionName(name);
+    req.setAsyncId(asyncId);
     return req.process( server );
+  }
+
+  public static CollectionAdminResponse requestStatus(String requestId, SolrServer server)
+      throws SolrServerException, IOException {
+    RequestStatus req = new RequestStatus();
+
+    req.setRequestId(requestId);
+    return req.process(server);
   }
 
   public static CollectionAdminResponse createShard( String name, String shard, String nodeSet, SolrServer server ) throws SolrServerException, IOException
@@ -370,15 +464,29 @@ public class CollectionAdminRequest extends SolrRequest
 
   public static CollectionAdminResponse splitShard( String name, String shard, String ranges, SolrServer server ) throws SolrServerException, IOException
   {
+    return splitShard(name, shard, ranges, server, null);
+  }
+
+  public static CollectionAdminResponse splitShard( String name, String shard, String ranges, SolrServer server,
+                                                    String asyncId) throws SolrServerException, IOException
+  {
     SplitShard req = new SplitShard();
     req.setCollectionName(name);
     req.setShardName(shard);
     req.setRanges(ranges);
+    req.setAsyncId(asyncId);
     return req.process( server );
   }
-  public static CollectionAdminResponse splitShard( String name, String shard, SolrServer server ) throws SolrServerException, IOException
+
+  public static CollectionAdminResponse splitShard(String name, String shard, SolrServer server)
+      throws SolrServerException, IOException {
+    return splitShard(name, shard, null, server, null);
+  }
+
+  public static CollectionAdminResponse splitShard( String name, String shard, SolrServer server,
+                                                    String asyncId ) throws SolrServerException, IOException
   {
-    return splitShard(name, shard, null, server);
+    return splitShard(name, shard, null, server, asyncId);
   }
 
   public static CollectionAdminResponse deleteShard( String name, String shard, SolrServer server ) throws SolrServerException, IOException

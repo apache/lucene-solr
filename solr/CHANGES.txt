@@ -119,6 +119,8 @@ New Features
 * SOLR-5653: Create a RestManager to provide REST API endpoints for
   reconfigurable plugins. (Tim Potter, Steve Rowe)
 
+* SOLR-5477: Async execution of OverseerCollectionProcessor(CollectionsAPI)
+  tasks. (Anshum Gupta)
 
 Bug Fixes
 ----------------------
