@@ -19,6 +19,7 @@ package org.apache.solr.util;
 import java.io.IOException;
 import java.net.URLEncoder;
 
+import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 
 import org.apache.http.HttpEntity;
@@ -149,15 +150,22 @@ public class RestTestHarness extends BaseTestHarness {
     }
   }
 
-  
+
+  /**
+   * Reloads the first core listed in the response to the core admin handler STATUS command
+   */
   @Override
   public void reload() throws Exception {
-    String xml = checkResponseStatus("/admin/cores?action=RELOAD", "0");
+    String coreName = (String)evaluateXPath
+        (query("/admin/cores?action=STATUS"),
+         "//lst[@name='status']/lst[1]/str[@name='name']",
+         XPathConstants.STRING);
+    String xml = checkResponseStatus("/admin/cores?action=RELOAD&core=" + coreName, "0");
     if (null != xml) {
       throw new RuntimeException("RELOAD failed:\n" + xml);
     }
   }
-  
+
   /**
    * Processes an "update" (add, commit or optimize) and
    * returns the response as a String.
