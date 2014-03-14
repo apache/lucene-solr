@@ -37,8 +37,8 @@
     <!-- needed only for newer svnkit releases, e.g. 1.8.x -->
     <ibiblio name="svnkit-releases" root="http://maven.tmatesoft.com/content/repositories/releases" m2compatible="true" />
 
-    <ibiblio name="cloudera" root="https://repository.cloudera.com/artifactory/repo" m2compatible="true" />
-    <ibiblio name="releases.cloudera.com" root="https://repository.cloudera.com/content/repositories/releases" m2compatible="true" />
+    <ibiblio name="cloudera" root="http://repository.cloudera.com/artifactory/repo" m2compatible="true" />
+    <ibiblio name="releases.cloudera.com" root="http://repository.cloudera.com/content/repositories/releases" m2compatible="true" />
 
 
     <!-- you might need to tweak this from china so it works -->
