@@ -1827,7 +1827,6 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
           params.set(CoreAdminParams.SHARD, sliceName);
           params.set(ZkStateReader.NUM_SHARDS_PROP, numSlices);
           String replica = zkStateReader.getBaseUrlForNodeName(nodeName);
-          if (replica.startsWith("http://")) replica = replica.substring(7);
 
           setupAsyncRequest(async, requestMap, params, nodeName);
 
@@ -2139,7 +2138,6 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       params.set("qt", adminPath);
       sreq.purpose = 1;
       String replica = zkStateReader.getBaseUrlForNodeName(nodeName);
-      if (replica.startsWith("http://")) replica = replica.substring(7);
       sreq.shards = new String[] {replica};
       sreq.actualShards = sreq.shards;
       sreq.params = params;
