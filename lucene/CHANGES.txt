@@ -100,6 +100,9 @@ New Features
   
 * LUCENE-3758: Allow the ComplexPhraseQueryParser to search order or 
   un-order proximity queries. (Ahmet Arslan via Erick Erickson)
+  
+* LUCENE-5530: ComplexPhraseQueryParser throws ParseException for fielded queries.
+  (Erick Erickson via Tomas Fernandez Lobbe and Ahmet Arslan)
 
 API Changes
 

@@ -230,13 +230,22 @@ public class ComplexPhraseQueryParser extends QueryParser {
     // Called by ComplexPhraseQueryParser for each phrase after the main
     // parse
     // thread is through
-    protected void parsePhraseElements(QueryParser qp) throws ParseException {
+    protected void parsePhraseElements(ComplexPhraseQueryParser qp) throws ParseException {
       // TODO ensure that field-sensitivity is preserved ie the query
       // string below is parsed as
       // field+":("+phrasedQueryStringContents+")"
       // but this will need code in rewrite to unwrap the first layer of
       // boolean query
-      contents = qp.parse(phrasedQueryStringContents);
+
+      String oldDefaultParserField = qp.field;
+      try {
+        //temporarily set the QueryParser to be parsing the default field for this phrase e.g author:"fred* smith"
+        qp.field = this.field;
+        contents = qp.parse(phrasedQueryStringContents);
+      }
+      finally {
+        qp.field = oldDefaultParserField;
+      }
     }
 
     @Override
