@@ -249,6 +249,7 @@
     <!-- queries: problems -->
     <!-- queryparser: problems -->
     <!-- sandbox: problems -->
+    <check-missing-javadocs dir="build/docs/server" level="method"/>
     <!-- spatial: problems -->
     <check-missing-javadocs dir="build/docs/suggest" level="method"/>
     <!-- test-framework: problems -->

@@ -1,0 +1,78 @@
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+<html>
+  <head>
+    <title>Lucene Server</title>
+  </head>
+  <body>
+    <h1>Lucene Server</h1>
+    A basic example JSON/HTTP server showing how to use Lucene's APIs in a server context.
+    <p>
+      Features/design:
+      <ul>
+	<li> A number of Lucene's capabilities have been exposed:
+	  indexing documents, bulk indexing (streaming JSON), block
+	  joins, grouping, highlighting, suggest, live-values,
+	  snapshots, etc.
+
+	<li> Lucene's legacy FieldCache is never used; only the
+	  faster, more RAM efficient doc values are used when you
+	  sort, group, facet on a field.
+
+	<li> All searching is based on near-real-time IndexReader; you
+	  configure the minimum and maximum refresh times.
+
+	<li> There is no required ID field; instead, a document is
+	  identified by the pair of the searcher version and Lucene's
+	  docID.
+
+	<li> The server APIs are self documenting; point your browser
+	  at http://localhost:4000/doc to browse the available methods
+	  and parameters.
+
+	<li> Error checking is strict but each error message should
+	  be easy to understand, pointing to the exact path/parameter
+	  that was problematic.  It's an error if a
+	  request has unexpected parameters.
+
+	<li> Write-once schema: fields must be registered up front,
+	  once, before any document is indexed with them; once a field
+	  is registered, it cannot be changed (write-once).
+    
+	<li> All changes (creating and configuring indices, indexing
+	  documents, etc.) are done through JSON APIs; there are no
+	  human-edited configuration files (though the server does
+	  store its index metadata in on-disk JSON files).
+
+	<li> A snapshot records all configuration (registered fields,
+	  settings, etc.) in addition to the point-in-time view of the
+	  index; future searches can then reference that snapshot for
+	  searching.
+
+	<li> A server thread pool handles all concurrency during
+	  indexing, so a single client thread using the bulk
+	  indexing API will take advantage of the server computer's
+	  concurrent hardware.
+
+	<li> Settings are divided into <em>live</em> settings, which
+	  can be changed after the index is started, and ordinary
+	  settings, which cannot.
+
+	<li> Limited infrastructure for plugins.
+      </ul>
+  </body>
+</html>

@@ -55,7 +55,7 @@ public class MappingCharFilterFactory extends CharFilterFactory implements
     super(args);
     mapping = get(args, "mapping");
     if (!args.isEmpty()) {
-      throw new IllegalArgumentException("Unknown parameters: " + args);
+      throw new IllegalArgumentException("Unknown parameters: " + args + "; valid parameters: mapping, luceneMatchVersion, class");
     }
   }
 
@@ -94,30 +94,32 @@ public class MappingCharFilterFactory extends CharFilterFactory implements
   }
 
   // "source" => "target"
-  static Pattern p = Pattern.compile( "\"(.*)\"\\s*=>\\s*\"(.*)\"\\s*$" );
+  static Pattern p = Pattern.compile("\"(.*)\"\\s*=>\\s*\"(.*)\"\\s*$");
 
-  protected void parseRules( List<String> rules, NormalizeCharMap.Builder builder ){
-    for( String rule : rules ){
-      Matcher m = p.matcher( rule );
-      if( !m.find() )
-        throw new IllegalArgumentException("Invalid Mapping Rule : [" + rule + "], file = " + mapping);
-      builder.add( parseString( m.group( 1 ) ), parseString( m.group( 2 ) ) );
+  protected void parseRules(List<String> rules, NormalizeCharMap.Builder builder) {
+    for(String rule : rules) {
+      Matcher m = p.matcher(rule);
+      if (m.find() == false) {
+        throw new IllegalArgumentException("Invalid Mapping Rule \"" + rule + "\" (file=\"" + mapping + "\"); should be form \"xxx\" => \"yyy\"");
+      }
+      builder.add(parseString(m.group(1)), parseString(m.group(2)));
     }
   }
 
   char[] out = new char[256];
   
-  protected String parseString( String s ){
+  protected String parseString(String s) {
     int readPos = 0;
     int len = s.length();
     int writePos = 0;
-    while( readPos < len ){
-      char c = s.charAt( readPos++ );
-      if( c == '\\' ){
-        if( readPos >= len )
+    while (readPos < len) {
+      char c = s.charAt(readPos++);
+      if (c == '\\') {
+        if (readPos >= len) {
           throw new IllegalArgumentException("Invalid escaped char in [" + s + "]");
-        c = s.charAt( readPos++ );
-        switch( c ) {
+        }
+        c = s.charAt(readPos++);
+        switch(c) {
           case '\\' : c = '\\'; break;
           case '"' : c = '"'; break;
           case 'n' : c = '\n'; break;
@@ -126,16 +128,17 @@ public class MappingCharFilterFactory extends CharFilterFactory implements
           case 'b' : c = '\b'; break;
           case 'f' : c = '\f'; break;
           case 'u' :
-            if( readPos + 3 >= len )
+            if (readPos + 3 >= len) {
               throw new IllegalArgumentException("Invalid escaped char in [" + s + "]");
-            c = (char)Integer.parseInt( s.substring( readPos, readPos + 4 ), 16 );
+            }
+            c = (char) Integer.parseInt(s.substring(readPos, readPos + 4 ), 16);
             readPos += 4;
             break;
         }
       }
       out[writePos++] = c;
     }
-    return new String( out, 0, writePos );
+    return new String(out, 0, writePos);
   }
 
   @Override

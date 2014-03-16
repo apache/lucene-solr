@@ -17,13 +17,14 @@ package org.apache.lucene.analysis.util;
  * limitations under the License.
  */
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.LinkedHashMap;
-import java.util.Set;
 import java.util.ServiceConfigurationError;
+import java.util.Set;
 
 import org.apache.lucene.util.SPIClassIterator;
 
@@ -108,6 +109,18 @@ final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
     final Class<? extends S> service = lookupClass(name);
     try {
       return service.getConstructor(Map.class).newInstance(args);
+    } catch (InvocationTargetException ite) {
+      Throwable cause = ite.getCause();
+      if (cause instanceof RuntimeException) {
+        throw (RuntimeException) cause;
+      }
+      if (cause instanceof Error) {
+        throw (Error) cause;
+      }
+      // TODO: AssertionError?  It's invalid for analysis
+      // factories to throw checked exc...
+      throw new IllegalArgumentException("SPI class of type "+clazz.getName()+" with name '"+name+"' cannot be instantiated. " +
+            "This is likely due to a misconfiguration of the java class '" + service.getName() + "': ", ite);
     } catch (Exception e) {
       throw new IllegalArgumentException("SPI class of type "+clazz.getName()+" with name '"+name+"' cannot be instantiated. " +
             "This is likely due to a misconfiguration of the java class '" + service.getName() + "': ", e);
@@ -120,7 +133,7 @@ final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
       return service;
     } else {
       throw new IllegalArgumentException("A SPI class of type "+clazz.getName()+" with name '"+name+"' does not exist. "+
-          "You need to add the corresponding JAR file supporting this SPI to your classpath."+
+          "You need to add the corresponding JAR file supporting this SPI to your classpath. "+
           "The current classpath supports the following names: "+availableServices());
     }
   }

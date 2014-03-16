@@ -104,6 +104,7 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
     List<Class<?>> analysisClasses = TestRandomChains.getClassesForPackage("org.apache.lucene.analysis");
     
     for (final Class<?> c : analysisClasses) {
+      // nocommit can we avoid deprecated components...
       final int modifiers = c.getModifiers();
       if (
         // don't waste time with abstract classes
@@ -133,7 +134,10 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
           }
           assertSame(c, instance.create().getClass());
         } catch (IllegalArgumentException e) {
-          if (!e.getMessage().contains("SPI")) {
+          // nocommit does this really catch a missing
+          // factory!?  the exc message on a missing factory
+          // contains SPI ...
+          if (!e.getMessage().contains("missing parameter") && !e.getMessage().contains("SPI")) {
             throw e;
           }
           // TODO: For now pass because some factories have not yet a default config that always works
@@ -155,7 +159,10 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
             assertSame(c, createdClazz);
           }
         } catch (IllegalArgumentException e) {
-          if (!e.getMessage().contains("SPI")) {
+          // nocommit does this really catch a missing
+          // factory!?  the exc message on a missing factory
+          // contains SPI ...
+          if (!e.getMessage().contains("missing parameter") && !e.getMessage().contains("SPI")) {
             throw e;
           }
           // TODO: For now pass because some factories have not yet a default config that always works
@@ -177,7 +184,10 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
             assertSame(c, createdClazz);
           }
         } catch (IllegalArgumentException e) {
-          if (!e.getMessage().contains("SPI")) {
+          // nocommit does this really catch a missing
+          // factory!?  the exc message on a missing factory
+          // contains SPI ...
+          if (!e.getMessage().contains("missing parameter") && !e.getMessage().contains("SPI")) {
             throw e;
           }
           // TODO: For now pass because some factories have not yet a default config that always works

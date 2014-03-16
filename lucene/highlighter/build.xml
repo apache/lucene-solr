@@ -31,11 +31,13 @@
   <path id="classpath">
     <pathelement path="${memory.jar}"/>
     <pathelement path="${queries.jar}"/>
+    <pathelement path="${join.jar}"/>
+    <pathelement path="${grouping.jar}"/>
     <path refid="base.classpath"/>
   </path>
 
-  <target name="compile-core" depends="jar-memory, common.compile-core" />
-  <target name="javadocs" depends="javadocs-memory,compile-core">
+  <target name="compile-core" depends="jar-memory,jar-join,jar-grouping,common.compile-core" />
+  <target name="javadocs" depends="javadocs-memory,javadocs-join,javadocs-grouping,compile-core">
     <invoke-module-javadoc>
       <links>
         <link href="../memory"/>

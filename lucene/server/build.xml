@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+ 
+        http://www.apache.org/licenses/LICENSE-2.0
+ 
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+ -->
+
+<project name="server" default="default">
+
+  <description>
+    Demo Server
+  </description>
+
+  <property name="forbidden-sysout-excludes" value="
+    org/apache/lucene/server/GlobalState.class
+    org/apache/lucene/server/IndexState.class
+    org/apache/lucene/server/Server.class
+    org/apache/lucene/server/http/HttpStaticFileServerHandler.class
+    org/apache/lucene/server/http/HttpStaticFileServerHandler$1.class
+  "/>
+        
+  <import file="../module-build.xml"/>
+
+  <path id="classpath">
+    <pathelement path="${analyzers-common.jar}"/>
+    <pathelement path="${analyzers-icu.jar}"/>
+    <pathelement path="${facet.jar}"/>
+    <pathelement path="${grouping.jar}"/>
+    <pathelement path="${highlighter.jar}"/>
+    <pathelement path="${join.jar}"/>
+    <pathelement path="${misc.jar}"/>
+    <pathelement path="${queries.jar}"/>
+    <pathelement path="${queryparser.jar}"/>
+    <pathelement path="${suggest.jar}"/>
+    <pathelement path="${expressions.jar}"/>
+    <fileset dir="../expressions/lib"/>
+    <fileset dir="lib"/>
+    <path refid="base.classpath"/>
+  </path>
+
+  <target name="javadocs" depends="javadocs-facet,javadocs-highlighter,javadocs-suggest,javadocs-analyzers-common,compile-core">
+    <invoke-module-javadoc>
+      <links>
+        <link href="../facet"/>
+        <link href="../highlighter"/>
+        <link href="../suggest"/>
+      </links>
+    </invoke-module-javadoc>
+  </target>
+
+  <target name="compile-core" depends="jar-analyzers-common, jar-analyzers-icu, jar-facet, jar-grouping, jar-highlighter, jar-join, jar-misc, jar-queries, jar-queryparser, jar-suggest, jar-expressions, common.compile-core" />
+
+</project>

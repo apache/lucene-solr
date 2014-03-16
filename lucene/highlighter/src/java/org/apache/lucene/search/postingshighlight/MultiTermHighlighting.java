@@ -36,6 +36,8 @@ import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.search.join.ToChildBlockJoinQuery;
+import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanNotQuery;
@@ -184,7 +186,16 @@ class MultiTermHighlighting {
           }
         });
       }
+    // nocommit we could add an interface, which a given
+    // Query impl would optionally implement, to
+    // extractQueries?  then we don't need hard deps on all
+    // the world's queries:
+    } else if (query instanceof ToParentBlockJoinQuery) {
+      list.addAll(Arrays.asList(extractAutomata(((ToParentBlockJoinQuery) query).getChildQuery(), field)));
+    } else if (query instanceof ToChildBlockJoinQuery) {
+      list.addAll(Arrays.asList(extractAutomata(((ToChildBlockJoinQuery) query).getParentQuery(), field)));
     }
+
     return list.toArray(new CharacterRunAutomaton[list.size()]);
   }
   
@@ -198,7 +209,7 @@ class MultiTermHighlighting {
     final CharTermAttribute charTermAtt = ts.addAttribute(CharTermAttribute.class);
     final OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
     ts.reset();
-    
+
     // TODO: we could use CachingWrapperFilter, (or consume twice) to allow us to have a true freq()
     // but this would have a performance cost for likely little gain in the user experience, it
     // would only serve to make this method less bogus.

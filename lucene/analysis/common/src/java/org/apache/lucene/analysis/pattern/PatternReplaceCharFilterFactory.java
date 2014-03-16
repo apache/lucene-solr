@@ -47,7 +47,7 @@ public class PatternReplaceCharFilterFactory extends CharFilterFactory {
     pattern = getPattern(args, "pattern");
     replacement = get(args, "replacement", "");
     if (!args.isEmpty()) {
-      throw new IllegalArgumentException("Unknown parameters: " + args);
+      throw new IllegalArgumentException("Unknown parameters: " + args + "; valid parameters: pattern, replacement, luceneMatchVersion, class");
     }
   }
 

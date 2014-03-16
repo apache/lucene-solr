@@ -35,7 +35,7 @@
     <path refid="base.classpath"/>
   </path>
 
-  <target name="javadocs" depends="javadocs-queries,javadocs-misc,compile-core">
+  <target name="javadocs" depends="javadocs-queries,javadocs-analyzers-common,javadocs-misc,compile-core">
     <invoke-module-javadoc>
       <links>
         <link href="../analyzers-common"/>

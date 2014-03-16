@@ -31,6 +31,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.NoSuchDirectoryException;
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -111,9 +112,12 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
 
     loadPriorSnapshots();
 
-    if (mode == OpenMode.APPEND && nextWriteGen == 0) {
-      throw new IllegalStateException("no snapshots stored in this directory");
-    }
+    // nocommit this seems overly anal?  it could simply be
+    // i'm opening a prior index but had never taken a
+    // snapshot in it?
+    //if (mode == OpenMode.APPEND && nextWriteGen == 0) {
+    //throw new IllegalStateException("no snapshots stored in this directory");
+    //}
   }
 
   /**
@@ -215,7 +219,15 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
   }
 
   private synchronized void clearPriorSnapshots() throws IOException {
-    for(String file : dir.listAll()) {
+    String[] files;
+    try {
+      files = dir.listAll();
+    } catch (NoSuchDirectoryException nsde) {
+      // It's OK if the directory doesn't exist yet; this
+      // just means there's nothing to clear:
+      return;
+    }
+    for(String file : files) {
       if (file.startsWith(SNAPSHOTS_PREFIX)) {
         dir.deleteFile(file);
       }
@@ -242,7 +254,15 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
     long genLoaded = -1;
     IOException ioe = null;
     List<String> snapshotFiles = new ArrayList<String>();
-    for(String file : dir.listAll()) {
+    String[] files;
+    try {
+      files = dir.listAll();
+    } catch (NoSuchDirectoryException nsde) {
+      // It's OK if the directory doesn't exist yet; this
+      // just means there's nothing to load:
+      return;      
+    }
+    for(String file : files) {
       if (file.startsWith(SNAPSHOTS_PREFIX)) {
         long gen = Long.parseLong(file.substring(SNAPSHOTS_PREFIX.length()));
         if (genLoaded == -1 || gen > genLoaded) {
