@@ -236,7 +236,7 @@ public class FSTTester<T> {
   private T randomAcceptedWord(FST<T> fst, IntsRef in) throws IOException {
     FST.Arc<T> arc = fst.getFirstArc(new FST.Arc<T>());
 
-    final List<FST.Arc<T>> arcs = new ArrayList<FST.Arc<T>>();
+    final List<FST.Arc<T>> arcs = new ArrayList<>();
     in.length = 0;
     in.offset = 0;
     final T NO_OUTPUT = fst.outputs.getNoOutput();
@@ -281,7 +281,7 @@ public class FSTTester<T> {
 
     final boolean willRewrite = random.nextBoolean();
 
-    final Builder<T> builder = new Builder<T>(inputMode == 0 ? FST.INPUT_TYPE.BYTE1 : FST.INPUT_TYPE.BYTE4,
+    final Builder<T> builder = new Builder<>(inputMode == 0 ? FST.INPUT_TYPE.BYTE1 : FST.INPUT_TYPE.BYTE4,
                                               prune1, prune2,
                                               prune1==0 && prune2==0,
                                               allowRandomSuffixSharing ? random.nextBoolean() : true,
@@ -320,7 +320,7 @@ public class FSTTester<T> {
       out.close();
       IndexInput in = dir.openInput("fst.bin", context);
       try {
-        fst = new FST<T>(in, outputs);
+        fst = new FST<>(in, outputs);
       } finally {
         in.close();
         dir.deleteFile("fst.bin");
@@ -366,7 +366,7 @@ public class FSTTester<T> {
     if (doReverseLookup) {
       @SuppressWarnings("unchecked") FST<Long> fstLong0 = (FST<Long>) fst;
       fstLong = fstLong0;
-      validOutputs = new HashSet<Long>();
+      validOutputs = new HashSet<>();
       for(InputOutput<T> pair: pairs) {
         Long output = (Long) pair.output;
         maxLong = Math.max(maxLong, output);
@@ -402,7 +402,7 @@ public class FSTTester<T> {
       System.out.println("TEST: check valid terms/next()");
     }
     {
-      IntsRefFSTEnum<T> fstEnum = new IntsRefFSTEnum<T>(fst);
+      IntsRefFSTEnum<T> fstEnum = new IntsRefFSTEnum<>(fst);
       for(InputOutput<T> pair : pairs) {
         IntsRef term = pair.input;
         if (LuceneTestCase.VERBOSE) {
@@ -421,7 +421,7 @@ public class FSTTester<T> {
       assertNull(fstEnum.next());
     }
 
-    final Map<IntsRef,T> termsMap = new HashMap<IntsRef,T>();
+    final Map<IntsRef,T> termsMap = new HashMap<>();
     for(InputOutput<T> pair : pairs) {
       termsMap.put(pair.input, pair.output);
     }
@@ -464,7 +464,7 @@ public class FSTTester<T> {
     if (LuceneTestCase.VERBOSE) {
       System.out.println("TEST: verify seek");
     }
-    IntsRefFSTEnum<T> fstEnum = new IntsRefFSTEnum<T>(fst);
+    IntsRefFSTEnum<T> fstEnum = new IntsRefFSTEnum<>(fst);
     num = LuceneTestCase.atLeast(random, 100);
     for(int iter=0;iter<num;iter++) {
       if (LuceneTestCase.VERBOSE) {
@@ -556,7 +556,7 @@ public class FSTTester<T> {
         System.out.println("TEST: iter " + iter);
       }
       // reset:
-      fstEnum = new IntsRefFSTEnum<T>(fst);
+      fstEnum = new IntsRefFSTEnum<>(fst);
       int upto = -1;
       while(true) {
         boolean isDone = false;
@@ -682,7 +682,7 @@ public class FSTTester<T> {
     //System.out.println("TEST: tally prefixes");
 
     // build all prefixes
-    final Map<IntsRef,CountMinOutput<T>> prefixes = new HashMap<IntsRef,CountMinOutput<T>>();
+    final Map<IntsRef,CountMinOutput<T>> prefixes = new HashMap<>();
     final IntsRef scratch = new IntsRef(10);
     for(InputOutput<T> pair: pairs) {
       scratch.copyInts(pair.input);
@@ -690,7 +690,7 @@ public class FSTTester<T> {
         scratch.length = idx;
         CountMinOutput<T> cmo = prefixes.get(scratch);
         if (cmo == null) {
-          cmo = new CountMinOutput<T>();
+          cmo = new CountMinOutput<>();
           cmo.count = 1;
           cmo.output = pair.output;
           prefixes.put(IntsRef.deepCopyOf(scratch), cmo);
@@ -787,7 +787,7 @@ public class FSTTester<T> {
     if (LuceneTestCase.VERBOSE) {
       System.out.println("TEST: check pruned enum");
     }
-    IntsRefFSTEnum<T> fstEnum = new IntsRefFSTEnum<T>(fst);
+    IntsRefFSTEnum<T> fstEnum = new IntsRefFSTEnum<>(fst);
     IntsRefFSTEnum.InputOutput<T> current;
     while((current = fstEnum.next()) != null) {
       if (LuceneTestCase.VERBOSE) {

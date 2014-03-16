@@ -45,7 +45,7 @@ public class QueryEqualsHashCodeTest extends LuceneTestCase {
     final SpatialPrefixTree gridQuad = new QuadPrefixTree(ctx,10);
     final SpatialPrefixTree gridGeohash = new GeohashPrefixTree(ctx,10);
 
-    Collection<SpatialStrategy> strategies = new ArrayList<SpatialStrategy>();
+    Collection<SpatialStrategy> strategies = new ArrayList<>();
     strategies.add(new RecursivePrefixTreeStrategy(gridGeohash, "recursive_geohash"));
     strategies.add(new TermQueryPrefixTreeStrategy(gridQuad, "termquery_quad"));
     strategies.add(new PointVectorStrategy(ctx, "pointvector"));

@@ -480,7 +480,7 @@ public class JsonLoader extends ContentStreamLoader {
             } else {
               // If we encounter other unknown map keys, then use a map
               if (extendedInfo == null) {
-                extendedInfo = new HashMap<String, Object>(2);
+                extendedInfo = new HashMap<>(2);
               }
               // for now, the only extended info will be field values
               // we could either store this as an Object or a SolrInputField

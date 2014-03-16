@@ -118,7 +118,7 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
         continue;
       }
       
-      Map<String,String> args = new HashMap<String,String>();
+      Map<String,String> args = new HashMap<>();
       args.put("luceneMatchVersion", TEST_VERSION_CURRENT.toString());
       
       if (Tokenizer.class.isAssignableFrom(c)) {

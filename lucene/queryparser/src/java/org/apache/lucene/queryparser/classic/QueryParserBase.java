@@ -351,7 +351,7 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
 
     if (fieldToDateResolution == null) {
       // lazily initialize HashMap
-      fieldToDateResolution = new HashMap<String,DateTools.Resolution>();
+      fieldToDateResolution = new HashMap<>();
     }
 
     fieldToDateResolution.put(fieldName, dateResolution);

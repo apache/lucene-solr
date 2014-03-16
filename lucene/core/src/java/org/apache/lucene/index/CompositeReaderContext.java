@@ -80,7 +80,7 @@ public final class CompositeReaderContext extends IndexReaderContext {
   
   private static final class Builder {
     private final CompositeReader reader;
-    private final List<AtomicReaderContext> leaves = new ArrayList<AtomicReaderContext>();
+    private final List<AtomicReaderContext> leaves = new ArrayList<>();
     private int leafDocBase = 0;
     
     public Builder(CompositeReader reader) {

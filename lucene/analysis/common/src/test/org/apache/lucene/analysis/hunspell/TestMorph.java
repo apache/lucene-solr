@@ -29,5 +29,6 @@ public class TestMorph extends StemmerTestBase {
   public void testExamples() {
     assertStemsTo("drink", "drink");
     assertStemsTo("drinkable", "drink");
+    assertStemsTo("drinkableable");
   }
 }

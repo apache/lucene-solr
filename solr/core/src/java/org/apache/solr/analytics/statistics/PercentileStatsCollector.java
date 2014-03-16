@@ -30,7 +30,7 @@ import com.google.common.collect.Iterables;
  */
 @SuppressWarnings("rawtypes")
 public class PercentileStatsCollector extends AbstractDelegatingStatsCollector{
-  public final List<Comparable> values = new ArrayList<Comparable>();
+  public final List<Comparable> values = new ArrayList<>();
   public static final Pattern PERCENTILE_PATTERN = Pattern.compile("perc(?:entile)?_(\\d+)",Pattern.CASE_INSENSITIVE);
   protected final double[] percentiles;
   protected final String[] percentileNames;

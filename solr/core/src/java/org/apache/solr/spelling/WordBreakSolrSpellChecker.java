@@ -199,9 +199,9 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
     
     StringBuilder sb = new StringBuilder();
     Token[] tokenArr = options.tokens.toArray(new Token[options.tokens.size()]);
-    List<Term> termArr = new ArrayList<Term>(options.tokens.size() + 2);
+    List<Term> termArr = new ArrayList<>(options.tokens.size() + 2);
     
-    List<ResultEntry> breakSuggestionList = new ArrayList<ResultEntry>();
+    List<ResultEntry> breakSuggestionList = new ArrayList<>();
     boolean lastOneProhibited = false;
     boolean lastOneRequired = false;
     boolean lastOneprocedesNewBooleanOp = false;
@@ -253,7 +253,7 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
     CombineSuggestion[] combineSuggestions = wbsp.suggestWordCombinations(
         termArr.toArray(new Term[termArr.size()]), numSuggestions, ir, options.suggestMode);
     if (combineWords) {
-      combineSuggestionList = new ArrayList<ResultEntry>(
+      combineSuggestionList = new ArrayList<>(
           combineSuggestions.length);
       for (CombineSuggestion cs : combineSuggestions) {
         int firstTermIndex = cs.originalTermIndexes[0];

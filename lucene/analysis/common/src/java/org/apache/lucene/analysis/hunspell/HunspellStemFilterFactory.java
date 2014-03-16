@@ -57,7 +57,6 @@ public class HunspellStemFilterFactory extends TokenFilterFactory implements Res
   private final boolean ignoreCase;
   private final boolean longestOnly;
   private Dictionary dictionary;
-  private int recursionCap;
   
   /** Creates a new HunspellStemFilterFactory */
   public HunspellStemFilterFactory(Map<String,String> args) {
@@ -65,11 +64,14 @@ public class HunspellStemFilterFactory extends TokenFilterFactory implements Res
     dictionaryFiles = require(args, PARAM_DICTIONARY);
     affixFile = get(args, PARAM_AFFIX);
     ignoreCase = getBoolean(args, PARAM_IGNORE_CASE, false);
-    recursionCap = getInt(args, PARAM_RECURSION_CAP, 2);
     longestOnly = getBoolean(args, PARAM_LONGEST_ONLY, false);
     // this isnt necessary: we properly load all dictionaries.
     // but recognize and ignore for back compat
     getBoolean(args, "strictAffixParsing", true);
+    // this isn't necessary: multi-stage stripping is fixed and 
+    // flags like COMPLEXPREFIXES in the data itself control this.
+    // but recognize and ignore for back compat
+    getInt(args, "recursionCap", 0);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -80,10 +82,10 @@ public class HunspellStemFilterFactory extends TokenFilterFactory implements Res
     String dicts[] = dictionaryFiles.split(",");
 
     InputStream affix = null;
-    List<InputStream> dictionaries = new ArrayList<InputStream>();
+    List<InputStream> dictionaries = new ArrayList<>();
 
     try {
-      dictionaries = new ArrayList<InputStream>();
+      dictionaries = new ArrayList<>();
       for (String file : dicts) {
         dictionaries.add(loader.openResource(file));
       }
@@ -100,6 +102,6 @@ public class HunspellStemFilterFactory extends TokenFilterFactory implements Res
 
   @Override
   public TokenStream create(TokenStream tokenStream) {
-    return new HunspellStemFilter(tokenStream, dictionary, true, recursionCap, longestOnly);
+    return new HunspellStemFilter(tokenStream, dictionary, true, longestOnly);
   }
 }

@@ -29,7 +29,7 @@ final class NodeHash<T> {
   private long count;
   private long mask;
   private final FST<T> fst;
-  private final FST.Arc<T> scratchArc = new FST.Arc<T>();
+  private final FST.Arc<T> scratchArc = new FST.Arc<>();
   private final FST.BytesReader in;
 
   public NodeHash(FST<T> fst, FST.BytesReader in) {

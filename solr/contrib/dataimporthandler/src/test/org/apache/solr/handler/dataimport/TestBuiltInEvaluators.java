@@ -44,7 +44,7 @@ public class TestBuiltInEvaluators extends AbstractDataImportHandlerTestCase {
     super.setUp();
     resolver = new VariableResolver();
 
-    sqlTests = new HashMap<String, String>();
+    sqlTests = new HashMap<>();
 
     sqlTests.put("foo\"", "foo\"\"");
     sqlTests.put("foo\\", "foo\\\\");
@@ -53,7 +53,7 @@ public class TestBuiltInEvaluators extends AbstractDataImportHandlerTestCase {
     sqlTests.put("'foo\"", "''foo\"\"");
     sqlTests.put("\"Albert D'souza\"", "\"\"Albert D''souza\"\"");
 
-    urlTests = new HashMap<String, String>();
+    urlTests = new HashMap<>();
 
     urlTests.put("*:*", URLEncoder.encode("*:*", ENCODING));
     urlTests.put("price:[* TO 200]", URLEncoder.encode("price:[* TO 200]",
@@ -78,7 +78,7 @@ public class TestBuiltInEvaluators extends AbstractDataImportHandlerTestCase {
 
   @Test
   public void parseParams() {
-    Map<String,Object> m = new HashMap<String,Object>();
+    Map<String,Object> m = new HashMap<>();
     m.put("b","B");
     VariableResolver vr = new VariableResolver();
     vr.addNamespace("a",m);
@@ -97,7 +97,7 @@ public class TestBuiltInEvaluators extends AbstractDataImportHandlerTestCase {
   @Test
   public void testEscapeSolrQueryFunction() {
     final VariableResolver resolver = new VariableResolver();    
-    Map<String,Object> m= new HashMap<String,Object>();
+    Map<String,Object> m= new HashMap<>();
     m.put("query","c:t");
     resolver.setEvaluators(new DataImporter().getEvaluators(Collections.<Map<String,String>>emptyList()));
     
@@ -147,7 +147,7 @@ public class TestBuiltInEvaluators extends AbstractDataImportHandlerTestCase {
     }
    
     Date d = new Date();    
-    Map<String,Object> map = new HashMap<String,Object>();
+    Map<String,Object> map = new HashMap<>();
     map.put("key", d);
     resolver.addNamespace("A", map);
         
@@ -174,7 +174,7 @@ public class TestBuiltInEvaluators extends AbstractDataImportHandlerTestCase {
   private void runTests(Map<String, String> tests, Evaluator evaluator) {
     ContextImpl ctx = new ContextImpl(null, resolver, null, Context.FULL_DUMP, Collections.<String, Object>emptyMap(), null, null);    
     for (Map.Entry<String, String> entry : tests.entrySet()) {
-      Map<String, Object> values = new HashMap<String, Object>();
+      Map<String, Object> values = new HashMap<>();
       values.put("key", entry.getKey());
       resolver.addNamespace("A", values);
 

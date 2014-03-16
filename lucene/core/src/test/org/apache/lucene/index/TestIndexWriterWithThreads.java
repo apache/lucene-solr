@@ -547,8 +547,11 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
 
     final int threadCount = TestUtil.nextInt(random(), 2, 6);
 
-    final AtomicReference<IndexWriter> writerRef = new AtomicReference<IndexWriter>();
-    writerRef.set(new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))));
+    final AtomicReference<IndexWriter> writerRef = new AtomicReference<>();
+    MockAnalyzer analyzer = new MockAnalyzer(random());
+    analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
+
+    writerRef.set(new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer)));
     final LineFileDocs docs = new LineFileDocs(random());
     final Thread[] threads = new Thread[threadCount];
     final int iters = atLeast(100);

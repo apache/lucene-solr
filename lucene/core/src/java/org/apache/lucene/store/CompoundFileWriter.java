@@ -60,10 +60,10 @@ final class CompoundFileWriter implements Closeable{
   static final String ENTRY_CODEC = "CompoundFileWriterEntries";
 
   private final Directory directory;
-  private final Map<String, FileEntry> entries = new HashMap<String, FileEntry>();
-  private final Set<String> seenIDs = new HashSet<String>();
+  private final Map<String, FileEntry> entries = new HashMap<>();
+  private final Set<String> seenIDs = new HashSet<>();
   // all entries that are written to a sep. file but not yet moved into CFS
-  private final Queue<FileEntry> pendingEntries = new LinkedList<FileEntry>();
+  private final Queue<FileEntry> pendingEntries = new LinkedList<>();
   private boolean closed = false;
   private IndexOutput dataOut;
   private final AtomicBoolean outputTaken = new AtomicBoolean(false);

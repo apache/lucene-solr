@@ -99,7 +99,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
     final int docCount = atLeast(200);
     final int fieldCount = TestUtil.nextInt(rand, 1, 5);
 
-    final List<Integer> fieldIDs = new ArrayList<Integer>();
+    final List<Integer> fieldIDs = new ArrayList<>();
 
     FieldType customType = new FieldType(TextField.TYPE_STORED);
     customType.setTokenized(false);
@@ -109,7 +109,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
       fieldIDs.add(i);
     }
 
-    final Map<String,Document> docs = new HashMap<String,Document>();
+    final Map<String,Document> docs = new HashMap<>();
 
     if (VERBOSE) {
       System.out.println("TEST: build index docCount=" + docCount);
@@ -439,8 +439,8 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
     final IndexSearcher searcher = new IndexSearcher(rd);
     final int concurrentReads = atLeast(5);
     final int readsPerThread = atLeast(50);
-    final List<Thread> readThreads = new ArrayList<Thread>();
-    final AtomicReference<Exception> ex = new AtomicReference<Exception>();
+    final List<Thread> readThreads = new ArrayList<>();
+    final AtomicReference<Exception> ex = new AtomicReference<>();
     for (int i = 0; i < concurrentReads; ++i) {
       readThreads.add(new Thread() {
 

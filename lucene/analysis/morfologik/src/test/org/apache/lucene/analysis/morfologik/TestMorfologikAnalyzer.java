@@ -124,8 +124,8 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
     ts.incrementToken();
     assertEquals(term, ts.getAttribute(CharTermAttribute.class).toString());
     
-    TreeSet<String> actual = new TreeSet<String>();
-    TreeSet<String> expected = new TreeSet<String>();
+    TreeSet<String> actual = new TreeSet<>();
+    TreeSet<String> expected = new TreeSet<>();
     for (StringBuilder b : ts.getAttribute(MorphosyntacticTagsAttribute.class).getTags()) {
       actual.add(b.toString());
     }

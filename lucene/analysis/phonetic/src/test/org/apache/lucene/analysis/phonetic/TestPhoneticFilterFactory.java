@@ -36,7 +36,7 @@ public class TestPhoneticFilterFactory extends BaseTokenStreamTestCase {
    * Case: default
    */
   public void testFactoryDefaults() throws IOException {
-    Map<String,String> args = new HashMap<String,String>();
+    Map<String,String> args = new HashMap<>();
     args.put(PhoneticFilterFactory.ENCODER, "Metaphone");
     PhoneticFilterFactory factory = new PhoneticFilterFactory(args);
     factory.inform(new ClasspathResourceLoader(factory.getClass()));
@@ -45,7 +45,7 @@ public class TestPhoneticFilterFactory extends BaseTokenStreamTestCase {
   }
   
   public void testInjectFalse() throws IOException {
-    Map<String,String> args = new HashMap<String,String>();
+    Map<String,String> args = new HashMap<>();
     args.put(PhoneticFilterFactory.ENCODER, "Metaphone");
     args.put(PhoneticFilterFactory.INJECT, "false");
     PhoneticFilterFactory factory = new PhoneticFilterFactory(args);
@@ -54,7 +54,7 @@ public class TestPhoneticFilterFactory extends BaseTokenStreamTestCase {
   }
   
   public void testMaxCodeLength() throws IOException {
-    Map<String,String> args = new HashMap<String,String>();
+    Map<String,String> args = new HashMap<>();
     args.put(PhoneticFilterFactory.ENCODER, "Metaphone");
     args.put(PhoneticFilterFactory.MAX_CODE_LENGTH, "2");
     PhoneticFilterFactory factory = new PhoneticFilterFactory(args);
@@ -76,7 +76,7 @@ public class TestPhoneticFilterFactory extends BaseTokenStreamTestCase {
   
   public void testUnknownEncoder() throws IOException {
     try {
-      Map<String,String> args = new HashMap<String,String>();
+      Map<String,String> args = new HashMap<>();
       args.put("encoder", "XXX");
       PhoneticFilterFactory factory = new PhoneticFilterFactory(args);
       factory.inform(new ClasspathResourceLoader(factory.getClass()));
@@ -88,7 +88,7 @@ public class TestPhoneticFilterFactory extends BaseTokenStreamTestCase {
   
   public void testUnknownEncoderReflection() throws IOException {
     try {
-      Map<String,String> args = new HashMap<String,String>();
+      Map<String,String> args = new HashMap<>();
       args.put("encoder", "org.apache.commons.codec.language.NonExistence");
       PhoneticFilterFactory factory = new PhoneticFilterFactory(args);
       factory.inform(new ClasspathResourceLoader(factory.getClass()));
@@ -102,7 +102,7 @@ public class TestPhoneticFilterFactory extends BaseTokenStreamTestCase {
    * Case: Reflection
    */
   public void testFactoryReflection() throws IOException {
-    Map<String,String> args = new HashMap<String, String>();
+    Map<String,String> args = new HashMap<>();
     args.put(PhoneticFilterFactory.ENCODER, "org.apache.commons.codec.language.Metaphone");
     PhoneticFilterFactory factory = new PhoneticFilterFactory(args);
     factory.inform(new ClasspathResourceLoader(factory.getClass()));
@@ -115,7 +115,7 @@ public class TestPhoneticFilterFactory extends BaseTokenStreamTestCase {
    * so this effectively tests reflection without package name
    */
   public void testFactoryReflectionCaverphone2() throws IOException {
-    Map<String,String> args = new HashMap<String, String>();
+    Map<String,String> args = new HashMap<>();
     args.put(PhoneticFilterFactory.ENCODER, "Caverphone2");
     PhoneticFilterFactory factory = new PhoneticFilterFactory(args);
     factory.inform(new ClasspathResourceLoader(factory.getClass()));
@@ -124,7 +124,7 @@ public class TestPhoneticFilterFactory extends BaseTokenStreamTestCase {
   }
   
   public void testFactoryReflectionCaverphone() throws IOException {
-    Map<String,String> args = new HashMap<String, String>();
+    Map<String,String> args = new HashMap<>();
     args.put(PhoneticFilterFactory.ENCODER, "Caverphone");
     PhoneticFilterFactory factory = new PhoneticFilterFactory(args);
     factory.inform(new ClasspathResourceLoader(factory.getClass()));
@@ -182,7 +182,7 @@ public class TestPhoneticFilterFactory extends BaseTokenStreamTestCase {
   static void assertAlgorithm(String algName, String inject, String input,
       String[] expected) throws Exception {
     Tokenizer tokenizer = whitespaceMockTokenizer(input);
-    Map<String,String> args = new HashMap<String,String>();
+    Map<String,String> args = new HashMap<>();
     args.put("encoder", algName);
     args.put("inject", inject);
     PhoneticFilterFactory factory = new PhoneticFilterFactory(args);

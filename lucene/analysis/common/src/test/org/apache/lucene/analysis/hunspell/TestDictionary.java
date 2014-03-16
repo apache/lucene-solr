@@ -17,14 +17,22 @@ package org.apache.lucene.analysis.hunspell;
  * limitations under the License.
  */
 
+import java.io.ByteArrayInputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.ParseException;
 
-import org.apache.lucene.analysis.hunspell.Dictionary;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.CharSequenceOutputs;
+import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.Outputs;
+import org.apache.lucene.util.fst.Util;
 
 public class TestDictionary extends LuceneTestCase {
 
@@ -35,11 +43,22 @@ public class TestDictionary extends LuceneTestCase {
     Dictionary dictionary = new Dictionary(affixStream, dictStream);
     assertEquals(3, dictionary.lookupSuffix(new char[]{'e'}, 0, 1).length);
     assertEquals(1, dictionary.lookupPrefix(new char[]{'s'}, 0, 1).length);
-    char flags[] = dictionary.lookupWord(new char[]{'o', 'l', 'r'}, 0, 3, new BytesRef());
-    assertNotNull(flags);
+    IntsRef ordList = dictionary.lookupWord(new char[]{'o', 'l', 'r'}, 0, 3);
+    assertNotNull(ordList);
+    assertEquals(1, ordList.length);
+    
+    BytesRef ref = new BytesRef();
+    dictionary.flagLookup.get(ordList.ints[0], ref);
+    char flags[] = Dictionary.decodeFlags(ref);
     assertEquals(1, flags.length);
-    assertEquals("Wrong number of flags for lucen", 1, dictionary.lookupWord(new char[]{'l', 'u', 'c', 'e', 'n'}, 0, 5, new BytesRef()).length);
-
+    
+    ordList = dictionary.lookupWord(new char[]{'l', 'u', 'c', 'e', 'n'}, 0, 5);
+    assertNotNull(ordList);
+    assertEquals(1, ordList.length);
+    dictionary.flagLookup.get(ordList.ints[0], ref);
+    flags = Dictionary.decodeFlags(ref);
+    assertEquals(1, flags.length);
+    
     affixStream.close();
     dictStream.close();
   }
@@ -51,7 +70,45 @@ public class TestDictionary extends LuceneTestCase {
     Dictionary dictionary = new Dictionary(affixStream, dictStream);
     assertEquals(3, dictionary.lookupSuffix(new char[]{'e'}, 0, 1).length);
     assertEquals(1, dictionary.lookupPrefix(new char[]{'s'}, 0, 1).length);
-    assertEquals(1, dictionary.lookupWord(new char[]{'o', 'l', 'r'}, 0, 3, new BytesRef()).length);
+    IntsRef ordList = dictionary.lookupWord(new char[]{'o', 'l', 'r'}, 0, 3);
+    BytesRef ref = new BytesRef();
+    dictionary.flagLookup.get(ordList.ints[0], ref);
+    char flags[] = Dictionary.decodeFlags(ref);
+    assertEquals(1, flags.length);
+    
+    affixStream.close();
+    dictStream.close();
+  }
+  
+  public void testCompressedBeforeSetDictionary() throws Exception {
+    InputStream affixStream = getClass().getResourceAsStream("compressed-before-set.aff");
+    InputStream dictStream = getClass().getResourceAsStream("compressed.dic");
+
+    Dictionary dictionary = new Dictionary(affixStream, dictStream);
+    assertEquals(3, dictionary.lookupSuffix(new char[]{'e'}, 0, 1).length);
+    assertEquals(1, dictionary.lookupPrefix(new char[]{'s'}, 0, 1).length);
+    IntsRef ordList = dictionary.lookupWord(new char[]{'o', 'l', 'r'}, 0, 3);
+    BytesRef ref = new BytesRef();
+    dictionary.flagLookup.get(ordList.ints[0], ref);
+    char flags[] = Dictionary.decodeFlags(ref);
+    assertEquals(1, flags.length);
+    
+    affixStream.close();
+    dictStream.close();
+  }
+  
+  public void testCompressedEmptyAliasDictionary() throws Exception {
+    InputStream affixStream = getClass().getResourceAsStream("compressed-empty-alias.aff");
+    InputStream dictStream = getClass().getResourceAsStream("compressed.dic");
+
+    Dictionary dictionary = new Dictionary(affixStream, dictStream);
+    assertEquals(3, dictionary.lookupSuffix(new char[]{'e'}, 0, 1).length);
+    assertEquals(1, dictionary.lookupPrefix(new char[]{'s'}, 0, 1).length);
+    IntsRef ordList = dictionary.lookupWord(new char[]{'o', 'l', 'r'}, 0, 3);
+    BytesRef ref = new BytesRef();
+    dictionary.flagLookup.get(ordList.ints[0], ref);
+    char flags[] = Dictionary.decodeFlags(ref);
+    assertEquals(1, flags.length);
     
     affixStream.close();
     dictStream.close();
@@ -66,8 +123,24 @@ public class TestDictionary extends LuceneTestCase {
       new Dictionary(affixStream, dictStream);
       fail("didn't get expected exception");
     } catch (ParseException expected) {
-      assertEquals("The affix file contains a rule with less than five elements", expected.getMessage());
-      assertEquals(23, expected.getErrorOffset());
+      assertTrue(expected.getMessage().startsWith("The affix file contains a rule with less than four elements"));
+      assertEquals(24, expected.getErrorOffset());
+    }
+    
+    affixStream.close();
+    dictStream.close();
+  }
+  
+  // malformed flags causes ParseException
+  public void testInvalidFlags() throws Exception {
+    InputStream affixStream = getClass().getResourceAsStream("broken-flags.aff");
+    InputStream dictStream = getClass().getResourceAsStream("simple.dic");
+    
+    try {
+      new Dictionary(affixStream, dictStream);
+      fail("didn't get expected exception");
+    } catch (Exception expected) {
+      assertTrue(expected.getMessage().startsWith("expected only one flag"));
     }
     
     affixStream.close();
@@ -106,5 +179,67 @@ public class TestDictionary extends LuceneTestCase {
     
     assertTrue(affixStream.isClosed());
     assertTrue(dictStream.isClosed());
+  }
+  
+  
+  
+  public void testReplacements() throws Exception {
+    Outputs<CharsRef> outputs = CharSequenceOutputs.getSingleton();
+    Builder<CharsRef> builder = new Builder<>(FST.INPUT_TYPE.BYTE2, outputs);
+    IntsRef scratchInts = new IntsRef();
+    
+    // a -> b
+    Util.toUTF16("a", scratchInts);
+    builder.add(scratchInts, new CharsRef("b"));
+    
+    // ab -> c
+    Util.toUTF16("ab", scratchInts);
+    builder.add(scratchInts, new CharsRef("c"));
+    
+    // c -> de
+    Util.toUTF16("c", scratchInts);
+    builder.add(scratchInts, new CharsRef("de"));
+    
+    // def -> gh
+    Util.toUTF16("def", scratchInts);
+    builder.add(scratchInts, new CharsRef("gh"));
+    
+    FST<CharsRef> fst = builder.finish();
+    
+    StringBuilder sb = new StringBuilder("atestanother");
+    Dictionary.applyMappings(fst, sb);
+    assertEquals("btestbnother", sb.toString());
+    
+    sb = new StringBuilder("abtestanother");
+    Dictionary.applyMappings(fst, sb);
+    assertEquals("ctestbnother", sb.toString());
+    
+    sb = new StringBuilder("atestabnother");
+    Dictionary.applyMappings(fst, sb);
+    assertEquals("btestcnother", sb.toString());
+    
+    sb = new StringBuilder("abtestabnother");
+    Dictionary.applyMappings(fst, sb);
+    assertEquals("ctestcnother", sb.toString());
+    
+    sb = new StringBuilder("abtestabcnother");
+    Dictionary.applyMappings(fst, sb);
+    assertEquals("ctestcdenother", sb.toString());
+    
+    sb = new StringBuilder("defdefdefc");
+    Dictionary.applyMappings(fst, sb);
+    assertEquals("ghghghde", sb.toString());
+  }
+  
+  public void testSetWithCrazyWhitespaceAndBOMs() throws Exception {
+    assertEquals("UTF-8", Dictionary.getDictionaryEncoding(new ByteArrayInputStream("SET\tUTF-8\n".getBytes(IOUtils.CHARSET_UTF_8))));
+    assertEquals("UTF-8", Dictionary.getDictionaryEncoding(new ByteArrayInputStream("SET\t UTF-8\n".getBytes(IOUtils.CHARSET_UTF_8))));
+    assertEquals("UTF-8", Dictionary.getDictionaryEncoding(new ByteArrayInputStream("\uFEFFSET\tUTF-8\n".getBytes(IOUtils.CHARSET_UTF_8))));
+    assertEquals("UTF-8", Dictionary.getDictionaryEncoding(new ByteArrayInputStream("\uFEFFSET\tUTF-8\r\n".getBytes(IOUtils.CHARSET_UTF_8))));
+  }
+  
+  public void testFlagWithCrazyWhitespace() throws Exception {
+    assertNotNull(Dictionary.getFlagParsingStrategy("FLAG\tUTF-8"));
+    assertNotNull(Dictionary.getFlagParsingStrategy("FLAG    UTF-8"));
   }
 }

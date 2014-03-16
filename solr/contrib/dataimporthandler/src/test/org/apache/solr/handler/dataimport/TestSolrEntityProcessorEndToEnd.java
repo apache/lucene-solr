@@ -53,17 +53,17 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
 
   private static final String DEAD_SOLR_SERVER = "http://[ff01::114]:33332/solr";
   
-  private static final List<Map<String,Object>> DB_DOCS = new ArrayList<Map<String,Object>>();
-  private static final List<Map<String,Object>> SOLR_DOCS = new ArrayList<Map<String,Object>>();
+  private static final List<Map<String,Object>> DB_DOCS = new ArrayList<>();
+  private static final List<Map<String,Object>> SOLR_DOCS = new ArrayList<>();
   
   static {
     // dynamic fields in the destination schema
-    Map<String,Object> dbDoc = new HashMap<String,Object>();
+    Map<String,Object> dbDoc = new HashMap<>();
     dbDoc.put("dbid_s", "1");
     dbDoc.put("dbdesc_s", "DbDescription");
     DB_DOCS.add(dbDoc);
 
-    Map<String,Object> solrDoc = new HashMap<String,Object>();
+    Map<String,Object> solrDoc = new HashMap<>();
     solrDoc.put("id", "1");
     solrDoc.put("desc", "SolrDescription");
     SOLR_DOCS.add(solrDoc);
@@ -161,7 +161,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     
     try {
       addDocumentsToSolr(generateSolrDocuments(30));
-      Map<String,String> map = new HashMap<String,String>();
+      Map<String,String> map = new HashMap<>();
       map.put("rows", "50");
       runFullImport(generateDIHConfig("query='*:*' fq='desc:Description1*,desc:Description*2' rows='2'", false), map);
     } catch (Exception e) {
@@ -202,15 +202,15 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     assertQ(req("*:*"), "//result[@numFound='0']");
     
     try {
-      List<Map<String,Object>> DOCS = new ArrayList<Map<String,Object>>(DB_DOCS);
-      Map<String, Object> doc = new HashMap<String, Object>();
+      List<Map<String,Object>> DOCS = new ArrayList<>(DB_DOCS);
+      Map<String, Object> doc = new HashMap<>();
       doc.put("dbid_s", "2");
       doc.put("dbdesc_s", "DbDescription2");
       DOCS.add(doc);
       MockDataSource.setIterator("select * from x", DOCS.iterator());
 
-      DOCS = new ArrayList<Map<String,Object>>(SOLR_DOCS);
-      Map<String,Object> solrDoc = new HashMap<String,Object>();
+      DOCS = new ArrayList<>(SOLR_DOCS);
+      Map<String,Object> solrDoc = new HashMap<>();
       solrDoc.put("id", "2");
       solrDoc.put("desc", "SolrDescription2");
       DOCS.add(solrDoc);
@@ -261,9 +261,9 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
   }
     
   private static List<Map<String,Object>> generateSolrDocuments(int num) {
-    List<Map<String,Object>> docList = new ArrayList<Map<String,Object>>();
+    List<Map<String,Object>> docList = new ArrayList<>();
     for (int i = 1; i <= num; i++) {
-      Map<String,Object> map = new HashMap<String,Object>();
+      Map<String,Object> map = new HashMap<>();
       map.put("id", i);
       map.put("desc", "Description" + i);
       docList.add(map);
@@ -272,7 +272,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
   }
   
   private void addDocumentsToSolr(List<Map<String,Object>> docs) throws SolrServerException, IOException {
-    List<SolrInputDocument> sidl = new ArrayList<SolrInputDocument>();
+    List<SolrInputDocument> sidl = new ArrayList<>();
     for (Map<String,Object> doc : docs) {
       SolrInputDocument sd = new SolrInputDocument();
       for (Entry<String,Object> entry : doc.entrySet()) {

@@ -86,7 +86,7 @@ public class SliceStateUpdateTest extends SolrTestCaseJ4 {
         .getZkAddress(), "solrconfig.xml", "schema.xml");
 
     log.info("####SETUP_START " + getTestName());
-    Map<String, Object> props2 = new HashMap<String, Object>();
+    Map<String, Object> props2 = new HashMap<>();
     props2.put("configName", "conf1");
 
     ZkNodeProps zkProps2 = new ZkNodeProps(props2);
@@ -147,7 +147,7 @@ public class SliceStateUpdateTest extends SolrTestCaseJ4 {
 //        new LinkedHashMap<String, DocCollection>(clusterState.getCollectionStates());
 
     Map<String, Slice> slicesMap = clusterState.getSlicesMap("collection1");
-    Map<String, Object> props = new HashMap<String, Object>(1);
+    Map<String, Object> props = new HashMap<>(1);
     Slice slice = slicesMap.get("shard1");
     Map<String, Object> prop = slice.getProperties();
     prop.put("state", "inactive");

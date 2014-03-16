@@ -40,7 +40,7 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
    * Test if writing doc stores to disk and everything else to ram works.
    */
   public void testBasic() throws IOException {
-    Set<String> fileExtensions = new HashSet<String>();
+    Set<String> fileExtensions = new HashSet<>();
     fileExtensions.add(Lucene40StoredFieldsWriter.FIELDS_EXTENSION);
     fileExtensions.add(Lucene40StoredFieldsWriter.FIELDS_INDEX_EXTENSION);
     

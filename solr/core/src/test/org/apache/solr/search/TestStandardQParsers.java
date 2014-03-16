@@ -50,9 +50,9 @@ public class TestStandardQParsers extends LuceneTestCase {
   public void testRegisteredName() throws Exception {
     Map<String, Class<QParserPlugin>> standardPlugins = getStandardQParsers();
 
-    List<String> notStatic = new ArrayList<String>(standardPlugins.size());
-    List<String> notFinal = new ArrayList<String>(standardPlugins.size());
-    List<String> mismatch = new ArrayList<String>(standardPlugins.size());
+    List<String> notStatic = new ArrayList<>(standardPlugins.size());
+    List<String> notFinal = new ArrayList<>(standardPlugins.size());
+    List<String> mismatch = new ArrayList<>(standardPlugins.size());
  
     for (Map.Entry<String,Class<QParserPlugin>> pair : standardPlugins.entrySet()) {
       String regName = pair.getKey();
@@ -93,7 +93,7 @@ public class TestStandardQParsers extends LuceneTestCase {
     Object[] standardPluginsValue = QParserPlugin.standardPlugins;
 
     Map<String, Class<QParserPlugin>> standardPlugins 
-      = new HashMap<String, Class<QParserPlugin>>(standardPluginsValue.length / 2);
+      = new HashMap<>(standardPluginsValue.length / 2);
 
     for (int i = 0; i < standardPluginsValue.length; i += 2) {
       @SuppressWarnings("unchecked")

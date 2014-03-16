@@ -88,9 +88,9 @@ public class StatsCollectorSupplierFactory {
    */
   @SuppressWarnings("unchecked")
   public static Supplier<StatsCollector[]> create(IndexSchema schema, AnalyticsRequest request) {
-    final Map<String, Set<String>> collectorStats =  new HashMap<String, Set<String>>();
-    final Map<String, Set<Integer>> collectorPercs =  new HashMap<String, Set<Integer>>();
-    final Map<String, ValueSource> collectorSources =  new HashMap<String, ValueSource>();
+    final Map<String, Set<String>> collectorStats =  new HashMap<>();
+    final Map<String, Set<Integer>> collectorPercs =  new HashMap<>();
+    final Map<String, ValueSource> collectorSources =  new HashMap<>();
     
     // Iterate through all expression request to make a list of ValueSource strings
     // and statistics that need to be calculated on those ValueSources.
@@ -121,7 +121,7 @@ public class StatsCollectorSupplierFactory {
           source = arguments[1];
           Set<Integer> percs = collectorPercs.get(source);
           if (percs == null) {
-            percs = new HashSet<Integer>();
+            percs = new HashSet<>();
             collectorPercs.put(source, percs);
           }
           try {
@@ -143,7 +143,7 @@ public class StatsCollectorSupplierFactory {
         // each ValueSource, even across different expression requests
         Set<String> stats = collectorStats.get(source);
         if (stats == null) {
-          stats = new HashSet<String>();
+          stats = new HashSet<>();
           collectorStats.put(source, stats);
         }
         stats.add(stat);
@@ -244,7 +244,7 @@ public class StatsCollectorSupplierFactory {
    * @return The set of statistics (sum, mean, median, etc.) found in the expression
    */
   public static Set<String> getStatistics(String expression) {
-    HashSet<String> set = new HashSet<String>();
+    HashSet<String> set = new HashSet<>();
     int firstParen = expression.indexOf('(');
     if (firstParen>0) {
       String topOperation = expression.substring(0,firstParen).trim();
@@ -511,7 +511,7 @@ public class StatsCollectorSupplierFactory {
     } else if (operation.equals(AnalyticsParams.FILTER)) {
       return buildFilterSource(schema, operands, NUMBER_TYPE);
     }
-    List<ValueSource> subExpressions = new ArrayList<ValueSource>();
+    List<ValueSource> subExpressions = new ArrayList<>();
     for (String argument : arguments) {
       ValueSource argSource = buildNumericSource(schema, argument);
       if (argSource == null) {
@@ -577,7 +577,7 @@ public class StatsCollectorSupplierFactory {
       return buildFilterSource(schema, operands, DATE_TYPE);
     }
     if (operation.equals(AnalyticsParams.DATE_MATH)) {
-      List<ValueSource> subExpressions = new ArrayList<ValueSource>();
+      List<ValueSource> subExpressions = new ArrayList<>();
       boolean first = true;
       for (String argument : arguments) {
         ValueSource argSource;
@@ -632,7 +632,7 @@ public class StatsCollectorSupplierFactory {
       }
       return new ReverseStringFunction(buildStringSource(schema, operands));
     }
-    List<ValueSource> subExpressions = new ArrayList<ValueSource>();
+    List<ValueSource> subExpressions = new ArrayList<>();
     for (String argument : arguments) {
       subExpressions.add(buildSourceTree(schema, argument));
     }

@@ -82,7 +82,7 @@ public class ModifyConfFileTest extends SolrTestCaseJ4 {
       core.execute(handler, new LocalSolrQueryRequest(core, params), rsp);
       assertEquals(rsp.getException().getMessage(), "No file name specified for write operation.");
 
-      ArrayList<ContentStream> streams = new ArrayList<ContentStream>( 2 );
+      ArrayList<ContentStream> streams = new ArrayList<>( 2 );
       streams.add(new ContentStreamBase.StringStream("Testing rewrite of schema.xml file." ) );
 
       params = params("op", "write", "file", "bogus.txt");

@@ -29,6 +29,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -64,8 +65,11 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     AtomicInteger numDocs = new AtomicInteger(numDocumentsToIndex);
     Directory dir = newDirectory();
     MockDefaultFlushPolicy flushPolicy = new MockDefaultFlushPolicy();
+    MockAnalyzer analyzer = new MockAnalyzer(random());
+    analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
+
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer(random())).setFlushPolicy(flushPolicy);
+        analyzer).setFlushPolicy(flushPolicy);
     final int numDWPT = 1 + atLeast(2);
     DocumentsWriterPerThreadPool threadPool = new ThreadAffinityDocumentsWriterThreadPool(
         numDWPT);
@@ -338,8 +342,8 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
 
     @Override
     public void onDelete(DocumentsWriterFlushControl control, ThreadState state) {
-      final ArrayList<ThreadState> pending = new ArrayList<DocumentsWriterPerThreadPool.ThreadState>();
-      final ArrayList<ThreadState> notPending = new ArrayList<DocumentsWriterPerThreadPool.ThreadState>();
+      final ArrayList<ThreadState> pending = new ArrayList<>();
+      final ArrayList<ThreadState> notPending = new ArrayList<>();
       findPending(control, pending, notPending);
       final boolean flushCurrent = state.flushPending;
       final ThreadState toFlush;
@@ -370,8 +374,8 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
 
     @Override
     public void onInsert(DocumentsWriterFlushControl control, ThreadState state) {
-      final ArrayList<ThreadState> pending = new ArrayList<DocumentsWriterPerThreadPool.ThreadState>();
-      final ArrayList<ThreadState> notPending = new ArrayList<DocumentsWriterPerThreadPool.ThreadState>();
+      final ArrayList<ThreadState> pending = new ArrayList<>();
+      final ArrayList<ThreadState> notPending = new ArrayList<>();
       findPending(control, pending, notPending);
       final boolean flushCurrent = state.flushPending;
       long activeBytes = control.activeBytes();

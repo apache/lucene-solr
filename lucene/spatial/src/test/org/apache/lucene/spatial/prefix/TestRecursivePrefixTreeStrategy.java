@@ -123,7 +123,7 @@ public class TestRecursivePrefixTreeStrategy extends StrategyTestCase {
       for (double radiusDeg : radiusDegs) {
         //3. Index random points in this cluster circle
         deleteAll();
-        List<Point> points = new ArrayList<Point>();
+        List<Point> points = new ArrayList<>();
         for(int i = 0; i < 20; i++) {
           //Note that this will not result in randomly distributed points in the
           // circle, they will be concentrated towards the center a little. But
@@ -184,7 +184,7 @@ public class TestRecursivePrefixTreeStrategy extends StrategyTestCase {
     SearchResults got = executeQuery(strategy.makeQuery(args), 100);
     assertEquals("" + args, assertNumFound, got.numFound);
     if (assertIds != null) {
-      Set<Integer> gotIds = new HashSet<Integer>();
+      Set<Integer> gotIds = new HashSet<>();
       for (SearchResult result : got.results) {
         gotIds.add(Integer.valueOf(result.document.get("id")));
       }

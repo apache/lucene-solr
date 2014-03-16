@@ -108,7 +108,7 @@ public class JavascriptCompiler {
   private static final int MAX_SOURCE_LENGTH = 16384;
   
   private final String sourceText;
-  private final Map<String, Integer> externalsMap = new LinkedHashMap<String, Integer>();
+  private final Map<String, Integer> externalsMap = new LinkedHashMap<>();
   private final ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
   private GeneratorAdapter gen;
   
@@ -499,7 +499,7 @@ public class JavascriptCompiler {
    */
   public static final Map<String,Method> DEFAULT_FUNCTIONS;
   static {
-    Map<String,Method> map = new HashMap<String,Method>();
+    Map<String,Method> map = new HashMap<>();
     try {
       final Properties props = new Properties();
       try (Reader in = IOUtils.getDecodingReader(JavascriptCompiler.class,

@@ -194,7 +194,7 @@ public class SolrPluginUtils {
 
       if (rb.doHighlights) {
         // copy return fields list
-        fieldFilter = new HashSet<String>(fieldFilter);
+        fieldFilter = new HashSet<>(fieldFilter);
         // add highlight fields
 
         SolrHighlighter highlighter = HighlightComponent.getHighlighter(req.getCore());
@@ -219,7 +219,7 @@ public class SolrPluginUtils {
 
 
   public static Set<String> getDebugInterests(String[] params, ResponseBuilder rb){
-    Set<String> debugInterests = new HashSet<String>();
+    Set<String> debugInterests = new HashSet<>();
     if (params != null) {
       for (int i = 0; i < params.length; i++) {
         if (params[i].equalsIgnoreCase("all") || params[i].equalsIgnoreCase("true")){
@@ -346,7 +346,7 @@ public class SolrPluginUtils {
   }
 
   public static NamedList<Object> explanationToNamedList(Explanation e) {
-    NamedList<Object> out = new SimpleOrderedMap<Object>();
+    NamedList<Object> out = new SimpleOrderedMap<>();
 
     out.add("match", e.isMatch());
     out.add("value", e.getValue());
@@ -358,7 +358,7 @@ public class SolrPluginUtils {
     if (null == details || 0 == details.length) return out;
 
     List<NamedList<Object>> kids
-      = new ArrayList<NamedList<Object>>(details.length);
+      = new ArrayList<>(details.length);
     for (Explanation d : details) {
       kids.add(explanationToNamedList(d));
     }
@@ -371,7 +371,7 @@ public class SolrPluginUtils {
     (NamedList<Explanation> explanations) {
 
     NamedList<NamedList<Object>> out
-      = new SimpleOrderedMap<NamedList<Object>>();
+      = new SimpleOrderedMap<>();
     for (Map.Entry<String,Explanation> entry : explanations) {
       out.add(entry.getKey(), explanationToNamedList(entry.getValue()));
     }
@@ -390,7 +390,7 @@ public class SolrPluginUtils {
      SolrIndexSearcher searcher,
      IndexSchema schema) throws IOException {
 
-    NamedList<Explanation> explainList = new SimpleOrderedMap<Explanation>();
+    NamedList<Explanation> explainList = new SimpleOrderedMap<>();
     DocIterator iterator = docs.iterator();
     for (int i=0; i<docs.size(); i++) {
       int id = iterator.nextDoc();
@@ -406,7 +406,7 @@ public class SolrPluginUtils {
   private static NamedList<String> explanationsToStrings
     (NamedList<Explanation> explanations) {
 
-    NamedList<String> out = new SimpleOrderedMap<String>();
+    NamedList<String> out = new SimpleOrderedMap<>();
     for (Map.Entry<String,Explanation> entry : explanations) {
       out.add(entry.getKey(), "\n"+entry.getValue().toString());
     }
@@ -470,9 +470,9 @@ public class SolrPluginUtils {
    */
   public static Map<String,Float> parseFieldBoosts(String[] fieldLists) {
     if (null == fieldLists || 0 == fieldLists.length) {
-      return new HashMap<String,Float>();
+      return new HashMap<>();
     }
-    Map<String, Float> out = new HashMap<String,Float>(7);
+    Map<String, Float> out = new HashMap<>(7);
     for (String in : fieldLists) {
       if (null == in) {
         continue;
@@ -502,9 +502,9 @@ public class SolrPluginUtils {
    */
   public static List<FieldParams> parseFieldBoostsAndSlop(String[] fieldLists,int wordGrams,int defaultSlop) {
     if (null == fieldLists || 0 == fieldLists.length) {
-        return new ArrayList<FieldParams>();
+        return new ArrayList<>();
     }
-    List<FieldParams> out = new ArrayList<FieldParams>();
+    List<FieldParams> out = new ArrayList<>();
     for (String in : fieldLists) {
       if (null == in) {
         continue;
@@ -738,7 +738,7 @@ public class SolrPluginUtils {
      * string, to Alias object containing the fields to use in our
      * DisjunctionMaxQuery and the tiebreaker to use.
      */
-    protected Map<String,Alias> aliases = new HashMap<String,Alias>(3);
+    protected Map<String,Alias> aliases = new HashMap<>(3);
     public DisjunctionMaxQueryParser(QParser qp, String defaultField) {
       super(qp,defaultField);
       // don't trust that our parent class won't ever change it's default
@@ -848,7 +848,7 @@ public class SolrPluginUtils {
   public static List<Query> parseQueryStrings(SolrQueryRequest req,
                                               String[] queries) throws SyntaxError {
     if (null == queries || 0 == queries.length) return null;
-    List<Query> out = new ArrayList<Query>(queries.length);
+    List<Query> out = new ArrayList<>(queries.length);
     for (String q : queries) {
       if (null != q && 0 != q.trim().length()) {
         out.add(QParser.getParser(q, null, req).getQuery());

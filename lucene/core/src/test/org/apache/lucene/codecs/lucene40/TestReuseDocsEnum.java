@@ -26,12 +26,13 @@ import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Bits.MatchNoBits;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
@@ -61,7 +62,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
       AtomicReader indexReader = ctx.reader();
       Terms terms = indexReader.terms("body");
       TermsEnum iterator = terms.iterator(null);
-      IdentityHashMap<DocsEnum, Boolean> enums = new IdentityHashMap<DocsEnum, Boolean>();
+      IdentityHashMap<DocsEnum, Boolean> enums = new IdentityHashMap<>();
       MatchNoBits bits = new Bits.MatchNoBits(indexReader.maxDoc());
       while ((iterator.next()) != null) {
         DocsEnum docs = iterator.docs(random().nextBoolean() ? bits : new Bits.MatchNoBits(indexReader.maxDoc()), null, random().nextBoolean() ? DocsEnum.FLAG_FREQS : DocsEnum.FLAG_NONE);
@@ -87,7 +88,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
     for (AtomicReaderContext ctx : open.leaves()) {
       Terms terms = ctx.reader().terms("body");
       TermsEnum iterator = terms.iterator(null);
-      IdentityHashMap<DocsEnum, Boolean> enums = new IdentityHashMap<DocsEnum, Boolean>();
+      IdentityHashMap<DocsEnum, Boolean> enums = new IdentityHashMap<>();
       MatchNoBits bits = new Bits.MatchNoBits(open.maxDoc());
       DocsEnum docs = null;
       while ((iterator.next()) != null) {
@@ -121,8 +122,11 @@ public class TestReuseDocsEnum extends LuceneTestCase {
   public void testReuseDocsEnumDifferentReader() throws IOException {
     Directory dir = newDirectory();
     Codec cp = TestUtil.alwaysPostingsFormat(new Lucene40RWPostingsFormat());
+    MockAnalyzer analyzer = new MockAnalyzer(random());
+    analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
+
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setCodec(cp));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).setCodec(cp));
     int numdocs = atLeast(20);
     createRandomIndex(numdocs, writer, random());
     writer.commit();
@@ -135,7 +139,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
     for (AtomicReaderContext ctx : leaves) {
       Terms terms = ctx.reader().terms("body");
       TermsEnum iterator = terms.iterator(null);
-      IdentityHashMap<DocsEnum, Boolean> enums = new IdentityHashMap<DocsEnum, Boolean>();
+      IdentityHashMap<DocsEnum, Boolean> enums = new IdentityHashMap<>();
       MatchNoBits bits = new Bits.MatchNoBits(firstReader.maxDoc());
       iterator = terms.iterator(null);
       DocsEnum docs = null;

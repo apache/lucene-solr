@@ -108,7 +108,7 @@ public class CloneFieldUpdateProcessorFactory
   
   private SelectorParams srcInclusions = new SelectorParams();
   private Collection<SelectorParams> srcExclusions 
-    = new ArrayList<SelectorParams>();
+    = new ArrayList<>();
 
   private FieldNameSelector srcSelector = null;
   private String dest = null;
@@ -175,8 +175,7 @@ public class CloneFieldUpdateProcessorFactory
       }
     } else {
       // source better be one or more strings
-      srcInclusions.fieldName = new HashSet<String>
-        (args.removeConfigArgs("source"));
+      srcInclusions.fieldName = new HashSet<>(args.removeConfigArgs("source"));
     }
 
     

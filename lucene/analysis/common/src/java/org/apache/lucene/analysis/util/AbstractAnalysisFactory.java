@@ -65,7 +65,7 @@ public abstract class AbstractAnalysisFactory {
    * Initialize this factory via a set of key-value pairs.
    */
   protected AbstractAnalysisFactory(Map<String,String> args) {
-    originalArgs = Collections.unmodifiableMap(new HashMap<String,String>(args));
+    originalArgs = Collections.unmodifiableMap(new HashMap<>(args));
     String version = get(args, LUCENE_MATCH_VERSION_PARAM);
     luceneMatchVersion = version == null ? null : Version.parseLeniently(version);
     args.remove(CLASS_NAME);  // consume the class arg
@@ -202,7 +202,7 @@ public abstract class AbstractAnalysisFactory {
       Set<String> set = null;
       Matcher matcher = ITEM_PATTERN.matcher(s);
       if (matcher.find()) {
-        set = new HashSet<String>();
+        set = new HashSet<>();
         set.add(matcher.group(0));
         while (matcher.find()) {
           set.add(matcher.group(0));
@@ -296,7 +296,7 @@ public abstract class AbstractAnalysisFactory {
     if (fileNames == null)
       return Collections.<String>emptyList();
 
-    List<String> result = new ArrayList<String>();
+    List<String> result = new ArrayList<>();
     for (String file : fileNames.split("(?<!\\\\),")) {
       result.add(file.replaceAll("\\\\(?=,)", ""));
     }

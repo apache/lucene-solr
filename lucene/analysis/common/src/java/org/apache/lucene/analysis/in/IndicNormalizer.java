@@ -43,7 +43,7 @@ public class IndicNormalizer {
   }
   
   private static final IdentityHashMap<Character.UnicodeBlock,ScriptData> scripts = 
-    new IdentityHashMap<Character.UnicodeBlock,ScriptData>(9);
+    new IdentityHashMap<>(9);
   
   private static int flag(Character.UnicodeBlock ub) {
     return scripts.get(ub).flag;

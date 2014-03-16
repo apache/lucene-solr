@@ -57,7 +57,7 @@ public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase 
             new VariableResolver(), getDataSource(cdData), Context.FULL_DUMP, fields, entityAttrs);
     XPathEntityProcessor xPathEntityProcessor = new XPathEntityProcessor();
     xPathEntityProcessor.init(c);
-    List<Map<String, Object>> result = new ArrayList<Map<String, Object>>();
+    List<Map<String, Object>> result = new ArrayList<>();
     while (true) {
       Map<String, Object> row = xPathEntityProcessor.nextRow();
       if (row == null)
@@ -80,7 +80,7 @@ public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase 
             new VariableResolver(), getDataSource(testXml), Context.FULL_DUMP, fields, entityAttrs);
     XPathEntityProcessor xPathEntityProcessor = new XPathEntityProcessor();
     xPathEntityProcessor.init(c);
-    List<Map<String, Object>> result = new ArrayList<Map<String, Object>>();
+    List<Map<String, Object>> result = new ArrayList<>();
     while (true) {
       Map<String, Object> row = xPathEntityProcessor.nextRow();
       if (row == null)
@@ -109,7 +109,7 @@ public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase 
             new VariableResolver(), getDataSource(textMultipleDocuments), Context.FULL_DUMP, fields, entityAttrs);
     XPathEntityProcessor xPathEntityProcessor = new XPathEntityProcessor();
     xPathEntityProcessor.init(c);
-    List<Map<String, Object>> result = new ArrayList<Map<String, Object>>();
+    List<Map<String, Object>> result = new ArrayList<>();
     while (true) {
       Map<String, Object> row = xPathEntityProcessor.nextRow();
       if (row == null)
@@ -276,7 +276,7 @@ public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase 
     xPathEntityProcessor.blockingQueueTimeOutUnits = TimeUnit.MICROSECONDS;
     
     xPathEntityProcessor.init(c);
-    List<Map<String, Object>> result = new ArrayList<Map<String, Object>>();
+    List<Map<String, Object>> result = new ArrayList<>();
     while (true) {
       if (rowsToRead >= 0 && result.size() >= rowsToRead) {
         Thread.currentThread().interrupt();
@@ -346,7 +346,7 @@ public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase 
             new VariableResolver(), getDataSource(cdData), Context.FULL_DUMP, null, entityAttrs);
     XPathEntityProcessor xPathEntityProcessor = new XPathEntityProcessor();
     xPathEntityProcessor.init(c);
-    List<Map<String, Object>> result = new ArrayList<Map<String, Object>>();
+    List<Map<String, Object>> result = new ArrayList<>();
     while (true) {
       Map<String, Object> row = xPathEntityProcessor.nextRow();
       if (row == null)

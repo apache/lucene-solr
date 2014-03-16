@@ -171,7 +171,7 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     ureq.close();
     
     // search - "B" should not be found.
-    Map<String,String> args = new HashMap<String, String>();
+    Map<String,String> args = new HashMap<>();
     args.put( CommonParams.Q, "id:A OR id:B" );
     args.put( "indent", "true" );
     SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
@@ -217,7 +217,7 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     ureq.close();
 
     // search - "A","B" should be found.
-    Map<String,String> args = new HashMap<String, String>();
+    Map<String,String> args = new HashMap<>();
     args.put( CommonParams.Q, "id:A OR id:B" );
     args.put( "indent", "true" );
     SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );

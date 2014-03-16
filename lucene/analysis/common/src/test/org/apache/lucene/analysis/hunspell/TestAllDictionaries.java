@@ -47,7 +47,7 @@ public class TestAllDictionaries extends LuceneTestCase {
     "bg_BG.zip",                 "bg_BG.dic",           "bg_BG.aff",
     "ca_ANY.zip",                "catalan.dic",         "catalan.aff",
     "ca_ES.zip",                 "ca_ES.dic",           "ca_ES.aff",
-    "cop_EG.zip",                "cop_EG.dic",          "cop_EG.aff",
+// BUG: broken flag "cop_EG.zip",                "cop_EG.dic",          "cop_EG.aff",
     "cs_CZ.zip",                 "cs_CZ.dic",           "cs_CZ.aff",
     "cy_GB.zip",                 "cy_GB.dic",           "cy_GB.aff",
     "da_DK.zip",                 "da_DK.dic",           "da_DK.aff",
@@ -169,7 +169,7 @@ public class TestAllDictionaries extends LuceneTestCase {
           System.out.println(tests[i] + "\t" + RamUsageEstimator.humanSizeOf(dic) + "\t(" +
                              "words=" + RamUsageEstimator.humanSizeOf(dic.words) + ", " +
                              "flags=" + RamUsageEstimator.humanSizeOf(dic.flagLookup) + ", " +
-                             "strips=" + RamUsageEstimator.humanSizeOf(dic.stripLookup) + ", " +
+                             "strips=" + RamUsageEstimator.humanSizeOf(dic.stripData) + ", " +
                              "conditions=" + RamUsageEstimator.humanSizeOf(dic.patterns) + ", " +
                              "affixData=" + RamUsageEstimator.humanSizeOf(dic.affixData) + ", " +
                              "prefixes=" + RamUsageEstimator.humanSizeOf(dic.prefixes) + ", " +

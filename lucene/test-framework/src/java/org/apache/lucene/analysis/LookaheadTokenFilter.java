@@ -59,7 +59,7 @@ public abstract class LookaheadTokenFilter<T extends LookaheadTokenFilter.Positi
    *  to record other state at each position. */ 
   protected static class Position implements RollingBuffer.Resettable {
     // Buffered input tokens at this position:
-    public final List<AttributeSource.State> inputTokens = new ArrayList<AttributeSource.State>();
+    public final List<AttributeSource.State> inputTokens = new ArrayList<>();
 
     // Next buffered token to be returned to consumer:
     public int nextRead;

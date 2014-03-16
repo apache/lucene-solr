@@ -42,7 +42,7 @@ public class SpatialTestData {
    * The stream is closed.
    */
   public static Iterator<SpatialTestData> getTestData(InputStream in, SpatialContext ctx) throws IOException {
-    List<SpatialTestData> results = new ArrayList<SpatialTestData>();
+    List<SpatialTestData> results = new ArrayList<>();
     BufferedReader bufInput = new BufferedReader(new InputStreamReader(in,"UTF-8"));
     try {
       String line;

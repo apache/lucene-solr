@@ -272,7 +272,7 @@ public class CompiledAutomaton {
       }
     }
 
-    final List<Integer> stack = new ArrayList<Integer>();
+    final List<Integer> stack = new ArrayList<>();
 
     int idx = 0;
     while (true) {

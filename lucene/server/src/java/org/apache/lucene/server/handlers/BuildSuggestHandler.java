@@ -236,7 +236,7 @@ public class BuildSuggestHandler extends Handler {
                                          r.getInt("maxGraphExpansions"), true);
     } else if (impl.equals("InfixSuggester")) {
       suggester = new AnalyzingInfixSuggester(state.matchVersion,
-                                              new File(state.rootDir, "suggest." + suggestName + ".infix"),
+                                              state.df.open(new File(state.rootDir, "suggest." + suggestName + ".infix")),
                                               indexAnalyzer,
                                               queryAnalyzer,
                                               AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS) {

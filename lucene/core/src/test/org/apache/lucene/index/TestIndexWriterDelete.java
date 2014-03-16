@@ -939,7 +939,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     final Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     final int NUM_DOCS = atLeast(1000);
-    final List<Integer> ids = new ArrayList<Integer>(NUM_DOCS);
+    final List<Integer> ids = new ArrayList<>(NUM_DOCS);
     for(int id=0;id<NUM_DOCS;id++) {
       ids.add(id);
     }

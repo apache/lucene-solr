@@ -92,7 +92,7 @@
     <svn-checker failonmodifications="true"/>
   </target>
   
-  <property name="svnkit.version" value="1.7.8"/>
+  <property name="svnkit.version" value="1.8.4"/>
 
   <macrodef xmlns:ivy="antlib:org.apache.ivy.ant" name="svn-checker">
     <attribute name="failonmodifications" default="true"/> <!-- false if file modifications are allowed -->
@@ -106,8 +106,6 @@
       import org.tmatesoft.svn.core.*;
       import org.tmatesoft.svn.core.wc.*;
       import org.apache.tools.ant.Project;
-      
-      def RECOMMENDED_SVNKIT_18 = '1.8.2';
       
       SVNClientManager manager = SVNClientManager.newInstance();
       SVNStatusClient statusClient = manager.getStatusClient();
@@ -124,11 +122,7 @@
         def ec = ex.getErrorMessage().getErrorCode();
         int code = ec.getCode();
         int category = ec.getCategory();
-        if (code == SVNErrorCode.WC_UNSUPPORTED_FORMAT.getCode()) {
-          task.log('WARNING: Unsupported SVN working copy version! Disabling checks...', Project.MSG_WARN);
-          task.log('If your working copy is on version 1.8 already, please pass -Dsvnkit.version=' + RECOMMENDED_SVNKIT_18 + ' to successfully run checks.', Project.MSG_INFO);
-          return;
-        } else if (code == SVNErrorCode.WC_NOT_DIRECTORY.getCode() || code == SVNErrorCode.WC_NOT_FILE.getCode()) {
+        if (code == SVNErrorCode.WC_NOT_DIRECTORY.getCode() || code == SVNErrorCode.WC_NOT_FILE.getCode()) {
           task.log('WARNING: Development directory is not an SVN checkout! Disabling checks...', Project.MSG_WARN);
           return;
         } else if (category == SVNErrorCode.WC_CATEGORY) {

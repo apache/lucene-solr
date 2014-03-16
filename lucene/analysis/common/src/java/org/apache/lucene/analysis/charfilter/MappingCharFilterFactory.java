@@ -69,7 +69,7 @@ public class MappingCharFilterFactory extends CharFilterFactory implements
         wlist = getLines(loader, mapping);
       } else {
         List<String> files = splitFileNames(mapping);
-        wlist = new ArrayList<String>();
+        wlist = new ArrayList<>();
         for (String file : files) {
           List<String> lines = getLines(loader, file.trim());
           wlist.addAll(lines);

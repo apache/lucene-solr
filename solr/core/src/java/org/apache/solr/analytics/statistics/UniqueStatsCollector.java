@@ -24,7 +24,7 @@ import java.util.Set;
  * <code>UniqueValueCounter</code> computes the number of unique values.
  */
 public class UniqueStatsCollector extends AbstractDelegatingStatsCollector{
-  private final Set<Object> uniqueValues = new HashSet<Object>();
+  private final Set<Object> uniqueValues = new HashSet<>();
   
   public UniqueStatsCollector(StatsCollector delegate) {
     super(delegate);

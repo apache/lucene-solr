@@ -93,7 +93,7 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, NO_OP_CACHE);
     taxoWriter.addCategory(new FacetLabel("a"));
     taxoWriter.addCategory(new FacetLabel("b"));
-    Map<String, String> userCommitData = new HashMap<String, String>();
+    Map<String, String> userCommitData = new HashMap<>();
     userCommitData.put("testing", "1 2 3");
     taxoWriter.setCommitData(userCommitData);
     taxoWriter.close();
@@ -243,7 +243,7 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     final int range = ncats * 3; // affects the categories selection
     final AtomicInteger numCats = new AtomicInteger(ncats);
     final Directory dir = newDirectory();
-    final ConcurrentHashMap<String,String> values = new ConcurrentHashMap<String,String>();
+    final ConcurrentHashMap<String,String> values = new ConcurrentHashMap<>();
     final double d = random().nextDouble();
     final TaxonomyWriterCache cache;
     if (d < 0.7) {

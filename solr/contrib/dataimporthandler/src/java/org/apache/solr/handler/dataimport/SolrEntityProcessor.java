@@ -222,7 +222,7 @@ public class SolrEntityProcessor extends EntityProcessorBase {
     public Map<String,Object> next() {
       SolrDocument solrDocument = solrDocumentIterator.next();
       
-      HashMap<String,Object> map = new HashMap<String,Object>();
+      HashMap<String,Object> map = new HashMap<>();
       Collection<String> fields = solrDocument.getFieldNames();
       for (String field : fields) {
         Object fieldValue = solrDocument.getFieldValue(field);

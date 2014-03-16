@@ -125,7 +125,7 @@ public class LangDetectLanguageIdentifierUpdateProcessorFactory extends
       return;
     }
     loaded = true;
-    List<String> profileData = new ArrayList<String>();
+    List<String> profileData = new ArrayList<>();
     Charset encoding = Charset.forName("UTF-8");
     for (String language : languages) {
       InputStream stream = LangDetectLanguageIdentifierUpdateProcessor.class.getResourceAsStream("langdetect-profiles/" + language);

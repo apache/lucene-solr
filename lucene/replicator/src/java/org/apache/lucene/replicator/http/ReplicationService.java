@@ -106,7 +106,7 @@ public class ReplicationService {
     // than using String.split() since the latter may return empty elements in
     // the array
     StringTokenizer stok = new StringTokenizer(path.substring(startIdx), "/");
-    ArrayList<String> elements = new ArrayList<String>();
+    ArrayList<String> elements = new ArrayList<>();
     while (stok.hasMoreTokens()) {
       elements.add(stok.nextToken());
     }

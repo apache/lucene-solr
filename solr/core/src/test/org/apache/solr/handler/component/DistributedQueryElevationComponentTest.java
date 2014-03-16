@@ -19,6 +19,8 @@ package org.apache.solr.handler.component;
 
 import java.io.File;
 
+import org.apache.lucene.util.Constants;
+
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
@@ -32,8 +34,8 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
 
   @BeforeClass
   public static void betterNotBeJ9() {
-    assumeFalse("FIXME: SOLR-5791: This test fails under J9", 
-                System.getProperty("java.vm.info", "<?>").contains("IBM J9"));
+    assumeFalse("FIXME: SOLR-5791: This test fails under IBM J9", 
+                Constants.JAVA_VENDOR.startsWith("IBM"));
   }
 
   public DistributedQueryElevationComponentTest() {

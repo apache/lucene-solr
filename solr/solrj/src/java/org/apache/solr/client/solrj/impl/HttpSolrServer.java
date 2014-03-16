@@ -86,7 +86,7 @@ public class HttpSolrServer extends SolrServer {
   /**
    * The URL of the Solr server.
    */
-  protected String baseUrl;
+  protected volatile String baseUrl;
   
   /**
    * Default value: null / empty.
@@ -115,14 +115,14 @@ public class HttpSolrServer extends SolrServer {
   
   private final HttpClient httpClient;
   
-  private boolean followRedirects = false;
+  private volatile boolean followRedirects = false;
   
-  private int maxRetries = 0;
+  private volatile int maxRetries = 0;
   
-  private boolean useMultiPartPost;
+  private volatile boolean useMultiPartPost;
   private final boolean internalClient;
 
-  private Set<String> queryParams = Collections.emptySet();
+  private volatile Set<String> queryParams = Collections.emptySet();
 
   /**
    * @param baseURL
@@ -199,8 +199,11 @@ public class HttpSolrServer extends SolrServer {
     return request(request, responseParser);
   }
   
-  public NamedList<Object> request(final SolrRequest request,
-      final ResponseParser processor) throws SolrServerException, IOException {
+  public NamedList<Object> request(final SolrRequest request, final ResponseParser processor) throws SolrServerException, IOException {
+    return executeMethod(createMethod(request),processor);
+  }
+  
+  protected HttpRequestBase createMethod(final SolrRequest request) throws IOException, SolrServerException {
     HttpRequestBase method = null;
     InputStream is = null;
     SolrParams params = request.getParams();
@@ -266,7 +269,7 @@ public class HttpSolrServer extends SolrServer {
               }
             }
             
-            LinkedList<NameValuePair> postParams = new LinkedList<NameValuePair>();
+            LinkedList<NameValuePair> postParams = new LinkedList<>();
             if (streams == null || isMultipart) {
               HttpPost post = new HttpPost(url + ClientUtils.toQueryString( queryParams, false ));
               post.setHeader("Content-Charset", "UTF-8");
@@ -275,7 +278,7 @@ public class HttpSolrServer extends SolrServer {
                     "application/x-www-form-urlencoded; charset=UTF-8");
               }
 
-              List<FormBodyPart> parts = new LinkedList<FormBodyPart>();
+              List<FormBodyPart> parts = new LinkedList<>();
               Iterator<String> iter = wparams.getParameterNamesIterator();
               while (iter.hasNext()) {
                 String p = iter.next();
@@ -382,6 +385,10 @@ public class HttpSolrServer extends SolrServer {
       throw new SolrServerException("error reading streams", ex);
     }
     
+    return method;
+  }
+  
+  protected NamedList<Object> executeMethod(HttpRequestBase method, final ResponseParser processor) throws SolrServerException {
     // XXX client already has this set, is this needed?
     method.getParams().setParameter(ClientPNames.HANDLE_REDIRECTS,
         followRedirects);
@@ -429,7 +436,7 @@ public class HttpSolrServer extends SolrServer {
       if (processor == null) {
         
         // no processor specified, return raw stream
-        NamedList<Object> rsp = new NamedList<Object>();
+        NamedList<Object> rsp = new NamedList<>();
         rsp.add("stream", respBody);
         // Only case where stream should not be closed
         shouldClose = false;

@@ -49,6 +49,8 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
 
   String defaultFieldName = "name";
 
+  boolean inOrder = true;
+
   public void testComplexPhrases() throws Exception {
     checkMatches("\"john smith\"", "1"); // Simple multi-term still works
     checkMatches("\"j*   smyth~\"", "1,2"); // wildcards and fuzzies are OK in
@@ -72,8 +74,20 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
     checkBadQuery("\"jo* \"smith\" \""); // phrases inside phrases is bad
   }
 
+
+  public void testUnOrderedProximitySearches() throws Exception {
+
+    inOrder = true;
+    checkMatches("\"smith jo*\"~2", ""); // ordered proximity produces empty set
+
+    inOrder = false;
+    checkMatches("\"smith jo*\"~2", "1,2,3"); // un-ordered proximity
+
+  }
+
   private void checkBadQuery(String qString) {
-    QueryParser qp = new ComplexPhraseQueryParser(TEST_VERSION_CURRENT, defaultFieldName, analyzer);
+    ComplexPhraseQueryParser qp = new ComplexPhraseQueryParser(TEST_VERSION_CURRENT, defaultFieldName, analyzer);
+    qp.setInOrder(inOrder);
     Throwable expected = null;
     try {
       qp.parse(qString);
@@ -86,12 +100,13 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
 
   private void checkMatches(String qString, String expectedVals)
       throws Exception {
-    QueryParser qp = new ComplexPhraseQueryParser(TEST_VERSION_CURRENT, defaultFieldName, analyzer);
+    ComplexPhraseQueryParser qp = new ComplexPhraseQueryParser(TEST_VERSION_CURRENT, defaultFieldName, analyzer);
+    qp.setInOrder(inOrder);
     qp.setFuzzyPrefixLength(1); // usually a good idea
 
     Query q = qp.parse(qString);
 
-    HashSet<String> expecteds = new HashSet<String>();
+    HashSet<String> expecteds = new HashSet<>();
     String[] vals = expectedVals.split(",");
     for (int i = 0; i < vals.length; i++) {
       if (vals[i].length() > 0)

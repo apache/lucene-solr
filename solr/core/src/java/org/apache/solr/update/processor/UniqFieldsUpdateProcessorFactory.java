@@ -70,8 +70,8 @@ public class UniqFieldsUpdateProcessorFactory extends FieldValueSubsetUpdateProc
   @Override
   @SuppressWarnings("unchecked")
   public Collection pickSubset(Collection values) {
-    Set<Object> uniqs = new HashSet<Object>();
-    List<Object> result = new ArrayList<Object>(values.size());
+    Set<Object> uniqs = new HashSet<>();
+    List<Object> result = new ArrayList<>(values.size());
     for (Object o : values) {
       if (!uniqs.contains(o)) {
         uniqs.add(o);

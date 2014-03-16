@@ -53,7 +53,7 @@ public class RepSumByNameRoundTask extends ReportTask {
    */
   protected Report reportSumByNameRound(List<TaskStats> taskStats) {
     // aggregate by task name and round
-    LinkedHashMap<String,TaskStats> p2 = new LinkedHashMap<String,TaskStats>();
+    LinkedHashMap<String,TaskStats> p2 = new LinkedHashMap<>();
     int reported = 0;
     for (final TaskStats stat1 : taskStats) {
       if (stat1.getElapsed()>=0) { // consider only tasks that ended

@@ -148,7 +148,7 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
         REPLICATION_FACTOR, replicationFactor,
         MAX_SHARDS_PER_NODE, maxShardsPerNode,
         NUM_SLICES, numShards);
-    Map<String,List<Integer>> collectionInfos = new HashMap<String,List<Integer>>();
+    Map<String,List<Integer>> collectionInfos = new HashMap<>();
     createCollection(collectionInfos, COLL_NAME, props, client);
   }
 }

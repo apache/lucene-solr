@@ -21,6 +21,9 @@ import java.io.IOException;
 
 import org.apache.lucene.store.IndexOutput;
 
+/**
+ * @lucene.experimental
+ */
 public class NullIndexOutput extends IndexOutput {
   
   private long pos;

@@ -51,10 +51,10 @@ public class FieldFacetExtrasTest extends AbstractAnalyticsFacetTest {
     h.update("<delete><query>*:*</query></delete>");
 
     //INT
-    intLongTestStart = new ArrayList<ArrayList<Integer>>(); 
-    intFloatTestStart = new ArrayList<ArrayList<Integer>>(); 
-    intDoubleTestStart = new ArrayList<ArrayList<Integer>>(); 
-    intStringTestStart = new ArrayList<ArrayList<Integer>>(); 
+    intLongTestStart = new ArrayList<>();
+    intFloatTestStart = new ArrayList<>();
+    intDoubleTestStart = new ArrayList<>();
+    intStringTestStart = new ArrayList<>();
 
     for (int j = 0; j < NUM_LOOPS; ++j) {
       int i = j%INT;
@@ -67,7 +67,7 @@ public class FieldFacetExtrasTest extends AbstractAnalyticsFacetTest {
           "double_dd", "" + d,  "date_dtd", (1800+dt) + "-12-31T23:59:59.999Z", "string_sd", "abc" + s));
       //Long
       if (j-LONG<0) {
-        ArrayList<Integer> list1 = new ArrayList<Integer>();
+        ArrayList<Integer> list1 = new ArrayList<>();
         list1.add(i);
         intLongTestStart.add(list1);
       } else {
@@ -75,7 +75,7 @@ public class FieldFacetExtrasTest extends AbstractAnalyticsFacetTest {
       }
       //String
       if (j-FLOAT<0) {
-        ArrayList<Integer> list1 = new ArrayList<Integer>();
+        ArrayList<Integer> list1 = new ArrayList<>();
         list1.add(i);
         intFloatTestStart.add(list1);
       } else {
@@ -83,7 +83,7 @@ public class FieldFacetExtrasTest extends AbstractAnalyticsFacetTest {
       }
       //String
       if (j-DOUBLE<0) {
-        ArrayList<Integer> list1 = new ArrayList<Integer>();
+        ArrayList<Integer> list1 = new ArrayList<>();
         list1.add(i);
         intDoubleTestStart.add(list1);
       } else {
@@ -91,7 +91,7 @@ public class FieldFacetExtrasTest extends AbstractAnalyticsFacetTest {
       }
       //String
       if (j-STRING<0) {
-        ArrayList<Integer> list1 = new ArrayList<Integer>();
+        ArrayList<Integer> list1 = new ArrayList<>();
         list1.add(i);
         intStringTestStart.add(list1);
       } else {
@@ -127,7 +127,7 @@ public class FieldFacetExtrasTest extends AbstractAnalyticsFacetTest {
 
     Collection<Double> lon;
    
-    List<Double> all = new ArrayList<Double>();
+    List<Double> all = new ArrayList<>();
     lon = getDoubleList("off0", "fieldFacets", "long_ld", "double", "mean");
     assertEquals(getRawResponse(), lon.size(),2);
     assertArrayEquals(new Double[]{ 1.5,  2.0 }, lon.toArray(new Double[0]));

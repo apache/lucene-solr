@@ -37,7 +37,7 @@ public class LocalSolrQueryRequest extends SolrQueryRequestBase {
   public final static Map emptyArgs = new HashMap(0,1);
 
   protected static SolrParams makeParams(String query, String qtype, int start, int limit, Map args) {
-    Map<String,String[]> map = new HashMap<String,String[]>();
+    Map<String,String[]> map = new HashMap<>();
     for (Iterator iter = args.entrySet().iterator(); iter.hasNext();) {
       Map.Entry e = (Map.Entry)iter.next();
       String k = e.getKey().toString();

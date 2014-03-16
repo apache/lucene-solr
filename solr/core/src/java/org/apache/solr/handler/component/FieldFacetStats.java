@@ -73,8 +73,8 @@ public class FieldFacetStats {
     topLevelReader = searcher.getAtomicReader();
     valueSource = facet_sf.getType().getValueSource(facet_sf, null);
 
-    facetStatsValues = new HashMap<String, StatsValues>();
-    facetStatsTerms = new ArrayList<HashMap<String, Integer>>();
+    facetStatsValues = new HashMap<>();
+    facetStatsTerms = new ArrayList<>();
   }
 
   private StatsValues getStatsValues(String key) throws IOException {

@@ -149,11 +149,11 @@ public class StressRamUsageEstimator extends LuceneTestCase {
    */
   private void causeGc() {
     List<GarbageCollectorMXBean> garbageCollectorMXBeans = ManagementFactory.getGarbageCollectorMXBeans();
-    List<Long> ccounts = new ArrayList<Long>();
+    List<Long> ccounts = new ArrayList<>();
     for (GarbageCollectorMXBean g : garbageCollectorMXBeans) {
       ccounts.add(g.getCollectionCount());
     }
-    List<Long> ccounts2 = new ArrayList<Long>();
+    List<Long> ccounts2 = new ArrayList<>();
     do {
       System.gc();
       ccounts.clear();

@@ -40,7 +40,7 @@ public class TestNumberFormatTransformer extends AbstractDataImportHandlerTestCa
   @Test
   public void testTransformRow_SingleNumber() {
     char GERMAN_GROUPING_SEP = new DecimalFormatSymbols(Locale.GERMANY).getGroupingSeparator();
-    List<Map<String, String>> l = new ArrayList<Map<String, String>>();
+    List<Map<String, String>> l = new ArrayList<>();
     l.add(createMap("column", "num",
             NumberFormatTransformer.FORMAT_STYLE, NumberFormatTransformer.NUMBER));
     l.add(createMap("column", "localizedNum",
@@ -55,13 +55,13 @@ public class TestNumberFormatTransformer extends AbstractDataImportHandlerTestCa
   @Test
   @SuppressWarnings("unchecked")
   public void testTransformRow_MultipleNumbers() throws Exception {
-    List<Map<String, String>> fields = new ArrayList<Map<String, String>>();
+    List<Map<String, String>> fields = new ArrayList<>();
     fields.add(createMap(DataImporter.COLUMN, "inputs"));
     fields.add(createMap(DataImporter.COLUMN,
             "outputs", RegexTransformer.SRC_COL_NAME, "inputs",
             NumberFormatTransformer.FORMAT_STYLE, NumberFormatTransformer.NUMBER));
 
-    List<String> inputs = new ArrayList<String>();
+    List<String> inputs = new ArrayList<>();
     inputs.add("123" + GROUPING_SEP + "567");
     inputs.add("245" + GROUPING_SEP + "678");
     Map<String, Object> row = createMap("inputs", inputs);
@@ -72,7 +72,7 @@ public class TestNumberFormatTransformer extends AbstractDataImportHandlerTestCa
     Context context = getContext(null, resolver, null, Context.FULL_DUMP, fields, null);
     new NumberFormatTransformer().transformRow(row, context);
 
-    List<Long> output = new ArrayList<Long>();
+    List<Long> output = new ArrayList<>();
     output.add(new Long(123567));
     output.add(new Long(245678));
     Map<String, Object> outputRow = createMap("inputs", inputs, "outputs", output);
@@ -83,7 +83,7 @@ public class TestNumberFormatTransformer extends AbstractDataImportHandlerTestCa
   @Test(expected = DataImportHandlerException.class)
   @SuppressWarnings("unchecked")
   public void testTransformRow_InvalidInput1_Number() {
-    List<Map<String, String>> l = new ArrayList<Map<String, String>>();
+    List<Map<String, String>> l = new ArrayList<>();
     l.add(createMap("column", "num",
             NumberFormatTransformer.FORMAT_STYLE, NumberFormatTransformer.NUMBER));
     Context c = getContext(null, null, null, Context.FULL_DUMP, l, null);
@@ -94,7 +94,7 @@ public class TestNumberFormatTransformer extends AbstractDataImportHandlerTestCa
   @Test(expected = DataImportHandlerException.class)
   @SuppressWarnings("unchecked")
   public void testTransformRow_InvalidInput2_Number() {
-    List<Map<String, String>> l = new ArrayList<Map<String, String>>();
+    List<Map<String, String>> l = new ArrayList<>();
     l.add(createMap("column", "num",
             NumberFormatTransformer.FORMAT_STYLE, NumberFormatTransformer.NUMBER));
     Context c = getContext(null, null, null, Context.FULL_DUMP, l, null);
@@ -105,7 +105,7 @@ public class TestNumberFormatTransformer extends AbstractDataImportHandlerTestCa
   @Test(expected = DataImportHandlerException.class)
   @SuppressWarnings("unchecked")
   public void testTransformRow_InvalidInput2_Currency() {
-    List<Map<String, String>> l = new ArrayList<Map<String, String>>();
+    List<Map<String, String>> l = new ArrayList<>();
     l.add(createMap("column", "num",
             NumberFormatTransformer.FORMAT_STYLE, NumberFormatTransformer.CURRENCY));
     Context c = getContext(null, null, null, Context.FULL_DUMP, l, null);
@@ -116,7 +116,7 @@ public class TestNumberFormatTransformer extends AbstractDataImportHandlerTestCa
   @Test(expected = DataImportHandlerException.class)
   @SuppressWarnings("unchecked")
   public void testTransformRow_InvalidInput1_Percent() {
-    List<Map<String, String>> l = new ArrayList<Map<String, String>>();
+    List<Map<String, String>> l = new ArrayList<>();
     l.add(createMap("column", "num",
             NumberFormatTransformer.FORMAT_STYLE, NumberFormatTransformer.PERCENT));
     Context c = getContext(null, null, null, Context.FULL_DUMP, l, null);
@@ -127,7 +127,7 @@ public class TestNumberFormatTransformer extends AbstractDataImportHandlerTestCa
   @Test(expected = DataImportHandlerException.class)
   @SuppressWarnings("unchecked")
   public void testTransformRow_InvalidInput3_Currency() {
-    List<Map<String, String>> l = new ArrayList<Map<String, String>>();
+    List<Map<String, String>> l = new ArrayList<>();
     l.add(createMap("column", "num",
             NumberFormatTransformer.FORMAT_STYLE, NumberFormatTransformer.CURRENCY));
     Context c = getContext(null, null, null, Context.FULL_DUMP, l, null);
@@ -138,7 +138,7 @@ public class TestNumberFormatTransformer extends AbstractDataImportHandlerTestCa
   @Test(expected = DataImportHandlerException.class)
   @SuppressWarnings("unchecked")
   public void testTransformRow_InvalidInput3_Number() {
-    List<Map<String, String>> l = new ArrayList<Map<String, String>>();
+    List<Map<String, String>> l = new ArrayList<>();
     l.add(createMap("column", "num",
             NumberFormatTransformer.FORMAT_STYLE, NumberFormatTransformer.NUMBER));
     Context c = getContext(null, null, null, Context.FULL_DUMP, l, null);
@@ -149,7 +149,7 @@ public class TestNumberFormatTransformer extends AbstractDataImportHandlerTestCa
   @Test
   @SuppressWarnings("unchecked")
   public void testTransformRow_MalformedInput_Number() {
-    List<Map<String, String>> l = new ArrayList<Map<String, String>>();
+    List<Map<String, String>> l = new ArrayList<>();
     l.add(createMap("column", "num",
             NumberFormatTransformer.FORMAT_STYLE, NumberFormatTransformer.NUMBER));
     Context c = getContext(null, null, null, Context.FULL_DUMP, l, null);

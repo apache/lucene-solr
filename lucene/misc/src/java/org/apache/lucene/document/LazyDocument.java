@@ -45,8 +45,8 @@ public class LazyDocument {
   // null until first field is loaded
   private StoredDocument doc;
 
-  private Map<Integer,List<LazyField>> fields = new HashMap<Integer,List<LazyField>>();
-  private Set<String> fieldNames = new HashSet<String>();
+  private Map<Integer,List<LazyField>> fields = new HashMap<>();
+  private Set<String> fieldNames = new HashSet<>();
 
   public LazyDocument(IndexReader reader, int docID) {
     this.reader = reader;
@@ -73,7 +73,7 @@ public class LazyDocument {
     fieldNames.add(fieldInfo.name);
     List<LazyField> values = fields.get(fieldInfo.number);
     if (null == values) {
-      values = new ArrayList<LazyField>();
+      values = new ArrayList<>();
       fields.put(fieldInfo.number, values);
     } 
 

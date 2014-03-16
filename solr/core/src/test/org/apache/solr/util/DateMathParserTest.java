@@ -314,7 +314,7 @@ public class DateMathParserTest extends LuceneTestCase {
     DateMathParser p = new DateMathParser(UTC, Locale.ROOT);
     p.setNow(parser.parse("2001-07-04T12:08:56.235"));
     
-    Map<String,Integer> badCommands = new HashMap<String,Integer>();
+    Map<String,Integer> badCommands = new HashMap<>();
     badCommands.put("/", 1);
     badCommands.put("+", 1);
     badCommands.put("-", 1);

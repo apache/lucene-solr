@@ -191,7 +191,7 @@ public class HdfsTransactionLog extends TransactionLog {
 
     synchronized (this) {
       globalStringList = (List<String>)header.get("strings");
-      globalStringMap = new HashMap<String, Integer>(globalStringList.size());
+      globalStringMap = new HashMap<>(globalStringList.size());
       for (int i=0; i<globalStringList.size(); i++) {
         globalStringMap.put( globalStringList.get(i), i+1);
       }

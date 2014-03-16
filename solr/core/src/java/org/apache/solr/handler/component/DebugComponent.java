@@ -106,7 +106,7 @@ public class DebugComponent extends SearchComponent
       if (null != rb.getDebugInfo() ) {
         if (rb.isDebugQuery() && null != rb.getFilters() ) {
           info.add("filter_queries",rb.req.getParams().getParams(FQ));
-          List<String> fqs = new ArrayList<String>(rb.getFilters().size());
+          List<String> fqs = new ArrayList<>(rb.getFilters().size());
           for (Query fq : rb.getFilters()) {
             fqs.add(QueryParsing.toString(fq, rb.req.getSchema()));
           }
@@ -175,7 +175,7 @@ public class DebugComponent extends SearchComponent
       @SuppressWarnings("unchecked")
       NamedList<Object> stageList = (NamedList<Object>) ((NamedList<Object>)rb.getDebugInfo().get("track")).get(stages.get(rb.stage));
       if(stageList == null) {
-        stageList = new NamedList<Object>();
+        stageList = new NamedList<>();
         rb.addDebug(stageList, "track", stages.get(rb.stage));
       }
       for(ShardResponse response: sreq.responses) {
@@ -184,7 +184,7 @@ public class DebugComponent extends SearchComponent
     }
   }
 
-  private Set<String> excludeSet = new HashSet<String>(Arrays.asList("explain"));
+  private Set<String> excludeSet = new HashSet<>(Arrays.asList("explain"));
 
   @Override
   public void finishStage(ResponseBuilder rb) {
@@ -207,19 +207,19 @@ public class DebugComponent extends SearchComponent
               // TODO: lookup won't work for non-string ids... String vs Float
               ShardDoc sdoc = rb.resultIds.get(id);
               int idx = sdoc.positionInResponse;
-              arr[idx] = new NamedList.NamedListEntry<Object>(id, sexplain.getVal(i));
+              arr[idx] = new NamedList.NamedListEntry<>(id, sexplain.getVal(i));
             }
           }
         }
       }
 
       if (rb.isDebugResults()) {
-        explain = SolrPluginUtils.removeNulls(new SimpleOrderedMap<Object>(arr));
+        explain = SolrPluginUtils.removeNulls(new SimpleOrderedMap<>(arr));
       }
 
       if (info == null) {
         // No responses were received from shards. Show local query info.
-        info = new SimpleOrderedMap<Object>();
+        info = new SimpleOrderedMap<>();
         SolrPluginUtils.doStandardQueryDebug(
                 rb.req, rb.getQueryString(),  rb.getQuery(), rb.isDebugQuery(), info);
         if (rb.isDebugQuery() && rb.getQparser() != null) {
@@ -243,7 +243,7 @@ public class DebugComponent extends SearchComponent
 
 
   private NamedList<String> getTrackResponse(ShardResponse shardResponse) {
-    NamedList<String> namedList = new NamedList<String>();
+    NamedList<String> namedList = new NamedList<>();
     NamedList<Object> responseNL = shardResponse.getSolrResponse().getResponse();
     @SuppressWarnings("unchecked")
     NamedList<Object> responseHeader = (NamedList<Object>)responseNL.get("responseHeader");
@@ -295,7 +295,7 @@ public class DebugComponent extends SearchComponent
 
 
     if (source instanceof NamedList && dest instanceof NamedList) {
-      NamedList<Object> tmp = new NamedList<Object>();
+      NamedList<Object> tmp = new NamedList<>();
       @SuppressWarnings("unchecked")
       NamedList<Object> sl = (NamedList<Object>)source;
       @SuppressWarnings("unchecked")
@@ -329,7 +329,7 @@ public class DebugComponent extends SearchComponent
     }
 
     // merge unlike elements in a list
-    List<Object> t = new ArrayList<Object>();
+    List<Object> t = new ArrayList<>();
     t.add(dest);
     t.add(source);
     return t;

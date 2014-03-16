@@ -1202,7 +1202,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     
     final int numDocs = atLeast(50);
     final int numTerms = TestUtil.nextInt(random(), 1, numDocs / 5);
-    Set<String> randomTerms = new HashSet<String>();
+    Set<String> randomTerms = new HashSet<>();
     while (randomTerms.size() < numTerms) {
       randomTerms.add(TestUtil.randomSimpleString(random()));
     }
@@ -1300,7 +1300,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     final int numDocs = atLeast(20000);
     final int numNumericFields = atLeast(5);
     final int numTerms = TestUtil.nextInt(random, 10, 100); // terms should affect many docs
-    Set<String> updateTerms = new HashSet<String>();
+    Set<String> updateTerms = new HashSet<>();
     while (updateTerms.size() < numTerms) {
       updateTerms.add(TestUtil.randomSimpleString(random));
     }

@@ -250,10 +250,10 @@ public class TestDirectoryReader extends LuceneTestCase {
       reader = DirectoryReader.open(d);
       fieldInfos = MultiFields.getMergedFieldInfos(reader);
 
-      Collection<String> allFieldNames = new HashSet<String>();
-      Collection<String> indexedFieldNames = new HashSet<String>();
-      Collection<String> notIndexedFieldNames = new HashSet<String>();
-      Collection<String> tvFieldNames = new HashSet<String>();
+      Collection<String> allFieldNames = new HashSet<>();
+      Collection<String> indexedFieldNames = new HashSet<>();
+      Collection<String> notIndexedFieldNames = new HashSet<>();
+      Collection<String> tvFieldNames = new HashSet<>();
 
       for(FieldInfo fieldInfo : fieldInfos) {
         final String name = fieldInfo.name;
@@ -743,7 +743,7 @@ public void testFilesOpenClose() throws IOException {
     Collection<IndexCommit> commits = DirectoryReader.listCommits(dir);
     for (final IndexCommit commit : commits) {
       Collection<String> files = commit.getFileNames();
-      HashSet<String> seen = new HashSet<String>();
+      HashSet<String> seen = new HashSet<>();
       for (final String fileName : files) { 
         assertTrue("file " + fileName + " was duplicated", !seen.contains(fileName));
         seen.add(fileName);
@@ -1079,7 +1079,7 @@ public void testFilesOpenClose() throws IOException {
     writer.addDocument(doc);
     DirectoryReader r = writer.getReader();
     writer.close();
-    Set<String> fieldsToLoad = new HashSet<String>();
+    Set<String> fieldsToLoad = new HashSet<>();
     assertEquals(0, r.document(0, fieldsToLoad).getFields().size());
     fieldsToLoad.add("field1");
     StoredDocument doc2 = r.document(0, fieldsToLoad);

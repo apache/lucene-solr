@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
@@ -79,8 +80,8 @@ import org.apache.solr.hadoop.morphline.MorphlineMapRunner;
 import org.apache.solr.hadoop.morphline.MorphlineMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.kitesdk.morphline.base.Fields;
+
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.io.ByteStreams;
@@ -540,7 +541,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
 
   static List<List<String>> buildShardUrls(List<Object> urls, Integer numShards) {
     if (urls == null) return null;
-    List<List<String>> shardUrls = new ArrayList<List<String>>(urls.size());
+    List<List<String>> shardUrls = new ArrayList<>(urls.size());
     List<String> list = null;
     
     int sz;
@@ -550,7 +551,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
     sz = (int) Math.ceil(urls.size() / (float)numShards);
     for (int i = 0; i < urls.size(); i++) {
       if (i % sz == 0) {
-        list = new ArrayList<String>();
+        list = new ArrayList<>();
         shardUrls.add(list);
       }
       list.add((String) urls.get(i));
@@ -613,7 +614,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
         "which is required for passing files via --files and --libjars");
     }
 
-    long programStartTime = System.currentTimeMillis();
+    long programStartTime = System.nanoTime();
     if (options.fairSchedulerPool != null) {
       getConf().set("mapred.fairscheduler.pool", options.fairSchedulerPool);
     }
@@ -684,7 +685,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
         
     
     LOG.info("Randomizing list of {} input files to spread indexing load more evenly among mappers", numFiles);
-    long startTime = System.currentTimeMillis();      
+    long startTime = System.nanoTime();      
     if (numFiles < job.getConfiguration().getInt(MAIN_MEMORY_RANDOMIZATION_THRESHOLD, 100001)) {
       // If there are few input files reduce latency by directly running main memory randomization 
       // instead of launching a high latency MapReduce job
@@ -698,7 +699,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
         return -1; // job failed
       }
     }
-    float secs = (System.currentTimeMillis() - startTime) / 1000.0f;
+    float secs = (System.nanoTime() - startTime) / (float)(10^9);
     LOG.info("Done. Randomizing list of {} input files took {} secs", numFiles, secs);
     
     
@@ -765,9 +766,9 @@ public class MapReduceIndexerTool extends Configured implements Tool {
     MorphlineMapRunner runner = setupMorphline(options);
     if (options.isDryRun && runner != null) {
       LOG.info("Indexing {} files in dryrun mode", numFiles);
-      startTime = System.currentTimeMillis();
+      startTime = System.nanoTime();
       dryRun(runner, fs, fullInputList);
-      secs = (System.currentTimeMillis() - startTime) / 1000.0f;
+      secs = (System.nanoTime() - startTime) / (float)(10^9);
       LOG.info("Done. Indexing {} files in dryrun mode took {} secs", numFiles, secs);
       goodbye(null, programStartTime);
       return 0;
@@ -778,12 +779,12 @@ public class MapReduceIndexerTool extends Configured implements Tool {
     job.setOutputKeyClass(Text.class);
     job.setOutputValueClass(SolrInputDocumentWritable.class);
     LOG.info("Indexing {} files using {} real mappers into {} reducers", new Object[] {numFiles, realMappers, reducers});
-    startTime = System.currentTimeMillis();
+    startTime = System.nanoTime();
     if (!waitForCompletion(job, options.isVerbose)) {
       return -1; // job failed
     }
 
-    secs = (System.currentTimeMillis() - startTime) / 1000.0f;
+    secs = (System.nanoTime() - startTime) / (float)(10^9);
     LOG.info("Done. Indexing {} files using {} real mappers into {} reducers took {} secs", new Object[] {numFiles, realMappers, reducers, secs});
 
     int mtreeMergeIterations = 0;
@@ -816,14 +817,14 @@ public class MapReduceIndexerTool extends Configured implements Tool {
       
       LOG.info("MTree merge iteration {}/{}: Merging {} shards into {} shards using fanout {}", new Object[] { 
           mtreeMergeIteration, mtreeMergeIterations, reducers, (reducers / options.fanout), options.fanout});
-      startTime = System.currentTimeMillis();
+      startTime = System.nanoTime();
       if (!waitForCompletion(job, options.isVerbose)) {
         return -1; // job failed
       }
       if (!renameTreeMergeShardDirs(outputTreeMergeStep, job, fs)) {
         return -1;
       }
-      secs = (System.currentTimeMillis() - startTime) / 1000.0f;
+      secs = (System.nanoTime() - startTime) / (float)(10^9);
       LOG.info("MTree merge iteration {}/{}: Done. Merging {} shards into {} shards using fanout {} took {} secs",
           new Object[] {mtreeMergeIteration, mtreeMergeIterations, reducers, (reducers / options.fanout), options.fanout, secs});
       
@@ -1343,7 +1344,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
   }
 
   private void goodbye(Job job, long startTime) {
-    float secs = (System.currentTimeMillis() - startTime) / 1000.0f;
+    float secs = (System.nanoTime() - startTime) / (float)(10^9);
     if (job != null) {
       LOG.info("Succeeded with job: " + getJobInfo(job));
     }

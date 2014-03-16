@@ -95,7 +95,7 @@ final public class SpecialOperations {
   public static String getCommonPrefix(Automaton a) {
     if (a.isSingleton()) return a.singleton;
     StringBuilder b = new StringBuilder();
-    HashSet<State> visited = new HashSet<State>();
+    HashSet<State> visited = new HashSet<>();
     State s = a.initial;
     boolean done;
     do {
@@ -119,7 +119,7 @@ final public class SpecialOperations {
   public static BytesRef getCommonPrefixBytesRef(Automaton a) {
     if (a.isSingleton()) return new BytesRef(a.singleton);
     BytesRef ref = new BytesRef(10);
-    HashSet<State> visited = new HashSet<State>();
+    HashSet<State> visited = new HashSet<>();
     State s = a.initial;
     boolean done;
     do {
@@ -185,9 +185,9 @@ final public class SpecialOperations {
   public static Set<State> reverse(Automaton a) {
     a.expandSingleton();
     // reverse all edges
-    HashMap<State, HashSet<Transition>> m = new HashMap<State, HashSet<Transition>>();
+    HashMap<State, HashSet<Transition>> m = new HashMap<>();
     State[] states = a.getNumberedStates();
-    Set<State> accept = new HashSet<State>();
+    Set<State> accept = new HashSet<>();
     for (State s : states)
       if (s.isAccept())
         accept.add(s);
@@ -223,7 +223,7 @@ final public class SpecialOperations {
    * the limit is infinite.
    */
   public static Set<IntsRef> getFiniteStrings(Automaton a, int limit) {
-    HashSet<IntsRef> strings = new HashSet<IntsRef>();
+    HashSet<IntsRef> strings = new HashSet<>();
     if (a.isSingleton()) {
       if (limit > 0) {
         strings.add(Util.toUTF32(a.singleton, new IntsRef()));

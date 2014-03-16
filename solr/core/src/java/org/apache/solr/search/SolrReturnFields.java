@@ -49,14 +49,14 @@ public class SolrReturnFields extends ReturnFields {
   // Special Field Keys
   public static final String SCORE = "score";
 
-  private final List<String> globs = new ArrayList<String>(1);
+  private final List<String> globs = new ArrayList<>(1);
 
   // The lucene field names to request from the SolrIndexSearcher
-  private final Set<String> fields = new HashSet<String>();
+  private final Set<String> fields = new HashSet<>();
 
   // Field names that are OK to include in the response.
   // This will include pseudo fields, lucene fields, and matching globs
-  private Set<String> okFieldNames = new HashSet<String>();
+  private Set<String> okFieldNames = new HashSet<>();
 
   // The list of explicitly requested fields
   // Order is important for CSVResponseWriter
@@ -106,7 +106,7 @@ public class SolrReturnFields extends ReturnFields {
       return;
     }
 
-    NamedList<String> rename = new NamedList<String>();
+    NamedList<String> rename = new NamedList<>();
     DocTransformers augmenters = new DocTransformers();
     for (String fieldList : fl) {
       add(fieldList,rename,augmenters,req);
@@ -122,7 +122,7 @@ public class SolrReturnFields extends ReturnFields {
           if(from.equals(rename.getName(j))) {
             rename.setName(j, to); // copy from the current target
             if(reqFieldNames==null) {
-              reqFieldNames = new LinkedHashSet<String>();
+              reqFieldNames = new LinkedHashSet<>();
             }
             reqFieldNames.add(to); // don't rename our current target
           }
@@ -247,7 +247,7 @@ public class SolrReturnFields extends ReturnFields {
         // This is identical to localParams syntax except it uses [] instead of {!}
 
         if (funcStr.startsWith("[")) {
-          Map<String,String> augmenterArgs = new HashMap<String,String>();
+          Map<String,String> augmenterArgs = new HashMap<>();
           int end = QueryParsing.parseLocalParams(funcStr, 0, augmenterArgs, req.getParams(), "[", ']');
           sp.pos += end;
 
@@ -356,7 +356,7 @@ public class SolrReturnFields extends ReturnFields {
   private void addField(String field, String key, DocTransformers augmenters, boolean isPseudoField)
   {
     if(reqFieldNames==null) {
-      reqFieldNames = new LinkedHashSet<String>();
+      reqFieldNames = new LinkedHashSet<>();
     }
     
     if(key==null) {

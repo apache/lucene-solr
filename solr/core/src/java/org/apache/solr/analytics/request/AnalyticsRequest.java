@@ -38,11 +38,11 @@ public class AnalyticsRequest {
   
   public AnalyticsRequest(String name) {
     this.name = name;
-    expressions = new ArrayList<ExpressionRequest>();
-    hiddenExpressions = new HashSet<String>();
-    fieldFacets = new ArrayList<FieldFacetRequest>();
-    rangeFacets = new ArrayList<RangeFacetRequest>();
-    queryFacets = new ArrayList<QueryFacetRequest>();
+    expressions = new ArrayList<>();
+    hiddenExpressions = new HashSet<>();
+    fieldFacets = new ArrayList<>();
+    rangeFacets = new ArrayList<>();
+    queryFacets = new ArrayList<>();
   }
   
   public String getName() {

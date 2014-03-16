@@ -26,7 +26,7 @@ import java.util.HashMap;
  */
 public class ToStringUtil {
   // a translation map for parts of speech, only used for reflectWith
-  private static final HashMap<String,String> posTranslations = new HashMap<String,String>();
+  private static final HashMap<String,String> posTranslations = new HashMap<>();
   static {
     posTranslations.put("名詞", "noun");
     posTranslations.put("名詞-一般", "noun-common");
@@ -127,7 +127,7 @@ public class ToStringUtil {
   }
   
   // a translation map for inflection types, only used for reflectWith
-  private static final HashMap<String,String> inflTypeTranslations = new HashMap<String,String>();
+  private static final HashMap<String,String> inflTypeTranslations = new HashMap<>();
   static {
     inflTypeTranslations.put("*", "*");
     inflTypeTranslations.put("形容詞・アウオ段", "adj-group-a-o-u");
@@ -197,7 +197,7 @@ public class ToStringUtil {
   }
 
   // a translation map for inflection forms, only used for reflectWith
-  private static final HashMap<String,String> inflFormTranslations = new HashMap<String,String>();
+  private static final HashMap<String,String> inflFormTranslations = new HashMap<>();
   static {
     inflFormTranslations.put("*", "*");
     inflFormTranslations.put("基本形", "base");

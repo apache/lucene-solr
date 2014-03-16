@@ -300,7 +300,7 @@ public abstract class ReadTask extends PerfTask {
    */
   protected Collection<String> getFieldsToHighlight(StoredDocument document) {
     List<StorableField> fields = document.getFields();
-    Set<String> result = new HashSet<String>(fields.size());
+    Set<String> result = new HashSet<>(fields.size());
     for (final StorableField f : fields) {
       result.add(f.name());
     }

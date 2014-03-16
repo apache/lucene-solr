@@ -40,7 +40,7 @@ public final class NoMergeScheduler extends MergeScheduler {
   public void close() {}
 
   @Override
-  public void merge(IndexWriter writer) {}
+  public void merge(IndexWriter writer, MergeTrigger trigger, boolean newMergesFound) {}
 
   @Override
   public MergeScheduler clone() {

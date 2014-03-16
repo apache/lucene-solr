@@ -126,8 +126,8 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     private TopDocsCollector<ScoreDoc> collector;
     private int docBase;
 
-    public final Map<Integer,Integer> docCounts = new HashMap<Integer,Integer>();
-    private final Set<Scorer> tqsSet = new HashSet<Scorer>();
+    public final Map<Integer,Integer> docCounts = new HashMap<>();
+    private final Set<Scorer> tqsSet = new HashSet<>();
     
     MyCollector() {
       collector = TopScoreDocCollector.create(10, true);

@@ -39,7 +39,7 @@ import org.apache.lucene.util.NamedSPILoader;
 public abstract class Codec implements NamedSPILoader.NamedSPI {
 
   private static final NamedSPILoader<Codec> loader =
-    new NamedSPILoader<Codec>(Codec.class);
+    new NamedSPILoader<>(Codec.class);
 
   private final String name;
 

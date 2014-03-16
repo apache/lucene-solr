@@ -38,7 +38,8 @@ public class TestCaseInsensitive extends StemmerTestBase {
   }
 
   public void testRecursiveSuffix() {
-    assertStemsTo("abcd", "ab");
+    // we should not recurse here! as the suffix has no continuation!
+    assertStemsTo("abcd");
   }
 
   // all forms unmunched from dictionary
@@ -47,7 +48,7 @@ public class TestCaseInsensitive extends StemmerTestBase {
     assertStemsTo("abc", "ab");
     assertStemsTo("apach", "apach");
     assertStemsTo("apache", "apach");
-    assertStemsTo("foo", "foo");
+    assertStemsTo("foo", "foo", "foo");
     assertStemsTo("food", "foo");
     assertStemsTo("foos", "foo");
     assertStemsTo("lucen", "lucen");

@@ -260,7 +260,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
             }
           }
 
-          Map<String,Facets> byDim = new HashMap<String,Facets>();
+          Map<String,Facets> byDim = new HashMap<>();
           byDim.put("field",
                     new LongRangeFacetCounts("field", fieldFC,
                           new LongRange("less than 10", 0L, true, 10L, false),

@@ -120,7 +120,7 @@ public class NRTCachingDirectory extends Directory {
 
   @Override
   public synchronized String[] listAll() throws IOException {
-    final Set<String> files = new HashSet<String>();
+    final Set<String> files = new HashSet<>();
     for(String f : cache.listAll()) {
       files.add(f);
     }

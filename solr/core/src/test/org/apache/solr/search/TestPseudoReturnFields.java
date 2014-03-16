@@ -471,7 +471,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
               ,"//result/doc[count(*)=6]"
               );
 
-      final List<String> params = new ArrayList<String>((fl.size()*2) + 4);
+      final List<String> params = new ArrayList<>((fl.size()*2) + 4);
       final StringBuilder info = new StringBuilder();
       params.addAll(Arrays.asList("q","*:*", "rows", "1"));
       for (String item : fl) {

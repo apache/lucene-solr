@@ -96,7 +96,7 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
     }
   }
 
-  private final List<FieldMetaData> fields = new ArrayList<FieldMetaData>();
+  private final List<FieldMetaData> fields = new ArrayList<>();
 
   // private final String segment;
 

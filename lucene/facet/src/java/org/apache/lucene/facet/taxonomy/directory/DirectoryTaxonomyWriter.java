@@ -620,7 +620,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
 
   /** Combine original user data with the taxonomy epoch. */
   private Map<String,String> combinedCommitData(Map<String,String> commitData) {
-    Map<String,String> m = new HashMap<String, String>();
+    Map<String,String> m = new HashMap<>();
     if (commitData != null) {
       m.putAll(commitData);
     }

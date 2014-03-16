@@ -232,8 +232,7 @@ class JoinQuery extends Query {
 
 
     @Override
-    public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-        boolean topScorer, Bits acceptDocs) throws IOException {
+    public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException {
       if (filter == null) {
         boolean debug = rb != null && rb.isDebug();
         long start = debug ? System.currentTimeMillis() : 0;
@@ -241,7 +240,7 @@ class JoinQuery extends Query {
         long end = debug ? System.currentTimeMillis() : 0;
 
         if (debug) {
-          SimpleOrderedMap<Object> dbg = new SimpleOrderedMap<Object>();
+          SimpleOrderedMap<Object> dbg = new SimpleOrderedMap<>();
           dbg.add("time", (end-start));
           dbg.add("fromSetSize", fromSetSize);  // the input
           dbg.add("toSetSize", resultSet.size());    // the output
@@ -296,7 +295,7 @@ class JoinQuery extends Query {
       DocSet fromSet = fromSearcher.getDocSet(q);
       fromSetSize = fromSet.size();
 
-      List<DocSet> resultList = new ArrayList<DocSet>(10);
+      List<DocSet> resultList = new ArrayList<>(10);
 
       // make sure we have a set that is fast for random access, if we will use it for that
       DocSet fastForRandomSet = fromSet;
@@ -502,7 +501,7 @@ class JoinQuery extends Query {
 
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      Scorer scorer = scorer(context, true, false, context.reader().getLiveDocs());
+      Scorer scorer = scorer(context, context.reader().getLiveDocs());
       boolean exists = scorer.advance(doc) == doc;
 
       ComplexExplanation result = new ComplexExplanation();

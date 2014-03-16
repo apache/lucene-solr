@@ -150,7 +150,7 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
   public void testRandomAccessWrites() throws IOException {
     int i = 0;
     try {
-      Set<String> names = new HashSet<String>();
+      Set<String> names = new HashSet<>();
       for (; i< 10; i++) {
         Directory fsDir = new RAMDirectory();
         String name = getName();

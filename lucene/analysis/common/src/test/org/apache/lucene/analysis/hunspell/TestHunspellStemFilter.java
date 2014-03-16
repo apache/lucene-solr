@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.hunspell;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.Collections;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -30,7 +31,7 @@ import org.apache.lucene.analysis.hunspell.Dictionary;
 import org.apache.lucene.analysis.hunspell.HunspellStemFilter;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.IOUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -39,9 +40,13 @@ public class TestHunspellStemFilter extends BaseTokenStreamTestCase {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    try (InputStream affixStream = TestStemmer.class.getResourceAsStream("simple.aff");
-         InputStream dictStream = TestStemmer.class.getResourceAsStream("simple.dic")) {
+    // no multiple try-with to workaround bogus VerifyError
+    InputStream affixStream = TestStemmer.class.getResourceAsStream("simple.aff");
+    InputStream dictStream = TestStemmer.class.getResourceAsStream("simple.dic");
+    try {
       dictionary = new Dictionary(affixStream, dictStream);
+    } finally {
+      IOUtils.closeWhileHandlingException(affixStream, dictStream);
     }
   }
   
@@ -54,13 +59,13 @@ public class TestHunspellStemFilter extends BaseTokenStreamTestCase {
   public void testKeywordAttribute() throws IOException {
     MockTokenizer tokenizer = whitespaceMockTokenizer("lucene is awesome");
     tokenizer.setEnableChecks(true);
-    HunspellStemFilter filter = new HunspellStemFilter(tokenizer, dictionary, TestUtil.nextInt(random(), 1, 3));
+    HunspellStemFilter filter = new HunspellStemFilter(tokenizer, dictionary);
     assertTokenStreamContents(filter, new String[]{"lucene", "lucen", "is", "awesome"}, new int[] {1, 0, 1, 1});
     
     // assert with keyword marker
     tokenizer = whitespaceMockTokenizer("lucene is awesome");
     CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, Arrays.asList("Lucene"), true);
-    filter = new HunspellStemFilter(new SetKeywordMarkerFilter(tokenizer, set), dictionary, TestUtil.nextInt(random(), 1, 3));
+    filter = new HunspellStemFilter(new SetKeywordMarkerFilter(tokenizer, set), dictionary);
     assertTokenStreamContents(filter, new String[]{"lucene", "is", "awesome"}, new int[] {1, 1, 1});
   }
   
@@ -68,7 +73,7 @@ public class TestHunspellStemFilter extends BaseTokenStreamTestCase {
   public void testLongestOnly() throws IOException {
     MockTokenizer tokenizer = whitespaceMockTokenizer("lucene is awesome");
     tokenizer.setEnableChecks(true);
-    HunspellStemFilter filter = new HunspellStemFilter(tokenizer, dictionary, true, TestUtil.nextInt(random(), 1, 3), true);
+    HunspellStemFilter filter = new HunspellStemFilter(tokenizer, dictionary, true, true);
     assertTokenStreamContents(filter, new String[]{"lucene", "is", "awesome"}, new int[] {1, 1, 1});
   }
   
@@ -78,7 +83,7 @@ public class TestHunspellStemFilter extends BaseTokenStreamTestCase {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
         Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        return new TokenStreamComponents(tokenizer, new HunspellStemFilter(tokenizer, dictionary, TestUtil.nextInt(random(), 1, 3)));
+        return new TokenStreamComponents(tokenizer, new HunspellStemFilter(tokenizer, dictionary));
       }  
     };
     checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
@@ -89,9 +94,29 @@ public class TestHunspellStemFilter extends BaseTokenStreamTestCase {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
         Tokenizer tokenizer = new KeywordTokenizer();
-        return new TokenStreamComponents(tokenizer, new HunspellStemFilter(tokenizer, dictionary, TestUtil.nextInt(random(), 1, 3)));
+        return new TokenStreamComponents(tokenizer, new HunspellStemFilter(tokenizer, dictionary));
       }
     };
     checkOneTerm(a, "", "");
+  }
+  
+  public void testIgnoreCaseNoSideEffects() throws Exception {
+    final Dictionary d;
+    // no multiple try-with to workaround bogus VerifyError
+    InputStream affixStream = TestStemmer.class.getResourceAsStream("simple.aff");
+    InputStream dictStream = TestStemmer.class.getResourceAsStream("simple.dic");
+    try {
+      d = new Dictionary(affixStream, Collections.singletonList(dictStream), true);
+    } finally {
+      IOUtils.closeWhileHandlingException(affixStream, dictStream);
+    }
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
+        return new TokenStreamComponents(tokenizer, new HunspellStemFilter(tokenizer, d));
+      }
+    };
+    checkOneTerm(a, "NoChAnGy", "NoChAnGy");
   }
 }

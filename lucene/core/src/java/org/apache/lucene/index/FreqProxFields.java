@@ -35,7 +35,7 @@ import org.apache.lucene.util.BytesRef;
  *  PostingsFormat. */
 
 class FreqProxFields extends Fields {
-  final Map<String,FreqProxTermsWriterPerField> fields = new LinkedHashMap<String,FreqProxTermsWriterPerField>();
+  final Map<String,FreqProxTermsWriterPerField> fields = new LinkedHashMap<>();
 
   public FreqProxFields(List<FreqProxTermsWriterPerField> fieldList) {
     // NOTE: fields are already sorted by field name

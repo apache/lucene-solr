@@ -212,7 +212,7 @@ public abstract class DataInput implements Cloneable {
   /** Reads a Map&lt;String,String&gt; previously written
    *  with {@link DataOutput#writeStringStringMap(Map)}. */
   public Map<String,String> readStringStringMap() throws IOException {
-    final Map<String,String> map = new HashMap<String,String>();
+    final Map<String,String> map = new HashMap<>();
     final int count = readInt();
     for(int i=0;i<count;i++) {
       final String key = readString();
@@ -226,7 +226,7 @@ public abstract class DataInput implements Cloneable {
   /** Reads a Set&lt;String&gt; previously written
    *  with {@link DataOutput#writeStringSet(Set)}. */
   public Set<String> readStringSet() throws IOException {
-    final Set<String> set = new HashSet<String>();
+    final Set<String> set = new HashSet<>();
     final int count = readInt();
     for(int i=0;i<count;i++) {
       set.add(readString());

@@ -35,7 +35,7 @@ import org.apache.lucene.util.RefCount;
  */
 final class SegmentDocValues {
 
-  private final Map<Long,RefCount<DocValuesProducer>> genDVProducers = new HashMap<Long,RefCount<DocValuesProducer>>();
+  private final Map<Long,RefCount<DocValuesProducer>> genDVProducers = new HashMap<>();
 
   private RefCount<DocValuesProducer> newDocValuesProducer(SegmentCommitInfo si, IOContext context, Directory dir,
       DocValuesFormat dvFormat, final Long gen, List<FieldInfo> infos) throws IOException {

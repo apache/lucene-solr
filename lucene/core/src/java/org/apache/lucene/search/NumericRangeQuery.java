@@ -191,7 +191,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
   public static NumericRangeQuery<Long> newLongRange(final String field, final int precisionStep,
     Long min, Long max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeQuery<Long>(field, precisionStep, NumericType.LONG, min, max, minInclusive, maxInclusive);
+    return new NumericRangeQuery<>(field, precisionStep, NumericType.LONG, min, max, minInclusive, maxInclusive);
   }
   
   /**
@@ -204,7 +204,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
   public static NumericRangeQuery<Long> newLongRange(final String field,
     Long min, Long max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeQuery<Long>(field, NumericUtils.PRECISION_STEP_DEFAULT, NumericType.LONG, min, max, minInclusive, maxInclusive);
+    return new NumericRangeQuery<>(field, NumericUtils.PRECISION_STEP_DEFAULT, NumericType.LONG, min, max, minInclusive, maxInclusive);
   }
   
   /**
@@ -217,7 +217,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
   public static NumericRangeQuery<Integer> newIntRange(final String field, final int precisionStep,
     Integer min, Integer max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeQuery<Integer>(field, precisionStep, NumericType.INT, min, max, minInclusive, maxInclusive);
+    return new NumericRangeQuery<>(field, precisionStep, NumericType.INT, min, max, minInclusive, maxInclusive);
   }
   
   /**
@@ -230,7 +230,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
   public static NumericRangeQuery<Integer> newIntRange(final String field,
     Integer min, Integer max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeQuery<Integer>(field, NumericUtils.PRECISION_STEP_DEFAULT, NumericType.INT, min, max, minInclusive, maxInclusive);
+    return new NumericRangeQuery<>(field, NumericUtils.PRECISION_STEP_DEFAULT, NumericType.INT, min, max, minInclusive, maxInclusive);
   }
   
   /**
@@ -245,7 +245,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
   public static NumericRangeQuery<Double> newDoubleRange(final String field, final int precisionStep,
     Double min, Double max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeQuery<Double>(field, precisionStep, NumericType.DOUBLE, min, max, minInclusive, maxInclusive);
+    return new NumericRangeQuery<>(field, precisionStep, NumericType.DOUBLE, min, max, minInclusive, maxInclusive);
   }
   
   /**
@@ -260,7 +260,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
   public static NumericRangeQuery<Double> newDoubleRange(final String field,
     Double min, Double max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeQuery<Double>(field, NumericUtils.PRECISION_STEP_DEFAULT, NumericType.DOUBLE, min, max, minInclusive, maxInclusive);
+    return new NumericRangeQuery<>(field, NumericUtils.PRECISION_STEP_DEFAULT, NumericType.DOUBLE, min, max, minInclusive, maxInclusive);
   }
   
   /**
@@ -275,7 +275,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
   public static NumericRangeQuery<Float> newFloatRange(final String field, final int precisionStep,
     Float min, Float max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeQuery<Float>(field, precisionStep, NumericType.FLOAT, min, max, minInclusive, maxInclusive);
+    return new NumericRangeQuery<>(field, precisionStep, NumericType.FLOAT, min, max, minInclusive, maxInclusive);
   }
   
   /**
@@ -290,7 +290,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
   public static NumericRangeQuery<Float> newFloatRange(final String field,
     Float min, Float max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeQuery<Float>(field, NumericUtils.PRECISION_STEP_DEFAULT, NumericType.FLOAT, min, max, minInclusive, maxInclusive);
+    return new NumericRangeQuery<>(field, NumericUtils.PRECISION_STEP_DEFAULT, NumericType.FLOAT, min, max, minInclusive, maxInclusive);
   }
 
   @Override @SuppressWarnings("unchecked")
@@ -390,7 +390,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
 
     private BytesRef currentLowerBound, currentUpperBound;
 
-    private final LinkedList<BytesRef> rangeBounds = new LinkedList<BytesRef>();
+    private final LinkedList<BytesRef> rangeBounds = new LinkedList<>();
 
     NumericRangeTermsEnum(final TermsEnum tenum) {
       super(tenum);

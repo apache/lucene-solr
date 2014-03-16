@@ -32,7 +32,7 @@ import java.util.Map;
 
 public class TestElevationComparator extends LuceneTestCase {
 
-  private final Map<BytesRef,Integer> priority = new HashMap<BytesRef,Integer>();
+  private final Map<BytesRef,Integer> priority = new HashMap<>();
 
   //@Test
   public void testSorting() throws Throwable {

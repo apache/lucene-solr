@@ -99,7 +99,7 @@ public class TestStressReorder extends TestRTGBase {
 
     final AtomicInteger numCommitting = new AtomicInteger();
 
-    List<Thread> threads = new ArrayList<Thread>();
+    List<Thread> threads = new ArrayList<>();
 
 
     final AtomicLong testVersion = new AtomicLong(0);
@@ -120,7 +120,7 @@ public class TestStressReorder extends TestRTGBase {
                 long version;
 
                 synchronized(TestStressReorder.this) {
-                  newCommittedModel = new HashMap<Integer,DocInfo>(model);  // take a snapshot
+                  newCommittedModel = new HashMap<>(model);  // take a snapshot
                   version = snapshotCount++;
                 }
 

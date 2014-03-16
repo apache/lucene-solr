@@ -425,7 +425,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     w.addDocument(doc);
 
     // commit to "first"
-    Map<String,String> commitData = new HashMap<String,String>();
+    Map<String,String> commitData = new HashMap<>();
     commitData.put("tag", "first");
     w.setCommitData(commitData);
     w.commit();
@@ -633,7 +633,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(2));
     for(int j=0;j<17;j++)
       TestIndexWriter.addDoc(w);
-    Map<String,String> data = new HashMap<String,String>();
+    Map<String,String> data = new HashMap<>();
     data.put("label", "test1");
     w.setCommitData(data);
     w.close();

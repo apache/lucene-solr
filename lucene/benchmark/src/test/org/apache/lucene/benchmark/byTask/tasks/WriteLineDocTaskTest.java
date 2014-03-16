@@ -344,7 +344,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     
     wldt.close();
     
-    Set<String> ids = new HashSet<String>();
+    Set<String> ids = new HashSet<>();
     BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), "utf-8"));
     try {
       String line = br.readLine();

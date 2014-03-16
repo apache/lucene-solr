@@ -119,7 +119,7 @@ public abstract class SpatialTestCase extends LuceneTestCase {
     try {
       TopDocs topDocs = indexSearcher.search(query, numDocs);
 
-      List<SearchResult> results = new ArrayList<SearchResult>();
+      List<SearchResult> results = new ArrayList<>();
       for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
         results.add(new SearchResult(scoreDoc.score, indexSearcher.doc(scoreDoc.doc)));
       }

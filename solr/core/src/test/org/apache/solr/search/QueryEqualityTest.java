@@ -71,9 +71,9 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   /** @see #testParserCoverage */
   private static boolean doAssertParserCoverage = false;
   /** @see #testParserCoverage */
-  private static final Set<String> qParsersTested = new HashSet<String>();
+  private static final Set<String> qParsersTested = new HashSet<>();
   /** @see #testParserCoverage */
-  private static final Set<String> valParsersTested = new HashSet<String>();
+  private static final Set<String> valParsersTested = new HashSet<>();
 
 
   public void testDateMathParsingEquality() throws Exception {

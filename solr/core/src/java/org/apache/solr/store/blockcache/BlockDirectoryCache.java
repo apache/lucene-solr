@@ -21,15 +21,29 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * @lucene.experimental
+ */
 public class BlockDirectoryCache implements Cache {
-  private BlockCache blockCache;
+  private final BlockCache blockCache;
   private AtomicInteger counter = new AtomicInteger();
-  private Map<String,Integer> names = new ConcurrentHashMap<String,Integer>();
+  private Map<String,Integer> names = new ConcurrentHashMap<>();
+  private String path;
   private Metrics metrics;
   
-  public BlockDirectoryCache(BlockCache blockCache, Metrics metrics) {
+  public BlockDirectoryCache(BlockCache blockCache, String path, Metrics metrics) {
     this.blockCache = blockCache;
+    this.path = path;
     this.metrics = metrics;
+  }
+  
+  /**
+   * Expert: mostly for tests
+   * 
+   * @lucene.experimental
+   */
+  public BlockCache getBlockCache() {
+    return blockCache;
   }
   
   @Override
@@ -46,6 +60,7 @@ public class BlockDirectoryCache implements Cache {
       names.put(name, file);
     }
     BlockCacheKey blockCacheKey = new BlockCacheKey();
+    blockCacheKey.setPath(path);
     blockCacheKey.setBlock(blockId);
     blockCacheKey.setFile(file);
     blockCache.store(blockCacheKey, blockOffset, buffer, offset, length);
@@ -59,6 +74,7 @@ public class BlockDirectoryCache implements Cache {
       return false;
     }
     BlockCacheKey blockCacheKey = new BlockCacheKey();
+    blockCacheKey.setPath(path);
     blockCacheKey.setBlock(blockId);
     blockCacheKey.setFile(file);
     boolean fetch = blockCache.fetch(blockCacheKey, b, blockOffset, off,

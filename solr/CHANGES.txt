@@ -76,9 +76,31 @@ Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.5
 
-                      
+Upgrading from Solr 4.7
+----------------------
+
+* In previous versions of Solr, Terms that exceeded Lucene's MAX_TERM_LENGTH were
+  silently ignored when indexing documents.  Begining with Solr 4.8, a document
+  an error will be generated when attempting to index a document with a term
+  that is too large.  If you wish to continue to have large terms ignored,
+  use "solr.LengthFilterFactory" in all of your Analyzers.  See LUCENE-5472 for
+  more details.
+  
+* Solr 4.8 needs Java 7 as minimum requirement.  If you not have done already,
+  update the underlying JDK/JRE versions to at least Oracle Java 7u1 or OpenJDK
+  7u1.  Please review the list of known JVM bugs at:
+  http://wiki.apache.org/lucene-java/JavaBugs
+  Solr 4.8 was also tested to work with Java 8, so give it a try!
+
 Detailed Change List
 ----------------------
+
+System Requirements
+----------------------
+
+* LUCENE-4747, LUCENE-5514: Move to Java 7 as minimum Java version.
+  (Robert Muir, Uwe Schindler)
+
 
 New Features
 ----------------------
@@ -87,6 +109,25 @@ New Features
 
 * SOLR-5183: JSON updates now support nested child documents using a 
   "_childDocument_" object key.  (Varun Thacker, hossman)
+
+* SOLR-5714: You can now use one pool of memory for for the HDFS block cache
+  that all collections share. (Mark Miller, Gregory Chanan)
+
+* SOLR-5720: Add ExpandComponent to expand results collapsed by the 
+  CollapsingQParserPlugin. (Joel Bernstein)
+
+* SOLR-5653: Create a RestManager to provide REST API endpoints for
+  reconfigurable plugins. (Tim Potter, Steve Rowe)
+
+* SOLR-5655: Create a stopword filter factory that is (re)configurable,
+  and capable of reporting its configuration, via REST API.
+  (Tim Potter via Steve Rowe)
+
+* SOLR-5477: Async execution of OverseerCollectionProcessor(CollectionsAPI)
+  tasks. (Anshum Gupta)
+
+* SOLR-3177: Enable tagging and excluding filters in StatsComponent via the
+  localParams syntax. (Mathias H., Nikolai Luthman, Vitaliy Zhovtyuk, shalin)
 
 Bug Fixes
 ----------------------
@@ -103,12 +144,57 @@ Bug Fixes
 * SOLR-5782: The full MapReduceIndexer help text does not display when using
   --help.  (Mark Miller, Wolfgang Hoschek)
 
+* SOLR-5734: We should use System.nanoTime rather than System.currentTimeMillis
+  when calculating elapsed time. (Mark Miller, Ramkumar Aiyengar)
+
+* SOLR-5760: ConcurrentUpdateSolrServer has a blockUntilFinished call when
+  streamDeletes is true that should be tucked into the if statement below it.
+  (Mark Miller, Gregory Chanan)
+
+* SOLR-5761: HttpSolrServer has a few fields that can be set via setters but
+  are not volatile. (Mark Miller, Gregory Chanan)
+
+* SOLR-5811: The Overseer will retry work items until success, which is a serious
+  problem if you hit a bad work item. (Mark Miller)
+  
+* SOLR-5796: Increase how long we are willing to wait for a core to see the ZK
+  advertised leader in it's local state. (Timothy Potter, Mark Miller)  
+
+* SOLR-5818: distrib search with custom comparator does not quite work correctly
+  (Ryan Ernst)
+
+* SOLR-5834: Overseer threads are only being interrupted and not closed.
+  (hossman, Mark Miller)
+
+* SOLR-5839: ZookeeperInfoServlet does not trim path properly.
+  (Furkan KAMACI via Mark Miller)
+
+* SOLR-5800: Admin UI - Analysis form doesn't render results correctly when a
+  CharFilter is used. (steffkes)
+
+* SOLR-5861: Recovery should not set onlyIfLeaderActive=true for slice in 'recovery'
+  state. (shalin)
+
+* SOLR-5867: OverseerCollectionProcessor isn't properly generating https urls in some
+  cases. (Steve Davids via shalin)
+
+* SOLR-5866: UpdateShardHandler needs to use the system default scheme registry to
+  properly handle https via javax.net.ssl.* properties. (Steve Davids via shalin)
+
+* SOLR-5550: shards.info is not returned by a short circuited distributed query.
+  (Timothy Potter, shalin)
+
 Optimizations
 ----------------------
 * SOLR-1880: Distributed Search skips GET_FIELDS stage if EXECUTE_QUERY
   stage gets all fields. Requests with fl=id or fl=id,score are now single-pass.
   (Shawn Smith, Vitaliy Zhovtyuk, shalin)
 
+* SOLR-5783: Requests to open a new searcher will now reuse the current registered
+  searcher (w/o additional warming) if possible in situations where the underlying 
+  index has not changed.  This reduces overhead in situations such as deletes that 
+  do not modify the index, and/or redundant commits. (hossman)
+  
 
 Other Changes
 ---------------------
@@ -128,6 +214,32 @@ Other Changes
 
 * SOLR-5771: Add SolrTestCaseJ4.SuppressSSL annotation to disable SSL (instead of static boolean).
   (Robert Muir)
+
+* SOLR-5799: When registering as the leader, if an existing ephemeral
+  registration exists, wait a short time to see if it goes away.
+  (Mark Miller)
+
+* LUCENE-5472: IndexWriter.addDocument will now throw an IllegalArgumentException 
+  if a Term to be indexed exceeds IndexWriter.MAX_TERM_LENGTH.  To recreate previous
+  behavior of silently ignoring these terms, use LengthFilter in your Analyzer.
+  (hossman, Mike McCandless, Varun Thacker)
+
+* SOLR-5796: Make how long we are willing to wait for a core to see the ZK
+  advertised leader in it's local state configurable. 
+  (Timothy Potter via Mark Miller)
+  
+* SOLR-5825: Separate http request creating and execution in SolrJ
+  (Steven Bower via Erick Erickson)
+  
+* SOLR-5837: Add hashCode/equals to SolrDocument, SolrInputDocument
+  and SolrInputField for testing purposes. (Varun Thacker, Noble Paul,
+  Mark Miller)
+
+* SOLR-5853: The createCollection methods in the test framework now reports
+  result of operation in the returned CollectionAdminResponse (janhoy)
+
+* SOLR-5838: Relative SolrHome Path Bug At AbstractFullDistribZkTestBase.
+  (Furkan KAMACI via shalin)
 
 ==================  4.7.0 ==================
 

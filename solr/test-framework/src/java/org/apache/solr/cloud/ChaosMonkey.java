@@ -80,7 +80,7 @@ public class ChaosMonkey {
   private Map<String,CloudJettyRunner> shardToLeaderJetty;
   private volatile long startTime;
   
-  private List<CloudJettyRunner> deadPool = new ArrayList<CloudJettyRunner>();
+  private List<CloudJettyRunner> deadPool = new ArrayList<>();
 
   private Thread monkeyThread;
   
@@ -305,7 +305,7 @@ public class ChaosMonkey {
   private String getRandomSlice() {
     Map<String,Slice> slices = zkStateReader.getClusterState().getSlicesMap(collection);
     
-    List<String> sliceKeyList = new ArrayList<String>(slices.size());
+    List<String> sliceKeyList = new ArrayList<>(slices.size());
     sliceKeyList.addAll(slices.keySet());
     String sliceName = sliceKeyList.get(LuceneTestCase.random().nextInt(sliceKeyList.size()));
     return sliceName;

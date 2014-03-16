@@ -44,7 +44,7 @@ import org.junit.Test;
 import static org.apache.lucene.analysis.BaseTokenStreamTestCase.*;
 
 public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
-  Map<String,String> args = new HashMap<String, String>();
+  Map<String,String> args = new HashMap<>();
   IndexSchema schema;
 
   @BeforeClass

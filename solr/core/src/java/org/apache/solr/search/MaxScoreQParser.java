@@ -58,8 +58,8 @@ public class MaxScoreQParser extends LuceneQParser {
       return q;
     }
     BooleanQuery obq = (BooleanQuery)q;
-    Collection<Query> should = new ArrayList<Query>();
-    Collection<BooleanClause> prohibOrReq = new ArrayList<BooleanClause>();
+    Collection<Query> should = new ArrayList<>();
+    Collection<BooleanClause> prohibOrReq = new ArrayList<>();
     BooleanQuery newq = new BooleanQuery();
 
     for (BooleanClause clause : obq.getClauses()) {

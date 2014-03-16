@@ -74,7 +74,7 @@ final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
    */
   public synchronized void reload(ClassLoader classloader) {
     final LinkedHashMap<String,Class<? extends S>> services =
-      new LinkedHashMap<String,Class<? extends S>>(this.services);
+      new LinkedHashMap<>(this.services);
     final SPIClassIterator<S> loader = SPIClassIterator.get(clazz, classloader);
     while (loader.hasNext()) {
       final Class<? extends S> service = loader.next();

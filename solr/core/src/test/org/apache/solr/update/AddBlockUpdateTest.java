@@ -188,7 +188,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   
   @Test
   public void testBasics() throws Exception {
-    List<Document> blocks = new ArrayList<Document>(Arrays.asList(
+    List<Document> blocks = new ArrayList<>(Arrays.asList(
         block("abcD"),
         block("efgH"),
         merge(block("ijkL"), block("mnoP")),
@@ -268,7 +268,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   public void testSolrJXML() throws IOException {
     UpdateRequest req = new UpdateRequest();
     
-    List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
+    List<SolrInputDocument> docs = new ArrayList<>();
     
     SolrInputDocument document1 = new SolrInputDocument() {
       {
@@ -276,7 +276,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
         addField("id", id);
         addField("parent_s", "X");
         
-        ArrayList<SolrInputDocument> ch1 = new ArrayList<SolrInputDocument>(
+        ArrayList<SolrInputDocument> ch1 = new ArrayList<>(
             Arrays.asList(new SolrInputDocument() {
               {
                 addField("id", id());
@@ -336,7 +336,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   public void testXML() throws IOException, XMLStreamException {
     UpdateRequest req = new UpdateRequest();
     
- List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
+ List<SolrInputDocument> docs = new ArrayList<>();
     
  
     String xml_doc1 =
@@ -571,7 +571,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   }
   
   private Collection<? extends Callable<Void>> callables(List<Document> blocks) {
-    final List<Callable<Void>> rez = new ArrayList<Callable<Void>>();
+    final List<Callable<Void>> rez = new ArrayList<>();
     for (Document block : blocks) {
       final String msg = block.asXML();
       if (msg.length() > 0) {

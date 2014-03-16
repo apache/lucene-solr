@@ -39,7 +39,7 @@ public abstract class CacheHeaderTestBase extends SolrJettyTestBase {
     HttpSolrServer httpserver = (HttpSolrServer)getSolrServer();
     HttpRequestBase m = null;
     
-    ArrayList<BasicNameValuePair> qparams = new ArrayList<BasicNameValuePair>();
+    ArrayList<BasicNameValuePair> qparams = new ArrayList<>();
     if(params.length==0) {
       qparams.add(new BasicNameValuePair("q", "solr"));
       qparams.add(new BasicNameValuePair("qt", "standard"));
@@ -66,7 +66,7 @@ public abstract class CacheHeaderTestBase extends SolrJettyTestBase {
     HttpSolrServer httpserver = (HttpSolrServer)getSolrServer();
     HttpRequestBase m = null;
     
-    ArrayList<BasicNameValuePair> qparams = new ArrayList<BasicNameValuePair>();
+    ArrayList<BasicNameValuePair> qparams = new ArrayList<>();
     for(int i=0;i<params.length/2;i++) {
       qparams.add(new BasicNameValuePair(params[i*2], params[i*2+1]));
     }

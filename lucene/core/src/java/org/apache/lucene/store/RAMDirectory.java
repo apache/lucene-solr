@@ -46,7 +46,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * operating system, so copying data to Java heap space is not useful.
  */
 public class RAMDirectory extends BaseDirectory {
-  protected final Map<String,RAMFile> fileMap = new ConcurrentHashMap<String,RAMFile>();
+  protected final Map<String,RAMFile> fileMap = new ConcurrentHashMap<>();
   protected final AtomicLong sizeInBytes = new AtomicLong();
   
   // *****
@@ -113,7 +113,7 @@ public class RAMDirectory extends BaseDirectory {
     // NOTE: fileMap.keySet().toArray(new String[0]) is broken in non Sun JDKs,
     // and the code below is resilient to map changes during the array population.
     Set<String> fileNames = fileMap.keySet();
-    List<String> names = new ArrayList<String>(fileNames.size());
+    List<String> names = new ArrayList<>(fileNames.size());
     for (String name : fileNames) names.add(name);
     return names.toArray(new String[names.size()]);
   }

@@ -118,7 +118,7 @@ public class TestCompactLabelToOrdinal extends FacetTestCase {
   }
 
   private static class LabelToOrdinalMap extends LabelToOrdinal {
-    private Map<FacetLabel, Integer> map = new HashMap<FacetLabel, Integer>();
+    private Map<FacetLabel, Integer> map = new HashMap<>();
 
     LabelToOrdinalMap() { }
     

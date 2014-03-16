@@ -34,13 +34,13 @@ import java.util.Set;
 public class SliceStateTest extends SolrTestCaseJ4 {
   @Test
   public void testDefaultSliceState() throws Exception {
-    Map<String, DocCollection> collectionStates = new HashMap<String, DocCollection>();
-    Set<String> liveNodes = new HashSet<String>();
+    Map<String, DocCollection> collectionStates = new HashMap<>();
+    Set<String> liveNodes = new HashSet<>();
     liveNodes.add("node1");
 
-    Map<String, Slice> slices = new HashMap<String, Slice>();
-    Map<String, Replica> sliceToProps = new HashMap<String, Replica>();
-    Map<String, Object> props = new HashMap<String, Object>();
+    Map<String, Slice> slices = new HashMap<>();
+    Map<String, Replica> sliceToProps = new HashMap<>();
+    Map<String, Object> props = new HashMap<>();
 
     Replica replica = new Replica("node1", props);
     sliceToProps.put("node1", replica);

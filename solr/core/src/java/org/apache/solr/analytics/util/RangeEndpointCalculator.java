@@ -151,7 +151,7 @@ public abstract class RangeEndpointCalculator<T extends Comparable<T>> {
         
     T low = start;
     
-    List<FacetRange> ranges = new ArrayList<FacetRange>();
+    List<FacetRange> ranges = new ArrayList<>();
     
     int gapCounter = 0;
     

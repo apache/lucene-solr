@@ -95,7 +95,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
       
       docs.put(term, doc);
     }
-    return new SimpleEntry<List<String>, Map<String, Document>>(invalidDocTerms, docs);
+    return new SimpleEntry<>(invalidDocTerms, docs);
   }
   
   @Test

@@ -52,6 +52,6 @@ public class LowerCaseTokenizerFactory extends TokenizerFactory implements Multi
 
   @Override
   public AbstractAnalysisFactory getMultiTermComponent() {
-    return new LowerCaseFilterFactory(new HashMap<String,String>(getOriginalArgs()));
+    return new LowerCaseFilterFactory(new HashMap<>(getOriginalArgs()));
   }
 }

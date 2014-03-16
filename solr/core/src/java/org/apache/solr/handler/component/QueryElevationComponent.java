@@ -113,7 +113,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   // The key is null if loaded from the config directory, and
   // is never re-loaded.
   final Map<IndexReader, Map<String, ElevationObj>> elevationCache =
-      new WeakHashMap<IndexReader, Map<String, ElevationObj>>();
+      new WeakHashMap<>();
 
   class ElevationObj {
     final String text;
@@ -127,12 +127,12 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     ElevationObj(String qstr, List<String> elevate, List<String> exclude) throws IOException {
       this.text = qstr;
       this.analyzed = getAnalyzedQuery(this.text);
-      this.ids = new HashSet<String>();
-      this.excludeIds = new HashSet<String>();
+      this.ids = new HashSet<>();
+      this.excludeIds = new HashSet<>();
 
       this.include = new BooleanQuery();
       this.include.setBoost(0);
-      this.priority = new HashMap<BytesRef, Integer>();
+      this.priority = new HashMap<>();
       int max = elevate.size() + 5;
       for (String id : elevate) {
         id = idSchemaFT.readableToIndexed(id);
@@ -279,7 +279,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   //load up the elevation map
   private Map<String, ElevationObj> loadElevationMap(Config cfg) throws IOException {
     XPath xpath = XPathFactory.newInstance().newXPath();
-    Map<String, ElevationObj> map = new HashMap<String, ElevationObj>();
+    Map<String, ElevationObj> map = new HashMap<>();
     NodeList nodes = (NodeList) cfg.evaluate("elevate/query", XPathConstants.NODESET);
     for (int i = 0; i < nodes.getLength(); i++) {
       Node node = nodes.item(i);
@@ -293,8 +293,8 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
             "query requires '<doc .../>' child");
       }
 
-      ArrayList<String> include = new ArrayList<String>();
-      ArrayList<String> exclude = new ArrayList<String>();
+      ArrayList<String> include = new ArrayList<>();
+      ArrayList<String> exclude = new ArrayList<>();
       for (int j = 0; j < children.getLength(); j++) {
         Node child = children.item(j);
         String id = DOMUtil.getAttr(child, "id", "missing 'id'");
@@ -333,7 +333,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
     Map<String, ElevationObj> elev = elevationCache.get(reader);
     if (elev == null) {
-      elev = new HashMap<String, ElevationObj>();
+      elev = new HashMap<>();
       elevationCache.put(reader, elev);
     }
     ElevationObj obj = new ElevationObj(query, Arrays.asList(ids), Arrays.asList(ex));
@@ -463,14 +463,14 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       List<String> match = null;
       if (booster != null) {
         // Extract the elevated terms into a list
-        match = new ArrayList<String>(booster.priority.size());
+        match = new ArrayList<>(booster.priority.size());
         for (Object o : booster.include.clauses()) {
           TermQuery tq = (TermQuery) ((BooleanClause) o).getQuery();
           match.add(tq.getTerm().text());
         }
       }
 
-      SimpleOrderedMap<Object> dbg = new SimpleOrderedMap<Object>();
+      SimpleOrderedMap<Object> dbg = new SimpleOrderedMap<>();
       dbg.add("q", qstr);
       dbg.add("match", match);
       if (rb.isDebugQuery()) {
@@ -490,8 +490,8 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     SortField[] currentSorts = current.getSort().getSort();
     List<SchemaField> currentFields = current.getSchemaFields();
 
-    ArrayList<SortField> sorts = new ArrayList<SortField>(currentSorts.length + 1);
-    List<SchemaField> fields = new ArrayList<SchemaField>(currentFields.size() + 1);
+    ArrayList<SortField> sorts = new ArrayList<>(currentSorts.length + 1);
+    List<SchemaField> fields = new ArrayList<>(currentFields.size() + 1);
 
     // Perhaps force it to always sort by score
     if (force && currentSorts[0].getType() != SortField.Type.SCORE) {
@@ -568,7 +568,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       private int topVal;
       private TermsEnum termsEnum;
       private DocsEnum docsEnum;
-      Set<String> seen = new HashSet<String>(elevations.ids.size());
+      Set<String> seen = new HashSet<>(elevations.ids.size());
 
       @Override
       public int compare(int slot1, int slot2) {

@@ -248,7 +248,7 @@ public abstract class RSLPStemmerBase {
     try {
       InputStream is = clazz.getResourceAsStream(resource);
       LineNumberReader r = new LineNumberReader(new InputStreamReader(is, "UTF-8"));
-      Map<String,Step> steps = new HashMap<String,Step>();
+      Map<String,Step> steps = new HashMap<>();
       String step;
       while ((step = readLine(r)) != null) {
         Step s = parseStep(r, step);
@@ -285,7 +285,7 @@ public abstract class RSLPStemmerBase {
   }
   
   private static Rule[] parseRules(LineNumberReader r, int type) throws IOException {
-    List<Rule> rules = new ArrayList<Rule>();
+    List<Rule> rules = new ArrayList<>();
     String line;
     while ((line = readLine(r)) != null) {
       Matcher matcher = stripPattern.matcher(line);

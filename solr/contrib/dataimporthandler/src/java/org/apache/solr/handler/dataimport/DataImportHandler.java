@@ -210,7 +210,7 @@ public class DataImportHandler extends RequestHandlerBase implements
 
   private Map<String, Object> getParamsMap(SolrParams params) {
     Iterator<String> names = params.getParameterNamesIterator();
-    Map<String, Object> result = new HashMap<String, Object>();
+    Map<String, Object> result = new HashMap<>();
     while (names.hasNext()) {
       String s = names.next();
       String[] val = params.getParams(s);

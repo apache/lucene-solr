@@ -156,7 +156,7 @@ public class Highlighter
     TextFragment[] frag =getBestTextFragments(tokenStream,text, true,maxNumFragments);
 
     //Get text
-    ArrayList<String> fragTexts = new ArrayList<String>();
+    ArrayList<String> fragTexts = new ArrayList<>();
     for (int i = 0; i < frag.length; i++)
     {
       if ((frag[i] != null) && (frag[i].getScore() > 0))
@@ -182,7 +182,7 @@ public class Highlighter
     int maxNumFragments)
     throws IOException, InvalidTokenOffsetsException
   {
-    ArrayList<TextFragment> docFrags = new ArrayList<TextFragment>();
+    ArrayList<TextFragment> docFrags = new ArrayList<>();
     StringBuilder newText=new StringBuilder();
 
     CharTermAttribute termAtt = tokenStream.addAttribute(CharTermAttribute.class);
@@ -327,7 +327,7 @@ public class Highlighter
       if(mergeContiguousFragments)
       {
         mergeContiguousFragments(frag);
-        ArrayList<TextFragment> fragTexts = new ArrayList<TextFragment>();
+        ArrayList<TextFragment> fragTexts = new ArrayList<>();
         for (int i = 0; i < frag.length; i++)
         {
           if ((frag[i] != null) && (frag[i].getScore() > 0))

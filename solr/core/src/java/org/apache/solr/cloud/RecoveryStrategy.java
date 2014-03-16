@@ -218,7 +218,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
       prepCmd.setState(ZkStateReader.RECOVERING);
       prepCmd.setCheckLive(true);
       prepCmd.setOnlyIfLeader(true);
-      if (!Slice.CONSTRUCTION.equals(slice.getState())) {
+      if (!Slice.CONSTRUCTION.equals(slice.getState()) && !Slice.RECOVERY.equals(slice.getState())) {
         prepCmd.setOnlyIfLeaderActive(true);
       }
       server.request(prepCmd);
@@ -284,7 +284,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
       recentVersions = recentUpdates.getVersions(ulog.numRecordsToKeep);
     } catch (Exception e) {
       SolrException.log(log, "Corrupt tlog - ignoring. core=" + coreName, e);
-      recentVersions = new ArrayList<Long>(0);
+      recentVersions = new ArrayList<>(0);
     } finally {
       if (recentUpdates != null) {
         recentUpdates.close();
@@ -313,7 +313,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         log.info("###### startupVersions=" + startingVersions);
       } catch (Exception e) {
         SolrException.log(log, "Error getting recent versions. core=" + coreName, e);
-        recentVersions = new ArrayList<Long>(0);
+        recentVersions = new ArrayList<>(0);
       }
     }
 

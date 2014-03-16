@@ -38,8 +38,8 @@ public class PropertiesUtil {
       return value;
     }
 
-    List<String> fragments = new ArrayList<String>();
-    List<String> propertyRefs = new ArrayList<String>();
+    List<String> fragments = new ArrayList<>();
+    List<String> propertyRefs = new ArrayList<>();
     parsePropertyString(value, fragments, propertyRefs);
 
     StringBuilder sb = new StringBuilder();

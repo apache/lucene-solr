@@ -118,7 +118,7 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
         return;
       }
       else {
-        SimpleOrderedMap<Object> info = new SimpleOrderedMap<Object>();
+        SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
         if(time>0) {
           info.add("since", time);
           info.add("found", found);
@@ -137,10 +137,10 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
     else {
       rsp.add("levels", watcher.getAllLevels());
   
-      List<LoggerInfo> loggers = new ArrayList<LoggerInfo>(watcher.getAllLoggers());
+      List<LoggerInfo> loggers = new ArrayList<>(watcher.getAllLoggers());
       Collections.sort(loggers);
   
-      List<SimpleOrderedMap<?>> info = new ArrayList<SimpleOrderedMap<?>>();
+      List<SimpleOrderedMap<?>> info = new ArrayList<>();
       for(LoggerInfo wrap:loggers) {
         info.add(wrap.getInfo());
       }

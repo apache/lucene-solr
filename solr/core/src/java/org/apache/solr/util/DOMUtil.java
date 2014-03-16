@@ -38,7 +38,7 @@ public class DOMUtil {
   }
 
   public static Map<String,String> toMapExcept(NamedNodeMap attrs, String... exclusions) {
-    Map<String,String> args = new HashMap<String,String>();
+    Map<String,String> args = new HashMap<>();
     outer: for (int j=0; j<attrs.getLength(); j++) {
       Node attr = attrs.item(j);
 
@@ -101,7 +101,7 @@ public class DOMUtil {
   }
 
   public static NamedList<Object> nodesToNamedList(NodeList nlst) {
-    NamedList<Object> clst = new NamedList<Object>();
+    NamedList<Object> clst = new NamedList<>();
     for (int i=0; i<nlst.getLength(); i++) {
       addToNamedList(nlst.item(i), clst, null);
     }
@@ -307,8 +307,8 @@ public class DOMUtil {
       return value;
     }
 
-    List<String> fragments = new ArrayList<String>();
-    List<String> propertyRefs = new ArrayList<String>();
+    List<String> fragments = new ArrayList<>();
+    List<String> propertyRefs = new ArrayList<>();
     parsePropertyString(value, fragments, propertyRefs);
 
     StringBuilder sb = new StringBuilder();

@@ -166,7 +166,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     assertU(adoc("id", "4"));
     assertU(commit());
 
-    Map<String, String> args = new HashMap<String, String>();
+    Map<String, String> args = new HashMap<>();
     args.put(CommonParams.Q, "*:*");
     args.put(StatsParams.STATS, "true");
     args.put(StatsParams.STATS_FIELD, "active_s");
@@ -197,7 +197,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     assertU(adoc("id", "3"));
     assertU(commit());
 
-    Map<String, String> args = new HashMap<String, String>();
+    Map<String, String> args = new HashMap<>();
     args.put(CommonParams.Q, "*:*");
     args.put(StatsParams.STATS, "true");
     args.put(StatsParams.STATS_FIELD, "active_dt");
@@ -322,7 +322,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     assertU(adoc("id", "4"));
     assertU(commit());
 
-    Map<String, String> args = new HashMap<String, String>();
+    Map<String, String> args = new HashMap<>();
     args.put(CommonParams.Q, "*:*");
     args.put(StatsParams.STATS, "true");
     args.put(StatsParams.STATS_FIELD, "active_i");
@@ -342,7 +342,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     assertU(adoc("id", "4"));
     assertU(commit());
 
-    Map<String, String> args = new HashMap<String, String>();
+    Map<String, String> args = new HashMap<>();
     args.put(CommonParams.Q, "*:*");
     args.put(StatsParams.STATS, "true");
     args.put(StatsParams.STATS_FIELD, "active_s");
@@ -363,7 +363,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     assertU(adoc("id", "3"));
     assertU(commit());
 
-    Map<String, String> args = new HashMap<String, String>();
+    Map<String, String> args = new HashMap<>();
     args.put(CommonParams.Q, "*:*");
     args.put(StatsParams.STATS, "true");
     args.put(StatsParams.STATS_FIELD, "active_dt");
@@ -394,5 +394,37 @@ public class StatsComponentTest extends AbstractSolrTestCase {
                   "stats.facet", "foo_ss"),
               400);
 
+  }
+
+  //SOLR-3177
+  public void testStatsExcludeFilterQuery() throws Exception {
+    SolrCore core = h.getCore();
+    assertU(adoc("id", "1"));
+    assertU(adoc("id", "2"));
+    assertU(adoc("id", "3"));
+    assertU(adoc("id", "4"));
+    assertU(commit());
+
+    Map<String, String> args = new HashMap<String, String>();
+    args.put(CommonParams.Q, "*:*");
+    args.put(StatsParams.STATS, "true");
+    args.put(StatsParams.STATS_FIELD, "{!ex=id}id");
+    args.put("fq", "{!tag=id}id:[2 TO 3]");
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+
+    assertQ("test exluding filter query", req
+            , "//lst[@name='id']/double[@name='min'][.='1.0']"
+            , "//lst[@name='id']/double[@name='max'][.='4.0']");
+
+    args = new HashMap<String, String>();
+    args.put(CommonParams.Q, "*:*");
+    args.put(StatsParams.STATS, "true");
+    args.put(StatsParams.STATS_FIELD, "{!key=id2}id");
+    args.put("fq", "{!tag=id}id:[2 TO 3]");
+    req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+
+    assertQ("test rename field", req
+            , "//lst[@name='id2']/double[@name='min'][.='2.0']"
+            , "//lst[@name='id2']/double[@name='max'][.='3.0']");
   }
 }

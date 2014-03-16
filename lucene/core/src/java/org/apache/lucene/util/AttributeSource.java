@@ -145,8 +145,8 @@ public class AttributeSource {
    * An AttributeSource using the supplied {@link AttributeFactory} for creating new {@link Attribute} instances.
    */
   public AttributeSource(AttributeFactory factory) {
-    this.attributes = new LinkedHashMap<Class<? extends Attribute>, AttributeImpl>();
-    this.attributeImpls = new LinkedHashMap<Class<? extends AttributeImpl>, AttributeImpl>();
+    this.attributes = new LinkedHashMap<>();
+    this.attributeImpls = new LinkedHashMap<>();
     this.currentState = new State[1];
     this.factory = factory;
   }
@@ -207,7 +207,7 @@ public class AttributeSource {
     LinkedList<WeakReference<Class<? extends Attribute>>> foundInterfaces = knownImplClasses.get(clazz);
     if (foundInterfaces == null) {
       // we have the slight chance that another thread may do the same, but who cares?
-      foundInterfaces = new LinkedList<WeakReference<Class<? extends Attribute>>>();
+      foundInterfaces = new LinkedList<>();
       // find all interfaces that this attribute instance implements
       // and that extend the Attribute interface
       Class<?> actClazz = clazz;

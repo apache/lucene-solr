@@ -199,7 +199,7 @@ public class TestWordDelimiterFilterFactory extends SolrTestCaseJ4 {
   public void testCustomTypes() throws Exception {
     String testText = "I borrowed $5,400.00 at 25% interest-rate";
     ResourceLoader loader = new SolrResourceLoader("solr/collection1");
-    Map<String,String> args = new HashMap<String,String>();
+    Map<String,String> args = new HashMap<>();
     args.put("generateWordParts", "1");
     args.put("generateNumberParts", "1");
     args.put("catenateWords", "1");
@@ -221,7 +221,7 @@ public class TestWordDelimiterFilterFactory extends SolrTestCaseJ4 {
 
     
     /* custom behavior */
-    args = new HashMap<String,String>();
+    args = new HashMap<>();
     // use a custom type mapping
     args.put("generateWordParts", "1");
     args.put("generateNumberParts", "1");

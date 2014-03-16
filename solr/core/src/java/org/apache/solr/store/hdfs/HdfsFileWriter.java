@@ -32,6 +32,9 @@ import org.apache.lucene.store.DataOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @lucene.experimental
+ */
 public class HdfsFileWriter extends DataOutput implements Closeable {
   public static Logger LOG = LoggerFactory.getLogger(HdfsFileWriter.class);
   

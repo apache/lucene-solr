@@ -110,7 +110,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     };
   };
 
-  private static final Map<Constructor<?>,Predicate<Object[]>> brokenConstructors = new HashMap<Constructor<?>, Predicate<Object[]>>();
+  private static final Map<Constructor<?>,Predicate<Object[]>> brokenConstructors = new HashMap<>();
   static {
     try {
       brokenConstructors.put(
@@ -158,7 +158,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
 
   // TODO: also fix these and remove (maybe):
   // Classes/options that don't produce consistent graph offsets:
-  private static final Map<Constructor<?>,Predicate<Object[]>> brokenOffsetsConstructors = new HashMap<Constructor<?>, Predicate<Object[]>>();
+  private static final Map<Constructor<?>,Predicate<Object[]>> brokenOffsetsConstructors = new HashMap<>();
   static {
     try {
       for (Class<?> c : Arrays.<Class<?>>asList(
@@ -188,9 +188,9 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     List<Class<?>> analysisClasses = getClassesForPackage("org.apache.lucene.analysis");
-    tokenizers = new ArrayList<Constructor<? extends Tokenizer>>();
-    tokenfilters = new ArrayList<Constructor<? extends TokenFilter>>();
-    charfilters = new ArrayList<Constructor<? extends CharFilter>>();
+    tokenizers = new ArrayList<>();
+    tokenfilters = new ArrayList<>();
+    charfilters = new ArrayList<>();
     for (final Class<?> c : analysisClasses) {
       final int modifiers = c.getModifiers();
       if (
@@ -257,7 +257,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
   }
   
   public static List<Class<?>> getClassesForPackage(String pckgname) throws Exception {
-    final List<Class<?>> classes = new ArrayList<Class<?>>();
+    final List<Class<?>> classes = new ArrayList<>();
     collectClassesForPackage(pckgname, classes);
     assertFalse("No classes found in package '"+pckgname+"'; maybe your test classes are packaged as JAR file?", classes.isEmpty());
     return classes;
@@ -358,7 +358,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     put(Set.class, new ArgProducer() {
       @Override public Object create(Random random) {
         // TypeTokenFilter
-        Set<String> set = new HashSet<String>();
+        Set<String> set = new HashSet<>();
         int num = random.nextInt(5);
         for (int i = 0; i < num; i++) {
           set.add(StandardTokenizer.TOKEN_TYPES[random.nextInt(StandardTokenizer.TOKEN_TYPES.length)]);
@@ -369,7 +369,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     put(Collection.class, new ArgProducer() {
       @Override public Object create(Random random) {
         // CapitalizationFilter
-        Collection<char[]> col = new ArrayList<char[]>();
+        Collection<char[]> col = new ArrayList<>();
         int num = random.nextInt(5);
         for (int i = 0; i < num; i++) {
           col.add(TestUtil.randomSimpleString(random).toCharArray());
@@ -459,7 +459,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       @Override public Object create(Random random) {
         NormalizeCharMap.Builder builder = new NormalizeCharMap.Builder();
         // we can't add duplicate keys, or NormalizeCharMap gets angry
-        Set<String> keys = new HashSet<String>();
+        Set<String> keys = new HashSet<>();
         int num = random.nextInt(5);
         //System.out.println("NormalizeCharMap=");
         for (int i = 0; i < num; i++) {
@@ -489,7 +489,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     put(CharArrayMap.class, new ArgProducer() {
       @Override public Object create(Random random) {
         int num = random.nextInt(10);
-        CharArrayMap<String> map = new CharArrayMap<String>(TEST_VERSION_CURRENT, num, random.nextBoolean());
+        CharArrayMap<String> map = new CharArrayMap<>(TEST_VERSION_CURRENT, num, random.nextBoolean());
         for (int i = 0; i < num; i++) {
           // TODO: make nastier
           map.put(TestUtil.randomSimpleString(random), TestUtil.randomSimpleString(random));

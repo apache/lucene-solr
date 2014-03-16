@@ -44,7 +44,7 @@ public class ShapeFieldCache<T extends Shape> {
   public void add( int docid, T s ) {
     List<T> list = cache[docid];
     if( list == null ) {
-      list = cache[docid] = new ArrayList<T>(defaultLength);
+      list = cache[docid] = new ArrayList<>(defaultLength);
     }
     list.add( s );
   }

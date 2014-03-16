@@ -45,7 +45,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
 
   private final PositiveIntOutputs fstOutputs = PositiveIntOutputs.getSingleton();
 
-  final HashMap<FieldInfo,FieldIndexData> fields = new HashMap<FieldInfo,FieldIndexData>();
+  final HashMap<FieldInfo,FieldIndexData> fields = new HashMap<>();
   
   // start of the field info data
   private long dirOffset;
@@ -104,7 +104,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
     private BytesRefFSTEnum.InputOutput<Long> current;
 
     public IndexEnum(FST<Long> fst) {
-      fstEnum = new BytesRefFSTEnum<Long>(fst);
+      fstEnum = new BytesRefFSTEnum<>(fst);
     }
 
     @Override
@@ -158,7 +158,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
     public FieldIndexData(IndexInput in, FieldInfo fieldInfo, long indexStart) throws IOException {
       IndexInput clone = in.clone();
       clone.seek(indexStart);
-      fst = new FST<Long>(clone, fstOutputs);
+      fst = new FST<>(clone, fstOutputs);
       clone.close();
 
       /*

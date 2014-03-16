@@ -261,7 +261,7 @@ public class FileFloatSource extends ValueSource {
     // because of this, simply ask the reader for a new termEnum rather than
     // trying to use skipTo()
 
-    List<String> notFound = new ArrayList<String>();
+    List<String> notFound = new ArrayList<>();
     int notFoundCount=0;
     int otherErrors=0;
 

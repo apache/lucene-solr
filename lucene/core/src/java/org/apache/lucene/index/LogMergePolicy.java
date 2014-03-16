@@ -24,8 +24,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import org.apache.lucene.index.MergePolicy.MergeTrigger;
-
 
 /**
  * <p>This class implements a {@link MergePolicy} that tries
@@ -470,7 +468,7 @@ public abstract class LogMergePolicy extends MergePolicy {
 
     // Compute levels, which is just log (base mergeFactor)
     // of the size of each segment
-    final List<SegmentInfoAndLevel> levels = new ArrayList<SegmentInfoAndLevel>();
+    final List<SegmentInfoAndLevel> levels = new ArrayList<>();
     final float norm = (float) Math.log(mergeFactor);
 
     final Collection<SegmentCommitInfo> mergingSegments = writer.get().getMergingSegments();
@@ -572,7 +570,7 @@ public abstract class LogMergePolicy extends MergePolicy {
         } else if (!anyTooLarge) {
           if (spec == null)
             spec = new MergeSpecification();
-          final List<SegmentCommitInfo> mergeInfos = new ArrayList<SegmentCommitInfo>();
+          final List<SegmentCommitInfo> mergeInfos = new ArrayList<>();
           for(int i=start;i<end;i++) {
             mergeInfos.add(levels.get(i).info);
             assert infos.contains(levels.get(i).info);

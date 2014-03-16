@@ -359,7 +359,7 @@ public class TestPayloads extends LuceneTestCase {
      * This Analyzer uses an WhitespaceTokenizer and PayloadFilter.
      */
     private static class PayloadAnalyzer extends Analyzer {
-        Map<String,PayloadData> fieldToData = new HashMap<String,PayloadData>();
+        Map<String,PayloadData> fieldToData = new HashMap<>();
 
         public PayloadAnalyzer() {
           super(PER_FIELD_REUSE_STRATEGY);
@@ -539,7 +539,7 @@ public class TestPayloads extends LuceneTestCase {
         private List<byte[]> pool;
         
         ByteArrayPool(int capacity, int size) {
-            pool = new ArrayList<byte[]>();
+            pool = new ArrayList<>();
             for (int i = 0; i < capacity; i++) {
                 pool.add(new byte[size]);
             }

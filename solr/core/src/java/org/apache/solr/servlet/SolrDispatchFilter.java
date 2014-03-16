@@ -20,6 +20,7 @@ package org.apache.solr.servlet;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
@@ -364,8 +365,9 @@ public class SolrDispatchFilter implements Filter
           // get or create/cache the parser for the core
           SolrRequestParsers parser = config.getRequestParsers();
 
-          // Handle /schema/* paths via Restlet
-          if( path.startsWith("/schema") ) {
+          // Handle /schema/* and /config/* paths via Restlet
+          if( path.equals("/schema") || path.startsWith("/schema/")
+              || path.equals("/config") || path.startsWith("/config/")) {
             solrReq = parser.parse(core, path, req);
             SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, new SolrQueryResponse()));
             if( path.equals(req.getServletPath()) ) {
@@ -479,7 +481,7 @@ public class SolrDispatchFilter implements Filter
       collectionsList = StrUtils.splitSmart(collection, ",", true);
     }
     if (collectionsList != null) {
-      Set<String> newCollectionsList = new HashSet<String>(
+      Set<String> newCollectionsList = new HashSet<>(
           collectionsList.size());
       for (String col : collectionsList) {
         String al = aliases.getCollectionAlias(col);
@@ -535,6 +537,9 @@ public class SolrDispatchFilter implements Filter
         HttpEntity entity = new InputStreamEntity(req.getInputStream(), req.getContentLength());
         entityRequest.setEntity(entity);
         method = entityRequest;
+      }
+      else if ("DELETE".equals(req.getMethod())) {
+        method = new HttpDelete(urlstr);
       }
       else {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -601,7 +606,7 @@ public class SolrDispatchFilter implements Filter
     boolean byCoreName = false;
     
     if (slices == null) {
-      slices = new ArrayList<Slice>();
+      slices = new ArrayList<>();
       // look by core name
       byCoreName = true;
       slices = getSlicesForCollections(clusterState, slices, true);

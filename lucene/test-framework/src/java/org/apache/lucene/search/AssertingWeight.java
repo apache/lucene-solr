@@ -29,12 +29,14 @@ class AssertingWeight extends Weight {
     return other instanceof AssertingWeight ? other : new AssertingWeight(random, other);
   }
 
+  final boolean scoresDocsOutOfOrder;
   final Random random;
   final Weight in;
 
   AssertingWeight(Random random, Weight in) {
     this.random = random;
     this.in = in;
+    scoresDocsOutOfOrder = in.scoresDocsOutOfOrder() || random.nextBoolean();
   }
 
   @Override
@@ -58,19 +60,46 @@ class AssertingWeight extends Weight {
   }
 
   @Override
-  public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
-                       boolean topScorer, Bits acceptDocs) throws IOException {
+  public Scorer scorer(AtomicReaderContext context, Bits acceptDocs) throws IOException {
     // if the caller asks for in-order scoring or if the weight does not support
     // out-of order scoring then collection will have to happen in-order.
-    final boolean inOrder = scoreDocsInOrder || !scoresDocsOutOfOrder();
-    final Scorer inScorer = in.scorer(context, scoreDocsInOrder, topScorer, acceptDocs);
-    return AssertingScorer.wrap(new Random(random.nextLong()), inScorer, topScorer, inOrder);
+    final Scorer inScorer = in.scorer(context, acceptDocs);
+    return AssertingScorer.wrap(new Random(random.nextLong()), inScorer);
+  }
+
+  @Override
+  public BulkScorer bulkScorer(AtomicReaderContext context, boolean scoreDocsInOrder, Bits acceptDocs) throws IOException {
+    // if the caller asks for in-order scoring or if the weight does not support
+    // out-of order scoring then collection will have to happen in-order.
+    BulkScorer inScorer = in.bulkScorer(context, scoreDocsInOrder, acceptDocs);
+    if (inScorer == null) {
+      return null;
+    }
+
+    if (AssertingBulkScorer.shouldWrap(inScorer)) {
+      // The incoming scorer already has a specialized
+      // implementation for BulkScorer, so we should use it:
+      return AssertingBulkScorer.wrap(new Random(random.nextLong()), inScorer);
+    } else if (scoreDocsInOrder == false && random.nextBoolean()) {
+      // The caller claims it can handle out-of-order
+      // docs; let's confirm that by pulling docs and
+      // randomly shuffling them before collection:
+      //Scorer scorer = in.scorer(context, acceptDocs);
+      Scorer scorer = scorer(context, acceptDocs);
+
+      // Scorer should not be null if bulkScorer wasn't:
+      assert scorer != null;
+      return new AssertingBulkOutOfOrderScorer(new Random(random.nextLong()), scorer);
+    } else {
+      // Let super wrap this.scorer instead, so we use
+      // AssertingScorer:
+      return super.bulkScorer(context, scoreDocsInOrder, acceptDocs);
+    }
   }
 
   @Override
   public boolean scoresDocsOutOfOrder() {
-    return in.scoresDocsOutOfOrder();
+    return scoresDocsOutOfOrder;
   }
-
 }
 

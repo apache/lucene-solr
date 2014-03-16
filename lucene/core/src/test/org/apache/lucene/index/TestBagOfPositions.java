@@ -43,7 +43,7 @@ import org.apache.lucene.util.TestUtil;
 @SuppressCodecs({"Direct", "Memory"}) // at night this makes like 200k/300k docs and will make Direct's heart beat!
 public class TestBagOfPositions extends LuceneTestCase {
   public void test() throws Exception {
-    List<String> postingsList = new ArrayList<String>();
+    List<String> postingsList = new ArrayList<>();
     int numTerms = atLeast(300);
     final int maxTermsPerDoc = TestUtil.nextInt(random(), 10, 20);
     boolean isSimpleText = "SimpleText".equals(TestUtil.getPostingsFormat("field"));
@@ -66,7 +66,7 @@ public class TestBagOfPositions extends LuceneTestCase {
     }
     Collections.shuffle(postingsList, random());
 
-    final ConcurrentLinkedQueue<String> postings = new ConcurrentLinkedQueue<String>(postingsList);
+    final ConcurrentLinkedQueue<String> postings = new ConcurrentLinkedQueue<>(postingsList);
 
     Directory dir = newFSDirectory(TestUtil.getTempDir("bagofpositions"));
 

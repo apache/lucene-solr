@@ -108,10 +108,10 @@ public class SimplePostTool {
   static HashMap<String,String> mimeMap;
   GlobFileFilter globFileFilter;
   // Backlog for crawling
-  List<LinkedHashSet<URL>> backlog = new ArrayList<LinkedHashSet<URL>>();
-  Set<URL> visited = new HashSet<URL>();
+  List<LinkedHashSet<URL>> backlog = new ArrayList<>();
+  Set<URL> visited = new HashSet<>();
   
-  static final Set<String> DATA_MODES = new HashSet<String>();
+  static final Set<String> DATA_MODES = new HashSet<>();
   static final String USAGE_STRING_SHORT =
       "Usage: java [SystemProperties] -jar post.jar [-h|-] [<file|folder|url|arg> [<file|folder|url|arg>...]]";
 
@@ -125,7 +125,7 @@ public class SimplePostTool {
     DATA_MODES.add(DATA_MODE_STDIN);
     DATA_MODES.add(DATA_MODE_WEB);
     
-    mimeMap = new HashMap<String,String>();
+    mimeMap = new HashMap<>();
     mimeMap.put("xml", "text/xml");
     mimeMap.put("csv", "text/csv");
     mimeMap.put("json", "application/json");
@@ -344,8 +344,8 @@ public class SimplePostTool {
   private void reset() {
     fileTypes = DEFAULT_FILE_TYPES;
     globFileFilter = this.getFileFilterFromFileTypes(fileTypes);
-    backlog = new ArrayList<LinkedHashSet<URL>>();
-    visited = new HashSet<URL>();
+    backlog = new ArrayList<>();
+    visited = new HashSet<>();
   }
 
 
@@ -512,7 +512,7 @@ public class SimplePostTool {
    */
   public int postWebPages(String[] args, int startIndexInArgs, OutputStream out) {
     reset();
-    LinkedHashSet<URL> s = new LinkedHashSet<URL>();
+    LinkedHashSet<URL> s = new LinkedHashSet<>();
     for (int j = startIndexInArgs; j < args.length; j++) {
       try {
         URL u = new URL(normalizeUrlEnding(args[j]));
@@ -558,7 +558,7 @@ public class SimplePostTool {
     int rawStackSize = stack.size();
     stack.removeAll(visited);
     int stackSize = stack.size();
-    LinkedHashSet<URL> subStack = new LinkedHashSet<URL>();
+    LinkedHashSet<URL> subStack = new LinkedHashSet<>();
     info("Entering crawl at level "+level+" ("+rawStackSize+" links total, "+stackSize+" new)");
     for(URL u : stack) {
       try {
@@ -1016,7 +1016,7 @@ public class SimplePostTool {
     final String DISALLOW = "Disallow:";
     
     public PageFetcher() {
-      robotsCache = new HashMap<String,List<String>>();
+      robotsCache = new HashMap<>();
     }
     
     public PageFetcherResult readPageFromUrl(URL u) {
@@ -1074,7 +1074,7 @@ public class SimplePostTool {
       String strRobot = url.getProtocol() + "://" + host + "/robots.txt";
       List<String> disallows = robotsCache.get(host);
       if(disallows == null) {
-        disallows = new ArrayList<String>();
+        disallows = new ArrayList<>();
         URL urlRobot;
         try { 
           urlRobot = new URL(strRobot);
@@ -1104,7 +1104,7 @@ public class SimplePostTool {
      * @throws IOException if problems reading the stream
      */
     protected List<String> parseRobotsTxt(InputStream is) throws IOException {
-      List<String> disallows = new ArrayList<String>();
+      List<String> disallows = new ArrayList<>();
       BufferedReader r = new BufferedReader(new InputStreamReader(is, "UTF-8"));
       String l;
       while((l = r.readLine()) != null) {
@@ -1130,7 +1130,7 @@ public class SimplePostTool {
      * @return a set of URLs parsed from the page
      */
     protected Set<URL> getLinksFromWebPage(URL u, InputStream is, String type, URL postUrl) {
-      Set<URL> l = new HashSet<URL>();
+      Set<URL> l = new HashSet<>();
       URL url = null;
       try {
         ByteArrayOutputStream os = new ByteArrayOutputStream();

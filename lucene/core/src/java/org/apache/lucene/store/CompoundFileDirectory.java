@@ -130,7 +130,7 @@ public final class CompoundFileDirectory extends BaseDirectory {
       entriesStream = dir.openInput(entriesFileName, IOContext.READONCE);
       CodecUtil.checkHeader(entriesStream, CompoundFileWriter.ENTRY_CODEC, CompoundFileWriter.VERSION_START, CompoundFileWriter.VERSION_START);
       final int numEntries = entriesStream.readVInt();
-      final Map<String, FileEntry> mapping = new HashMap<String,FileEntry>(numEntries);
+      final Map<String, FileEntry> mapping = new HashMap<>(numEntries);
       for (int i = 0; i < numEntries; i++) {
         final FileEntry fileEntry = new FileEntry();
         final String id = entriesStream.readString();

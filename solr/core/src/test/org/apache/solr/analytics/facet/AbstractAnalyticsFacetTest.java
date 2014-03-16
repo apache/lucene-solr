@@ -53,7 +53,7 @@ import javax.xml.xpath.XPathFactory;
 
 @SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Appending","Asserting"})
 public class AbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
-  protected static final HashMap<String,Object> defaults = new HashMap<String,Object>();
+  protected static final HashMap<String,Object> defaults = new HashMap<>();
   
   protected String latestType = "";
 
@@ -88,7 +88,7 @@ public class AbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
   }
   protected ArrayList<String> getStringList(String n1, String n2, String n3, String element, String n4)
       throws XPathExpressionException {
-    ArrayList<String> ret = new ArrayList<String>();
+    ArrayList<String> ret = new ArrayList<>();
     NodeList nodes = getNodes(n1, n2, n3, element, n4);
     for (int idx = 0; idx < nodes.getLength(); ++idx) {
       ret.add(nodes.item(idx).getTextContent());
@@ -98,7 +98,7 @@ public class AbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
 
   protected ArrayList<Integer> getIntegerList(String n1, String n2, String n3, String element, String n4)
       throws XPathExpressionException {
-    ArrayList<Integer> ret = new ArrayList<Integer>();
+    ArrayList<Integer> ret = new ArrayList<>();
     NodeList nodes = getNodes(n1, n2, n3, element, n4);
     for (int idx = 0; idx < nodes.getLength(); ++idx) {
       ret.add(Integer.parseInt(nodes.item(idx).getTextContent()));
@@ -107,7 +107,7 @@ public class AbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
   }
   protected ArrayList<Long> getLongList(String n1, String n2, String n3, String element, String n4)
       throws XPathExpressionException {
-    ArrayList<Long> ret = new ArrayList<Long>();
+    ArrayList<Long> ret = new ArrayList<>();
     NodeList nodes = getNodes(n1, n2, n3, element, n4);
     for (int idx = 0; idx < nodes.getLength(); ++idx) {
       ret.add(Long.parseLong(nodes.item(idx).getTextContent()));
@@ -116,7 +116,7 @@ public class AbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
   }
   protected ArrayList<Float> getFloatList(String n1, String n2, String n3, String element, String n4)
       throws XPathExpressionException {
-    ArrayList<Float> ret = new ArrayList<Float>();
+    ArrayList<Float> ret = new ArrayList<>();
     NodeList nodes = getNodes(n1, n2, n3, element, n4);
     for (int idx = 0; idx < nodes.getLength(); ++idx) {
       ret.add(Float.parseFloat(nodes.item(idx).getTextContent()));
@@ -126,7 +126,7 @@ public class AbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
 
   protected ArrayList<Double> getDoubleList(String n1, String n2, String n3, String element, String n4)
       throws XPathExpressionException {
-    ArrayList<Double> ret = new ArrayList<Double>();
+    ArrayList<Double> ret = new ArrayList<>();
     NodeList nodes = getNodes(n1, n2, n3, element, n4);
     for (int idx = 0; idx < nodes.getLength(); ++idx) {
       ret.add(Double.parseDouble(nodes.item(idx).getTextContent()));
@@ -141,7 +141,7 @@ public class AbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
   }
   
   public static String[] filter(String...args){
-    List<String> l = new ArrayList<String>();
+    List<String> l = new ArrayList<>();
     for( int i=0; i <args.length; i+=2){
       if( args[i+1].equals("0") || args[i+1].equals("0.0") || 
           args[i+1].equals("1800-12-31T23:59:59Z") || args[i+1].equals("str0") ||
@@ -237,7 +237,7 @@ public class AbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
     } else if (stat.equals("unique")) {
       result = new ArrayList<Long>();
       for (List<T> list : lists) {
-        HashSet<T> set = new HashSet<T>();
+        HashSet<T> set = new HashSet<>();
         set.addAll(list);
         result.add((long)set.size());
       }
@@ -285,7 +285,7 @@ public class AbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
     if (in == null) throw new FileNotFoundException("Resource not found: " + fileName);
     Scanner file = new Scanner(in, "UTF-8");
     try { 
-      ArrayList<String> strList = new ArrayList<String>();
+      ArrayList<String> strList = new ArrayList<>();
       while (file.hasNextLine()) {
         String line = file.nextLine();
         if (line.length()<2) {

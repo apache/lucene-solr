@@ -66,7 +66,7 @@ public class BlockTermsReader extends FieldsProducer {
   // produce DocsEnum on demand
   private final PostingsReaderBase postingsReader;
 
-  private final TreeMap<String,FieldReader> fields = new TreeMap<String,FieldReader>();
+  private final TreeMap<String,FieldReader> fields = new TreeMap<>();
 
   // Reads the terms index
   private TermsIndexReaderBase indexReader;

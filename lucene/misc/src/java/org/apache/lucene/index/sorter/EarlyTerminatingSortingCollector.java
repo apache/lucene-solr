@@ -24,50 +24,53 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.CollectionTerminatedException;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TotalHitCountCollector;
 
 /**
  * A {@link Collector} that early terminates collection of documents on a
  * per-segment basis, if the segment was sorted according to the given
- * {@link Sorter}.
+ * {@link Sort}.
  * 
  * <p>
- * <b>NOTE:</b> the {@link Collector} detects sorted segments according to
+ * <b>NOTE:</b> the {@code Collector} detects sorted segments according to
  * {@link SortingMergePolicy}, so it's best used in conjunction with it. Also,
- * it collects up to a specified num docs from each segment, and therefore is
- * mostly suitable for use in conjunction with collectors such as
+ * it collects up to a specified {@code numDocsToCollect} from each segment, 
+ * and therefore is mostly suitable for use in conjunction with collectors such as
  * {@link TopDocsCollector}, and not e.g. {@link TotalHitCountCollector}.
  * <p>
- * <b>NOTE</b>: If you wrap a {@link TopDocsCollector} that sorts in the same
- * order as the index order, the returned {@link TopDocsCollector#topDocs()}
+ * <b>NOTE</b>: If you wrap a {@code TopDocsCollector} that sorts in the same
+ * order as the index order, the returned {@link TopDocsCollector#topDocs() TopDocs}
  * will be correct. However the total of {@link TopDocsCollector#getTotalHits()
  * hit count} will be underestimated since not all matching documents will have
  * been collected.
  * <p>
- * <b>NOTE</b>: This {@link Collector} uses {@link Sorter#getID()} to detect
- * whether a segment was sorted with the same {@link Sorter} as the one given in
- * {@link #EarlyTerminatingSortingCollector(Collector, Sorter, int)}. This has
+ * <b>NOTE</b>: This {@code Collector} uses {@link Sort#toString()} to detect
+ * whether a segment was sorted with the same {@code Sort}. This has
  * two implications:
  * <ul>
- * <li>if {@link Sorter#getID()} is not implemented correctly and returns
- * different identifiers for equivalent {@link Sorter}s, this collector will not
+ * <li>if a custom comparator is not implemented correctly and returns
+ * different identifiers for equivalent instances, this collector will not
  * detect sorted segments,</li>
  * <li>if you suddenly change the {@link IndexWriter}'s
- * {@link SortingMergePolicy} to sort according to another criterion and if both
- * the old and the new {@link Sorter}s have the same identifier, this
- * {@link Collector} will incorrectly detect sorted segments.</li>
+ * {@code SortingMergePolicy} to sort according to another criterion and if both
+ * the old and the new {@code Sort}s have the same identifier, this
+ * {@code Collector} will incorrectly detect sorted segments.</li>
  * </ul>
  * 
  * @lucene.experimental
  */
 public class EarlyTerminatingSortingCollector extends Collector {
-
+  /** The wrapped Collector */
   protected final Collector in;
-  protected final Sorter sorter;
+  /** Sort used to sort the search results */
+  protected final Sort sort;
+  /** Number of documents to collect in each segment */
   protected final int numDocsToCollect;
-  
+  /** Number of documents to collect in the current segment being processed */
   protected int segmentTotalCollect;
+  /** True if the current segment being processed is sorted by {@link #sort} */
   protected boolean segmentSorted;
 
   private int numCollected;
@@ -77,20 +80,19 @@ public class EarlyTerminatingSortingCollector extends Collector {
    * 
    * @param in
    *          the collector to wrap
-   * @param sorter
-   *          the same sorter as the one which is used by {@link IndexWriter}'s
-   *          {@link SortingMergePolicy}
+   * @param sort
+   *          the sort you are sorting the search results on
    * @param numDocsToCollect
    *          the number of documents to collect on each segment. When wrapping
    *          a {@link TopDocsCollector}, this number should be the number of
    *          hits.
    */
-  public EarlyTerminatingSortingCollector(Collector in, Sorter sorter, int numDocsToCollect) {
+  public EarlyTerminatingSortingCollector(Collector in, Sort sort, int numDocsToCollect) {
     if (numDocsToCollect <= 0) {
       throw new IllegalStateException("numDocsToCollect must always be > 0, got " + segmentTotalCollect);
     }
     this.in = in;
-    this.sorter = sorter;
+    this.sort = sort;
     this.numDocsToCollect = numDocsToCollect;
   }
 
@@ -110,7 +112,7 @@ public class EarlyTerminatingSortingCollector extends Collector {
   @Override
   public void setNextReader(AtomicReaderContext context) throws IOException {
     in.setNextReader(context);
-    segmentSorted = SortingMergePolicy.isSorted(context.reader(), sorter);
+    segmentSorted = SortingMergePolicy.isSorted(context.reader(), sort);
     segmentTotalCollect = segmentSorted ? numDocsToCollect : Integer.MAX_VALUE;
     numCollected = 0;
   }

@@ -54,7 +54,7 @@ public class FacetsCollector extends Collector {
   private int totalHits;
   private float[] scores;
   private final boolean keepScores;
-  private final List<MatchingDocs> matchingDocs = new ArrayList<MatchingDocs>();
+  private final List<MatchingDocs> matchingDocs = new ArrayList<>();
   private Docs docs;
   
   /**

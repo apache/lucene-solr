@@ -79,10 +79,10 @@ public class TrecContentSource extends ContentSource {
        "hhmm z.z.z. MMM dd, yyyy",       // 0901 u.t.c. April 28, 1994
   };
 
-  private ThreadLocal<DateFormatInfo> dateFormats = new ThreadLocal<DateFormatInfo>();
-  private ThreadLocal<StringBuilder> trecDocBuffer = new ThreadLocal<StringBuilder>();
+  private ThreadLocal<DateFormatInfo> dateFormats = new ThreadLocal<>();
+  private ThreadLocal<StringBuilder> trecDocBuffer = new ThreadLocal<>();
   private File dataDir = null;
-  private ArrayList<File> inputFiles = new ArrayList<File>();
+  private ArrayList<File> inputFiles = new ArrayList<>();
   private int nextFile = 0;
   // Use to synchronize threads on reading from the TREC documents.
   private Object lock = new Object();

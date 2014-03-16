@@ -210,7 +210,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
       if( fields == null || fields.size() == 0 ) return;
       StringBuilder sb = new StringBuilder();
       String[] flparams = fl.split( "[,\\s]+" );
-      Set<String> flParamSet = new HashSet<String>(flparams.length);
+      Set<String> flParamSet = new HashSet<>(flparams.length);
       for( String flparam : flparams ){
         // no need trim() because of split() by \s+
         flParamSet.add(flparam);

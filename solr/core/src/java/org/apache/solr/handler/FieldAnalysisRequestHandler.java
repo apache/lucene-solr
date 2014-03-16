@@ -173,9 +173,9 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
    * @return The analysis breakdown as a named list.
    */
   protected NamedList<NamedList> handleAnalysisRequest(FieldAnalysisRequest request, IndexSchema schema) {
-    NamedList<NamedList> analysisResults = new SimpleOrderedMap<NamedList>();
+    NamedList<NamedList> analysisResults = new SimpleOrderedMap<>();
 
-    NamedList<NamedList> fieldTypeAnalysisResults = new SimpleOrderedMap<NamedList>();
+    NamedList<NamedList> fieldTypeAnalysisResults = new SimpleOrderedMap<>();
     if (request.getFieldTypes() != null)  {
       for (String fieldTypeName : request.getFieldTypes()) {
         FieldType fieldType = schema.getFieldTypes().get(fieldTypeName);
@@ -183,7 +183,7 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
       }
     }
 
-    NamedList<NamedList> fieldNameAnalysisResults = new SimpleOrderedMap<NamedList>();
+    NamedList<NamedList> fieldNameAnalysisResults = new SimpleOrderedMap<>();
     if (request.getFieldNames() != null)  {
       for (String fieldName : request.getFieldNames()) {
         FieldType fieldType = schema.getFieldType(fieldName);
@@ -215,7 +215,7 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
       ? getQueryTokenSet(queryValue, fieldType.getQueryAnalyzer())
       : EMPTY_BYTES_SET;
 
-    NamedList<NamedList> analyzeResults = new SimpleOrderedMap<NamedList>();
+    NamedList<NamedList> analyzeResults = new SimpleOrderedMap<>();
     if (analysisRequest.getFieldValue() != null) {
       AnalysisContext context = new AnalysisContext(fieldName, fieldType, fieldType.getAnalyzer(), termsToMatch);
       NamedList analyzedTokens = analyzeValue(analysisRequest.getFieldValue(), context);

@@ -90,7 +90,7 @@ public class TriLevelCompositeIdRoutingTest extends ShardRoutingTest {
 
     commit();
 
-    HashMap<String, Integer> idMap = new HashMap<String, Integer>();
+    HashMap<String, Integer> idMap = new HashMap<>();
 
     for (int i = 1; i <= sliceCount; i++) {
 
@@ -122,7 +122,7 @@ public class TriLevelCompositeIdRoutingTest extends ShardRoutingTest {
 
     commit();
 
-    HashMap<String, Integer> idMap = new HashMap<String, Integer>();
+    HashMap<String, Integer> idMap = new HashMap<>();
 
     for (int i = 1; i <= sliceCount; i++) {
 
@@ -142,7 +142,7 @@ public class TriLevelCompositeIdRoutingTest extends ShardRoutingTest {
 
   Set<String> doQueryGetUniqueIdKeys(String... queryParams) throws Exception {
     QueryResponse rsp = cloudClient.query(params(queryParams));
-    Set<String> obtainedIdKeys = new HashSet<String>();
+    Set<String> obtainedIdKeys = new HashSet<>();
     for (SolrDocument doc : rsp.getResults()) {
       obtainedIdKeys.add(getKey((String) doc.get("id")));
     }

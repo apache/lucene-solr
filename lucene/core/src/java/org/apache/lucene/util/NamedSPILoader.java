@@ -59,7 +59,7 @@ public final class NamedSPILoader<S extends NamedSPILoader.NamedSPI> implements 
    * of new service providers on the given classpath/classloader!</em>
    */
   public synchronized void reload(ClassLoader classloader) {
-    final LinkedHashMap<String,S> services = new LinkedHashMap<String,S>(this.services);
+    final LinkedHashMap<String,S> services = new LinkedHashMap<>(this.services);
     final SPIClassIterator<S> loader = SPIClassIterator.get(clazz, classloader);
     while (loader.hasNext()) {
       final Class<? extends S> c = loader.next();

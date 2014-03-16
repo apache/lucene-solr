@@ -31,8 +31,8 @@ import org.slf4j.LoggerFactory;
 class CollectingDocumentLoader implements DocumentLoader {
 
   private final int batchSize;
-  private final List<SolrInputDocument> batch = new ArrayList<SolrInputDocument> ();
-  private List<SolrInputDocument> results = new ArrayList<SolrInputDocument> ();
+  private final List<SolrInputDocument> batch = new ArrayList<> ();
+  private List<SolrInputDocument> results = new ArrayList<> ();
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CollectingDocumentLoader.class);
 

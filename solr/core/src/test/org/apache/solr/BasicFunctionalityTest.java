@@ -351,7 +351,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     final String BAD_VALUE = "NOT_A_NUMBER";
     ignoreException(BAD_VALUE);
 
-    final List<String> FIELDS = new LinkedList<String>();
+    final List<String> FIELDS = new LinkedList<>();
     for (String type : new String[] { "ti", "tf", "td", "tl" }) {
       FIELDS.add("malformed_" + type);
     }
@@ -550,7 +550,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     nl.add("bt","true");
     nl.add("bf","false");
 
-    Map<String,String> m = new HashMap<String,String>();
+    Map<String,String> m = new HashMap<>();
     m.put("f.field1.i", "1000");
     m.put("s", "BBB");
     m.put("ss", "SSS");

@@ -111,7 +111,7 @@ public class GenerateJflexTLDMacros {
    * @throws java.io.IOException if there is a problem downloading the database 
    */
   private SortedSet<String> getIANARootZoneDatabase() throws IOException {
-    final SortedSet<String> TLDs = new TreeSet<String>();
+    final SortedSet<String> TLDs = new TreeSet<>();
     final URLConnection connection = tldFileURL.openConnection();
     connection.setUseCaches(false);
     connection.addRequestProperty("Cache-Control", "no-cache");

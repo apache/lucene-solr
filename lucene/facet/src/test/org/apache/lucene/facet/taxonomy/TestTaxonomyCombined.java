@@ -534,7 +534,7 @@ public class TestTaxonomyCombined extends FacetTestCase {
     for (int i=0; i<expectedCategories.length; i++) {
       // find expected children by looking at all expectedCategories
       // for children
-      ArrayList<Integer> expectedChildren = new ArrayList<Integer>();
+      ArrayList<Integer> expectedChildren = new ArrayList<>();
       for (int j=expectedCategories.length-1; j>=0; j--) {
         if (expectedCategories[j].length != expectedCategories[i].length+1) {
           continue; // not longer by 1, so can't be a child

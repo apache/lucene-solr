@@ -27,7 +27,7 @@ import org.apache.solr.common.util.IteratorChain;
 public class IteratorChainTest extends LuceneTestCase {
   
   private Iterator<String> makeIterator(String marker,int howMany) {
-    final List<String> c = new ArrayList<String>();
+    final List<String> c = new ArrayList<>();
     for(int i = 1; i <= howMany; i++) {
       c.add(marker + i);
     }
@@ -35,13 +35,13 @@ public class IteratorChainTest extends LuceneTestCase {
   }
   
   public void testNoIterator() {
-    final IteratorChain<String> c = new IteratorChain<String>();
+    final IteratorChain<String> c = new IteratorChain<>();
     assertFalse("Empty IteratorChain.hastNext() is false",c.hasNext());
     assertEquals("",getString(c));
   }
   
   public void testCallNextTooEarly() {
-    final IteratorChain<String> c = new IteratorChain<String>();
+    final IteratorChain<String> c = new IteratorChain<>();
     c.addIterator(makeIterator("a",3));
     try {
       c.next();
@@ -52,7 +52,7 @@ public class IteratorChainTest extends LuceneTestCase {
   }
   
   public void testCallAddTooLate() {
-    final IteratorChain<String> c = new IteratorChain<String>();
+    final IteratorChain<String> c = new IteratorChain<>();
     c.hasNext();
     try {
       c.addIterator(makeIterator("a",3));
@@ -63,7 +63,7 @@ public class IteratorChainTest extends LuceneTestCase {
   }
   
   public void testRemove() {
-    final IteratorChain<String> c = new IteratorChain<String>();
+    final IteratorChain<String> c = new IteratorChain<>();
     try {
       c.remove();
       fail("Calling remove should throw UnsupportedOperationException");
@@ -73,20 +73,20 @@ public class IteratorChainTest extends LuceneTestCase {
   }
   
   public void testOneIterator() {
-    final IteratorChain<String> c = new IteratorChain<String>();
+    final IteratorChain<String> c = new IteratorChain<>();
     c.addIterator(makeIterator("a",3));
     assertEquals("a1a2a3",getString(c));
   }
   
   public void testTwoIterators() {
-    final IteratorChain<String> c = new IteratorChain<String>();
+    final IteratorChain<String> c = new IteratorChain<>();
     c.addIterator(makeIterator("a",3));
     c.addIterator(makeIterator("b",2));
     assertEquals("a1a2a3b1b2",getString(c));
   }
   
   public void testEmptyIteratorsInTheMiddle() {
-    final IteratorChain<String> c = new IteratorChain<String>();
+    final IteratorChain<String> c = new IteratorChain<>();
     c.addIterator(makeIterator("a",3));
     c.addIterator(makeIterator("b",0));
     c.addIterator(makeIterator("c",1));

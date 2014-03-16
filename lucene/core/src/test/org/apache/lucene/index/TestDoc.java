@@ -71,7 +71,7 @@ public class TestDoc extends LuceneTestCase {
         Directory directory = newFSDirectory(indexDir);
         directory.close();
 
-        files = new LinkedList<File>();
+        files = new LinkedList<>();
         files.add(createOutput("test.txt",
             "This is the first test file"
         ));
@@ -229,7 +229,7 @@ public class TestDoc extends LuceneTestCase {
       final SegmentInfo info = new SegmentInfo(si1.info.dir, Constants.LUCENE_MAIN_VERSION, merged,
                                                si1.info.getDocCount() + si2.info.getDocCount(),
                                                false, codec, null);
-      info.setFiles(new HashSet<String>(trackingDir.getCreatedFiles()));
+      info.setFiles(new HashSet<>(trackingDir.getCreatedFiles()));
       
       if (useCompoundFile) {
         Collection<String> filesToDelete = IndexWriter.createCompoundFile(InfoStream.getDefault(), dir, MergeState.CheckAbort.NONE, info, newIOContext(random()));

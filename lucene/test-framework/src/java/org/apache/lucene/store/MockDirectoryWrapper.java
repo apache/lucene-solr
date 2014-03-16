@@ -76,7 +76,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   boolean wrapLockFactory = true;
   private Set<String> unSyncedFiles;
   private Set<String> createdFiles;
-  private Set<String> openFilesForWrite = new HashSet<String>();
+  private Set<String> openFilesForWrite = new HashSet<>();
   Set<String> openLocks = Collections.synchronizedSet(new HashSet<String>());
   volatile boolean crashed;
   private ThrottledIndexOutput throttledOutput;
@@ -101,14 +101,14 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
 
   private synchronized void init() {
     if (openFiles == null) {
-      openFiles = new HashMap<String,Integer>();
-      openFilesDeleted = new HashSet<String>();
+      openFiles = new HashMap<>();
+      openFilesDeleted = new HashSet<>();
     }
 
     if (createdFiles == null)
-      createdFiles = new HashSet<String>();
+      createdFiles = new HashSet<>();
     if (unSyncedFiles == null)
-      unSyncedFiles = new HashSet<String>();
+      unSyncedFiles = new HashSet<>();
   }
 
   public MockDirectoryWrapper(Random random, Directory delegate) {
@@ -207,14 +207,14 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
    *  unsynced files. */
   public synchronized void crash() throws IOException {
     crashed = true;
-    openFiles = new HashMap<String,Integer>();
-    openFilesForWrite = new HashSet<String>();
-    openFilesDeleted = new HashSet<String>();
+    openFiles = new HashMap<>();
+    openFilesForWrite = new HashSet<>();
+    openFilesDeleted = new HashSet<>();
     Iterator<String> it = unSyncedFiles.iterator();
-    unSyncedFiles = new HashSet<String>();
+    unSyncedFiles = new HashSet<>();
     // first force-close all files, so we can corrupt on windows etc.
     // clone the file map, as these guys want to remove themselves on close.
-    Map<Closeable,Exception> m = new IdentityHashMap<Closeable,Exception>(openFileHandles);
+    Map<Closeable,Exception> m = new IdentityHashMap<>(openFileHandles);
     for (Closeable f : m.keySet()) {
       try {
         f.close();
@@ -441,7 +441,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   }
 
   public synchronized Set<String> getOpenDeletedFiles() {
-    return new HashSet<String>(openFilesDeleted);
+    return new HashSet<>(openFilesDeleted);
   }
 
   private boolean failOnCreateOutput = true;
@@ -629,11 +629,11 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   public synchronized void close() throws IOException {
     // files that we tried to delete, but couldn't because readers were open.
     // all that matters is that we tried! (they will eventually go away)
-    Set<String> pendingDeletions = new HashSet<String>(openFilesDeleted);
+    Set<String> pendingDeletions = new HashSet<>(openFilesDeleted);
     maybeYield();
     if (openFiles == null) {
-      openFiles = new HashMap<String,Integer>();
-      openFilesDeleted = new HashSet<String>();
+      openFiles = new HashMap<>();
+      openFilesDeleted = new HashSet<>();
     }
     if (openFiles.size() > 0) {
       // print the first one as its very verbose otherwise
@@ -666,7 +666,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         // TODO: factor this out / share w/ TestIW.assertNoUnreferencedFiles
         if (assertNoUnreferencedFilesOnClose) {
           // now look for unreferenced files: discount ones that we tried to delete but could not
-          Set<String> allFiles = new HashSet<String>(Arrays.asList(listAll()));
+          Set<String> allFiles = new HashSet<>(Arrays.asList(listAll()));
           allFiles.removeAll(pendingDeletions);
           String[] startFiles = allFiles.toArray(new String[0]);
           IndexWriterConfig iwc = new IndexWriterConfig(LuceneTestCase.TEST_VERSION_CURRENT, null);
@@ -674,8 +674,8 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
           new IndexWriter(in, iwc).rollback();
           String[] endFiles = in.listAll();
 
-          Set<String> startSet = new TreeSet<String>(Arrays.asList(startFiles));
-          Set<String> endSet = new TreeSet<String>(Arrays.asList(endFiles));
+          Set<String> startSet = new TreeSet<>(Arrays.asList(startFiles));
+          Set<String> endSet = new TreeSet<>(Arrays.asList(endFiles));
           
           if (pendingDeletions.contains("segments.gen") && endSet.contains("segments.gen")) {
             // this is possible if we hit an exception while writing segments.gen, we try to delete it
@@ -703,7 +703,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
               }
 
               try {
-                Set<String> ghosts = new HashSet<String>(sis.files(in, false));
+                Set<String> ghosts = new HashSet<>(sis.files(in, false));
                 for (String s : ghosts) {
                   if (endSet.contains(s) && !startSet.contains(s)) {
                     assert pendingDeletions.contains(s);
@@ -725,14 +725,14 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
           endFiles = endSet.toArray(new String[0]);
 
           if (!Arrays.equals(startFiles, endFiles)) {
-            List<String> removed = new ArrayList<String>();
+            List<String> removed = new ArrayList<>();
             for(String fileName : startFiles) {
               if (!endSet.contains(fileName)) {
                 removed.add(fileName);
               }
             }
 
-            List<String> added = new ArrayList<String>();
+            List<String> added = new ArrayList<>();
             for(String fileName : endFiles) {
               if (!startSet.contains(fileName)) {
                 added.add(fileName);
@@ -841,7 +841,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
    */
   synchronized public void failOn(Failure fail) {
     if (failures == null) {
-      failures = new ArrayList<Failure>();
+      failures = new ArrayList<>();
     }
     failures.add(fail);
   }

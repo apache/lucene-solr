@@ -61,7 +61,7 @@ class FieldCacheImpl implements FieldCache {
   }
 
   private synchronized void init() {
-    caches = new HashMap<Class<?>,Cache>(9);
+    caches = new HashMap<>(9);
     caches.put(Integer.TYPE, new IntCache(this));
     caches.put(Float.TYPE, new FloatCache(this));
     caches.put(Long.TYPE, new LongCache(this));
@@ -86,7 +86,7 @@ class FieldCacheImpl implements FieldCache {
 
   @Override
   public synchronized CacheEntry[] getCacheEntries() {
-    List<CacheEntry> result = new ArrayList<CacheEntry>(17);
+    List<CacheEntry> result = new ArrayList<>(17);
     for(final Map.Entry<Class<?>,Cache> cacheEntry: caches.entrySet()) {
       final Cache cache = cacheEntry.getValue();
       final Class<?> cacheType = cacheEntry.getKey();
@@ -149,7 +149,7 @@ class FieldCacheImpl implements FieldCache {
 
     final FieldCacheImpl wrapper;
 
-    final Map<Object,Map<CacheKey,Object>> readerCache = new WeakHashMap<Object,Map<CacheKey,Object>>();
+    final Map<Object,Map<CacheKey,Object>> readerCache = new WeakHashMap<>();
     
     protected abstract Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException;
@@ -169,7 +169,7 @@ class FieldCacheImpl implements FieldCache {
         Map<CacheKey,Object> innerCache = readerCache.get(readerKey);
         if (innerCache == null) {
           // First time this reader is using FieldCache
-          innerCache = new HashMap<CacheKey,Object>();
+          innerCache = new HashMap<>();
           readerCache.put(readerKey, innerCache);
           wrapper.initReader(reader);
         }
@@ -190,7 +190,7 @@ class FieldCacheImpl implements FieldCache {
         innerCache = readerCache.get(readerKey);
         if (innerCache == null) {
           // First time this reader is using FieldCache
-          innerCache = new HashMap<CacheKey,Object>();
+          innerCache = new HashMap<>();
           readerCache.put(readerKey, innerCache);
           wrapper.initReader(reader);
           value = null;
@@ -438,7 +438,7 @@ class FieldCacheImpl implements FieldCache {
         return wrapper.getInts(reader, key.field, NUMERIC_UTILS_INT_PARSER, setDocsWithField);
       }
 
-      final HoldsOneThing<GrowableWriterAndMinValue> valuesRef = new HoldsOneThing<GrowableWriterAndMinValue>();
+      final HoldsOneThing<GrowableWriterAndMinValue> valuesRef = new HoldsOneThing<>();
 
       Uninvert u = new Uninvert() {
           private int minValue;
@@ -626,7 +626,7 @@ class FieldCacheImpl implements FieldCache {
         return wrapper.getFloats(reader, key.field, NUMERIC_UTILS_FLOAT_PARSER, setDocsWithField);
       }
 
-      final HoldsOneThing<float[]> valuesRef = new HoldsOneThing<float[]>();
+      final HoldsOneThing<float[]> valuesRef = new HoldsOneThing<>();
 
       Uninvert u = new Uninvert() {
           private float currentValue;
@@ -733,7 +733,7 @@ class FieldCacheImpl implements FieldCache {
         return wrapper.getLongs(reader, key.field, NUMERIC_UTILS_LONG_PARSER, setDocsWithField);
       }
 
-      final HoldsOneThing<GrowableWriterAndMinValue> valuesRef = new HoldsOneThing<GrowableWriterAndMinValue>();
+      final HoldsOneThing<GrowableWriterAndMinValue> valuesRef = new HoldsOneThing<>();
 
       Uninvert u = new Uninvert() {
           private long minValue;
@@ -851,7 +851,7 @@ class FieldCacheImpl implements FieldCache {
         return wrapper.getDoubles(reader, key.field, NUMERIC_UTILS_DOUBLE_PARSER, setDocsWithField);
       }
 
-      final HoldsOneThing<double[]> valuesRef = new HoldsOneThing<double[]>();
+      final HoldsOneThing<double[]> valuesRef = new HoldsOneThing<>();
 
       Uninvert u = new Uninvert() {
           private double currentValue;

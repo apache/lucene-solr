@@ -40,6 +40,8 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TieredMergePolicy;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -50,14 +52,14 @@ public class TestSortingMergePolicy extends LuceneTestCase {
 
   private List<String> terms;
   private Directory dir1, dir2;
-  private Sorter sorter;
+  private Sort sort;
   private IndexReader reader;
   private IndexReader sortedReader;
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    sorter = new NumericDocValuesSorter("ndv");
+    sort = new Sort(new SortField("ndv", SortField.Type.LONG));
     createRandomIndexes();
   }
 
@@ -68,7 +70,7 @@ public class TestSortingMergePolicy extends LuceneTestCase {
     return doc;
   }
 
-  static MergePolicy newSortingMergePolicy(Sorter sorter) {
+  static MergePolicy newSortingMergePolicy(Sort sort) {
     // create a MP with a low merge factor so that many merges happen
     MergePolicy mp;
     if (random().nextBoolean()) {
@@ -83,7 +85,7 @@ public class TestSortingMergePolicy extends LuceneTestCase {
       mp = lmp;
     }
     // wrap it with a sorting mp
-    return new SortingMergePolicy(mp, sorter);
+    return new SortingMergePolicy(mp, sort);
   }
 
   private void createRandomIndexes() throws IOException {
@@ -91,15 +93,15 @@ public class TestSortingMergePolicy extends LuceneTestCase {
     dir2 = newDirectory();
     final int numDocs = atLeast(150);
     final int numTerms = TestUtil.nextInt(random(), 1, numDocs / 5);
-    Set<String> randomTerms = new HashSet<String>();
+    Set<String> randomTerms = new HashSet<>();
     while (randomTerms.size() < numTerms) {
       randomTerms.add(TestUtil.randomSimpleString(random()));
     }
-    terms = new ArrayList<String>(randomTerms);
+    terms = new ArrayList<>(randomTerms);
     final long seed = random().nextLong();
     final IndexWriterConfig iwc1 = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(new Random(seed)));
     final IndexWriterConfig iwc2 = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(new Random(seed)));
-    iwc2.setMergePolicy(newSortingMergePolicy(sorter));
+    iwc2.setMergePolicy(newSortingMergePolicy(sort));
     final RandomIndexWriter iw1 = new RandomIndexWriter(new Random(seed), dir1, iwc1);
     final RandomIndexWriter iw2 = new RandomIndexWriter(new Random(seed), dir2, iwc2);
     for (int i = 0; i < numDocs; ++i) {
@@ -162,13 +164,22 @@ public class TestSortingMergePolicy extends LuceneTestCase {
   }
 
   public void testSortingMP() throws IOException {
-    final AtomicReader sortedReader1 = SortingAtomicReader.wrap(SlowCompositeReaderWrapper.wrap(reader), sorter);
+    final AtomicReader sortedReader1 = SortingAtomicReader.wrap(SlowCompositeReaderWrapper.wrap(reader), sort);
     final AtomicReader sortedReader2 = SlowCompositeReaderWrapper.wrap(sortedReader);
 
     assertSorted(sortedReader1);
     assertSorted(sortedReader2);
     
     assertReaderEquals("", sortedReader1, sortedReader2);
+  }
+  
+  public void testBadSort() throws Exception {
+    try {
+      new SortingMergePolicy(newMergePolicy(), Sort.RELEVANCE);
+      fail("Didn't get expected exception");
+    } catch (IllegalArgumentException e) {
+      assertEquals("Cannot sort an index with a Sort that refers to the relevance score", e.getMessage());
+    }
   }
 
 }

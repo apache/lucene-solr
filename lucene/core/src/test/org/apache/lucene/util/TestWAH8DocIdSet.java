@@ -44,11 +44,11 @@ public class TestWAH8DocIdSet extends BaseDocIdSetTestCase<WAH8DocIdSet> {
   public void testUnion() throws IOException {
     final int numBits = TestUtil.nextInt(random(), 100, 1 << 20);
     final int numDocIdSets = TestUtil.nextInt(random(), 0, 4);
-    final List<BitSet> fixedSets = new ArrayList<BitSet>(numDocIdSets);
+    final List<BitSet> fixedSets = new ArrayList<>(numDocIdSets);
     for (int i = 0; i < numDocIdSets; ++i) {
       fixedSets.add(randomSet(numBits, random().nextFloat() / 16));
     }
-    final List<WAH8DocIdSet> compressedSets = new ArrayList<WAH8DocIdSet>(numDocIdSets);
+    final List<WAH8DocIdSet> compressedSets = new ArrayList<>(numDocIdSets);
     for (BitSet set : fixedSets) {
       compressedSets.add(copyOf(set, numBits));
     }
@@ -66,11 +66,11 @@ public class TestWAH8DocIdSet extends BaseDocIdSetTestCase<WAH8DocIdSet> {
   public void testIntersection() throws IOException {
     final int numBits = TestUtil.nextInt(random(), 100, 1 << 20);
     final int numDocIdSets = TestUtil.nextInt(random(), 1, 4);
-    final List<BitSet> fixedSets = new ArrayList<BitSet>(numDocIdSets);
+    final List<BitSet> fixedSets = new ArrayList<>(numDocIdSets);
     for (int i = 0; i < numDocIdSets; ++i) {
       fixedSets.add(randomSet(numBits, random().nextFloat()));
     }
-    final List<WAH8DocIdSet> compressedSets = new ArrayList<WAH8DocIdSet>(numDocIdSets);
+    final List<WAH8DocIdSet> compressedSets = new ArrayList<>(numDocIdSets);
     for (BitSet set : fixedSets) {
       compressedSets.add(copyOf(set, numBits));
     }

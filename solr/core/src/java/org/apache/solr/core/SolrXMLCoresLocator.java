@@ -143,7 +143,7 @@ public class SolrXMLCoresLocator implements CoresLocator {
 
   @Override
   public synchronized final void persist(CoreContainer cc, CoreDescriptor... coreDescriptors) {
-    List<CoreDescriptor> cds = new ArrayList<CoreDescriptor>(cc.getCoreDescriptors().size() + coreDescriptors.length);
+    List<CoreDescriptor> cds = new ArrayList<>(cc.getCoreDescriptors().size() + coreDescriptors.length);
     
     cds.addAll(cc.getCoreDescriptors());
     cds.addAll(Arrays.asList(coreDescriptors));

@@ -65,7 +65,7 @@ import org.apache.lucene.codecs.CodecUtil;
  */
 
 public class FSTTermsReader extends FieldsProducer {
-  final TreeMap<String, TermsReader> fields = new TreeMap<String, TermsReader>();
+  final TreeMap<String, TermsReader> fields = new TreeMap<>();
   final PostingsReaderBase postingsReader;
   final IndexInput in;
   //static boolean TEST = false;
@@ -172,7 +172,7 @@ public class FSTTermsReader extends FieldsProducer {
       this.sumDocFreq = sumDocFreq;
       this.docCount = docCount;
       this.longsSize = longsSize;
-      this.dict = new FST<FSTTermOutputs.TermData>(in, new FSTTermOutputs(fieldInfo, longsSize));
+      this.dict = new FST<>(in, new FSTTermOutputs(fieldInfo, longsSize));
     }
 
     @Override
@@ -307,7 +307,7 @@ public class FSTTermsReader extends FieldsProducer {
 
       SegmentTermsEnum() throws IOException {
         super();
-        this.fstEnum = new BytesRefFSTEnum<FSTTermOutputs.TermData>(dict);
+        this.fstEnum = new BytesRefFSTEnum<>(dict);
         this.decoded = false;
         this.seekPending = false;
         this.meta = null;
@@ -411,7 +411,7 @@ public class FSTTermsReader extends FieldsProducer {
         int fsaState;
 
         Frame() {
-          this.fstArc = new FST.Arc<FSTTermOutputs.TermData>();
+          this.fstArc = new FST.Arc<>();
           this.fsaState = -1;
         }
 
@@ -697,7 +697,7 @@ public class FSTTermsReader extends FieldsProducer {
   }
 
   static<T> void walk(FST<T> fst) throws IOException {
-    final ArrayList<FST.Arc<T>> queue = new ArrayList<FST.Arc<T>>();
+    final ArrayList<FST.Arc<T>> queue = new ArrayList<>();
     final BitSet seen = new BitSet();
     final FST.BytesReader reader = fst.getBytesReader();
     final FST.Arc<T> startArc = fst.getFirstArc(new FST.Arc<T>());

@@ -102,7 +102,7 @@ public class AnlysisResponseBaseTest extends LuceneTestCase {
   //================================================ Helper Methods ==================================================
 
   private List<NamedList> buildFakeTokenInfoList(int numberOfTokens) {
-    List<NamedList> list = new ArrayList<NamedList>(numberOfTokens);
+    List<NamedList> list = new ArrayList<>(numberOfTokens);
     for (int i = 0; i < numberOfTokens; i++) {
       list.add(new NamedList());
     }

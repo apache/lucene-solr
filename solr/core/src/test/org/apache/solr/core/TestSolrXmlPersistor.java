@@ -37,8 +37,7 @@ public class TestSolrXmlPersistor  extends SolrTestCaseJ4 {
     final String solrxml = "<solr><cores adminHandler=\"/admin\"/></solr>";
 
     SolrXMLCoresLocator persistor = new SolrXMLCoresLocator(solrxml, null);
-    assertEquals(persistor.buildSolrXML(EMPTY_CD_LIST),
-        "<solr><cores adminHandler=\"/admin\"></cores></solr>");
+    assertEquals("<solr><cores adminHandler=\"/admin\"></cores></solr>", persistor.buildSolrXML(EMPTY_CD_LIST));
 
   }
 
@@ -47,7 +46,7 @@ public class TestSolrXmlPersistor  extends SolrTestCaseJ4 {
     final String solrxml = "<solr><cores adminHandler=\"/admin\"></cores></solr>";
 
     SolrXMLCoresLocator persistor = new SolrXMLCoresLocator(solrxml, null);
-    assertEquals(persistor.buildSolrXML(EMPTY_CD_LIST), "<solr><cores adminHandler=\"/admin\"></cores></solr>");
+    assertEquals("<solr><cores adminHandler=\"/admin\"></cores></solr>", persistor.buildSolrXML(EMPTY_CD_LIST));
   }
 
   @Test
@@ -55,7 +54,7 @@ public class TestSolrXmlPersistor  extends SolrTestCaseJ4 {
     final String solrxml = "<solr></solr>";
 
     SolrXMLCoresLocator persistor = new SolrXMLCoresLocator(solrxml, null);
-    assertEquals(persistor.buildSolrXML(EMPTY_CD_LIST), "<solr><cores></cores></solr>");
+    assertEquals("<solr><cores></cores></solr>", persistor.buildSolrXML(EMPTY_CD_LIST));
   }
 
   @Test

@@ -44,7 +44,7 @@ public class SolrLogLayout extends Layout {
   
   long startTime = System.currentTimeMillis();
   long lastTime = startTime;
-  Map<Method,String> methodAlias = new HashMap<Method,String>();
+  Map<Method,String> methodAlias = new HashMap<>();
   
   public static class Method {
     public String className;
@@ -81,9 +81,9 @@ public class SolrLogLayout extends Layout {
     Map<String,Object> coreProps;
   }
   
-  Map<Integer,CoreInfo> coreInfoMap = new WeakHashMap<Integer,CoreInfo>();
+  Map<Integer,CoreInfo> coreInfoMap = new WeakHashMap<>();
   
-  public Map<String,String> classAliases = new HashMap<String,String>();
+  public Map<String,String> classAliases = new HashMap<>();
   
   public void appendThread(StringBuilder sb, LoggingEvent event) {
     Thread th = Thread.currentThread();

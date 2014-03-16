@@ -43,9 +43,9 @@ public class TestDocValuesWithThreads extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
 
-    final List<Long> numbers = new ArrayList<Long>();
-    final List<BytesRef> binary = new ArrayList<BytesRef>();
-    final List<BytesRef> sorted = new ArrayList<BytesRef>();
+    final List<Long> numbers = new ArrayList<>();
+    final List<BytesRef> binary = new ArrayList<>();
+    final List<BytesRef> sorted = new ArrayList<>();
     final int numDocs = atLeast(100);
     for(int i=0;i<numDocs;i++) {
       Document d = new Document();
@@ -69,7 +69,7 @@ public class TestDocValuesWithThreads extends LuceneTestCase {
     final AtomicReader ar = r.leaves().get(0).reader();
 
     int numThreads = TestUtil.nextInt(random(), 2, 5);
-    List<Thread> threads = new ArrayList<Thread>();
+    List<Thread> threads = new ArrayList<>();
     final CountDownLatch startingGun = new CountDownLatch(1);
     for(int t=0;t<numThreads;t++) {
       final Random threadRandom = new Random(random().nextLong());
@@ -133,12 +133,12 @@ public class TestDocValuesWithThreads extends LuceneTestCase {
     final Directory dir = newDirectory();
     final RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     final boolean allowDups = random.nextBoolean();
-    final Set<String> seen = new HashSet<String>();
+    final Set<String> seen = new HashSet<>();
     if (VERBOSE) {
       System.out.println("TEST: NUM_DOCS=" + NUM_DOCS + " allowDups=" + allowDups);
     }
     int numDocs = 0;
-    final List<BytesRef> docValues = new ArrayList<BytesRef>();
+    final List<BytesRef> docValues = new ArrayList<>();
 
     // TODO: deletions
     while (numDocs < NUM_DOCS) {

@@ -293,7 +293,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
 
   public void testRandom() throws IOException {
     String[] terms = new String[TestUtil.nextInt(random(), 2, 10)];
-    Set<String> seen = new HashSet<String>();
+    Set<String> seen = new HashSet<>();
     while (seen.size() < terms.length) {
       String token = TestUtil.randomSimpleString(random(), 1, 5);
       if (!seen.contains(token)) {
@@ -367,12 +367,12 @@ public class TestFreeTextSuggester extends LuceneTestCase {
       });
 
     // Build inefficient but hopefully correct model:
-    List<Map<String,Integer>> gramCounts = new ArrayList<Map<String,Integer>>(grams);
+    List<Map<String,Integer>> gramCounts = new ArrayList<>(grams);
     for(int gram=0;gram<grams;gram++) {
       if (VERBOSE) {
         System.out.println("TEST: build model for gram=" + gram);
       }
-      Map<String,Integer> model = new HashMap<String,Integer>();
+      Map<String,Integer> model = new HashMap<>();
       gramCounts.add(model);
       for(String[] doc : docs) {
         for(int i=0;i<doc.length-gram;i++) {
@@ -429,9 +429,9 @@ public class TestFreeTextSuggester extends LuceneTestCase {
       }
 
       // Expected:
-      List<LookupResult> expected = new ArrayList<LookupResult>();
+      List<LookupResult> expected = new ArrayList<>();
       double backoff = 1.0;
-      seen = new HashSet<String>();
+      seen = new HashSet<>();
 
       if (VERBOSE) {
         System.out.println("  compute expected");
@@ -494,7 +494,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("      find terms w/ prefix=" + tokens[tokens.length-1]);
         }
-        List<LookupResult> tmp = new ArrayList<LookupResult>();
+        List<LookupResult> tmp = new ArrayList<>();
         for(String term : terms) {
           if (term.startsWith(tokens[tokens.length-1])) {
             if (VERBOSE) {
@@ -587,7 +587,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
 
   @SafeVarargs
   private final <T> Iterable<T> shuffle(T...values) {
-    final List<T> asList = new ArrayList<T>(values.length);
+    final List<T> asList = new ArrayList<>(values.length);
     for (T value : values) {
       asList.add(value);
     }

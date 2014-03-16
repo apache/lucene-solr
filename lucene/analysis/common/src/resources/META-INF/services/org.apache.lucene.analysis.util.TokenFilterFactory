@@ -13,6 +13,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+org.apache.lucene.analysis.tr.ApostropheFilterFactory
 org.apache.lucene.analysis.ar.ArabicNormalizationFilterFactory
 org.apache.lucene.analysis.ar.ArabicStemFilterFactory
 org.apache.lucene.analysis.bg.BulgarianStemFilterFactory

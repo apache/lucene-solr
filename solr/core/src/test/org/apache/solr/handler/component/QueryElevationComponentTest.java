@@ -348,7 +348,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       init("schema12.xml");
       SolrCore core = h.getCore();
 
-      NamedList<String> args = new NamedList<String>();
+      NamedList<String> args = new NamedList<>();
       args.add(QueryElevationComponent.FIELD_TYPE, "string");
       args.add(QueryElevationComponent.CONFIG_FILE, "elevate.xml");
 
@@ -371,7 +371,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       assertEquals(null, map.get("zzzz"));
 
       // Now test the same thing with a lowercase filter: 'lowerfilt'
-      args = new NamedList<String>();
+      args = new NamedList<>();
       args.add(QueryElevationComponent.FIELD_TYPE, "lowerfilt");
       args.add(QueryElevationComponent.CONFIG_FILE, "elevate.xml");
 
@@ -535,7 +535,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
       String query = "title:ipod";
 
-      Map<String, String> args = new HashMap<String, String>();
+      Map<String, String> args = new HashMap<>();
       args.put(CommonParams.Q, query);
       args.put(CommonParams.QT, "/elevate");
       args.put(CommonParams.FL, "id,score");
@@ -699,7 +699,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       writeFile(f, "aaa", "A");
 
       QueryElevationComponent comp = (QueryElevationComponent) h.getCore().getSearchComponent("elevate");
-      NamedList<String> args = new NamedList<String>();
+      NamedList<String> args = new NamedList<>();
       args.add(QueryElevationComponent.CONFIG_FILE, testfile);
       comp.init(args);
       comp.inform(h.getCore());

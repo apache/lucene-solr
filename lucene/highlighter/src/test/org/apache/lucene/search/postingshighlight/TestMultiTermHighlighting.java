@@ -525,7 +525,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
         return analyzer;
       }
     };
-    Query query = new SpanMultiTermQueryWrapper<WildcardQuery>(new WildcardQuery(new Term("body", "te*")));
+    Query query = new SpanMultiTermQueryWrapper<>(new WildcardQuery(new Term("body", "te*")));
     TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
     assertEquals(2, topDocs.totalHits);
     String snippets[] = highlighter.highlight("body", query, searcher, topDocs);
@@ -566,7 +566,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
         return analyzer;
       }
     };
-    SpanQuery childQuery = new SpanMultiTermQueryWrapper<WildcardQuery>(new WildcardQuery(new Term("body", "te*")));
+    SpanQuery childQuery = new SpanMultiTermQueryWrapper<>(new WildcardQuery(new Term("body", "te*")));
     Query query = new SpanOrQuery(new SpanQuery[] { childQuery });
     TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
     assertEquals(2, topDocs.totalHits);
@@ -608,7 +608,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
         return analyzer;
       }
     };
-    SpanQuery childQuery = new SpanMultiTermQueryWrapper<WildcardQuery>(new WildcardQuery(new Term("body", "te*")));
+    SpanQuery childQuery = new SpanMultiTermQueryWrapper<>(new WildcardQuery(new Term("body", "te*")));
     Query query = new SpanNearQuery(new SpanQuery[] { childQuery }, 0, true);
     TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
     assertEquals(2, topDocs.totalHits);
@@ -650,7 +650,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
         return analyzer;
       }
     };
-    SpanQuery include = new SpanMultiTermQueryWrapper<WildcardQuery>(new WildcardQuery(new Term("body", "te*")));
+    SpanQuery include = new SpanMultiTermQueryWrapper<>(new WildcardQuery(new Term("body", "te*")));
     SpanQuery exclude = new SpanTermQuery(new Term("body", "bogus"));
     Query query = new SpanNotQuery(include, exclude);
     TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
@@ -693,7 +693,7 @@ public class TestMultiTermHighlighting extends LuceneTestCase {
         return analyzer;
       }
     };
-    SpanQuery childQuery = new SpanMultiTermQueryWrapper<WildcardQuery>(new WildcardQuery(new Term("body", "te*")));
+    SpanQuery childQuery = new SpanMultiTermQueryWrapper<>(new WildcardQuery(new Term("body", "te*")));
     Query query = new SpanFirstQuery(childQuery, 1000000);
     TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
     assertEquals(2, topDocs.totalHits);

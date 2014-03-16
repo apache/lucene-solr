@@ -144,7 +144,7 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
       } else {
         meta.writeByte(TABLE_COMPRESSED); // table-compressed
         Long[] decode = uniqueValues.toArray(new Long[uniqueValues.size()]);
-        final HashMap<Long,Integer> encode = new HashMap<Long,Integer>();
+        final HashMap<Long,Integer> encode = new HashMap<>();
         data.writeVInt(decode.length);
         for (int i = 0; i < decode.length; i++) {
           data.writeLong(decode[i]);
@@ -252,7 +252,7 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
     meta.writeByte(FST);
     meta.writeLong(data.getFilePointer());
     PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
-    Builder<Long> builder = new Builder<Long>(INPUT_TYPE.BYTE1, outputs);
+    Builder<Long> builder = new Builder<>(INPUT_TYPE.BYTE1, outputs);
     IntsRef scratch = new IntsRef();
     long ord = 0;
     for (BytesRef v : values) {

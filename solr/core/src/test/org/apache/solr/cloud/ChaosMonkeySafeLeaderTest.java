@@ -105,10 +105,10 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
 
     del("*:*");
     
-    List<StopableIndexingThread> threads = new ArrayList<StopableIndexingThread>();
+    List<StopableIndexingThread> threads = new ArrayList<>();
     int threadCount = 2;
     for (int i = 0; i < threadCount; i++) {
-      StopableIndexingThread indexThread = new StopableIndexingThread(Integer.toString(i), true);
+      StopableIndexingThread indexThread = new StopableIndexingThread(controlClient, cloudClient, Integer.toString(i), true);
       threads.add(indexThread);
       indexThread.start();
     }
@@ -169,7 +169,7 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
     } finally {
       client.shutdown();
     }
-    List<Integer> numShardsNumReplicas = new ArrayList<Integer>(2);
+    List<Integer> numShardsNumReplicas = new ArrayList<>(2);
     numShardsNumReplicas.add(1);
     numShardsNumReplicas.add(1);
     checkForCollection("testcollection",numShardsNumReplicas, null);

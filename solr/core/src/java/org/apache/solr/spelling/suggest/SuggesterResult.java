@@ -35,7 +35,7 @@ public class SuggesterResult {
   
   /** token -> lookup results mapping*/
   private Map<String, Map<String, List<LookupResult>>> suggestionsMap = 
-      new HashMap<String, Map<String, List<LookupResult>>>();
+      new HashMap<>();
 
   /** Add suggestion results for <code>token</code> */
   public void add(String suggesterName, String token, List<LookupResult> results) {

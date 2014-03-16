@@ -266,7 +266,7 @@ public class SortedSetDocValuesFacetCounts extends Facets {
   @Override
   public List<FacetResult> getAllDims(int topN) throws IOException {
 
-    List<FacetResult> results = new ArrayList<FacetResult>();
+    List<FacetResult> results = new ArrayList<>();
     for(Map.Entry<String,OrdRange> ent : state.getPrefixToOrdRange().entrySet()) {
       FacetResult fr = getDim(ent.getKey(), ent.getValue(), topN);
       if (fr != null) {

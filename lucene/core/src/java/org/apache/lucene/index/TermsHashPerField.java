@@ -179,12 +179,11 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
     try {
       termID = bytesHash.add(termBytesRef, termAtt.fillBytesRef());
     } catch (MaxBytesLengthExceededException e) {
-      // Not enough room in current block
-      // Just skip this term, to remain as robust as
-      // possible during indexing.  A TokenFilter
-      // can be inserted into the analyzer chain if
-      // other behavior is wanted (pruning the term
-      // to a prefix, throwing an exception, etc).
+      // Term is too large; record this here (can't throw an
+      // exc because DocInverterPerField will then abort the
+      // entire segment) and then throw an exc later in
+      // DocInverterPerField.java.  LengthFilter can always be
+      // used to prune the term before indexing:
       if (docState.maxTermPrefix == null) {
         final int saved = termBytesRef.length;
         try {

@@ -109,7 +109,7 @@ public class LocalReplicator implements Replicator {
   private volatile boolean closed = false;
   
   private final AtomicInteger sessionToken = new AtomicInteger(0);
-  private final Map<String, ReplicationSession> sessions = new HashMap<String, ReplicationSession>();
+  private final Map<String, ReplicationSession> sessions = new HashMap<>();
   
   private void checkExpiredSessions() throws IOException {
     Iterator<ReplicationSession> it = sessions.values().iterator();

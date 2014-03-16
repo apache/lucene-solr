@@ -84,6 +84,7 @@ import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.handler.component.RealTimeGetComponent;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.StatsComponent;
+import org.apache.solr.handler.component.ExpandComponent;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.BinaryResponseWriter;
@@ -99,6 +100,9 @@ import org.apache.solr.response.SchemaXmlResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.XMLResponseWriter;
 import org.apache.solr.response.transform.TransformerFactory;
+import org.apache.solr.rest.ManagedResourceStorage;
+import org.apache.solr.rest.RestManager;
+import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
@@ -166,11 +170,17 @@ public final class SolrCore implements SolrInfoMBean {
   private DirectoryFactory directoryFactory;
   private IndexReaderFactory indexReaderFactory;
   private final Codec codec;
-
+  
   private final ReentrantLock ruleExpiryLock;
-
+  
   public long getStartTime() { return startTime; }
-
+  
+  private RestManager restManager;
+  
+  public RestManager getRestManager() {
+    return restManager;
+  }
+  
   static int boolean_query_max_clause_count = Integer.MIN_VALUE;
   // only change the BooleanQuery maxClauseCount once for ALL cores...
   void booleanQueryMaxClauseCount()  {
@@ -183,8 +193,7 @@ public final class SolrCore implements SolrInfoMBean {
       }
     }
   }
-
-  
+    
   /**
    * The SolrResourceLoader used to load all resources for this core.
    * @since solr 1.3
@@ -359,8 +368,8 @@ public final class SolrCore implements SolrInfoMBean {
     }
   }
 
-  final List<SolrEventListener> firstSearcherListeners = new ArrayList<SolrEventListener>();
-  final List<SolrEventListener> newSearcherListeners = new ArrayList<SolrEventListener>();
+  final List<SolrEventListener> firstSearcherListeners = new ArrayList<>();
+  final List<SolrEventListener> newSearcherListeners = new ArrayList<>();
 
   /**
    * NOTE: this function is not thread safe.  However, it is safe to call within the
@@ -463,7 +472,7 @@ public final class SolrCore implements SolrInfoMBean {
   }
   
   // protect via synchronized(SolrCore.class)
-  private static Set<String> dirs = new HashSet<String>();
+  private static Set<String> dirs = new HashSet<>();
 
   void initIndex(boolean reload) throws IOException {
  
@@ -715,7 +724,7 @@ public final class SolrCore implements SolrInfoMBean {
       infoRegistry = new JmxMonitoredMap<String, SolrInfoMBean>(name, String.valueOf(this.hashCode()), config.jmxConfig);
     } else  {
       log.info("JMX monitoring not detected for core: " + name);
-      infoRegistry = new ConcurrentHashMap<String, SolrInfoMBean>();
+      infoRegistry = new ConcurrentHashMap<>();
     }
 
     infoRegistry.put("fieldCache", new SolrFieldCacheMBean());
@@ -830,6 +839,9 @@ public final class SolrCore implements SolrInfoMBean {
         if (iwRef != null) iwRef.decref();
       }
       
+      // Initialize the RestManager
+      restManager = initRestManager();
+            
       // Finally tell anyone who wants to know
       resourceLoader.inform(resourceLoader);
       resourceLoader.inform(this); // last call before the latch is released.
@@ -922,7 +934,7 @@ public final class SolrCore implements SolrInfoMBean {
    * Load the request processors
    */
    private Map<String,UpdateRequestProcessorChain> loadUpdateProcessorChains() {
-    Map<String, UpdateRequestProcessorChain> map = new HashMap<String, UpdateRequestProcessorChain>();
+    Map<String, UpdateRequestProcessorChain> map = new HashMap<>();
     UpdateRequestProcessorChain def = initPlugins(map,UpdateRequestProcessorChain.class, UpdateRequestProcessorChain.class.getName());
     if(def == null){
       def = map.get(null);
@@ -1140,7 +1152,7 @@ public final class SolrCore implements SolrInfoMBean {
    public void addCloseHook( CloseHook hook )
    {
      if( closeHooks == null ) {
-       closeHooks = new ArrayList<CloseHook>();
+       closeHooks = new ArrayList<>();
      }
      closeHooks.add( hook );
    }
@@ -1217,7 +1229,7 @@ public final class SolrCore implements SolrInfoMBean {
    */
   private Map<String, SearchComponent> loadSearchComponents()
   {
-    Map<String, SearchComponent> components = new HashMap<String, SearchComponent>();
+    Map<String, SearchComponent> components = new HashMap<>();
     initPlugins(components,SearchComponent.class);
     for (Map.Entry<String, SearchComponent> e : components.entrySet()) {
       SearchComponent c = e.getValue();
@@ -1237,6 +1249,8 @@ public final class SolrCore implements SolrInfoMBean {
     addIfNotPresent(components,DebugComponent.COMPONENT_NAME,DebugComponent.class);
     addIfNotPresent(components,RealTimeGetComponent.COMPONENT_NAME,RealTimeGetComponent.class);
     addIfNotPresent(components,AnalyticsComponent.COMPONENT_NAME,AnalyticsComponent.class);
+    addIfNotPresent(components,ExpandComponent.COMPONENT_NAME,ExpandComponent.class);
+
     return components;
   }
   private <T> void addIfNotPresent(Map<String ,T> registry, String name, Class<? extends  T> c){
@@ -1300,8 +1314,8 @@ public final class SolrCore implements SolrInfoMBean {
 
   // All of the normal open searchers.  Don't access this directly.
   // protected by synchronizing on searcherLock.
-  private final LinkedList<RefCounted<SolrIndexSearcher>> _searchers = new LinkedList<RefCounted<SolrIndexSearcher>>();
-  private final LinkedList<RefCounted<SolrIndexSearcher>> _realtimeSearchers = new LinkedList<RefCounted<SolrIndexSearcher>>();
+  private final LinkedList<RefCounted<SolrIndexSearcher>> _searchers = new LinkedList<>();
+  private final LinkedList<RefCounted<SolrIndexSearcher>> _realtimeSearchers = new LinkedList<>();
 
   final ExecutorService searcherExecutor = Executors.newSingleThreadExecutor(
       new DefaultSolrThreadFactory("searcherExecutor"));
@@ -1456,20 +1470,33 @@ public final class SolrCore implements SolrInfoMBean {
           }
         }
 
-        if (newReader == null) {
-          // if this is a request for a realtime searcher, just return the same searcher if there haven't been any changes.
+        if (newReader == null) { // the underlying index has not changed at all
+
           if (realtime) {
+            // if this is a request for a realtime searcher, just return the same searcher
             newestSearcher.incref();
             return newestSearcher;
-          }
 
+          } else if (newestSearcher.get().isCachingEnabled() && newestSearcher.get().getSchema() == getLatestSchema()) {
+            // absolutely nothing has changed, can use the same searcher
+            // but log a message about it to minimize confusion
+
+            newestSearcher.incref();
+            log.info("SolrIndexSearcher has not changed - not re-opening: " + newestSearcher.get().getName());
+            return newestSearcher;
+
+          } // ELSE: open a new searcher against the old reader...
           currentReader.incRef();
           newReader = currentReader;
         }
 
-       // for now, turn off caches if this is for a realtime reader (caches take a little while to instantiate)
-        tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(), getSolrConfig().indexConfig, 
-            (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory);
+        // for now, turn off caches if this is for a realtime reader 
+        // (caches take a little while to instantiate)
+        final boolean useCaches = !realtime;
+        final String newName = realtime ? "realtime" : "main";
+        tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(), 
+                                    getSolrConfig().indexConfig, newName,
+                                    newReader, true, useCaches, true, directoryFactory);
 
       } else {
         // newestSearcher == null at this point
@@ -1665,68 +1692,68 @@ public final class SolrCore implements SolrInfoMBean {
 
       Future future=null;
 
-      // warm the new searcher based on the current searcher.
-      // should this go before the other event handlers or after?
-      if (currSearcher != null) {
-        future = searcherExecutor.submit(
-            new Callable() {
-              @Override
-              public Object call() throws Exception {
-                try {
-                  newSearcher.warm(currSearcher);
-                } catch (Throwable e) {
-                  SolrException.log(log,e);
-                  if (e instanceof Error) {
-                    throw (Error) e;
-                  }
+      // if the underlying seracher has not changed, no warming is needed
+      if (newSearcher != currSearcher) {
+        
+        // warm the new searcher based on the current searcher.
+        // should this go before the other event handlers or after?
+        if (currSearcher != null) {
+          future = searcherExecutor.submit(new Callable() {
+            @Override
+            public Object call() throws Exception {
+              try {
+                newSearcher.warm(currSearcher);
+              } catch (Throwable e) {
+                SolrException.log(log, e);
+                if (e instanceof Error) {
+                  throw (Error) e;
                 }
-                return null;
               }
+              return null;
             }
-        );
+          });
+        }
+        
+        if (currSearcher == null && firstSearcherListeners.size() > 0) {
+          future = searcherExecutor.submit(new Callable() {
+            @Override
+            public Object call() throws Exception {
+              try {
+                for (SolrEventListener listener : firstSearcherListeners) {
+                  listener.newSearcher(newSearcher, null);
+                }
+              } catch (Throwable e) {
+                SolrException.log(log, null, e);
+                if (e instanceof Error) {
+                  throw (Error) e;
+                }
+              }
+              return null;
+            }
+          });
+        }
+        
+        if (currSearcher != null && newSearcherListeners.size() > 0) {
+          future = searcherExecutor.submit(new Callable() {
+            @Override
+            public Object call() throws Exception {
+              try {
+                for (SolrEventListener listener : newSearcherListeners) {
+                  listener.newSearcher(newSearcher, currSearcher);
+                }
+              } catch (Throwable e) {
+                SolrException.log(log, null, e);
+                if (e instanceof Error) {
+                  throw (Error) e;
+                }
+              }
+              return null;
+            }
+          });
+        }
+        
       }
 
-      if (currSearcher==null && firstSearcherListeners.size() > 0) {
-        future = searcherExecutor.submit(
-            new Callable() {
-              @Override
-              public Object call() throws Exception {
-                try {
-                  for (SolrEventListener listener : firstSearcherListeners) {
-                    listener.newSearcher(newSearcher,null);
-                  }
-                } catch (Throwable e) {
-                  SolrException.log(log,null,e);
-                  if (e instanceof Error) {
-                    throw (Error) e;
-                  }
-                }
-                return null;
-              }
-            }
-        );
-      }
-
-      if (currSearcher!=null && newSearcherListeners.size() > 0) {
-        future = searcherExecutor.submit(
-            new Callable() {
-              @Override
-              public Object call() throws Exception {
-                try {
-                  for (SolrEventListener listener : newSearcherListeners) {
-                    listener.newSearcher(newSearcher, currSearcher);
-                  }
-                } catch (Throwable e) {
-                  SolrException.log(log,null,e);
-                  if (e instanceof Error) {
-                    throw (Error) e;
-                  }
-                }
-                return null;
-              }
-            }
-        );
-      }
 
       // WARNING: this code assumes a single threaded executor (that all tasks
       // queued will finish first).
@@ -1845,6 +1872,13 @@ public final class SolrCore implements SolrInfoMBean {
   private void registerSearcher(RefCounted<SolrIndexSearcher> newSearcherHolder) {
     synchronized (searcherLock) {
       try {
+        if (_searcher == newSearcherHolder) {
+          // trying to re-register the same searcher... this can now happen when a commit has been done but
+          // there were no changes to the index.
+          newSearcherHolder.decref();  // decref since the caller should have still incref'd (since they didn't know the searcher was the same)
+          return;  // still execute the finally block to notify anyone waiting.
+        }
+
         if (_searcher != null) {
           _searcher.decref();   // dec refcount for this._searcher
           _searcher=null;
@@ -1924,7 +1958,7 @@ public final class SolrCore implements SolrInfoMBean {
 
   public static void preDecorateResponse(SolrQueryRequest req, SolrQueryResponse rsp) {
     // setup response header
-    final NamedList<Object> responseHeader = new SimpleOrderedMap<Object>();
+    final NamedList<Object> responseHeader = new SimpleOrderedMap<>();
     rsp.add("responseHeader", responseHeader);
 
     // toLog is a local ref to the same NamedList used by the response
@@ -1994,10 +2028,10 @@ public final class SolrCore implements SolrInfoMBean {
   
   
   private QueryResponseWriter defaultResponseWriter;
-  private final Map<String, QueryResponseWriter> responseWriters = new HashMap<String, QueryResponseWriter>();
+  private final Map<String, QueryResponseWriter> responseWriters = new HashMap<>();
   public static final Map<String ,QueryResponseWriter> DEFAULT_RESPONSE_WRITERS ;
   static{
-    HashMap<String, QueryResponseWriter> m= new HashMap<String, QueryResponseWriter>();
+    HashMap<String, QueryResponseWriter> m= new HashMap<>();
     m.put("xml", new XMLResponseWriter());
     m.put("standard", m.get("xml"));
     m.put("json", new JSONResponseWriter());
@@ -2016,7 +2050,7 @@ public final class SolrCore implements SolrInfoMBean {
    * writers may also be configured. */
   private void initWriters() {
     // use link map so we iterate in the same order
-    Map<PluginInfo,QueryResponseWriter> writers = new LinkedHashMap<PluginInfo,QueryResponseWriter>();
+    Map<PluginInfo,QueryResponseWriter> writers = new LinkedHashMap<>();
     for (PluginInfo info : solrConfig.getPluginInfos(QueryResponseWriter.class.getName())) {
       try {
         QueryResponseWriter writer;
@@ -2096,7 +2130,7 @@ public final class SolrCore implements SolrInfoMBean {
     return getQueryResponseWriter(request.getParams().get(CommonParams.WT)); 
   }
 
-  private final Map<String, QParserPlugin> qParserPlugins = new HashMap<String, QParserPlugin>();
+  private final Map<String, QParserPlugin> qParserPlugins = new HashMap<>();
 
   /** Configure the query parsers. */
   private void initQParsers() {
@@ -2124,7 +2158,7 @@ public final class SolrCore implements SolrInfoMBean {
     throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown query parser '"+parserName+"'");
   }
   
-  private final HashMap<String, ValueSourceParser> valueSourceParsers = new HashMap<String, ValueSourceParser>();
+  private final HashMap<String, ValueSourceParser> valueSourceParsers = new HashMap<>();
   
   /** Configure the ValueSource (function) plugins */
   private void initValueSourceParsers() {
@@ -2145,7 +2179,7 @@ public final class SolrCore implements SolrInfoMBean {
   }
   
 
-  private final HashMap<String, TransformerFactory> transformerFactories = new HashMap<String, TransformerFactory>();
+  private final HashMap<String, TransformerFactory> transformerFactories = new HashMap<>();
   
   /** Configure the TransformerFactory plugins */
   private void initTransformerFactories() {
@@ -2204,7 +2238,7 @@ public final class SolrCore implements SolrInfoMBean {
    */
   public <T> List<T> initPlugins(List<PluginInfo> pluginInfos, Class<T> type, String defClassName) {
     if(pluginInfos.isEmpty()) return Collections.emptyList();
-    List<T> result = new ArrayList<T>();
+    List<T> result = new ArrayList<>();
     for (PluginInfo info : pluginInfos) result.add(createInitInstance(info,type, type.getSimpleName(), defClassName));
     return result;
   }
@@ -2235,10 +2269,10 @@ public final class SolrCore implements SolrInfoMBean {
           "solrconfig.xml uses deprecated <admin/gettableFiles>, Please "+
           "update your config to use the ShowFileRequestHandler." );
       if( getRequestHandler( "/admin/file" ) == null ) {
-        NamedList<String> invariants = new NamedList<String>();
+        NamedList<String> invariants = new NamedList<>();
         
         // Hide everything...
-        Set<String> hide = new HashSet<String>();
+        Set<String> hide = new HashSet<>();
 
         for (String file : solrConfig.getResourceLoader().listConfigDir()) {
           hide.add(file.toUpperCase(Locale.ROOT));
@@ -2253,7 +2287,7 @@ public final class SolrCore implements SolrInfoMBean {
           invariants.add( ShowFileRequestHandler.HIDDEN, s );
         }
         
-        NamedList<Object> args = new NamedList<Object>();
+        NamedList<Object> args = new NamedList<>();
         args.add( "invariants", invariants );
         ShowFileRequestHandler handler = new ShowFileRequestHandler();
         handler.init( args );
@@ -2270,7 +2304,44 @@ public final class SolrCore implements SolrInfoMBean {
           "update your config to use <string name='facet.sort'>.");
     }
   } 
-
+  
+  /**
+   * Creates and initializes a RestManager based on configuration args in solrconfig.xml.
+   * RestManager provides basic storage support for managed resource data, such as to
+   * persist stopwords to ZooKeeper if running in SolrCloud mode.
+   */
+  @SuppressWarnings("unchecked")
+  protected RestManager initRestManager() throws SolrException {
+    
+    PluginInfo restManagerPluginInfo = 
+        getSolrConfig().getPluginInfo(RestManager.class.getName());
+        
+    NamedList<String> initArgs = null;
+    RestManager mgr = null;
+    if (restManagerPluginInfo != null) {
+      if (restManagerPluginInfo.className != null) {
+        mgr = resourceLoader.newInstance(restManagerPluginInfo.className, RestManager.class);
+      }
+      
+      if (restManagerPluginInfo.initArgs != null) {
+        initArgs = (NamedList<String>)restManagerPluginInfo.initArgs;        
+      }
+    }
+    
+    if (mgr == null) 
+      mgr = new RestManager();
+    
+    if (initArgs == null)
+      initArgs = new NamedList<>();
+                                
+    String collection = coreDescriptor.getCollectionName();
+    StorageIO storageIO = 
+        ManagedResourceStorage.newStorageIO(collection, resourceLoader, initArgs);    
+    mgr.init(resourceLoader, initArgs, storageIO);
+    
+    return mgr;
+  }  
+  
   public CoreDescriptor getCoreDescriptor() {
     return coreDescriptor;
   }
@@ -2314,7 +2385,7 @@ public final class SolrCore implements SolrInfoMBean {
 
   @Override
   public NamedList getStatistics() {
-    NamedList<Object> lst = new SimpleOrderedMap<Object>();
+    NamedList<Object> lst = new SimpleOrderedMap<>();
     lst.add("coreName", name==null ? "(null)" : name);
     lst.add("startTime", new Date(startTime));
     lst.add("refCount", getOpenCount());

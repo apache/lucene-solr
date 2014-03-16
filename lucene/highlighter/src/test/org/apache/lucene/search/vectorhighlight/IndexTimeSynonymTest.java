@@ -48,7 +48,7 @@ public class IndexTimeSynonymTest extends AbstractTestCase {
     FieldQuery fq = new FieldQuery( bq, true, true );
     FieldTermStack stack = new FieldTermStack( reader, 0, F, fq );
     assertEquals( 2, stack.termList.size() );
-    Set<String> expectedSet = new HashSet<String>();
+    Set<String> expectedSet = new HashSet<>();
     expectedSet.add( "Mac(11,20,3)" );
     expectedSet.add( "MacBook(11,20,3)" );
     assertTrue( expectedSet.contains( stack.pop().toString() ) );
@@ -92,7 +92,7 @@ public class IndexTimeSynonymTest extends AbstractTestCase {
     FieldQuery fq = new FieldQuery( bq, true, true );
     FieldTermStack stack = new FieldTermStack( reader, 0, F, fq );
     assertEquals( 3, stack.termList.size() );
-    Set<String> expectedSet = new HashSet<String>();
+    Set<String> expectedSet = new HashSet<>();
     expectedSet.add( "pc(3,5,1)" );
     expectedSet.add( "personal(3,5,1)" );
     assertTrue( expectedSet.contains( stack.pop().toString() ) );
@@ -137,7 +137,7 @@ public class IndexTimeSynonymTest extends AbstractTestCase {
     FieldQuery fq = new FieldQuery( bq, true, true );
     FieldTermStack stack = new FieldTermStack( reader, 0, F, fq );
     assertEquals( 3, stack.termList.size() );
-    Set<String> expectedSet = new HashSet<String>();
+    Set<String> expectedSet = new HashSet<>();
     expectedSet.add( "pc(3,20,1)" );
     expectedSet.add( "personal(3,20,1)" );
     assertTrue( expectedSet.contains( stack.pop().toString() ) );

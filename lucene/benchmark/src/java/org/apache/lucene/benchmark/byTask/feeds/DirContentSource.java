@@ -82,7 +82,7 @@ public class DirContentSource extends ContentSource {
 
     int count = 0;
 
-    Stack<File> stack = new Stack<File>();
+    Stack<File> stack = new Stack<>();
 
     /* this seems silly ... there must be a better way ...
        not that this is good, but can it matter? */
@@ -156,7 +156,7 @@ public class DirContentSource extends ContentSource {
 
   }
   
-  private ThreadLocal<DateFormatInfo> dateFormat = new ThreadLocal<DateFormatInfo>();
+  private ThreadLocal<DateFormatInfo> dateFormat = new ThreadLocal<>();
   private File dataDir = null;
   private int iteration = 0;
   private Iterator inputFiles = null;

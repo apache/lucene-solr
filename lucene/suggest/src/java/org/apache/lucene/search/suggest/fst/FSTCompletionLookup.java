@@ -251,7 +251,7 @@ public class FSTCompletionLookup extends Lookup {
       completions = normalCompletion.lookup(key, num);
     }
     
-    final ArrayList<LookupResult> results = new ArrayList<LookupResult>(completions.size());
+    final ArrayList<LookupResult> results = new ArrayList<>(completions.size());
     CharsRef spare = new CharsRef();
     for (Completion c : completions) {
       spare.grow(c.utf8.length);
@@ -283,7 +283,7 @@ public class FSTCompletionLookup extends Lookup {
   @Override
   public synchronized boolean load(DataInput input) throws IOException {
     count = input.readVLong();
-    this.higherWeightsCompletion = new FSTCompletion(new FST<Object>(
+    this.higherWeightsCompletion = new FSTCompletion(new FST<>(
         input, NoOutputs.getSingleton()));
     this.normalCompletion = new FSTCompletion(
         higherWeightsCompletion.getFST(), false, exactMatchFirst);

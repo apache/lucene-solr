@@ -100,5 +100,5 @@ public class MockCharFilter extends CharFilter {
     corrections.put(off, cumulativeDiff);
   }
   
-  TreeMap<Integer,Integer> corrections = new TreeMap<Integer,Integer>();
+  TreeMap<Integer,Integer> corrections = new TreeMap<>();
 }

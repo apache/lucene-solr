@@ -90,7 +90,7 @@ public class CompositeIdRouter extends HashBasedRouter {
 
     Range completeRange = new KeyParser(id).getRange();
 
-    List<Slice> targetSlices = new ArrayList<Slice>(1);
+    List<Slice> targetSlices = new ArrayList<>(1);
     for (Slice slice : collection.getActiveSlices()) {
       Range range = slice.getRange();
       if (range != null && range.overlaps(completeRange)) {
@@ -102,7 +102,7 @@ public class CompositeIdRouter extends HashBasedRouter {
   }
 
   public List<Range> partitionRangeByKey(String key, Range range) {
-    List<Range> result = new ArrayList<Range>(3);
+    List<Range> result = new ArrayList<>(3);
     Range keyRange = keyHashRange(key);
     if (!keyRange.overlaps(range)) {
       throw new IllegalArgumentException("Key range does not overlap given range");
@@ -133,7 +133,7 @@ public class CompositeIdRouter extends HashBasedRouter {
     long rangeSize = (long) max - (long) min;
     long rangeStep = Math.max(1, rangeSize / partitions);
 
-    List<Range> ranges = new ArrayList<Range>(partitions);
+    List<Range> ranges = new ArrayList<>(partitions);
 
     long start = min;
     long end = start;

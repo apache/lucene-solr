@@ -94,7 +94,7 @@ public class TestLazyDocument extends LuceneTestCase {
       StoredDocument d = visitor.doc;
 
       int numFieldValues = 0;
-      Map<String,Integer> fieldValueCounts = new HashMap<String,Integer>();
+      Map<String,Integer> fieldValueCounts = new HashMap<>();
 
       // at this point, all FIELDS should be Lazy and unrealized
       for (StorableField f : d) {
@@ -195,7 +195,7 @@ public class TestLazyDocument extends LuceneTestCase {
 
     LazyTestingStoredFieldVisitor(LazyDocument l, String... fields) {
       lazyDoc = l;
-      lazyFieldNames = new HashSet<String>(Arrays.asList(fields));
+      lazyFieldNames = new HashSet<>(Arrays.asList(fields));
     }
 
     @Override

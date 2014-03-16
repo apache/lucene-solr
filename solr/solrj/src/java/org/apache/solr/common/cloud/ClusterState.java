@@ -74,9 +74,9 @@ public class ClusterState implements JSONWriter.Writable {
   public ClusterState(Integer zkClusterStateVersion, Set<String> liveNodes,
       Map<String, DocCollection> collectionStates, ZkStateReader stateReader) {
     this.zkClusterStateVersion = zkClusterStateVersion;
-    this.liveNodes = new HashSet<String>(liveNodes.size());
+    this.liveNodes = new HashSet<>(liveNodes.size());
     this.liveNodes.addAll(liveNodes);
-    this.collectionStates = new LinkedHashMap<String, DocCollection>(collectionStates.size());
+    this.collectionStates = new LinkedHashMap<>(collectionStates.size());
     this.collectionStates.putAll(collectionStates);
     this.stateReader = stateReader;
 
@@ -258,7 +258,7 @@ public class ClusterState implements JSONWriter.Writable {
       return new ClusterState(version, liveNodes, Collections.<String, DocCollection>emptyMap(),stateReader);
     }
     Map<String, Object> stateMap = (Map<String, Object>) ZkStateReader.fromJSON(bytes);
-    Map<String,DocCollection> collections = new LinkedHashMap<String,DocCollection>(stateMap.size());
+    Map<String,DocCollection> collections = new LinkedHashMap<>(stateMap.size());
     for (Entry<String, Object> entry : stateMap.entrySet()) {
       String collectionName = entry.getKey();
       DocCollection coll = collectionFromObjects(collectionName, (Map<String,Object>)entry.getValue());
@@ -289,7 +289,7 @@ public class ClusterState implements JSONWriter.Writable {
       props = Collections.emptyMap();
     } else {
       slices = makeSlices(sliceObjs);
-      props = new HashMap<String, Object>(objs);
+      props = new HashMap<>(objs);
       objs.remove(DocCollection.SHARDS);
     }
 
@@ -310,7 +310,7 @@ public class ClusterState implements JSONWriter.Writable {
 
   private static Map<String,Slice> makeSlices(Map<String,Object> genericSlices) {
     if (genericSlices == null) return Collections.emptyMap();
-    Map<String,Slice> result = new LinkedHashMap<String, Slice>(genericSlices.size());
+    Map<String,Slice> result = new LinkedHashMap<>(genericSlices.size());
     for (Map.Entry<String,Object> entry : genericSlices.entrySet()) {
       String name = entry.getKey();
       Object val = entry.getValue();

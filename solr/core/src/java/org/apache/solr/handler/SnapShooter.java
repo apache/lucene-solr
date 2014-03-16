@@ -82,7 +82,7 @@ public class SnapShooter {
 
   void createSnapshot(final IndexCommit indexCommit, int numberToKeep, ReplicationHandler replicationHandler) {
     LOG.info("Creating backup snapshot...");
-    NamedList<Object> details = new NamedList<Object>();
+    NamedList<Object> details = new NamedList<>();
     details.add("startTime", new Date().toString());
     File snapShotDir = null;
     String directoryName = null;
@@ -131,7 +131,7 @@ public class SnapShooter {
   }
   private void deleteOldBackups(int numberToKeep) {
     File[] files = new File(snapDir).listFiles();
-    List<OldBackupDirectory> dirs = new ArrayList<OldBackupDirectory>();
+    List<OldBackupDirectory> dirs = new ArrayList<>();
     for(File f : files) {
       OldBackupDirectory obd = new OldBackupDirectory(f);
       if(obd.dir != null) {

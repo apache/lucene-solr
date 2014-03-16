@@ -82,7 +82,7 @@ public final class DutchAnalyzer extends Analyzer {
         throw new RuntimeException("Unable to load default stopword set");
       }
       
-      DEFAULT_STEM_DICT = new CharArrayMap<String>(Version.LUCENE_CURRENT, 4, false);
+      DEFAULT_STEM_DICT = new CharArrayMap<>(Version.LUCENE_CURRENT, 4, false);
       DEFAULT_STEM_DICT.put("fiets", "fiets"); //otherwise fiet
       DEFAULT_STEM_DICT.put("bromfiets", "bromfiets"); //otherwise bromfiet
       DEFAULT_STEM_DICT.put("ei", "eier");

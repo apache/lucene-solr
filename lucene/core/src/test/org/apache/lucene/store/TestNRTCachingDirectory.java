@@ -38,14 +38,15 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
 
 public class TestNRTCachingDirectory extends LuceneTestCase {
 
   public void testNRTAndCommit() throws Exception {
     Directory dir = newDirectory();
     NRTCachingDirectory cachedDir = new NRTCachingDirectory(dir, 2.0, 25.0);
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    MockAnalyzer analyzer = new MockAnalyzer(random());
+    analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
     RandomIndexWriter w = new RandomIndexWriter(random(), cachedDir, conf);
     final LineFileDocs docs = new LineFileDocs(random(), true);
     final int numDocs = TestUtil.nextInt(random(), 100, 400);
@@ -54,7 +55,7 @@ public class TestNRTCachingDirectory extends LuceneTestCase {
       System.out.println("TEST: numDocs=" + numDocs);
     }
 
-    final List<BytesRef> ids = new ArrayList<BytesRef>();
+    final List<BytesRef> ids = new ArrayList<>();
     DirectoryReader r = null;
     for(int docCount=0;docCount<numDocs;docCount++) {
       final Document doc = docs.nextDoc();

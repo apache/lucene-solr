@@ -60,7 +60,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
 
   /** Creates an empty instance */
   public NamedList() {
-    nvPairs = new ArrayList<Object>();
+    nvPairs = new ArrayList<>();
   }
 
   /**
@@ -78,6 +78,31 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    */
   public NamedList(Map.Entry<String, ? extends T>[] nameValuePairs) {
     nvPairs = nameValueMapToList(nameValuePairs);
+  }
+
+  /**
+   * Creates a NamedList instance containing the "name,value" pairs contained in the
+   * Map.
+   *
+   * <p>
+   * Modifying the contents of the Map after calling this constructor may change
+   * the NamedList (in future versions of Solr), but this is not guaranteed and should
+   * not be relied upon.  To modify the NamedList, refer to {@link #add(String, Object)}
+   * or {@link #remove(String)}.
+   * </p>
+   *
+   * @param nameValueMap the name value pairs
+   */
+  public NamedList(Map<String,? extends T> nameValueMap) {
+    if (null == nameValueMap) {
+      nvPairs = new ArrayList<>();
+    } else {
+      nvPairs = new ArrayList<>(nameValueMap.size());
+      for (Map.Entry<String,? extends T> ent : nameValueMap.entrySet()) {
+        nvPairs.add(ent.getKey());
+        nvPairs.add(ent.getValue());
+      }
+    }
   }
 
   /**
@@ -109,7 +134,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    */
   @Deprecated
   private List<Object> nameValueMapToList(Map.Entry<String, ? extends T>[] nameValuePairs) {
-    List<Object> result = new ArrayList<Object>();
+    List<Object> result = new ArrayList<>();
     for (Map.Entry<String, ?> ent : nameValuePairs) {
       result.add(ent.getKey());
       result.add(ent.getValue());
@@ -251,7 +276,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    * @return List of values
    */
   public List<T> getAll(String name) {
-    List<T> result = new ArrayList<T>();
+    List<T> result = new ArrayList<>();
     int sz = size();
     for (int i = 0; i < sz; i++) {
       String n = getName(i);
@@ -418,9 +443,9 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    */
   @Override
   public NamedList<T> clone() {
-    ArrayList<Object> newList = new ArrayList<Object>(nvPairs.size());
+    ArrayList<Object> newList = new ArrayList<>(nvPairs.size());
     newList.addAll(nvPairs);
-    return new NamedList<T>(newList);
+    return new NamedList<>(newList);
   }
 
   //----------------------------------------------------------------------------
@@ -501,7 +526,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    * @return List of values
    */
   public List<T> removeAll(String name) {
-    List<T> result = new ArrayList<T>();
+    List<T> result = new ArrayList<>();
     result = getAll(name);
     if (result.size() > 0 ) {
       killAll(name);
@@ -528,6 +553,30 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    *           not a Boolean or a String.
    */
   public Boolean removeBooleanArg(final String name) {
+    Boolean bool = getBooleanArg(name);
+    if (null != bool) {
+      remove(name);
+    }
+    return bool;
+  }
+
+  /**
+   * Used for getting a boolean argument from a NamedList object.  If the name
+   * is not present, returns null.  If there is more than one value with that
+   * name, or if the value found is not a Boolean or a String, throws an
+   * exception.  If there is only one value present and it is a Boolean or a
+   * String, the value is returned as a Boolean.  The NamedList is not
+   * modified. See {@link #remove(String)}, {@link #removeAll(String)}
+   * and {@link #removeConfigArgs(String)} for additional ways of gathering
+   * configuration information from a NamedList.
+   *
+   * @param name The key to look up in the NamedList.
+   * @return The boolean value found.
+   * @throws SolrException
+   *           If multiple values are found for the name or the value found is
+   *           not a Boolean or a String.
+   */
+  public Boolean getBooleanArg(final String name) {
     Boolean bool;
     List<T> values = getAll(name);
     if (0 == values.size()) {
@@ -544,12 +593,11 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
       bool = Boolean.parseBoolean(o.toString());
     } else {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "'" + name + "' must have type 'bool' or 'str'; found " + o.getClass());
+          "'" + name + "' must have type Boolean or CharSequence; found " + o.getClass());
     }
-    remove(name);
     return bool;
   }
-  
+
   /**
    * Used for getting one or many arguments from NamedList objects that hold
    * configuration parameters. Finds all entries in the NamedList that match
@@ -575,7 +623,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   public Collection<String> removeConfigArgs(final String name)
       throws SolrException {
     List<T> objects = getAll(name);
-    List<String> collection = new ArrayList<String>(size() / 2);
+    List<String> collection = new ArrayList<>(size() / 2);
     final String err = "init arg '" + name + "' must be a string "
         + "(ie: 'str'), or an array (ie: 'arr') containing strings; found: ";
     

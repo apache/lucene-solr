@@ -42,7 +42,7 @@ public class DefaultSortedSetDocValuesReaderState extends SortedSetDocValuesRead
   /** {@link IndexReader} passed to the constructor. */
   public final IndexReader origReader;
 
-  private final Map<String,OrdRange> prefixToOrdRange = new HashMap<String,OrdRange>();
+  private final Map<String,OrdRange> prefixToOrdRange = new HashMap<>();
 
   /** Creates this, pulling doc values from the default {@link
    *  FacetsConfig#DEFAULT_INDEX_FIELD_NAME}. */ 

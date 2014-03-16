@@ -219,7 +219,7 @@ public class WordlistLoader {
     try {
       input = getBufferedReader(IOUtils.getDecodingReader(stream, charset));
 
-      lines = new ArrayList<String>();
+      lines = new ArrayList<>();
       for (String word=null; (word=input.readLine())!=null;) {
         // skip initial bom marker
         if (lines.isEmpty() && word.length() > 0 && word.charAt(0) == '\uFEFF')

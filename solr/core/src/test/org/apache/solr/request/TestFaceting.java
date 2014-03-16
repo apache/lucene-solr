@@ -272,7 +272,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
   public void testTrieFields() {
     // make sure that terms are correctly filtered even for trie fields that index several
     // terms for a single value
-    List<String> fields = new ArrayList<String>();
+    List<String> fields = new ArrayList<>();
     fields.add("id");
     fields.add("7");
     final String[] suffixes = new String[] {"ti", "tis", "tf", "tfs", "tl", "tls", "td", "tds"};

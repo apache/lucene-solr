@@ -55,7 +55,7 @@ public class Test2BFST extends LuceneTestCase {
         System.out.println("\nTEST: 3B nodes; doPack=false output=NO_OUTPUTS");
         Outputs<Object> outputs = NoOutputs.getSingleton();
         Object NO_OUTPUT = outputs.getNoOutput();
-        final Builder<Object> b = new Builder<Object>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs,
+        final Builder<Object> b = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs,
                                                       null, doPack, PackedInts.COMPACT, true, 15);
 
         int count = 0;
@@ -98,7 +98,7 @@ public class Test2BFST extends LuceneTestCase {
           }
 
           System.out.println("\nTEST: enum all input/outputs");
-          IntsRefFSTEnum<Object> fstEnum = new IntsRefFSTEnum<Object>(fst);
+          IntsRefFSTEnum<Object> fstEnum = new IntsRefFSTEnum<>(fst);
 
           Arrays.fill(ints2, 0);
           r = new Random(seed);
@@ -124,7 +124,7 @@ public class Test2BFST extends LuceneTestCase {
             fst.save(out);
             out.close();
             IndexInput in = dir.openInput("fst", IOContext.DEFAULT);
-            fst = new FST<Object>(in, outputs);
+            fst = new FST<>(in, outputs);
             in.close();
           } else {
             dir.deleteFile("fst");
@@ -137,7 +137,7 @@ public class Test2BFST extends LuceneTestCase {
       {
         System.out.println("\nTEST: 3 GB size; doPack=" + doPack + " outputs=bytes");
         Outputs<BytesRef> outputs = ByteSequenceOutputs.getSingleton();
-        final Builder<BytesRef> b = new Builder<BytesRef>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs,
+        final Builder<BytesRef> b = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs,
                                                           null, doPack, PackedInts.COMPACT, true, 15);
 
         byte[] outputBytes = new byte[20];
@@ -177,7 +177,7 @@ public class Test2BFST extends LuceneTestCase {
           }
 
           System.out.println("\nTEST: enum all input/outputs");
-          IntsRefFSTEnum<BytesRef> fstEnum = new IntsRefFSTEnum<BytesRef>(fst);
+          IntsRefFSTEnum<BytesRef> fstEnum = new IntsRefFSTEnum<>(fst);
 
           Arrays.fill(ints, 0);
           r = new Random(seed);
@@ -201,7 +201,7 @@ public class Test2BFST extends LuceneTestCase {
             fst.save(out);
             out.close();
             IndexInput in = dir.openInput("fst", IOContext.DEFAULT);
-            fst = new FST<BytesRef>(in, outputs);
+            fst = new FST<>(in, outputs);
             in.close();
           } else {
             dir.deleteFile("fst");
@@ -214,7 +214,7 @@ public class Test2BFST extends LuceneTestCase {
       {
         System.out.println("\nTEST: 3 GB size; doPack=" + doPack + " outputs=long");
         Outputs<Long> outputs = PositiveIntOutputs.getSingleton();
-        final Builder<Long> b = new Builder<Long>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs,
+        final Builder<Long> b = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs,
                                                   null, doPack, PackedInts.COMPACT, true, 15);
 
         long output = 1;
@@ -260,7 +260,7 @@ public class Test2BFST extends LuceneTestCase {
           }
 
           System.out.println("\nTEST: enum all input/outputs");
-          IntsRefFSTEnum<Long> fstEnum = new IntsRefFSTEnum<Long>(fst);
+          IntsRefFSTEnum<Long> fstEnum = new IntsRefFSTEnum<>(fst);
 
           Arrays.fill(ints, 0);
           r = new Random(seed);
@@ -285,7 +285,7 @@ public class Test2BFST extends LuceneTestCase {
             fst.save(out);
             out.close();
             IndexInput in = dir.openInput("fst", IOContext.DEFAULT);
-            fst = new FST<Long>(in, outputs);
+            fst = new FST<>(in, outputs);
             in.close();
           } else {
             dir.deleteFile("fst");

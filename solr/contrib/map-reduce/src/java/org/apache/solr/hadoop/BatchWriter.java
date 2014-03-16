@@ -81,7 +81,7 @@ class BatchWriter {
     private UpdateResponse result;
 
     public Batch(Collection<SolrInputDocument> batch) {
-      documents = new ArrayList<SolrInputDocument>(batch);
+      documents = new ArrayList<>(batch);
     }
 
     public void run() {
@@ -111,7 +111,7 @@ class BatchWriter {
 
     protected void reset(List<SolrInputDocument> documents) {
       if (this.documents == null) {
-        this.documents = new ArrayList<SolrInputDocument>(documents);
+        this.documents = new ArrayList<>(documents);
       } else {
         this.documents.clear();
         this.documents.addAll(documents);
@@ -121,7 +121,7 @@ class BatchWriter {
 
     protected void reset(SolrInputDocument document) {
       if (this.documents == null) {
-        this.documents = new ArrayList<SolrInputDocument>();
+        this.documents = new ArrayList<>();
       } else {
         this.documents.clear();
       }
@@ -201,10 +201,10 @@ class BatchWriter {
     context.setStatus("Optimizing Solr");
     int maxSegments = context.getConfiguration().getInt(SolrOutputFormat.SOLR_RECORD_WRITER_MAX_SEGMENTS, 1);
     LOG.info("Optimizing Solr: forcing merge down to {} segments", maxSegments);
-    long start = System.currentTimeMillis();
+    long start = System.nanoTime();
     solr.optimize(true, false, maxSegments);
-    context.getCounter(SolrCounters.class.getName(), SolrCounters.PHYSICAL_REDUCER_MERGE_TIME.toString()).increment(System.currentTimeMillis() - start);
-    float secs = (System.currentTimeMillis() - start) / 1000.0f;
+    context.getCounter(SolrCounters.class.getName(), SolrCounters.PHYSICAL_REDUCER_MERGE_TIME.toString()).increment(System.nanoTime() - start);
+    float secs = (System.nanoTime() - start) / (float)(10^9);
     LOG.info("Optimizing Solr: done forcing merge down to {} segments in {} secs", maxSegments, secs);
     context.setStatus("Committing Solr Phase 2");
     solr.commit(true, false);

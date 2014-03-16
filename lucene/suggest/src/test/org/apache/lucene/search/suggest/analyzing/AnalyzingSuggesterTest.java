@@ -648,9 +648,9 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
 
     int numQueries = atLeast(1000);
     
-    final List<TermFreq2> slowCompletor = new ArrayList<TermFreq2>();
-    final TreeSet<String> allPrefixes = new TreeSet<String>();
-    final Set<String> seen = new HashSet<String>();
+    final List<TermFreq2> slowCompletor = new ArrayList<>();
+    final TreeSet<String> allPrefixes = new TreeSet<>();
+    final Set<String> seen = new HashSet<>();
     
     boolean doPayloads = random().nextBoolean();
 
@@ -742,7 +742,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     if (VERBOSE) {
       // Don't just sort original list, to avoid VERBOSE
       // altering the test:
-      List<TermFreq2> sorted = new ArrayList<TermFreq2>(slowCompletor);
+      List<TermFreq2> sorted = new ArrayList<>(slowCompletor);
       Collections.sort(sorted);
       for(TermFreq2 ent : sorted) {
         System.out.println("  surface='" + ent.surfaceForm + "' analyzed='" + ent.analyzedForm + "' weight=" + ent.weight);
@@ -768,7 +768,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
       List<LookupResult> r = suggester.lookup(TestUtil.stringToCharSequence(prefix, random()), false, topN);
 
       // 2. go thru whole set to find suggestions:
-      List<TermFreq2> matches = new ArrayList<TermFreq2>();
+      List<TermFreq2> matches = new ArrayList<>();
 
       // "Analyze" the key:
       String[] tokens = prefix.split(" ");
@@ -1194,7 +1194,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
 
   @SafeVarargs
   public final <T> Iterable<T> shuffle(T...values) {
-    final List<T> asList = new ArrayList<T>(values.length);
+    final List<T> asList = new ArrayList<>(values.length);
     for (T value : values) {
       asList.add(value);
     }

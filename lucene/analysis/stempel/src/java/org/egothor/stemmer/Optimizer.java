@@ -81,7 +81,7 @@ public class Optimizer extends Reduce {
   @Override
   public Trie optimize(Trie orig) {
     List<CharSequence> cmds = orig.cmds;
-    List<Row> rows = new ArrayList<Row>();
+    List<Row> rows = new ArrayList<>();
     List<Row> orows = orig.rows;
     int remap[] = new int[orows.size()];
     

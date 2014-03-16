@@ -48,7 +48,7 @@ class ExpressionComparator extends FieldComparator<Double> {
     // TODO: might be cleaner to lazy-init 'source' and set scorer after?
     assert readerContext != null;
     try {
-      Map<String,Object> context = new HashMap<String,Object>();
+      Map<String,Object> context = new HashMap<>();
       assert scorer != null;
       context.put("scorer", scorer);
       scores = source.getValues(context, readerContext);

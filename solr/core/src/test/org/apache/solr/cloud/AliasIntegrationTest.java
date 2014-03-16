@@ -85,13 +85,13 @@ public class AliasIntegrationTest extends AbstractFullDistribZkTestBase {
     handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
     
-    waitForThingsToLevelOut(15);
+    waitForThingsToLevelOut(30);
 
     del("*:*");
     
     createCollection("collection2", 2, 1, 10);
     
-    List<Integer> numShardsNumReplicaList = new ArrayList<Integer>(2);
+    List<Integer> numShardsNumReplicaList = new ArrayList<>(2);
     numShardsNumReplicaList.add(2);
     numShardsNumReplicaList.add(1);
     checkForCollection("collection2", numShardsNumReplicaList, null);

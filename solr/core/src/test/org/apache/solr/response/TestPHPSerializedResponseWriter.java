@@ -81,7 +81,7 @@ public class TestPHPSerializedResponseWriter extends SolrTestCaseJ4 {
 
     // we use LinkedHashMap because we are doing a string comparison 
     // later and we need predictible ordering
-    LinkedHashMap<String,String> nl = new LinkedHashMap<String,String>();
+    LinkedHashMap<String,String> nl = new LinkedHashMap<>();
     nl.put("data4.1", "hashmap");
     nl.put("data4.2", "hello");
     d.addField("data4",nl);

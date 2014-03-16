@@ -210,7 +210,7 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
   @Test
   public void testPositionIncrements() throws Exception {
     final int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
-    final CharArraySet protWords = new CharArraySet(TEST_VERSION_CURRENT, new HashSet<String>(Arrays.asList("NUTCH")), false);
+    final CharArraySet protWords = new CharArraySet(TEST_VERSION_CURRENT, new HashSet<>(Arrays.asList("NUTCH")), false);
     
     /* analyzer that uses whitespace + wdf */
     Analyzer a = new Analyzer() {
@@ -332,7 +332,7 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
       final int flags = random().nextInt(512);
       final CharArraySet protectedWords;
       if (random().nextBoolean()) {
-        protectedWords = new CharArraySet(TEST_VERSION_CURRENT, new HashSet<String>(Arrays.asList("a", "b", "cd")), false);
+        protectedWords = new CharArraySet(TEST_VERSION_CURRENT, new HashSet<>(Arrays.asList("a", "b", "cd")), false);
       } else {
         protectedWords = null;
       }
@@ -355,7 +355,7 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
       final int flags = i;
       final CharArraySet protectedWords;
       if (random.nextBoolean()) {
-        protectedWords = new CharArraySet(TEST_VERSION_CURRENT, new HashSet<String>(Arrays.asList("a", "b", "cd")), false);
+        protectedWords = new CharArraySet(TEST_VERSION_CURRENT, new HashSet<>(Arrays.asList("a", "b", "cd")), false);
       } else {
         protectedWords = null;
       }

@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.filecache.DistributedCache;
@@ -52,10 +53,10 @@ class SolrRecordWriter<K, V> extends RecordWriter<K, V> {
   
   private static final Logger LOG = LoggerFactory.getLogger(SolrRecordWriter.class);
 
-  public final static List<String> allowedConfigDirectories = new ArrayList<String>(
+  public final static List<String> allowedConfigDirectories = new ArrayList<>(
       Arrays.asList(new String[] { "conf", "lib", "solr.xml" }));
 
-  public final static Set<String> requiredConfigDirectories = new HashSet<String>();
+  public final static Set<String> requiredConfigDirectories = new HashSet<>();
   
   static {
     requiredConfigDirectories.add("conf");
@@ -98,9 +99,9 @@ class SolrRecordWriter<K, V> extends RecordWriter<K, V> {
   private final List<SolrInputDocument> batch;
   private final int batchSize;
   private long numDocsWritten = 0;
-  private long nextLogTime = System.currentTimeMillis();
+  private long nextLogTime = System.nanoTime();
 
-  private static HashMap<TaskID, Reducer<?,?,?,?>.Context> contextMap = new HashMap<TaskID, Reducer<?,?,?,?>.Context>();
+  private static HashMap<TaskID, Reducer<?,?,?,?>.Context> contextMap = new HashMap<>();
   
   public SolrRecordWriter(TaskAttemptContext context, Path outputShardDir, int batchSize) {
     this.batchSize = batchSize;
@@ -266,9 +267,9 @@ class SolrRecordWriter<K, V> extends RecordWriter<K, V> {
         if (batch.size() >= batchSize) {
           batchWriter.queueBatch(batch);
           numDocsWritten += batch.size();
-          if (System.currentTimeMillis() >= nextLogTime) {
+          if (System.nanoTime() >= nextLogTime) {
             LOG.info("docsWritten: {}", numDocsWritten);
-            nextLogTime += 10000;
+            nextLogTime += TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);
           }
           batch.clear();
         }

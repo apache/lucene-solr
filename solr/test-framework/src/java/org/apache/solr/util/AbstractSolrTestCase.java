@@ -67,7 +67,7 @@ public abstract class AbstractSolrTestCase extends SolrTestCaseJ4 {
     /** Causes an exception matching the regex pattern to not be logged. */
   public static void ignoreException(String pattern) {
     if (SolrException.ignorePatterns == null)
-      SolrException.ignorePatterns = new HashSet<String>();
+      SolrException.ignorePatterns = new HashSet<>();
     SolrException.ignorePatterns.add(pattern);
   }
 

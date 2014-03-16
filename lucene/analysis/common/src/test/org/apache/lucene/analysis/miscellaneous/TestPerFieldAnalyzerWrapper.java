@@ -31,7 +31,7 @@ public class TestPerFieldAnalyzerWrapper extends BaseTokenStreamTestCase {
   public void testPerField() throws Exception {
     String text = "Qwerty";
 
-    Map<String, Analyzer> analyzerPerField = new HashMap<String, Analyzer>();
+    Map<String, Analyzer> analyzerPerField = new HashMap<>();
     analyzerPerField.put("special", new SimpleAnalyzer(TEST_VERSION_CURRENT));
 
     PerFieldAnalyzerWrapper analyzer =

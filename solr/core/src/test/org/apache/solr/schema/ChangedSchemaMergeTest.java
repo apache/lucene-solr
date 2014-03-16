@@ -45,7 +45,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
 
   private void addDoc(SolrCore core, String... fieldValues) throws IOException {
     UpdateHandler updater = core.getUpdateHandler();
-    AddUpdateCommand cmd = new AddUpdateCommand(new LocalSolrQueryRequest(core, new NamedList<Object>()));
+    AddUpdateCommand cmd = new AddUpdateCommand(new LocalSolrQueryRequest(core, new NamedList<>()));
     cmd.solrDoc = sdoc((Object[]) fieldValues);
     updater.addDoc(cmd);
   }
@@ -83,7 +83,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
       addDoc(changed, "id", "2", "which", "15", "text", "some stuff with which");
       addDoc(changed, "id", "3", "which", "15", "text", "some stuff with which");
       addDoc(changed, "id", "4", "which", "15", "text", "some stuff with which");
-      SolrQueryRequest req = new LocalSolrQueryRequest(changed, new NamedList<Object>());
+      SolrQueryRequest req = new LocalSolrQueryRequest(changed, new NamedList<>());
       changed.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
 
       // write the new schema out and make it current

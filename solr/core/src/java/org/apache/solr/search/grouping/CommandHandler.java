@@ -53,7 +53,7 @@ public class CommandHandler {
   public static class Builder {
 
     private SolrIndexSearcher.QueryCommand queryCommand;
-    private List<Command> commands = new ArrayList<Command>();
+    private List<Command> commands = new ArrayList<>();
     private SolrIndexSearcher searcher;
     private boolean needDocSet = false;
     private boolean truncateGroups = false;
@@ -137,7 +137,7 @@ public class CommandHandler {
   @SuppressWarnings("unchecked")
   public void execute() throws IOException {
     final int nrOfCommands = commands.size();
-    List<Collector> collectors = new ArrayList<Collector>(nrOfCommands);
+    List<Collector> collectors = new ArrayList<>(nrOfCommands);
     for (Command command : commands) {
       collectors.addAll(command.create());
     }

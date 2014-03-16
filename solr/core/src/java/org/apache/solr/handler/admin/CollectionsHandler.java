@@ -17,8 +17,34 @@ package org.apache.solr.handler.admin;
  * limitations under the License.
  */
 
-import com.google.common.collect.ImmutableSet;
-import org.apache.commons.lang.StringUtils;
+import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.ASYNC;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.COLL_CONF;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATESHARD;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATE_NODE_SET;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.DELETEREPLICA;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.MAX_SHARDS_PER_NODE;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.REQUESTID;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.ROUTER;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARDS_PROP;
+import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERPROP;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
@@ -27,6 +53,7 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestSyncShard;
 import org.apache.solr.cloud.DistributedQueue.QueueEvent;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.OverseerCollectionProcessor;
+import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -34,7 +61,6 @@ import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -50,30 +76,7 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.COLL_CONF;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATESHARD;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.CREATE_NODE_SET;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.DELETEREPLICA;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.MAX_SHARDS_PER_NODE;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.ROUTER;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARDS_PROP;
-import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERPROP;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
+import com.google.common.collect.ImmutableSet;
 
 public class CollectionsHandler extends RequestHandlerBase {
   protected static Logger log = LoggerFactory.getLogger(CollectionsHandler.class);
@@ -199,6 +202,10 @@ public class CollectionsHandler extends RequestHandlerBase {
         this.handleAddReplica(req, rsp);
         break;
       }
+      case REQUESTSTATUS: {
+        this.handleRequestStatus(req, rsp);
+        break;
+      }
       default: {
           throw new RuntimeException("Unknown action: " + action);
       }
@@ -236,6 +243,16 @@ public class CollectionsHandler extends RequestHandlerBase {
 
   public static long DEFAULT_ZK_TIMEOUT = 180*1000;
 
+  private void handleRequestStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
+    log.debug("REQUESTSTATUS action invoked: " + req.getParamString());
+    req.getParams().required().check(REQUESTID);
+    Map<String, Object> props = new HashMap<String, Object>();
+    props.put(Overseer.QUEUE_OPERATION, OverseerCollectionProcessor.REQUESTSTATUS);
+    props.put(REQUESTID, req.getParams().get(REQUESTID));
+    ZkNodeProps m = new ZkNodeProps(props);
+    handleResponse(OverseerCollectionProcessor.REQUESTSTATUS, m, rsp);
+  }
+
   private void handleResponse(String operation, ZkNodeProps m,
                               SolrQueryResponse rsp) throws KeeperException, InterruptedException {
     handleResponse(operation, m, rsp, DEFAULT_ZK_TIMEOUT);
@@ -243,7 +260,36 @@ public class CollectionsHandler extends RequestHandlerBase {
   
   private void handleResponse(String operation, ZkNodeProps m,
       SolrQueryResponse rsp, long timeout) throws KeeperException, InterruptedException {
-    long time = System.currentTimeMillis();
+    long time = System.nanoTime();
+
+     if(m.containsKey(ASYNC) && m.get(ASYNC) != null) {
+ 
+       String asyncId = m.getStr(ASYNC);
+ 
+       if(asyncId.equals("-1")) {
+         throw new SolrException(ErrorCode.BAD_REQUEST, "requestid can not be -1. It is reserved for cleanup purposes.");
+       }
+ 
+       NamedList<String> r = new NamedList<>();
+ 
+       if (coreContainer.getZkController().getOverseerCompletedMap().contains(asyncId) ||
+           coreContainer.getZkController().getOverseerFailureMap().contains(asyncId) ||
+           coreContainer.getZkController().getOverseerRunningMap().contains(asyncId)) {
+         r.add("error", "Task with the same requestid already exists.");
+ 
+       } else {
+         coreContainer.getZkController().getOverseerCollectionQueue()
+             .offer(ZkStateReader.toJSON(m));
+ 
+       }
+       r.add(CoreAdminParams.REQUESTID, (String) m.get(ASYNC));
+       SolrResponse response = new OverseerSolrResponse(r);
+ 
+       rsp.getValues().addAll(response.getResponse());
+ 
+       return;
+     }
+
     QueueEvent event = coreContainer.getZkController()
         .getOverseerCollectionQueue()
         .offer(ZkStateReader.toJSON(m), timeout);
@@ -256,7 +302,7 @@ public class CollectionsHandler extends RequestHandlerBase {
         rsp.setException(new SolrException(code != null && code != -1 ? ErrorCode.getErrorCode(code) : ErrorCode.SERVER_ERROR, (String)exp.get("msg")));
       }
     } else {
-      if (System.currentTimeMillis() - time >= timeout) {
+      if (System.nanoTime() - time >= TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS)) {
         throw new SolrException(ErrorCode.SERVER_ERROR, operation
             + " the collection time out:" + timeout / 1000 + "s");
       } else if (event.getWatchedEvent() != null) {
@@ -368,6 +414,7 @@ public class CollectionsHandler extends RequestHandlerBase {
          MAX_SHARDS_PER_NODE,
         CREATE_NODE_SET ,
         SHARDS_PROP,
+        ASYNC,
         "router.");
 
     copyPropertiesIfNotNull(req.getParams(), props);
@@ -380,7 +427,7 @@ public class CollectionsHandler extends RequestHandlerBase {
     log.info("Remove replica: " + req.getParamString());
     req.getParams().required().check(COLLECTION_PROP, SHARD_ID_PROP, "replica");
     Map<String, Object> map = makeMap(QUEUE_OPERATION, DELETEREPLICA);
-    copyIfNotNull(req.getParams(),map,COLLECTION_PROP,SHARD_ID_PROP,"replica");
+    copyIfNotNull(req.getParams(),map,COLLECTION_PROP,SHARD_ID_PROP,"replica", ASYNC);
     ZkNodeProps m = new ZkNodeProps(map);
     handleResponse(DELETEREPLICA, m, rsp);
   }
@@ -394,14 +441,14 @@ public class CollectionsHandler extends RequestHandlerBase {
       throw new SolrException(ErrorCode.BAD_REQUEST, "shards can be added only to 'implicit' collections" );
 
     Map<String, Object> map = makeMap(QUEUE_OPERATION, CREATESHARD);
-    copyIfNotNull(req.getParams(),map,COLLECTION_PROP, SHARD_ID_PROP, REPLICATION_FACTOR,CREATE_NODE_SET);
+    copyIfNotNull(req.getParams(),map,COLLECTION_PROP, SHARD_ID_PROP, REPLICATION_FACTOR,CREATE_NODE_SET, ASYNC);
     copyPropertiesIfNotNull(req.getParams(), map);
     ZkNodeProps m = new ZkNodeProps(map);
     handleResponse(CREATESHARD, m, rsp);
   }
 
   private static void copyIfNotNull(SolrParams params, Map<String, Object> props, String... keys) {
-    ArrayList<String> prefixes = new ArrayList<String>(1);
+    ArrayList<String> prefixes = new ArrayList<>(1);
     if(keys !=null){
       for (String key : keys) {
         if(key.endsWith(".")) {
@@ -444,7 +491,7 @@ public class CollectionsHandler extends RequestHandlerBase {
     String name = req.getParams().required().get(ZkStateReader.COLLECTION_PROP);
     String shard = req.getParams().required().get(ZkStateReader.SHARD_ID_PROP);
     
-    Map<String,Object> props = new HashMap<String,Object>();
+    Map<String,Object> props = new HashMap<>();
     props.put(ZkStateReader.COLLECTION_PROP, name);
     props.put(Overseer.QUEUE_OPERATION, OverseerCollectionProcessor.DELETESHARD);
     props.put(ZkStateReader.SHARD_ID_PROP, shard);
@@ -473,7 +520,7 @@ public class CollectionsHandler extends RequestHandlerBase {
           "Only one of 'ranges' or 'split.key' should be specified");
     }
 
-    Map<String,Object> props = new HashMap<String,Object>();
+    Map<String,Object> props = new HashMap<>();
     props.put(Overseer.QUEUE_OPERATION, OverseerCollectionProcessor.SPLITSHARD);
     props.put("collection", name);
     if (shard != null)  {
@@ -485,6 +532,10 @@ public class CollectionsHandler extends RequestHandlerBase {
     if (rangesStr != null)  {
       props.put(CoreAdminParams.RANGES, rangesStr);
     }
+
+    if (req.getParams().get(ASYNC) != null)
+      props.put(ASYNC, req.getParams().get(ASYNC));
+
     copyPropertiesIfNotNull(req.getParams(), props);
 
     ZkNodeProps m = new ZkNodeProps(props);
@@ -495,16 +546,16 @@ public class CollectionsHandler extends RequestHandlerBase {
   private void handleMigrate(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
     log.info("Migrate action invoked: " + req.getParamString());
     req.getParams().required().check("collection", "split.key", "target.collection");
-    Map<String,Object> props = new HashMap<String,Object>();
+    Map<String,Object> props = new HashMap<>();
     props.put(Overseer.QUEUE_OPERATION, OverseerCollectionProcessor.MIGRATE);
-    copyIfNotNull(req.getParams(), props, "collection", "split.key", "target.collection", "forward.timeout");
+    copyIfNotNull(req.getParams(), props, "collection", "split.key", "target.collection", "forward.timeout", ASYNC);
     ZkNodeProps m = new ZkNodeProps(props);
     handleResponse(OverseerCollectionProcessor.MIGRATE, m, rsp, DEFAULT_ZK_TIMEOUT * 20);
   }
 
   private void handleAddReplica(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException  {
     log.info("Add replica action invoked: " + req.getParamString());
-    Map<String,Object> props = new HashMap<String,Object>();
+    Map<String,Object> props = new HashMap<>();
     props.put(Overseer.QUEUE_OPERATION, CollectionAction.ADDREPLICA.toString());
     copyIfNotNull(req.getParams(), props, COLLECTION_PROP, "node", SHARD_ID_PROP, ShardParams._ROUTE_,
         CoreAdminParams.NAME, CoreAdminParams.INSTANCE_DIR, CoreAdminParams.DATA_DIR);

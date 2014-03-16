@@ -212,7 +212,7 @@ public  class LeaderElector {
    * @return int seqs
    */
   private List<Integer> getSeqs(List<String> seqs) {
-    List<Integer> intSeqs = new ArrayList<Integer>(seqs.size());
+    List<Integer> intSeqs = new ArrayList<>(seqs.size());
     for (String seq : seqs) {
       intSeqs.add(getSeq(seq));
     }

@@ -101,14 +101,14 @@ public class TestTaxonomyFacetCounts2 extends FacetTestCase {
     // category is not added twice.
     int numFacetsA = random.nextInt(3) + 1; // 1-3
     int numFacetsB = random.nextInt(2) + 1; // 1-2
-    ArrayList<FacetField> categories_a = new ArrayList<FacetField>();
+    ArrayList<FacetField> categories_a = new ArrayList<>();
     categories_a.addAll(Arrays.asList(CATEGORIES_A));
-    ArrayList<FacetField> categories_b = new ArrayList<FacetField>();
+    ArrayList<FacetField> categories_b = new ArrayList<>();
     categories_b.addAll(Arrays.asList(CATEGORIES_B));
     Collections.shuffle(categories_a, random);
     Collections.shuffle(categories_b, random);
 
-    ArrayList<FacetField> categories = new ArrayList<FacetField>();
+    ArrayList<FacetField> categories = new ArrayList<>();
     categories.addAll(categories_a.subList(0, numFacetsA));
     categories.addAll(categories_b.subList(0, numFacetsB));
     
@@ -210,7 +210,7 @@ public class TestTaxonomyFacetCounts2 extends FacetTestCase {
   
   // initialize expectedCounts w/ 0 for all categories
   private static Map<String,Integer> newCounts() {
-    Map<String,Integer> counts = new HashMap<String,Integer>();
+    Map<String,Integer> counts = new HashMap<>();
     counts.put(CP_A, 0);
     counts.put(CP_B, 0);
     counts.put(CP_C, 0);

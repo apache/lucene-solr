@@ -18,6 +18,7 @@
     <orderEntry type="library" name="Solr morphlines core library" level="project" />
     <orderEntry type="library" name="Solr morphlines cell library" level="project" />
     <orderEntry type="library" scope="TEST" name="Solr morphlines core test library" level="project" />
+    <orderEntry type="library" scope="TEST" name="Solr example library" level="project" />
     <orderEntry type="module" scope="TEST" module-name="lucene-test-framework" />
     <orderEntry type="module" scope="TEST" module-name="solr-test-framework" />
     <orderEntry type="module" module-name="solr-core" />

@@ -472,7 +472,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
 
       // Perform clustering
       LocalSolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), solrParams);
-      Map<SolrDocument,Integer> docIds = new HashMap<SolrDocument, Integer>(docList.size());
+      Map<SolrDocument,Integer> docIds = new HashMap<>(docList.size());
       SolrDocumentList solrDocList = SolrPluginUtils.docListToSolrDocumentList( docList, searcher, engine.getFieldsToLoad(req), docIds );
 
       @SuppressWarnings("unchecked")

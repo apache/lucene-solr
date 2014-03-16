@@ -251,7 +251,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
   public void assertThreadSafe(final Analyzer analyzer) throws Exception {
     int numTestPoints = 100;
     int numThreads = TestUtil.nextInt(random(), 3, 5);
-    final HashMap<String,BytesRef> map = new HashMap<String,BytesRef>();
+    final HashMap<String,BytesRef> map = new HashMap<>();
     
     // create a map<String,SortKey> up front.
     // then with multiple threads, generate sort keys for all the keys in the map

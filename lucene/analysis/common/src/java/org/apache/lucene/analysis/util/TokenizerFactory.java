@@ -31,7 +31,7 @@ import java.util.Set;
 public abstract class TokenizerFactory extends AbstractAnalysisFactory {
 
   private static final AnalysisSPILoader<TokenizerFactory> loader =
-      new AnalysisSPILoader<TokenizerFactory>(TokenizerFactory.class);
+      new AnalysisSPILoader<>(TokenizerFactory.class);
   
   /** looks up a tokenizer by name from context classpath */
   public static TokenizerFactory forName(String name, Map<String,String> args) {

@@ -66,11 +66,12 @@ public class ZkContainer {
 
     initZooKeeper(cc, solrHome,
         config.getZkHost(), config.getZkClientTimeout(), config.getZkHostPort(), config.getZkHostContext(),
-        config.getHost(), config.getLeaderVoteWait(), config.getGenericCoreNodeNames());
+        config.getHost(), config.getLeaderVoteWait(), config.getLeaderConflictResolveWait(), config.getGenericCoreNodeNames());
   }
-  
+    
   public void initZooKeeper(final CoreContainer cc, String solrHome, String zkHost, int zkClientTimeout, String hostPort,
-                            String hostContext, String host, int leaderVoteWait, boolean genericCoreNodeNames) {
+        String hostContext, String host, int leaderVoteWait, int leaderConflictResolveWait, boolean genericCoreNodeNames) {
+
     ZkController zkController = null;
     
     // if zkHost sys property is not set, we are not using ZooKeeper
@@ -135,12 +136,12 @@ public class ZkContainer {
         }
         zkController = new ZkController(cc, zookeeperHost, zkClientTimeout,
             zkClientConnectTimeout, host, hostPort, hostContext,
-            leaderVoteWait, genericCoreNodeNames,
+            leaderVoteWait, leaderConflictResolveWait, genericCoreNodeNames,
             new CurrentCoreDescriptorProvider() {
 
               @Override
               public List<CoreDescriptor> getCurrentDescriptors() {
-                List<CoreDescriptor> descriptors = new ArrayList<CoreDescriptor>(
+                List<CoreDescriptor> descriptors = new ArrayList<>(
                     cc.getCoreNames().size());
                 Collection<SolrCore> cores = cc.getCores();
                 for (SolrCore core : cores) {

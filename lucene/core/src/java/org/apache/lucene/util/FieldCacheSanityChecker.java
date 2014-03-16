@@ -109,13 +109,13 @@ public final class FieldCacheSanityChecker {
     //
     // maps the (valId) identityhashCode of cache values to 
     // sets of CacheEntry instances
-    final MapOfSets<Integer, CacheEntry> valIdToItems = new MapOfSets<Integer, CacheEntry>(new HashMap<Integer, Set<CacheEntry>>(17));
+    final MapOfSets<Integer, CacheEntry> valIdToItems = new MapOfSets<>(new HashMap<Integer, Set<CacheEntry>>(17));
     // maps ReaderField keys to Sets of ValueIds
-    final MapOfSets<ReaderField, Integer> readerFieldToValIds = new MapOfSets<ReaderField, Integer>(new HashMap<ReaderField, Set<Integer>>(17));
+    final MapOfSets<ReaderField, Integer> readerFieldToValIds = new MapOfSets<>(new HashMap<ReaderField, Set<Integer>>(17));
     //
 
     // any keys that we know result in more then one valId
-    final Set<ReaderField> valMismatchKeys = new HashSet<ReaderField>();
+    final Set<ReaderField> valMismatchKeys = new HashSet<>();
 
     // iterate over all the cacheEntries to get the mappings we'll need
     for (int i = 0; i < cacheEntries.length; i++) {
@@ -144,7 +144,7 @@ public final class FieldCacheSanityChecker {
       }
     }
 
-    final List<Insanity> insanity = new ArrayList<Insanity>(valMismatchKeys.size() * 3);
+    final List<Insanity> insanity = new ArrayList<>(valMismatchKeys.size() * 3);
 
     insanity.addAll(checkValueMismatch(valIdToItems, 
                                        readerFieldToValIds, 
@@ -166,7 +166,7 @@ public final class FieldCacheSanityChecker {
                                         MapOfSets<ReaderField, Integer> readerFieldToValIds,
                                         Set<ReaderField> valMismatchKeys) {
 
-    final List<Insanity> insanity = new ArrayList<Insanity>(valMismatchKeys.size() * 3);
+    final List<Insanity> insanity = new ArrayList<>(valMismatchKeys.size() * 3);
 
     if (! valMismatchKeys.isEmpty() ) { 
       // we have multiple values for some ReaderFields
@@ -174,7 +174,7 @@ public final class FieldCacheSanityChecker {
       final Map<ReaderField, Set<Integer>> rfMap = readerFieldToValIds.getMap();
       final Map<Integer, Set<CacheEntry>> valMap = valIdToItems.getMap();
       for (final ReaderField rf : valMismatchKeys) {
-        final List<CacheEntry> badEntries = new ArrayList<CacheEntry>(valMismatchKeys.size() * 2);
+        final List<CacheEntry> badEntries = new ArrayList<>(valMismatchKeys.size() * 2);
         for(final Integer value: rfMap.get(rf)) {
           for (final CacheEntry cacheEntry : valMap.get(value)) {
             badEntries.add(cacheEntry);
@@ -203,15 +203,15 @@ public final class FieldCacheSanityChecker {
   private Collection<Insanity> checkSubreaders( MapOfSets<Integer, CacheEntry>  valIdToItems,
                                       MapOfSets<ReaderField, Integer> readerFieldToValIds) {
 
-    final List<Insanity> insanity = new ArrayList<Insanity>(23);
+    final List<Insanity> insanity = new ArrayList<>(23);
 
-    Map<ReaderField, Set<ReaderField>> badChildren = new HashMap<ReaderField, Set<ReaderField>>(17);
-    MapOfSets<ReaderField, ReaderField> badKids = new MapOfSets<ReaderField, ReaderField>(badChildren); // wrapper
+    Map<ReaderField, Set<ReaderField>> badChildren = new HashMap<>(17);
+    MapOfSets<ReaderField, ReaderField> badKids = new MapOfSets<>(badChildren); // wrapper
 
     Map<Integer, Set<CacheEntry>> viToItemSets = valIdToItems.getMap();
     Map<ReaderField, Set<Integer>> rfToValIdSets = readerFieldToValIds.getMap();
 
-    Set<ReaderField> seen = new HashSet<ReaderField>(17);
+    Set<ReaderField> seen = new HashSet<>(17);
 
     Set<ReaderField> readerFields = rfToValIdSets.keySet();
     for (final ReaderField rf : readerFields) {
@@ -242,7 +242,7 @@ public final class FieldCacheSanityChecker {
     for (final ReaderField parent : badChildren.keySet()) {
       Set<ReaderField> kids = badChildren.get(parent);
 
-      List<CacheEntry> badEntries = new ArrayList<CacheEntry>(kids.size() * 2);
+      List<CacheEntry> badEntries = new ArrayList<>(kids.size() * 2);
 
       // put parent entr(ies) in first
       {
@@ -277,7 +277,7 @@ public final class FieldCacheSanityChecker {
    * returned by {@code seed.getCoreCacheKey()}
    */
   private List<Object> getAllDescendantReaderKeys(Object seed) {
-    List<Object> all = new ArrayList<Object>(17); // will grow as we iter
+    List<Object> all = new ArrayList<>(17); // will grow as we iter
     all.add(seed);
     for (int i = 0; i < all.size(); i++) {
       final Object obj = all.get(i);

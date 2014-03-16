@@ -60,12 +60,12 @@ public final class SessionToken {
   public SessionToken(DataInput in) throws IOException {
     this.id = in.readUTF();
     this.version = in.readUTF();
-    this.sourceFiles = new HashMap<String,List<RevisionFile>>();
+    this.sourceFiles = new HashMap<>();
     int numSources = in.readInt();
     while (numSources > 0) {
       String source = in.readUTF();
       int numFiles = in.readInt();
-      List<RevisionFile> files = new ArrayList<RevisionFile>(numFiles);
+      List<RevisionFile> files = new ArrayList<>(numFiles);
       for (int i = 0; i < numFiles; i++) {
         String fileName = in.readUTF();
         RevisionFile file = new RevisionFile(fileName);

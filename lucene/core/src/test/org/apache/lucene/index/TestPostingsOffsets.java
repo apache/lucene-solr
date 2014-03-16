@@ -220,7 +220,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
 
   public void testRandom() throws Exception {
     // token -> docID -> tokens
-    final Map<String,Map<Integer,List<Token>>> actualTokens = new HashMap<String,Map<Integer,List<Token>>>();
+    final Map<String,Map<Integer,List<Token>>> actualTokens = new HashMap<>();
 
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
@@ -242,7 +242,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     for(int docCount=0;docCount<numDocs;docCount++) {
       Document doc = new Document();
       doc.add(new IntField("id", docCount, Field.Store.YES));
-      List<Token> tokens = new ArrayList<Token>();
+      List<Token> tokens = new ArrayList<>();
       final int numTokens = atLeast(100);
       //final int numTokens = atLeast(20);
       int pos = -1;

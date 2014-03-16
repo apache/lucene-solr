@@ -328,7 +328,7 @@ public class ZkTestServer {
   }
   
   public static List<HostPort> parseHostPortList(String hplist) {
-    ArrayList<HostPort> alist = new ArrayList<HostPort>();
+    ArrayList<HostPort> alist = new ArrayList<>();
     for (String hp : hplist.split(",")) {
       int idx = hp.lastIndexOf(':');
       String host = hp.substring(0, idx);

@@ -105,7 +105,7 @@ public final class RamUsageEstimator {
    */
   private static final Map<Class<?>,Integer> primitiveSizes;
   static {
-    primitiveSizes = new IdentityHashMap<Class<?>,Integer>();
+    primitiveSizes = new IdentityHashMap<>();
     primitiveSizes.put(boolean.class, Integer.valueOf(NUM_BYTES_BOOLEAN));
     primitiveSizes.put(byte.class, Integer.valueOf(NUM_BYTES_BYTE));
     primitiveSizes.put(char.class, Integer.valueOf(NUM_BYTES_CHAR));
@@ -403,11 +403,11 @@ public final class RamUsageEstimator {
    */
   private static long measureObjectSize(Object root) {
     // Objects seen so far.
-    final IdentityHashSet<Object> seen = new IdentityHashSet<Object>();
+    final IdentityHashSet<Object> seen = new IdentityHashSet<>();
     // Class cache with reference Field and precalculated shallow size. 
-    final IdentityHashMap<Class<?>, ClassCache> classCache = new IdentityHashMap<Class<?>, ClassCache>();
+    final IdentityHashMap<Class<?>, ClassCache> classCache = new IdentityHashMap<>();
     // Stack of objects pending traversal. Recursion caused stack overflows. 
-    final ArrayList<Object> stack = new ArrayList<Object>();
+    final ArrayList<Object> stack = new ArrayList<>();
     stack.add(root);
 
     long totalSize = 0;
@@ -486,7 +486,7 @@ public final class RamUsageEstimator {
   private static ClassCache createCacheEntry(final Class<?> clazz) {
     ClassCache cachedInfo;
     long shallowInstanceSize = NUM_BYTES_OBJECT_HEADER;
-    final ArrayList<Field> referenceFields = new ArrayList<Field>(32);
+    final ArrayList<Field> referenceFields = new ArrayList<>(32);
     for (Class<?> c = clazz; c != null; c = c.getSuperclass()) {
       final Field[] fields = c.getDeclaredFields();
       for (final Field f : fields) {

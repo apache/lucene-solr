@@ -42,7 +42,7 @@ import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessor
 public class RemoveEmptyNonLeafQueryNodeProcessor extends
     QueryNodeProcessorImpl {
 
-  private LinkedList<QueryNode> childrenBuffer = new LinkedList<QueryNode>();
+  private LinkedList<QueryNode> childrenBuffer = new LinkedList<>();
 
   public RemoveEmptyNonLeafQueryNodeProcessor() {
     // empty constructor

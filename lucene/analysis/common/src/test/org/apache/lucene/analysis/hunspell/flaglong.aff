@@ -1,0 +1,4 @@
+SET UTF-8
+FLAG long
+SFX Y1 Y 1
+SFX Y1 0 s .

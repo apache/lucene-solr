@@ -84,7 +84,7 @@ public abstract class FieldMutatingUpdateProcessor
 
     // make a copy we can iterate over while mutating the doc
     final Collection<String> fieldNames 
-      = new ArrayList<String>(doc.getFieldNames());
+      = new ArrayList<>(doc.getFieldNames());
 
     for (final String fname : fieldNames) {
 
@@ -217,7 +217,7 @@ public abstract class FieldMutatingUpdateProcessor
       this.core = core;
       this.params = params;
 
-      final Collection<Class> classes = new ArrayList<Class>(params.typeClass.size());
+      final Collection<Class> classes = new ArrayList<>(params.typeClass.size());
 
       for (String t : params.typeClass) {
         try {

@@ -346,9 +346,9 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
 class MockEventListener implements SolrEventListener {
 
   // use capacity bound Queues just so we're sure we don't OOM 
-  public final BlockingQueue<Long> soft = new LinkedBlockingQueue<Long>(1000);
-  public final BlockingQueue<Long> hard = new LinkedBlockingQueue<Long>(1000);
-  public final BlockingQueue<Long> searcher = new LinkedBlockingQueue<Long>(1000);
+  public final BlockingQueue<Long> soft = new LinkedBlockingQueue<>(1000);
+  public final BlockingQueue<Long> hard = new LinkedBlockingQueue<>(1000);
+  public final BlockingQueue<Long> searcher = new LinkedBlockingQueue<>(1000);
 
   // if non enpty, then at least one offer failed (queues full)
   private StringBuffer fail = new StringBuffer();

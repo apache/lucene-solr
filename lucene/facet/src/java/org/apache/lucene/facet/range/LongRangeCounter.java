@@ -44,7 +44,7 @@ final class LongRangeCounter {
     // track the start vs end case separately because if a
     // given point is both, then it must be its own
     // elementary interval:
-    Map<Long,Integer> endsMap = new HashMap<Long,Integer>();
+    Map<Long,Integer> endsMap = new HashMap<>();
 
     endsMap.put(Long.MIN_VALUE, 1);
     endsMap.put(Long.MAX_VALUE, 2);
@@ -64,11 +64,11 @@ final class LongRangeCounter {
       }
     }
 
-    List<Long> endsList = new ArrayList<Long>(endsMap.keySet());
+    List<Long> endsList = new ArrayList<>(endsMap.keySet());
     Collections.sort(endsList);
 
     // Build elementaryIntervals (a 1D Venn diagram):
-    List<InclusiveRange> elementaryIntervals = new ArrayList<InclusiveRange>();
+    List<InclusiveRange> elementaryIntervals = new ArrayList<>();
     int upto0 = 1;
     long v = endsList.get(0);
     long prev;
@@ -281,7 +281,7 @@ final class LongRangeCounter {
         // Our range is fully included in the incoming
         // range; add to our output list:
         if (outputs == null) {
-          outputs = new ArrayList<Integer>();
+          outputs = new ArrayList<>();
         }
         outputs.add(index);
       } else if (left != null) {

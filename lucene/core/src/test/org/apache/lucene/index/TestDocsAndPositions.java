@@ -120,7 +120,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     customType.setOmitNorms(true);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
-      ArrayList<Integer> positions = new ArrayList<Integer>();
+      ArrayList<Integer> positions = new ArrayList<>();
       StringBuilder builder = new StringBuilder();
       int num = atLeast(131);
       for (int j = 0; j < num; j++) {

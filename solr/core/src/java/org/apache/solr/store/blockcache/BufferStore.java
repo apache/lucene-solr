@@ -22,7 +22,9 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-
+/**
+ * @lucene.experimental
+ */
 public class BufferStore implements Store {
 
   private static final Store EMPTY = new Store() {
@@ -37,7 +39,7 @@ public class BufferStore implements Store {
     }
   };
 
-  private final static ConcurrentMap<Integer, BufferStore> bufferStores = new ConcurrentHashMap<Integer, BufferStore>();
+  private final static ConcurrentMap<Integer, BufferStore> bufferStores = new ConcurrentHashMap<>();
 
   private final BlockingQueue<byte[]> buffers;
 
@@ -64,7 +66,7 @@ public class BufferStore implements Store {
   }
 
   private static BlockingQueue<byte[]> setupBuffers(int bufferSize, int count) {
-    BlockingQueue<byte[]> queue = new ArrayBlockingQueue<byte[]>(count);
+    BlockingQueue<byte[]> queue = new ArrayBlockingQueue<>(count);
     for (int i = 0; i < count; i++) {
       queue.add(new byte[bufferSize]);
     }

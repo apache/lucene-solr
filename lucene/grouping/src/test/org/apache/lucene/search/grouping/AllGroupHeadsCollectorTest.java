@@ -380,10 +380,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
             System.out.println("\n===================================================================================");
           }
 
-          assertEquals(expectedGroupHeads.length, actualGroupHeads.length);
-          for (int i = 0; i < expectedGroupHeads.length; i++) {
-            assertEquals(expectedGroupHeads[i], actualGroupHeads[i]);
-          }
+          assertArrayEquals(expectedGroupHeads, actualGroupHeads);
         }
       } finally {
         QueryUtils.purgeFieldCache(r);

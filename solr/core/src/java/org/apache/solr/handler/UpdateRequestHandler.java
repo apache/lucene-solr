@@ -98,7 +98,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase {
         String wt = loader.getDefaultWT();
         // Make sure it is a valid writer
         if(req.getCore().getQueryResponseWriter(wt)!=null) {
-          Map<String,String> map = new HashMap<String,String>(1);
+          Map<String,String> map = new HashMap<>(1);
           map.put(CommonParams.WT, wt);
           req.setParams(SolrParams.wrapDefaults(params, 
               new MapSolrParams(map)));
@@ -117,7 +117,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase {
   
   protected void setAssumeContentType(String ct) {
     if(invariants==null) {
-      Map<String,String> map = new HashMap<String,String>();
+      Map<String,String> map = new HashMap<>();
       map.put(UpdateParams.ASSUME_CONTENT_TYPE,ct);
       invariants = new MapSolrParams(map);
     }
@@ -133,7 +133,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase {
     if(args!=null) {
       p = SolrParams.toSolrParams(args);
     }
-    Map<String,ContentStreamLoader> registry = new HashMap<String,ContentStreamLoader>();
+    Map<String,ContentStreamLoader> registry = new HashMap<>();
     registry.put("application/xml", new XMLLoader().init(p) );
     registry.put("application/json", new JsonLoader().init(p) );
     registry.put("application/csv", new CSVLoader().init(p) );

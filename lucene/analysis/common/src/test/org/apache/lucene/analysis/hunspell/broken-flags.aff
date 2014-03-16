@@ -1,0 +1,21 @@
+SET UTF-8
+TRY abcdefghijklmopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ
+
+SFX A Y 3
+SFX A   0     e         n
+SFX A   0     e         t
+SFX A   0     e         h
+
+SFX C Y 2
+SFX C   0     d/C       c
+SFX C   0     c         b
+
+SFX D Y 1
+SFX D   0     s         o
+
+SFX E Y 1
+SFX E   0     d         o
+
+# broken, the flag has too much in it
+PFX B0 Y 1
+PFX B0   0     s         o

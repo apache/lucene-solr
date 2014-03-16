@@ -73,7 +73,7 @@ public class JapaneseAnalyzer extends StopwordAnalyzerBase {
       try {
         DEFAULT_STOP_SET = loadStopwordSet(true, JapaneseAnalyzer.class, "stopwords.txt", "#");  // ignore case
         final CharArraySet tagset = loadStopwordSet(false, JapaneseAnalyzer.class, "stoptags.txt", "#");
-        DEFAULT_STOP_TAGS = new HashSet<String>();
+        DEFAULT_STOP_TAGS = new HashSet<>();
         for (Object element : tagset) {
           char chars[] = (char[]) element;
           DEFAULT_STOP_TAGS.add(new String(chars));

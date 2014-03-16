@@ -69,7 +69,7 @@ public class IndexRevision implements Revision {
   /** Returns a singleton map of the revision files from the given {@link IndexCommit}. */
   public static Map<String,List<RevisionFile>> revisionFiles(IndexCommit commit) throws IOException {
     Collection<String> commitFiles = commit.getFileNames();
-    List<RevisionFile> revisionFiles = new ArrayList<RevisionFile>(commitFiles.size());
+    List<RevisionFile> revisionFiles = new ArrayList<>(commitFiles.size());
     String segmentsFile = commit.getSegmentsFileName();
     Directory dir = commit.getDirectory();
     

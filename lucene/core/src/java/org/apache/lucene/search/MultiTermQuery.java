@@ -92,7 +92,7 @@ public abstract class MultiTermQuery extends Query {
   public static final RewriteMethod CONSTANT_SCORE_FILTER_REWRITE = new RewriteMethod() {
     @Override
     public Query rewrite(IndexReader reader, MultiTermQuery query) {
-      Query result = new ConstantScoreQuery(new MultiTermQueryWrapperFilter<MultiTermQuery>(query));
+      Query result = new ConstantScoreQuery(new MultiTermQueryWrapperFilter<>(query));
       result.setBoost(query.getBoost());
       return result;
     }

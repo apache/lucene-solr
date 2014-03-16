@@ -76,7 +76,7 @@ import java.util.*;
  * @since solr 1.4
  */
 public class LBHttpSolrServer extends SolrServer {
-  private static Set<Integer> RETRY_CODES = new HashSet<Integer>(4);
+  private static Set<Integer> RETRY_CODES = new HashSet<>(4);
 
   static {
     RETRY_CODES.add(404);
@@ -87,10 +87,10 @@ public class LBHttpSolrServer extends SolrServer {
 
   // keys to the maps are currently of the form "http://localhost:8983/solr"
   // which should be equivalent to CommonsHttpSolrServer.getBaseURL()
-  private final Map<String, ServerWrapper> aliveServers = new LinkedHashMap<String, ServerWrapper>();
+  private final Map<String, ServerWrapper> aliveServers = new LinkedHashMap<>();
   // access to aliveServers should be synchronized on itself
   
-  protected final Map<String, ServerWrapper> zombieServers = new ConcurrentHashMap<String, ServerWrapper>();
+  protected final Map<String, ServerWrapper> zombieServers = new ConcurrentHashMap<>();
 
   // changes to aliveServers are reflected in this array, no need to synchronize
   private volatile ServerWrapper[] aliveServerList = new ServerWrapper[0];
@@ -283,7 +283,7 @@ public class LBHttpSolrServer extends SolrServer {
     Rsp rsp = new Rsp();
     Exception ex = null;
     boolean isUpdate = req.request instanceof IsUpdateRequest;
-    List<ServerWrapper> skipped = new ArrayList<ServerWrapper>(req.getNumDeadServersToTry());
+    List<ServerWrapper> skipped = new ArrayList<>(req.getNumDeadServersToTry());
 
     for (String serverStr : req.getServers()) {
       serverStr = normalize(serverStr);
@@ -505,7 +505,7 @@ public class LBHttpSolrServer extends SolrServer {
         if (e.getRootCause() instanceof IOException) {
           ex = e;
           moveAliveToDead(wrapper);
-          if (justFailed == null) justFailed = new HashMap<String,ServerWrapper>();
+          if (justFailed == null) justFailed = new HashMap<>();
           justFailed.put(wrapper.getKey(), wrapper);
         } else {
           throw e;
@@ -619,7 +619,7 @@ public class LBHttpSolrServer extends SolrServer {
           aliveCheckExecutor = Executors.newSingleThreadScheduledExecutor(
               new SolrjNamedThreadFactory("aliveCheckExecutor"));
           aliveCheckExecutor.scheduleAtFixedRate(
-                  getAliveCheckRunner(new WeakReference<LBHttpSolrServer>(this)),
+                  getAliveCheckRunner(new WeakReference<>(this)),
                   this.interval, this.interval, TimeUnit.MILLISECONDS);
         }
       }

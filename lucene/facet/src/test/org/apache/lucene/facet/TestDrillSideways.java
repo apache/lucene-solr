@@ -148,7 +148,7 @@ public class TestDrillSideways extends FacetTestCase {
     // published once:
     assertEquals("dim=Author path=[] value=5 childCount=4\n  Lisa (2)\n  Bob (1)\n  Susan (1)\n  Frank (1)\n", r.facets.getTopChildren(10, "Author").toString());
 
-    // Another simple case: drill-down on on single fields
+    // Another simple case: drill-down on single fields
     // but OR of two values
     ddq = new DrillDownQuery(config);
     ddq.add("Author", "Lisa");
@@ -162,6 +162,12 @@ public class TestDrillSideways extends FacetTestCase {
     // (drill-down) published twice, and Frank/Susan/Bob
     // published once:
     assertEquals("dim=Author path=[] value=5 childCount=4\n  Lisa (2)\n  Bob (1)\n  Susan (1)\n  Frank (1)\n", r.facets.getTopChildren(10, "Author").toString());
+
+    assertTrue(r.facets instanceof MultiFacets);
+    List<FacetResult> allResults = r.facets.getAllDims(10);
+    assertEquals(2, allResults.size());
+    assertEquals("dim=Author path=[] value=5 childCount=4\n  Lisa (2)\n  Bob (1)\n  Susan (1)\n  Frank (1)\n", allResults.get(0).toString());
+    assertEquals("dim=Publish Date path=[] value=3 childCount=2\n  2010 (2)\n  2012 (1)\n", allResults.get(1).toString());
 
     // More interesting case: drill-down on two fields
     ddq = new DrillDownQuery(config);
@@ -422,7 +428,7 @@ public class TestDrillSideways extends FacetTestCase {
     int valueCount = 2;
 
     for(int dim=0;dim<numDims;dim++) {
-      Set<String> values = new HashSet<String>();
+      Set<String> values = new HashSet<>();
       while (values.size() < valueCount) {
         String s = TestUtil.randomRealisticUnicodeString(random());
         //String s = _TestUtil.randomString(random());
@@ -434,7 +440,7 @@ public class TestDrillSideways extends FacetTestCase {
       valueCount *= 2;
     }
 
-    List<Doc> docs = new ArrayList<Doc>();
+    List<Doc> docs = new ArrayList<>();
     for(int i=0;i<numDocs;i++) {
       Doc doc = new Doc();
       doc.id = ""+i;
@@ -710,7 +716,7 @@ public class TestDrillSideways extends FacetTestCase {
         ds = new DrillSideways(s, config, tr) {
             @Override
             protected Facets buildFacetsResult(FacetsCollector drillDowns, FacetsCollector[] drillSideways, String[] drillSidewaysDims) throws IOException {
-              Map<String,Facets> drillSidewaysFacets = new HashMap<String,Facets>();
+              Map<String,Facets> drillSidewaysFacets = new HashMap<>();
               Facets drillDownFacets = getTaxonomyFacetCounts(taxoReader, config, drillDowns);
               if (drillSideways != null) {
                 for(int i=0;i<drillSideways.length;i++) {
@@ -733,7 +739,7 @@ public class TestDrillSideways extends FacetTestCase {
       DrillSidewaysResult actual = ds.search(ddq, filter, null, numDocs, sort, true, true);
 
       TopDocs hits = s.search(baseQuery, numDocs);
-      Map<String,Float> scores = new HashMap<String,Float>();
+      Map<String,Float> scores = new HashMap<>();
       for(ScoreDoc sd : hits.scoreDocs) {
         scores.put(s.doc(sd.doc).get("id"), sd.score);
       }
@@ -847,7 +853,7 @@ public class TestDrillSideways extends FacetTestCase {
                                                         String[][] dimValues, Filter onlyEven) throws Exception {
     int numDims = dimValues.length;
 
-    List<Doc> hits = new ArrayList<Doc>();
+    List<Doc> hits = new ArrayList<>();
     Counters drillDownCounts = new Counters(dimValues);
     Counters[] drillSidewaysCounts = new Counters[dimValues.length];
     for(int dim=0;dim<numDims;dim++) {
@@ -909,7 +915,7 @@ public class TestDrillSideways extends FacetTestCase {
       }
     }
 
-    Map<String,Integer> idToDocID = new HashMap<String,Integer>();
+    Map<String,Integer> idToDocID = new HashMap<>();
     for(int i=0;i<s.getIndexReader().maxDoc();i++) {
       idToDocID.put(s.doc(i).get("id"), i);
     }
@@ -964,7 +970,7 @@ public class TestDrillSideways extends FacetTestCase {
       }
 
       int idx = 0;
-      Map<String,Integer> actualValues = new HashMap<String,Integer>();
+      Map<String,Integer> actualValues = new HashMap<>();
 
       if (fr != null) {
         for(LabelAndValue labelValue : fr.labelValues) {

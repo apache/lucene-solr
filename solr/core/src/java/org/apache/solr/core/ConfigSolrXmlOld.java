@@ -186,8 +186,8 @@ public class ConfigSolrXmlOld extends ConfigSolr {
     coreNodes = (NodeList) config.evaluate("solr/cores/core",
         XPathConstants.NODESET);
     // Check a couple of error conditions
-    Set<String> names = new HashSet<String>(); // for duplicate names
-    Map<String,String> dirs = new HashMap<String,String>(); // for duplicate
+    Set<String> names = new HashSet<>(); // for duplicate names
+    Map<String,String> dirs = new HashMap<>(); // for duplicate
                                                             // data dirs.
     
     for (int idx = 0; idx < coreNodes.getLength(); ++idx) {
@@ -236,7 +236,7 @@ public class ConfigSolrXmlOld extends ConfigSolr {
   }
 
   public List<String> getAllCoreNames() {
-    List<String> ret = new ArrayList<String>();
+    List<String> ret = new ArrayList<>();
     
     synchronized (coreNodes) {
       for (int idx = 0; idx < coreNodes.getLength(); ++idx) {

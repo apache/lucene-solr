@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 
 /**
  * SolrCache based on ConcurrentLRUCache implementation.
@@ -84,7 +85,7 @@ public class FastLRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
     str = (String) args.get("showItems");
     showItems = str == null ? 0 : Integer.parseInt(str);
     description = generateDescription(limit, initialSize, minLimit, acceptableLimit, newThread);
-    cache = new ConcurrentLRUCache<K,V>(limit, minLimit, acceptableLimit, initialSize, newThread, false, null);
+    cache = new ConcurrentLRUCache<>(limit, minLimit, acceptableLimit, initialSize, newThread, false, null);
     cache.setAlive(false);
 
     statsList = (List<ConcurrentLRUCache.Stats>) persistence;
@@ -92,7 +93,7 @@ public class FastLRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
       // must be the first time a cache of this type is being created
       // Use a CopyOnWriteArrayList since puts are very rare and iteration may be a frequent operation
       // because it is used in getStatistics()
-      statsList = new CopyOnWriteArrayList<ConcurrentLRUCache.Stats>();
+      statsList = new CopyOnWriteArrayList<>();
 
       // the first entry will be for cumulative stats of caches that have been closed.
       statsList.add(new ConcurrentLRUCache.Stats());
@@ -143,7 +144,7 @@ public class FastLRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
   @Override
   public void warm(SolrIndexSearcher searcher, SolrCache old) {
     if (regenerator == null) return;
-    long warmingStartTime = System.currentTimeMillis();
+    long warmingStartTime = System.nanoTime();
     FastLRUCache other = (FastLRUCache) old;
     // warm entries
     if (isAutowarmingOn()) {
@@ -165,7 +166,7 @@ public class FastLRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
         }
       }
     }
-    warmupTime = System.currentTimeMillis() - warmingStartTime;
+    warmupTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - warmingStartTime, TimeUnit.NANOSECONDS);
   }
 
 
@@ -196,7 +197,7 @@ public class FastLRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
 
   @Override
   public NamedList getStatistics() {
-    NamedList<Serializable> lst = new SimpleOrderedMap<Serializable>();
+    NamedList<Serializable> lst = new SimpleOrderedMap<>();
     if (cache == null)  return lst;
     ConcurrentLRUCache.Stats stats = cache.getStats();
     long lookups = stats.getCumulativeLookups();

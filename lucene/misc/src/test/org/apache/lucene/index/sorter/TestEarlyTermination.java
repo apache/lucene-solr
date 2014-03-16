@@ -51,14 +51,14 @@ public class TestEarlyTermination extends LuceneTestCase {
   private int numDocs;
   private List<String> terms;
   private Directory dir;
-  private Sorter sorter;
+  private Sort sort;
   private RandomIndexWriter iw;
   private IndexReader reader;
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    sorter = new NumericDocValuesSorter("ndv1");
+    sort = new Sort(new SortField("ndv1", SortField.Type.LONG));
   }
 
   private Document randomDocument() {
@@ -73,14 +73,14 @@ public class TestEarlyTermination extends LuceneTestCase {
     dir = newDirectory();
     numDocs = atLeast(150);
     final int numTerms = TestUtil.nextInt(random(), 1, numDocs / 5);
-    Set<String> randomTerms = new HashSet<String>();
+    Set<String> randomTerms = new HashSet<>();
     while (randomTerms.size() < numTerms) {
       randomTerms.add(TestUtil.randomSimpleString(random()));
     }
-    terms = new ArrayList<String>(randomTerms);
+    terms = new ArrayList<>(randomTerms);
     final long seed = random().nextLong();
     final IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(new Random(seed)));
-    iwc.setMergePolicy(TestSortingMergePolicy.newSortingMergePolicy(sorter));
+    iwc.setMergePolicy(TestSortingMergePolicy.newSortingMergePolicy(sort));
     iw = new RandomIndexWriter(new Random(seed), dir, iwc);
     for (int i = 0; i < numDocs; ++i) {
       final Document doc = randomDocument();
@@ -120,7 +120,7 @@ public class TestEarlyTermination extends LuceneTestCase {
     for (int i = 0; i < iters; ++i) {
       final TermQuery query = new TermQuery(new Term("s", RandomPicks.randomFrom(random(), terms)));
       searcher.search(query, collector1);
-      searcher.search(query, new EarlyTerminatingSortingCollector(collector2, sorter, numHits));
+      searcher.search(query, new EarlyTerminatingSortingCollector(collector2, sort, numHits));
     }
     assertTrue(collector1.getTotalHits() >= collector2.getTotalHits());
     assertTopDocsEquals(collector1.topDocs().scoreDocs, collector2.topDocs().scoreDocs);
@@ -144,7 +144,8 @@ public class TestEarlyTermination extends LuceneTestCase {
     for (int i = 0; i < iters; ++i) {
       final TermQuery query = new TermQuery(new Term("s", RandomPicks.randomFrom(random(), terms)));
       searcher.search(query, collector1);
-      searcher.search(query, new EarlyTerminatingSortingCollector(collector2, new NumericDocValuesSorter("ndv2"), numHits) {
+      Sort different = new Sort(new SortField("ndv2", SortField.Type.LONG));
+      searcher.search(query, new EarlyTerminatingSortingCollector(collector2, different, numHits) {
         @Override
         public void setNextReader(AtomicReaderContext context) throws IOException {
           super.setNextReader(context);

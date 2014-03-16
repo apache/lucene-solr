@@ -50,11 +50,11 @@ public class FieldQuery {
 
   // fieldMatch==true,  Map<fieldName,QueryPhraseMap>
   // fieldMatch==false, Map<null,QueryPhraseMap>
-  Map<String, QueryPhraseMap> rootMaps = new HashMap<String, QueryPhraseMap>();
+  Map<String, QueryPhraseMap> rootMaps = new HashMap<>();
 
   // fieldMatch==true,  Map<fieldName,setOfTermsInQueries>
   // fieldMatch==false, Map<null,setOfTermsInQueries>
-  Map<String, Set<String>> termSetMap = new HashMap<String, Set<String>>();
+  Map<String, Set<String>> termSetMap = new HashMap<>();
 
   int termOrPhraseNumber; // used for colored tag support
 
@@ -63,7 +63,7 @@ public class FieldQuery {
 
   FieldQuery( Query query, IndexReader reader, boolean phraseHighlight, boolean fieldMatch ) throws IOException {
     this.fieldMatch = fieldMatch;
-    Set<Query> flatQueries = new LinkedHashSet<Query>();
+    Set<Query> flatQueries = new LinkedHashSet<>();
     flatten( query, reader, flatQueries );
     saveTerms( flatQueries, reader );
     Collection<Query> expandQueries = expand( flatQueries );
@@ -169,7 +169,7 @@ public class FieldQuery {
    *      => expandQueries={a,"b c","c d","b c d"}
    */
   Collection<Query> expand( Collection<Query> flatQueries ){
-    Set<Query> expandQueries = new LinkedHashSet<Query>();
+    Set<Query> expandQueries = new LinkedHashSet<>();
     for( Iterator<Query> i = flatQueries.iterator(); i.hasNext(); ){
       Query query = i.next();
       i.remove();
@@ -316,7 +316,7 @@ public class FieldQuery {
     String key = getKey( query );
     Set<String> set = termSetMap.get( key );
     if( set == null ){
-      set = new HashSet<String>();
+      set = new HashSet<>();
       termSetMap.put( key, set );
     }
     return set;
@@ -364,7 +364,7 @@ public class FieldQuery {
     float boost;  // valid if terminal == true
     int termOrPhraseNumber;   // valid if terminal == true
     FieldQuery fieldQuery;
-    Map<String, QueryPhraseMap> subMap = new HashMap<String, QueryPhraseMap>();
+    Map<String, QueryPhraseMap> subMap = new HashMap<>();
     
     public QueryPhraseMap( FieldQuery fieldQuery ){
       this.fieldQuery = fieldQuery;

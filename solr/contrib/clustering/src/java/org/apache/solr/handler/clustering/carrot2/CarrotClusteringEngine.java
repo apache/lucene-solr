@@ -123,7 +123,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     final SolrParams initParams = SolrParams.toSolrParams(config);
 
     // Initialization attributes for Carrot2 controller.
-    HashMap<String, Object> initAttributes = new HashMap<String, Object>();
+    HashMap<String, Object> initAttributes = new HashMap<>();
 
     // Customize Carrot2's resource lookup to first look for resources
     // using Solr's resource loader. If that fails, try loading from the classpath.
@@ -221,7 +221,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
       Map<SolrDocument, Integer> docIds, SolrQueryRequest sreq) {
     try {
       // Prepare attributes for Carrot2 clustering call
-      Map<String, Object> attributes = new HashMap<String, Object>();
+      Map<String, Object> attributes = new HashMap<>();
       List<Document> documents = getDocuments(solrDocList, docIds, query, sreq);
       attributes.put(AttributeNames.DOCUMENTS, documents);
       attributes.put(AttributeNames.QUERY, query.toString());
@@ -350,7 +350,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     }
 
     Iterator<SolrDocument> docsIter = solrDocList.iterator();
-    List<Document> result = new ArrayList<Document>(solrDocList.size());
+    List<Document> result = new ArrayList<>(solrDocList.size());
 
     float[] scores = {1.0f};
     int[] docsHolder = new int[1];
@@ -500,7 +500,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
   private void clustersToNamedList(List<Cluster> outputClusters,
                                    List<NamedList<Object>> parent, boolean outputSubClusters, int maxLabels) {
     for (Cluster outCluster : outputClusters) {
-      NamedList<Object> cluster = new SimpleOrderedMap<Object>();
+      NamedList<Object> cluster = new SimpleOrderedMap<>();
       parent.add(cluster);
 
       // Add labels

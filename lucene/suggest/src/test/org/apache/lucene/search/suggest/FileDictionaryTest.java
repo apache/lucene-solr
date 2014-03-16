@@ -53,7 +53,7 @@ public class FileDictionaryTest extends LuceneTestCase {
       entryValues.add(payload);
     }
     sb.append("\n");
-    return new SimpleEntry<List<String>, String>(entryValues, sb.toString());
+    return new SimpleEntry<>(entryValues, sb.toString());
   }
   
   private Map.Entry<List<List<String>>,String> generateFileInput(int count, String fieldDelimiter, boolean hasWeights, boolean hasPayloads) {
@@ -68,7 +68,7 @@ public class FileDictionaryTest extends LuceneTestCase {
       entries.add(entrySet.getKey());
       sb.append(entrySet.getValue());
     }
-    return new SimpleEntry<List<List<String>>, String>(entries, sb.toString());
+    return new SimpleEntry<>(entries, sb.toString());
   }
   
   @Test

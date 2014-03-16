@@ -163,7 +163,7 @@ public class AbstractRangeQueryNode<T extends FieldValuePairQueryNode<?>>
       this.lowerInclusive = lowerInclusive;
       this.upperInclusive = upperInclusive;
       
-      ArrayList<QueryNode> children = new ArrayList<QueryNode>(2);
+      ArrayList<QueryNode> children = new ArrayList<>(2);
       children.add(lower);
       children.add(upper);
       

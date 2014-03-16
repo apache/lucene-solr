@@ -47,6 +47,8 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 @Slow
 @ThreadLeakLingering(linger = 60000)
 public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase {
+  private static final int FAIL_TOLERANCE = 20;
+
   public static Logger log = LoggerFactory.getLogger(ChaosMonkeyNothingIsSafeTest.class);
   
   private static final Integer RUN_LENGTH = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.runlength", "-1"));
@@ -125,11 +127,11 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       // as it's not supported for recovery
        del("*:*");
       
-      List<StopableThread> threads = new ArrayList<StopableThread>();
+      List<StopableThread> threads = new ArrayList<>();
       int threadCount = 1;
       int i = 0;
       for (i = 0; i < threadCount; i++) {
-        StopableIndexingThread indexThread = new StopableIndexingThread(Integer.toString(i), true);
+        StopableIndexingThread indexThread = new StopableIndexingThread(controlClient, cloudClient, Integer.toString(i), true);
         threads.add(indexThread);
         indexThread.start();
       }
@@ -207,7 +209,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       // we expect full throttle fails, but cloud client should not easily fail
       for (StopableThread indexThread : threads) {
         if (indexThread instanceof StopableIndexingThread && !(indexThread instanceof FullThrottleStopableIndexingThread)) {
-          assertFalse("There were too many update fails - we expect it can happen, but shouldn't easily", ((StopableIndexingThread) indexThread).getFailCount() > 10);
+          assertFalse("There were too many update fails - we expect it can happen, but shouldn't easily", ((StopableIndexingThread) indexThread).getFailCount() > FAIL_TOLERANCE);
         }
       }
       
@@ -245,7 +247,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       } finally {
         client.shutdown();
       }
-      List<Integer> numShardsNumReplicas = new ArrayList<Integer>(2);
+      List<Integer> numShardsNumReplicas = new ArrayList<>(2);
       numShardsNumReplicas.add(1);
       numShardsNumReplicas.add(1);
       checkForCollection("testcollection",numShardsNumReplicas, null);
@@ -268,7 +270,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
     
     public FullThrottleStopableIndexingThread(List<SolrServer> clients,
         String id, boolean doDeletes) {
-      super(id, doDeletes);
+      super(controlClient, cloudClient, id, doDeletes);
       setName("FullThrottleStopableIndexingThread");
       setDaemon(true);
       this.clients = clients;

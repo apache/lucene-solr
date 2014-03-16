@@ -29,7 +29,7 @@ package org.apache.lucene.util;
  * @lucene.internal
 */
 public abstract class PriorityQueue<T> {
-  private int size;
+  private int size = 0;
   private final int maxSize;
   private final T[] heap;
 
@@ -37,10 +37,8 @@ public abstract class PriorityQueue<T> {
     this(maxSize, true);
   }
 
-  @SuppressWarnings("unchecked")
   public PriorityQueue(int maxSize, boolean prepopulate) {
-    size = 0;
-    int heapSize;
+    final int heapSize;
     if (0 == maxSize) {
       // We allocate 1 extra to avoid if statement in top()
       heapSize = 2;
@@ -62,7 +60,9 @@ public abstract class PriorityQueue<T> {
         heapSize = maxSize + 1;
       }
     }
-    heap = (T[]) new Object[heapSize]; // T is unbounded type, so this unchecked cast works always
+    // T is unbounded type, so this unchecked cast works always:
+    @SuppressWarnings("unchecked") final T[] h = (T[]) new Object[heapSize];
+    this.heap = h;
     this.maxSize = maxSize;
     
     if (prepopulate) {

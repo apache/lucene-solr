@@ -108,8 +108,8 @@ public class DocMaker implements Closeable {
       this.reuseFields = reuseFields;
       
       if (reuseFields) {
-        fields =  new HashMap<String,Field>();
-        numericFields = new HashMap<String,Field>();
+        fields =  new HashMap<>();
+        numericFields = new HashMap<>();
         
         // Initialize the map with the default fields.
         fields.put(BODY_FIELD, new Field(BODY_FIELD, "", bodyFt));
@@ -192,9 +192,9 @@ public class DocMaker implements Closeable {
   }
 
   // leftovers are thread local, because it is unsafe to share residues between threads
-  private ThreadLocal<LeftOver> leftovr = new ThreadLocal<LeftOver>();
-  private ThreadLocal<DocState> docState = new ThreadLocal<DocState>();
-  private ThreadLocal<DateUtil> dateParsers = new ThreadLocal<DateUtil>();
+  private ThreadLocal<LeftOver> leftovr = new ThreadLocal<>();
+  private ThreadLocal<DocState> docState = new ThreadLocal<>();
+  private ThreadLocal<DateUtil> dateParsers = new ThreadLocal<>();
 
   public static final String BODY_FIELD = "body";
   public static final String TITLE_FIELD = "doctitle";
@@ -459,7 +459,7 @@ public class DocMaker implements Closeable {
     // In a multi-rounds run, it is important to reset DocState since settings
     // of fields may change between rounds, and this is the only way to reset
     // the cache of all threads.
-    docState = new ThreadLocal<DocState>();
+    docState = new ThreadLocal<>();
     
     indexProperties = config.get("doc.index.props", false);
 

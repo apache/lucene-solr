@@ -49,9 +49,9 @@ public class ReutersContentSource extends ContentSource {
     ParsePosition pos;
   }
 
-  private ThreadLocal<DateFormatInfo> dateFormat = new ThreadLocal<DateFormatInfo>();
+  private ThreadLocal<DateFormatInfo> dateFormat = new ThreadLocal<>();
   private File dataDir = null;
-  private ArrayList<File> inputFiles = new ArrayList<File>();
+  private ArrayList<File> inputFiles = new ArrayList<>();
   private int nextFile = 0;
   private int iteration = 0;
   

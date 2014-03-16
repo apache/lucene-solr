@@ -215,7 +215,7 @@ public final class WikipediaTokenizer extends Tokenizer {
     int lastPos = theStart + numAdded;
     int tmpTokType;
     int numSeen = 0;
-    List<AttributeSource.State> tmp = new ArrayList<AttributeSource.State>();
+    List<AttributeSource.State> tmp = new ArrayList<>();
     setupSavedToken(0, type);
     tmp.add(captureState());
     //while we can get a token and that token is the same type and we have not transitioned to a new wiki-item of the same type

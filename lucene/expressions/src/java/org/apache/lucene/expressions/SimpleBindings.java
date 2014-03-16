@@ -52,7 +52,7 @@ import org.apache.lucene.search.SortField;
  * @lucene.experimental
  */
 public final class SimpleBindings extends Bindings {
-  final Map<String,Object> map = new HashMap<String,Object>();
+  final Map<String,Object> map = new HashMap<>();
   
   /** Creates a new empty Bindings */
   public SimpleBindings() {}

@@ -67,11 +67,11 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
   
   // ram instances we have already loaded
   private final Map<Integer,NumericDocValues> numericInstances = 
-      new HashMap<Integer,NumericDocValues>();
+      new HashMap<>();
   private final Map<Integer,BinaryDocValues> binaryInstances =
-      new HashMap<Integer,BinaryDocValues>();
+      new HashMap<>();
   private final Map<Integer,FST<Long>> fstInstances =
-      new HashMap<Integer,FST<Long>>();
+      new HashMap<>();
   
   private final int maxDoc;
   private final AtomicLong ramBytesUsed;
@@ -103,9 +103,9 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       version = CodecUtil.checkHeader(in, metaCodec, 
                                       VERSION_START,
                                       VERSION_CURRENT);
-      numerics = new HashMap<Integer,NumericEntry>();
-      binaries = new HashMap<Integer,BinaryEntry>();
-      fsts = new HashMap<Integer,FSTEntry>();
+      numerics = new HashMap<>();
+      binaries = new HashMap<>();
+      fsts = new HashMap<>();
       readFields(in, state.fieldInfos);
 
       success = true;
@@ -297,7 +297,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       instance = fstInstances.get(field.number);
       if (instance == null) {
         data.seek(entry.offset);
-        instance = new FST<Long>(data, PositiveIntOutputs.getSingleton());
+        instance = new FST<>(data, PositiveIntOutputs.getSingleton());
         ramBytesUsed.addAndGet(instance.sizeInBytes());
         fstInstances.put(field.number, instance);
       }
@@ -307,10 +307,10 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
     
     // per-thread resources
     final BytesReader in = fst.getBytesReader();
-    final Arc<Long> firstArc = new Arc<Long>();
-    final Arc<Long> scratchArc = new Arc<Long>();
+    final Arc<Long> firstArc = new Arc<>();
+    final Arc<Long> scratchArc = new Arc<>();
     final IntsRef scratchInts = new IntsRef();
-    final BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<Long>(fst); 
+    final BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<>(fst);
     
     return new SortedDocValues() {
       @Override
@@ -372,7 +372,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       instance = fstInstances.get(field.number);
       if (instance == null) {
         data.seek(entry.offset);
-        instance = new FST<Long>(data, PositiveIntOutputs.getSingleton());
+        instance = new FST<>(data, PositiveIntOutputs.getSingleton());
         ramBytesUsed.addAndGet(instance.sizeInBytes());
         fstInstances.put(field.number, instance);
       }
@@ -382,10 +382,10 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
     
     // per-thread resources
     final BytesReader in = fst.getBytesReader();
-    final Arc<Long> firstArc = new Arc<Long>();
-    final Arc<Long> scratchArc = new Arc<Long>();
+    final Arc<Long> firstArc = new Arc<>();
+    final Arc<Long> scratchArc = new Arc<>();
     final IntsRef scratchInts = new IntsRef();
-    final BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<Long>(fst); 
+    final BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<>(fst);
     final BytesRef ref = new BytesRef();
     final ByteArrayDataInput input = new ByteArrayDataInput();
     return new SortedSetDocValues() {
@@ -493,14 +493,14 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
     // maybe we should add a FSTEnum that supports this operation?
     final FST<Long> fst;
     final FST.BytesReader bytesReader;
-    final Arc<Long> firstArc = new Arc<Long>();
-    final Arc<Long> scratchArc = new Arc<Long>();
+    final Arc<Long> firstArc = new Arc<>();
+    final Arc<Long> scratchArc = new Arc<>();
     final IntsRef scratchInts = new IntsRef();
     final BytesRef scratchBytes = new BytesRef();
     
     FSTTermsEnum(FST<Long> fst) {
       this.fst = fst;
-      in = new BytesRefFSTEnum<Long>(fst);
+      in = new BytesRefFSTEnum<>(fst);
       bytesReader = fst.getBytesReader();
     }
 

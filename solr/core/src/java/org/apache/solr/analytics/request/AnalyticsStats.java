@@ -60,7 +60,7 @@ public class AnalyticsStats {
    */
   public NamedList<?> execute() throws IOException {
     statsCollector.startRequest();
-    NamedList<Object> res = new NamedList<Object>();
+    NamedList<Object> res = new NamedList<>();
     List<AnalyticsRequest> requests;
     
     requests = AnalyticsRequestFactory.parse(searcher.getSchema(), params);

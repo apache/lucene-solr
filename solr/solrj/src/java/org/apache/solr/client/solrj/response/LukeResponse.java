@@ -91,7 +91,7 @@ public class LukeResponse extends SolrResponseBase {
         String key = entry.getKey();
         if ("fields".equals(key) && entry.getValue() != null) {
           List<String> theFields = (List<String>) entry.getValue();
-          fields = new ArrayList<String>(theFields);
+          fields = new ArrayList<>(theFields);
         } else if ("tokenized".equals(key) == true) {
           tokenized = Boolean.parseBoolean(entry.getValue().toString());
         } else if ("analyzer".equals(key) == true) {
@@ -202,7 +202,7 @@ public class LukeResponse extends SolrResponseBase {
       flds = (NamedList<Object>) schema.get("fields");
     }
     if (flds != null) {
-      fieldInfo = new HashMap<String, FieldInfo>();
+      fieldInfo = new HashMap<>();
       for (Map.Entry<String, Object> field : flds) {
         FieldInfo f = new FieldInfo(field.getKey());
         f.read((NamedList<Object>) field.getValue());
@@ -213,7 +213,7 @@ public class LukeResponse extends SolrResponseBase {
     if( schema != null ) {
       NamedList<Object> fldTypes = (NamedList<Object>) schema.get("types");
       if (fldTypes != null) {
-        fieldTypeInfo = new HashMap<String, FieldTypeInfo>();
+        fieldTypeInfo = new HashMap<>();
         for (Map.Entry<String, Object> fieldType : fldTypes) {
           FieldTypeInfo ft = new FieldTypeInfo(fieldType.getKey());
           ft.read((NamedList<Object>) fieldType.getValue());

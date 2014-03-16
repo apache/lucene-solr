@@ -69,7 +69,7 @@ final class DocFieldProcessor extends DocConsumer {
   @Override
   public void flush(SegmentWriteState state) throws IOException {
 
-    Map<String,DocFieldConsumerPerField> childFields = new HashMap<String,DocFieldConsumerPerField>();
+    Map<String,DocFieldConsumerPerField> childFields = new HashMap<>();
     Collection<DocFieldConsumerPerField> fields = fields();
     for (DocFieldConsumerPerField f : fields) {
       childFields.put(f.getFieldInfo().name, f);
@@ -132,7 +132,7 @@ final class DocFieldProcessor extends DocConsumer {
   }
 
   public Collection<DocFieldConsumerPerField> fields() {
-    Collection<DocFieldConsumerPerField> fields = new HashSet<DocFieldConsumerPerField>();
+    Collection<DocFieldConsumerPerField> fields = new HashSet<>();
     for(int i=0;i<fieldHash.length;i++) {
       DocFieldProcessorPerField field = fieldHash[i];
       while(field != null) {
@@ -208,11 +208,6 @@ final class DocFieldProcessor extends DocConsumer {
     for(int i=0;i<fieldCount;i++) {
       final DocFieldProcessorPerField perField = fields[i];
       perField.consumer.processFields(perField.fields, perField.fieldCount);
-    }
-
-    if (docState.maxTermPrefix != null && docState.infoStream.isEnabled("IW")) {
-      docState.infoStream.message("IW", "WARNING: document contains at least one immense term (whose UTF8 encoding is longer than the max length " + DocumentsWriterPerThread.MAX_TERM_LENGTH_UTF8 + "), all of which were skipped.  Please correct the analyzer to not produce such terms.  The prefix of the first immense term is: '" + docState.maxTermPrefix + "...'");
-      docState.maxTermPrefix = null;
     }
   }
 

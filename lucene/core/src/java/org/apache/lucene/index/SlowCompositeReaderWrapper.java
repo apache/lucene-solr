@@ -180,7 +180,7 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
   
   // TODO: this could really be a weak map somewhere else on the coreCacheKey,
   // but do we really need to optimize slow-wrapper any more?
-  private final Map<String,OrdinalMap> cachedOrdMaps = new HashMap<String,OrdinalMap>();
+  private final Map<String,OrdinalMap> cachedOrdMaps = new HashMap<>();
 
   @Override
   public NumericDocValues getNormValues(String field) throws IOException {

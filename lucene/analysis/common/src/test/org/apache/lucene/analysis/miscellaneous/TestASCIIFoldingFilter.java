@@ -1888,8 +1888,8 @@ public class TestASCIIFoldingFilter extends BaseTokenStreamTestCase {
     };
 
     // Construct input text and expected output tokens
-    List<String> expectedUnfoldedTokens = new ArrayList<String>();
-    List<String> expectedFoldedTokens = new ArrayList<String>();
+    List<String> expectedUnfoldedTokens = new ArrayList<>();
+    List<String> expectedFoldedTokens = new ArrayList<>();
     StringBuilder inputText = new StringBuilder();
     for (int n = 0 ; n < foldings.length ; n += 2) {
       if (n > 0) {

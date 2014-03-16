@@ -42,7 +42,7 @@ import java.util.Map;
  * @see ParserExtension
  */
 public class Extensions {
-  private final Map<String,ParserExtension> extensions = new HashMap<String,ParserExtension>();
+  private final Map<String,ParserExtension> extensions = new HashMap<>();
   private final char extensionFieldDelimiter;
   /**
    * The default extension field delimiter character. This constant is set to
@@ -122,11 +122,11 @@ public class Extensions {
       String field) {
     int indexOf = field.indexOf(this.extensionFieldDelimiter);
     if (indexOf < 0)
-      return new Pair<String,String>(field, null);
+      return new Pair<>(field, null);
     final String indexField = indexOf == 0 ? defaultField : field.substring(0,
         indexOf);
     final String extensionKey = field.substring(indexOf + 1);
-    return new Pair<String,String>(indexField, extensionKey);
+    return new Pair<>(indexField, extensionKey);
 
   }
 

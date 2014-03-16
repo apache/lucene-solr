@@ -83,7 +83,7 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
   private final String format;
   private final boolean expand;
   private final String analyzerName;
-  private final Map<String, String> tokArgs = new HashMap<String, String>();
+  private final Map<String, String> tokArgs = new HashMap<>();
 
   private SynonymMap map;
   

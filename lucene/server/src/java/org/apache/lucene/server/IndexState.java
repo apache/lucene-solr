@@ -139,7 +139,7 @@ public class IndexState implements Closeable {
   public Version matchVersion = Version.LUCENE_46;
 
   /** Creates directories */
-  DirectoryFactory df = DirectoryFactory.get("FSDirectory");
+  public DirectoryFactory df = DirectoryFactory.get("FSDirectory");
 
   /** Loads all resources for analysis components */
   public final ResourceLoader resourceLoader;

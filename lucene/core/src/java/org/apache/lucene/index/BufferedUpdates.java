@@ -95,9 +95,9 @@ class BufferedUpdates {
   
   final AtomicInteger numTermDeletes = new AtomicInteger();
   final AtomicInteger numNumericUpdates = new AtomicInteger();
-  final Map<Term,Integer> terms = new HashMap<Term,Integer>();
-  final Map<Query,Integer> queries = new HashMap<Query,Integer>();
-  final List<Integer> docIDs = new ArrayList<Integer>();
+  final Map<Term,Integer> terms = new HashMap<>();
+  final Map<Query,Integer> queries = new HashMap<>();
+  final List<Integer> docIDs = new ArrayList<>();
 
   // Map<dvField,Map<updateTerm,NumericUpdate>>
   // For each field we keep an ordered list of NumericUpdates, key'd by the
@@ -106,7 +106,7 @@ class BufferedUpdates {
   // one that came in wins), and helps us detect faster if the same Term is
   // used to update the same field multiple times (so we later traverse it
   // only once).
-  final Map<String,LinkedHashMap<Term,NumericUpdate>> numericUpdates = new HashMap<String,LinkedHashMap<Term,NumericUpdate>>();
+  final Map<String,LinkedHashMap<Term,NumericUpdate>> numericUpdates = new HashMap<>();
 
   public static final Integer MAX_INT = Integer.valueOf(Integer.MAX_VALUE);
 
@@ -187,7 +187,7 @@ class BufferedUpdates {
   public void addNumericUpdate(NumericUpdate update, int docIDUpto) {
     LinkedHashMap<Term,NumericUpdate> fieldUpdates = numericUpdates.get(update.field);
     if (fieldUpdates == null) {
-      fieldUpdates = new LinkedHashMap<Term,NumericUpdate>();
+      fieldUpdates = new LinkedHashMap<>();
       numericUpdates.put(update.field, fieldUpdates);
       bytesUsed.addAndGet(BYTES_PER_NUMERIC_FIELD_ENTRY);
     }

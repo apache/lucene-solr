@@ -29,6 +29,7 @@ import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.transform.TransformerFactory;
+import org.apache.solr.rest.RestManager;
 import org.apache.solr.search.CacheConfig;
 import org.apache.solr.search.FastLRUCache;
 import org.apache.solr.search.QParserPlugin;
@@ -193,7 +194,7 @@ public class SolrConfig extends Config {
     documentCacheConfig = CacheConfig.getConfig(this, "query/documentCache");
     CacheConfig conf = CacheConfig.getConfig(this, "query/fieldValueCache");
     if (conf == null) {
-      Map<String,String> args = new HashMap<String,String>();
+      Map<String,String> args = new HashMap<>();
       args.put("name","fieldValueCache");
       args.put("size","10000");
       args.put("initialSize","10");
@@ -267,7 +268,7 @@ public class SolrConfig extends Config {
      loadPluginInfo(UpdateLog.class,"updateHandler/updateLog");
      loadPluginInfo(IndexSchemaFactory.class,"schemaFactory", 
                     REQUIRE_CLASS);
-
+     loadPluginInfo(RestManager.class, "restManager");
      updateHandlerInfo = loadUpdatehandlerInfo();
      
      multipartUploadLimitKB = getInt( 
@@ -318,7 +319,7 @@ public class SolrConfig extends Config {
   }
 
   public List<PluginInfo> readPluginInfos(String tag, boolean requireName, boolean requireClass) {
-    ArrayList<PluginInfo> result = new ArrayList<PluginInfo>();
+    ArrayList<PluginInfo> result = new ArrayList<>();
     NodeList nodes = (NodeList) evaluate(tag, XPathConstants.NODESET);
     for (int i=0; i<nodes.getLength(); i++) {
       PluginInfo pluginInfo = new PluginInfo(nodes.item(i), "[solrconfig.xml] " + tag, requireName, requireClass);
@@ -362,7 +363,7 @@ public class SolrConfig extends Config {
 
   protected UpdateHandlerInfo updateHandlerInfo ;
 
-  private Map<String, List<PluginInfo>> pluginStore = new LinkedHashMap<String, List<PluginInfo>>();
+  private Map<String, List<PluginInfo>> pluginStore = new LinkedHashMap<>();
 
   public final int maxWarmingSearchers;
   public final boolean unlockOnStartup;

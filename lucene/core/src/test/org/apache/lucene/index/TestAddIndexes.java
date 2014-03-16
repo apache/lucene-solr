@@ -653,7 +653,7 @@ public class TestAddIndexes extends LuceneTestCase {
     Directory dir, dir2;
     final static int NUM_INIT_DOCS = 17;
     IndexWriter writer2;
-    final List<Throwable> failures = new ArrayList<Throwable>();
+    final List<Throwable> failures = new ArrayList<>();
     volatile boolean didClose;
     final IndexReader[] readers;
     final int NUM_COPY;

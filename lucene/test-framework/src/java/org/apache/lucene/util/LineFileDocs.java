@@ -197,7 +197,7 @@ public class LineFileDocs implements Closeable {
     }
   }
 
-  private final ThreadLocal<DocState> threadDocs = new ThreadLocal<DocState>();
+  private final ThreadLocal<DocState> threadDocs = new ThreadLocal<>();
 
   /** Note: Document instance is re-used per-thread */
   public Document nextDoc() throws IOException {

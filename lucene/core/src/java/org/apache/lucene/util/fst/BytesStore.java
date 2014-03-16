@@ -29,7 +29,7 @@ import org.apache.lucene.store.DataOutput;
 
 class BytesStore extends DataOutput {
 
-  private final List<byte[]> blocks = new ArrayList<byte[]>();
+  private final List<byte[]> blocks = new ArrayList<>();
 
   private final int blockSize;
   private final int blockBits;

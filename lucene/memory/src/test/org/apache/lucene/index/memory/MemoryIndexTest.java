@@ -83,7 +83,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
  * returning the same results for queries on some randomish indexes.
  */
 public class MemoryIndexTest extends BaseTokenStreamTestCase {
-  private Set<String> queries = new HashSet<String>();
+  private Set<String> queries = new HashSet<>();
   
   public static final int ITERATIONS = 100 * RANDOM_MULTIPLIER;
 
@@ -98,7 +98,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
    * read a set of queries from a resource file
    */
   private Set<String> readQueries(String resource) throws IOException {
-    Set<String> queries = new HashSet<String>();
+    Set<String> queries = new HashSet<>();
     InputStream stream = getClass().getResourceAsStream(resource);
     BufferedReader reader = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
     String line = null;
@@ -376,7 +376,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
   // LUCENE-3831
   public void testNullPointerException() throws IOException {
     RegexpQuery regex = new RegexpQuery(new Term("field", "worl."));
-    SpanQuery wrappedquery = new SpanMultiTermQueryWrapper<RegexpQuery>(regex);
+    SpanQuery wrappedquery = new SpanMultiTermQueryWrapper<>(regex);
         
     MemoryIndex mindex = new MemoryIndex(random().nextBoolean(),  random().nextInt(50) * 1024 * 1024);
     mindex.addField("field", new MockAnalyzer(random()).tokenStream("field", "hello there"));
@@ -388,7 +388,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
   // LUCENE-3831
   public void testPassesIfWrapped() throws IOException {
     RegexpQuery regex = new RegexpQuery(new Term("field", "worl."));
-    SpanQuery wrappedquery = new SpanOrQuery(new SpanMultiTermQueryWrapper<RegexpQuery>(regex));
+    SpanQuery wrappedquery = new SpanOrQuery(new SpanMultiTermQueryWrapper<>(regex));
 
     MemoryIndex mindex = new MemoryIndex(random().nextBoolean(),  random().nextInt(50) * 1024 * 1024);
     mindex.addField("field", new MockAnalyzer(random()).tokenStream("field", "hello there"));
@@ -436,6 +436,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     for (int i = 0; i < numDocs; i++) {
       Directory dir = newDirectory();
       MockAnalyzer mockAnalyzer = new MockAnalyzer(random());
+      mockAnalyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random(), TEST_VERSION_CURRENT, mockAnalyzer));
       Document nextDoc = lineFileDocs.nextDoc();
       Document doc = new Document();

@@ -35,6 +35,7 @@ import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMFile;
@@ -48,13 +49,13 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 /**
  * An {@link AtomicReader} which supports sorting documents by a given
- * {@link Sorter}. You can use this class to sort an index as follows:
+ * {@link Sort}. You can use this class to sort an index as follows:
  * 
  * <pre class="prettyprint">
  * IndexWriter writer; // writer to which the sorted index will be added
  * DirectoryReader reader; // reader on the input index
- * Sorter sorter; // determines how the documents are sorted
- * AtomicReader sortingReader = SortingAtomicReader.wrap(SlowCompositeReaderWrapper.wrap(reader), sorter);
+ * Sort sort; // determines how the documents are sorted
+ * AtomicReader sortingReader = SortingAtomicReader.wrap(SlowCompositeReaderWrapper.wrap(reader), sort);
  * writer.addIndexes(reader);
  * writer.close();
  * reader.close();
@@ -480,7 +481,7 @@ public class SortingAtomicReader extends FilterAtomicReader {
   static class SortingDocsAndPositionsEnum extends FilterDocsAndPositionsEnum {
     
     /**
-     * A {@link Sorter} which sorts two parallel arrays of doc IDs and
+     * A {@link TimSorter} which sorts two parallel arrays of doc IDs and
      * offsets in one go. Everytime a doc ID is 'swapped', its correponding offset
      * is swapped too.
      */
@@ -708,14 +709,14 @@ public class SortingAtomicReader extends FilterAtomicReader {
   }
 
   /** Return a sorted view of <code>reader</code> according to the order
-   *  defined by <code>sorter</code>. If the reader is already sorted, this
+   *  defined by <code>sort</code>. If the reader is already sorted, this
    *  method might return the reader as-is. */
-  public static AtomicReader wrap(AtomicReader reader, Sorter sorter) throws IOException {
-    return wrap(reader, sorter.sort(reader));
+  public static AtomicReader wrap(AtomicReader reader, Sort sort) throws IOException {
+    return wrap(reader, new Sorter(sort).sort(reader));
   }
 
-  /** Expert: same as {@link #wrap(AtomicReader, Sorter)} but operates directly on a {@link Sorter.DocMap}. */
-  public static AtomicReader wrap(AtomicReader reader, Sorter.DocMap docMap) {
+  /** Expert: same as {@link #wrap(AtomicReader, Sort)} but operates directly on a {@link Sorter.DocMap}. */
+  static AtomicReader wrap(AtomicReader reader, Sorter.DocMap docMap) {
     if (docMap == null) {
       // the reader is already sorter
       return reader;

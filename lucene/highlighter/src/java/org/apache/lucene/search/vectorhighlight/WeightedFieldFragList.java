@@ -44,9 +44,9 @@ public class WeightedFieldFragList extends FieldFragList {
    */ 
   @Override
   public void add( int startOffset, int endOffset, List<WeightedPhraseInfo> phraseInfoList ) {
-    List<SubInfo> tempSubInfos = new ArrayList<SubInfo>();
-    List<SubInfo> realSubInfos = new ArrayList<SubInfo>();
-    HashSet<String> distinctTerms = new HashSet<String>();   
+    List<SubInfo> tempSubInfos = new ArrayList<>();
+    List<SubInfo> realSubInfos = new ArrayList<>();
+    HashSet<String> distinctTerms = new HashSet<>();
     int length = 0;
 
     for( WeightedPhraseInfo phraseInfo : phraseInfoList ){

@@ -168,7 +168,7 @@ public abstract class AbstractTestCase extends LuceneTestCase {
   }
 
   protected List<BytesRef> analyze(String text, String field, Analyzer analyzer) throws IOException {
-    List<BytesRef> bytesRefs = new ArrayList<BytesRef>();
+    List<BytesRef> bytesRefs = new ArrayList<>();
 
     try (TokenStream tokenStream = analyzer.tokenStream(field, text)) {
       TermToBytesRefAttribute termAttribute = tokenStream.getAttribute(TermToBytesRefAttribute.class);
