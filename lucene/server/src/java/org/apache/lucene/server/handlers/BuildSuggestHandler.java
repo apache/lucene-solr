@@ -177,6 +177,12 @@ public class BuildSuggestHandler extends Handler {
   private Lookup getSuggester(IndexState state, String suggestName, Request r) throws IOException {
 
     Request.PolyResult pr = r.getPoly("class");
+
+    Lookup oldSuggester = state.suggesters.get(suggestName);
+    if (oldSuggester != null && oldSuggester instanceof Closeable) {
+      ((Closeable) oldSuggester).close();
+      state.suggesters.remove(suggestName);
+    }
     
     String impl = pr.name;
 
@@ -500,6 +506,9 @@ public class BuildSuggestHandler extends Handler {
         JSONObject ret = new JSONObject();
         if (suggester instanceof AnalyzingSuggester) {
           ret.put("sizeInBytes", ((AnalyzingSuggester) suggester).sizeInBytes());
+        }
+        if (suggester instanceof AnalyzingInfixSuggester) {
+          ((AnalyzingInfixSuggester) suggester).commit();
         }
 
         ret.put("count", suggester.getCount());

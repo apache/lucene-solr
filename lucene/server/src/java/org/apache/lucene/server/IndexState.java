@@ -83,6 +83,7 @@ import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.suggest.Lookup;
+import org.apache.lucene.search.suggest.analyzing.AnalyzingInfixSuggester;
 import org.apache.lucene.server.handlers.BuildSuggestHandler;
 import org.apache.lucene.server.handlers.LiveSettingsHandler;
 import org.apache.lucene.server.handlers.RegisterFieldHandler;
@@ -907,6 +908,12 @@ public class IndexState implements Closeable {
 
     if (saveLoadState == null) {
       initSaveLoadState();
+    }
+
+    for(Lookup suggester : suggesters.values()) {
+      if (suggester instanceof AnalyzingInfixSuggester) {       
+        ((AnalyzingInfixSuggester) suggester).commit();
+      }
     }
 
     JSONObject saveState = new JSONObject();

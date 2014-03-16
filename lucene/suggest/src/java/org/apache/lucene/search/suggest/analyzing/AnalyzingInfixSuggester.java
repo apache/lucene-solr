@@ -272,7 +272,6 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       writer = new IndexWriter(dir,
                                getIndexWriterConfig(matchVersion, getGramAnalyzer(), sorter, IndexWriterConfig.OpenMode.CREATE));
       writer.addIndexes(new IndexReader[] {r});
-      writer.commit();
       r.close();
 
       //System.out.println("sort time: " + ((System.nanoTime()-t1)/1000000) + " msec");
@@ -316,6 +315,9 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
    *  you must call {@link #refresh} in the end in order to
    *  see the suggestions in {@link #lookup} */
   public void add(BytesRef text, long weight, BytesRef payload) throws IOException {
+    if (searcherMgr == null) {
+      throw new IllegalStateException("suggester was not built");
+    }
     String textString = text.utf8ToString();
     Document doc = new Document();
     FieldType ft = getTextFieldType();
@@ -338,6 +340,9 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
    *  new suggestions, you must call {@link #refresh} in the
    *  end in order to see the suggestions in {@link #lookup} */
   public void update(BytesRef text, long weight, BytesRef payload) throws IOException {
+    if (searcherMgr == null) {
+      throw new IllegalStateException("suggester was not built");
+    }
     String textString = text.utf8ToString();
     Document doc = new Document();
     FieldType ft = getTextFieldType();
@@ -356,7 +361,18 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
    *  up" many additions/updates, and then call refresh
    *  once in the end. */
   public void refresh() throws IOException {
+    if (searcherMgr == null) {
+      throw new IllegalStateException("suggester was not built");
+    }
     searcherMgr.maybeRefreshBlocking();
+  }
+
+  /** Commits changes to the underlying index. */
+  public void commit() throws IOException {
+    if (searcherMgr == null) {
+      throw new IllegalStateException("suggester was not built");
+    }
+    writer.commit();
   }
 
   private void initSorter() {

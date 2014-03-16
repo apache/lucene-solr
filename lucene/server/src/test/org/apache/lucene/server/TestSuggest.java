@@ -294,4 +294,6 @@ public class TestSuggest extends ServerBaseTestCase {
       send("startIndex");
     }
   }
+
+  // nocommit test full build over an already built suggester
 }
