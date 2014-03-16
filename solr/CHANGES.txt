@@ -71,6 +71,9 @@ New Features
   CollapsingQParserPlugin. (Joel Bernstein)
 
 
+* SOLR-3177: Enable tagging and excluding filters in StatsComponent via the
+  localParams syntax. (Mathias H., Nikolai Luthman, Vitaliy Zhovtyuk, shalin)
+
 Bug Fixes
 ----------------------
 
