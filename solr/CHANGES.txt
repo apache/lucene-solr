@@ -126,6 +126,9 @@ New Features
 * SOLR-5477: Async execution of OverseerCollectionProcessor(CollectionsAPI)
   tasks. (Anshum Gupta)
 
+* SOLR-3177: Enable tagging and excluding filters in StatsComponent via the
+  localParams syntax. (Mathias H., Nikolai Luthman, Vitaliy Zhovtyuk, shalin)
+
 Bug Fixes
 ----------------------
 
