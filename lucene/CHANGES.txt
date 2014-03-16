@@ -44,6 +44,9 @@ New Features
 * LUCENE-5493: SortingMergePolicy, and EarlyTerminatingSortingCollector
   support arbitrary Sort specifications.  
   (Robert Muir, Mike McCandless, Adrien Grand)
+  
+* LUCENE-3758: Allow the ComplexPhraseQueryParser to search order or 
+  un-order proximity queries. (Ahmet Arslan via Erick Erickson)
 
 API Changes
 
