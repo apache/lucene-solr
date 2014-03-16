@@ -172,6 +172,9 @@ Bug Fixes
 * SOLR-5861: Recovery should not set onlyIfLeaderActive=true for slice in 'recovery'
   state. (shalin)
 
+* SOLR-5867: OverseerCollectionProcessor isn't properly generating https urls in some
+  cases. (Steve Davids via shalin)
+
 Optimizations
 ----------------------
 * SOLR-1880: Distributed Search skips GET_FIELDS stage if EXECUTE_QUERY
