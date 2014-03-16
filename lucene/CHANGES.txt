@@ -131,6 +131,10 @@ Bug fixes
   ArrayIndexOutOfBoundsException if a parent document had no children
   (Sally Ang via Mike McCandless)
 
+* LUCENE-5525: Implement MultiFacets.getAllDims, so you can do sparse
+  facets through DrillSideways, for example.  (Jose Peleteiro, Mike
+  McCandless)
+
 Test Framework
 
 * LUCENE-5449: Rename _TestUtil and _TestHelper to remove the leading _.

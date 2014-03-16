@@ -24,6 +24,8 @@ import java.util.List;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.DrillDownQuery;
+import org.apache.lucene.facet.DrillSideways.DrillSidewaysResult;
+import org.apache.lucene.facet.DrillSideways;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.facet.Facets;
@@ -145,7 +147,8 @@ public class SimpleFacetsExample {
     return results;
   }
   
-  /** User drills down on 'Publish Date/2010'. */
+  /** User drills down on 'Publish Date/2010', and we
+   *  return facets for 'Author' */
   private FacetResult drillDown() throws IOException {
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     IndexSearcher searcher = new IndexSearcher(indexReader);
@@ -170,6 +173,33 @@ public class SimpleFacetsExample {
     return result;
   }
 
+  /** User drills down on 'Publish Date/2010', and we
+   *  return facets for both 'Publish Date' and 'Author',
+   *  using DrillSideways. */
+  private List<FacetResult> drillSideways() throws IOException {
+    DirectoryReader indexReader = DirectoryReader.open(indexDir);
+    IndexSearcher searcher = new IndexSearcher(indexReader);
+    TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
+
+    // Passing no baseQuery means we drill down on all
+    // documents ("browse only"):
+    DrillDownQuery q = new DrillDownQuery(config);
+
+    // Now user drills down on Publish Date/2010:
+    q.add("Publish Date", "2010");
+
+    DrillSideways ds = new DrillSideways(searcher, config, taxoReader);
+    DrillSidewaysResult result = ds.search(q, 10);
+
+    // Retrieve results
+    List<FacetResult> facets = result.facets.getAllDims(10);
+
+    indexReader.close();
+    taxoReader.close();
+    
+    return facets;
+  }
+
   /** Runs the search example. */
   public List<FacetResult> runFacetOnly() throws IOException {
     index();
@@ -188,6 +218,12 @@ public class SimpleFacetsExample {
     return drillDown();
   }
 
+  /** Runs the drill-sideways example. */
+  public List<FacetResult> runDrillSideways() throws IOException {
+    index();
+    return drillSideways();
+  }
+
   /** Runs the search and drill-down examples and prints the results. */
   public static void main(String[] args) throws Exception {
     System.out.println("Facet counting example:");
@@ -204,11 +240,17 @@ public class SimpleFacetsExample {
     System.out.println("Author: " + results.get(0));
     System.out.println("Publish Date: " + results.get(1));
     
-
     System.out.println("\n");
     System.out.println("Facet drill-down example (Publish Date/2010):");
     System.out.println("---------------------------------------------");
     System.out.println("Author: " + example.runDrillDown());
+
+    System.out.println("\n");
+    System.out.println("Facet drill-sideways example (Publish Date/2010):");
+    System.out.println("---------------------------------------------");
+    for(FacetResult result : example.runDrillSideways()) {
+      System.out.println(result);
+    }
   }
   
 }

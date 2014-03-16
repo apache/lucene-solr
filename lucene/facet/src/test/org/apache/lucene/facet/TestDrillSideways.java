@@ -148,7 +148,7 @@ public class TestDrillSideways extends FacetTestCase {
     // published once:
     assertEquals("dim=Author path=[] value=5 childCount=4\n  Lisa (2)\n  Bob (1)\n  Susan (1)\n  Frank (1)\n", r.facets.getTopChildren(10, "Author").toString());
 
-    // Another simple case: drill-down on on single fields
+    // Another simple case: drill-down on single fields
     // but OR of two values
     ddq = new DrillDownQuery(config);
     ddq.add("Author", "Lisa");
@@ -162,6 +162,12 @@ public class TestDrillSideways extends FacetTestCase {
     // (drill-down) published twice, and Frank/Susan/Bob
     // published once:
     assertEquals("dim=Author path=[] value=5 childCount=4\n  Lisa (2)\n  Bob (1)\n  Susan (1)\n  Frank (1)\n", r.facets.getTopChildren(10, "Author").toString());
+
+    assertTrue(r.facets instanceof MultiFacets);
+    List<FacetResult> allResults = r.facets.getAllDims(10);
+    assertEquals(2, allResults.size());
+    assertEquals("dim=Author path=[] value=5 childCount=4\n  Lisa (2)\n  Bob (1)\n  Susan (1)\n  Frank (1)\n", allResults.get(0).toString());
+    assertEquals("dim=Publish Date path=[] value=3 childCount=2\n  2010 (2)\n  2012 (1)\n", allResults.get(1).toString());
 
     // More interesting case: drill-down on two fields
     ddq = new DrillDownQuery(config);
