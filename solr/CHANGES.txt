@@ -238,6 +238,9 @@ Other Changes
 * SOLR-5853: The createCollection methods in the test framework now reports
   result of operation in the returned CollectionAdminResponse (janhoy)
 
+* SOLR-5838: Relative SolrHome Path Bug At AbstractFullDistribZkTestBase.
+  (Furkan KAMACI via shalin)
+
 ==================  4.7.0 ==================
 
 Versions of Major Components

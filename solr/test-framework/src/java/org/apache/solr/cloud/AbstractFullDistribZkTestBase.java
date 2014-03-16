@@ -496,9 +496,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     String path = SolrResourceLoader.normalizeDir(new File(".").getAbsolutePath());
     String base = new File(solrHome.getPath()).getAbsolutePath();
     
-    if (base.startsWith("."));
-    base.replaceFirst("\\.", new File(".").getName());
-    
+    if (base.startsWith(".")) {
+      base = base.replaceFirst("\\.", new File(".").getName());
+    }
+
     if (path.endsWith(File.separator + ".")) {
       path = path.substring(0, path.length() - 2);
     }
@@ -507,7 +508,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     
     StringBuilder p = new StringBuilder();
     for (int i = 0; i < splits - 2; i++) {
-      p.append(".." + File.separator);
+      p.append("..").append(File.separator);
     }   
     
     String prefix = FilenameUtils.getPrefix(path);
