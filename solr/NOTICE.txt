@@ -1,6 +1,6 @@
 ==============================================================
  Apache Solr
- Copyright 2006-2013 The Apache Software Foundation
+ Copyright 2006-2014 The Apache Software Foundation
 ==============================================================
 
 This product includes software developed by
@@ -85,7 +85,7 @@ the Apache Blur incubating project and are Apache License 2.0.
 =========================================================================
 
 Apache Lucene
-Copyright 2013 The Apache Software Foundation
+Copyright 2014 The Apache Software Foundation
 
 This product includes software developed by
 The Apache Software Foundation (http://www.apache.org/).
