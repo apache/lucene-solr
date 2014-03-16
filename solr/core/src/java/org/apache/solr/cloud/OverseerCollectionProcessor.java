@@ -1826,7 +1826,6 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
           params.set(CoreAdminParams.COLLECTION, collectionName);
           params.set(CoreAdminParams.SHARD, sliceName);
           params.set(ZkStateReader.NUM_SHARDS_PROP, numSlices);
-          String replica = zkStateReader.getBaseUrlForNodeName(nodeName);
 
           setupAsyncRequest(async, requestMap, params, nodeName);
 
