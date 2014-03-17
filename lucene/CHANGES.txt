@@ -17,6 +17,10 @@ Changes in Runtime Behavior
   behavior of silently ignoring these terms, use LengthFilter in your Analyzer.
   (hossman, Mike McCandless, Varun Thacker)
 
+* LUCENE-5532: AutomatonQuery.equals is no longer implemented as "accepts same language".
+  This was inconsistent with hashCode, and unnecessary for any subclasses in Lucene.
+  If you desire this in a custom subclass, minimize the automaton.  (Robert Muir)
+
 New Features
 
 * LUCENE-5454: Add SortedSetSortField to lucene/sandbox, to allow sorting
@@ -144,6 +148,8 @@ Bug fixes
 * LUCENE-5525: Implement MultiFacets.getAllDims, so you can do sparse
   facets through DrillSideways, for example.  (Jose Peleteiro, Mike
   McCandless)
+
+* LUCENE-5532: AutomatonQuery.hashCode was not thread-safe. (Robert Muir)
 
 Test Framework
 

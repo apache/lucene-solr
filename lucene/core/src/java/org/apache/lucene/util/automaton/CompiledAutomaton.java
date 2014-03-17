@@ -19,6 +19,7 @@ package org.apache.lucene.util.automaton;
   
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.index.Terms;
@@ -364,5 +365,31 @@ public class CompiledAutomaton {
       }
     }
     return b.append("}\n").toString();
+  }
+
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + ((runAutomaton == null) ? 0 : runAutomaton.hashCode());
+    result = prime * result + ((term == null) ? 0 : term.hashCode());
+    result = prime * result + ((type == null) ? 0 : type.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) return true;
+    if (obj == null) return false;
+    if (getClass() != obj.getClass()) return false;
+    CompiledAutomaton other = (CompiledAutomaton) obj;
+    if (type != other.type) return false;
+    if (type == AUTOMATON_TYPE.SINGLE || type == AUTOMATON_TYPE.PREFIX) {
+      if (!term.equals(other.term)) return false;
+    } else if (type == AUTOMATON_TYPE.NORMAL) {
+      if (!runAutomaton.equals(other.runAutomaton)) return false;
+    }
+
+    return true;
   }
 }
