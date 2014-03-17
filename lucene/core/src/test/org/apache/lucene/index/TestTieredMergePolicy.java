@@ -21,10 +21,13 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
-public class TestTieredMergePolicy extends LuceneTestCase {
+public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
+
+  public MergePolicy mergePolicy() {
+    return newTieredMergePolicy();
+  }
 
   public void testForceMergeDeletes() throws Exception {
     Directory dir = newDirectory();

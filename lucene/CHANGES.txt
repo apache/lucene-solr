@@ -36,6 +36,9 @@ Bug Fixes
 
 * LUCENE-5532: AutomatonQuery.hashCode was not thread-safe. (Robert Muir)
 
+* LUCENE-5481: IndexWriter.forceMerge used to run a merge even if there was a
+  single segment in the index. (Adrien Grand, Mike McCandless)
+
 Build
 
 * LUCENE-5511: "ant precommit" / "ant check-svn-working-copy" now work again

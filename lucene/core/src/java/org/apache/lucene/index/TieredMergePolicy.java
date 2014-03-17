@@ -518,7 +518,7 @@ public class TieredMergePolicy extends MergePolicy {
     }
 
     if ((maxSegmentCount > 1 && eligible.size() <= maxSegmentCount) ||
-        (maxSegmentCount == 1 && eligible.size() == 1 && (!segmentIsOriginal || isMerged(eligible.get(0))))) {
+        (maxSegmentCount == 1 && eligible.size() == 1 && (!segmentIsOriginal || isMerged(infos, eligible.get(0))))) {
       if (verbose()) {
         message("already merged");
       }
