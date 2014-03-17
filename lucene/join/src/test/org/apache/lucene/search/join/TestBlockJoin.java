@@ -1441,4 +1441,48 @@ public class TestBlockJoin extends LuceneTestCase {
     r.close();
     d.close();
   }
+
+  public void testAdvanceSingleDeletedParentNoChild() throws Exception {
+
+    final Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+
+    // First doc with 1 children
+    Document parentDoc = new Document();
+    parentDoc.add(newStringField("parent", "1", Field.Store.NO));
+    parentDoc.add(newStringField("isparent", "yes", Field.Store.NO));
+    Document childDoc = new Document();
+    childDoc.add(newStringField("child", "1", Field.Store.NO));
+    w.addDocuments(Arrays.asList(childDoc, parentDoc));
+
+    parentDoc = new Document();
+    parentDoc.add(newStringField("parent", "2", Field.Store.NO));
+    parentDoc.add(newStringField("isparent", "yes", Field.Store.NO));
+    w.addDocuments(Arrays.asList(parentDoc));
+
+    w.deleteDocuments(new Term("parent", "2"));
+
+    parentDoc = new Document();
+    parentDoc.add(newStringField("parent", "2", Field.Store.NO));
+    parentDoc.add(newStringField("isparent", "yes", Field.Store.NO));
+    childDoc = new Document();
+    childDoc.add(newStringField("child", "2", Field.Store.NO));
+    w.addDocuments(Arrays.asList(childDoc, parentDoc));
+
+    IndexReader r = w.getReader();
+    w.close();
+    IndexSearcher s = newSearcher(r);
+
+    // Create a filter that defines "parent" documents in the index - in this case resumes
+    Filter parentsFilter = new FixedBitSetCachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("isparent", "yes"))));
+
+    Query parentQuery = new TermQuery(new Term("parent", "2"));
+
+    ToChildBlockJoinQuery parentJoinQuery = new ToChildBlockJoinQuery(parentQuery, parentsFilter, random().nextBoolean());
+    TopDocs topdocs = s.search(parentJoinQuery, 3);
+    assertEquals(1, topdocs.totalHits);
+    
+    r.close();
+    dir.close();
+  }
 }

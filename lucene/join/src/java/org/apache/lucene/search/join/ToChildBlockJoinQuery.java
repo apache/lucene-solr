@@ -209,7 +209,7 @@ public class ToChildBlockJoinQuery extends Query {
             validateParentDoc();
 
             if (parentDoc == 0) {
-              // Degenerate but allowed: parent has no children
+              // Degenerate but allowed: first parent doc has no children
               // TODO: would be nice to pull initial parent
               // into ctor so we can skip this if... but it's
               // tricky because scorer must return -1 for
@@ -224,7 +224,14 @@ public class ToChildBlockJoinQuery extends Query {
               return childDoc;
             }
 
+            // Go to first child for this next parentDoc:
             childDoc = 1 + parentBits.prevSetBit(parentDoc-1);
+
+            if (childDoc == parentDoc) {
+              // This parent has no children; continue
+              // parent loop so we move to next parent
+              continue;
+            }
 
             if (acceptDocs != null && !acceptDocs.get(childDoc)) {
               continue nextChildDoc;
