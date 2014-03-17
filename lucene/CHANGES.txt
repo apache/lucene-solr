@@ -216,6 +216,11 @@ Build
 * LUCENE-5512: Remove redundant typing (use diamond operator) throughout
   the codebase.  (Furkan KAMACI via Robert Muir)
 
+Documentation:
+
+* LUCENE-5534: Add javadocs to GreekStemmer methods. 
+  (Stamatis Pitsios via Robert Muir)
+
 ======================= Lucene 4.7.0 =======================
 
 New Features

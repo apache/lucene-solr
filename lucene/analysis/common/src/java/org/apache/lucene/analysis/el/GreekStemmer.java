@@ -32,6 +32,15 @@ import java.util.Arrays;
  * @lucene.experimental
  */
 public class GreekStemmer {
+  
+ /**
+   * Stems a word contained in a leading portion of a char[] array.
+   * The word is passed through a number of rules that modify it's length.
+   * 
+   * @param s A char[] array that contains the word to be stemmed.
+   * @param len The length of the char[] array.
+   * @return The new length of the stemmed word.
+   */
   public int stem(char s[], int len) {
     if (len < 4) // too short
       return len;
@@ -773,6 +782,15 @@ public class GreekStemmer {
     return len;
   }
 
+ /**
+   * Checks if the word contained in the leading portion of char[] array , 
+   * ends with the suffix given as parameter.
+   * 
+   * @param s A char[] array that represents a word.
+   * @param len The length of the char[] array.
+   * @param suffix A {@link String} object to check if the word given ends with these characters.
+   * @return True if the word ends with the suffix given , false otherwise.
+   */
   private boolean endsWith(char s[], int len, String suffix) {
     final int suffixLen = suffix.length();
     if (suffixLen > len)
@@ -784,6 +802,15 @@ public class GreekStemmer {
     return true;
   }
   
+ /**
+   * Checks if the word contained in the leading portion of char[] array , 
+   * ends with a Greek vowel.
+   * 
+   * @param s A char[] array that represents a word.
+   * @param len The length of the char[] array.
+   * @return True if the word contained in the leading portion of char[] array , 
+   * ends with a vowel , false otherwise.
+   */
   private boolean endsWithVowel(char s[], int len) {
     if (len == 0)
       return false;
@@ -801,6 +828,15 @@ public class GreekStemmer {
     }
   }
   
+ /**
+   * Checks if the word contained in the leading portion of char[] array , 
+   * ends with a Greek vowel.
+   * 
+   * @param s A char[] array that represents a word.
+   * @param len The length of the char[] array.
+   * @return True if the word contained in the leading portion of char[] array , 
+   * ends with a vowel , false otherwise.
+   */
   private boolean endsWithVowelNoY(char s[], int len) {
     if (len == 0)
       return false;
