@@ -24,6 +24,9 @@ Bug Fixes
 * LUCENE-5432: EliasFanoDocIdSet: Fix number of index entry bits when the maximum
   entry is a power of 2. (Paul Elschot via Adrien Grand)
 
+* LUCENE-5466: query is always null in countDocsWithClass() of SimpleNaiveBayesClassifier.
+  (Koji Sekiguchi)
+
 * LUCENE-5532: AutomatonQuery.hashCode was not thread-safe. (Robert Muir)
 
 Build
