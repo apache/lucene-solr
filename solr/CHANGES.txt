@@ -36,6 +36,12 @@ Detailed Change List
 Bug Fixes
 ----------------------
 
+* SOLR-5647: The lib paths in example-schemaless will now load correctly.
+  (Paul Westin via Shawn Heisey)
+
+* SOLR-5770: All attempts to match a SolrCore with it's state in clusterstate.json
+  should be done with the CoreNodeName. (Steve Davids via Mark Miller)
+
 * SOLR-5875: QueryComponent.mergeIds() unmarshals all docs' sort field values once
   per doc instead of once per shard.
   (Alexey Serba, hoss, Martin de Vries via Steve Rowe)
@@ -333,12 +339,6 @@ Bug Fixes
 
 * SOLR-5448: ShowFileRequestHandler treats everything as Directory, when in
   Cloud-Mode. (Erick Erickson, steffkes)
-
-* SOLR-5647: The lib paths in example-schemaless will now load correctly.
-  (Paul Westin via Shawn Heisey)
-
-* SOLR-5770: All attempts to match a SolrCore with it's state in clusterstate.json 
-  should be done with the CoreNodeName. (Steve Davids via Mark Miller)
 
 Optimizations
 ----------------------
