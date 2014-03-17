@@ -71,6 +71,9 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   private static final String CONFIG_NAME = "myconfig";
   
   private static DistributedQueue workQueueMock;
+  private static DistributedMap runningMapMock;
+  private static DistributedMap completedMapMock;
+  private static DistributedMap failureMapMock;
   private static ShardHandler shardHandlerMock;
   private static ZkStateReader zkStateReaderMock;
   private static ClusterState clusterStateMock;
@@ -90,8 +93,10 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
     
     public OverseerCollectionProcessorToBeTested(ZkStateReader zkStateReader,
         String myId, ShardHandler shardHandler, String adminPath,
-        DistributedQueue workQueue) {
-      super(zkStateReader, myId, shardHandler, adminPath, workQueue);
+        DistributedQueue workQueue, DistributedMap runningMap,
+        DistributedMap completedMap,
+        DistributedMap failureMap) {
+      super(zkStateReader, myId, shardHandler, adminPath, workQueue, runningMap, completedMap, failureMap);
     }
     
     @Override
@@ -111,6 +116,9 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void setUpOnce() throws Exception {
     workQueueMock = createMock(DistributedQueue.class);
+    runningMapMock = createMock(DistributedMap.class);
+    completedMapMock = createMock(DistributedMap.class);
+    failureMapMock = createMock(DistributedMap.class);
     shardHandlerMock = createMock(ShardHandler.class);
     zkStateReaderMock = createMock(ZkStateReader.class);
     clusterStateMock = createMock(ClusterState.class);
@@ -120,6 +128,9 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   @AfterClass
   public static void tearDownOnce() {
     workQueueMock = null;
+    runningMapMock = null;
+    completedMapMock = null;
+    failureMapMock = null;
     shardHandlerMock = null;
     zkStateReaderMock = null;
     clusterStateMock = null;
@@ -131,13 +142,16 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
     super.setUp();
     queue.clear();
     reset(workQueueMock);
-    reset(workQueueMock);
+    reset(runningMapMock);
+    reset(completedMapMock);
+    reset(failureMapMock);
     reset(shardHandlerMock);
     reset(zkStateReaderMock);
     reset(clusterStateMock);
     reset(solrZkClientMock);
     underTest = new OverseerCollectionProcessorToBeTested(zkStateReaderMock,
-        "1234", shardHandlerMock, ADMIN_PATH, workQueueMock);
+        "1234", shardHandlerMock, ADMIN_PATH, workQueueMock, runningMapMock,
+        completedMapMock, failureMapMock);
     zkMap.clear();
     collectionsSet.clear();
   }

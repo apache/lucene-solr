@@ -92,6 +92,10 @@ public final class ZkController {
   
   private final DistributedQueue overseerJobQueue;
   private final DistributedQueue overseerCollectionQueue;
+
+  private final DistributedMap overseerRunningMap;
+  private final DistributedMap overseerCompletedMap;
+  private final DistributedMap overseerFailureMap;
   
   public static final String CONFIGS_ZKNODE = "/configs";
 
@@ -279,6 +283,9 @@ public final class ZkController {
     
     this.overseerJobQueue = Overseer.getInQueue(zkClient);
     this.overseerCollectionQueue = Overseer.getCollectionQueue(zkClient);
+    this.overseerRunningMap = Overseer.getRunningMap(zkClient);
+    this.overseerCompletedMap = Overseer.getCompletedMap(zkClient);
+    this.overseerFailureMap = Overseer.getFailureMap(zkClient);
     cmdExecutor = new ZkCmdExecutor(zkClientTimeout);
     leaderElector = new LeaderElector(zkClient);
     zkStateReader = new ZkStateReader(zkClient);
@@ -1582,6 +1589,18 @@ public final class ZkController {
 
   public DistributedQueue getOverseerCollectionQueue() {
     return overseerCollectionQueue;
+  }
+
+  public DistributedMap getOverseerRunningMap() {
+    return overseerRunningMap;
+  }
+
+  public DistributedMap getOverseerCompletedMap() {
+    return overseerCompletedMap;
+  }
+
+  public DistributedMap getOverseerFailureMap() {
+    return overseerFailureMap;
   }
   
   public int getClientTimeout() {

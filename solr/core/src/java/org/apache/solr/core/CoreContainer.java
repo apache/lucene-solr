@@ -368,6 +368,13 @@ public class CoreContainer {
     }
 
     try {
+      coreAdminHandler.shutdown();
+    } catch (Exception e) {
+      log.warn("Error shutting down CoreAdminHandler. Continuing to shutdown CoreContainer.");
+      e.printStackTrace();
+    }
+
+    try {
       // First wake up the closer thread, it'll terminate almost immediately since it checks isShutDown.
       synchronized (solrCores.getModifyLock()) {
         solrCores.getModifyLock().notifyAll(); // wake up anyone waiting

@@ -70,11 +70,13 @@ New Features
 * SOLR-5720: Add ExpandComponent to expand results collapsed by the 
   CollapsingQParserPlugin. (Joel Bernstein)
 
-
 * SOLR-3177: Enable tagging and excluding filters in StatsComponent via the
   localParams syntax. (Mathias H., Nikolai Luthman, Vitaliy Zhovtyuk, shalin)
   
 * SOLR-1604: Wildcards, ORs etc inside Phrase Queries. (Ahmet Arslan via Erick Erickson)
+
+* SOLR-5477: Async execution of OverseerCollectionProcessor(CollectionsAPI)
+  tasks. (Anshum Gupta)
 
 Bug Fixes
 ----------------------
