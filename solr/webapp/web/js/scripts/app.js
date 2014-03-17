@@ -281,29 +281,48 @@ var solr_admin = function( app_config )
         .css( 'width', ( selector_width - 2 ) + 'px' );
     }
 
-    if( cores.initFailures )
-    {
-      var failures = [];
-      for( var core_name in cores.initFailures )
-      {
-        failures.push
-        (
-          '<li>' +
-            '<strong>' + core_name.esc() + ':</strong>' + "\n" +
-            cores.initFailures[core_name].esc() + "\n" +
-          '</li>'
-        );
-      }
-
-      if( 0 !== failures.length )
-      {
-        var init_failures = $( '#init-failures' );
-
-        init_failures.show();
-        $( 'ul', init_failures ).html( failures.join( "\n" ) );
-      }
-    }
+    this.check_for_init_failures( cores );
   };
+
+  this.remove_init_failures = function remove_init_failures()
+  {
+    $( '#init-failures' )
+      .hide()
+      .find( 'ul' )
+        .empty();
+  }
+
+  this.check_for_init_failures = function check_for_init_failures( cores )
+  {
+    if( !cores.initFailures )
+    {
+      this.remove_init_failures();
+      return false;
+    }
+
+    var failures = [];
+    for( var core_name in cores.initFailures )
+    {
+      failures.push
+      (
+        '<li>' +
+          '<strong>' + core_name.esc() + ':</strong>' + "\n" +
+          cores.initFailures[core_name].esc() + "\n" +
+        '</li>'
+      );
+    }
+
+    if( 0 === failures.length )
+    {
+      this.remove_init_failures();
+      return false;
+    }
+
+    $( '#init-failures' )
+      .show()
+      .find( 'ul' )
+        .html( failures.join( "\n" ) );
+  }
 
   this.run = function()
   {

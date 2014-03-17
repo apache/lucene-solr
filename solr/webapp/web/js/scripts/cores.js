@@ -30,6 +30,12 @@ sammy.bind
         },
         success : function( response, text_status, xhr )
         {
+          if( params.only_failures )
+          {
+            app.check_for_init_failures( response );
+            return true;
+          }
+
           var has_cores = false;
           for( core in response.status )
           {
@@ -572,6 +578,20 @@ sammy.get
                           },
                           error : function( xhr, text_status, error_thrown )
                           {
+                            this
+                              .addClass( 'warn' );
+
+                            sammy.trigger( 'cores_load_data', { only_failures : true } );
+
+                            window.setTimeout
+                            (
+                              function()
+                              {
+                                reload_button
+                                  .removeClass( 'warn' );
+                              },
+                              1000
+                            );
                           },
                           complete : function( xhr, text_status )
                           {
