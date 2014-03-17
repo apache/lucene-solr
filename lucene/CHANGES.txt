@@ -21,6 +21,9 @@ Bug Fixes
   NullPointerException, if the synonym map is empty when creating
   SynonymFilter (帅广应 via Mike McCandless)
 
+* LUCENE-5432: EliasFanoDocIdSet: Fix number of index entry bits when the maximum
+  entry is a power of 2. (Paul Elschot via Adrien Grand)
+
 * LUCENE-5532: AutomatonQuery.hashCode was not thread-safe. (Robert Muir)
 
 Build
