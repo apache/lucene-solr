@@ -20,7 +20,6 @@ package org.apache.lucene.demo.facet;
 import java.util.List;
 
 import org.apache.lucene.facet.FacetResult;
-import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
@@ -40,5 +39,12 @@ public class TestSimpleFacetsExample extends LuceneTestCase {
   public void testDrillDown() throws Exception {
     FacetResult result = new SimpleFacetsExample().runDrillDown();
     assertEquals("dim=Author path=[] value=2 childCount=2\n  Bob (1)\n  Lisa (1)\n", result.toString());
+  }
+
+  @Test
+  public void testDrillSideways() throws Exception {
+    List<FacetResult> result = new SimpleFacetsExample().runDrillSideways();
+    assertEquals("dim=Publish Date path=[] value=5 childCount=3\n  2010 (2)\n  2012 (2)\n  1999 (1)\n", result.get(0).toString());
+    assertEquals("dim=Author path=[] value=2 childCount=2\n  Bob (1)\n  Lisa (1)\n", result.get(1).toString());
   }
 }
