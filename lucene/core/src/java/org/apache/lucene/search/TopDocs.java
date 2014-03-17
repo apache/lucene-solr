@@ -206,7 +206,14 @@ public class TopDocs {
    *
    * @lucene.experimental */
   public static TopDocs merge(Sort sort, int topN, TopDocs[] shardHits) throws IOException {
+    return merge(sort, 0, topN, shardHits);
+  }
 
+  /**
+   * Same as {@link #merge(Sort, int, TopDocs[])} but also slices the result at the same time based
+   * on the provided start and size. The return TopDocs will always have a scoreDocs with length of at most size.
+   */
+  public static TopDocs merge(Sort sort, int start, int size, TopDocs[] shardHits) throws IOException {
     final PriorityQueue<ShardRef> queue;
     if (sort == null) {
       queue = new ScoreMergeSortQueue(shardHits);
@@ -234,24 +241,32 @@ public class TopDocs {
       maxScore = Float.NaN;
     }
 
-    final ScoreDoc[] hits = new ScoreDoc[Math.min(topN, availHitCount)];
+    final ScoreDoc[] hits;
+    if (availHitCount <= start) {
+      hits = new ScoreDoc[0];
+    } else {
+      hits = new ScoreDoc[Math.min(size, availHitCount - start)];
+      int requestedResultWindow = start + size;
+      int numIterOnHits = Math.min(availHitCount, requestedResultWindow);
+      int hitUpto = 0;
+      while (hitUpto < numIterOnHits) {
+        assert queue.size() > 0;
+        ShardRef ref = queue.pop();
+        final ScoreDoc hit = shardHits[ref.shardIndex].scoreDocs[ref.hitIndex++];
+        hit.shardIndex = ref.shardIndex;
+        if (hitUpto >= start) {
+          hits[hitUpto - start] = hit;
+        }
 
-    int hitUpto = 0;
-    while(hitUpto < hits.length) {
-      assert queue.size() > 0;
-      ShardRef ref = queue.pop();
-      final ScoreDoc hit = shardHits[ref.shardIndex].scoreDocs[ref.hitIndex++];
-      hit.shardIndex = ref.shardIndex;
-      hits[hitUpto] = hit;
+        //System.out.println("  hitUpto=" + hitUpto);
+        //System.out.println("    doc=" + hits[hitUpto].doc + " score=" + hits[hitUpto].score);
 
-      //System.out.println("  hitUpto=" + hitUpto);
-      //System.out.println("    doc=" + hits[hitUpto].doc + " score=" + hits[hitUpto].score);
+        hitUpto++;
 
-      hitUpto++;
-
-      if (ref.hitIndex < shardHits[ref.shardIndex].scoreDocs.length) {
-        // Not done with this these TopDocs yet:
-        queue.add(ref);
+        if (ref.hitIndex < shardHits[ref.shardIndex].scoreDocs.length) {
+          // Not done with this these TopDocs yet:
+          queue.add(ref);
+        }
       }
     }
 
