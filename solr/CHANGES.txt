@@ -73,6 +73,8 @@ New Features
 
 * SOLR-3177: Enable tagging and excluding filters in StatsComponent via the
   localParams syntax. (Mathias H., Nikolai Luthman, Vitaliy Zhovtyuk, shalin)
+  
+* SOLR-1604: Wildcards, ORs etc inside Phrase Queries. (Ahmet Arslan via Erick Erickson)
 
 Bug Fixes
 ----------------------

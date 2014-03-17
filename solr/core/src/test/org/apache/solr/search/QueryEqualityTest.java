@@ -344,6 +344,13 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
                       "and(apache,solr)", "apache AND solr");
   }
 
+  public void testQueryComplexPhrase() throws Exception {
+    assertQueryEquals("complexphrase", "{!complexphrase df=text}\"jo* smith\"",
+        "text:\"jo* smith\"");
+    assertQueryEquals("complexphrase", "{!complexphrase df=title}\"jo* smith\"",
+        "title:\"jo* smith\"");
+  }
+
   public void testFuncTestfunc() throws Exception {
     assertFuncEquals("testfunc(foo_i)","testfunc(field(foo_i))"); 
     assertFuncEquals("testfunc(23)"); 
