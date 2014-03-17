@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -30,7 +31,10 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Rethrow;
+import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.BasicOperations;
 
@@ -148,8 +152,10 @@ public class TestAutomatonQuery extends LuceneTestCase {
     AutomatonQuery a5 = new AutomatonQuery(newTerm("blah"), BasicAutomata
         .makeString("foobar"));
     
+    assertEquals(a1.hashCode(), a2.hashCode());
     assertEquals(a1, a2);
     
+    assertEquals(a1.hashCode(), a3.hashCode());
     assertEquals(a1, a3);
   
     // different class
@@ -203,5 +209,36 @@ public class TestAutomatonQuery extends LuceneTestCase {
     Terms terms = MultiFields.getTerms(searcher.getIndexReader(), FN);
     assertSame(TermsEnum.EMPTY, aq.getTermsEnum(terms));
     assertEquals(0, automatonQueryNrHits(aq));
+  }
+  
+  public void testHashCodeWithThreads() throws Exception {
+    final AutomatonQuery queries[] = new AutomatonQuery[1000];
+    for (int i = 0; i < queries.length; i++) {
+      queries[i] = new AutomatonQuery(new Term("bogus", "bogus"), AutomatonTestUtil.randomAutomaton(random()));
+    }
+    final CountDownLatch startingGun = new CountDownLatch(1);
+    int numThreads = _TestUtil.nextInt(random(), 2, 5);
+    Thread[] threads = new Thread[numThreads];
+    for (int threadID = 0; threadID < numThreads; threadID++) {
+      Thread thread = new Thread() {
+          @Override
+          public void run() {
+            try {
+              startingGun.await();
+              for (int i = 0; i < queries.length; i++) {
+                queries[i].hashCode();
+              }
+            } catch (Exception e) {
+              Rethrow.rethrow(e);
+            }
+          }
+        };
+      threads[threadID] = thread;
+      thread.start();
+    }
+    startingGun.countDown();
+    for (Thread thread : threads) {
+      thread.join();
+    }
   }
 }

@@ -3,6 +3,18 @@ Lucene Change Log
 For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
+======================= Lucene 4.7.1 =======================
+
+Changes in Runtime Behavior
+
+* LUCENE-5532: AutomatonQuery.equals is no longer implemented as "accepts same language".
+  This was inconsistent with hashCode, and unnecessary for any subclasses in Lucene.
+  If you desire this in a custom subclass, minimize the automaton.  (Robert Muir)
+
+Bug Fixes
+
+* LUCENE-5532: AutomatonQuery.hashCode was not thread-safe. (Robert Muir)
+
 ======================= Lucene 4.7.0 =======================
 
 New Features

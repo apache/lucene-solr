@@ -271,12 +271,12 @@ public class Automaton implements Cloneable {
       expandSingleton();
       final Set<State> visited = new HashSet<State>();
       final LinkedList<State> worklist = new LinkedList<State>();
-      numberedStates = new State[4];
+      State states[] = new State[4];
       int upto = 0;
       worklist.add(initial);
       visited.add(initial);
       initial.number = upto;
-      numberedStates[upto] = initial;
+      states[upto] = initial;
       upto++;
       while (worklist.size() > 0) {
         State s = worklist.removeFirst();
@@ -286,21 +286,22 @@ public class Automaton implements Cloneable {
             visited.add(t.to);
             worklist.add(t.to);
             t.to.number = upto;
-            if (upto == numberedStates.length) {
+            if (upto == states.length) {
               final State[] newArray = new State[ArrayUtil.oversize(1+upto, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
-              System.arraycopy(numberedStates, 0, newArray, 0, upto);
-              numberedStates = newArray;
+              System.arraycopy(states, 0, newArray, 0, upto);
+              states = newArray;
             }
-            numberedStates[upto] = t.to;
+            states[upto] = t.to;
             upto++;
           }
         }
       }
-      if (numberedStates.length != upto) {
+      if (states.length != upto) {
         final State[] newArray = new State[upto];
-        System.arraycopy(numberedStates, 0, newArray, 0, upto);
-        numberedStates = newArray;
+        System.arraycopy(states, 0, newArray, 0, upto);
+        states = newArray;
       }
+      numberedStates = states;
     }
 
     return numberedStates;
