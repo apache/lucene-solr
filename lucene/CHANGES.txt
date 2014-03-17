@@ -146,6 +146,10 @@ Optimizations
   on Windows if NIOFSDirectory is used, mmapped files are still locked.
   (Michael Poindexter, Robert Muir, Uwe Schindler)
 
+* LUCENE-5515: Improved TopDocs#merge to create a merged ScoreDoc
+  array with length of at most equal to the specified size instead of length
+  equal to at most from + size as was before.
+
 Bug fixes
 
 * LUCENE-5450: Fix getField() NPE issues with SpanOr/SpanNear when they have an 
