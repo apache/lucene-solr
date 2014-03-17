@@ -190,6 +190,8 @@ Bug Fixes
   per doc instead of once per shard.
   (Alexey Serba, hoss, Martin de Vries via Steve Rowe)
 
+* SOLR-5870: Admin UI - Reload on Core Admin doesn't show errors (steffkes)
+
 Optimizations
 ----------------------
 * SOLR-1880: Distributed Search skips GET_FIELDS stage if EXECUTE_QUERY
