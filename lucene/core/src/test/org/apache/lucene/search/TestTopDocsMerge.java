@@ -17,11 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatField;
@@ -36,7 +31,11 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class TestTopDocsMerge extends LuceneTestCase {
 
@@ -62,7 +61,15 @@ public class TestTopDocsMerge extends LuceneTestCase {
     }
   }
 
-  public void testSort() throws Exception {
+  public void testSort_1() throws Exception {
+    testSort(false);
+  }
+
+  public void testSort_2() throws Exception {
+    testSort(true);
+  }
+
+  void testSort(boolean useFrom) throws Exception {
 
     IndexReader reader = null;
     Directory dir = null;
@@ -125,7 +132,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
 
     final ShardSearcher[] subSearchers;
     final int[] docStarts;
-    
+
     if (ctx instanceof AtomicReaderContext) {
       subSearchers = new ShardSearcher[1];
       docStarts = new int[1];
@@ -176,23 +183,62 @@ public class TestTopDocsMerge extends LuceneTestCase {
 
       final int numHits = TestUtil.nextInt(random(), 1, numDocs + 5);
       //final int numHits = 5;
-      
+
       if (VERBOSE) {
         System.out.println("TEST: search query=" + query + " sort=" + sort + " numHits=" + numHits);
       }
 
+      int from = -1;
+      int size = -1;
       // First search on whole index:
       final TopDocs topHits;
       if (sort == null) {
-        topHits = searcher.search(query, numHits);
+        if (useFrom) {
+          TopScoreDocCollector c = TopScoreDocCollector.create(numHits, random().nextBoolean());
+          searcher.search(query, c);
+          from = TestUtil.nextInt(random(), 0, numHits - 1);
+          size = numHits - from;
+          TopDocs tempTopHits = c.topDocs();
+          if (from < tempTopHits.scoreDocs.length) {
+            // Can't use TopDocs#topDocs(start, howMany), since it has different behaviour when start >= hitCount
+            // than TopDocs#merge currently has
+            ScoreDoc[] newScoreDocs = new ScoreDoc[Math.min(size, tempTopHits.scoreDocs.length - from)];
+            System.arraycopy(tempTopHits.scoreDocs, from, newScoreDocs, 0, newScoreDocs.length);
+            tempTopHits.scoreDocs = newScoreDocs;
+            topHits = tempTopHits;
+          } else {
+            topHits = new TopDocs(tempTopHits.totalHits, new ScoreDoc[0], tempTopHits.getMaxScore());
+          }
+        } else {
+          topHits = searcher.search(query, numHits);
+        }
       } else {
         final TopFieldCollector c = TopFieldCollector.create(sort, numHits, true, true, true, random().nextBoolean());
         searcher.search(query, c);
-        topHits = c.topDocs(0, numHits);
+        if (useFrom) {
+          from = TestUtil.nextInt(random(), 0, numHits - 1);
+          size = numHits - from;
+          TopDocs tempTopHits = c.topDocs();
+          if (from < tempTopHits.scoreDocs.length) {
+            // Can't use TopDocs#topDocs(start, howMany), since it has different behaviour when start >= hitCount
+            // than TopDocs#merge currently has
+            ScoreDoc[] newScoreDocs = new ScoreDoc[Math.min(size, tempTopHits.scoreDocs.length - from)];
+            System.arraycopy(tempTopHits.scoreDocs, from, newScoreDocs, 0, newScoreDocs.length);
+            tempTopHits.scoreDocs = newScoreDocs;
+            topHits = tempTopHits;
+          } else {
+            topHits = new TopDocs(tempTopHits.totalHits, new ScoreDoc[0], tempTopHits.getMaxScore());
+          }
+        } else {
+          topHits = c.topDocs(0, numHits);
+        }
       }
 
       if (VERBOSE) {
-        System.out.println("  top search: " + topHits.totalHits + " totalHits; hits=" + (topHits.scoreDocs == null ? "null" : topHits.scoreDocs.length));
+        if (useFrom) {
+          System.out.println("from=" + from + " size=" + size);
+        }
+        System.out.println("  top search: " + topHits.totalHits + " totalHits; hits=" + (topHits.scoreDocs == null ? "null" : topHits.scoreDocs.length + " maxScore=" + topHits.getMaxScore()));
         if (topHits.scoreDocs != null) {
           for(int hitIDX=0;hitIDX<topHits.scoreDocs.length;hitIDX++) {
             final ScoreDoc sd = topHits.scoreDocs[hitIDX];
@@ -228,7 +274,12 @@ public class TestTopDocsMerge extends LuceneTestCase {
       }
 
       // Merge:
-      final TopDocs mergedHits = TopDocs.merge(sort, numHits, shardHits);
+      final TopDocs mergedHits;
+      if (useFrom) {
+        mergedHits = TopDocs.merge(sort, from, size, shardHits);
+      } else {
+        mergedHits = TopDocs.merge(sort, numHits, shardHits);
+      }
 
       if (mergedHits.scoreDocs != null) {
         // Make sure the returned shards are correct:
