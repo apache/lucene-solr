@@ -338,6 +338,8 @@ Bug Fixes
 * SOLR-5800: Admin UI - Analysis form doesn't render results correctly when a
   CharFilter is used. (steffkes)
 
+* SOLR-5870: Admin UI - Reload on Core Admin doesn't show errors (steffkes)
+
 Optimizations
 ----------------------
 
