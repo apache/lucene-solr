@@ -51,6 +51,9 @@ Bug Fixes
 
 * SOLR-5870: Admin UI - Reload on Core Admin doesn't show errors (steffkes)
 
+* SOLR-5867: OverseerCollectionProcessor isn't properly generating https urls in some
+  cases. (Steve Davids via shalin)
+
 ==================  4.7.0 ==================
 
 Versions of Major Components

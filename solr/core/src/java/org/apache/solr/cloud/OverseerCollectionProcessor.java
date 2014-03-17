@@ -344,7 +344,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     params.set("qt", adminPath);
     ShardRequest sreq = new ShardRequest();
     sreq.purpose = 1;
-    String replica = nodeName.replaceFirst("_", "/");
+    String replica = zkStateReader.getBaseUrlForNodeName(nodeName);
     sreq.shards = new String[]{replica};
     sreq.actualShards = sreq.shards;
     sreq.params = params;
