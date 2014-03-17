@@ -40,6 +40,11 @@ Bug Fixes
   per doc instead of once per shard.
   (Alexey Serba, hoss, Martin de Vries via Steve Rowe)
 
+* SOLR-5800: Admin UI - Analysis form doesn't render results correctly when a
+  CharFilter is used. (steffkes)
+
+* SOLR-5870: Admin UI - Reload on Core Admin doesn't show errors (steffkes)
+
 ==================  4.7.0 ==================
 
 Versions of Major Components
@@ -334,11 +339,6 @@ Bug Fixes
 
 * SOLR-5770: All attempts to match a SolrCore with it's state in clusterstate.json 
   should be done with the CoreNodeName. (Steve Davids via Mark Miller)
-
-* SOLR-5800: Admin UI - Analysis form doesn't render results correctly when a
-  CharFilter is used. (steffkes)
-
-* SOLR-5870: Admin UI - Reload on Core Admin doesn't show errors (steffkes)
 
 Optimizations
 ----------------------
