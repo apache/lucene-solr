@@ -335,6 +335,9 @@ Bug Fixes
 * SOLR-5770: All attempts to match a SolrCore with it's state in clusterstate.json 
   should be done with the CoreNodeName. (Steve Davids via Mark Miller)
 
+* SOLR-5800: Admin UI - Analysis form doesn't render results correctly when a
+  CharFilter is used. (steffkes)
+
 Optimizations
 ----------------------
 
