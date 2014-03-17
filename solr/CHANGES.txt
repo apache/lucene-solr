@@ -131,6 +131,10 @@ Bug Fixes
 * SOLR-5550: shards.info is not returned by a short circuited distributed query.
   (Timothy Potter, shalin)
 
+* SOLR-5875: QueryComponent.mergeIds() unmarshals all docs' sort field values once
+  per doc instead of once per shard.
+  (Alexey Serba, hoss, Martin de Vries via Steve Rowe)
+
 Optimizations
 ----------------------
 * SOLR-1880: Distributed Search skips GET_FIELDS stage if EXECUTE_QUERY
