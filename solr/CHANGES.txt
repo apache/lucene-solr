@@ -81,9 +81,6 @@ New Features
 Bug Fixes
 ----------------------
 
-* SOLR-5647: The lib paths in example-schemaless will now load correctly.
-  (Paul Westin via Shawn Heisey)
-
 * SOLR-5423: CSV output doesn't include function field
   (Arun Kumar, hossman, Steve Rowe)
 
@@ -118,26 +115,14 @@ Bug Fixes
 * SOLR-5839: ZookeeperInfoServlet does not trim path properly.
   (Furkan KAMACI via Mark Miller)
 
-* SOLR-5800: Admin UI - Analysis form doesn't render results correctly when a
-  CharFilter is used. (steffkes)
-
 * SOLR-5861: Recovery should not set onlyIfLeaderActive=true for slice in 'recovery'
   state. (shalin)
-
-* SOLR-5867: OverseerCollectionProcessor isn't properly generating https urls in some
-  cases. (Steve Davids via shalin)
 
 * SOLR-5866: UpdateShardHandler needs to use the system default scheme registry to
   properly handle https via javax.net.ssl.* properties. (Steve Davids via shalin)
 
 * SOLR-5550: shards.info is not returned by a short circuited distributed query.
   (Timothy Potter, shalin)
-
-* SOLR-5875: QueryComponent.mergeIds() unmarshals all docs' sort field values once
-  per doc instead of once per shard.
-  (Alexey Serba, hoss, Martin de Vries via Steve Rowe)
-
-* SOLR-5870: Admin UI - Reload on Core Admin doesn't show errors (steffkes)
 
 Optimizations
 ----------------------
@@ -195,6 +180,40 @@ Other Changes
 
 * SOLR-5838: Relative SolrHome Path Bug At AbstractFullDistribZkTestBase.
   (Furkan KAMACI via shalin)
+
+==================  4.7.1  ==================
+
+Versions of Major Components
+---------------------
+Apache Tika 1.4
+Carrot2 3.8.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.5
+
+Detailed Change List
+----------------------
+
+Bug Fixes
+----------------------
+
+* SOLR-5647: The lib paths in example-schemaless will now load correctly.
+  (Paul Westin via Shawn Heisey)
+
+* SOLR-5770: All attempts to match a SolrCore with it's state in clusterstate.json
+  should be done with the CoreNodeName. (Steve Davids via Mark Miller)
+
+* SOLR-5875: QueryComponent.mergeIds() unmarshals all docs' sort field values once
+  per doc instead of once per shard.
+  (Alexey Serba, hoss, Martin de Vries via Steve Rowe)
+
+* SOLR-5800: Admin UI - Analysis form doesn't render results correctly when a
+  CharFilter is used. (steffkes)
+
+* SOLR-5870: Admin UI - Reload on Core Admin doesn't show errors (steffkes)
+
+* SOLR-5867: OverseerCollectionProcessor isn't properly generating https urls in some
+  cases. (Steve Davids via shalin)
 
 ==================  4.7.0 ==================
 
@@ -484,9 +503,6 @@ Bug Fixes
 
 * SOLR-5448: ShowFileRequestHandler treats everything as Directory, when in
   Cloud-Mode. (Erick Erickson, steffkes)
-
-* SOLR-5770: All attempts to match a SolrCore with it's state in clusterstate.json 
-  should be done with the CoreNodeName. (Steve Davids via Mark Miller)
 
 Optimizations
 ----------------------
