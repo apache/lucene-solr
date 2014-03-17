@@ -13,6 +13,10 @@ Changes in Runtime Behavior
 
 Bug Fixes
 
+* LUCENE-5450: Fix getField() NPE issues with SpanOr/SpanNear when they have an 
+  empty list of clauses. This can happen for example,  when a wildcard matches 
+  no terms.  (Tim Allison via Robert Muir)
+
 * LUCENE-5532: AutomatonQuery.hashCode was not thread-safe. (Robert Muir)
 
 ======================= Lucene 4.7.0 =======================
