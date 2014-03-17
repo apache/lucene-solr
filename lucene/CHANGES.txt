@@ -29,6 +29,9 @@ Bug Fixes
 
 * LUCENE-5502: Fixed TermsFilter.equals that could return true for different
   filters. (Igor Motov via Adrien Grand)
+  
+* LUCENE-5522: FacetsConfig didn't add drill-down terms for association facet 
+  fields labels. (Shai Erera)
 
 * LUCENE-5520: ToChildBlockJoinQuery would hit
   ArrayIndexOutOfBoundsException if a parent document had no children
