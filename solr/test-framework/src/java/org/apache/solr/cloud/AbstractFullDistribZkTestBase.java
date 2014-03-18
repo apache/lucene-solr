@@ -1798,7 +1798,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     throw new RuntimeException("Could not find a live node for collection:" + collection);
   }
 
- public  static void waitForNon403or404or503(HttpSolrServer collectionClient)
+ public static void waitForNon403or404or503(HttpSolrServer collectionClient)
       throws Exception {
     SolrException exp = null;
     long timeoutAt = System.currentTimeMillis() + 30000;

@@ -99,6 +99,8 @@ import org.junit.BeforeClass;
 @Slow
 public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBase {
   
+  private static final String COLLECTION_CONFIG_NAME = "collection.configName";
+  private static final String NODES_USED_COLLECTION = "nodes_used_collection";
   private static final String DEFAULT_COLLECTION = "collection1";
   private static final boolean DEBUG = false;
 
@@ -158,7 +160,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
       zkClient.close();
     }
     
-    System.setProperty("numShards", Integer.toString(sliceCount));
+    System.setProperty(NUM_SLICES, Integer.toString(sliceCount));
     System.setProperty("solr.xml.persist", "true");
   }
   
@@ -172,11 +174,11 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     fixShardCount = true;
     
     sliceCount = 2;
-    shardCount = 4;
+    int regularShardCount = random().nextBoolean() ? 3 : 2;
+    shardCount = TEST_NIGHTLY ? 5 : regularShardCount;
     completionService = new ExecutorCompletionService<>(executor);
     pending = new HashSet<>();
     checkCreatedVsState = false;
-    
   }
   
   @Override
@@ -256,7 +258,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     Map<String, NamedList<Integer>> nodesStatus;
 
     response = CollectionAdminRequest.createCollection("solrj_collection",
-                                                       2, 2, null,
+                                                       2, 2, 1000,
                                                        null, "conf1", "myOwnField",
                                                        server);
     assertEquals(0, response.getStatus());
@@ -358,11 +360,11 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     params = new ModifiableSolrParams();
     params.set("action", CollectionAction.CREATE.toString());
     params.set("name", collectionName);
-    params.set("numShards", 2);
+    params.set(NUM_SLICES, 2);
     request = new QueryRequest(params);
     request.setPath("/admin/collections");
     if (secondConfigSet) {
-      params.set("collection.configName", "conf1");
+      params.set(COLLECTION_CONFIG_NAME, "conf1");
     }
     resp = createNewSolrServer("", baseUrl).request(request);
   }
@@ -424,7 +426,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     params.set("action", "BADACTION");
     String collectionName = "badactioncollection";
     params.set("name", collectionName);
-    params.set("numShards", 2);
+    params.set(NUM_SLICES, 2);
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
     boolean gotExp = false;
@@ -440,12 +442,12 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     // leave out required param name
     params = new ModifiableSolrParams();
     params.set("action", CollectionAction.CREATE.toString());
-    params.set("numShards", 2);
+    params.set(NUM_SLICES, 2);
     collectionName = "collection";
     // No Name
     // params.set("name", collectionName);
     if (secondConfigSet) {
-      params.set("collection.configName", "conf1");
+      params.set(COLLECTION_CONFIG_NAME, "conf1");
     }
     request = new QueryRequest(params);
     request.setPath("/admin/collections");
@@ -463,9 +465,9 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     params.set("action", CollectionAction.CREATE.toString());
     collectionName = "collection";
     params.set("name", collectionName);
-    params.set("numShards", 2);
+    params.set(NUM_SLICES, 2);
     if (secondConfigSet) {
-      params.set("collection.configName", "conf1");
+      params.set(COLLECTION_CONFIG_NAME, "conf1");
     }
     params.set(REPLICATION_FACTOR, 10);
     request = new QueryRequest(params);
@@ -486,7 +488,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     params.set("name", collectionName);
     params.set(REPLICATION_FACTOR, 10);
     if (secondConfigSet) {
-      params.set("collection.configName", "conf1");
+      params.set(COLLECTION_CONFIG_NAME, "conf1");
     }
     request = new QueryRequest(params);
     request.setPath("/admin/collections");
@@ -505,9 +507,9 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     collectionName = "acollection";
     params.set("name", collectionName);
     params.set(REPLICATION_FACTOR, 10);
-    params.set("numShards", 0);
+    params.set(NUM_SLICES, 0);
     if (secondConfigSet) {
-      params.set("collection.configName", "conf1");
+      params.set(COLLECTION_CONFIG_NAME, "conf1");
     }
     request = new QueryRequest(params);
     request.setPath("/admin/collections");
@@ -552,11 +554,11 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     params.set("action", CollectionAction.CREATE.toString());
     collectionName = "halfcollection";
     params.set("name", collectionName);
-    params.set("numShards", 2);
+    params.set(NUM_SLICES, 2);
     params.set("wt", "xml");
     
     if (secondConfigSet) {
-      params.set("collection.configName", "conf1");
+      params.set(COLLECTION_CONFIG_NAME, "conf1");
     }
     
     String nn1 = ((SolrDispatchFilter) jettys.get(0).getDispatchFilter().getFilter()).getCores().getZkController().getNodeName();
@@ -620,14 +622,15 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionAction.CREATE.toString());
 
-    params.set("numShards", 2);
+    params.set(NUM_SLICES, 2);
     params.set(REPLICATION_FACTOR, 2);
-    String collectionName = "nodes_used_collection";
+    params.set(MAX_SHARDS_PER_NODE, 1000);
+    String collectionName = NODES_USED_COLLECTION;
 
     params.set("name", collectionName);
     
     if (secondConfigSet) {
-      params.set("collection.configName", "conf1");
+      params.set(COLLECTION_CONFIG_NAME, "conf1");
     }
     
     QueryRequest request = new QueryRequest(params);
@@ -637,7 +640,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     List<Integer> numShardsNumReplicaList = new ArrayList<>();
     numShardsNumReplicaList.add(2);
     numShardsNumReplicaList.add(2);
-    checkForCollection("nodes_used_collection", numShardsNumReplicaList , null);
+    checkForCollection(NODES_USED_COLLECTION, numShardsNumReplicaList , null);
 
     List<String> createNodeList = new ArrayList<>();
 
@@ -648,7 +651,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
       createNodeList.add(node);
     }
 
-    DocCollection col = cloudClient.getZkStateReader().getClusterState().getCollection("nodes_used_collection");
+    DocCollection col = cloudClient.getZkStateReader().getClusterState().getCollection(NODES_USED_COLLECTION);
     Collection<Slice> slices = col.getSlices();
     for (Slice slice : slices) {
       Collection<Replica> replicas = slice.getReplicas();
@@ -656,7 +659,9 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
         createNodeList.remove(replica.getNodeName());
       }
     }
-    assertEquals(createNodeList.toString(), 1, createNodeList.size());
+    printLayout();
+    // 2x2 collection + control means we should be on shardCount + 1 - 4
+    assertEquals(createNodeList.toString(), Math.max(0, shardCount + 1 - 4), createNodeList.size());
 
   }
 
@@ -871,13 +876,13 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     params = new ModifiableSolrParams();
     params.set("action", CollectionAction.CREATE.toString());
 
-    params.set("numShards", 1);
+    params.set(NUM_SLICES, 1);
     params.set(REPLICATION_FACTOR, 2);
     collectionName = "acollectionafterbaddelete";
 
     params.set("name", collectionName);
     if (secondConfigSet) {
-      params.set("collection.configName", "conf1");
+      params.set(COLLECTION_CONFIG_NAME, "conf1");
     }
     request = new QueryRequest(params);
     request.setPath("/admin/collections");
@@ -967,7 +972,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
       public void run() {
         // create new collections rapid fire
         Map<String,List<Integer>> collectionInfos = new HashMap<>();
-        int cnt = random().nextInt(TEST_NIGHTLY ? 13 : 3) + 1;
+        int cnt = random().nextInt(TEST_NIGHTLY ? 13 : 2) + 1;
         
         for (int i = 0; i < cnt; i++) {
           String collectionName = "awholynewstresscollection_" + name + "_" + i;
@@ -1048,7 +1053,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     }
   }
 
-  private boolean waitForReloads(String collectionName, Map<String,Long> urlToTimeBefore) throws SolrServerException, IOException {
+  private boolean waitForReloads(String collectionName, Map<String,Long> urlToTimeBefore) throws SolrServerException, IOException, InterruptedException {
     
     
     long timeoutAt = System.currentTimeMillis() + 45000;
@@ -1074,6 +1079,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
         allTimesAreCorrect = true;
         break;
       }
+      Thread.sleep(100);
     }
     return allTimesAreCorrect;
   }
@@ -1082,7 +1088,6 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
       Map<String,Long> urlToTime) throws SolrServerException, IOException {
     ClusterState clusterState = getCommonCloudSolrServer().getZkStateReader()
         .getClusterState();
-//    Map<String,DocCollection> collections = clusterState.getCollectionStates();
     if (clusterState.hasCollection(collectionName)) {
       Map<String,Slice> slices = clusterState.getSlicesMap(collectionName);
 
@@ -1135,32 +1140,6 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     throw new RuntimeException("Could not find a live node for collection:" + collection);
   }
 
-/*  private void waitForNon403or404or503(HttpSolrServer collectionClient)
-      throws Exception {
-    SolrException exp = null;
-    long timeoutAt = System.currentTimeMillis() + 30000;
-    
-    while (System.currentTimeMillis() < timeoutAt) {
-      boolean missing = false;
-
-      try {
-        collectionClient.query(new SolrQuery("*:*"));
-      } catch (SolrException e) {
-        if (!(e.code() == 403 || e.code() == 503 || e.code() == 404)) {
-          throw e;
-        }
-        exp = e;
-        missing = true;
-      }
-      if (!missing) {
-        return;
-      }
-      Thread.sleep(50);
-    }
-
-    fail("Could not find the new collection - " + exp.code() + " : " + collectionClient.getBaseURL());
-  }*/
-  
   private void checkForMissingCollection(String collectionName)
       throws Exception {
     // check for a  collection - we poll the state
@@ -1169,8 +1148,6 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     while (System.currentTimeMillis() < timeoutAt) {
       getCommonCloudSolrServer().getZkStateReader().updateClusterState(true);
       ClusterState clusterState = getCommonCloudSolrServer().getZkStateReader().getClusterState();
-//      Map<String,DocCollection> collections = clusterState
-//          .getCollectionStates();
       if (! clusterState.hasCollection(collectionName)) {
         found = false;
         break;
@@ -1249,9 +1226,10 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
 
       long timeout = System.currentTimeMillis() + 3000;
       Replica newReplica = null;
-
-      for(; System.currentTimeMillis()<timeout;){
-        Slice slice = client.getZkStateReader().getClusterState().getSlice(collectionName, "shard1");
+      
+      while (System.currentTimeMillis() < timeout) {
+        Slice slice = client.getZkStateReader().getClusterState()
+            .getSlice(collectionName, "shard1");
         newReplica = slice.getReplica(newReplicaName);
       }
 
@@ -1289,8 +1267,6 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
 
   }
 
-
-
   @Override
   protected QueryResponse queryServer(ModifiableSolrParams params) throws SolrServerException {
 
@@ -1304,23 +1280,22 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     return rsp;
   }
 
-  protected void createCollection(String COLL_NAME, CloudSolrServer client,int replicationFactor , int numShards ) throws Exception {
-    int maxShardsPerNode = ((((numShards+1) * replicationFactor) / getCommonCloudSolrServer()
+  protected void createCollection(String COLL_NAME, CloudSolrServer client,
+      int replicationFactor, int numShards) throws Exception {
+    int maxShardsPerNode = ((((numShards + 1) * replicationFactor) / getCommonCloudSolrServer()
         .getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
-
-    Map<String, Object> props = makeMap(
-        REPLICATION_FACTOR, replicationFactor,
-        MAX_SHARDS_PER_NODE, maxShardsPerNode,
-        NUM_SLICES, numShards);
+    
+    Map<String,Object> props = makeMap(REPLICATION_FACTOR, replicationFactor,
+        MAX_SHARDS_PER_NODE, maxShardsPerNode, NUM_SLICES, numShards);
     Map<String,List<Integer>> collectionInfos = new HashMap<>();
-    createCollection(collectionInfos, COLL_NAME, props, client,"conf1");
+    createCollection(collectionInfos, COLL_NAME, props, client, "conf1");
     waitForRecoveriesToFinish(COLL_NAME, false);
   }
   
   @Override
   public void tearDown() throws Exception {
     super.tearDown();
-    System.clearProperty("numShards");
+    System.clearProperty(NUM_SLICES);
     System.clearProperty("zkHost");
     System.clearProperty("solr.xml.persist");
     
