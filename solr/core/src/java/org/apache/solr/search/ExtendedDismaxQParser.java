@@ -17,16 +17,6 @@
 
 package org.apache.solr.search;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.StopFilterFactory;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
@@ -51,6 +41,16 @@ import org.apache.solr.parser.SolrQueryParserBase.MagicFieldName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.util.SolrPluginUtils;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Query parser that generates DisjunctionMaxQueries based on user configuration.
@@ -100,6 +100,7 @@ public class ExtendedDismaxQParser extends QParser {
   private Query parsedUserQuery;
   private Query altUserQuery;
   private List<Query> boostQueries;
+  private boolean parsed = false;
   
   
   public ExtendedDismaxQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
@@ -109,6 +110,8 @@ public class ExtendedDismaxQParser extends QParser {
   
   @Override
   public Query parse() throws SyntaxError {
+
+    parsed = true;
     
     /* the main query we will execute.  we disable the coord because
      * this query is an artificial construct
@@ -565,6 +568,8 @@ public class ExtendedDismaxQParser extends QParser {
   
   @Override
   public Query getHighlightQuery() throws SyntaxError {
+    if (!parsed)
+      parse();
     return parsedUserQuery == null ? altUserQuery : parsedUserQuery;
   }
   

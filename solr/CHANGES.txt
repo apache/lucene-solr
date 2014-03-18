@@ -101,6 +101,9 @@ System Requirements
 * LUCENE-4747, LUCENE-5514: Move to Java 7 as minimum Java version.
   (Robert Muir, Uwe Schindler)
 
+* SOLR-5858: Add a hl.qparser parameter to allow you to define a queryparser
+  for hl.q highlight queries. If no queryparser is defined, Solr will use
+  the overall query's defType. (Alan Woodward)
 
 New Features
 ----------------------
@@ -176,6 +179,9 @@ Bug Fixes
 
 * SOLR-5550: shards.info is not returned by a short circuited distributed query.
   (Timothy Potter, shalin)
+
+* SOLR-5858, SOLR-4812: edismax and dismax query parsers can be used for parsing 
+  highlight queries. (Alan Woodward, Tien Nguyen Manh)
 
 Optimizations
 ----------------------
