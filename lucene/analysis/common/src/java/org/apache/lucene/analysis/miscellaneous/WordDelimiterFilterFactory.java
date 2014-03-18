@@ -17,11 +17,13 @@ package org.apache.lucene.analysis.miscellaneous;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.util.Version;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -61,6 +63,7 @@ public class WordDelimiterFilterFactory extends TokenFilterFactory implements Re
   /** Creates a new WordDelimiterFilterFactory */
   public WordDelimiterFilterFactory(Map<String, String> args) {
     super(args);
+    assureMatchVersion();
     int flags = 0;
     if (getInt(args, "generateWordParts", 1) != 0) {
       flags |= GENERATE_WORD_PARTS;
@@ -114,9 +117,14 @@ public class WordDelimiterFilterFactory extends TokenFilterFactory implements Re
   }
 
   @Override
-  public WordDelimiterFilter create(TokenStream input) {
-    return new WordDelimiterFilter(input, typeTable == null ? WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE : typeTable,
+  public TokenFilter create(TokenStream input) {
+    if (luceneMatchVersion.onOrAfter(Version.LUCENE_48)) {
+      return new WordDelimiterFilter(luceneMatchVersion, input, typeTable == null ? WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE : typeTable,
                                    flags, protectedWords);
+    } else {
+      return new Lucene47WordDelimiterFilter(input, typeTable == null ? WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE : typeTable,
+                                  flags, protectedWords);
+    }
   }
   
   // source => type
