@@ -272,7 +272,7 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
         case 0: queryShape = randomPoint(); break;
         case 1:case 2:case 3:
           if (!indexedAtLeastOneShapePair) { // avoids ShapePair.relate(ShapePair), which isn't reliable
-            queryShape = randomShapePairRect(biasContains);
+            queryShape = randomShapePairRect(!biasContains);//invert biasContains for query side
             break;
           }
         default: queryShape = randomRectangle();
