@@ -144,9 +144,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           CachingTokenFilter.class,
           // Not broken: we forcefully add this, so we shouldn't
           // also randomly pick it:
-          ValidatingTokenFilter.class,
-          // broken!
-          WordDelimiterFilter.class)) {
+          ValidatingTokenFilter.class)) {
         for (Constructor<?> ctor : c.getConstructors()) {
           brokenConstructors.put(ctor, ALWAYS);
         }
@@ -175,7 +173,9 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           // TODO: LUCENE-4983
           CommonGramsFilter.class,
           // TODO: doesn't handle graph inputs
-          CommonGramsQueryFilter.class)) {
+          CommonGramsQueryFilter.class,
+          // TODO: probably doesnt handle graph inputs, too afraid to try
+          WordDelimiterFilter.class)) {
         for (Constructor<?> ctor : c.getConstructors()) {
           brokenOffsetsConstructors.put(ctor, ALWAYS);
         }
@@ -893,7 +893,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
   }
   
   public void testRandomChains() throws Throwable {
-    int numIterations = atLeast(10);
+    int numIterations = atLeast(20);
     Random random = random();
     for (int i = 0; i < numIterations; i++) {
       MockRandomAnalyzer a = new MockRandomAnalyzer(random.nextLong());
@@ -901,7 +901,26 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         System.out.println("Creating random analyzer:" + a);
       }
       try {
-        checkRandomData(random, a, 200, 20, false,
+        checkRandomData(random, a, 500*RANDOM_MULTIPLIER, 20, false,
+                        false /* We already validate our own offsets... */);
+      } catch (Throwable e) {
+        System.err.println("Exception from random analyzer: " + a);
+        throw e;
+      }
+    }
+  }
+  
+  // we might regret this decision...
+  public void testRandomChainsWithLargeStrings() throws Throwable {
+    int numIterations = atLeast(20);
+    Random random = random();
+    for (int i = 0; i < numIterations; i++) {
+      MockRandomAnalyzer a = new MockRandomAnalyzer(random.nextLong());
+      if (VERBOSE) {
+        System.out.println("Creating random analyzer:" + a);
+      }
+      try {
+        checkRandomData(random, a, 50*RANDOM_MULTIPLIER, 256, false,
                         false /* We already validate our own offsets... */);
       } catch (Throwable e) {
         System.err.println("Exception from random analyzer: " + a);
