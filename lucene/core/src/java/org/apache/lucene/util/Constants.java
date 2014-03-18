@@ -99,11 +99,14 @@ public final class Constants {
     return s.toString();
   }
   
-  // NOTE: we track per-segment version as a String with the "X.Y" format, e.g.
-  // "4.0", "3.1", "3.0". Therefore when we change this constant, we should keep
-  // the format.
+  // We should never change index format with minor versions, so it should always be x.y or x.y.0.z for alpha/beta versions!
   /**
    * This is the internal Lucene version, recorded into each segment.
+   * NOTE: we track per-segment version as a String with the {@code "X.Y"} format
+   * (no minor version), e.g. {@code "4.0", "3.1", "3.0"}.
+   * <p>Alpha and Beta versions will have numbers like {@code "X.Y.0.Z"},
+   * anything else is not allowed. This is done to prevent people from
+   * using indexes created with ALPHA/BETA versions with the released version.
    */
   public static final String LUCENE_MAIN_VERSION = ident("5.0");
 
@@ -115,15 +118,20 @@ public final class Constants {
     Package pkg = LucenePackage.get();
     String v = (pkg == null) ? null : pkg.getImplementationVersion();
     if (v == null) {
-      String parts[] = LUCENE_MAIN_VERSION.split("\\.");
-      if (parts.length == 4) {
-        // alpha/beta
-        assert parts[2].equals("0");
-        v = parts[0] + "." + parts[1] + "-SNAPSHOT";
-      } else {
-        v = LUCENE_MAIN_VERSION + "-SNAPSHOT";
-      }
+      v = mainVersionWithoutAlphaBeta() + "-SNAPSHOT";
     }
     LUCENE_VERSION = ident(v);
+  }
+  
+  /**
+   * Returns a LUCENE_MAIN_VERSION without any ALPHA/BETA qualifier
+   * Used by test only!
+   */
+  static String mainVersionWithoutAlphaBeta() {
+    final String parts[] = LUCENE_MAIN_VERSION.split("\\.");
+    if (parts.length == 4 && "0".equals(parts[2])) {
+      return parts[0] + "." + parts[1];
+    }
+    return LUCENE_MAIN_VERSION;
   }
 }
