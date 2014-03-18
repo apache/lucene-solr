@@ -41,7 +41,7 @@ import com.carrotsearch.randomizedtesting.generators.RandomPicks;
  * limitations under the License.
  */
 
-@SuppressCodecs({"Lucene40","Lucene41","Lucene42","Lucene45"})
+@SuppressCodecs({"Appending","Lucene3x","Lucene40","Lucene41","Lucene42","Lucene45"})
 public class TestMixedDocValuesUpdates extends LuceneTestCase {
 
   public void testManyReopensAndFields() throws Exception {
