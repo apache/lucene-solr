@@ -157,6 +157,9 @@ Optimizations
 * LUCENE-5515: Improved TopDocs#merge to create a merged ScoreDoc
   array with length of at most equal to the specified size instead of length
   equal to at most from + size as was before. (Martijn van Groningen)
+  
+* LUCENE-5529: Spatial search of non-point indexed shapes should be a little
+  faster due to skipping intersection tests on redundant cells. (David Smiley)
 
 Bug fixes
 

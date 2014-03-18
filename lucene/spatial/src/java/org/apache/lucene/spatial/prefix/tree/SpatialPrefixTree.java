@@ -228,7 +228,7 @@ public abstract class SpatialPrefixTree {
     assert endToken.length() == detailLevel;
     List<Cell> cells = new ArrayList<>(detailLevel);
     for (int i = 1; i < detailLevel; i++) {
-      cells.add(getCell(endToken.substring(0, i)));
+      cells.add(getCell(endToken.substring(0, i)));//TODO refactor: add a cell.getParent()
     }
     cells.add(cell);
     return cells;
@@ -236,6 +236,7 @@ public abstract class SpatialPrefixTree {
 
   /**
    * Will add the trailing leaf byte for leaves. This isn't particularly efficient.
+   * @deprecated TODO remove; not used and not interesting, don't need collection in & out
    */
   public static List<String> cellsToTokenStrings(Collection<Cell> cells) {
     List<String> tokens = new ArrayList<>((cells.size()));
