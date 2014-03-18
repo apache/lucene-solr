@@ -82,7 +82,5 @@ public class TaxonomyFacetSumIntAssociations extends IntTaxonomyFacets {
         }
       }
     }
-
-    rollup();
   }
 }

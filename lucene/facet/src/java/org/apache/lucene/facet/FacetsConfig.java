@@ -389,7 +389,8 @@ public class FacetsConfig {
       for(AssociationFacetField field : ent.getValue()) {
         // NOTE: we don't add parents for associations
         checkTaxoWriter(taxoWriter);
-        int ordinal = taxoWriter.addCategory(new FacetLabel(field.dim, field.path));
+        FacetLabel label = new FacetLabel(field.dim, field.path);
+        int ordinal = taxoWriter.addCategory(label);
         if (upto + 4 > bytes.length) {
           bytes = ArrayUtil.grow(bytes, upto+4);
         }
@@ -405,9 +406,8 @@ public class FacetsConfig {
         upto += field.assoc.length;
         
         // Drill down:
-        FacetLabel cp = new FacetLabel(field.dim, field.path);
-        for (int i = 1; i <= cp.length; i++) {
-          doc.add(new StringField(indexFieldName, pathToString(cp.components, i), Field.Store.NO));
+        for (int i = 1; i <= label.length; i++) {
+          doc.add(new StringField(indexFieldName, pathToString(label.components, i), Field.Store.NO));
         }
       }
       doc.add(new BinaryDocValuesField(indexFieldName, new BytesRef(bytes, 0, upto)));

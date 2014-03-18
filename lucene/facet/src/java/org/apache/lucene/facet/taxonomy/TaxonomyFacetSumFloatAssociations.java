@@ -82,7 +82,5 @@ public class TaxonomyFacetSumFloatAssociations extends FloatTaxonomyFacets {
         }
       }
     }
-
-    rollup();
   }
 }
