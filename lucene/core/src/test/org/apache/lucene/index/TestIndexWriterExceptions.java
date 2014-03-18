@@ -1789,9 +1789,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         if (defaultCodecSupportsDocValues()) {
           doc.add(new NumericDocValuesField("f", 1L));
           doc.add(new NumericDocValuesField("cf", 2L));
+          doc.add(new BinaryDocValuesField("bf", TestBinaryDocValuesUpdates.toBytes(1L)));
+          doc.add(new BinaryDocValuesField("bcf", TestBinaryDocValuesUpdates.toBytes(2L)));
         }
-        doc.add(new BinaryDocValuesField("bf", TestBinaryDocValuesUpdates.toBytes(1L)));
-        doc.add(new BinaryDocValuesField("bcf", TestBinaryDocValuesUpdates.toBytes(2L)));
         w.addDocument(doc);
       }
       docCount += numDocs;
