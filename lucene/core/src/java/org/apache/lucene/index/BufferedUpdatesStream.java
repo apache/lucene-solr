@@ -22,9 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -221,20 +219,22 @@ class BufferedUpdatesStream {
         int delCount = 0;
         final boolean segAllDeletes;
         try {
-          Map<String,NumericFieldUpdates> fieldUpdates = null;
+          final DocValuesFieldUpdates.Container dvUpdates = new DocValuesFieldUpdates.Container();
           if (coalescedUpdates != null) {
             //System.out.println("    del coalesced");
             delCount += applyTermDeletes(coalescedUpdates.termsIterable(), rld, reader);
             delCount += applyQueryDeletes(coalescedUpdates.queriesIterable(), rld, reader);
-            fieldUpdates = applyNumericDocValuesUpdates(coalescedUpdates.numericDVUpdates, rld, reader, fieldUpdates);
+            applyDocValuesUpdates(coalescedUpdates.numericDVUpdates, rld, reader, dvUpdates);
+            applyDocValuesUpdates(coalescedUpdates.binaryDVUpdates, rld, reader, dvUpdates);
           }
           //System.out.println("    del exact");
           // Don't delete by Term here; DocumentsWriterPerThread
           // already did that on flush:
           delCount += applyQueryDeletes(packet.queriesIterable(), rld, reader);
-          fieldUpdates = applyNumericDocValuesUpdates(Arrays.asList(packet.updates), rld, reader, fieldUpdates);
-          if (!fieldUpdates.isEmpty()) {
-            rld.writeFieldUpdates(info.info.dir, fieldUpdates);
+          applyDocValuesUpdates(Arrays.asList(packet.numericDVUpdates), rld, reader, dvUpdates);
+          applyDocValuesUpdates(Arrays.asList(packet.binaryDVUpdates), rld, reader, dvUpdates);
+          if (dvUpdates.any()) {
+            rld.writeFieldUpdates(info.info.dir, dvUpdates);
           }
           final int fullDelCount = rld.info.getDelCount() + rld.getPendingDeleteCount();
           assert fullDelCount <= rld.info.info.getDocCount();
@@ -282,9 +282,11 @@ class BufferedUpdatesStream {
           try {
             delCount += applyTermDeletes(coalescedUpdates.termsIterable(), rld, reader);
             delCount += applyQueryDeletes(coalescedUpdates.queriesIterable(), rld, reader);
-            Map<String,NumericFieldUpdates> fieldUpdates = applyNumericDocValuesUpdates(coalescedUpdates.numericDVUpdates, rld, reader, null);
-            if (!fieldUpdates.isEmpty()) {
-              rld.writeFieldUpdates(info.info.dir, fieldUpdates);
+            DocValuesFieldUpdates.Container dvUpdates = new DocValuesFieldUpdates.Container();
+            applyDocValuesUpdates(coalescedUpdates.numericDVUpdates, rld, reader, dvUpdates);
+            applyDocValuesUpdates(coalescedUpdates.binaryDVUpdates, rld, reader, dvUpdates);
+            if (dvUpdates.any()) {
+              rld.writeFieldUpdates(info.info.dir, dvUpdates);
             }
             final int fullDelCount = rld.info.getDelCount() + rld.getPendingDeleteCount();
             assert fullDelCount <= rld.info.info.getDocCount();
@@ -443,14 +445,13 @@ class BufferedUpdatesStream {
     return delCount;
   }
 
-  // NumericDocValues Updates
-  // If otherFieldUpdates != null, we need to merge the updates into them
-  private synchronized Map<String,NumericFieldUpdates> applyNumericDocValuesUpdates(Iterable<NumericUpdate> updates, 
-      ReadersAndUpdates rld, SegmentReader reader, Map<String,NumericFieldUpdates> otherFieldUpdates) throws IOException {
+  // DocValues updates
+  private synchronized void applyDocValuesUpdates(Iterable<? extends DocValuesUpdate> updates, 
+      ReadersAndUpdates rld, SegmentReader reader, DocValuesFieldUpdates.Container dvUpdatesContainer) throws IOException {
     Fields fields = reader.fields();
     if (fields == null) {
       // This reader has no postings
-      return Collections.emptyMap();
+      return;
     }
 
     // TODO: we can process the updates per DV field, from last to first so that
@@ -466,9 +467,9 @@ class BufferedUpdatesStream {
     String currentField = null;
     TermsEnum termsEnum = null;
     DocsEnum docs = null;
-    final Map<String,NumericFieldUpdates> result = otherFieldUpdates == null ? new HashMap<String,NumericFieldUpdates>() : otherFieldUpdates;
+    
     //System.out.println(Thread.currentThread().getName() + " numericDVUpdate reader=" + reader);
-    for (NumericUpdate update : updates) {
+    for (DocValuesUpdate update : updates) {
       Term term = update.term;
       int limit = update.docIDUpto;
       
@@ -506,10 +507,9 @@ class BufferedUpdatesStream {
       
         //System.out.println("BDS: got docsEnum=" + docsEnum);
 
-        NumericFieldUpdates fieldUpdates = result.get(update.field);
-        if (fieldUpdates == null) {
-          fieldUpdates = new NumericFieldUpdates.PackedNumericFieldUpdates(reader.maxDoc());
-          result.put(update.field, fieldUpdates);
+        DocValuesFieldUpdates dvUpdates = dvUpdatesContainer.getUpdates(update.field, update.type);
+        if (dvUpdates == null) {
+          dvUpdates = dvUpdatesContainer.newUpdates(update.field, update.type, reader.maxDoc());
         }
         int doc;
         while ((doc = docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
@@ -517,13 +517,12 @@ class BufferedUpdatesStream {
           if (doc >= limit) {
             break; // no more docs that can be updated for this term
           }
-          fieldUpdates.add(doc, update.value);
+          dvUpdates.add(doc, update.value);
         }
       }
     }
-    return result;
   }
-
+  
   public static class QueryAndLimit {
     public final Query query;
     public final int limit;

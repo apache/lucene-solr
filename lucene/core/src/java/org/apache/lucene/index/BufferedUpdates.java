@@ -25,6 +25,8 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.lucene.index.DocValuesUpdate.BinaryDocValuesUpdate;
+import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -92,9 +94,39 @@ class BufferedUpdates {
    * NumericUpdate (val) counts its own size and isn't accounted for here.
    */
   final static int BYTES_PER_NUMERIC_UPDATE_ENTRY = 7*RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + RamUsageEstimator.NUM_BYTES_INT;
+
+  /* Rough logic: BinaryUpdate calculates its actual size,
+   * including the update Term and DV field (String). The 
+   * per-field map holds a reference to the updated field, and
+   * therefore we only account for the object reference and 
+   * map space itself. This is incremented when we first see
+   * an updated field.
+   * 
+   * HashMap has an array[Entry] w/ varying load
+   * factor (say 2*POINTER). Entry is an object w/ String key, 
+   * LinkedHashMap val, int hash, Entry next (OBJ_HEADER + 3*POINTER + INT).
+   * 
+   * LinkedHashMap (val) is counted as OBJ_HEADER, array[Entry] ref + header, 4*INT, 1*FLOAT,
+   * Set (entrySet) (2*OBJ_HEADER + ARRAY_HEADER + 2*POINTER + 4*INT + FLOAT)
+   */
+  final static int BYTES_PER_BINARY_FIELD_ENTRY =
+      7*RamUsageEstimator.NUM_BYTES_OBJECT_REF + 3*RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 
+      RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + 5*RamUsageEstimator.NUM_BYTES_INT + RamUsageEstimator.NUM_BYTES_FLOAT;
+      
+  /* Rough logic: Incremented when we see another Term for an already updated
+   * field.
+   * LinkedHashMap has an array[Entry] w/ varying load factor 
+   * (say 2*POINTER). Entry is an object w/ Term key, BinaryUpdate val, 
+   * int hash, Entry next, Entry before, Entry after (OBJ_HEADER + 5*POINTER + INT).
+   * 
+   * Term (key) is counted only as POINTER.
+   * BinaryUpdate (val) counts its own size and isn't accounted for here.
+   */
+  final static int BYTES_PER_BINARY_UPDATE_ENTRY = 7*RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + RamUsageEstimator.NUM_BYTES_INT;
   
   final AtomicInteger numTermDeletes = new AtomicInteger();
   final AtomicInteger numNumericUpdates = new AtomicInteger();
+  final AtomicInteger numBinaryUpdates = new AtomicInteger();
   final Map<Term,Integer> terms = new HashMap<>();
   final Map<Query,Integer> queries = new HashMap<>();
   final List<Integer> docIDs = new ArrayList<>();
@@ -106,7 +138,16 @@ class BufferedUpdates {
   // one that came in wins), and helps us detect faster if the same Term is
   // used to update the same field multiple times (so we later traverse it
   // only once).
-  final Map<String,LinkedHashMap<Term,NumericUpdate>> numericUpdates = new HashMap<>();
+  final Map<String,LinkedHashMap<Term,NumericDocValuesUpdate>> numericUpdates = new HashMap<>();
+  
+  // Map<dvField,Map<updateTerm,BinaryUpdate>>
+  // For each field we keep an ordered list of BinaryUpdates, key'd by the
+  // update Term. LinkedHashMap guarantees we will later traverse the map in
+  // insertion order (so that if two terms affect the same document, the last
+  // one that came in wins), and helps us detect faster if the same Term is
+  // used to update the same field multiple times (so we later traverse it
+  // only once).
+  final Map<String,LinkedHashMap<Term,BinaryDocValuesUpdate>> binaryUpdates = new HashMap<>();
 
   public static final Integer MAX_INT = Integer.valueOf(Integer.MAX_VALUE);
 
@@ -125,7 +166,7 @@ class BufferedUpdates {
     if (VERBOSE_DELETES) {
       return "gen=" + gen + " numTerms=" + numTermDeletes + ", terms=" + terms
         + ", queries=" + queries + ", docIDs=" + docIDs + ", numericUpdates=" + numericUpdates
-        + ", bytesUsed=" + bytesUsed;
+        + ", binaryUpdates=" + binaryUpdates + ", bytesUsed=" + bytesUsed;
     } else {
       String s = "gen=" + gen;
       if (numTermDeletes.get() != 0) {
@@ -139,6 +180,9 @@ class BufferedUpdates {
       }
       if (numNumericUpdates.get() != 0) {
         s += " " + numNumericUpdates.get() + " numeric updates (unique count=" + numericUpdates.size() + ")";
+      }
+      if (numBinaryUpdates.get() != 0) {
+        s += " " + numBinaryUpdates.get() + " binary updates (unique count=" + binaryUpdates.size() + ")";
       }
       if (bytesUsed.get() != 0) {
         s += " bytesUsed=" + bytesUsed.get();
@@ -184,14 +228,14 @@ class BufferedUpdates {
     }
   }
  
-  public void addNumericUpdate(NumericUpdate update, int docIDUpto) {
-    LinkedHashMap<Term,NumericUpdate> fieldUpdates = numericUpdates.get(update.field);
+  public void addNumericUpdate(NumericDocValuesUpdate update, int docIDUpto) {
+    LinkedHashMap<Term,NumericDocValuesUpdate> fieldUpdates = numericUpdates.get(update.field);
     if (fieldUpdates == null) {
       fieldUpdates = new LinkedHashMap<>();
       numericUpdates.put(update.field, fieldUpdates);
       bytesUsed.addAndGet(BYTES_PER_NUMERIC_FIELD_ENTRY);
     }
-    final NumericUpdate current = fieldUpdates.get(update.term);
+    final NumericDocValuesUpdate current = fieldUpdates.get(update.term);
     if (current != null && docIDUpto < current.docIDUpto) {
       // Only record the new number if it's greater than or equal to the current
       // one. This is important because if multiple threads are replacing the
@@ -213,17 +257,48 @@ class BufferedUpdates {
     }
   }
   
+  public void addBinaryUpdate(BinaryDocValuesUpdate update, int docIDUpto) {
+    LinkedHashMap<Term,BinaryDocValuesUpdate> fieldUpdates = binaryUpdates.get(update.field);
+    if (fieldUpdates == null) {
+      fieldUpdates = new LinkedHashMap<>();
+      binaryUpdates.put(update.field, fieldUpdates);
+      bytesUsed.addAndGet(BYTES_PER_BINARY_FIELD_ENTRY);
+    }
+    final BinaryDocValuesUpdate current = fieldUpdates.get(update.term);
+    if (current != null && docIDUpto < current.docIDUpto) {
+      // Only record the new number if it's greater than or equal to the current
+      // one. This is important because if multiple threads are replacing the
+      // same doc at nearly the same time, it's possible that one thread that
+      // got a higher docID is scheduled before the other threads.
+      return;
+    }
+    
+    update.docIDUpto = docIDUpto;
+    // since it's a LinkedHashMap, we must first remove the Term entry so that
+    // it's added last (we're interested in insertion-order).
+    if (current != null) {
+      fieldUpdates.remove(update.term);
+    }
+    fieldUpdates.put(update.term, update);
+    numBinaryUpdates.incrementAndGet();
+    if (current == null) {
+      bytesUsed.addAndGet(BYTES_PER_BINARY_UPDATE_ENTRY + update.sizeInBytes());
+    }
+  }
+  
   void clear() {
     terms.clear();
     queries.clear();
     docIDs.clear();
     numericUpdates.clear();
+    binaryUpdates.clear();
     numTermDeletes.set(0);
     numNumericUpdates.set(0);
+    numBinaryUpdates.set(0);
     bytesUsed.set(0);
   }
   
   boolean any() {
-    return terms.size() > 0 || docIDs.size() > 0 || queries.size() > 0 || numericUpdates.size() > 0;
+    return terms.size() > 0 || docIDs.size() > 0 || queries.size() > 0 || numericUpdates.size() > 0 || binaryUpdates.size() > 0;
   }
 }

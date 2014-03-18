@@ -25,17 +25,23 @@ import java.util.Map;
 
 import org.apache.lucene.search.Query;
 import org.apache.lucene.index.BufferedUpdatesStream.QueryAndLimit;
+import org.apache.lucene.index.DocValuesUpdate.BinaryDocValuesUpdate;
+import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.MergedIterator;
 
 class CoalescedUpdates {
   final Map<Query,Integer> queries = new HashMap<>();
   final List<Iterable<Term>> iterables = new ArrayList<>();
-  final List<NumericUpdate> numericDVUpdates = new ArrayList<>();
+  final List<NumericDocValuesUpdate> numericDVUpdates = new ArrayList<>();
+  final List<BinaryDocValuesUpdate> binaryDVUpdates = new ArrayList<>();
   
   @Override
   public String toString() {
     // note: we could add/collect more debugging information
-    return "CoalescedUpdates(termSets=" + iterables.size() + ",queries=" + queries.size() + ",numericUpdates=" + numericDVUpdates.size() + ")";
+    return "CoalescedUpdates(termSets=" + iterables.size() + ",queries="
+        + queries.size() + ",numericDVUpdates=" + numericDVUpdates.size()
+        + ",binaryDVUpdates=" + binaryDVUpdates.size() + ")";
   }
 
   void update(FrozenBufferedUpdates in) {
@@ -46,10 +52,16 @@ class CoalescedUpdates {
       queries.put(query, BufferedUpdates.MAX_INT);
     }
     
-    for (NumericUpdate nu : in.updates) {
-      NumericUpdate clone = new NumericUpdate(nu.term, nu.field, nu.value);
+    for (NumericDocValuesUpdate nu : in.numericDVUpdates) {
+      NumericDocValuesUpdate clone = new NumericDocValuesUpdate(nu.term, nu.field, (Long) nu.value);
       clone.docIDUpto = Integer.MAX_VALUE;
       numericDVUpdates.add(clone);
+    }
+    
+    for (BinaryDocValuesUpdate bu : in.binaryDVUpdates) {
+      BinaryDocValuesUpdate clone = new BinaryDocValuesUpdate(bu.term, bu.field, (BytesRef) bu.value);
+      clone.docIDUpto = Integer.MAX_VALUE;
+      binaryDVUpdates.add(clone);
     }
   }
 

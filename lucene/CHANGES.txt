@@ -55,6 +55,10 @@ New Features
 * LUCENE-5530: ComplexPhraseQueryParser throws ParseException for fielded queries.
   (Erick Erickson via Tomas Fernandez Lobbe and Ahmet Arslan)
 
+* LUCENE-5513: Add IndexWriter.updateBinaryDocValue which lets
+  you update the value of a BinaryDocValuesField without reindexing the
+  document(s). (Shai Erera)
+
 API Changes
 
 * LUCENE-5454: Add RandomAccessOrds, an optional extension of SortedSetDocValues

@@ -21,6 +21,8 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.apache.lucene.index.DocValuesUpdate.BinaryDocValuesUpdate;
+import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
 import org.apache.lucene.search.Query;
 
 /**
@@ -107,8 +109,13 @@ final class DocumentsWriterDeleteQueue {
     tryApplyGlobalSlice();
   }
 
-  void addNumericUpdate(NumericUpdate update) {
+  void addNumericUpdate(NumericDocValuesUpdate update) {
     add(new NumericUpdateNode(update));
+    tryApplyGlobalSlice();
+  }
+  
+  void addBinaryUpdate(BinaryDocValuesUpdate update) {
+    add(new BinaryUpdateNode(update));
     tryApplyGlobalSlice();
   }
 
@@ -385,9 +392,9 @@ final class DocumentsWriterDeleteQueue {
     }
   }
 
-  private static final class NumericUpdateNode extends Node<NumericUpdate> {
+  private static final class NumericUpdateNode extends Node<NumericDocValuesUpdate> {
 
-    NumericUpdateNode(NumericUpdate update) {
+    NumericUpdateNode(NumericDocValuesUpdate update) {
       super(update);
     }
 
@@ -396,6 +403,23 @@ final class DocumentsWriterDeleteQueue {
       bufferedUpdates.addNumericUpdate(item, docIDUpto);
     }
 
+    @Override
+    public String toString() {
+      return "update=" + item;
+    }
+  }
+  
+  private static final class BinaryUpdateNode extends Node<BinaryDocValuesUpdate> {
+    
+    BinaryUpdateNode(BinaryDocValuesUpdate update) {
+      super(update);
+    }
+    
+    @Override
+    void apply(BufferedUpdates bufferedUpdates, int docIDUpto) {
+      bufferedUpdates.addBinaryUpdate(item, docIDUpto);
+    }
+    
     @Override
     public String toString() {
       return "update=" + item;
