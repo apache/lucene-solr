@@ -86,7 +86,7 @@ public class CoreContainer {
   protected boolean shareSchema;
 
   protected ZkContainer zkSys = new ZkContainer();
-  private ShardHandlerFactory shardHandlerFactory;
+  protected ShardHandlerFactory shardHandlerFactory;
   
   private UpdateShardHandler updateShardHandler;
 
