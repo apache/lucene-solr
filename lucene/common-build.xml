@@ -51,7 +51,7 @@
   
   <property name="name" value="${ant.project.name}"/>
   <property name="tests.luceneMatchVersion" value="4.7"/>
-  <property name="dev.version.base" value="4.7"/>
+  <property name="dev.version.base" value="4.7.1"/>
   <property name="dev.version.suffix" value="SNAPSHOT"/>
   <property name="dev.version" value="${dev.version.base}-${dev.version.suffix}"/>
   <property name="version" value="${dev.version}"/>

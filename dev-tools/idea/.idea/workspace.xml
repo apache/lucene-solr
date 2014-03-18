@@ -8,7 +8,7 @@
       <module name="lucene-core-tests" />
       <option name="TEST_OBJECT" value="package" />
       <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/idea-build/lucene/core" />
-      <option name="VM_PARAMETERS" value="-Xmx256m -ea -Dlucene.version=4.7-SNAPSHOT -DtempDir=temp" />
+      <option name="VM_PARAMETERS" value="-Xmx256m -ea -Dlucene.version=4.7.1-SNAPSHOT -DtempDir=temp" />
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
     </configuration>
     <configuration default="false" name="Module analyzers-common" type="JUnit" factoryName="JUnit">
