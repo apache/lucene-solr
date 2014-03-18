@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.component;
 
+import com.google.common.base.Objects;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -24,22 +25,24 @@ import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.highlight.DefaultSolrHighlighter;
 import org.apache.solr.highlight.PostingsSolrHighlighter;
 import org.apache.solr.highlight.SolrHighlighter;
-import org.apache.solr.highlight.DefaultSolrHighlighter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QParserPlugin;
+import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
-import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.SolrCore;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
 
 /**
  * TODO!
@@ -69,9 +72,11 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
     rb.doHighlights = highlighter.isHighlightingEnabled(params);
     if(rb.doHighlights){
       String hlq = params.get(HighlightParams.Q);
+      String hlparser = Objects.firstNonNull(params.get(HighlightParams.QPARSER),
+                                              params.get(QueryParsing.DEFTYPE, QParserPlugin.DEFAULT_QTYPE));
       if(hlq != null){
         try {
-          QParser parser = QParser.getParser(hlq, null, rb.req);
+          QParser parser = QParser.getParser(hlq, hlparser, rb.req);
           rb.setHighlightQuery(parser.getHighlightQuery());
         } catch (SyntaxError e) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
