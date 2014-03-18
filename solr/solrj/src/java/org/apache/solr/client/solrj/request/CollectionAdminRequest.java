@@ -361,12 +361,12 @@ public class CollectionAdminRequest extends SolrRequest
   }
 
   public static CollectionAdminResponse createCollection(String name,
-                                                         String shards,
-                                                         Integer repl, Integer maxShards,
+                                                         String shards, Integer repl, Integer maxShards,
+                                                         String nodeSet,
                                                          String conf,
                                                          String routerField,
                                                          SolrServer server) throws SolrServerException, IOException {
-    return createCollection(name, shards, repl, maxShards, conf, routerField, null);
+    return createCollection(name, shards, repl, maxShards, nodeSet, conf, routerField, server, null);
   }
 
   // creates a collection using an implicit router
