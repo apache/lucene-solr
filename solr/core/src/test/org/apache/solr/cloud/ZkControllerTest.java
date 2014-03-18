@@ -30,6 +30,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.util.ExternalPaths;
@@ -308,11 +309,11 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
   }
 
   private static class MockCoreContainer extends CoreContainer {
-    private HttpShardHandlerFactory shardHandlerFactory;
 
     public MockCoreContainer() {
       super((Object)null);
       this.shardHandlerFactory = new HttpShardHandlerFactory();
+      this.coreAdminHandler = new CoreAdminHandler();
     }
     
     @Override
@@ -322,10 +323,6 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     public String getAdminPath() {
       return "/admin/cores";
     }
-    
-    @Override
-    public ShardHandlerFactory getShardHandlerFactory() {
-      return shardHandlerFactory;
-    }
+
   }
 }
