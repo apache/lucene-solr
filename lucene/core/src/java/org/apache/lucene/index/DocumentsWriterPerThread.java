@@ -480,7 +480,7 @@ class DocumentsWriterPerThread {
       }
 
       final BufferedUpdates segmentDeletes;
-      if (pendingUpdates.queries.isEmpty() && pendingUpdates.numericUpdates.isEmpty()) {
+      if (pendingUpdates.queries.isEmpty() && pendingUpdates.numericUpdates.isEmpty() && pendingUpdates.binaryUpdates.isEmpty()) {
         pendingUpdates.clear();
         segmentDeletes = null;
       } else {

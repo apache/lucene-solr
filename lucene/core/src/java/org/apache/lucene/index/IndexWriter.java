@@ -17,28 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.FieldInfo.DocValuesType;
-import org.apache.lucene.index.FieldInfos.FieldNumbers;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.index.MergeState.CheckAbort;
-import org.apache.lucene.index.NumericFieldUpdates.UpdatesIterator;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.store.CompoundFileDirectory;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.Lock;
-import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.store.MergeInfo;
-import org.apache.lucene.store.TrackingDirectoryWrapper;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.InfoStream;
-import org.apache.lucene.util.ThreadInterruptedException;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -56,6 +34,28 @@ import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
+import org.apache.lucene.index.FieldInfos.FieldNumbers;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.MergeState.CheckAbort;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.store.CompoundFileDirectory;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.Lock;
+import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.store.MergeInfo;
+import org.apache.lucene.store.TrackingDirectoryWrapper;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.InfoStream;
+import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
   An <code>IndexWriter</code> creates and maintains an index.
@@ -1542,10 +1542,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
   }
 
   /**
-   * Updates a document's NumericDocValue for <code>field</code> to the given
-   * <code>value</code>. This method can be used to 'unset' a document's value
-   * by passing {@code null} as the new value. Also, you can only update fields
-   * that already exist in the index, not add new fields through this method.
+   * Updates a document's {@link NumericDocValues} for <code>field</code> to the
+   * given <code>value</code>. This method can be used to 'unset' a document's
+   * value by passing {@code null} as the new value. Also, you can only update
+   * fields that already exist in the index, not add new fields through this
+   * method.
    * 
    * <p>
    * <b>NOTE</b>: if this method hits an OutOfMemoryError you should immediately
@@ -1555,7 +1556,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
    * @param term
    *          the term to identify the document(s) to be updated
    * @param field
-   *          field name of the NumericDocValues field
+   *          field name of the {@link NumericDocValues} field
    * @param value
    *          new value for the field
    * @throws CorruptIndexException
@@ -1574,6 +1575,47 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
       }
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "updateNumericDocValue");
+    }
+  }
+
+  /**
+   * Updates a document's {@link BinaryDocValues} for <code>field</code> to the
+   * given <code>value</code>. This method can be used to 'unset' a document's
+   * value by passing {@code null} as the new value. Also, you can only update
+   * fields that already exist in the index, not add new fields through this
+   * method.
+   * 
+   * <p>
+   * <b>NOTE:</b> this method currently replaces the existing value of all
+   * affected documents with the new value.
+   * 
+   * <p>
+   * <b>NOTE:</b> if this method hits an OutOfMemoryError you should immediately
+   * close the writer. See <a href="#OOME">above</a> for details.
+   * </p>
+   * 
+   * @param term
+   *          the term to identify the document(s) to be updated
+   * @param field
+   *          field name of the {@link BinaryDocValues} field
+   * @param value
+   *          new value for the field
+   * @throws CorruptIndexException
+   *           if the index is corrupt
+   * @throws IOException
+   *           if there is a low-level IO error
+   */
+  public void updateBinaryDocValue(Term term, String field, BytesRef value) throws IOException {
+    ensureOpen();
+    if (!globalFieldNumberMap.contains(field, DocValuesType.BINARY)) {
+      throw new IllegalArgumentException("can only update existing binary-docvalues fields!");
+    }
+    try {
+      if (docWriter.updateBinaryDocValue(term, field, value)) {
+        processEvents(true, false);
+      }
+    } catch (OutOfMemoryError oom) {
+      handleOOM(oom, "updateBinaryDocValue");
     }
   }
 
@@ -3162,13 +3204,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     return docMap;
   }
 
-  private void skipDeletedDoc(UpdatesIterator[] updatesIters, int deletedDoc) {
-    for (UpdatesIterator iter : updatesIters) {
+  private void skipDeletedDoc(DocValuesFieldUpdates.Iterator[] updatesIters, int deletedDoc) {
+    for (DocValuesFieldUpdates.Iterator iter : updatesIters) {
       if (iter.doc() == deletedDoc) {
         iter.nextDoc();
       }
       // when entering the method, all iterators must already be beyond the
-      // deleted document, or right on it, in which case we advance them above
+      // deleted document, or right on it, in which case we advance them over
       // and they must be beyond it now.
       assert iter.doc() > deletedDoc : "updateDoc=" + iter.doc() + " deletedDoc=" + deletedDoc;
     }
@@ -3203,7 +3245,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     ReadersAndUpdates mergedDeletesAndUpdates = null;
     boolean initWritableLiveDocs = false;
     MergePolicy.DocMap docMap = null;
-    final Map<String,NumericFieldUpdates> mergedFieldUpdates = new HashMap<>();
+    final DocValuesFieldUpdates.Container mergedDVUpdates = new DocValuesFieldUpdates.Container();
     
     for (int i = 0; i < sourceSegments.size(); i++) {
       SegmentCommitInfo info = sourceSegments.get(i);
@@ -3214,19 +3256,28 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
       // We hold a ref so it should still be in the pool:
       assert rld != null: "seg=" + info.info.name;
       final Bits currentLiveDocs = rld.getLiveDocs();
-      final Map<String,NumericFieldUpdates> mergingFieldUpdates = rld.getMergingFieldUpdates();
+      final Map<String,DocValuesFieldUpdates> mergingFieldUpdates = rld.getMergingFieldUpdates();
       final String[] mergingFields;
-      final UpdatesIterator[] updatesIters;
+      final DocValuesFieldUpdates[] dvFieldUpdates;
+      final DocValuesFieldUpdates.Iterator[] updatesIters;
       if (mergingFieldUpdates.isEmpty()) {
         mergingFields = null;
         updatesIters = null;
+        dvFieldUpdates = null;
       } else {
         mergingFields = new String[mergingFieldUpdates.size()];
-        updatesIters = new UpdatesIterator[mergingFieldUpdates.size()];
+        dvFieldUpdates = new DocValuesFieldUpdates[mergingFieldUpdates.size()];
+        updatesIters = new DocValuesFieldUpdates.Iterator[mergingFieldUpdates.size()];
         int idx = 0;
-        for (Entry<String,NumericFieldUpdates> e : mergingFieldUpdates.entrySet()) {
-          mergingFields[idx] = e.getKey();
-          updatesIters[idx] = e.getValue().getUpdates();
+        for (Entry<String,DocValuesFieldUpdates> e : mergingFieldUpdates.entrySet()) {
+          String field = e.getKey();
+          DocValuesFieldUpdates updates = e.getValue();
+          mergingFields[idx] = field;
+          dvFieldUpdates[idx] = mergedDVUpdates.getUpdates(field, updates.type);
+          if (dvFieldUpdates[idx] == null) {
+            dvFieldUpdates[idx] = mergedDVUpdates.newUpdates(field, updates.type, mergeState.segmentInfo.getDocCount());
+          }
+          updatesIters[idx] = updates.iterator();
           updatesIters[idx].nextDoc(); // advance to first update doc
           ++idx;
         }
@@ -3279,7 +3330,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
                 // document isn't deleted, check if any of the fields have an update to it
                 int newDoc = -1;
                 for (int idx = 0; idx < mergingFields.length; idx++) {
-                  UpdatesIterator updatesIter = updatesIters[idx];
+                  DocValuesFieldUpdates.Iterator updatesIter = updatesIters[idx];
                   if (updatesIter.doc() == j) { // document has an update
                     if (mergedDeletesAndUpdates == null) {
                       mergedDeletesAndUpdates = readerPool.get(merge.info, true);
@@ -3288,14 +3339,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
                     if (newDoc == -1) { // map once per all field updates, but only if there are any updates
                       newDoc = docMap.map(docUpto);
                     }
-                    String field = mergingFields[idx];
-                    NumericFieldUpdates fieldUpdates = mergedFieldUpdates.get(field);
-                    if (fieldUpdates == null) {
-                      // an approximantion of maxDoc, used to compute best bitsPerValue
-                      fieldUpdates = new NumericFieldUpdates.PackedNumericFieldUpdates(mergeState.segmentInfo.getDocCount());
-                      mergedFieldUpdates.put(field, fieldUpdates);
-                    }
-                    fieldUpdates.add(newDoc, updatesIter.value() == null ? NumericUpdate.MISSING : updatesIter.value());
+                    DocValuesFieldUpdates dvUpdates = dvFieldUpdates[idx];
+                    dvUpdates.add(newDoc, updatesIter.value());
                     updatesIter.nextDoc(); // advance to next document
                   } else {
                     assert updatesIter.doc() > j : "updateDoc=" + updatesIter.doc() + " curDoc=" + j;
@@ -3312,7 +3357,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
               // document isn't deleted, check if any of the fields have an update to it
               int newDoc = -1;
               for (int idx = 0; idx < mergingFields.length; idx++) {
-                UpdatesIterator updatesIter = updatesIters[idx];
+                DocValuesFieldUpdates.Iterator updatesIter = updatesIters[idx];
                 if (updatesIter.doc() == j) { // document has an update
                   if (mergedDeletesAndUpdates == null) {
                     mergedDeletesAndUpdates = readerPool.get(merge.info, true);
@@ -3321,14 +3366,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
                   if (newDoc == -1) { // map once per all field updates, but only if there are any updates
                     newDoc = docMap.map(docUpto);
                   }
-                  String field = mergingFields[idx];
-                  NumericFieldUpdates fieldUpdates = mergedFieldUpdates.get(field);
-                  if (fieldUpdates == null) {
-                    // an approximantion of maxDoc, used to compute best bitsPerValue
-                    fieldUpdates = new NumericFieldUpdates.PackedNumericFieldUpdates(mergeState.segmentInfo.getDocCount());
-                    mergedFieldUpdates.put(field, fieldUpdates);
-                  }
-                  fieldUpdates.add(newDoc, updatesIter.value() == null ? NumericUpdate.MISSING : updatesIter.value());
+                  DocValuesFieldUpdates dvUpdates = dvFieldUpdates[idx];
+                  dvUpdates.add(newDoc, updatesIter.value());
                   updatesIter.nextDoc(); // advance to next document
                 } else {
                   assert updatesIter.doc() > j : "updateDoc=" + updatesIter.doc() + " curDoc=" + j;
@@ -3367,7 +3406,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
             // document isn't deleted, check if any of the fields have an update to it
             int newDoc = -1;
             for (int idx = 0; idx < mergingFields.length; idx++) {
-              UpdatesIterator updatesIter = updatesIters[idx];
+              DocValuesFieldUpdates.Iterator updatesIter = updatesIters[idx];
               if (updatesIter.doc() == j) { // document has an update
                 if (mergedDeletesAndUpdates == null) {
                   mergedDeletesAndUpdates = readerPool.get(merge.info, true);
@@ -3376,14 +3415,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
                 if (newDoc == -1) { // map once per all field updates, but only if there are any updates
                   newDoc = docMap.map(docUpto);
                 }
-                String field = mergingFields[idx];
-                NumericFieldUpdates fieldUpdates = mergedFieldUpdates.get(field);
-                if (fieldUpdates == null) {
-                  // an approximantion of maxDoc, used to compute best bitsPerValue
-                  fieldUpdates = new NumericFieldUpdates.PackedNumericFieldUpdates(mergeState.segmentInfo.getDocCount());
-                  mergedFieldUpdates.put(field, fieldUpdates);
-                }
-                fieldUpdates.add(newDoc, updatesIter.value() == null ? NumericUpdate.MISSING : updatesIter.value());
+                DocValuesFieldUpdates dvUpdates = dvFieldUpdates[idx];
+                dvUpdates.add(newDoc, updatesIter.value());
                 updatesIter.nextDoc(); // advance to next document
               } else {
                 assert updatesIter.doc() > j : "field=" + mergingFields[idx] + " updateDoc=" + updatesIter.doc() + " curDoc=" + j;
@@ -3397,7 +3430,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
         for (int j = 0; j < docCount; j++) {
           int newDoc = -1;
           for (int idx = 0; idx < mergingFields.length; idx++) {
-            UpdatesIterator updatesIter = updatesIters[idx];
+            DocValuesFieldUpdates.Iterator updatesIter = updatesIters[idx];
             if (updatesIter.doc() == j) { // document has an update
               if (mergedDeletesAndUpdates == null) {
                 mergedDeletesAndUpdates = readerPool.get(merge.info, true);
@@ -3406,14 +3439,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
               if (newDoc == -1) { // map once per all field updates, but only if there are any updates
                 newDoc = docMap.map(docUpto);
               }
-              String field = mergingFields[idx];
-              NumericFieldUpdates fieldUpdates = mergedFieldUpdates.get(field);
-              if (fieldUpdates == null) {
-                // an approximantion of maxDoc, used to compute best bitsPerValue
-                fieldUpdates = new NumericFieldUpdates.PackedNumericFieldUpdates(mergeState.segmentInfo.getDocCount());
-                mergedFieldUpdates.put(field, fieldUpdates);
-              }
-              fieldUpdates.add(newDoc, updatesIter.value() == null ? NumericUpdate.MISSING : updatesIter.value());
+              DocValuesFieldUpdates dvUpdates = dvFieldUpdates[idx];
+              dvUpdates.add(newDoc, updatesIter.value());
               updatesIter.nextDoc(); // advance to next document
             } else {
               assert updatesIter.doc() > j : "updateDoc=" + updatesIter.doc() + " curDoc=" + j;
@@ -3430,7 +3457,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
 
     assert docUpto == merge.info.info.getDocCount();
 
-    if (!mergedFieldUpdates.isEmpty()) {
+    if (mergedDVUpdates.any()) {
 //      System.out.println("[" + Thread.currentThread().getName() + "] IW.commitMergedDeletes: mergedDeletes.info=" + mergedDeletes.info + ", mergedFieldUpdates=" + mergedFieldUpdates);
       boolean success = false;
       try {
@@ -3440,7 +3467,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
         // NOTE: currently this is the only place which throws a true
         // IOException. If this ever changes, we need to extend that try/finally
         // block to the rest of the method too.
-        mergedDeletesAndUpdates.writeFieldUpdates(directory, mergedFieldUpdates);
+        mergedDeletesAndUpdates.writeFieldUpdates(directory, mergedDVUpdates);
         success = true;
       } finally {
         if (!success) {
@@ -3455,8 +3482,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
         infoStream.message("IW", "no new deletes or field updates since merge started");
       } else {
         String msg = mergedDeletesAndUpdates.getPendingDeleteCount() + " new deletes";
-        if (!mergedFieldUpdates.isEmpty()) {
-          msg += " and " + mergedFieldUpdates.size() + " new field updates";
+        if (mergedDVUpdates.any()) {
+          msg += " and " + mergedDVUpdates.size() + " new field updates";
         }
         msg += " since merge started";
         infoStream.message("IW", msg);

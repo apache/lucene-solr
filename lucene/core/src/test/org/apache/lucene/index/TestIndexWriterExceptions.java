@@ -1778,6 +1778,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         doc.add(new StringField("id", ""+(docBase+i), Field.Store.NO));
         doc.add(new NumericDocValuesField("f", 1L));
         doc.add(new NumericDocValuesField("cf", 2L));
+        doc.add(new BinaryDocValuesField("bf", TestBinaryDocValuesUpdates.toBytes(1L)));
+        doc.add(new BinaryDocValuesField("bcf", TestBinaryDocValuesUpdates.toBytes(2L)));
         w.addDocument(doc);
       }
       docCount += numDocs;
@@ -1802,8 +1804,18 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
               if (VERBOSE) {
                 System.out.println("  update id=" + (docBase+i) + " to value " + value);
               }
-              w.updateNumericDocValue(new Term("id", Integer.toString(docBase + i)), "f", value);
-              w.updateNumericDocValue(new Term("id", Integer.toString(docBase + i)), "cf", value * 2);
+              if (random().nextBoolean()) { // update only numeric field
+                w.updateNumericDocValue(new Term("id", Integer.toString(docBase + i)), "f", value);
+                w.updateNumericDocValue(new Term("id", Integer.toString(docBase + i)), "cf", value * 2);
+              } else if (random().nextBoolean()) {
+                w.updateBinaryDocValue(new Term("id", Integer.toString(docBase + i)), "bf", TestBinaryDocValuesUpdates.toBytes(value));
+                w.updateBinaryDocValue(new Term("id", Integer.toString(docBase + i)), "bcf", TestBinaryDocValuesUpdates.toBytes(value * 2));
+              } else {
+                w.updateNumericDocValue(new Term("id", Integer.toString(docBase + i)), "f", value);
+                w.updateNumericDocValue(new Term("id", Integer.toString(docBase + i)), "cf", value * 2);
+                w.updateBinaryDocValue(new Term("id", Integer.toString(docBase + i)), "bf", TestBinaryDocValuesUpdates.toBytes(value));
+                w.updateBinaryDocValue(new Term("id", Integer.toString(docBase + i)), "bcf", TestBinaryDocValuesUpdates.toBytes(value * 2));
+              }
             }
             
             // sometimes do both deletes and updates
@@ -1877,13 +1889,18 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         r = w.getReader();
       }
       assertEquals(docCount-deleteCount, r.numDocs());
+      BytesRef scratch = new BytesRef();
       for (AtomicReaderContext context : r.leaves()) {
-        Bits liveDocs = context.reader().getLiveDocs();
-        NumericDocValues f = context.reader().getNumericDocValues("f");
-        NumericDocValues cf = context.reader().getNumericDocValues("cf");
-        for (int i = 0; i < context.reader().maxDoc(); i++) {
+        AtomicReader reader = context.reader();
+        Bits liveDocs = reader.getLiveDocs();
+        NumericDocValues f = reader.getNumericDocValues("f");
+        NumericDocValues cf = reader.getNumericDocValues("cf");
+        BinaryDocValues bf = reader.getBinaryDocValues("bf");
+        BinaryDocValues bcf = reader.getBinaryDocValues("bcf");
+        for (int i = 0; i < reader.maxDoc(); i++) {
           if (liveDocs == null || liveDocs.get(i)) {
             assertEquals("doc=" + (docBase + i), cf.get(i), f.get(i) * 2);
+            assertEquals("doc=" + (docBase + i), TestBinaryDocValuesUpdates.getValue(bcf, i, scratch), TestBinaryDocValuesUpdates.getValue(bf, i, scratch) * 2);
           }
         }
       }
