@@ -973,7 +973,7 @@
             <sysproperty key="java.security.manager" value="org.apache.lucene.util.TestSecurityManager" />
             <sysproperty key="java.security.policy" file="${common.dir}/tools/junit4/tests.policy" />
 
-            <sysproperty key="lucene.version" value="${dev.version}"/>
+            <sysproperty key="lucene.version" value="${version}"/>
 
             <sysproperty key="jetty.testMode" value="1"/>
             <sysproperty key="jetty.insecurerandom" value="1"/>
@@ -2401,7 +2401,7 @@ The following arguments can be provided to ant to alter its behaviour and target
 
         <junit4:pickseed property="pitest.seed" />
 
-        <property name="pitest.sysprops" value="-Dlucene.version=${dev.version},-Dtest.seed=${pitest.seed},-Djava.security.manager=org.apache.lucene.util.TestSecurityManager,-Djava.security.policy=${common.dir}/tools/junit4/tests.policy,-Djava.io.tmpdir=${tests.workDir},-Djunit4.childvm.cwd=${tests.workDir},-Djunit4.tempDir=${tests.workDir}" />
+        <property name="pitest.sysprops" value="-Dlucene.version=${version},-Dtest.seed=${pitest.seed},-Djava.security.manager=org.apache.lucene.util.TestSecurityManager,-Djava.security.policy=${common.dir}/tools/junit4/tests.policy,-Djava.io.tmpdir=${tests.workDir},-Djunit4.childvm.cwd=${tests.workDir},-Djunit4.tempDir=${tests.workDir}" />
 
         <pitest
             classPath="pitest.classpath"

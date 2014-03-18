@@ -49,4 +49,14 @@ public class TestVersion extends LuceneTestCase {
       }
     }
   }
+  
+  public void testAgainstMainVersionConstant() {
+    final Version values[] = Version.values();
+    assertTrue(values.length >= 2);
+    final String mainVersionWithoutAlphaBeta = Constants.mainVersionWithoutAlphaBeta();
+    final Version mainVersionParsed = Version.parseLeniently(mainVersionWithoutAlphaBeta); 
+    assertSame("Constant one before last must be the same as the parsed LUCENE_MAIN_VERSION (without alpha/beta) constant: " + 
+        mainVersionWithoutAlphaBeta,
+        mainVersionParsed, values[values.length - 2]);
+  }
 }
