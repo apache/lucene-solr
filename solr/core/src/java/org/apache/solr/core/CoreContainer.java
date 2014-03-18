@@ -18,6 +18,7 @@
 package org.apache.solr.core;
 
 import com.google.common.collect.Maps;
+
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -158,6 +159,20 @@ public class CoreContainer {
     this.coresLocator = locator;
   }
 
+  /**
+   * This method allows subclasses to construct a CoreContainer
+   * without any default init behavior.
+   * 
+   * @param testConstructor pass (Object)null.
+   * @lucene.experimental
+   */
+  protected CoreContainer(Object testConstructor) {
+    solrHome = null;
+    loader = null;
+    coresLocator = null;
+    cfg = null;
+  }
+  
   /**
    * Create a new CoreContainer and load its cores
    * @param solrHome the solr home directory
