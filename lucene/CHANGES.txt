@@ -164,6 +164,9 @@ Bug fixes
 
 * LUCENE-5111: Fix WordDelimiterFilter to return offsets in correct order.  (Robert Muir)
 
+* LUCENE-5538: Fix FastVectorHighlighter bug with index-time synonyms when the
+  query is more complex than a single phrase.  (Robert Muir)
+
 Test Framework
 
 * LUCENE-5449: Rename _TestUtil and _TestHelper to remove the leading _.

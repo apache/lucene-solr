@@ -18,6 +18,7 @@ package org.apache.lucene.search.vectorhighlight;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Set;
 
@@ -128,6 +129,30 @@ public class FieldTermStack {
     
     // sort by position
     Collections.sort(termList);
+    
+    // now look for dups at the same position, linking them together
+    int currentPos = -1;
+    TermInfo previous = null;
+    TermInfo first = null;
+    Iterator<TermInfo> iterator = termList.iterator();
+    while (iterator.hasNext()) {
+      TermInfo current = iterator.next();
+      if (current.position == currentPos) {
+        assert previous != null;
+        previous.setNext(current);
+        previous = current;
+        iterator.remove();
+      } else {
+        if (previous != null) {
+          previous.setNext(first);
+        }
+        previous = first = current;
+        currentPos = current.position;
+      }
+    }
+    if (previous != null) {
+      previous.setNext(first);
+    }
   }
 
   /**
@@ -173,6 +198,10 @@ public class FieldTermStack {
 
     // IDF-weight of this term
     private final float weight;
+    
+    // pointer to other TermInfo's at the same position.
+    // this is a circular list, so with no syns, just points to itself
+    private TermInfo next;
 
     public TermInfo( String text, int startOffset, int endOffset, int position, float weight ){
       this.text = text;
@@ -180,8 +209,15 @@ public class FieldTermStack {
       this.endOffset = endOffset;
       this.position = position;
       this.weight = weight;
+      this.next = this;
     }
     
+    void setNext(TermInfo next) { this.next = next; }
+    /** 
+     * Returns the next TermInfo at this same position.
+     * This is a circular list!
+     */
+    public TermInfo getNext() { return next; }
     public String getText(){ return text; }
     public int getStartOffset(){ return startOffset; }
     public int getEndOffset(){ return endOffset; }
