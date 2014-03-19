@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.nio.CharBuffer;
+import java.util.Arrays;
+import java.util.HashSet;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -17,10 +19,12 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.charfilter.MappingCharFilter;
 import org.apache.lucene.analysis.charfilter.NormalizeCharMap;
 import org.apache.lucene.analysis.commongrams.CommonGramsFilter;
+import org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter;
 import org.apache.lucene.analysis.ngram.EdgeNGramTokenizer;
 import org.apache.lucene.analysis.ngram.NGramTokenFilter;
 import org.apache.lucene.analysis.shingle.ShingleFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.wikipedia.WikipediaTokenizer;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 /*
@@ -256,5 +260,29 @@ public class TestBugInSomething extends BaseTokenStreamTestCase {
       }  
     };
     checkRandomData(random(), analyzer, 2000);
+  }
+  
+  public void testCuriousWikipediaString() throws Exception {
+    final CharArraySet protWords = new CharArraySet(TEST_VERSION_CURRENT, new HashSet<>(
+        Arrays.asList("rrdpafa", "pupmmlu", "xlq", "dyy", "zqrxrrck", "o", "hsrlfvcha")), false);
+    final byte table[] = new byte[] { 
+        -57, 26, 1, 48, 63, -23, 55, -84, 18, 120, -97, 103, 58, 13, 84, 89, 57, -13, -63, 
+        5, 28, 97, -54, -94, 102, -108, -5, 5, 46, 40, 43, 78, 43, -72, 36, 29, 124, -106, 
+        -22, -51, 65, 5, 31, -42, 6, -99, 97, 14, 81, -128, 74, 100, 54, -55, -25, 53, -71, 
+        -98, 44, 33, 86, 106, -42, 47, 115, -89, -18, -26, 22, -95, -43, 83, -125, 105, -104,
+        -24, 106, -16, 126, 115, -105, 97, 65, -33, 57, 44, -1, 123, -68, 100, 13, -41, -64, 
+        -119, 0, 92, 94, -36, 53, -9, -102, -18, 90, 94, -26, 31, 71, -20
+    };
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new WikipediaTokenizer();
+        TokenStream stream = new SopTokenFilter(tokenizer);
+        stream = new WordDelimiterFilter(TEST_VERSION_CURRENT, stream, table, -50, protWords);
+        stream = new SopTokenFilter(stream);
+        return new TokenStreamComponents(tokenizer, stream);
+      }  
+    };
+    checkAnalysisConsistency(random(), a, false, "B\u28c3\ue0f8[ \ud800\udfc2 </p> jb");
   }
 }

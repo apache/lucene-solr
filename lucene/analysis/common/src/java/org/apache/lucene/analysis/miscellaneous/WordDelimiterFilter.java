@@ -258,7 +258,8 @@ public final class WordDelimiterFilter extends TokenFilter {
         // word of simply delimiters
         if (iterator.end == WordDelimiterIterator.DONE && !has(PRESERVE_ORIGINAL)) {
           // if the posInc is 1, simply ignore it in the accumulation
-          if (posIncAttribute.getPositionIncrement() == 1) {
+          // TODO: proper hole adjustment (FilteringTokenFilter-like) instead of this previous logic!
+          if (posIncAttribute.getPositionIncrement() == 1 && !first) {
             accumPosInc--;
           }
           continue;

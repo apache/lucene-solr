@@ -689,7 +689,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         */
         descr.append("\n  ");
         descr.append(ctor.getDeclaringClass().getName());
-        String params = Arrays.toString(args);
+        String params = Arrays.deepToString(args);
         params = params.substring(1, params.length()-1);
         descr.append("(").append(params).append(")");
         return instance;
