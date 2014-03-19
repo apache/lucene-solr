@@ -44,6 +44,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +54,7 @@ import org.slf4j.LoggerFactory;
  * LuceneTestCase, as the MiniSolrCloudCluster is designed to be used outside of the
  * lucene test hierarchy.
  */
+@Ignore
 public class TestMiniSolrCloudCluster {
 
   private static Logger log = LoggerFactory.getLogger(MiniSolrCloudCluster.class);
