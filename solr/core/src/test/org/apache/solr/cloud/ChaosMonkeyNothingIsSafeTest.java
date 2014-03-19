@@ -130,7 +130,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
        del("*:*");
       
       List<StopableThread> threads = new ArrayList<>();
-      int threadCount = 1;
+      int threadCount = TEST_NIGHTLY ? 3 : 1;
       int i = 0;
       for (i = 0; i < threadCount; i++) {
         StopableIndexingThread indexThread = new StopableIndexingThread(controlClient, cloudClient, Integer.toString(i), true);
@@ -162,8 +162,13 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
         if (RUN_LENGTH != -1) {
           runLength = RUN_LENGTH;
         } else {
-          int[] runTimes = new int[] {5000, 6000, 10000, 15000, 25000, 30000,
-              30000, 45000, 90000, 120000};
+          int[] runTimes;
+          if (TEST_NIGHTLY) {
+            runTimes = new int[] {5000, 6000, 10000, 15000, 25000, 30000,
+                30000, 45000, 90000, 120000};
+          } else {
+            runTimes = new int[] {5000, 7000, 15000};
+          }
           runLength = runTimes[random().nextInt(runTimes.length - 1)];
         }
         
