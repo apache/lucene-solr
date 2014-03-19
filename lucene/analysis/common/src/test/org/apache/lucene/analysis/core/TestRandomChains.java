@@ -920,7 +920,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         System.out.println("Creating random analyzer:" + a);
       }
       try {
-        checkRandomData(random, a, 50*RANDOM_MULTIPLIER, 256, false,
+        checkRandomData(random, a, 50*RANDOM_MULTIPLIER, 128, false,
                         false /* We already validate our own offsets... */);
       } catch (Throwable e) {
         System.err.println("Exception from random analyzer: " + a);
