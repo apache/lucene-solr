@@ -187,6 +187,8 @@ Other Changes
 * SOLR-5838: Relative SolrHome Path Bug At AbstractFullDistribZkTestBase.
   (Furkan KAMACI via shalin)
 
+* SOLR-5763: Upgrade to Tika 1.5 (Vitaliy Zhovtyuk via Steve Rowe)
+
 ==================  4.7.1  ==================
 
 Versions of Major Components
