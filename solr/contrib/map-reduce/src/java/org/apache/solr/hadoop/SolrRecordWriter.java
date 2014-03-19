@@ -238,7 +238,7 @@ class SolrRecordWriter<K, V> extends RecordWriter<K, V> {
         } catch (InterruptedException e) {
           exitValue = "interrupted";
         }
-        System.err.format("Exit value of 'ls -lR' is %s%n", exitValue);
+        System.err.format(Locale.ENGLISH, "Exit value of 'ls -lR' is %s%n", exitValue);
       }
       if (unpackedDir.getName().equals(SolrOutputFormat.getZipName(conf))) {
         LOG.info("Using this unpacked directory as solr home: {}", unpackedDir);
