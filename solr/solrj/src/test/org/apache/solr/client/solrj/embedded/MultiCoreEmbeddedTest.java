@@ -51,26 +51,12 @@ public class MultiCoreEmbeddedTest extends MultiCoreExampleTestBase {
   }
 
   @Override
-  protected SolrServer getSolrCore0()
-  {
-    return new EmbeddedSolrServer( cores, "core0" );
-  }
-
-  @Override
-  protected SolrServer getSolrCore1()
-  {
-    return new EmbeddedSolrServer( cores, "core1" );
-  }
-
-  @Override
-  protected SolrServer getSolrCore(String name)
-  {
-    return new EmbeddedSolrServer( cores, name );
-  }
-
-  @Override
+  protected SolrServer createServer(String string) {
+    return new EmbeddedSolrServer( cores, string );
+  } 
+  
   protected SolrServer getSolrAdmin()
   {
-    return new EmbeddedSolrServer( cores, "core0" );
+    return getSolrCore0();
   } 
 }

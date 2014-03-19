@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase.BadApple;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -95,6 +96,14 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
   public void tearDownServer() throws Exception {
     if (jetty != null) jetty.stop();
     FileUtils.deleteDirectory(solrHomeDirectory);
+    for(SolrServer server:indexingServers) {
+      server.shutdown();
+    }
+    for(SolrServer server:queryServers) {
+      server.shutdown();
+    }
+    indexingServers.clear();
+    queryServers.clear();
   }
 
   @Test

@@ -199,6 +199,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
 
       // poll for a second - it can take a moment before we are ready to serve
       waitForNon403or404or503(collectionClient);
+      collectionClient.shutdown();
     }
     ZkStateReader zkStateReader = getCommonCloudSolrServer().getZkStateReader();
     for (int j = 0; j < cnt; j++) {
@@ -320,7 +321,8 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
 
 
     url = getUrlFromZk(getCommonCloudSolrServer().getZkStateReader().getClusterState(), collectionName);
-
+    
+    collectionClient.shutdown();
     collectionClient = new HttpSolrServer(url);
 
     // poll for a second - it can take a moment before we are ready to serve
@@ -328,7 +330,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
 
 
 
-
+    collectionClient.shutdown();
     collectionClient = new HttpSolrServer(url);
 
 
@@ -349,8 +351,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     assertEquals(0, collectionClient.query(new SolrQuery("*:*").setParam(_ROUTE_,"b")).getResults().getNumFound());
     //TODO debug the following case
     assertEquals(3, collectionClient.query(new SolrQuery("*:*").setParam(_ROUTE_, "a")).getResults().getNumFound());
-
-
+    collectionClient.shutdown();
   }
 
   private void testRouteFieldForHashRouter()throws Exception{
@@ -386,6 +387,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
 
     // poll for a second - it can take a moment before we are ready to serve
     waitForNon403or404or503(collectionClient);
+    collectionClient.shutdown();
 
 
     collectionClient = new HttpSolrServer(url);
@@ -414,7 +416,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     collectionClient.add (getDoc( id,100,shard_fld, "b!doc1"));
     collectionClient.commit();
     assertEquals(1, collectionClient.query(new SolrQuery("*:*").setParam(_ROUTE_, "b!")).getResults().getNumFound());
-
+    collectionClient.shutdown();
   }
 
   private void testCreateShardRepFactor() throws Exception  {

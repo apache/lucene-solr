@@ -17,6 +17,10 @@
 
 package org.apache.solr.client.solrj;
 
+import java.io.File;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Unload;
@@ -26,11 +30,8 @@ import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.Test;
-
-import java.io.File;
 
 
 /**
@@ -43,6 +44,12 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
 
   private File dataDir2;
   private File dataDir1;
+  
+  private SolrServer solrCore0;
+  private SolrServer solrCore1;
+  private SolrServer solrAdmin;
+  
+  private final Set<SolrServer> clients = new HashSet<>();
 
   @Override public String getSolrHome() { return ExternalPaths.EXAMPLE_MULTICORE_HOME; }
 
@@ -74,6 +81,14 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
         System.err.println("!!!! WARNING: best effort to remove " + dataDir2.getAbsolutePath() + " FAILED !!!!!");
       }
     }
+    if(solrCore0 != null) solrCore0.shutdown();
+    if(solrCore1 != null) solrCore1.shutdown();
+    if(solrAdmin != null) solrAdmin.shutdown();
+    solrCore0 = solrCore1 = solrAdmin = null;
+    for (SolrServer client:clients) {
+      client.shutdown();
+    }
+    clients.clear();
   }
 
   @Override
@@ -87,11 +102,40 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
   {
     throw new UnsupportedOperationException();
   }
+  
+  protected SolrServer getSolrCore0()
+  {
+    if (solrCore0 == null) {
+      solrCore0 = createServer( "core0" );
+    }
+    return solrCore0;
+  }
 
-  protected abstract SolrServer getSolrCore0();
-  protected abstract SolrServer getSolrCore1();
-  protected abstract SolrServer getSolrAdmin();
-  protected abstract SolrServer getSolrCore(String name);
+  protected SolrServer getSolrCore1()
+  {
+    if (solrCore1 == null) {
+      solrCore1 = createServer( "core1" );
+    }
+    return solrCore1;
+  }
+
+  protected SolrServer getSolrAdmin()
+  {
+    if (solrAdmin == null) {
+      solrAdmin = createServer( "" );
+    }
+    return solrAdmin;
+  } 
+  
+  protected SolrServer getSolrCore(String name)
+  {
+    SolrServer server = createServer(name);
+    clients.add(server);
+    return server;
+  }
+
+
+  protected abstract SolrServer createServer(String string);
 
   @Test
   public void testMultiCore() throws Exception
@@ -197,25 +241,22 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
     CoreAdminRequest.renameCore("coreb","corec",coreadmin);
     CoreAdminRequest.renameCore("corec","cored",coreadmin);
     CoreAdminRequest.renameCore("cored","corefoo",coreadmin);
-    try {
+    try { 
       getSolrCore("core1").query( new SolrQuery( "id:BBB" ) );
       fail( "core1 should be gone" );
     }
     catch( Exception ex ) {}
+    
     assertEquals( 1, getSolrCore("corefoo").query( new SolrQuery( "id:BBB" ) ).getResults().size() );
 
     NamedList<Object> response = getSolrCore("corefoo").query(new SolrQuery().setRequestHandler("/admin/system")).getResponse();
     NamedList<Object> coreInfo = (NamedList<Object>) response.get("core");
     String indexDir = (String) ((NamedList<Object>) coreInfo.get("directory")).get("index");
     
-    
     response = getSolrCore("core0").query(new SolrQuery().setRequestHandler("/admin/system")).getResponse();
     coreInfo = (NamedList<Object>) response.get("core");
     String dataDir = (String) ((NamedList<Object>) coreInfo.get("directory")).get("data");
     
-
-    System.out.println( (String) ((NamedList<Object>) coreInfo.get("directory")).get("dirimpl"));
-
     // test delete index on core
     CoreAdminRequest.unloadCore("corefoo", true, coreadmin);
     File dir = new File(indexDir);

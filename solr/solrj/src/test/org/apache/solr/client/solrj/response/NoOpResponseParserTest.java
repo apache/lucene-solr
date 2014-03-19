@@ -81,6 +81,7 @@ public class NoOpResponseParserTest extends SolrJettyTestBase {
     String responseString = (String) resp.get("response");
 
     assertResponse(responseString);
+    server.shutdown();
   }
 
   private void assertResponse(String responseString) throws IOException {

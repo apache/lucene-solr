@@ -658,6 +658,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
               + new ZkCoreNodeProps(replica).getCoreUrl(), found, count);
         }
         found = count;
+        client.shutdown();
       }
     }
   }

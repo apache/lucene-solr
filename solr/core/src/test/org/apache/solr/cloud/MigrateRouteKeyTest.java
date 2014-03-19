@@ -214,6 +214,8 @@ public class MigrateRouteKeyTest extends BasicDistributedZkTest {
     QueryResponse response = collectionClient.query(solrQuery);
     log.info("Response from target collection: " + response);
     assertEquals("DocCount on target collection does not match", splitKeyCount[0], response.getResults().getNumFound());
+    collectionClient.shutdown();
+    collectionClient = null;
 
     getCommonCloudSolrServer().getZkStateReader().updateClusterState(true);
     ClusterState state = getCommonCloudSolrServer().getZkStateReader().getClusterState();

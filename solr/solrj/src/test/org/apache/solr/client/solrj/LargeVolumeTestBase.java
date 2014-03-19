@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrInputDocument;
@@ -115,6 +116,9 @@ public abstract class LargeVolumeTestBase extends SolrJettyTestBase
         } catch (Exception e) {
           // a commit/optimize can fail with a too many warming searchers exception
           log.info("Caught benign exception during commit: " + e.getMessage());
+        }
+        if (!(tserver instanceof EmbeddedSolrServer)) {
+          tserver.shutdown();
         }
 
       } catch (Exception e) {
