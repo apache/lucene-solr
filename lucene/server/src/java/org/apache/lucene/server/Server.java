@@ -442,7 +442,12 @@ public class Server {
       PrintWriter pw = new PrintWriter(sw);
       if (e.getCause() instanceof RequestFailedException) {
         RequestFailedException rfe = (RequestFailedException) e.getCause();
-        pw.write(rfe.path + ": " + rfe.reason);
+        pw.println(rfe.path + ": " + rfe.reason);
+        if (rfe.getCause() != null) {
+          pw.println();
+          rfe.getCause().printStackTrace(pw);
+        }
+        
         // TODO?
         //Throwable cause = rfe.getCause();
         //if (cause != null) {

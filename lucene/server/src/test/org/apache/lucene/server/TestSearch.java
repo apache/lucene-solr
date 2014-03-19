@@ -358,4 +358,10 @@ public class TestSearch extends ServerBaseTestCase {
       send("startIndex");
     }
   }
+
+  public void testFailsQueryParserError() throws Exception {
+    assertFailsWith("search",
+                    "{queryText: 'field:bar', retrieveFields: [id],}",
+                    "field \"field\" is unknown");
+  }
 }
