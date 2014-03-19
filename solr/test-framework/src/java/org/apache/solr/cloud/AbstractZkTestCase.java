@@ -35,7 +35,8 @@ import org.slf4j.LoggerFactory;
  * Base test class for ZooKeeper tests.
  */
 public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
-
+  private static final String ZOOKEEPER_FORCE_SYNC = "zookeeper.forceSync";
+  
   static final int TIMEOUT = 10000;
 
   private static final boolean DEBUG = false;
@@ -71,6 +72,7 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
     System.setProperty("solrcloud.skip.autorecovery", "true");
     System.setProperty("zkHost", zkServer.getZkAddress());
     System.setProperty("jetty.port", "0000");
+    System.setProperty(ZOOKEEPER_FORCE_SYNC, "false");
     
     buildZooKeeper(zkServer.getZkHost(), zkServer.getZkAddress(), SOLRHOME,
         "solrconfig.xml", "schema.xml");
@@ -152,6 +154,7 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
     System.clearProperty("solr.test.sys.prop2");
     System.clearProperty("solrcloud.skip.autorecovery");
     System.clearProperty("jetty.port");
+    System.clearProperty(ZOOKEEPER_FORCE_SYNC);
 
     zkServer.shutdown();
 

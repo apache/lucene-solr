@@ -38,6 +38,10 @@ import org.junit.BeforeClass;
 
 public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTestCase {
   
+  private static final String REMOVE_VERSION_FIELD = "remove.version.field";
+  private static final String ENABLE_UPDATE_LOG = "enable.update.log";
+  private static final String ZK_HOST = "zkHost";
+  private static final String ZOOKEEPER_FORCE_SYNC = "zookeeper.forceSync";
   protected static final String DEFAULT_COLLECTION = "collection1";
   private static final boolean DEBUG = false;
   protected ZkTestServer zkServer;
@@ -61,9 +65,10 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
     
-    System.setProperty("zkHost", zkServer.getZkAddress());
-    System.setProperty("enable.update.log", "true");
-    System.setProperty("remove.version.field", "true");
+    System.setProperty(ZK_HOST, zkServer.getZkAddress());
+    System.setProperty(ENABLE_UPDATE_LOG, "true");
+    System.setProperty(REMOVE_VERSION_FIELD, "true");
+    System.setProperty(ZOOKEEPER_FORCE_SYNC, "false");
 
     String schema = getSchemaFile();
     if (schema == null) schema = "schema.xml";
@@ -211,13 +216,15 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     if (DEBUG) {
       printLayout();
     }
-    System.clearProperty("zkHost");
+    System.clearProperty(ZK_HOST);
     System.clearProperty("collection");
-    System.clearProperty("enable.update.log");
-    System.clearProperty("remove.version.field");
+    System.clearProperty(ENABLE_UPDATE_LOG);
+    System.clearProperty(REMOVE_VERSION_FIELD);
     System.clearProperty("solr.directoryFactory");
     System.clearProperty("solr.test.sys.prop1");
     System.clearProperty("solr.test.sys.prop2");
+    System.clearProperty(ZOOKEEPER_FORCE_SYNC);
+    
     resetExceptionIgnores();
     super.tearDown();
     zkServer.shutdown();
