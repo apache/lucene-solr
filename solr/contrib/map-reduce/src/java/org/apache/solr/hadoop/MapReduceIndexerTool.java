@@ -322,11 +322,12 @@ public class MapReduceIndexerTool extends Configured implements Tool {
       Argument reducersArg = parser.addArgument("--reducers")
         .metavar("INTEGER")
         .type(Integer.class)
-        .choices(new RangeArgumentChoice(-1, Integer.MAX_VALUE)) // TODO: also support X% syntax where X is an integer
+        .choices(new RangeArgumentChoice(-2, Integer.MAX_VALUE)) // TODO: also support X% syntax where X is an integer
         .setDefault(-1)
         .help("Tuning knob that indicates the number of reducers to index into. " +
+            "0 is reserved for a mapper-only feature that may ship in a future release. " +
             "-1 indicates use all reduce slots available on the cluster. " +
-            "0 indicates use one reducer per output shard, which disables the mtree merge MR algorithm. " +
+            "-2 indicates use one reducer per output shard, which disables the mtree merge MR algorithm. " +
             "The mtree merge MR algorithm improves scalability by spreading load " +
             "(in particular CPU load) among a number of parallel reducers that can be much larger than the number " +
             "of solr shards expected by the user. It can be seen as an extension of concurrent lucene merges " +
@@ -511,6 +512,9 @@ public class MapReduceIndexerTool extends Configured implements Tool {
       opts.collection = ns.getString(collectionArg.getDest());
 
       try {
+        if (opts.reducers == 0) {
+          throw new ArgumentParserException("--reducers must not be zero", parser); 
+        }
         verifyGoLiveArgs(opts, parser);
       } catch (ArgumentParserException e) {
         parser.handleError(e);
@@ -606,8 +610,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
   
   /** API for Java clients; visible for testing; may become a public API eventually */
   int run(Options options) throws Exception {
-
-    if ("local".equals(getConf().get("mapred.job.tracker"))) {
+    if (getConf().getBoolean("isMR1", false) && "local".equals(getConf().get("mapred.job.tracker"))) {
       throw new IllegalStateException(
         "Running with LocalJobRunner (i.e. all of Hadoop inside a single JVM) is not supported " +
         "because LocalJobRunner does not (yet) implement the Hadoop Distributed Cache feature, " +
@@ -884,11 +887,14 @@ public class MapReduceIndexerTool extends Configured implements Tool {
     //reducers = job.getCluster().getClusterStatus().getReduceSlotCapacity(); // Yarn only      
     LOG.info("Cluster reports {} reduce slots", reducers);
 
-    if (options.reducers == 0) {
+    if (options.reducers == -2) {
       reducers = options.shards;
     } else if (options.reducers == -1) {
       reducers = Math.min(reducers, realMappers); // no need to use many reducers when using few mappers
     } else {
+      if (options.reducers == 0) {
+        throw new IllegalStateException("Illegal zero reducers");
+      }
       reducers = options.reducers;
     }
     reducers = Math.max(reducers, options.shards);
@@ -925,8 +931,8 @@ public class MapReduceIndexerTool extends Configured implements Tool {
         if (inputFileFs.exists(inputFile)) {
           PathFilter pathFilter = new PathFilter() {      
             @Override
-            public boolean accept(Path path) {
-              return !path.getName().startsWith("."); // ignore "hidden" files and dirs
+            public boolean accept(Path path) { // ignore "hidden" files and dirs
+              return !(path.getName().startsWith(".") || path.getName().startsWith("_")); 
             }
           };
           numFiles += addInputFilesRecursively(inputFile, writer, inputFileFs, pathFilter);
@@ -1084,7 +1090,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
      * like this:
      * 
      * ... caused by compilation failed: mfm:///MyJavaClass1.java:2: package
-     * com.cloudera.cdk.morphline.api does not exist
+     * org.kitesdk.morphline.api does not exist
      */
     LOG.trace("dryRun: java.class.path: {}", System.getProperty("java.class.path"));
     String fullClassPath = "";
