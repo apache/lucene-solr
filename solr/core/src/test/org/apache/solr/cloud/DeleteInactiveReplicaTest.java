@@ -23,6 +23,7 @@ import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 import java.net.URL;
 import java.util.Map;
 
+import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
@@ -36,7 +37,6 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 
 //@Ignore("Not currently valid see SOLR-5580")
 public class DeleteInactiveReplicaTest extends DeleteReplicaTest{
@@ -131,10 +131,12 @@ public class DeleteInactiveReplicaTest extends DeleteReplicaTest{
 
     Map m = makeMap("qt", "/admin/cores", "action", "status");
 
-    NamedList<Object> resp = new HttpSolrServer(replica1.getStr(ZkStateReader.BASE_URL_PROP))
-        .request(new QueryRequest(new MapSolrParams(m)));
+    SolrServer server = new HttpSolrServer(replica1.getStr(ZkStateReader.BASE_URL_PROP));
+    NamedList<Object> resp = server.request(new QueryRequest(new MapSolrParams(m)));
     assertNull("The core is up and running again",
         ((NamedList) resp.get("status")).get(replica1.getStr("core")));
+    server.shutdown();
+    server = null;
 
 
     Exception exp = null;

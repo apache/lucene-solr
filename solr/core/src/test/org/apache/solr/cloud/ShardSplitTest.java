@@ -314,6 +314,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
     assertEquals(docCounts[0], collectionClient.query(new SolrQuery("*:*").setParam("shards", "shard1_0")).getResults().getNumFound());
     assertEquals(docCounts[1], collectionClient.query(new SolrQuery("*:*").setParam("shards", "shard1_1")).getResults().getNumFound());
+    collectionClient.shutdown();
   }
 
   private void splitByRouteKeyTest() throws Exception {
@@ -404,6 +405,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     assertEquals("shard1_0 must have 0 docs for route key: " + splitKey, 0, collectionClient.query(solrQuery.setParam("shards", "shard1_0")).getResults().getNumFound());
     assertEquals("Wrong number of docs on shard1_1 for route key: " + splitKey, splitKeyDocCount, collectionClient.query(solrQuery.setParam("shards", "shard1_1")).getResults().getNumFound());
     assertEquals("shard1_2 must have 0 docs for route key: " + splitKey, 0, collectionClient.query(solrQuery.setParam("shards", "shard1_2")).getResults().getNumFound());
+    collectionClient.shutdown();
   }
 
   protected void checkDocCountsAndShardStates(int[] docCounts, int numReplicas) throws Exception {
@@ -523,6 +525,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     baseServer.setConnectionTimeout(15000);
     baseServer.setSoTimeout(60000 * 5);
     baseServer.request(request);
+    baseServer.shutdown();
   }
 
   protected void indexAndUpdateCount(DocRouter router, List<DocRouter.Range> ranges, int[] docCounts, String id, int n) throws Exception {

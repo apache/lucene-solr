@@ -137,6 +137,8 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     // we only set the connect timeout, not so timeout
     baseServer.setConnectionTimeout(30000);
     baseServer.request(request);
+    baseServer.shutdown();
+    baseServer = null;
     
     waitForThingsToLevelOut(15);
     

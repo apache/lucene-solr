@@ -136,6 +136,8 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     unloadCmd = new Unload(false);
     unloadCmd.setCoreName("test_unload_shard_and_collection_1");
     server.request(unloadCmd);
+    server.shutdown();
+    server = null;
     
     //printLayout();
     // the collection should be gone
@@ -169,6 +171,8 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     String core1DataDir = dataDir.getAbsolutePath() + File.separator + System.currentTimeMillis() + "unloadcollection1" + "_1n";
     createCmd.setDataDir(getDataDir(core1DataDir));
     server.request(createCmd);
+    server.shutdown();
+    server = null;
     
     ZkStateReader zkStateReader = getCommonCloudSolrServer().getZkStateReader();
     
@@ -187,6 +191,8 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     String core2dataDir = dataDir.getAbsolutePath() + File.separator + System.currentTimeMillis() + "unloadcollection1" + "_2n";
     createCmd.setDataDir(getDataDir(core2dataDir));
     server.request(createCmd);
+    server.shutdown();
+    server = null;
     
     zkStateReader.updateClusterState(true);
     slices = zkStateReader.getClusterState().getCollection("unloadcollection").getSlices().size();
@@ -212,6 +218,8 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
       collectionClient.add(doc2);
       collectionClient.add(doc3);
       collectionClient.commit();
+      collectionClient.shutdown();
+      collectionClient = null;
     }
 
     // create another replica for our collection
@@ -225,6 +233,9 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     String core3dataDir = dataDir.getAbsolutePath() + File.separator + System.currentTimeMillis() + "unloadcollection" + "_3n";
     createCmd.setDataDir(getDataDir(core3dataDir));
     server.request(createCmd);
+    server.shutdown();
+    server = null;
+    
     
     waitForRecoveriesToFinish("unloadcollection", zkStateReader, false);
     
@@ -240,6 +251,8 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
           "humpty dumpy sat on a wall");
       addClient.add(doc1);
     }
+    addClient.shutdown();
+    addClient = null;
 
     // don't commit so they remain in the tran log
     //collectionClient.commit();
@@ -254,6 +267,8 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     ModifiableSolrParams p = (ModifiableSolrParams) unloadCmd.getParams();
 
     collectionClient.request(unloadCmd);
+    collectionClient.shutdown();
+    collectionClient = null;
 
 //    Thread.currentThread().sleep(500);
 //    printLayout();
@@ -279,6 +294,8 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
           "humpty dumpy sat on a wall");
       addClient.add(doc1);
     }
+    addClient.shutdown();
+    addClient = null;
     
     
     // create another replica for our collection
@@ -294,6 +311,8 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     String core4dataDir = dataDir.getAbsolutePath() + File.separator + System.currentTimeMillis() + "unloadcollection" + "_4n";
     createCmd.setDataDir(getDataDir(core4dataDir));
     server.request(createCmd);
+    server.shutdown();
+    server = null;
     
     waitForRecoveriesToFinish("unloadcollection", zkStateReader, false);
     
@@ -307,6 +326,8 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     unloadCmd.setCoreName(leaderProps.getCoreName());
     p = (ModifiableSolrParams) unloadCmd.getParams();
     collectionClient.request(unloadCmd);
+    collectionClient.shutdown();
+    collectionClient = null;
     
     tries = 50;
     while (leaderProps.getCoreUrl().equals(zkStateReader.getLeaderUrl("unloadcollection", "shard1", 15000))) {
@@ -332,6 +353,8 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     createCmd.setCollection("unloadcollection");
     createCmd.setDataDir(getDataDir(core1DataDir));
     server.request(createCmd);
+    server.shutdown();
+    server = null;
 
     waitForRecoveriesToFinish("unloadcollection", zkStateReader, false);
     
@@ -342,6 +365,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     SolrQuery q = new SolrQuery("*:*");
     q.set("distrib", false);
     long found1 = server.query(q).getResults().getNumFound();
+    server.shutdown();
     server = new HttpSolrServer(url3 + "/unloadcollection");
     server.setConnectionTimeout(15000);
     server.setSoTimeout(30000);
@@ -349,6 +373,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     q = new SolrQuery("*:*");
     q.set("distrib", false);
     long found3 = server.query(q).getResults().getNumFound();
+    server.shutdown();
     server = new HttpSolrServer(url4 + "/unloadcollection");
     server.setConnectionTimeout(15000);
     server.setSoTimeout(30000);
@@ -360,6 +385,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     // all 3 shards should now have the same number of docs
     assertEquals(found1, found3);
     assertEquals(found3, found4);
+    server.shutdown();
     
   }
   
@@ -402,6 +428,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     }
     executor.shutdown();
     executor.awaitTermination(120, TimeUnit.SECONDS);
+    server.shutdown();
   }
 
 

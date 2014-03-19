@@ -79,6 +79,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
       jetty.stop();
       jetty = null;
     }
+    if (server != null) server.shutdown();
     server = null;
   }
 

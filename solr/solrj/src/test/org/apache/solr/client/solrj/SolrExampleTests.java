@@ -32,6 +32,7 @@ import com.google.common.collect.Maps;
 import junit.framework.Assert;
 
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
@@ -56,6 +57,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -215,6 +217,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       QueryResponse rsp = client.query(q);
       assertNotNull(rsp.getResponse().get("mode"));
       assertNotNull(rsp.getResponse().get("lucene"));
+      client.shutdown();
     }
   }
 
@@ -539,6 +542,11 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     
     SolrDocumentList out = rsp.getResults();
     assertEquals(2, out.getNumFound());
+    if (!(server1 instanceof EmbeddedSolrServer)) {
+      /* Do not shutdown in case of using EmbeddedSolrServer, 
+       * as that would shutdown the CoreContainer */
+      server1.shutdown();
+    }
   }
   
  @Test

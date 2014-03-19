@@ -140,6 +140,7 @@ public class DeleteShardTest extends AbstractFullDistribZkTestBase {
     baseServer.setConnectionTimeout(15000);
     baseServer.setSoTimeout(60000);
     baseServer.request(request);
+    baseServer.shutdown();
   }
 
   protected void setSliceAsInactive(String slice) throws SolrServerException, IOException,

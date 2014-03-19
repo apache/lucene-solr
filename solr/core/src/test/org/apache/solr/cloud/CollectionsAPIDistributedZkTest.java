@@ -732,6 +732,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
       
       // poll for a second - it can take a moment before we are ready to serve
       waitForNon403or404or503(collectionClient);
+      collectionClient.shutdown();
     }
     
     // sometimes we restart one of the jetty nodes
@@ -751,6 +752,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
         
         // poll for a second - it can take a moment before we are ready to serve
         waitForNon403or404or503(collectionClient);
+        collectionClient.shutdown();
       }
     }
 
@@ -813,6 +815,8 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     collectionClient.commit();
     
     assertEquals(3, collectionClient.query(new SolrQuery("*:*")).getResults().getNumFound());
+    collectionClient.shutdown();
+    collectionClient = null;
     
     // lets try a collection reload
     
@@ -894,6 +898,8 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     
     // poll for a second - it can take a moment before we are ready to serve
     waitForNon403or404or503(collectionClient);
+    collectionClient.shutdown();
+    collectionClient = null;
     
     for (int j = 0; j < cnt; j++) {
       waitForRecoveriesToFinish(collectionName, zkStateReader, false);

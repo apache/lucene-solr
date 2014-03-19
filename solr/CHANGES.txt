@@ -243,6 +243,9 @@ Other Changes
 
 * SOLR-5881: Upgrade ZooKeeper to 3.4.6 (Shawn Heisey)
 
+* SOLR-5883: Many tests do not shutdown SolrServer. 
+  (Tomás Fernández Löbbe via Mark Miller)
+
 ==================  4.7.1  ==================
 
 Versions of Major Components

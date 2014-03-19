@@ -1619,8 +1619,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     CollectionAdminResponse res = new CollectionAdminResponse();
     if (client == null) {
       final String baseUrl = getBaseUrl((HttpSolrServer) clients.get(clientIndex));
-
-      res.setResponse(createNewSolrServer("", baseUrl).request(request));
+      SolrServer server = createNewSolrServer("", baseUrl);
+      res.setResponse(server.request(request));
+      server.shutdown();
     } else {
       res.setResponse(client.request(request));
     }

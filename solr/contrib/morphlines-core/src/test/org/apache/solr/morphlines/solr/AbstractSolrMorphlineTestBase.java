@@ -125,6 +125,7 @@ public class AbstractSolrMorphlineTestBase extends SolrTestCaseJ4 {
   @After
   public void tearDown() throws Exception {
     collector = null;
+    solrServer.shutdown();
     solrServer = null;
     super.tearDown();
   }
