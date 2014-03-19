@@ -3198,12 +3198,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     }
   }
 
-  private MergePolicy.DocMap getDocMap(MergePolicy.OneMerge merge, MergeState mergeState) {
-    MergePolicy.DocMap docMap = merge.getDocMap(mergeState);
-    assert docMap.isConsistent(merge.info.info.getDocCount());
-    return docMap;
-  }
-
   private void skipDeletedDoc(DocValuesFieldUpdates.Iterator[] updatesIters, int deletedDoc) {
     for (DocValuesFieldUpdates.Iterator iter : updatesIters) {
       if (iter.doc() == deletedDoc) {
@@ -3216,6 +3210,49 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     }
   }
   
+  private static class MergedDeletesAndUpdates {
+    ReadersAndUpdates mergedDeletesAndUpdates = null;
+    MergePolicy.DocMap docMap = null;
+    boolean initializedWritableLiveDocs = false;
+    
+    MergedDeletesAndUpdates() {}
+    
+    final void init(ReaderPool readerPool, MergePolicy.OneMerge merge, MergeState mergeState, boolean initWritableLiveDocs) throws IOException {
+      if (mergedDeletesAndUpdates == null) {
+        mergedDeletesAndUpdates = readerPool.get(merge.info, true);
+        docMap = merge.getDocMap(mergeState);
+        assert docMap.isConsistent(merge.info.info.getDocCount());
+      }
+      if (initWritableLiveDocs && !initializedWritableLiveDocs) {
+        mergedDeletesAndUpdates.initWritableLiveDocs();
+        this.initializedWritableLiveDocs = true;
+      }
+    }
+    
+  }
+  
+  private void maybeApplyMergedDVUpdates(MergePolicy.OneMerge merge, MergeState mergeState, int docUpto, 
+      MergedDeletesAndUpdates holder, String[] mergingFields, DocValuesFieldUpdates[] dvFieldUpdates,
+      DocValuesFieldUpdates.Iterator[] updatesIters, int curDoc) throws IOException {
+    int newDoc = -1;
+    for (int idx = 0; idx < mergingFields.length; idx++) {
+      DocValuesFieldUpdates.Iterator updatesIter = updatesIters[idx];
+      if (updatesIter.doc() == curDoc) { // document has an update
+        if (holder.mergedDeletesAndUpdates == null) {
+          holder.init(readerPool, merge, mergeState, false);
+        }
+        if (newDoc == -1) { // map once per all field updates, but only if there are any updates
+          newDoc = holder.docMap.map(docUpto);
+        }
+        DocValuesFieldUpdates dvUpdates = dvFieldUpdates[idx];
+        dvUpdates.add(newDoc, updatesIter.value());
+        updatesIter.nextDoc(); // advance to next document
+      } else {
+        assert updatesIter.doc() > curDoc : "field=" + mergingFields[idx] + " updateDoc=" + updatesIter.doc() + " curDoc=" + curDoc;
+      }
+    }
+  }
+
   /**
    * Carefully merges deletes and updates for the segments we just merged. This
    * is tricky because, although merging will clear all deletes (compacts the
@@ -3242,9 +3279,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     long minGen = Long.MAX_VALUE;
 
     // Lazy init (only when we find a delete to carry over):
-    ReadersAndUpdates mergedDeletesAndUpdates = null;
-    boolean initWritableLiveDocs = false;
-    MergePolicy.DocMap docMap = null;
+    final MergedDeletesAndUpdates holder = new MergedDeletesAndUpdates();
     final DocValuesFieldUpdates.Container mergedDVUpdates = new DocValuesFieldUpdates.Container();
     
     for (int i = 0; i < sourceSegments.size(); i++) {
@@ -3313,39 +3348,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
               assert !currentLiveDocs.get(j);
             } else {
               if (!currentLiveDocs.get(j)) {
-                if (mergedDeletesAndUpdates == null) {
-                  mergedDeletesAndUpdates = readerPool.get(merge.info, true);
-                  mergedDeletesAndUpdates.initWritableLiveDocs();
-                  initWritableLiveDocs = true;
-                  docMap = getDocMap(merge, mergeState);
-                } else if (!initWritableLiveDocs) { // mergedDeletes was initialized by field-updates changes
-                  mergedDeletesAndUpdates.initWritableLiveDocs();
-                  initWritableLiveDocs = true;
+                if (holder.mergedDeletesAndUpdates == null || !holder.initializedWritableLiveDocs) {
+                  holder.init(readerPool, merge, mergeState, true);
                 }
-                mergedDeletesAndUpdates.delete(docMap.map(docUpto));
+                holder.mergedDeletesAndUpdates.delete(holder.docMap.map(docUpto));
                 if (mergingFields != null) { // advance all iters beyond the deleted document
                   skipDeletedDoc(updatesIters, j);
                 }
               } else if (mergingFields != null) {
-                // document isn't deleted, check if any of the fields have an update to it
-                int newDoc = -1;
-                for (int idx = 0; idx < mergingFields.length; idx++) {
-                  DocValuesFieldUpdates.Iterator updatesIter = updatesIters[idx];
-                  if (updatesIter.doc() == j) { // document has an update
-                    if (mergedDeletesAndUpdates == null) {
-                      mergedDeletesAndUpdates = readerPool.get(merge.info, true);
-                      docMap = getDocMap(merge, mergeState);
-                    }
-                    if (newDoc == -1) { // map once per all field updates, but only if there are any updates
-                      newDoc = docMap.map(docUpto);
-                    }
-                    DocValuesFieldUpdates dvUpdates = dvFieldUpdates[idx];
-                    dvUpdates.add(newDoc, updatesIter.value());
-                    updatesIter.nextDoc(); // advance to next document
-                  } else {
-                    assert updatesIter.doc() > j : "updateDoc=" + updatesIter.doc() + " curDoc=" + j;
-                  }
-                }
+                maybeApplyMergedDVUpdates(merge, mergeState, docUpto, holder, mergingFields, dvFieldUpdates, updatesIters, j);
               }
               docUpto++;
             }
@@ -3355,24 +3366,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
           for (int j = 0; j < docCount; j++) {
             if (prevLiveDocs.get(j)) {
               // document isn't deleted, check if any of the fields have an update to it
-              int newDoc = -1;
-              for (int idx = 0; idx < mergingFields.length; idx++) {
-                DocValuesFieldUpdates.Iterator updatesIter = updatesIters[idx];
-                if (updatesIter.doc() == j) { // document has an update
-                  if (mergedDeletesAndUpdates == null) {
-                    mergedDeletesAndUpdates = readerPool.get(merge.info, true);
-                    docMap = getDocMap(merge, mergeState);
-                  }
-                  if (newDoc == -1) { // map once per all field updates, but only if there are any updates
-                    newDoc = docMap.map(docUpto);
-                  }
-                  DocValuesFieldUpdates dvUpdates = dvFieldUpdates[idx];
-                  dvUpdates.add(newDoc, updatesIter.value());
-                  updatesIter.nextDoc(); // advance to next document
-                } else {
-                  assert updatesIter.doc() > j : "updateDoc=" + updatesIter.doc() + " curDoc=" + j;
-                }
-              }
+              maybeApplyMergedDVUpdates(merge, mergeState, docUpto, holder, mergingFields, dvFieldUpdates, updatesIters, j);
               // advance docUpto for every non-deleted document
               docUpto++;
             } else {
@@ -3389,63 +3383,22 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
         // does:
         for (int j = 0; j < docCount; j++) {
           if (!currentLiveDocs.get(j)) {
-            if (mergedDeletesAndUpdates == null) {
-              mergedDeletesAndUpdates = readerPool.get(merge.info, true);
-              mergedDeletesAndUpdates.initWritableLiveDocs();
-              initWritableLiveDocs = true;
-              docMap = getDocMap(merge, mergeState);
-            } else if (!initWritableLiveDocs) { // mergedDeletes was initialized by field-updates changes
-              mergedDeletesAndUpdates.initWritableLiveDocs();
-              initWritableLiveDocs = true;
+            if (holder.mergedDeletesAndUpdates == null || !holder.initializedWritableLiveDocs) {
+              holder.init(readerPool, merge, mergeState, true);
             }
-            mergedDeletesAndUpdates.delete(docMap.map(docUpto));
+            holder.mergedDeletesAndUpdates.delete(holder.docMap.map(docUpto));
             if (mergingFields != null) { // advance all iters beyond the deleted document
               skipDeletedDoc(updatesIters, j);
             }
           } else if (mergingFields != null) {
-            // document isn't deleted, check if any of the fields have an update to it
-            int newDoc = -1;
-            for (int idx = 0; idx < mergingFields.length; idx++) {
-              DocValuesFieldUpdates.Iterator updatesIter = updatesIters[idx];
-              if (updatesIter.doc() == j) { // document has an update
-                if (mergedDeletesAndUpdates == null) {
-                  mergedDeletesAndUpdates = readerPool.get(merge.info, true);
-                  docMap = getDocMap(merge, mergeState);
-                }
-                if (newDoc == -1) { // map once per all field updates, but only if there are any updates
-                  newDoc = docMap.map(docUpto);
-                }
-                DocValuesFieldUpdates dvUpdates = dvFieldUpdates[idx];
-                dvUpdates.add(newDoc, updatesIter.value());
-                updatesIter.nextDoc(); // advance to next document
-              } else {
-                assert updatesIter.doc() > j : "field=" + mergingFields[idx] + " updateDoc=" + updatesIter.doc() + " curDoc=" + j;
-              }
-            }
+            maybeApplyMergedDVUpdates(merge, mergeState, docUpto, holder, mergingFields, dvFieldUpdates, updatesIters, j);
           }
           docUpto++;
         }
       } else if (mergingFields != null) {
         // no deletions before or after, but there were updates
         for (int j = 0; j < docCount; j++) {
-          int newDoc = -1;
-          for (int idx = 0; idx < mergingFields.length; idx++) {
-            DocValuesFieldUpdates.Iterator updatesIter = updatesIters[idx];
-            if (updatesIter.doc() == j) { // document has an update
-              if (mergedDeletesAndUpdates == null) {
-                mergedDeletesAndUpdates = readerPool.get(merge.info, true);
-                docMap = getDocMap(merge, mergeState);
-              }
-              if (newDoc == -1) { // map once per all field updates, but only if there are any updates
-                newDoc = docMap.map(docUpto);
-              }
-              DocValuesFieldUpdates dvUpdates = dvFieldUpdates[idx];
-              dvUpdates.add(newDoc, updatesIter.value());
-              updatesIter.nextDoc(); // advance to next document
-            } else {
-              assert updatesIter.doc() > j : "updateDoc=" + updatesIter.doc() + " curDoc=" + j;
-            }
-          }
+          maybeApplyMergedDVUpdates(merge, mergeState, docUpto, holder, mergingFields, dvFieldUpdates, updatesIters, j);
           // advance docUpto for every non-deleted document
           docUpto++;
         }
@@ -3467,21 +3420,21 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
         // NOTE: currently this is the only place which throws a true
         // IOException. If this ever changes, we need to extend that try/finally
         // block to the rest of the method too.
-        mergedDeletesAndUpdates.writeFieldUpdates(directory, mergedDVUpdates);
+        holder.mergedDeletesAndUpdates.writeFieldUpdates(directory, mergedDVUpdates);
         success = true;
       } finally {
         if (!success) {
-          mergedDeletesAndUpdates.dropChanges();
+          holder.mergedDeletesAndUpdates.dropChanges();
           readerPool.drop(merge.info);
         }
       }
     }
     
     if (infoStream.isEnabled("IW")) {
-      if (mergedDeletesAndUpdates == null) {
+      if (holder.mergedDeletesAndUpdates == null) {
         infoStream.message("IW", "no new deletes or field updates since merge started");
       } else {
-        String msg = mergedDeletesAndUpdates.getPendingDeleteCount() + " new deletes";
+        String msg = holder.mergedDeletesAndUpdates.getPendingDeleteCount() + " new deletes";
         if (mergedDVUpdates.any()) {
           msg += " and " + mergedDVUpdates.size() + " new field updates";
         }
@@ -3492,7 +3445,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
 
     merge.info.setBufferedDeletesGen(minGen);
 
-    return mergedDeletesAndUpdates;
+    return holder.mergedDeletesAndUpdates;
   }
 
   synchronized private boolean commitMerge(MergePolicy.OneMerge merge, MergeState mergeState) throws IOException {
