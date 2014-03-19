@@ -17,54 +17,48 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.impl.CloudSolrServer;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.params.CollectionParams.CollectionAction;
-import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.cloud.ZkController;
-import org.apache.solr.SolrTestCaseJ4;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Random;
+
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudSolrServer;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Test of the MiniSolrCloudCluster functionality.  This doesn't derive from
  * LuceneTestCase, as the MiniSolrCloudCluster is designed to be used outside of the
  * lucene test hierarchy.
  */
-@Ignore
 public class TestMiniSolrCloudCluster {
 
   private static Logger log = LoggerFactory.getLogger(MiniSolrCloudCluster.class);
   private static final int NUM_SERVERS = 5;
   private static final int NUM_SHARDS = 2;
   private static final int REPLICATION_FACTOR = 2;
-  private static final Random RANDOM = new Random();
   private static MiniSolrCloudCluster miniCluster;
 
   @BeforeClass
@@ -79,6 +73,7 @@ public class TestMiniSolrCloudCluster {
     if (miniCluster != null) {
       miniCluster.shutdown();
     }
+    miniCluster = null;
   }
 
   @Test
@@ -103,7 +98,7 @@ public class TestMiniSolrCloudCluster {
     CloudSolrServer cloudSolrServer = null;
     SolrZkClient zkClient = null;
     try {
-      cloudSolrServer = new CloudSolrServer(miniCluster.getZkServer().getZkAddress(), RANDOM.nextBoolean());
+      cloudSolrServer = new CloudSolrServer(miniCluster.getZkServer().getZkAddress(), true);
       cloudSolrServer.connect();
       zkClient = new SolrZkClient(miniCluster.getZkServer().getZkAddress(),
         AbstractZkTestCase.TIMEOUT, 45000, null);
