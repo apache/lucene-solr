@@ -72,8 +72,15 @@ public class FieldPhraseList {
     {      
       phraseCandidate.clear();
 
-      TermInfo ti = fieldTermStack.pop();
+      TermInfo ti = null;
+      TermInfo first = null;
+      
+      first = ti = fieldTermStack.pop();
       currMap = fieldQuery.getFieldTermMap( field, ti.getText() );
+      while (currMap == null && ti.getNext() != first) {
+        ti = ti.getNext();
+        currMap = fieldQuery.getFieldTermMap( field, ti.getText() );
+      }
 
       // if not found, discard top TermInfo from stack, then try next element
       if( currMap == null ) continue;
@@ -81,10 +88,15 @@ public class FieldPhraseList {
       // if found, search the longest phrase
       phraseCandidate.add( ti );
       while( true ){
-        ti = fieldTermStack.pop();
+        first = ti = fieldTermStack.pop();
         nextMap = null;
-        if( ti != null )
+        if( ti != null ) {
           nextMap = currMap.getTermMap( ti.getText() );
+          while (nextMap == null && ti.getNext() != first) {
+            ti = ti.getNext();
+            nextMap = currMap.getTermMap( ti.getText() );
+          }
+        }
         if( ti == null || nextMap == null ){
           if( ti != null ) 
             fieldTermStack.push( ti );
