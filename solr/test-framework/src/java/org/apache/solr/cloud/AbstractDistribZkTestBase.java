@@ -68,7 +68,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     System.setProperty(ZK_HOST, zkServer.getZkAddress());
     System.setProperty(ENABLE_UPDATE_LOG, "true");
     System.setProperty(REMOVE_VERSION_FIELD, "true");
-    System.setProperty(ZOOKEEPER_FORCE_SYNC, "false");
+    //System.setProperty(ZOOKEEPER_FORCE_SYNC, "false");
 
     String schema = getSchemaFile();
     if (schema == null) schema = "schema.xml";
@@ -223,7 +223,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     System.clearProperty("solr.directoryFactory");
     System.clearProperty("solr.test.sys.prop1");
     System.clearProperty("solr.test.sys.prop2");
-    System.clearProperty(ZOOKEEPER_FORCE_SYNC);
+    //System.clearProperty(ZOOKEEPER_FORCE_SYNC);
     
     resetExceptionIgnores();
     super.tearDown();
