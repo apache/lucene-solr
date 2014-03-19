@@ -177,9 +177,6 @@ Bug Fixes
 * SOLR-5861: Recovery should not set onlyIfLeaderActive=true for slice in 'recovery'
   state. (shalin)
 
-* SOLR-5866: UpdateShardHandler needs to use the system default scheme registry to
-  properly handle https via javax.net.ssl.* properties. (Steve Davids via shalin)
-
 * SOLR-5550: shards.info is not returned by a short circuited distributed query.
   (Timothy Potter, shalin)
 
@@ -278,6 +275,9 @@ Bug Fixes
 
 * SOLR-5867: OverseerCollectionProcessor isn't properly generating https urls in some
   cases. (Steve Davids via shalin)
+
+* SOLR-5866: UpdateShardHandler needs to use the system default scheme registry to
+  properly handle https via javax.net.ssl.* properties. (Steve Davids via shalin)
 
 ==================  4.7.0 ==================
 
