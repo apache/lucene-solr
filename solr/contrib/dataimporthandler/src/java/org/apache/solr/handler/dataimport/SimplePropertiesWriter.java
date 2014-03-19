@@ -90,7 +90,7 @@ public class SimplePropertiesWriter extends DIHProperties {
     if(params.get(LOCALE) != null) {
       String localeStr = params.get(LOCALE);
       for (Locale l : Locale.getAvailableLocales()) {
-        if(localeStr.equals(l.getDisplayName())) {
+        if(localeStr.equals(l.getDisplayName(Locale.ROOT))) {
           locale = l;
           break;
         }

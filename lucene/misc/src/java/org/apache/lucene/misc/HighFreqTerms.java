@@ -31,6 +31,7 @@ import org.apache.lucene.util.BytesRef;
 import java.io.File;
 import java.io.IOException;
 import java.util.Comparator;
+import java.util.Locale;
 
 /**
  * <code>HighFreqTerms</code> class extracts the top n most frequent terms
@@ -76,7 +77,7 @@ public class HighFreqTerms {
     TermStats[] terms = getHighFreqTerms(reader, numTerms, field, comparator);
 
     for (int i = 0; i < terms.length; i++) {
-      System.out.printf("%s:%s \t totalTF = %,d \t docFreq = %,d \n",
+      System.out.printf(Locale.ROOT, "%s:%s \t totalTF = %,d \t docFreq = %,d \n",
             terms[i].field, terms[i].termtext.utf8ToString(), terms[i].totalTermFreq, terms[i].docFreq);
     }
     reader.close();
