@@ -24,7 +24,7 @@ $Id$
 
 Versions of Major Components
 ---------------------
-Apache Tika 1.4
+Apache Tika 1.5
 Carrot2 3.8.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
@@ -70,7 +70,7 @@ Other Changes
 
 Versions of Major Components
 ---------------------
-Apache Tika 1.4
+Apache Tika 1.5
 Carrot2 3.8.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
