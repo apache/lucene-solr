@@ -134,6 +134,9 @@ New Features
   
 * SOLR-1604: Wildcards, ORs etc inside Phrase Queries. (Ahmet Arslan via Erick Erickson)
 
+* SOLR-5865: Provide a MiniSolrCloudCluster to enable easier testing.
+ (Greg Chanan via Mark Miller)
+
 Bug Fixes
 ----------------------
 
