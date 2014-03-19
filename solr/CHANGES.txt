@@ -81,6 +81,9 @@ New Features
 * SOLR-5477: Async execution of OverseerCollectionProcessor(CollectionsAPI)
   tasks. (Anshum Gupta)
 
+* SOLR-5865: Provide a MiniSolrCloudCluster to enable easier testing.
+ (Greg Chanan via Mark Miller)
+
 Bug Fixes
 ----------------------
 
