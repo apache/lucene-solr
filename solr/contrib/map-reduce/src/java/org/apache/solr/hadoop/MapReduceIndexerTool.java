@@ -28,7 +28,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -81,8 +80,8 @@ import org.apache.solr.hadoop.morphline.MorphlineMapRunner;
 import org.apache.solr.hadoop.morphline.MorphlineMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.kitesdk.morphline.base.Fields;
+
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.io.ByteStreams;
@@ -183,11 +182,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
         .action(new HelpArgumentAction() {
           @Override
           public void run(ArgumentParser parser, Argument arg, Map<String, Object> attrs, String flag, Object value) throws ArgumentParserException {
-            try {
-              parser.printHelp(new PrintWriter(new OutputStreamWriter(System.out, "UTF-8")));
-            } catch (UnsupportedEncodingException e) {
-              throw new RuntimeException("Won't Happen for UTF-8");
-            }  
+            parser.printHelp();
             System.out.println();
             System.out.print(ToolRunnerHelpFormatter.getGenericCommandUsage());
             //ToolRunner.printGenericCommandUsage(System.out);
@@ -206,31 +201,6 @@ public class MapReduceIndexerTool extends Configured implements Tool {
               "  --output-dir hdfs://c2202.mycompany.com/user/$USER/test \\\n" + 
               "  --shards 1 \\\n" + 
               "  hdfs:///user/$USER/test-documents/sample-statuses-20120906-141433.avro\n" +
-              "\n" +
-              "# (Re)index all files that match all of the following conditions:\n" +
-              "# 1) File is contained in dir tree hdfs:///user/$USER/solrloadtest/twitter/tweets\n" +
-              "# 2) file name matches the glob pattern 'sample-statuses*.gz'\n" +
-              "# 3) file was last modified less than 100000 minutes ago\n" +
-              "# 4) file size is between 1 MB and 1 GB\n" +
-              "# Also include extra library jar file containing JSON tweet Java parser:\n" +
-              "hadoop jar target/solr-map-reduce-*.jar " + "com.cloudera.cdk.morphline.hadoop.find.HdfsFindTool" + " \\\n" + 
-              "  -find hdfs:///user/$USER/solrloadtest/twitter/tweets \\\n" + 
-              "  -type f \\\n" + 
-              "  -name 'sample-statuses*.gz' \\\n" + 
-              "  -mmin -1000000 \\\n" + 
-              "  -size -100000000c \\\n" + 
-              "  -size +1000000c \\\n" + 
-              "| sudo -u hdfs hadoop \\\n" + 
-              "  --config /etc/hadoop/conf.cloudera.mapreduce1 \\\n" + 
-              "  jar target/solr-map-reduce-*.jar \\\n" +
-              "  -D 'mapred.child.java.opts=-Xmx500m' \\\n" + 
-//            "  -D 'mapreduce.child.java.opts=-Xmx500m' \\\n" + 
-              "  --log4j src/test/resources/log4j.properties \\\n" + 
-              "  --morphline-file ../search-core/src/test/resources/test-morphlines/tutorialReadJsonTestTweets.conf \\\n" + 
-              "  --solr-home-dir src/test/resources/solr/minimr \\\n" + 
-              "  --output-dir hdfs://c2202.mycompany.com/user/$USER/test \\\n" + 
-              "  --shards 100 \\\n" + 
-              "  --input-list -\n" +
               "\n" +
               "# Go live by merging resulting index shards into a live Solr cluster\n" +
               "# (explicitly specify Solr URLs - for a SolrCloud cluster see next example):\n" +

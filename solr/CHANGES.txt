@@ -56,6 +56,9 @@ Bug Fixes
 
 * SOLR-5866: UpdateShardHandler needs to use the system default scheme registry to
   properly handle https via javax.net.ssl.* properties. (Steve Davids via shalin)
+  
+* SOLR-5782: The full MapReduceIndexer help text does not display when using
+  --help.  (Mark Miller, Wolfgang Hoschek)
 
 ==================  4.7.0 ==================
 
