@@ -28,7 +28,7 @@ Apache Tika 1.5
 Carrot2 3.8.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
-Apache ZooKeeper 3.4.5
+Apache ZooKeeper 3.4.6
 
 Upgrading from Solr 4.7
 ----------------------
@@ -45,6 +45,8 @@ Upgrading from Solr 4.7
   7u1.  Please review the list of known JVM bugs at:
   http://wiki.apache.org/lucene-java/JavaBugs
   Solr 4.8 was also tested to work with Java 8, so give it a try!
+
+* ZooKeeper is upgraded from 3.4.5 to 3.4.6.
 
 Detailed Change List
 ----------------------
@@ -185,6 +187,8 @@ Other Changes
   (Furkan KAMACI via shalin)
 
 * SOLR-5763: Upgrade to Tika 1.5 (Vitaliy Zhovtyuk via Steve Rowe)
+
+* SOLR-5881: Upgrade ZooKeeper to 3.4.6 (Shawn Heisey)
 
 ==================  4.7.1  ==================
 
