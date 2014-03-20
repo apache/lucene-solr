@@ -153,7 +153,7 @@ public class RandomSamplingFacetsCollector extends FacetsCollector {
   
   /** Create a sampled copy of the matching documents list. */
   private List<MatchingDocs> createSampledDocs(List<MatchingDocs> matchingDocsList) {
-    List<MatchingDocs> sampledDocsList = new ArrayList<MatchingDocs>(matchingDocsList.size());
+    List<MatchingDocs> sampledDocsList = new ArrayList<>(matchingDocsList.size());
     for (MatchingDocs docs : matchingDocsList) {
       sampledDocsList.add(createSample(docs));
     }
