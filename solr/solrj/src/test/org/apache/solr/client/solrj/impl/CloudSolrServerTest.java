@@ -18,13 +18,20 @@ package org.apache.solr.client.solrj.impl;
  */
 
 import java.io.File;
+import java.io.IOException;
 import java.net.MalformedURLException;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeoutException;
 
-import org.apache.lucene.util.LuceneTestCase.BadApple;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -33,7 +40,15 @@ import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -189,9 +204,104 @@ public class CloudSolrServerTest extends AbstractFullDistribZkTestBase {
     } finally {
       threadedClient.shutdown();
     }
-    
+
+    // Test that queries with _route_ params are routed by the client
+
+    // Track request counts on each node before query calls
+    ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
+    DocCollection col = clusterState.getCollection(DEFAULT_COLLECTION);
+    Map<String, Long> requestCountsMap = Maps.newHashMap();
+    for (Slice slice : col.getSlices()) {
+      for (Replica replica : slice.getReplicas()) {
+        String baseURL = (String) replica.get(ZkStateReader.BASE_URL_PROP);
+        requestCountsMap.put(baseURL, getNumRequests(new HttpSolrServer(baseURL)));
+      }
+    }
+
+    // Collect the base URLs of the replicas of shard that's expected to be hit
+    DocRouter router = col.getRouter();
+    Collection<Slice> expectedSlices = router.getSearchSlicesSingle("0", null, col);
+    Set<String> expectedBaseURLs = Sets.newHashSet();
+    for (Slice expectedSlice : expectedSlices) {
+      for (Replica replica : expectedSlice.getReplicas()) {
+        String baseURL = (String) replica.get(ZkStateReader.BASE_URL_PROP);
+        expectedBaseURLs.add(baseURL);
+      }
+    }
+
+    assertTrue("expected urls is not fewer than all urls! expected=" + expectedBaseURLs
+        + "; all=" + requestCountsMap.keySet(),
+        expectedBaseURLs.size() < requestCountsMap.size());
+
+    // Calculate a number of shard keys that route to the same shard.
+    List<String> sameShardRoutes = Lists.newArrayList();
+    sameShardRoutes.add("0");
+    for (int i = 1; i < 1000; i++) {
+      String shardKey = Integer.toString(i);
+      Collection<Slice> slices = router.getSearchSlicesSingle(shardKey, null, col);
+      if (expectedSlices.equals(slices)) {
+        sameShardRoutes.add(shardKey);
+      }
+    }
+
+    assertTrue(sameShardRoutes.size() > 1);
+
+    // Do 1000 queries with _route_ parameter to the same shard
+    for (int i = 0; i < 1000; i++) {
+      ModifiableSolrParams solrParams = new ModifiableSolrParams();
+      solrParams.set(CommonParams.Q, "*:*");
+      solrParams.set(ShardParams._ROUTE_, sameShardRoutes.get(random().nextInt(sameShardRoutes.size())));
+      cloudClient.query(solrParams);
+    }
+
+    // Request counts increase from expected nodes should aggregate to 1000, while there should be
+    // no increase in unexpected nodes.
+    int increaseFromExpectedUrls = 0;
+    int increaseFromUnexpectedUrls = 0;
+    Map<String, Long> numRequestsToUnexpectedUrls = Maps.newHashMap();
+    for (Slice slice : col.getSlices()) {
+      for (Replica replica : slice.getReplicas()) {
+        String baseURL = (String) replica.get(ZkStateReader.BASE_URL_PROP);
+
+        Long prevNumRequests = requestCountsMap.get(baseURL);
+        Long curNumRequests = getNumRequests(new HttpSolrServer(baseURL));
+
+        long delta = curNumRequests - prevNumRequests;
+        if (expectedBaseURLs.contains(baseURL)) {
+          increaseFromExpectedUrls += delta;
+        } else {
+          increaseFromUnexpectedUrls += delta;
+          numRequestsToUnexpectedUrls.put(baseURL, delta);
+        }
+      }
+    }
+
+    assertEquals("Unexpected number of requests to expected URLs", 1000, increaseFromExpectedUrls);
+    assertEquals("Unexpected number of requests to unexpected URLs: " + numRequestsToUnexpectedUrls,
+        0, increaseFromUnexpectedUrls);
+
     del("*:*");
     commit();
+  }
+
+  private Long getNumRequests(HttpSolrServer solrServer) throws
+      SolrServerException, IOException {
+    HttpSolrServer server = new HttpSolrServer(solrServer.getBaseURL());
+    server.setConnectionTimeout(15000);
+    server.setSoTimeout(60000);
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("qt", "/admin/mbeans");
+    params.set("stats", "true");
+    params.set("key", "org.apache.solr.handler.StandardRequestHandler");
+    params.set("cat", "QUERYHANDLER");
+    // use generic request to avoid extra processing of queries
+    QueryRequest req = new QueryRequest(params);
+    NamedList<Object> resp = server.request(req);
+    NamedList mbeans = (NamedList) resp.get("solr-mbeans");
+    NamedList queryHandler = (NamedList) mbeans.get("QUERYHANDLER");
+    NamedList select = (NamedList) queryHandler.get("org.apache.solr.handler.StandardRequestHandler");
+    NamedList stats = (NamedList) select.get("stats");
+    return (Long) stats.get("requests");
   }
   
   @Override
