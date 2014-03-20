@@ -1510,7 +1510,43 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       }
       
       if (failMessage != null) {
-        retry  = true;
+        log.info("shard inconsistency - waiting ...");
+        retry = true;
+      } else {
+        retry = false;
+      }
+      cnt++;
+      if (cnt > 20) break;
+      Thread.sleep(2000);
+    } while (retry);
+  }
+  
+  
+  public void waitForNoShardInconsistency() throws Exception {
+    log.info("Wait for no shard inconsistency");
+    int cnt = 0;
+    boolean retry = false;
+    do {
+      try {
+        commit();
+      } catch (Throwable t) {
+        t.printStackTrace();
+        // we don't care if this commit fails on some nodes
+      }
+      
+      updateMappingsFromZk(jettys, clients);
+      
+      Set<String> theShards = shardToJetty.keySet();
+      String failMessage = null;
+      for (String shard : theShards) {
+        failMessage = checkShardConsistency(shard, true, false);
+      }
+      
+      if (failMessage != null) {
+        log.info("shard inconsistency - waiting ...");
+        retry = true;
+      } else {
+        retry = false;
       }
       cnt++;
       if (cnt > 20) break;

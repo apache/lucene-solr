@@ -313,7 +313,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
         
         try {
           numAdds++;
-          if (numAdds > 4000)
+          if (numAdds > (TEST_NIGHTLY ? 4002 : 197))
             continue;
           SolrInputDocument doc = getDoc(
               "id",
