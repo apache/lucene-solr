@@ -44,7 +44,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,9 +51,10 @@ import org.slf4j.LoggerFactory;
 /**
  * Test of the MiniSolrCloudCluster functionality.  This doesn't derive from
  * LuceneTestCase, as the MiniSolrCloudCluster is designed to be used outside of the
- * lucene test hierarchy.
+ * lucene test hierarchy. Because of this, normal checks are not applied to this test
+ * to ensure it does not do things like pollute future tests that will run in this JVM.
+ * *Please be very careful*.
  */
-@Ignore
 public class TestMiniSolrCloudCluster {
 
   private static Logger log = LoggerFactory.getLogger(MiniSolrCloudCluster.class);
@@ -76,6 +76,14 @@ public class TestMiniSolrCloudCluster {
       miniCluster.shutdown();
     }
     miniCluster = null;
+    System.clearProperty("solr.tests.mergePolicy");
+    System.clearProperty("solr.tests.maxBufferedDocs");
+    System.clearProperty("solr.tests.maxIndexingThreads");
+    System.clearProperty("solr.tests.ramBufferSizeMB");
+    System.clearProperty("solr.tests.mergeScheduler");
+    System.clearProperty("solr.directoryFactory");
+    System.clearProperty("solr.solrxml.location");
+    System.clearProperty("zkHost");
   }
 
   @Test

@@ -17,14 +17,6 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.commons.io.IOUtils;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.ZooDefs;
-
-import org.eclipse.jetty.servlet.ServletHolder;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -33,12 +25,26 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.SortedMap;
 
-import com.google.common.io.Files;
-
+import org.apache.commons.io.IOUtils;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.ZooDefs;
+import org.eclipse.jetty.servlet.ServletHolder;
+import org.junit.Rule;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import com.google.common.io.Files;
+
 public class MiniSolrCloudCluster {
+  @Rule
+  public TestRule testRules = 
+    RuleChain.outerRule(new SystemPropertiesRestoreRule());
+  
   private static Logger log = LoggerFactory.getLogger(MiniSolrCloudCluster.class);
 
   private ZkTestServer zkServer;
@@ -135,10 +141,18 @@ public class MiniSolrCloudCluster {
    * Shut down the cluster, including all Solr nodes and ZooKeeper
    */
   public void shutdown() throws Exception {
-    for (int i = jettys.size() - 1; i >= 0; --i) {
-      stopJettySolrRunner(i);
+    try {
+      for (int i = jettys.size() - 1; i >= 0; --i) {
+        stopJettySolrRunner(i);
+      }
+    } finally {
+      try {
+        zkServer.shutdown();
+      } finally {
+        System.clearProperty("solr.solrxml.location");
+        System.clearProperty("zkHost");
+      }
     }
-    zkServer.shutdown();
   }
 
   private static String getHostContextSuitableForServletContext(String ctx) {
