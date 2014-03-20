@@ -194,7 +194,23 @@ final class ZooKeeperInspector {
       dir = confDir.getParentFile();
     }
     FileUtils.writeStringToFile(new File(dir, "solr.xml"), "<solr><cores><core name=\"collection1\" instanceDir=\".\" /></cores></solr>", "UTF-8");
+    verifyConfigDir(confDir);
     return dir;
+  }
+  
+  private void verifyConfigDir(File confDir) throws IOException {
+    File solrConfigFile = new File(confDir, "solrconfig.xml");
+    if (!solrConfigFile.exists()) {
+      throw new IOException("Detected invalid Solr config dir in ZooKeeper - Reason: File not found: "
+          + solrConfigFile.getName());
+    }
+    if (!solrConfigFile.isFile()) {
+      throw new IOException("Detected invalid Solr config dir in ZooKeeper - Reason: Not a file: "
+          + solrConfigFile.getName());
+    }
+    if (!solrConfigFile.canRead()) {
+      throw new IOException("Insufficient permissions to read file: " + solrConfigFile);
+    }    
   }
 
 }

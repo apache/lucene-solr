@@ -60,6 +60,10 @@ Bug Fixes
 * SOLR-5782: The full MapReduceIndexer help text does not display when using
   --help.  (Mark Miller, Wolfgang Hoschek)
 
+* SOLR-5824: Merge up Solr MapReduce contrib code to latest external changes.
+  Includes a few minor bug fixes.
+  (Mark Miller)
+
 ==================  4.7.0 ==================
 
 Versions of Major Components
