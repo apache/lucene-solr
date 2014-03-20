@@ -603,7 +603,7 @@ final class DocumentsWriter {
     throws IOException {
     final DocumentsWriterDeleteQueue flushingDeleteQueue;
     if (infoStream.isEnabled("DW")) {
-      infoStream.message("DW", Thread.currentThread().getName() + " startFullFlush");
+      infoStream.message("DW", "startFullFlush");
     }
     
     synchronized (this) {
