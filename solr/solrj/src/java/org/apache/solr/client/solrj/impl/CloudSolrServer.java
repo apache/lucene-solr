@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -61,6 +60,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
@@ -542,6 +542,11 @@ public class CloudSolrServer extends SolrServer {
             "Could not find collection: " + collection);
       }
 
+      String shardKeys =  reqParams.get(ShardParams._ROUTE_);
+      if(shardKeys == null) {
+        shardKeys = reqParams.get(ShardParams.SHARD_KEYS); // deprecated
+      }
+
       // TODO: not a big deal because of the caching, but we could avoid looking
       // at every shard
       // when getting leaders if we tweaked some things
@@ -551,16 +556,12 @@ public class CloudSolrServer extends SolrServer {
       // add it to the Map of slices.
       Map<String,Slice> slices = new HashMap<>();
       for (String collectionName : collectionsList) {
-        Collection<Slice> colSlices = clusterState
-            .getActiveSlices(collectionName);
-        if (colSlices == null) {
-          throw new SolrServerException("Could not find collection:"
-              + collectionName);
-        }
-        ClientUtils.addSlices(slices, collectionName, colSlices, true);
+        DocCollection col = clusterState.getCollection(collectionName);
+        Collection<Slice> routeSlices = col.getRouter().getSearchSlices(shardKeys, reqParams , col);
+        ClientUtils.addSlices(slices, collectionName, routeSlices, true);
       }
       Set<String> liveNodes = clusterState.getLiveNodes();
-      
+
       List<String> leaderUrlList = null;
       List<String> urlList = null;
       List<String> replicasList = null;
