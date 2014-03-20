@@ -115,6 +115,10 @@ New Features
 * LUCENE-4072: Add ICUNormalizer2CharFilter, which lets you do unicode normalization
   with offset correction before the tokenizer. (David Goldfarb, Ippei UKAI via Robert Muir)
 
+* LUCENE-5476: Add RandomSamplingFacetsCollector for computing facets on a sampled
+  set of matching hits, in cases where there are millions of hits.
+  (Rob Audenaerde, Gilad Barkai, Shai Erera)
+
 API Changes
 
 * LUCENE-5454: Add RandomAccessOrds, an optional extension of SortedSetDocValues
