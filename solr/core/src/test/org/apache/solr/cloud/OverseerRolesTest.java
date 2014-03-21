@@ -20,7 +20,7 @@ package org.apache.solr.cloud;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.getSortedNodeNames;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.getSortedOverseerNodeNames;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.getLeaderNode;
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 
@@ -95,7 +95,7 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
     createCollection(collectionName, client);
 
     waitForRecoveriesToFinish(collectionName, false);
-    List<String> l = OverseerCollectionProcessor.getSortedNodeNames(client.getZkStateReader().getZkClient()) ;
+    List<String> l = OverseerCollectionProcessor.getSortedOverseerNodeNames(client.getZkStateReader().getZkClient()) ;
 
     log.info("All nodes {}", l);
     String currentLeader = OverseerCollectionProcessor.getLeaderNode(client.getZkStateReader().getZkClient());
@@ -118,15 +118,9 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
       }
       Thread.sleep(100);
     }
-    /*if(!leaderchanged){
-
-      log.warn("expected {}, current order {}",
-          overseerDesignate,
-          getSortedNodeNames(client.getZkStateReader().getZkClient())+ " ldr :"+ OverseerCollectionProcessor.getLeaderNode(client.getZkStateReader().getZkClient()) );
-    }*/
     assertTrue("could not set the new overseer . expected "+
         overseerDesignate + " current order : " +
-        getSortedNodeNames(client.getZkStateReader().getZkClient()) +
+        getSortedOverseerNodeNames(client.getZkStateReader().getZkClient()) +
         " ldr :"+ OverseerCollectionProcessor.getLeaderNode(client.getZkStateReader().getZkClient()) ,leaderchanged);
 
 
@@ -145,7 +139,7 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
     timeout = System.currentTimeMillis()+10000;
     leaderchanged = false;
     for(;System.currentTimeMillis() < timeout;){
-      List<String> sortedNodeNames = getSortedNodeNames(client.getZkStateReader().getZkClient());
+      List<String> sortedNodeNames = getSortedOverseerNodeNames(client.getZkStateReader().getZkClient());
       if(sortedNodeNames.get(1) .equals(anotherOverseer) || sortedNodeNames.get(0).equals(anotherOverseer)){
         leaderchanged =true;
         break;
@@ -153,14 +147,18 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
       Thread.sleep(100);
     }
 
-    assertTrue("New overseer not the frontrunner : "+ getSortedNodeNames(client.getZkStateReader().getZkClient()) + " expected : "+ anotherOverseer, leaderchanged);
+    assertTrue("New overseer not the frontrunner : "+ getSortedOverseerNodeNames(client.getZkStateReader().getZkClient()) + " expected : "+ anotherOverseer, leaderchanged);
 
 
     String currentOverseer = getLeaderNode(client.getZkStateReader().getZkClient());
 
+    String killedOverseer = currentOverseer;
+
     log.info("Current Overseer {}", currentOverseer);
     Pattern pattern = Pattern.compile("(.*):(\\d*)(.*)");
     Matcher m = pattern.matcher(currentOverseer);
+    JettySolrRunner stoppedJetty =null;
+
     if(m.matches()){
       String hostPort =  m.group(1)+":"+m.group(2);
 
@@ -171,7 +169,7 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
         if(s.contains(hostPort)){
           log.info("leader node {}",s);
           ChaosMonkey.stop(jetty);
-
+          stoppedJetty = jetty;
           timeout = System.currentTimeMillis()+10000;
           leaderchanged = false;
           for(;System.currentTimeMillis() < timeout;){
@@ -188,6 +186,25 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
       }
 
     }
+
+    ChaosMonkey.start(stoppedJetty);
+
+    timeout = System.currentTimeMillis()+10000;
+    leaderchanged = false;
+    for(;System.currentTimeMillis() < timeout;){
+      List<String> sortedNodeNames = getSortedOverseerNodeNames(client.getZkStateReader().getZkClient());
+      if(sortedNodeNames.get(1).equals(killedOverseer) || sortedNodeNames.get(0).equals(killedOverseer)){
+        leaderchanged =true;
+        break;
+      }
+      Thread.sleep(100);
+    }
+
+    assertTrue("New overseer not the frontrunner : "+ getSortedOverseerNodeNames(client.getZkStateReader().getZkClient()) + " expected : "+ killedOverseer, leaderchanged);
+
+
+
+
 
     client.shutdown();
 

@@ -55,7 +55,6 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
@@ -72,15 +71,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import static org.apache.solr.cloud.Assign.Node;
@@ -281,7 +276,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     if(overseerDesignates.size() == 1 && overseerDesignates.contains(getLeaderNode(zk))) return;
     log.info("overseer designates {}", overseerDesignates);
 
-    List<String> nodeNames = getSortedNodeNames(zk);
+    List<String> nodeNames = getSortedOverseerNodeNames(zk);
     if(nodeNames.size()<2) return;
 
 //
@@ -318,7 +313,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(2500, TimeUnit.MILLISECONDS);
 
       while (System.nanoTime() < timeout) {
-        List<String> currentNodeNames = getSortedNodeNames(zk);
+        List<String> currentNodeNames = getSortedOverseerNodeNames(zk);
 
         int totalLeaders = 0;
 
@@ -339,7 +334,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       }
 
       if(!prioritizationComplete) {
-        log.warn("available designates and current state {} {} ", availableDesignates, getSortedNodeNames(zk));
+        log.warn("available designates and current state {} {} ", availableDesignates, getSortedOverseerNodeNames(zk));
       }
 
     } else {
@@ -358,7 +353,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
   }
 
-  public static List<String> getSortedNodeNames(SolrZkClient zk) throws KeeperException, InterruptedException {
+  public static List<String> getSortedOverseerNodeNames(SolrZkClient zk) throws KeeperException, InterruptedException {
     List<String> children = null;
     try {
       children = zk.getChildren(OverseerElectionContext.PATH + LeaderElector.ELECTION_NODE, null, true);

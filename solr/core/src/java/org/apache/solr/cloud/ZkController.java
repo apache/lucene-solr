@@ -58,6 +58,7 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.CoreContainer;
@@ -1660,6 +1661,26 @@ public final class ZkController {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to rejoin election", e);
     }
 
+  }
+
+  public void checkOverseerDesignate() {
+    try {
+      byte[] data = zkClient.getData(ZkStateReader.ROLES, null, new Stat(), true);
+      if(data ==null) return;
+      Map roles = (Map) ZkStateReader.fromJSON(data);
+      if(roles ==null) return;
+      List nodeList= (List) roles.get("overseer");
+      if(nodeList == null) return;
+      if(nodeList.contains(getNodeName())){
+        ZkNodeProps props = new ZkNodeProps(Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.ADDROLE.toString().toLowerCase(Locale.ROOT),
+            "node", getNodeName(),
+            "role", "overseer");
+        log.info("Going to add role {} ",props);
+        getOverseerCollectionQueue().offer(ZkStateReader.toJSON(props));
+      }
+    } catch (Exception e) {
+      log.warn("could not readd the overseer designate ",e);
+    }
   }
 
 }
