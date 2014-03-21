@@ -105,9 +105,12 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       final String indexStreamFN = IndexFileNames.segmentFileName(segment, segmentSuffix, VECTORS_INDEX_EXTENSION);
       indexStream = d.openInput(indexStreamFN, context);
       final String codecNameIdx = formatName + CODEC_SFX_IDX;
-      CodecUtil.checkHeader(indexStream, codecNameIdx, VERSION_START, VERSION_CURRENT);
+      int version = CodecUtil.checkHeader(indexStream, codecNameIdx, VERSION_START, VERSION_CURRENT);
       assert CodecUtil.headerLength(codecNameIdx) == indexStream.getFilePointer();
       indexReader = new CompressingStoredFieldsIndexReader(indexStream, si);
+      if (indexStream.getFilePointer() != indexStream.length()) {
+        throw new CorruptIndexException("did not read all bytes from file \"" + indexStreamFN + "\": read " + indexStream.getFilePointer() + " vs size " + indexStream.length() + " (resource: " + indexStream + ")");
+      }
       indexStream.close();
       indexStream = null;
 
@@ -115,7 +118,10 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       final String vectorsStreamFN = IndexFileNames.segmentFileName(segment, segmentSuffix, VECTORS_EXTENSION);
       vectorsStream = d.openInput(vectorsStreamFN, context);
       final String codecNameDat = formatName + CODEC_SFX_DAT;
-      CodecUtil.checkHeader(vectorsStream, codecNameDat, VERSION_START, VERSION_CURRENT);
+      int version2 = CodecUtil.checkHeader(vectorsStream, codecNameDat, VERSION_START, VERSION_CURRENT);
+      if (version != version2) {
+        throw new CorruptIndexException("Version mismatch between stored fields index and data: " + version + " != " + version2);
+      }
       assert CodecUtil.headerLength(codecNameDat) == vectorsStream.getFilePointer();
 
       packedIntsVersion = vectorsStream.readVInt();

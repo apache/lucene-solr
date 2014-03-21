@@ -108,6 +108,10 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       fsts = new HashMap<>();
       readFields(in, state.fieldInfos);
 
+      if (in.getFilePointer() != in.length()) {
+        throw new CorruptIndexException("did not read all bytes from file \"" + metaName + "\": read " + in.getFilePointer() + " vs size " + in.length() + " (resource: " + in + ")");
+      }
+      
       success = true;
     } finally {
       if (success) {
