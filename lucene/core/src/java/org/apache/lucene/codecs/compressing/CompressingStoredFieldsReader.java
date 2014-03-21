@@ -122,6 +122,9 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       version = CodecUtil.checkHeader(indexStream, codecNameIdx, VERSION_START, VERSION_CURRENT);
       assert CodecUtil.headerLength(codecNameIdx) == indexStream.getFilePointer();
       indexReader = new CompressingStoredFieldsIndexReader(indexStream, si);
+      if (indexStream.getFilePointer() != indexStream.length()) {
+        throw new CorruptIndexException("did not read all bytes from file \"" + indexStreamFN + "\": read " + indexStream.getFilePointer() + " vs size " + indexStream.length() + " (resource: " + indexStream + ")");
+      }
       indexStream.close();
       indexStream = null;
 
