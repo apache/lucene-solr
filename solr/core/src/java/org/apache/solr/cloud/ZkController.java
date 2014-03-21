@@ -299,6 +299,10 @@ public final class ZkController {
   public int getLeaderVoteWait() {
     return leaderVoteWait;
   }
+  
+  public int getLeaderConflictResolveWait() {
+    return leaderConflictResolveWait;
+  }
 
   public void forceOverSeer(){
     try {

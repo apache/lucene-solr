@@ -139,6 +139,10 @@ New Features
 * SOLR-5865: Provide a MiniSolrCloudCluster to enable easier testing.
  (Greg Chanan via Mark Miller)
 
+* SOLR-5860: Use leaderConflictResolveWait in WaitForState during recovery/startup,
+  improve logging and force refresh cluster state every 15 seconds.
+  (Timothy Potter via shalin)
+
 Bug Fixes
 ----------------------
 
