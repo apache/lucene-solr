@@ -17,15 +17,12 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -42,26 +39,40 @@ import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+
 /**
- * Test of the MiniSolrCloudCluster functionality.  This doesn't derive from
- * LuceneTestCase, as the MiniSolrCloudCluster is designed to be used outside of the
- * lucene test hierarchy. Because of this, normal checks are not applied to this test
- * to ensure it does not do things like pollute future tests that will run in this JVM.
- * *Please be very careful*.
+ * Test of the MiniSolrCloudCluster functionality. Keep in mind, 
+ * MiniSolrCloudCluster is designed to be used outside of the Lucene test
+ * hierarchy.
  */
-public class TestMiniSolrCloudCluster {
+public class TestMiniSolrCloudCluster extends LuceneTestCase {
 
   private static Logger log = LoggerFactory.getLogger(MiniSolrCloudCluster.class);
   private static final int NUM_SERVERS = 5;
   private static final int NUM_SHARDS = 2;
   private static final int REPLICATION_FACTOR = 2;
   private static MiniSolrCloudCluster miniCluster;
+
+  @Rule
+  public TestRule solrTestRules = RuleChain
+      .outerRule(new SystemPropertiesRestoreRule());
+  
+  @ClassRule
+  public static TestRule solrClassRules = RuleChain.outerRule(
+      new SystemPropertiesRestoreRule()).around(
+      new RevertDefaultThreadHandlerRule());
 
   @BeforeClass
   public static void startup() throws Exception {
