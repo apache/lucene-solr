@@ -137,8 +137,15 @@ public final class SmartChineseAnalyzer extends Analyzer {
 
   @Override
   public TokenStreamComponents createComponents(String fieldName) {
-    Tokenizer tokenizer = new SentenceTokenizer();
-    TokenStream result = new WordTokenFilter(tokenizer);
+    final Tokenizer tokenizer;
+    TokenStream result;
+    if (matchVersion.onOrAfter(Version.LUCENE_48)) {
+      tokenizer = new HMMChineseTokenizer();
+      result = tokenizer;
+    } else {
+      tokenizer = new SentenceTokenizer();
+      result = new WordTokenFilter(tokenizer);
+    }
     // result = new LowerCaseFilter(result);
     // LowerCaseFilter is not needed, as SegTokenFilter lowercases Basic Latin text.
     // The porter stemming is too strict, this is not a bug, this is a feature:)

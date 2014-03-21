@@ -77,7 +77,6 @@ import org.apache.lucene.analysis.payloads.PayloadEncoder;
 import org.apache.lucene.analysis.snowball.TestSnowball;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.synonym.SynonymMap;
-import org.apache.lucene.analysis.th.ThaiWordFilter;
 import org.apache.lucene.analysis.util.CharArrayMap;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.wikipedia.WikipediaTokenizer;
@@ -164,8 +163,6 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           PathHierarchyTokenizer.class,
           // TODO: it seems to mess up offsets!?
           WikipediaTokenizer.class,
-          // TODO: doesn't handle graph inputs
-          ThaiWordFilter.class,
           // TODO: doesn't handle graph inputs
           CJKBigramFilter.class,
           // TODO: doesn't handle graph inputs (or even look at positionIncrement)

@@ -119,6 +119,10 @@ New Features
   set of matching hits, in cases where there are millions of hits.
   (Rob Audenaerde, Gilad Barkai, Shai Erera)
 
+* LUCENE-4984: Add SegmentingTokenizerBase, abstract class for tokenizers
+  that want to do two-pass tokenization such as by sentence and then by word.
+  (Robert Muir)
+
 API Changes
 
 * LUCENE-5454: Add RandomAccessOrds, an optional extension of SortedSetDocValues
@@ -149,6 +153,11 @@ API Changes
   The TopNSearcher now returns a struct like class that indicates if the result
   is complete in the sense of the top N or not. Consumers of this API should assert
   on the completeness if the bounded queue size is know ahead of time. (Simon Willnauer)
+
+* LUCENE-4984: Deprecate ThaiWordFilter and smartcn SentenceTokenizer and WordTokenFilter.
+  These filters would not work correctly with CharFilters and could not be safely placed
+  at an arbitrary position in the analysis chain. Use ThaiTokenizer and HMMChineseTokenizer
+  instead. (Robert Muir)
 
 Optimizations
 

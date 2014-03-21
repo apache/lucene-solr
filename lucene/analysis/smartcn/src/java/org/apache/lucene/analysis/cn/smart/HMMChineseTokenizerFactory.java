@@ -1,5 +1,3 @@
-package org.apache.lucene.analysis.th;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,39 +15,35 @@ package org.apache.lucene.analysis.th;
  * limitations under the License.
  */
 
+package org.apache.lucene.analysis.cn.smart;
+
 import java.util.Map;
 
-import org.apache.lucene.analysis.th.ThaiWordFilter;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
-
-/** 
- * Factory for {@link ThaiWordFilter}.
- * <pre class="prettyprint">
- * &lt;fieldType name="text_thai" class="solr.TextField" positionIncrementGap="100"&gt;
- *   &lt;analyzer&gt;
- *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
- *     &lt;filter class="solr.ThaiWordFilterFactory"/&gt;
- *   &lt;/analyzer&gt;
- * &lt;/fieldType&gt;</pre>
- * @deprecated Use {@link ThaiTokenizerFactory} instead
+/**
+ * Factory for {@link HMMChineseTokenizer}
+ * <p>
+ * Note: this class will currently emit tokens for punctuation. So you should either add
+ * a WordDelimiterFilter after to remove these (with concatenate off), or use the 
+ * SmartChinese stoplist with a StopFilterFactory via:
+ * <code>words="org/apache/lucene/analysis/cn/smart/stopwords.txt"</code>
+ * @lucene.experimental
  */
-@Deprecated
-public class ThaiWordFilterFactory extends TokenFilterFactory {
-  
-  /** Creates a new ThaiWordFilterFactory */
-  public ThaiWordFilterFactory(Map<String,String> args) {
+public final class HMMChineseTokenizerFactory extends TokenizerFactory {
+
+  /** Creates a new HMMChineseTokenizerFactory */
+  public HMMChineseTokenizerFactory(Map<String,String> args) {
     super(args);
-    assureMatchVersion();
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   @Override
-  public ThaiWordFilter create(TokenStream input) {
-    return new ThaiWordFilter(luceneMatchVersion, input);
+  public Tokenizer create(AttributeFactory factory) {
+    return new HMMChineseTokenizer(factory);
   }
 }
-

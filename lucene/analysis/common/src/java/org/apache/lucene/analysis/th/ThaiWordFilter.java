@@ -37,19 +37,16 @@ import org.apache.lucene.util.Version;
  *    It is known to work with Sun/Oracle and Harmony JREs.
  *    If your application needs to be fully portable, consider using ICUTokenizer instead,
  *    which uses an ICU Thai BreakIterator that will always be available.
+ * @deprecated Use {@link ThaiTokenizer} instead.
  */
+@Deprecated
 public final class ThaiWordFilter extends TokenFilter {
   /** 
    * True if the JRE supports a working dictionary-based breakiterator for Thai.
    * If this is false, this filter will not work at all!
    */
-  public static final boolean DBBI_AVAILABLE;
+  public static final boolean DBBI_AVAILABLE = ThaiTokenizer.DBBI_AVAILABLE;
   private static final BreakIterator proto = BreakIterator.getWordInstance(new Locale("th"));
-  static {
-    // check that we have a working dictionary-based break iterator for thai
-    proto.setText("ภาษาไทย");
-    DBBI_AVAILABLE = proto.isBoundary(4);
-  }
   private final BreakIterator breaker = (BreakIterator) proto.clone();
   private final CharArrayIterator charIterator = CharArrayIterator.newWordInstance();
   

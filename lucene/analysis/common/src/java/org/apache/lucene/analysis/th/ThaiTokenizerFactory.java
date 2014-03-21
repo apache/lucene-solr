@@ -19,37 +19,32 @@ package org.apache.lucene.analysis.th;
 
 import java.util.Map;
 
-import org.apache.lucene.analysis.th.ThaiWordFilter;
-
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.util.AttributeSource;
 
 /** 
- * Factory for {@link ThaiWordFilter}.
+ * Factory for {@link ThaiTokenizer}.
  * <pre class="prettyprint">
  * &lt;fieldType name="text_thai" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
- *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
- *     &lt;filter class="solr.ThaiWordFilterFactory"/&gt;
+ *     &lt;tokenizer class="solr.ThaiTokenizerFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @deprecated Use {@link ThaiTokenizerFactory} instead
  */
-@Deprecated
-public class ThaiWordFilterFactory extends TokenFilterFactory {
+public class ThaiTokenizerFactory extends TokenizerFactory {
   
-  /** Creates a new ThaiWordFilterFactory */
-  public ThaiWordFilterFactory(Map<String,String> args) {
+  /** Creates a new ThaiTokenizerFactory */
+  public ThaiTokenizerFactory(Map<String,String> args) {
     super(args);
-    assureMatchVersion();
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
   
   @Override
-  public ThaiWordFilter create(TokenStream input) {
-    return new ThaiWordFilter(luceneMatchVersion, input);
+  public Tokenizer create(AttributeSource.AttributeFactory factory) {
+    return new ThaiTokenizer(factory);
   }
 }
 
