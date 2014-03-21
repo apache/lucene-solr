@@ -49,6 +49,9 @@ Bug Fixes
 * LUCENE-5538: Fix FastVectorHighlighter bug with index-time synonyms when the
   query is more complex than a single phrase.  (Robert Muir)
 
+* LUCENE-5544: Exceptions during IndexWriter.rollback could leak file handles
+  and the write lock. (Robert Muir)
+
 Build
 
 * LUCENE-5511: "ant precommit" / "ant check-svn-working-copy" now work again

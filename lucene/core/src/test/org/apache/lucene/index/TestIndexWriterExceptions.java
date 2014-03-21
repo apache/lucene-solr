@@ -1927,5 +1927,135 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     dir.close();
   }
+  
+  public void testExceptionDuringRollback() throws Exception {
+    // currently: fail in two different places
+    final String messageToFailOn = random().nextBoolean() ? 
+        "rollback: done finish merges" : "rollback before checkpoint";
+    
+    // infostream that throws exception during rollback
+    InfoStream evilInfoStream = new InfoStream() {
+      @Override
+      public void message(String component, String message) {
+        if (messageToFailOn.equals(message)) {
+          throw new RuntimeException("BOOM!");
+        }
+      }
 
+      @Override
+      public boolean isEnabled(String component) {
+        return true;
+      }
+      
+      @Override
+      public void close() throws IOException {}
+    };
+    
+    Directory dir = newMockDirectory(); // we want to ensure we don't leak any locks or file handles
+    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, null);
+    iwc.setInfoStream(evilInfoStream);
+    IndexWriter iw = new IndexWriter(dir, iwc);
+    Document doc = new Document();
+    for (int i = 0; i < 10; i++) {
+      iw.addDocument(doc);
+    }
+    iw.commit();
+
+    iw.addDocument(doc);
+    
+    // pool readers
+    DirectoryReader r = DirectoryReader.open(iw, false);
+
+    // sometimes sneak in a pending commit: we don't want to leak a file handle to that segments_N
+    if (random().nextBoolean()) {
+      iw.prepareCommit();
+    }
+    
+    try {
+      iw.rollback();
+      fail();
+    } catch (RuntimeException expected) {
+      assertEquals("BOOM!", expected.getMessage());
+    }
+    
+    r.close();
+    
+    // even though we hit exception: we are closed, no locks or files held, index in good state
+    assertTrue(iw.isClosed());
+    assertFalse(IndexWriter.isLocked(dir));
+    
+    r = DirectoryReader.open(dir);
+    assertEquals(10, r.maxDoc());
+    r.close();
+    
+    // no leaks
+    dir.close();
+  }
+  
+  public void testRandomExceptionDuringRollback() throws Exception {
+    // fail in random places on i/o
+    final int numIters = RANDOM_MULTIPLIER * 75;
+    for (int iter = 0; iter < numIters; iter++) {
+      MockDirectoryWrapper dir = newMockDirectory();
+      dir.failOn(new MockDirectoryWrapper.Failure() {
+        
+        @Override
+        public void eval(MockDirectoryWrapper dir) throws IOException {
+          boolean maybeFail = false;
+          StackTraceElement[] trace = new Exception().getStackTrace();
+          
+          for (int i = 0; i < trace.length; i++) {
+            if ("rollbackInternal".equals(trace[i].getMethodName())) {
+              maybeFail = true;
+              break;
+            }
+          }
+          
+          if (maybeFail && random().nextInt(10) == 0) {
+            if (VERBOSE) {
+              System.out.println("TEST: now fail; thread=" + Thread.currentThread().getName() + " exc:");
+              new Throwable().printStackTrace(System.out);
+            }
+            throw new FakeIOException();
+          }
+        }
+      });
+      
+      IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, null);
+      IndexWriter iw = new IndexWriter(dir, iwc);
+      Document doc = new Document();
+      for (int i = 0; i < 10; i++) {
+        iw.addDocument(doc);
+      }
+      iw.commit();
+      
+      iw.addDocument(doc);
+      
+      // pool readers
+      DirectoryReader r = DirectoryReader.open(iw, false);
+      
+      // sometimes sneak in a pending commit: we don't want to leak a file handle to that segments_N
+      if (random().nextBoolean()) {
+        iw.prepareCommit();
+      }
+      
+      try {
+        iw.rollback();
+      } catch (FakeIOException expected) {
+      }
+      
+      r.close();
+      
+      // even though we hit exception: we are closed, no locks or files held, index in good state
+      assertTrue(iw.isClosed());
+      assertFalse(IndexWriter.isLocked(dir));
+      
+      r = DirectoryReader.open(dir);
+      assertEquals(10, r.maxDoc());
+      r.close();
+      
+      // no leaks
+      dir.close();
+    }
+  }
 }

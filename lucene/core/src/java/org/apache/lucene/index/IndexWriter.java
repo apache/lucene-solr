@@ -422,7 +422,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
    *  places if it is in "near real-time mode" (getReader()
    *  has been called on this instance). */
 
-  class ReaderPool {
+  class ReaderPool implements Closeable {
     
     private final Map<SegmentCommitInfo,ReadersAndUpdates> readerMap = new HashMap<SegmentCommitInfo,ReadersAndUpdates>();
 
@@ -488,6 +488,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
         rld.dropReaders();
         readerMap.remove(rld.info);
       }
+    }
+    
+    @Override
+    public void close() throws IOException {
+      dropAll(false);
     }
 
     /** Remove all our references to readers, and commits
@@ -2024,8 +2029,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
    */
   @Override
   public void rollback() throws IOException {
-    ensureOpen();
-
+    // don't call ensureOpen here: this acts like "close()" in closeable.
+    
     // Ensure that only one thread actually gets to do the
     // closing, and make sure no commit is also in progress:
     synchronized(commitLock) {
@@ -2095,6 +2100,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
         deleter.refresh();
 
         lastCommitChangeCount = changeCount;
+        
+        processEvents(false, true);
+        deleter.refresh();
+        deleter.close();
+
+        IOUtils.close(writeLock);                     // release write lock
+        writeLock = null;
+        
+        assert docWriter.perThreadPool.numDeactivatedThreadStates() == docWriter.perThreadPool.getMaxThreadStates() : "" +  docWriter.perThreadPool.numDeactivatedThreadStates() + " " +  docWriter.perThreadPool.getMaxThreadStates();
       }
 
       success = true;
@@ -2103,16 +2117,29 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     } finally {
       synchronized(this) {
         if (!success) {
-          closing = false;
-          notifyAll();
-          if (infoStream.isEnabled("IW")) {
-            infoStream.message("IW", "hit exception during rollback");
+          // we tried to be nice about it: do the minimum
+          
+          // don't leak a segments_N file if there is a pending commit
+          if (pendingCommit != null) {
+            try {
+              pendingCommit.rollbackCommit(directory);
+              deleter.decRef(pendingCommit);
+            } catch (Throwable t) {}
           }
+          
+          // close all the closeables we can (but important is readerPool and writeLock to prevent leaks)
+          IOUtils.closeWhileHandlingException(mergePolicy, mergeScheduler, readerPool, deleter, writeLock);
+          writeLock = null;
+        }
+        closed = true;
+        closing = false;
+        try {
+          processEvents(false, true);
+        } finally {
+          notifyAll();
         }
       }
     }
-
-    closeInternal(false, false);
   }
 
   /**
