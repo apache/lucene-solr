@@ -31,19 +31,12 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooDefs;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.Rule;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import com.google.common.io.Files;
 
 public class MiniSolrCloudCluster {
-  @Rule
-  public TestRule testRules = 
-    RuleChain.outerRule(new SystemPropertiesRestoreRule());
   
   private static Logger log = LoggerFactory.getLogger(MiniSolrCloudCluster.class);
 
