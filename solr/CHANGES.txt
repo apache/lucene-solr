@@ -182,6 +182,9 @@ Bug Fixes
 * SOLR-5858, SOLR-4812: edismax and dismax query parsers can be used for parsing 
   highlight queries. (Alan Woodward, Tien Nguyen Manh)
 
+* SOLR-5893: On restarting overseer designate , move itself to front of the queue (Noble Paul)
+
+
 Optimizations
 ----------------------
 * SOLR-1880: Distributed Search skips GET_FIELDS stage if EXECUTE_QUERY
