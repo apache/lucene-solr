@@ -17,6 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
@@ -102,7 +103,7 @@ import org.apache.lucene.util.InfoStream;
  * or none") added to the index.
  */
 
-final class DocumentsWriter {
+final class DocumentsWriter implements Closeable {
   private final Directory directory;
 
   private volatile boolean closed;
@@ -345,7 +346,8 @@ final class DocumentsWriter {
     return deleteQueue.anyChanges();
   }
 
-  void close() {
+  @Override
+  public void close() {
     closed = true;
     flushControl.setClosed();
   }
