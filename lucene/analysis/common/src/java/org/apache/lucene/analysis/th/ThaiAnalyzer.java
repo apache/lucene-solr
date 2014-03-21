@@ -110,12 +110,19 @@ public final class ThaiAnalyzer extends StopwordAnalyzerBase {
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
-    final Tokenizer source = new StandardTokenizer(matchVersion, reader);
-    TokenStream result = new StandardFilter(matchVersion, source);
-    if (matchVersion.onOrAfter(Version.LUCENE_31))
-      result = new LowerCaseFilter(matchVersion, result);
-    result = new ThaiWordFilter(matchVersion, result);
-    return new TokenStreamComponents(source, new StopFilter(matchVersion,
+    if (matchVersion.onOrAfter(Version.LUCENE_48)) {
+      final Tokenizer source = new ThaiTokenizer(reader);
+      TokenStream result = new LowerCaseFilter(matchVersion, source);
+      result = new StopFilter(matchVersion, result, stopwords);
+      return new TokenStreamComponents(source, result);
+    } else {
+      final Tokenizer source = new StandardTokenizer(matchVersion, reader);
+      TokenStream result = new StandardFilter(matchVersion, source);
+      if (matchVersion.onOrAfter(Version.LUCENE_31))
+        result = new LowerCaseFilter(matchVersion, result);
+      result = new ThaiWordFilter(matchVersion, result);
+      return new TokenStreamComponents(source, new StopFilter(matchVersion,
         result, stopwords));
+    }
   }
 }

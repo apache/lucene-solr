@@ -17,36 +17,30 @@ package org.apache.lucene.analysis.th;
  * limitations under the License.
  */
 
-import java.io.Reader;
 import java.io.StringReader;
 
-import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.th.ThaiWordFilter;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
 /**
  * Simple tests to ensure the Thai word filter factory is working.
  */
-@Deprecated
-public class TestThaiWordFilterFactory extends BaseTokenStreamFactoryTestCase {
+public class TestThaiTokenizerFactory extends BaseTokenStreamFactoryTestCase {
   /**
    * Ensure the filter actually decomposes text.
    */
   public void testWordBreak() throws Exception {
-    assumeTrue("JRE does not support Thai dictionary-based BreakIterator", ThaiWordFilter.DBBI_AVAILABLE);
-    Reader reader = new StringReader("การที่ได้ต้องแสดงว่างานดี");
-    TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-    stream = tokenFilterFactory("ThaiWord").create(stream);
-    assertTokenStreamContents(stream, new String[] {"การ", "ที่", "ได้",
+    assumeTrue("JRE does not support Thai dictionary-based BreakIterator", ThaiTokenizer.DBBI_AVAILABLE);
+    Tokenizer tokenizer = tokenizerFactory("Thai").create(new StringReader("การที่ได้ต้องแสดงว่างานดี"));
+    assertTokenStreamContents(tokenizer, new String[] {"การ", "ที่", "ได้",
         "ต้อง", "แสดง", "ว่า", "งาน", "ดี"});
   }
   
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    assumeTrue("JRE does not support Thai dictionary-based BreakIterator", ThaiWordFilter.DBBI_AVAILABLE);
+    assumeTrue("JRE does not support Thai dictionary-based BreakIterator", ThaiTokenizer.DBBI_AVAILABLE);
     try {
-      tokenFilterFactory("ThaiWord", "bogusArg", "bogusValue");
+      tokenizerFactory("Thai", "bogusArg", "bogusValue");
       fail();
     } catch (IllegalArgumentException expected) {
       assertTrue(expected.getMessage().contains("Unknown parameters"));
