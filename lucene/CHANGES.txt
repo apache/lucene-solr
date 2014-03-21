@@ -123,6 +123,10 @@ New Features
   that want to do two-pass tokenization such as by sentence and then by word.
   (Robert Muir)
 
+* LUCENE-5489: Add Rescorer/QueryRescorer, to resort the hits from a
+  first pass search using scores from a more costly second pass
+  search. (Simon Willnauer, Robert Muir, Mike McCandless)
+
 API Changes
 
 * LUCENE-5454: Add RandomAccessOrds, an optional extension of SortedSetDocValues
