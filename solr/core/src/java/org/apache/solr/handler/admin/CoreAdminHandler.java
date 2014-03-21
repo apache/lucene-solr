@@ -34,6 +34,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -968,6 +969,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
     log.info("Going to wait for coreNodeName: " + coreNodeName + ", state: " + waitForState
         + ", checkLive: " + checkLive + ", onlyIfLeader: " + onlyIfLeader);
 
+    int maxTries = 0; 
     String state = null;
     boolean live = false;
     int retry = 0;
@@ -991,9 +993,24 @@ public class CoreAdminHandler extends RequestHandlerBase {
           CloudDescriptor cloudDescriptor = core.getCoreDescriptor()
               .getCloudDescriptor();
           
-          if (retry == 15 || retry == 60) {
+          if (retry % 15 == 0) {
+            if (retry > 0 && log.isInfoEnabled())
+              log.info("After " + retry + " seconds, core " + cname + " (" +
+                  cloudDescriptor.getShardId() + " of " +
+                  cloudDescriptor.getCollectionName() + ") still does not have state: " +
+                  waitForState + "; forcing ClusterState update from ZooKeeper");
+            
             // force a cluster state update
             coreContainer.getZkController().getZkStateReader().updateClusterState(true);
+          }
+
+          if (maxTries == 0) {
+            // wait long enough for the leader conflict to work itself out plus a little extra
+            int conflictWaitMs = coreContainer.getZkController().getLeaderConflictResolveWait();
+            maxTries = (int) Math.round(conflictWaitMs / 1000) + 3;
+            log.info("Will wait a max of " + maxTries + " seconds to see " + cname + " (" +
+                cloudDescriptor.getShardId() + " of " +
+                cloudDescriptor.getCollectionName() + ") have state: " + waitForState);
           }
           
           ClusterState clusterState = coreContainer.getZkController()
@@ -1023,13 +1040,28 @@ public class CoreAdminHandler extends RequestHandlerBase {
             }
           }
         }
-        
-        if (retry++ == 120) {
+
+        if (retry++ == maxTries) {
+          String collection = null;
+          String leaderInfo = null;
+          String shardId = null;
+          try {
+            CloudDescriptor cloudDescriptor =
+                core.getCoreDescriptor().getCloudDescriptor();
+            collection = cloudDescriptor.getCollectionName();
+            shardId = cloudDescriptor.getShardId();
+            leaderInfo = coreContainer.getZkController().
+                getZkStateReader().getLeaderUrl(collection, shardId, 0);
+          } catch (Exception exc) {
+            leaderInfo = "Not available due to: " + exc;
+          }
+
           throw new SolrException(ErrorCode.BAD_REQUEST,
               "I was asked to wait on state " + waitForState + " for "
-                  + nodeName
+                  + shardId + " in " + collection + " on " + nodeName
                   + " but I still do not see the requested state. I see state: "
-                  + state + " live:" + live);
+                  + state + " live:" + live + " leader from ZK: " + leaderInfo
+          );
         }
         
         if (coreContainer.isShutDown()) {
@@ -1040,7 +1072,6 @@ public class CoreAdminHandler extends RequestHandlerBase {
         // solrcloud_debug
         if (log.isDebugEnabled()) {
           try {
-            ;
             LocalSolrQueryRequest r = new LocalSolrQueryRequest(core,
                 new ModifiableSolrParams());
             CommitUpdateCommand commitCmd = new CommitUpdateCommand(r, false);
