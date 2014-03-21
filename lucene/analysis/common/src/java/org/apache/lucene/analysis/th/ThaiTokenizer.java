@@ -64,7 +64,7 @@ public class ThaiTokenizer extends SegmentingTokenizerBase {
       
   /** Creates a new ThaiTokenizer, supplying the AttributeFactory */
   public ThaiTokenizer(AttributeFactory factory) {
-    super((BreakIterator)sentenceProto.clone());
+    super(factory, (BreakIterator)sentenceProto.clone());
     if (!DBBI_AVAILABLE) {
       throw new UnsupportedOperationException("This JRE does not have support for Thai segmentation");
     }

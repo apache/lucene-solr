@@ -52,7 +52,7 @@ public class HMMChineseTokenizer extends SegmentingTokenizerBase {
       
   /** Creates a new HMMChineseTokenizer, supplying the AttributeFactory */
   public HMMChineseTokenizer(AttributeFactory factory) {
-    super((BreakIterator)sentenceProto.clone());
+    super(factory, (BreakIterator)sentenceProto.clone());
   }
 
   @Override
