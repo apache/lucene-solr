@@ -166,6 +166,9 @@ public final class CompoundFileDirectory extends BaseDirectory {
           fileEntry.offset = entriesStream.readLong();
           fileEntry.length = entriesStream.readLong();
         }
+        if (entriesStream.getFilePointer() != entriesStream.length()) {
+          throw new CorruptIndexException("did not read all bytes from file \"" + entriesFileName + "\": read " + entriesStream.getFilePointer() + " vs size " + entriesStream.length() + " (resource: " + entriesStream + ")");
+        }
       } else {
         // TODO remove once 3.x is not supported anymore
         mapping = readLegacyEntries(stream, firstInt);
