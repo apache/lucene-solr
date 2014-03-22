@@ -251,7 +251,7 @@ public class SnapPuller {
       
       rsp = server.request(req);
     } catch (SolrServerException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage());
+      throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage(), e);
     } finally {
       server.shutdown();
     }
@@ -883,9 +883,8 @@ public class SnapPuller {
       File oldFile = new File(confDir, file.getPath().substring(tmpconfDir.getPath().length(), file.getPath().length()));
       if (!oldFile.getParentFile().exists()) {
         status = oldFile.getParentFile().mkdirs();
-        if (status) {
-        } else {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+        if (!status) {
+          throw new SolrException(ErrorCode.SERVER_ERROR,
                   "Unable to mkdirs: " + oldFile.getParentFile());
         }
       }
@@ -893,9 +892,8 @@ public class SnapPuller {
         File backupFile = new File(oldFile.getPath() + "." + getDateAsStr(new Date(oldFile.lastModified())));
         if (!backupFile.getParentFile().exists()) {
           status = backupFile.getParentFile().mkdirs();
-          if (status) {
-          } else {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          if (!status) {
+            throw new SolrException(ErrorCode.SERVER_ERROR,
                     "Unable to mkdirs: " + backupFile.getParentFile());
           }
         }
@@ -906,9 +904,8 @@ public class SnapPuller {
         }
       }
       status = file.renameTo(oldFile);
-      if (status) {
-      } else {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+      if (!status) {
+        throw new SolrException(ErrorCode.SERVER_ERROR,
                 "Unable to rename: " + file + " to: " + oldFile);
       }
     }
