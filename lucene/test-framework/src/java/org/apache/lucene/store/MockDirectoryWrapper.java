@@ -20,6 +20,7 @@ package org.apache.lucene.store;
 import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -381,7 +382,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       if (randomState.nextBoolean()) {
         throw new IOException("a random IOException (" + name + ")");
       } else {
-        throw new FileNotFoundException("a random IOException (" + name + ")");
+        throw randomState.nextBoolean() ? new FileNotFoundException("a random IOException (" + name + ")") : new NoSuchFileException("a random IOException (" + name + ")");
       }
     }
   }
@@ -549,7 +550,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       maybeThrowDeterministicException();
     }
     if (!in.fileExists(name)) {
-      throw new FileNotFoundException(name + " in dir=" + in);
+      throw randomState.nextBoolean() ? new FileNotFoundException(name + " in dir=" + in) : new NoSuchFileException(name + " in dir=" + in);
     }
 
     // cannot open a file for input if it's still open for
@@ -925,7 +926,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       throws IOException {
     maybeYield();
     if (!in.fileExists(name)) {
-      throw new FileNotFoundException(name);
+      throw randomState.nextBoolean() ? new FileNotFoundException(name) : new NoSuchFileException(name);
     }
     // cannot open a file for input if it's still open for
     // output, except for segments.gen and segments_N

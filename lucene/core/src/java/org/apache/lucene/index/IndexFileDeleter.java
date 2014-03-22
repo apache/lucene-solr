@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -170,7 +171,7 @@ final class IndexFileDeleter implements Closeable {
             SegmentInfos sis = new SegmentInfos();
             try {
               sis.read(directory, fileName);
-            } catch (FileNotFoundException e) {
+            } catch (FileNotFoundException | NoSuchFileException e) {
               // LUCENE-948: on NFS (and maybe others), if
               // you have writers switching back and forth
               // between machines, it's very likely that the
