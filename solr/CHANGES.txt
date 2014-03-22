@@ -64,6 +64,8 @@ Bug Fixes
   Includes a few minor bug fixes.
   (Mark Miller)
 
+* SOLR-5895: JavaBinLoader hides IOExceptions. (Mike Sokolov via shalin)
+
 ==================  4.7.0 ==================
 
 Versions of Major Components
