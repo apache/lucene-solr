@@ -21,13 +21,13 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.standard.StandardTokenizerInterface;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
+@Deprecated
 /**
  * This class implements StandardTokenizer, except with a bug 
  * (https://issues.apache.org/jira/browse/LUCENE-3358) where Han and Hiragana
  * characters would be split from combining characters:
  * @deprecated This class is only for exact backwards compatibility
  */
-@Deprecated
 %%
 
 %unicode 6.0

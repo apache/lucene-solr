@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.standard.StandardTokenizerInterface;
 import org.apache.lucene.analysis.standard.UAX29URLEmailTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
+@Deprecated
 /**
  * This class implements UAX29URLEmailTokenizer, except with a bug
  * (https://issues.apache.org/jira/browse/LUCENE-3880) where "mailto:"
@@ -28,7 +29,6 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
  * of the email address.
  * @deprecated This class is only for exact backwards compatibility
  */
- @Deprecated
 %%
 
 %unicode 6.0

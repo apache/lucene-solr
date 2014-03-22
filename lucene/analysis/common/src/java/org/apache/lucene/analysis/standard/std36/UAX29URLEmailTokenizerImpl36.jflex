@@ -21,11 +21,11 @@ import org.apache.lucene.analysis.standard.StandardTokenizerInterface;
 import org.apache.lucene.analysis.standard.UAX29URLEmailTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
+@Deprecated
 /**
  * This class implements UAX29URLEmailTokenizer using Unicode 6.0.0.
  * @deprecated This class is only for exact backwards compatibility
  */
-@Deprecated
 %%
 
 %unicode 6.0
