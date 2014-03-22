@@ -32,6 +32,15 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestQueryRescorer extends LuceneTestCase {
 
+  private IndexSearcher getSearcher(IndexReader r) {
+    IndexSearcher searcher = newSearcher(r);
+
+    // We rely on more tokens = lower score:
+    searcher.setSimilarity(new DefaultSimilarity());
+
+    return searcher;
+  }
+
   public void testBasic() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
@@ -52,10 +61,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     BooleanQuery bq = new BooleanQuery();
     bq.add(new TermQuery(new Term("field", "wizard")), Occur.SHOULD);
     bq.add(new TermQuery(new Term("field", "oz")), Occur.SHOULD);
-    IndexSearcher searcher = newSearcher(r);
-
-    // We rely on more tokens = lower score:
-    searcher.setSimilarity(new DefaultSimilarity());
+    IndexSearcher searcher = getSearcher(r);
 
     TopDocs hits = searcher.search(bq, 10);
     assertEquals(2, hits.totalHits);
@@ -111,7 +117,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     BooleanQuery bq = new BooleanQuery();
     bq.add(new TermQuery(new Term("field", "wizard")), Occur.SHOULD);
     bq.add(new TermQuery(new Term("field", "oz")), Occur.SHOULD);
-    IndexSearcher searcher = newSearcher(r);
+    IndexSearcher searcher = getSearcher(r);
 
     TopDocs hits = searcher.search(bq, 10);
     assertEquals(2, hits.totalHits);
@@ -165,7 +171,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     BooleanQuery bq = new BooleanQuery();
     bq.add(new TermQuery(new Term("field", "wizard")), Occur.SHOULD);
     bq.add(new TermQuery(new Term("field", "oz")), Occur.SHOULD);
-    IndexSearcher searcher = newSearcher(r);
+    IndexSearcher searcher = getSearcher(r);
 
     TopDocs hits = searcher.search(bq, 10);
     assertEquals(2, hits.totalHits);
@@ -243,7 +249,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     BooleanQuery bq = new BooleanQuery();
     bq.add(new TermQuery(new Term("field", "wizard")), Occur.SHOULD);
     bq.add(new TermQuery(new Term("field", "oz")), Occur.SHOULD);
-    IndexSearcher searcher = newSearcher(r);
+    IndexSearcher searcher = getSearcher(r);
 
     TopDocs hits = searcher.search(bq, 10);
     assertEquals(2, hits.totalHits);
