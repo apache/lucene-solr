@@ -74,7 +74,6 @@
     <run-jflex dir="src/java/org/apache/lucene/analysis/standard" name="UAX29URLEmailTokenizerImpl"/>
   </target>
   
-  <!-- Remove the inappropriate JFlex-generated constructor -->
   <macrodef name="run-jflex">
     <attribute name="dir"/>
     <attribute name="name"/>
