@@ -752,8 +752,14 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
                                                                                "",
                                                                                gen-1);
 
-            final boolean prevExists;
-            prevExists = directory.fileExists(prevSegmentFileName);
+            boolean prevExists;
+
+            try {
+              directory.openInput(prevSegmentFileName, IOContext.DEFAULT).close();
+              prevExists = true;
+            } catch (IOException ioe) {
+              prevExists = false;
+            }
 
             if (prevExists) {
               if (infoStream != null) {

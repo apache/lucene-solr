@@ -40,7 +40,6 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.ArrayUtil;
 
 public class TestBufferedIndexInput extends LuceneTestCase {
@@ -328,12 +327,6 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         throws IOException
       {
         dir.deleteFile(name);
-      }
-      @Override
-      public boolean fileExists(String name)
-        throws IOException
-      {
-        return dir.fileExists(name);
       }
       @Override
       public String[] listAll()

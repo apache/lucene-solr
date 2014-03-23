@@ -144,11 +144,6 @@ public class HdfsDirectory extends BaseDirectory {
   }
   
   @Override
-  public boolean fileExists(String name) throws IOException {
-    return getFileSystem().exists(new Path(hdfsDirPath, name));
-  }
-  
-  @Override
   public long fileLength(String name) throws IOException {
     return HdfsFileReader.getLength(getFileSystem(),
         new Path(hdfsDirPath, name));

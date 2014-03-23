@@ -83,6 +83,7 @@ public class TestIndexWriterOutOfFileDescriptors extends LuceneTestCase {
           }
           w.addDocument(docs.nextDoc());
         }
+        dir.setRandomIOExceptionRateOnOpen(0.0);
         w.close();
         w = null;
 

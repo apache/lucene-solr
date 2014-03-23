@@ -118,10 +118,10 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
     assertEquals(12345, input1.readInt());
     input1.close();
 
-    assertFalse(directory.fileExists("testing.test.other"));
-    assertTrue(directory.fileExists("testing.test"));
+    assertFalse(slowFileExists(directory, "testing.test.other"));
+    assertTrue(slowFileExists(directory, "testing.test"));
     directory.deleteFile("testing.test");
-    assertFalse(directory.fileExists("testing.test"));
+    assertFalse(slowFileExists(directory, "testing.test"));
   }
   
   @Test

@@ -207,16 +207,6 @@ public final class CompoundFileDirectory extends BaseDirectory {
     return res;
   }
   
-  /** Returns true iff a file with the given name exists. */
-  @Override
-  public boolean fileExists(String name) {
-    ensureOpen();
-    if (this.writer != null) {
-      return writer.fileExists(name);
-    }
-    return entries.containsKey(IndexFileNames.stripSegmentName(name));
-  }
-  
   /** Not implemented
    * @throws UnsupportedOperationException always: not supported by CFS */
   @Override

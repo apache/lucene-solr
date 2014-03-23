@@ -369,10 +369,6 @@ public class BlockDirectory extends Directory {
     directory.deleteFile(name);
   }
   
-  public boolean fileExists(String name) throws IOException {
-    return directory.fileExists(name);
-  }
-  
   public long fileLength(String name) throws IOException {
     return directory.fileLength(name);
   }

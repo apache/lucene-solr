@@ -500,7 +500,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
                 for (String name : ic.getFileNames()) {
                   //distribute, and backup
                   //System.out.println(names);
-                  assertTrue(dir.fileExists(name));
+                  assertTrue(slowFileExists(dir, name));
                 }
               } catch (Exception e) {
                 throw new RuntimeException(e);

@@ -82,8 +82,8 @@ public class IndexAndTaxonomyRevisionTest extends ReplicatorTestCase {
       Revision rev1 = new IndexAndTaxonomyRevision(indexWriter, taxoWriter);
       // releasing that revision should not delete the files
       rev1.release();
-      assertTrue(indexDir.fileExists(IndexFileNames.SEGMENTS + "_1"));
-      assertTrue(taxoDir.fileExists(IndexFileNames.SEGMENTS + "_1"));
+      assertTrue(slowFileExists(indexDir, IndexFileNames.SEGMENTS + "_1"));
+      assertTrue(slowFileExists(taxoDir, IndexFileNames.SEGMENTS + "_1"));
       
       rev1 = new IndexAndTaxonomyRevision(indexWriter, taxoWriter); // create revision again, so the files are snapshotted
       indexWriter.addDocument(newDocument(taxoWriter));
@@ -91,7 +91,7 @@ public class IndexAndTaxonomyRevisionTest extends ReplicatorTestCase {
       taxoWriter.commit();
       assertNotNull(new IndexAndTaxonomyRevision(indexWriter, taxoWriter));
       rev1.release(); // this release should trigger the delete of segments_1
-      assertFalse(indexDir.fileExists(IndexFileNames.SEGMENTS + "_1"));
+      assertFalse(slowFileExists(indexDir, IndexFileNames.SEGMENTS + "_1"));
     } finally {
       IOUtils.close(indexWriter, taxoWriter, taxoDir, indexDir);
     }

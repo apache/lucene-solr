@@ -121,10 +121,6 @@ public class TestFieldsReader extends LuceneTestCase {
       return fsDir.listAll();
     }
     @Override
-    public boolean fileExists(String name) throws IOException {
-      return fsDir.fileExists(name);
-    }
-    @Override
     public void deleteFile(String name) throws IOException {
       fsDir.deleteFile(name);
     }

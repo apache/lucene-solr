@@ -133,11 +133,6 @@ public class FileSwitchDirectory extends BaseDirectory {
   }
 
   @Override
-  public boolean fileExists(String name) throws IOException {
-    return getDirectory(name).fileExists(name);
-  }
-
-  @Override
   public void deleteFile(String name) throws IOException {
     getDirectory(name).deleteFile(name);
   }

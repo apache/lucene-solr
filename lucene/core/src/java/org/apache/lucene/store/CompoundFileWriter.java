@@ -225,9 +225,6 @@ final class CompoundFileWriter implements Closeable{
         out = new DirectCFSIndexOutput(getOutput(), entry, false);
       } else {
         entry.dir = this.directory;
-        if (directory.fileExists(name)) {
-          throw new IllegalArgumentException("File " + name + " already exists");
-        }
         out = new DirectCFSIndexOutput(directory.createOutput(name, context), entry,
             true);
       }

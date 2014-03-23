@@ -118,9 +118,7 @@ public class RAMDirectory extends BaseDirectory {
     return names.toArray(new String[names.size()]);
   }
 
-  /** Returns true iff the named file exists in this directory. */
-  @Override
-  public final boolean fileExists(String name) {
+  public final boolean fileNameExists(String name) {
     ensureOpen();
     return fileMap.containsKey(name);
   }
