@@ -17,6 +17,13 @@ package org.apache.lucene.search.suggest.fst;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Set;
+
 import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.SortedInputIterator;
@@ -31,19 +38,13 @@ import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.fst.Builder;
-import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FST.Arc;
 import org.apache.lucene.util.fst.FST.BytesReader;
+import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util.Result;
 import org.apache.lucene.util.fst.Util.TopResults;
 import org.apache.lucene.util.fst.Util;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
 
 /**
  * Suggester based on a weighted FST: it first traverses the prefix, 
@@ -97,6 +98,9 @@ public class WFSTCompletionLookup extends Lookup {
     if (iterator.hasPayloads()) {
       throw new IllegalArgumentException("this suggester doesn't support payloads");
     }
+    if (iterator.hasContexts()) {
+      throw new IllegalArgumentException("this suggester doesn't support contexts");
+    }
     count = 0;
     BytesRef scratch = new BytesRef();
     InputIterator iter = new WFSTInputIterator(iterator);
@@ -140,7 +144,10 @@ public class WFSTCompletionLookup extends Lookup {
   }
 
   @Override
-  public List<LookupResult> lookup(CharSequence key, boolean onlyMorePopular, int num) {
+  public List<LookupResult> lookup(CharSequence key, Set<BytesRef> contexts, boolean onlyMorePopular, int num) {
+    if (contexts != null) {
+      throw new IllegalArgumentException("this suggester doesn't support contexts");
+    }
     assert num > 0;
 
     if (onlyMorePopular) {
@@ -260,7 +267,7 @@ public class WFSTCompletionLookup extends Lookup {
     }
 
     @Override
-    protected void encode(ByteSequencesWriter writer, ByteArrayDataOutput output, byte[] buffer, BytesRef spare, BytesRef payload, long weight) throws IOException {
+    protected void encode(ByteSequencesWriter writer, ByteArrayDataOutput output, byte[] buffer, BytesRef spare, BytesRef payload, Set<BytesRef> contexts, long weight) throws IOException {
       if (spare.length + 4 >= buffer.length) {
         buffer = ArrayUtil.grow(buffer, spare.length + 4);
       }

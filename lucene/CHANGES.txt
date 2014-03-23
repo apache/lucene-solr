@@ -74,6 +74,11 @@ New Features
   first pass search using scores from a more costly second pass
   search. (Simon Willnauer, Robert Muir, Mike McCandless)
 
+* LUCENE-5528: Add context to suggesters (InputIterator and Lookup
+  classes), and fix AnalyzingInfixSuggester to handle contexts.
+  Suggester contexts allow you to filter suggestions.  (Areek Zillur,
+  Mike McCandless)
+
 * LUCENE-5545: Add SortRescorer and Expression.getRescorer, to
   resort the hits from a first pass search using a Sort or an
   Expression. (Simon Willnauer, Robert Muir, Mike McCandless)

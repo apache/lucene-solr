@@ -20,6 +20,7 @@ package org.apache.lucene.search.suggest.jaspell;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup;
@@ -29,7 +30,6 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.UnicodeUtil;
 
 /**
@@ -62,6 +62,10 @@ public class JaspellLookup extends Lookup {
       // WTF - this could result in yet another sorted iteration....
       tfit = new UnsortedInputIterator(tfit);
     }
+    if (tfit.hasContexts()) {
+      throw new IllegalArgumentException("this suggester doesn't support contexts");
+    }
+    count = 0;
     trie = new JaspellTernarySearchTrie();
     trie.setMatchAlmostDiff(editDistance);
     BytesRef spare;
@@ -99,7 +103,10 @@ public class JaspellLookup extends Lookup {
   }
 
   @Override
-  public List<LookupResult> lookup(CharSequence key, boolean onlyMorePopular, int num) {
+  public List<LookupResult> lookup(CharSequence key, Set<BytesRef> contexts, boolean onlyMorePopular, int num) {
+    if (contexts != null) {
+      throw new IllegalArgumentException("this suggester doesn't support contexts");
+    }
     List<LookupResult> res = new ArrayList<>();
     List<String> list;
     int count = onlyMorePopular ? num * 2 : num;

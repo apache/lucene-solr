@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.store.DataInput;
@@ -40,6 +41,7 @@ public abstract class Lookup {
 
   /**
    * Result of a lookup.
+   * @lucene.experimental
    */
   public static final class LookupResult implements Comparable<LookupResult> {
     /** the key's text */
@@ -55,31 +57,53 @@ public abstract class Lookup {
     /** the key's payload (null if not present) */
     public final BytesRef payload;
     
+    /** the key's contexts (null if not present) */
+    public final Set<BytesRef> contexts;
+    
     /**
      * Create a new result from a key+weight pair.
      */
     public LookupResult(CharSequence key, long value) {
-      this(key, value, null);
+      this(key, null, value, null, null);
     }
 
     /**
      * Create a new result from a key+weight+payload triple.
      */
     public LookupResult(CharSequence key, long value, BytesRef payload) {
-      this.key = key;
-      this.highlightKey = null;
-      this.value = value;
-      this.payload = payload;
+      this(key, null, value, payload, null);
     }
-
+    
     /**
      * Create a new result from a key+highlightKey+weight+payload triple.
      */
     public LookupResult(CharSequence key, Object highlightKey, long value, BytesRef payload) {
+      this(key, highlightKey, value, payload, null);
+    }
+    
+    /**
+     * Create a new result from a key+weight+payload+contexts triple.
+     */
+    public LookupResult(CharSequence key, long value, BytesRef payload, Set<BytesRef> contexts) {
+      this(key, null, value, payload, contexts);
+    }
+
+    /**
+     * Create a new result from a key+weight+contexts triple.
+     */
+    public LookupResult(CharSequence key, long value, Set<BytesRef> contexts) {
+      this(key, null, value, null, contexts);
+    }
+    
+    /**
+     * Create a new result from a key+highlightKey+weight+payload+contexts triple.
+     */
+    public LookupResult(CharSequence key, Object highlightKey, long value, BytesRef payload, Set<BytesRef> contexts) {
       this.key = key;
       this.highlightKey = highlightKey;
       this.value = value;
       this.payload = payload;
+      this.contexts = contexts;
     }
 
     @Override
@@ -211,7 +235,20 @@ public abstract class Lookup {
    * @param num maximum number of results to return
    * @return a list of possible completions, with their relative weight (e.g. popularity)
    */
-  public abstract List<LookupResult> lookup(CharSequence key, boolean onlyMorePopular, int num) throws IOException;
+  public List<LookupResult> lookup(CharSequence key, boolean onlyMorePopular, int num) throws IOException {
+    return lookup(key, null, onlyMorePopular, num);
+  }
+
+  /**
+   * Look up a key and return possible completion for this key.
+   * @param key lookup key. Depending on the implementation this may be
+   * a prefix, misspelling, or even infix.
+   * @param contexts contexts to filter the lookup by, or null if all contexts are allowed; if the suggestion contains any of the contexts, it's a match
+   * @param onlyMorePopular return only more popular results
+   * @param num maximum number of results to return
+   * @return a list of possible completions, with their relative weight (e.g. popularity)
+   */
+  public abstract List<LookupResult> lookup(CharSequence key, Set<BytesRef> contexts, boolean onlyMorePopular, int num) throws IOException;
 
   /**
    * Persist the constructed lookup data to a directory. Optional operation.
@@ -235,4 +272,5 @@ public abstract class Lookup {
    * @return ram size of the lookup implementation in bytes
    */
   public abstract long sizeInBytes();
+
 }

@@ -19,6 +19,9 @@ package org.apache.lucene.search.suggest;
 
 import java.io.IOException;
 import java.util.Comparator;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
@@ -35,6 +38,8 @@ public class BufferedInputIterator implements InputIterator {
   protected BytesRefArray entries = new BytesRefArray(Counter.newCounter());
   /** buffered payload entries */
   protected BytesRefArray payloads = new BytesRefArray(Counter.newCounter());
+  /** buffered context set entries */
+  protected List<Set<BytesRef>> contextSets = new ArrayList<>();
   /** current buffer position */
   protected int curPos = -1;
   /** buffered weights, parallel with {@link #entries} */
@@ -44,15 +49,21 @@ public class BufferedInputIterator implements InputIterator {
   private final boolean hasPayloads;
   private final Comparator<BytesRef> comp;
 
+  private final boolean hasContexts;
+
   /** Creates a new iterator, buffering entries from the specified iterator */
   public BufferedInputIterator(InputIterator source) throws IOException {
     BytesRef spare;
     int freqIndex = 0;
     hasPayloads = source.hasPayloads();
+    hasContexts = source.hasContexts();
     while((spare = source.next()) != null) {
       entries.append(spare);
       if (hasPayloads) {
         payloads.append(source.payload());
+      }
+      if (hasContexts) {
+        contextSets.add(source.contexts());
       }
       if (freqIndex >= freqs.length) {
         freqs = ArrayUtil.grow(freqs, freqs.length+1);
@@ -92,5 +103,18 @@ public class BufferedInputIterator implements InputIterator {
   @Override
   public Comparator<BytesRef> getComparator() {
     return comp;
+  }
+
+  @Override
+  public Set<BytesRef> contexts() {
+    if (hasContexts && curPos < contextSets.size()) {
+      return contextSets.get(curPos);
+    }
+    return null;
+  }
+
+  @Override
+  public boolean hasContexts() {
+    return hasContexts;
   }
 }

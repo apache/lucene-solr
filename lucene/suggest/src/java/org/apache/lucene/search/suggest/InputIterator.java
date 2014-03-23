@@ -19,6 +19,7 @@ package org.apache.lucene.search.suggest;
 
 import java.io.IOException;
 import java.util.Comparator;
+import java.util.Set;
 
 import org.apache.lucene.search.suggest.Lookup.LookupResult; // javadocs
 import org.apache.lucene.search.suggest.analyzing.AnalyzingInfixSuggester; // javadocs
@@ -44,6 +45,15 @@ public interface InputIterator extends BytesRefIterator {
 
   /** Returns true if the iterator has payloads */
   public boolean hasPayloads();
+  
+  /** 
+   * A term's contexts context can be used to filter suggestions.
+   * May return null, if suggest entries do not have any context
+   * */
+  public Set<BytesRef> contexts();
+  
+  /** Returns true if the iterator has contexts */
+  public boolean hasContexts();
   
   /** Singleton InputIterator that iterates over 0 BytesRefs. */
   public static final InputIterator EMPTY = new InputIteratorWrapper(BytesRefIterator.EMPTY);
@@ -87,6 +97,16 @@ public interface InputIterator extends BytesRefIterator {
     @Override
     public Comparator<BytesRef> getComparator() {
       return wrapped.getComparator();
+    }
+
+    @Override
+    public Set<BytesRef> contexts() {
+      return null;
+    }
+
+    @Override
+    public boolean hasContexts() {
+      return false;
     }
   }
 }

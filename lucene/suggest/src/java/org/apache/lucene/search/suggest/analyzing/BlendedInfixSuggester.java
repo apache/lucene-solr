@@ -50,6 +50,8 @@ import org.apache.lucene.util.Version;
  * the indexed text.
  * Please note that it increases the number of elements searched and applies the
  * ponderation after. It might be costly for long suggestions.
+ *
+ * @lucene.experimental
  */
 public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
 
@@ -114,15 +116,15 @@ public class BlendedInfixSuggester extends AnalyzingInfixSuggester {
   }
 
   @Override
-  public List<Lookup.LookupResult> lookup(CharSequence key, boolean onlyMorePopular, int num) throws IOException {
+  public List<Lookup.LookupResult> lookup(CharSequence key, Set<BytesRef> contexts, boolean onlyMorePopular, int num) throws IOException {
     // here we multiply the number of searched element by the defined factor
-    return super.lookup(key, onlyMorePopular, num * numFactor);
+    return super.lookup(key, contexts, onlyMorePopular, num * numFactor);
   }
 
   @Override
-  public List<Lookup.LookupResult> lookup(CharSequence key, int num, boolean allTermsRequired, boolean doHighlight) throws IOException {
+  public List<Lookup.LookupResult> lookup(CharSequence key, Set<BytesRef> contexts, int num, boolean allTermsRequired, boolean doHighlight) throws IOException {
     // here we multiply the number of searched element by the defined factor
-    return super.lookup(key, num * numFactor, allTermsRequired, doHighlight);
+    return super.lookup(key, contexts, num * numFactor, allTermsRequired, doHighlight);
   }
 
   @Override
