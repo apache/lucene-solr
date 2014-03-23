@@ -286,7 +286,10 @@ public class FreeTextSuggester extends Lookup {
    *  the weights for the suggestions are ignored. */
   public void build(InputIterator iterator, double ramBufferSizeMB) throws IOException {
     if (iterator.hasPayloads()) {
-      throw new IllegalArgumentException("payloads are not supported");
+      throw new IllegalArgumentException("this suggester doesn't support payloads");
+    }
+    if (iterator.hasContexts()) {
+      throw new IllegalArgumentException("this suggester doesn't support contexts");
     }
 
     String prefix = getClass().getSimpleName();
@@ -433,8 +436,18 @@ public class FreeTextSuggester extends Lookup {
 
   @Override
   public List<LookupResult> lookup(final CharSequence key, /* ignored */ boolean onlyMorePopular, int num) {
+    return lookup(key, null, onlyMorePopular, num);
+  }
+
+  /** Lookup, without any context. */
+  public List<LookupResult> lookup(final CharSequence key, int num) {
+    return lookup(key, null, true, num);
+  }
+
+  @Override
+  public List<LookupResult> lookup(final CharSequence key, Set<BytesRef> contexts, /* ignored */ boolean onlyMorePopular, int num) {
     try {
-      return lookup(key, num);
+      return lookup(key, contexts, num);
     } catch (IOException ioe) {
       // bogus:
       throw new RuntimeException(ioe);
@@ -458,7 +471,11 @@ public class FreeTextSuggester extends Lookup {
   }
 
   /** Retrieve suggestions. */
-  public List<LookupResult> lookup(final CharSequence key, int num) throws IOException {
+  public List<LookupResult> lookup(final CharSequence key, Set<BytesRef> contexts, int num) throws IOException {
+    if (contexts != null) {
+      throw new IllegalArgumentException("this suggester doesn't support contexts");
+    }
+
     try (TokenStream ts = queryAnalyzer.tokenStream("", key.toString())) {
       TermToBytesRefAttribute termBytesAtt = ts.addAttribute(TermToBytesRefAttribute.class);
       OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);

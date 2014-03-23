@@ -29,12 +29,11 @@ import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefIterator;
 
 /**
  * <p>
- * Dictionary with terms, weights and optionally payload information 
- * taken from stored/indexed fields in a Lucene index.
+ * Dictionary with terms, weights, payload (optional) and contexts (optional)
+ * information taken from stored/indexed fields in a Lucene index.
  * </p>
  * <b>NOTE:</b> 
  *  <ul>
@@ -60,6 +59,8 @@ public class DocumentDictionary implements Dictionary {
 
   /** Field to read payload from */
   protected final String payloadField;
+  /** Field to read contexts from */
+  protected final String contextsField;
   private final String field;
   private final String weightField;
   
@@ -79,15 +80,26 @@ public class DocumentDictionary implements Dictionary {
    * for the entry.
    */
   public DocumentDictionary(IndexReader reader, String field, String weightField, String payloadField) {
+    this(reader, field, weightField, payloadField, null);
+  }
+
+  /**
+   * Creates a new dictionary with the contents of the fields named <code>field</code>
+   * for the terms, <code>weightField</code> for the weights that will be used for the 
+   * the corresponding terms, <code>payloadField</code> for the corresponding payloads
+   * for the entry and <code>contextsFeild</code> for associated contexts.
+   */
+  public DocumentDictionary(IndexReader reader, String field, String weightField, String payloadField, String contextsField) {
     this.reader = reader;
     this.field = field;
     this.weightField = weightField;
     this.payloadField = payloadField;
+    this.contextsField = contextsField;
   }
-  
+
   @Override
   public InputIterator getEntryIterator() throws IOException {
-    return new DocumentInputIterator(payloadField!=null);
+    return new DocumentInputIterator(payloadField!=null, contextsField!=null);
   }
 
   /** Implements {@link InputIterator} from stored fields. */
@@ -96,23 +108,26 @@ public class DocumentDictionary implements Dictionary {
     private final int docCount;
     private final Set<String> relevantFields;
     private final boolean hasPayloads;
+    private final boolean hasContexts;
     private final Bits liveDocs;
     private int currentDocId = -1;
     private long currentWeight = 0;
     private BytesRef currentPayload = null;
+    private Set<BytesRef> currentContexts;
     private final NumericDocValues weightValues;
-    
+
     /**
      * Creates an iterator over term, weight and payload fields from the lucene
      * index. setting <code>withPayload</code> to false, implies an iterator
      * over only term and weight.
      */
-    public DocumentInputIterator(boolean hasPayloads) throws IOException {
+    public DocumentInputIterator(boolean hasPayloads, boolean hasContexts) throws IOException {
       this.hasPayloads = hasPayloads;
+      this.hasContexts = hasContexts;
       docCount = reader.maxDoc() - 1;
       weightValues = (weightField != null) ? MultiDocValues.getNumericValues(reader, weightField) : null;
       liveDocs = (reader.leaves().size() > 0) ? MultiFields.getLiveDocs(reader) : null;
-      relevantFields = getRelevantFields(new String [] {field, weightField, payloadField});
+      relevantFields = getRelevantFields(new String [] {field, weightField, payloadField, contextsField});
     }
 
     @Override
@@ -129,10 +144,11 @@ public class DocumentDictionary implements Dictionary {
         }
 
         StoredDocument doc = reader.document(currentDocId, relevantFields);
-        
+
         BytesRef tempPayload = null;
         BytesRef tempTerm = null;
-        
+        Set<BytesRef> tempContexts = new HashSet<>();
+
         if (hasPayloads) {
           StorableField payload = doc.getField(payloadField);
           if (payload == null || (payload.binaryValue() == null && payload.stringValue() == null)) {
@@ -140,16 +156,28 @@ public class DocumentDictionary implements Dictionary {
           }
           tempPayload = (payload.binaryValue() != null) ? payload.binaryValue() : new BytesRef(payload.stringValue());
         }
-        
+
+        if (hasContexts) {
+          final StorableField[] contextFields = doc.getFields(contextsField);
+          for (StorableField contextField : contextFields) {
+            if (contextField.binaryValue() == null && contextField.stringValue() == null) {
+              continue;
+            } else {
+              tempContexts.add((contextField.binaryValue() != null) ? contextField.binaryValue() : new BytesRef(contextField.stringValue()));
+            }
+          }
+        }
+
         StorableField fieldVal = doc.getField(field);
         if (fieldVal == null || (fieldVal.binaryValue() == null && fieldVal.stringValue() == null)) {
           continue;
         }
         tempTerm = (fieldVal.stringValue() != null) ? new BytesRef(fieldVal.stringValue()) : fieldVal.binaryValue();
-        
+
         currentPayload = tempPayload;
+        currentContexts = tempContexts;
         currentWeight = getWeight(doc, currentDocId);
-        
+
         return tempTerm;
       }
       return null;
@@ -190,6 +218,19 @@ public class DocumentDictionary implements Dictionary {
         }
       }
       return relevantFields;
+    }
+
+    @Override
+    public Set<BytesRef> contexts() {
+      if (hasContexts) {
+        return currentContexts;
+      }
+      return null;
+    }
+
+    @Override
+    public boolean hasContexts() {
+      return hasContexts;
     }
   }
 }

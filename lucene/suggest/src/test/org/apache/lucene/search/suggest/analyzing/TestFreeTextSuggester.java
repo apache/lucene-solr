@@ -173,6 +173,15 @@ public class TestFreeTextSuggester extends LuceneTestCase {
           return false;
         }
 
+        @Override
+        public Set<BytesRef> contexts() {
+          return null;
+        }
+
+        @Override
+        public boolean hasContexts() {
+          return false;
+        }
       });
     if (VERBOSE) {
       System.out.println(sug.sizeInBytes() + " bytes");
@@ -362,6 +371,16 @@ public class TestFreeTextSuggester extends LuceneTestCase {
 
         @Override
         public boolean hasPayloads() {
+          return false;
+        }
+
+        @Override
+        public Set<BytesRef> contexts() {
+          return null;
+        }
+
+        @Override
+        public boolean hasContexts() {
           return false;
         }
       });

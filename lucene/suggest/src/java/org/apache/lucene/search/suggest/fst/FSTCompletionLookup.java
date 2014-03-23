@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup;
@@ -30,16 +31,16 @@ import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
-import org.apache.lucene.util.fst.FST;
-import org.apache.lucene.util.fst.NoOutputs;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.OfflineSorter.SortInfo;
+import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.UnicodeUtil;
+import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.NoOutputs;
 
 /**
  * An adapter from {@link Lookup} API to {@link FSTCompletion}.
@@ -150,6 +151,9 @@ public class FSTCompletionLookup extends Lookup {
     if (iterator.hasPayloads()) {
       throw new IllegalArgumentException("this suggester doesn't support payloads");
     }
+    if (iterator.hasContexts()) {
+      throw new IllegalArgumentException("this suggester doesn't support contexts");
+    }
     File tempInput = File.createTempFile(
         FSTCompletionLookup.class.getSimpleName(), ".input", OfflineSorter.defaultTempDir());
     File tempSorted = File.createTempFile(
@@ -243,7 +247,10 @@ public class FSTCompletionLookup extends Lookup {
   }
 
   @Override
-  public List<LookupResult> lookup(CharSequence key, boolean higherWeightsFirst, int num) {
+  public List<LookupResult> lookup(CharSequence key, Set<BytesRef> contexts, boolean higherWeightsFirst, int num) {
+    if (contexts != null) {
+      throw new IllegalArgumentException("this suggester doesn't support contexts");
+    }
     final List<Completion> completions;
     if (higherWeightsFirst) {
       completions = higherWeightsCompletion.lookup(key, num);
