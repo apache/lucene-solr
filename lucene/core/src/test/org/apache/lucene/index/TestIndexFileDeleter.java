@@ -116,8 +116,8 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     // Create a bogus cfs file shadowing a non-cfs segment:
     
     // TODO: assert is bogus (relies upon codec-specific filenames)
-    assertTrue(dir.fileExists("_3.fdt") || dir.fileExists("_3.fld"));
-    assertTrue(!dir.fileExists("_3.cfs"));
+    assertTrue(slowFileExists(dir, "_3.fdt") || slowFileExists(dir, "_3.fld"));
+    assertTrue(!slowFileExists(dir, "_3.cfs"));
     copyFile(dir, "_1.cfs", "_3.cfs");
     
     String[] filesPre = dir.listAll();

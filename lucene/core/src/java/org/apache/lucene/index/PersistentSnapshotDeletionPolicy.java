@@ -206,8 +206,10 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
     
     if (nextWriteGen > 0) {
       String lastSaveFile = SNAPSHOTS_PREFIX + (nextWriteGen-1);
-      if (dir.fileExists(lastSaveFile)) {
+      try {
         dir.deleteFile(lastSaveFile);
+      } catch (IOException ioe) {
+        // OK: likely it didn't exist
       }
     }
 

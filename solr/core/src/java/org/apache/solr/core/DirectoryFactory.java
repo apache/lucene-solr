@@ -19,7 +19,9 @@ package org.apache.solr.core;
 
 import java.io.Closeable;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
@@ -202,11 +204,11 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   }
   
   public static long sizeOf(Directory directory, String file) throws IOException {
-    if (!directory.fileExists(file)) {
+    try {
+      return directory.fileLength(file);
+    } catch (FileNotFoundException | NoSuchFileException e) {
       return 0;
     }
-    
-    return directory.fileLength(file);
   }
   
   /**

@@ -53,7 +53,10 @@ public abstract class Directory implements Closeable {
    */
   public abstract String[] listAll() throws IOException;
 
-  /** Returns true iff a file with the given name exists. */
+  /** Returns true iff a file with the given name exists.
+   *
+   *  @deprecated This method will be removed in 5.0 */
+  @Deprecated
   public abstract boolean fileExists(String name)
        throws IOException;
 

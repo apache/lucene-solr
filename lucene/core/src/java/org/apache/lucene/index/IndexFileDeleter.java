@@ -584,23 +584,20 @@ final class IndexFileDeleter implements Closeable {
       }
       directory.deleteFile(fileName);
     } catch (IOException e) {  // if delete fails
-      if (directory.fileExists(fileName)) {
+      // Some operating systems (e.g. Windows) don't
+      // permit a file to be deleted while it is opened
+      // for read (e.g. by another process or thread). So
+      // we assume that when a delete fails it is because
+      // the file is open in another process, and queue
+      // the file for subsequent deletion.
 
-        // Some operating systems (e.g. Windows) don't
-        // permit a file to be deleted while it is opened
-        // for read (e.g. by another process or thread). So
-        // we assume that when a delete fails it is because
-        // the file is open in another process, and queue
-        // the file for subsequent deletion.
-
-        if (infoStream.isEnabled("IFD")) {
-          infoStream.message("IFD", "unable to remove file \"" + fileName + "\": " + e.toString() + "; Will re-try later.");
-        }
-        if (deletable == null) {
-          deletable = new ArrayList<>();
-        }
-        deletable.add(fileName);                  // add to deletable
+      if (infoStream.isEnabled("IFD")) {
+        infoStream.message("IFD", "unable to remove file \"" + fileName + "\": " + e.toString() + "; Will re-try later.");
       }
+      if (deletable == null) {
+        deletable = new ArrayList<>();
+      }
+      deletable.add(fileName);                  // add to deletable
     }
   }
 

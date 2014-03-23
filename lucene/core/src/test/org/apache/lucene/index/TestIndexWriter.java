@@ -1145,6 +1145,9 @@ public class TestIndexWriter extends LuceneTestCase {
       }
 
       if (!failed) {
+        if (VERBOSE) {
+          System.out.println("TEST: now rollback");
+        }
         // clear interrupt state:
         Thread.interrupted();
         if (w != null) {
@@ -1173,7 +1176,12 @@ public class TestIndexWriter extends LuceneTestCase {
         }
       }
       try {
-        IOUtils.close(dir, adder);
+        IOUtils.close(dir);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+      try {
+        IOUtils.close(adder);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -1979,7 +1987,7 @@ public class TestIndexWriter extends LuceneTestCase {
       
       new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random()))).close();
       
-      assertTrue(dir.fileExists("myrandomfile"));
+      assertTrue(slowFileExists(dir, "myrandomfile"));
     } finally {
       dir.close();
     }
@@ -2057,14 +2065,14 @@ public class TestIndexWriter extends LuceneTestCase {
       
       new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random()))).close();
       
-      assertTrue(dir.fileExists("_a.frq"));
+      assertTrue(slowFileExists(dir, "_a.frq"));
       
       IndexWriter iw = new IndexWriter(dir, 
           newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
       iw.addDocument(new Document());
       iw.close();
       
-      assertFalse(dir.fileExists("_a.frq"));
+      assertFalse(slowFileExists(dir, "_a.frq"));
     } finally {
       dir.close();
     }

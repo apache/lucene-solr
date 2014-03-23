@@ -91,7 +91,7 @@ public class TestNeverDelete extends LuceneTestCase {
       allFiles.addAll(ic.getFileNames());
       // Make sure no old files were removed
       for(String fileName : allFiles) {
-        assertTrue("file " + fileName + " does not exist", d.fileExists(fileName));
+        assertTrue("file " + fileName + " does not exist", slowFileExists(d, fileName));
       }
       DirectoryReader r2 = DirectoryReader.openIfChanged(r);
       if (r2 != null) {
