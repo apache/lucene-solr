@@ -74,6 +74,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   boolean preventDoubleWrite = true;
   boolean trackDiskUsage = false;
   boolean wrapLockFactory = true;
+  boolean allowRandomFileNotFoundException = true;
   private Set<String> unSyncedFiles;
   private Set<String> createdFiles;
   private Set<String> openFilesForWrite = new HashSet<>();
@@ -137,7 +138,15 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   public void setPreventDoubleWrite(boolean value) {
     preventDoubleWrite = value;
   }
-  
+
+  /** If set to true (the default), when we throw random
+   *  IOException on openInput or createOutput, we may
+   *  sometimes throw FileNotFoundException or
+   *  NoSuchFileException. */
+  public void setAllowRandomFileNotFoundException(boolean value) {
+    allowRandomFileNotFoundException = value;
+  }
+
   /**
    * Enum for controlling hard disk throttling.
    * Set via {@link MockDirectoryWrapper #setThrottling(Throttling)}
@@ -379,7 +388,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         System.out.println(Thread.currentThread().getName() + ": MockDirectoryWrapper: now throw random exception during open file=" + name);
         new Throwable().printStackTrace(System.out);
       }
-      if (randomState.nextBoolean()) {
+      if (allowRandomFileNotFoundException == false || randomState.nextBoolean()) {
         throw new IOException("a random IOException (" + name + ")");
       } else {
         throw randomState.nextBoolean() ? new FileNotFoundException("a random IOException (" + name + ")") : new NoSuchFileException("a random IOException (" + name + ")");
