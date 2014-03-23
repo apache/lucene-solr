@@ -59,6 +59,9 @@ import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.update.SolrIndexSplitter;
+import org.apache.solr.util.stats.Snapshot;
+import org.apache.solr.util.stats.Timer;
+import org.apache.solr.util.stats.TimerContext;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -85,6 +88,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.OVERSEERSTATUS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
 
 
@@ -162,15 +166,18 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   private ZkStateReader zkStateReader;
 
   private boolean isClosed;
-  
-  public OverseerCollectionProcessor(ZkStateReader zkStateReader, String myId, ShardHandler shardHandler, String adminPath) {
-    this(zkStateReader, myId, shardHandler, adminPath, Overseer.getCollectionQueue(zkStateReader.getZkClient()),
+
+  private Overseer.Stats stats;
+
+  public OverseerCollectionProcessor(ZkStateReader zkStateReader, String myId, ShardHandler shardHandler, String adminPath, Overseer.Stats stats) {
+    this(zkStateReader, myId, shardHandler, adminPath, stats, Overseer.getCollectionQueue(zkStateReader.getZkClient(), stats),
         Overseer.getRunningMap(zkStateReader.getZkClient()),
         Overseer.getCompletedMap(zkStateReader.getZkClient()), Overseer.getFailureMap(zkStateReader.getZkClient()));
   }
 
   protected OverseerCollectionProcessor(ZkStateReader zkStateReader, String myId, ShardHandler shardHandler,
                                         String adminPath,
+                                        Overseer.Stats stats,
                                         DistributedQueue workQueue,
                                         DistributedMap runningMap,
                                         DistributedMap completedMap,
@@ -183,6 +190,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     this.runningMap = runningMap;
     this.completedMap = completedMap;
     this.failureMap = failureMap;
+    this.stats = stats;
   }
   
   @Override
@@ -227,7 +235,13 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
            log.info("Overseer Collection Processor: Get the message id:" + head.getId() + " message:" + message.toString());
            final String operation = message.getStr(QUEUE_OPERATION);
-           SolrResponse response = processMessage(message, operation);
+           final TimerContext timerContext = stats.time("collection_" + operation); // even if operation is async, it is sync!
+           SolrResponse response = null;
+           try  {
+             response = processMessage(message, operation);
+           } finally {
+             timerContext.stop();
+           }
 
            head.setBytes(SolrResponse.serializable(response));
            if (!operation.equals(REQUESTSTATUS) && asyncId != null) {
@@ -241,6 +255,13 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
             runningMap.remove(asyncId);
 
            workQueue.remove(head);
+
+           if (response.getResponse().get("failure") != null || response.getResponse().get("exception") != null)  {
+             stats.error("collection_" + operation);
+             stats.storeFailureDetails("collection_" + operation, message, response);
+           } else {
+             stats.success("collection_" + operation);
+           }
 
           log.info("Overseer Collection Processor: Message id:" + head.getId() + " complete, response:"+ response.getResponse().toString());
         } catch (KeeperException e) {
@@ -451,7 +472,11 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         addReplica(zkStateReader.getClusterState(), message, results);
       } else if (REQUESTSTATUS.equals(operation)) {
         requestStatus(message, results);
-      } else {
+      } else if (OVERSEERSTATUS.isEqual(operation)) {
+        getOverseerStatus(message, results);
+      }
+
+      else {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:"
             + operation);
       }
@@ -467,6 +492,79 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     } 
     
     return new OverseerSolrResponse(results);
+  }
+
+  private void getOverseerStatus(ZkNodeProps message, NamedList results) throws KeeperException, InterruptedException {
+    String leaderNode = getLeaderNode(zkStateReader.getZkClient());
+    results.add("leader", leaderNode);
+    Stat stat = new Stat();
+    zkStateReader.getZkClient().getData("/overseer/queue",null, stat, true);
+    results.add("overseer_queue_size", stat.getNumChildren());
+    stat = new Stat();
+    zkStateReader.getZkClient().getData("/overseer/queue-work",null, stat, true);
+    results.add("overseer_work_queue_size", stat.getNumChildren());
+    stat = new Stat();
+    zkStateReader.getZkClient().getData("/overseer/collection-queue-work",null, stat, true);
+    results.add("overseer_collection_queue_size", stat.getNumChildren());
+
+    NamedList overseerStats = new NamedList();
+    NamedList collectionStats = new NamedList();
+    NamedList stateUpdateQueueStats = new NamedList();
+    NamedList workQueueStats = new NamedList();
+    NamedList collectionQueueStats = new NamedList();
+    for (Map.Entry<String, Overseer.Stat> entry : this.stats.getStats().entrySet()) {
+      String key = entry.getKey();
+      NamedList<Object> lst = new SimpleOrderedMap<>();
+      if (key.startsWith("collection_"))  {
+        collectionStats.add(key.substring(11), lst);
+        int successes = this.stats.getSuccessCount(entry.getKey());
+        int errors = this.stats.getErrorCount(entry.getKey());
+        lst.add("requests", successes);
+        lst.add("errors", errors);
+        List<Overseer.FailedOp> failureDetails = this.stats.getFailureDetails(key);
+        if (failureDetails != null) {
+          List<SimpleOrderedMap<Object>> failures = new ArrayList<>();
+          for (Overseer.FailedOp failedOp : failureDetails) {
+            SimpleOrderedMap<Object> fail = new SimpleOrderedMap<>();
+            fail.add("request", failedOp.req.getProperties());
+            fail.add("response", failedOp.resp.getResponse());
+            failures.add(fail);
+          }
+          lst.add("recent_failures", failures);
+        }
+      } else if (key.startsWith("/overseer/queue_"))  {
+        stateUpdateQueueStats.add(key.substring(16), lst);
+      } else if (key.startsWith("/overseer/queue-work_"))  {
+        workQueueStats.add(key.substring(21), lst);
+      } else if (key.startsWith("/overseer/collection-queue-work_"))  {
+        collectionQueueStats.add(key.substring(32), lst);
+      } else  {
+        // overseer stats
+        overseerStats.add(key, lst);
+        int successes = this.stats.getSuccessCount(entry.getKey());
+        int errors = this.stats.getErrorCount(entry.getKey());
+        lst.add("requests", successes);
+        lst.add("errors", errors);
+      }
+      Timer timer = entry.getValue().requestTime;
+      Snapshot snapshot = timer.getSnapshot();
+      lst.add("totalTime", timer.getSum());
+      lst.add("avgRequestsPerMinute", timer.getMeanRate());
+      lst.add("5minRateReqsPerMinute", timer.getFiveMinuteRate());
+      lst.add("15minRateReqsPerMinute", timer.getFifteenMinuteRate());
+      lst.add("avgTimePerRequest", timer.getMean());
+      lst.add("medianRequestTime", snapshot.getMedian());
+      lst.add("75thPcRequestTime", snapshot.get75thPercentile());
+      lst.add("95thPcRequestTime", snapshot.get95thPercentile());
+      lst.add("99thPcRequestTime", snapshot.get99thPercentile());
+      lst.add("999thPcRequestTime", snapshot.get999thPercentile());
+    }
+    results.add("overseer_operations", overseerStats);
+    results.add("collection_operations", collectionStats);
+    results.add("overseer_queue", stateUpdateQueueStats);
+    results.add("overseer_internal_queue", workQueueStats);
+    results.add("collection_queue", collectionQueueStats);
+
   }
 
   private void processRoleCommand(ZkNodeProps message, String operation) throws KeeperException, InterruptedException {

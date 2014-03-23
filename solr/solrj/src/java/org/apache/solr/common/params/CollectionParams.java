@@ -43,7 +43,8 @@ public interface CollectionParams
     REMOVEROLE,
     CLUSTERPROP,
     REQUESTSTATUS,
-    ADDREPLICA;
+    ADDREPLICA,
+    OVERSEERSTATUS;
     
     public static CollectionAction get( String p )
     {

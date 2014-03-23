@@ -96,7 +96,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
         DistributedQueue workQueue, DistributedMap runningMap,
         DistributedMap completedMap,
         DistributedMap failureMap) {
-      super(zkStateReader, myId, shardHandler, adminPath, workQueue, runningMap, completedMap, failureMap);
+      super(zkStateReader, myId, shardHandler, adminPath, new Overseer.Stats(), workQueue, runningMap, completedMap, failureMap);
     }
     
     @Override
