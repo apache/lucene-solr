@@ -20,13 +20,9 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.util.Bits;
-
-// TODO: we could also have an ExpressionRescorer
 
 /** A {@link Rescorer} that uses a provided Query to assign
  *  scores to the first-pass hits.
@@ -52,43 +48,65 @@ public abstract class QueryRescorer extends Rescorer {
   protected abstract float combine(float firstPassScore, boolean secondPassMatches, float secondPassScore);
 
   @Override
-  public TopDocs rescore(IndexSearcher searcher, TopDocs topDocs, int topN) throws IOException {
-    int[] docIDs = new int[topDocs.scoreDocs.length];
-    for(int i=0;i<docIDs.length;i++) {
-      docIDs[i] = topDocs.scoreDocs[i].doc;
-    }
+  public TopDocs rescore(IndexSearcher searcher, TopDocs firstPassTopDocs, int topN) throws IOException {
+    ScoreDoc[] hits = firstPassTopDocs.scoreDocs.clone();
+    Arrays.sort(hits,
+                new Comparator<ScoreDoc>() {
+                  @Override
+                  public int compare(ScoreDoc a, ScoreDoc b) {
+                    return a.doc - b.doc;
+                  }
+                });
 
-    TopDocs topDocs2 = searcher.search(query, new OnlyDocIDsFilter(docIDs), topDocs.scoreDocs.length);
+    List<AtomicReaderContext> leaves = searcher.getIndexReader().leaves();
 
-    // TODO: we could save small young GC cost here if we
-    // cloned the incoming ScoreDoc[], sorted that by doc,
-    // passed that to OnlyDocIDsFilter, sorted 2nd pass
-    // TopDocs by doc, did a merge sort to combine the
-    // scores, and finally re-sorted by the combined score,
-    // but that is sizable added code complexity for minor
-    // GC savings:
-    Map<Integer,Float> newScores = new HashMap<Integer,Float>();
-    for(ScoreDoc sd : topDocs2.scoreDocs) {
-      newScores.put(sd.doc, sd.score);
-    }
+    Weight weight = searcher.createNormalizedWeight(query);
 
-    ScoreDoc[] newHits = new ScoreDoc[topDocs.scoreDocs.length];
-    for(int i=0;i<topDocs.scoreDocs.length;i++) {
-      ScoreDoc sd = topDocs.scoreDocs[i];
-      Float newScore = newScores.get(sd.doc);
-      float combinedScore;
-      if (newScore == null) {
-        combinedScore = combine(sd.score, false, 0.0f);
-      } else {
-        combinedScore = combine(sd.score, true, newScore.floatValue());
+    // Now merge sort docIDs from hits, with reader's leaves:
+    int hitUpto = 0;
+    int readerUpto = -1;
+    int endDoc = 0;
+    int docBase = 0;
+    Scorer scorer = null;
+
+    while (hitUpto < hits.length) {
+      ScoreDoc hit = hits[hitUpto];
+      int docID = hit.doc;
+      AtomicReaderContext readerContext = null;
+      while (docID >= endDoc) {
+        readerUpto++;
+        readerContext = leaves.get(readerUpto);
+        endDoc = readerContext.docBase + readerContext.reader().maxDoc();
       }
-      newHits[i] = new ScoreDoc(sd.doc, combinedScore);
+
+      if (readerContext != null) {
+        // We advanced to another segment:
+        docBase = readerContext.docBase;
+        scorer = weight.scorer(readerContext, null);
+      }
+
+      int targetDoc = docID - docBase;
+      int actualDoc = scorer.docID();
+      if (actualDoc < targetDoc) {
+        actualDoc = scorer.advance(targetDoc);
+      }
+
+      if (actualDoc == targetDoc) {
+        // Query did match this doc:
+        hit.score = combine(hit.score, true, scorer.score());
+      } else {
+        // Query did not match this doc:
+        assert actualDoc > targetDoc;
+        hit.score = combine(hit.score, false, 0.0f);
+      }
+
+      hitUpto++;
     }
 
     // TODO: we should do a partial sort (of only topN)
     // instead, but typically the number of hits is
     // smallish:
-    Arrays.sort(newHits,
+    Arrays.sort(hits,
                 new Comparator<ScoreDoc>() {
                   @Override
                   public int compare(ScoreDoc a, ScoreDoc b) {
@@ -105,13 +123,13 @@ public abstract class QueryRescorer extends Rescorer {
                   }
                 });
 
-    if (topN < newHits.length) {
+    if (topN < hits.length) {
       ScoreDoc[] subset = new ScoreDoc[topN];
-      System.arraycopy(newHits, 0, subset, 0, topN);
-      newHits = subset;
+      System.arraycopy(hits, 0, subset, 0, topN);
+      hits = subset;
     }
 
-    return new TopDocs(topDocs.totalHits, newHits, newHits[0].score);
+    return new TopDocs(firstPassTopDocs.totalHits, hits, hits[0].score);
   }
 
   @Override
@@ -158,81 +176,5 @@ public abstract class QueryRescorer extends Rescorer {
         return score;
       }
     }.rescore(searcher, topDocs, topN);
-  }
-
-  /** Filter accepting only the specified docIDs */
-  private static class OnlyDocIDsFilter extends Filter {
-
-    private final int[] docIDs;
-
-    /** Sole constructor. */
-    public OnlyDocIDsFilter(int[] docIDs) {
-      this.docIDs = docIDs;
-      Arrays.sort(docIDs);
-    }
-
-    @Override
-    public DocIdSet getDocIdSet(final AtomicReaderContext context, final Bits acceptDocs) throws IOException {
-      int loc = Arrays.binarySearch(docIDs, context.docBase);
-      if (loc < 0) {
-        loc = -loc-1;
-      }
-
-      final int startLoc = loc;
-      final int endDoc = context.docBase + context.reader().maxDoc();
-
-      return new DocIdSet() {
-
-        int pos = startLoc;
-
-        @Override
-        public DocIdSetIterator iterator() throws IOException {
-          return new DocIdSetIterator() {
-
-            int docID;
-
-            @Override
-            public int docID() {
-              return docID;
-            }
-
-            @Override
-            public int nextDoc() {
-              if (pos == docIDs.length) {
-                return NO_MORE_DOCS;
-              }
-              int docID = docIDs[pos];
-              if (docID >= endDoc) {
-                return NO_MORE_DOCS;
-              }
-              pos++;
-              assert acceptDocs == null || acceptDocs.get(docID-context.docBase);
-              return docID-context.docBase;
-            }
-
-            @Override
-            public long cost() {
-              // NOTE: not quite right, since this is cost
-              // across all segments, and we are supposed to
-              // return cost for just this segment:
-              return docIDs.length;
-            }
-
-            @Override
-            public int advance(int target) {
-              // TODO: this is a full binary search; we
-              // could optimize (a bit) by setting lower
-              // bound to current pos instead:
-              int loc = Arrays.binarySearch(docIDs, target + context.docBase);
-              if (loc < 0) {
-                loc = -loc-1;
-              }
-              pos = loc;
-              return nextDoc();
-            }
-          };
-        }
-      };
-    }
   }
 }
