@@ -999,7 +999,7 @@ public abstract class LuceneTestCase extends Assert {
   public static BaseDirectoryWrapper newDirectory(Random r, Directory d) throws IOException {
     Directory impl = newDirectoryImpl(r, TEST_DIRECTORY);
     for (String file : d.listAll()) {
-     d.copy(impl, file, file, newIOContext(r));
+      d.copy(impl, file, file, newIOContext(r));
     }
     return wrapDirectory(r, impl, rarely(r));
   }

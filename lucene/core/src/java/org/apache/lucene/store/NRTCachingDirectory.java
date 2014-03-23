@@ -303,12 +303,13 @@ public class NRTCachingDirectory extends Directory {
     // happens during commit() or close():
     synchronized(uncacheLock) {
       if (true || VERBOSE) {
-        System.out.println("nrtdir.unCache name=" + fileName);
+        System.out.println(Thread.currentThread().getName() + ": nrtdir.unCache name=" + fileName);
       }
       if (!cache.fileExists(fileName)) {
+        // nocommit why am i hitting this so much?
         // Another thread beat us...
         if (true || VERBOSE) {
-          System.out.println("nrtdir.unCache skip name=" + fileName);
+          System.out.println(Thread.currentThread().getName() + ": nrtdir.unCache skip name=" + fileName);
         }
         return;
       }
