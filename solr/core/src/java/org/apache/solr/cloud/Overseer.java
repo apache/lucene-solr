@@ -1045,13 +1045,6 @@ public class Overseer {
         return this.isClosed;
       }
 
-      public DistributedQueue getStateUpdateQueue() {
-        return stateUpdateQueue;
-      }
-
-      public DistributedQueue getWorkQueue()  {
-        return workQueue;
-      }
   }
 
   static void getShardNames(Integer numShards, List<String> shardNames) {
