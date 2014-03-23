@@ -265,6 +265,9 @@ Other Changes
 * SOLR-5883: Many tests do not shutdown SolrServer. 
   (Tomás Fernández Löbbe via Mark Miller)
 
+* SOLR-5898: Update to latest Kite Morphlines release: Version 0.12.1. 
+  (Mark Miller)
+
 ==================  4.7.1  ==================
 
 Versions of Major Components
