@@ -34,6 +34,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERPROP;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.OVERSEERSTATUS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
 
 import java.io.IOException;
@@ -206,12 +207,22 @@ public class CollectionsHandler extends RequestHandlerBase {
         this.handleRequestStatus(req, rsp);
         break;
       }
+      case OVERSEERSTATUS:  {
+        this.handleOverseerStatus(req, rsp);
+        break;
+      }
       default: {
           throw new RuntimeException("Unknown action: " + action);
       }
     }
 
     rsp.setHttpCaching(false);
+  }
+
+  private void handleOverseerStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
+    Map<String, Object> props = ZkNodeProps.makeMap(
+        Overseer.QUEUE_OPERATION, OVERSEERSTATUS.toLower());
+    handleResponse(OVERSEERSTATUS.toLower(), new ZkNodeProps(props), rsp);
   }
 
   private void handleProp(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
