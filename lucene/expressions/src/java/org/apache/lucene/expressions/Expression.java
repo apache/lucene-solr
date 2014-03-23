@@ -19,6 +19,7 @@ package org.apache.lucene.expressions;
 import org.apache.lucene.expressions.js.JavascriptCompiler; // javadocs
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.Rescorer;
 import org.apache.lucene.search.SortField;
 
 /**
@@ -82,5 +83,11 @@ public abstract class Expression {
   /** Get a sort field which can be used to rank documents by this expression. */
   public SortField getSortField(Bindings bindings, boolean reverse) {
     return getValueSource(bindings).getSortField(reverse);
+  }
+
+  /** Get a {@link Rescorer}, to rescore first-pass hits
+   *  using this expression. */
+  public Rescorer getRescorer(Bindings bindings) {
+    return new ExpressionRescorer(this, bindings);
   }
 }

@@ -74,6 +74,10 @@ New Features
   first pass search using scores from a more costly second pass
   search. (Simon Willnauer, Robert Muir, Mike McCandless)
 
+* LUCENE-5545: Add SortRescorer and Expression.getRescorer, to
+  resort the hits from a first pass search using a Sort or an
+  Expression. (Simon Willnauer, Robert Muir, Mike McCandless)
+
 API Changes
 
 * LUCENE-5454: Add RandomAccessOrds, an optional extension of SortedSetDocValues
