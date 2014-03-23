@@ -37,8 +37,10 @@ import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
 
+@SuppressCodecs("Lucene3x")
 public class TestQueryRescorer extends LuceneTestCase {
 
   private IndexSearcher getSearcher(IndexReader r) {
