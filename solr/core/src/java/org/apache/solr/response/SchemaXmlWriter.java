@@ -111,9 +111,6 @@ public class SchemaXmlWriter extends TextResponseWriter {
       } else if (schemaPropName.equals(IndexSchema.FIELD_TYPES)) {
         writeFieldTypes((List<SimpleOrderedMap<Object>>)schemaProperties.getVal(schemaPropNum));
       } else if (schemaPropName.equals(IndexSchema.FIELDS)) {
-        openStartTag(IndexSchema.FIELDS);
-        closeStartTag(false);
-        incLevel();
         @SuppressWarnings("unchecked") List<SimpleOrderedMap<Object>> fieldPropertiesList
             = (List<SimpleOrderedMap<Object>>)schemaProperties.getVal(schemaPropNum);
         for (SimpleOrderedMap<Object> fieldProperties : fieldPropertiesList) {
@@ -134,8 +131,6 @@ public class SchemaXmlWriter extends TextResponseWriter {
           }
           closeStartTag(true);
         }
-        decLevel();
-        endTag(IndexSchema.FIELDS);
       } else if (schemaPropName.equals(IndexSchema.COPY_FIELDS)) {
         @SuppressWarnings("unchecked") List<SimpleOrderedMap<Object>> copyFieldPropertiesList
             = (List<SimpleOrderedMap<Object>>)schemaProperties.getVal(schemaPropNum);
@@ -156,9 +151,6 @@ public class SchemaXmlWriter extends TextResponseWriter {
   }
 
   private void writeFieldTypes(List<SimpleOrderedMap<Object>> fieldTypePropertiesList) throws IOException {
-    openStartTag(IndexSchema.TYPES);
-    closeStartTag(false);
-    incLevel();
     for (SimpleOrderedMap<Object> fieldTypeProperties : fieldTypePropertiesList) {
       SimpleOrderedMap<Object> analyzerProperties = null;
       SimpleOrderedMap<Object> indexAnalyzerProperties = null;
@@ -199,8 +191,6 @@ public class SchemaXmlWriter extends TextResponseWriter {
         endTag(IndexSchema.FIELD_TYPE);
       }
     }
-    decLevel();
-    endTag(IndexSchema.TYPES);
   }
 
   private void writeSimilarity(SimpleOrderedMap<Object> similarityProperties) throws IOException {

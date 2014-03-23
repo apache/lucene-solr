@@ -463,8 +463,10 @@ public class IndexSchema {
 
       final FieldTypePluginLoader typeLoader = new FieldTypePluginLoader(this, fieldTypes, schemaAware);
 
-      //               /schema/types/fieldtype | /schema/types/fieldType 
-      expression =     stepsToPath(SCHEMA, TYPES, FIELD_TYPE.toLowerCase(Locale.ROOT)) // backcompat(?) 
+      //               /schema/fieldtype | /schema/fieldType | /schema/types/fieldtype | /schema/types/fieldType
+      expression = stepsToPath(SCHEMA, FIELD_TYPE.toLowerCase(Locale.ROOT)) // backcompat(?)
+          + XPATH_OR + stepsToPath(SCHEMA, FIELD_TYPE)
+          + XPATH_OR + stepsToPath(SCHEMA, TYPES, FIELD_TYPE.toLowerCase(Locale.ROOT))
           + XPATH_OR + stepsToPath(SCHEMA, TYPES, FIELD_TYPE);
       NodeList nodes = (NodeList) xpath.evaluate(expression, document, XPathConstants.NODESET);
       typeLoader.load(loader, nodes);
@@ -637,9 +639,12 @@ public class IndexSchema {
     
     ArrayList<DynamicField> dFields = new ArrayList<>();
 
-    //                  /schema/fields/field | /schema/fields/dynamicField
-    String expression = stepsToPath(SCHEMA, FIELDS, FIELD)
-           + XPATH_OR + stepsToPath(SCHEMA, FIELDS, DYNAMIC_FIELD);
+    //                  /schema/field | /schema/dynamicField | /schema/fields/field | /schema/fields/dynamicField
+    String expression = stepsToPath(SCHEMA, FIELD)
+        + XPATH_OR + stepsToPath(SCHEMA, DYNAMIC_FIELD)
+        + XPATH_OR + stepsToPath(SCHEMA, FIELDS, FIELD)
+        + XPATH_OR + stepsToPath(SCHEMA, FIELDS, DYNAMIC_FIELD);
+
     NodeList nodes = (NodeList)xpath.evaluate(expression, document, XPathConstants.NODESET);
 
     for (int i=0; i<nodes.getLength(); i++) {

@@ -37,7 +37,6 @@
        1.0: multiValued attribute did not exist, all fields are multiValued by nature
        1.1: multiValued attribute introduced, false by default -->
 
-  <types>
     <!-- field type definitions. The "name" attribute is
        just a label to be used by field definitions.  The "class"
        attribute and any other attributes determine the real
@@ -187,15 +186,10 @@
      --> 
     <fieldtype name="ignored" stored="false" indexed="false" class="solr.StrField" /> 
 
- </types>
-
-
- <fields>
    <field name="title" type="string" indexed="true" stored="true"/>
    <field name="author" type="string" indexed="true" stored="true" />
    <field name="text" type="text" indexed="true" stored="true" />
    
- </fields>
  <!-- field for the QueryParser to use when an explicit fieldname is absent -->
  <defaultSearchField>text</defaultSearchField>
 
