@@ -1192,10 +1192,9 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     }
   }
 
-  @SafeVarargs
-  public final <T> Iterable<T> shuffle(T...values) {
-    final List<T> asList = new ArrayList<>(values.length);
-    for (T value : values) {
+  static final Iterable<Input> shuffle(Input...values) {
+    final List<Input> asList = new ArrayList<>(values.length);
+    for (Input value : values) {
       asList.add(value);
     }
     Collections.shuffle(asList, random());
