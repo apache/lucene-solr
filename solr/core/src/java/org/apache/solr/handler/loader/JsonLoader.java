@@ -418,11 +418,11 @@ public class JsonLoader extends ContentStreamLoader {
       for (;;) {
         SolrInputField sif = parseField();
         if (sif == null) return sdoc;
-        SolrInputField prev = sdoc.put(sif.getName(), sif);
-        if (prev != null) {
-          // blech - repeated keys
-          sif.addValue(prev.getValue(), prev.getBoost());
-        }
+        // pulling out hte pieces may seem weird, but it's because
+        // SolrInputDocument.addField will do the right thing
+        // if the doc already has another value for this field
+        // (ie: repeating fieldname keys)
+        sdoc.addField(sif.getName(), sif.getValue(), sif.getBoost());
       }
     }
   

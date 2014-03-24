@@ -209,6 +209,54 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     req.close();
   }
 
+  public void testFieldValueOrdering() throws Exception {
+    final String pre = "{'add':[{'id':'1',";
+    final String post = "},{'id':'2'}]}";
+
+    // list
+    checkFieldValueOrdering((pre+ "'f':[45,67,89]" +post)
+                            .replace('\'', '"'),
+                            1.0F);
+    // dup fieldname keys
+    checkFieldValueOrdering((pre+ "'f':45,'f':67,'f':89" +post)
+                            .replace('\'', '"'),
+                            1.0F);
+    // extended w/boost
+    checkFieldValueOrdering((pre+ "'f':{'boost':4.0,'value':[45,67,89]}" +post)
+                            .replace('\'', '"'),
+                            4.0F);
+    // dup keys extended w/ multiplicitive boost
+    checkFieldValueOrdering((pre+ 
+                             "'f':{'boost':2.0,'value':[45,67]}," +
+                             "'f':{'boost':2.0,'value':89}" 
+                             +post)
+                            .replace('\'', '"'),
+                            4.0F);
+
+  }
+  private void checkFieldValueOrdering(String rawJson, float fBoost) throws Exception {
+    SolrQueryRequest req = req();
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+    JsonLoader loader = new JsonLoader();
+    loader.load(req, rsp, new ContentStreamBase.StringStream(rawJson), p);
+    assertEquals( 2, p.addCommands.size() );
+
+    SolrInputDocument d = p.addCommands.get(0).solrDoc;
+    assertEquals(2, d.getFieldNames().size());
+    assertEquals("1", d.getFieldValue("id"));
+    assertEquals(new Object[] {45L, 67L, 89L} , d.getFieldValues("f").toArray());
+    assertEquals(0.0F, fBoost, d.getField("f").getBoost());
+
+    d = p.addCommands.get(1).solrDoc;
+    assertEquals(1, d.getFieldNames().size());
+    assertEquals("2", d.getFieldValue("id"));
+
+    req.close();
+  }
+
+
+
   public void testExtendedFieldValues() throws Exception {
     String str = "[{'id':'1', 'val_s':{'add':'foo'}}]".replace('\'', '"');
     SolrQueryRequest req = req();
