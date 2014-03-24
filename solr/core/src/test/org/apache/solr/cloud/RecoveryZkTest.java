@@ -62,9 +62,15 @@ public class RecoveryZkTest extends AbstractFullDistribZkTestBase {
     
     // start a couple indexing threads
     
-    int[] maxDocList = new int[] {300, 700, 1200, 1350, 5000, 15000};
+    int[] maxDocList = new int[] {300, 700, 1200, 1350, 3000};
+    int[] maxDocNightlyList = new int[] {3000, 7000, 12000, 30000, 45000, 60000};
     
-    int maxDoc = maxDocList[random().nextInt(maxDocList.length - 1)];
+    int maxDoc;
+    if (!TEST_NIGHTLY) {
+      maxDoc = maxDocList[random().nextInt(maxDocList.length - 1)];
+    } else {
+      maxDoc = maxDocNightlyList[random().nextInt(maxDocList.length - 1)];
+    }
     
     indexThread = new StopableIndexingThread(controlClient, cloudClient, "1", true, maxDoc);
     indexThread.start();
@@ -100,7 +106,7 @@ public class RecoveryZkTest extends AbstractFullDistribZkTestBase {
     
     Thread.sleep(1000);
   
-    waitForThingsToLevelOut(90);
+    waitForThingsToLevelOut(120);
     
     Thread.sleep(2000);
     
