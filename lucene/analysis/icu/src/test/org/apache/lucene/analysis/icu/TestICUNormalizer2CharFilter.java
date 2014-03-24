@@ -396,8 +396,8 @@ public class TestICUNormalizer2CharFilter extends BaseTokenStreamTestCase {
     
     Analyzer a = new Analyzer() {
       @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        return new TokenStreamComponents(new MockTokenizer(MockTokenizer.WHITESPACE, false));
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        return new TokenStreamComponents(new MockTokenizer(reader, MockTokenizer.WHITESPACE, false));
       }
 
       @Override
