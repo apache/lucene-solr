@@ -137,9 +137,6 @@ Bug Fixes
 * SOLR-5839: ZookeeperInfoServlet does not trim path properly.
   (Furkan KAMACI via Mark Miller)
 
-* SOLR-5550: shards.info is not returned by a short circuited distributed query.
-  (Timothy Potter, shalin)
-
 * SOLR-5858, SOLR-4812: edismax and dismax query parsers can be used for parsing 
   highlight queries. (Alan Woodward, Tien Nguyen Manh)
 
@@ -275,6 +272,9 @@ Bug Fixes
 
 * SOLR-5423: CSV output doesn't include function field
   (Arun Kumar, hossman, Steve Rowe)
+
+* SOLR-5550: shards.info is not returned by a short circuited distributed query.
+  (Timothy Potter, shalin)
 
 ==================  4.7.0 ==================
 
