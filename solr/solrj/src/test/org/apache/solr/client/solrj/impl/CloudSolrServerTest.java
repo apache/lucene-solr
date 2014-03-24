@@ -202,6 +202,7 @@ public class CloudSolrServerTest extends AbstractFullDistribZkTestBase {
     indexDoc(doc);
   }
   
+  @BadApple // bug url: https://issues.apache.org/jira/browse/SOLR-5880
   public void testShutdown() throws MalformedURLException {
     CloudSolrServer server = new CloudSolrServer("[ff01::114]:33332");
     try {
