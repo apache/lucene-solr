@@ -63,7 +63,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
 
       SolrCore core1 = container.create("core1", testDirectory + "/core1", "configSet", "configset-2");
       assertThat(core1.getCoreDescriptor().getName(), is("core1"));
-      assertThat(core1.getDataDir(), is(testDirectory + "/core1/data/"));
+      assertThat(core1.getDataDir(), is(testDirectory + "/core1" + File.separator + "data" + File.separator));
       core1.close();
 
     }
