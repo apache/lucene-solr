@@ -76,6 +76,9 @@ Changes in Runtime Behavior
 
 New Features
 
+* LUCENE-5356: Morfologik filter can accept custom dictionary resources.
+  (Michal Hlavac, Dawid Weiss)
+
 * LUCENE-5454: Add SortedSetSortField to lucene/sandbox, to allow sorting
   on multi-valued field. (Robert Muir)
 

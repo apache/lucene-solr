@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.morfologik;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.TreeSet;
 
 import org.apache.lucene.analysis.Analyzer;
