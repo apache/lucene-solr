@@ -66,6 +66,9 @@ Bug Fixes
 
 * SOLR-5895: JavaBinLoader hides IOExceptions. (Mike Sokolov via shalin)
 
+* SOLR-5861: Recovery should not set onlyIfLeaderActive=true for slice in 'recovery'
+  state. (shalin)
+
 ==================  4.7.0 ==================
 
 Versions of Major Components
