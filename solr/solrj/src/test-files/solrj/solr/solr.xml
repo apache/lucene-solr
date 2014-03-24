@@ -28,8 +28,16 @@
   adminPath: RequestHandler path to manage cores.  
     If 'null' (or absent), cores will not be manageable via request handler
   -->
-  <cores adminPath="/admin/cores" defaultCoreName="collection1" host="127.0.0.1" hostPort="${hostPort:8983}" hostContext="${hostContext:solr}" zkClientTimeout="8000" genericCoreNodeNames="${genericCoreNodeNames:true}">
+  <cores adminPath="/admin/cores" defaultCoreName="collection1" host="127.0.0.1" hostPort="${hostPort:8983}" 
+         hostContext="${hostContext:solr}" zkClientTimeout="${solr.zkclienttimeout:30000}" shareSchema="${shareSchema:false}" 
+         genericCoreNodeNames="${genericCoreNodeNames:true}" leaderVoteWait="0"
+         distribUpdateConnTimeout="${distribUpdateConnTimeout:45000}" distribUpdateSoTimeout="${distribUpdateSoTimeout:340000}">
     <core name="collection1" instanceDir="collection1" shard="${shard:}" collection="${collection:collection1}" />
     <!--config="${solrconfig:solrconfig.xml}" schema="${schema:schema.xml}"/-->
+    <shardHandlerFactory name="shardHandlerFactory" class="HttpShardHandlerFactory">
+      <str name="urlScheme">${urlScheme:}</str>
+      <int name="socketTimeout">${socketTimeout:90000}</int>
+      <int name="connTimeout">${connTimeout:15000}</int>
+    </shardHandlerFactory>
   </cores>
 </solr>
