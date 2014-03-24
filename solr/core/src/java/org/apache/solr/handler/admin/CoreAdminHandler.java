@@ -86,7 +86,6 @@ import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
 
@@ -488,6 +487,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       .put(CoreAdminParams.SCHEMA, CoreDescriptor.CORE_SCHEMA)
       .put(CoreAdminParams.DATA_DIR, CoreDescriptor.CORE_DATADIR)
       .put(CoreAdminParams.ULOG_DIR, CoreDescriptor.CORE_ULOGDIR)
+      .put(CoreAdminParams.CONFIGSET, CoreDescriptor.CORE_CONFIGSET)
       .put(CoreAdminParams.LOAD_ON_STARTUP, CoreDescriptor.CORE_LOADONSTARTUP)
       .put(CoreAdminParams.TRANSIENT, CoreDescriptor.CORE_TRANSIENT)
       .put(CoreAdminParams.SHARD, CoreDescriptor.CORE_SHARD)

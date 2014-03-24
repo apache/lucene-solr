@@ -17,46 +17,8 @@
 
 package org.apache.solr.core;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Writer;
-import java.lang.reflect.Constructor;
-import java.net.URL;
-import java.nio.file.NoSuchFileException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.StringTokenizer;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantLock;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.parsers.ParserConfigurationException;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
@@ -69,8 +31,8 @@ import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.params.CommonParams.EchoParamStyle;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.CommonParams.EchoParamStyle;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
@@ -112,8 +74,8 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.ValueSourceParser;
 import org.apache.solr.update.DefaultSolrCoreState;
 import org.apache.solr.update.DirectUpdateHandler2;
-import org.apache.solr.update.SolrCoreState.IndexWriterCloser;
 import org.apache.solr.update.SolrCoreState;
+import org.apache.solr.update.SolrCoreState.IndexWriterCloser;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.VersionInfo;
@@ -131,6 +93,42 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
+
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Writer;
+import java.lang.reflect.Constructor;
+import java.net.URL;
+import java.nio.file.NoSuchFileException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.StringTokenizer;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  *
@@ -403,18 +401,9 @@ public final class SolrCore implements SolrInfoMBean {
   public QueryResponseWriter registerResponseWriter( String name, QueryResponseWriter responseWriter ){
     return responseWriters.put(name, responseWriter);
   }
-  
-  public SolrCore reload(SolrCore prev) throws IOException,
+
+  public SolrCore reload(ConfigSet coreConfig, SolrCore prev) throws IOException,
       ParserConfigurationException, SAXException {
-    return reload(prev.getResourceLoader(), prev);
-  }
-  
-  public SolrCore reload(SolrResourceLoader resourceLoader, SolrCore prev) throws IOException,
-      ParserConfigurationException, SAXException {
-    
-    SolrConfig config = new SolrConfig(resourceLoader, getSolrConfig().getName(), null);
-    
-    IndexSchema schema = IndexSchemaFactory.buildIndexSchema(getLatestSchema().getResourceName(), config);
     
     solrCoreState.increfSolrCoreState();
     
@@ -423,8 +412,8 @@ public final class SolrCore implements SolrInfoMBean {
       prev = null;
     }
     
-    SolrCore core = new SolrCore(getName(), getDataDir(), config,
-        schema, coreDescriptor, updateHandler, this.solrDelPolicy, prev);
+    SolrCore core = new SolrCore(getName(), getDataDir(), coreConfig.getSolrConfig(),
+        coreConfig.getIndexSchema(), coreDescriptor, updateHandler, this.solrDelPolicy, prev);
     core.solrDelPolicy = this.solrDelPolicy;
     
     core.getUpdateHandler().getSolrCoreState().newIndexWriter(core, false);
@@ -635,6 +624,10 @@ public final class SolrCore implements SolrInfoMBean {
    */
   public SolrCore(String name, String dataDir, SolrConfig config, IndexSchema schema, CoreDescriptor cd) {
     this(name, dataDir, config, schema, cd, null, null, null);
+  }
+
+  public SolrCore(CoreDescriptor cd, ConfigSet coreConfig) {
+    this(cd.getName(), null, coreConfig.getSolrConfig(), coreConfig.getIndexSchema(), cd, null, null, null);
   }
 
 

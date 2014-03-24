@@ -58,6 +58,7 @@ public class CoreDescriptor {
   public static final String CORE_LOADONSTARTUP = "loadOnStartup";
   public static final String CORE_TRANSIENT = "transient";
   public static final String CORE_NODE_NAME = "coreNodeName";
+  public static final String CORE_CONFIGSET = "configSet";
   public static final String SOLR_CORE_PROP_PREFIX = "solr.core.";
 
   public static final String DEFAULT_EXTERNAL_PROPERTIES_FILE = "conf" + File.separator + "solrcore.properties";
@@ -100,6 +101,7 @@ public class CoreDescriptor {
       CORE_PROPERTIES,
       CORE_LOADONSTARTUP,
       CORE_TRANSIENT,
+      CORE_CONFIGSET,
       // cloud props
       CORE_SHARD,
       CORE_COLLECTION,
@@ -389,5 +391,9 @@ public class CoreDescriptor {
         .append(this.getInstanceDir())
         .append("]")
         .toString();
+  }
+
+  public String getConfigSet() {
+    return coreProperties.getProperty(CORE_CONFIGSET);
   }
 }
