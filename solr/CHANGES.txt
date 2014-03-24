@@ -48,6 +48,13 @@ Upgrading from Solr 4.7
 
 * ZooKeeper is upgraded from 3.4.5 to 3.4.6.
 
+* <fields> and <types> tags have been deprecated. There is no longer any reason to
+  keep them in the schema file, they may be safely removed. This allows intermixing of
+  <fieldType>, <field> and <copyField> definitions if desired. Currently, these tags
+  are supported so either style may be implemented. TBD is whether they'll be
+  deprecated formally for 5.0
+
+
 Detailed Change List
 ----------------------
 
@@ -89,6 +96,9 @@ New Features
 * SOLR-5860: Use leaderConflictResolveWait in WaitForState during recovery/startup,
   improve logging and force refresh cluster state every 15 seconds.
   (Timothy Potter via shalin)
+  
+ * SOLR-5228: Don't require <field> or <dynamicField> be inside of <fields> -- or 
+   that <fieldType> be inside of <types>. (Erick Erickson)
 
 * SOLR-5749: A new Overseer status collection API exposes overseer queue sizes, timing
   statistics, success and error counts and last N failures per operation. (shalin)
@@ -213,6 +223,9 @@ Other Changes
 
 * SOLR-5898: Update to latest Kite Morphlines release: Version 0.12.1. 
   (Mark Miller)
+
+* SOLR-5228: Don't require <field> or <dynamicField> be inside of <fields> -- or
+  that <fieldType> be inside of <types>. (Erick Erickson)
 
 ==================  4.7.1  ==================
 
