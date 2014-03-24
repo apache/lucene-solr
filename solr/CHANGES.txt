@@ -162,9 +162,6 @@ New Features
 Bug Fixes
 ----------------------
 
-* SOLR-5423: CSV output doesn't include function field
-  (Arun Kumar, hossman, Steve Rowe)
-
 * SOLR-5777: Fix ordering of field values in JSON updates where
   field name key is repeated (hossman)
 
@@ -328,6 +325,9 @@ Bug Fixes
 
 * SOLR-5861: Recovery should not set onlyIfLeaderActive=true for slice in 'recovery'
   state. (shalin)
+
+* SOLR-5423: CSV output doesn't include function field
+  (Arun Kumar, hossman, Steve Rowe)
 
 ==================  4.7.0 ==================
 
