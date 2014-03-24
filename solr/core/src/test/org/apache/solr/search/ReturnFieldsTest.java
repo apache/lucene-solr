@@ -184,25 +184,31 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testFunctions() {
-    ReturnFields rf = new SolrReturnFields( req("fl", "id sum(1,1)") );
+    ReturnFields rf = new SolrReturnFields( req("fl", "exists(text),id,sum(1,1)") );
     assertFalse(rf.wantsScore());
     assertTrue( rf.wantsField( "id" ) );
+    assertTrue( rf.wantsField( "sum(1,1)" ));
+    assertTrue( rf.wantsField( "exists(text)" ));
     assertFalse( rf.wantsAllFields() );
     assertFalse( rf.wantsField( "xxx" ) );
-    assertTrue( rf.getTransformer() instanceof ValueSourceAugmenter);
-    assertEquals("sum(1,1)", ((ValueSourceAugmenter) rf.getTransformer()).name);
+    assertTrue( rf.getTransformer() instanceof DocTransformers);
+    DocTransformers transformers = (DocTransformers)rf.getTransformer();
+    assertEquals("exists(text)", transformers.getTransformer(0).getName());
+    assertEquals("sum(1,1)", transformers.getTransformer(1).getName());
   }
 
   @Test
   public void testTransformers() {
     ReturnFields rf = new SolrReturnFields( req("fl", "[explain]") );
     assertFalse( rf.wantsScore() );
+    assertTrue(rf.wantsField("[explain]"));
     assertFalse(rf.wantsField("id"));
     assertFalse(rf.wantsAllFields());
     assertEquals( "[explain]", rf.getTransformer().getName() );
 
     rf = new SolrReturnFields( req("fl", "[shard],id") );
     assertFalse( rf.wantsScore() );
+    assertTrue(rf.wantsField("[shard]"));
     assertTrue(rf.wantsField("id"));
     assertFalse(rf.wantsField("xxx"));
     assertFalse(rf.wantsAllFields());
@@ -210,6 +216,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
 
     rf = new SolrReturnFields( req("fl", "[docid]") );
     assertFalse( rf.wantsScore() );
+    assertTrue(rf.wantsField("[docid]"));
     assertFalse( rf.wantsField( "id" ) );
     assertFalse(rf.wantsField("xxx"));
     assertFalse(rf.wantsAllFields());
@@ -217,6 +224,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
 
     rf = new SolrReturnFields( req("fl", "mydocid:[docid]") );
     assertFalse( rf.wantsScore() );
+    assertTrue(rf.wantsField("mydocid"));
     assertFalse( rf.wantsField( "id" ) );
     assertFalse(rf.wantsField("xxx"));
     assertFalse(rf.wantsAllFields());
@@ -224,6 +232,8 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
 
     rf = new SolrReturnFields( req("fl", "[docid][shard]") );
     assertFalse( rf.wantsScore() );
+    assertTrue(rf.wantsField("[docid]"));
+    assertTrue(rf.wantsField("[shard]"));
     assertFalse(rf.wantsField("xxx"));
     assertFalse(rf.wantsAllFields());
     assertTrue( rf.getTransformer() instanceof DocTransformers);
@@ -231,6 +241,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
 
     rf = new SolrReturnFields( req("fl", "[xxxxx]") );
     assertFalse( rf.wantsScore() );
+    assertTrue(rf.wantsField("[xxxxx]"));
     assertFalse( rf.wantsField( "id" ) );
     assertFalse(rf.wantsAllFields());
     assertNull(rf.getTransformer());
