@@ -17,12 +17,20 @@
 
 package org.apache.solr.handler.component;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
-import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
@@ -35,11 +43,6 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-
 
 /**
  *
@@ -230,7 +233,6 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
           rb.addDebugInfo("timing", timer.asNamedList() );
         }
       }
-
     } else {
       // a distributed request
 
@@ -329,6 +331,37 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
 
         // we are done when the next stage is MAX_VALUE
       } while (nextStage != Integer.MAX_VALUE);
+    }
+    
+    // SOLR-5550: still provide shards.info if requested even for a short circuited distrib request
+    if(!rb.isDistrib && req.getParams().getBool(ShardParams.SHARDS_INFO, false) && rb.shortCircuitedURL != null) {  
+      NamedList<Object> shardInfo = new SimpleOrderedMap<Object>();
+      SimpleOrderedMap<Object> nl = new SimpleOrderedMap<Object>();        
+      if (rsp.getException() != null) {
+        Throwable cause = rsp.getException();
+        if (cause instanceof SolrServerException) {
+          cause = ((SolrServerException)cause).getRootCause();
+        } else {
+          if (cause.getCause() != null) {
+            cause = cause.getCause();
+          }          
+        }
+        nl.add("error", cause.toString() );
+        StringWriter trace = new StringWriter();
+        cause.printStackTrace(new PrintWriter(trace));
+        nl.add("trace", trace.toString() );
+      }
+      else {
+        nl.add("numFound", rb.getResults().docList.matches());
+        nl.add("maxScore", rb.getResults().docList.maxScore());
+      }
+      nl.add("shardAddress", rb.shortCircuitedURL);
+      nl.add("time", rsp.getEndTime()-req.getStartTime()); // elapsed time of this request so far
+      
+      int pos = rb.shortCircuitedURL.indexOf("://");        
+      String shardInfoName = pos != -1 ? rb.shortCircuitedURL.substring(pos+3) : rb.shortCircuitedURL;
+      shardInfo.add(shardInfoName, nl);   
+      rsp.getValues().add(ShardParams.SHARDS_INFO,shardInfo);            
     }
   }
 

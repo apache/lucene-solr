@@ -128,7 +128,7 @@ public class ResponseBuilder
   public int shards_start = -1;
   public List<ShardRequest> outgoing;  // requests to be sent
   public List<ShardRequest> finished;  // requests that have received responses from all shards
-
+  public String shortCircuitedURL;
 
   public int getShardNum(String shard) {
     for (int i = 0; i < shards.length; i++) {

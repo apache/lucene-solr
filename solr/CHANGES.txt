@@ -72,6 +72,9 @@ Bug Fixes
 * SOLR-5423: CSV output doesn't include function field
   (Arun Kumar, hossman, Steve Rowe)
 
+* SOLR-5550: shards.info is not returned by a short circuited distributed query.
+  (Timothy Potter, shalin)
+
 ==================  4.7.0 ==================
 
 Versions of Major Components
