@@ -678,7 +678,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     
     // create new collections rapid fire
     Map<String,List<Integer>> collectionInfos = new HashMap<>();
-    int cnt = random().nextInt(TEST_NIGHTLY ? 6 : 3) + 1;
+    int cnt = random().nextInt(TEST_NIGHTLY ? 6 : 1) + 1;
     
     for (int i = 0; i < cnt; i++) {
       int numShards = TestUtil.nextInt(random(), 0, shardCount) + 1;
@@ -973,7 +973,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
       public void run() {
         // create new collections rapid fire
         Map<String,List<Integer>> collectionInfos = new HashMap<>();
-        int cnt = random().nextInt(TEST_NIGHTLY ? 13 : 3) + 1;
+        int cnt = random().nextInt(TEST_NIGHTLY ? 13 : 1) + 1;
         
         for (int i = 0; i < cnt; i++) {
           String collectionName = "awholynewstresscollection_" + name + "_" + i;

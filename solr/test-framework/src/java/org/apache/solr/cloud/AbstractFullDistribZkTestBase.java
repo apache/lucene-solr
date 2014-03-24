@@ -320,7 +320,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
   }
 
-
   protected void waitForCollection(ZkStateReader reader, String collection, int slices) throws Exception {
     // wait until shards have started registering...
     int cnt = 30;
@@ -1662,12 +1661,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       res.setResponse(client.request(request));
     }
     return res;
-  }
-
-  protected void runCollectionAdminCommand(ModifiableSolrParams params){
-
-   ;
-
   }
 
   protected CollectionAdminResponse createCollection(Map<String,List<Integer>> collectionInfos,
