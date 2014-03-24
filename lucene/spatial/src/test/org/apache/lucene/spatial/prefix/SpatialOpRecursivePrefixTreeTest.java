@@ -63,7 +63,7 @@ import static com.spatial4j.core.shape.SpatialRelation.WITHIN;
 
 public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
 
-  static final int ITERATIONS = 10;//Test Iterations
+  static final int ITERATIONS = 1;//Test Iterations
 
   private SpatialPrefixTree grid;
 
@@ -371,12 +371,8 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
       ShapePair me = (ShapePair) snapMe;
       return new ShapePair(gridSnap(me.shape1), gridSnap(me.shape2), me.biasContainsThenWithin);
     }
-    if (ctx.isGeo()) {
-      //A hack; works around issue with (dateline) wrap-around when the point or rect is exactly
-      // adjacent to the dateline.
-      if (snapMe instanceof Point) {
-        snapMe = snapMe.getBoundingBox();
-      }
+    if (snapMe instanceof Point) {
+      snapMe = snapMe.getBoundingBox();
     }
     //The next 4 lines mimic PrefixTreeStrategy.createIndexableFields()
     double distErrPct = ((PrefixTreeStrategy) strategy).getDistErrPct();
