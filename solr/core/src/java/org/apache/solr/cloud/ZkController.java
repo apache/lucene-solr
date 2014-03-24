@@ -1682,6 +1682,8 @@ public final class ZkController {
         log.info("Going to add role {} ",props);
         getOverseerCollectionQueue().offer(ZkStateReader.toJSON(props));
       }
+    } catch (NoNodeException nne){
+      return;
     } catch (Exception e) {
       log.warn("could not readd the overseer designate ",e);
     }
