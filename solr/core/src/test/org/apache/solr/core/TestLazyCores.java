@@ -27,11 +27,9 @@ import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.UpdateHandler;
-import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestHarness;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -560,10 +558,13 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
   // See fi the message you expect is in the list of failures
   private void testMessage(Map<String, Exception> failures, String lookFor) {
+    List<String> messages = new ArrayList<>();
     for (Exception e : failures.values()) {
-      if (e.getMessage().indexOf(lookFor) != -1) return;
+      String message = e.getCause().getMessage();
+      messages.add(message);
+      if (message.contains(lookFor)) return;
     }
-    fail("Should have found message containing these tokens " + lookFor + " in the failure messages");
+    fail("Should have found message containing these tokens " + lookFor + " in the failure messages: " + messages);
   }
 
   // Just localizes writing a configuration rather than repeating it for good and bad files.

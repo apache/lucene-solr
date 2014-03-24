@@ -17,6 +17,21 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.util.ByteUtils;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.Watcher.Event.EventType;
+import org.apache.zookeeper.data.Stat;
+import org.noggit.CharArr;
+import org.noggit.JSONParser;
+import org.noggit.JSONWriter;
+import org.noggit.ObjectBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -33,21 +48,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import org.noggit.CharArr;
-import org.noggit.JSONParser;
-import org.noggit.JSONWriter;
-import org.noggit.ObjectBuilder;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.util.ByteUtils;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.Watcher.Event.EventType;
-import org.apache.zookeeper.data.Stat;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ZkStateReader {
   private static Logger log = LoggerFactory.getLogger(ZkStateReader.class);
@@ -134,8 +134,7 @@ public class ZkStateReader {
    * 
    * @param collection to return config set name for
    */
-  public String readConfigName(String collection) throws KeeperException,
-      InterruptedException {
+  public String readConfigName(String collection) {
 
     String configName = null;
 
@@ -143,22 +142,33 @@ public class ZkStateReader {
     if (log.isInfoEnabled()) {
       log.info("Load collection config from:" + path);
     }
-    byte[] data = zkClient.getData(path, null, null, true);
 
-    if(data != null) {
-      ZkNodeProps props = ZkNodeProps.load(data);
-      configName = props.getStr(CONFIGNAME_PROP);
-    }
+    try {
+      byte[] data = zkClient.getData(path, null, null, true);
 
-    if (configName != null) {
-      if (!zkClient.exists(CONFIGS_ZKNODE + "/" + configName, true)) {
-        log.error("Specified config does not exist in ZooKeeper:" + configName);
-        throw new ZooKeeperException(ErrorCode.SERVER_ERROR,
-            "Specified config does not exist in ZooKeeper:" + configName);
-      } else if (log.isInfoEnabled()) {
-        log.info("path={} {}={} specified config exists in ZooKeeper",
-            new Object[] {path, CONFIGNAME_PROP, configName});
+      if(data != null) {
+        ZkNodeProps props = ZkNodeProps.load(data);
+        configName = props.getStr(CONFIGNAME_PROP);
       }
+
+      if (configName != null) {
+        if (!zkClient.exists(CONFIGS_ZKNODE + "/" + configName, true)) {
+          log.error("Specified config does not exist in ZooKeeper:" + configName);
+          throw new ZooKeeperException(ErrorCode.SERVER_ERROR,
+              "Specified config does not exist in ZooKeeper:" + configName);
+        } else if (log.isInfoEnabled()) {
+          log.info("path={} {}={} specified config exists in ZooKeeper",
+              new Object[] {path, CONFIGNAME_PROP, configName});
+        }
+
+      }
+    }
+    catch (KeeperException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Error loading config name for collection " + collection, e);
+    }
+    catch (InterruptedException e) {
+      Thread.interrupted();
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Error loading config name for collection " + collection, e);
     }
 
     return configName;

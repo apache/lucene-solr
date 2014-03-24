@@ -87,8 +87,6 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     System.setProperty("shareSchema", "true");
     final CoreContainer cores = init("_shareSchema");
     try {
-      assertTrue(cores.isShareSchema());
-      
       CoreDescriptor descriptor1 = new CoreDescriptor(cores, "core1", "./collection1");
       SolrCore core1 = cores.create(descriptor1);
       

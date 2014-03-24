@@ -110,10 +110,6 @@ System Requirements
 * LUCENE-4747, LUCENE-5514: Move to Java 7 as minimum Java version.
   (Robert Muir, Uwe Schindler)
 
-* SOLR-5858: Add a hl.qparser parameter to allow you to define a queryparser
-  for hl.q highlight queries. If no queryparser is defined, Solr will use
-  the overall query's defType. (Alan Woodward)
-
 New Features
 ----------------------
 
@@ -155,6 +151,13 @@ New Features
 
 * SOLR-5749: A new Overseer status collection API exposes overseer queue sizes, timing
   statistics, success and error counts and last N failures per operation. (shalin)
+
+* SOLR-5858: Add a hl.qparser parameter to allow you to define a queryparser
+  for hl.q highlight queries. If no queryparser is defined, Solr will use
+  the overall query's defType. (Alan Woodward)
+
+* SOLR-4478: Allow cores to use configuration from a configsets directory
+  outside their instance directory. (Alan Woodward, Erick Erickson)
 
 Bug Fixes
 ----------------------

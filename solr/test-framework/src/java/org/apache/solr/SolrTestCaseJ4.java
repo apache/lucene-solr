@@ -301,6 +301,13 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     System.setProperty("solr.tests.maxIndexingThreads", String.valueOf(maxIndexingThreads));
   }
 
+  public static Throwable getWrappedException(Throwable e) {
+    while (e != null && e.getCause() != e && e.getCause() != null) {
+      e = e.getCause();
+    }
+    return e;
+  }
+
   @Override
   public void setUp() throws Exception {
     super.setUp();

@@ -37,9 +37,10 @@ public abstract class CoreAdminParams
   /** If you rename something, what is the new name **/
   public final static String NAME = "name";
 
-  /** If you rename something, what is the new name **/
+  /** Core data directory **/
   public final static String DATA_DIR = "dataDir";
-  
+
+  /** Core updatelog directory **/
   public final static String ULOG_DIR = "ulogDir";
 
   /** Name of the other core in actions involving 2 cores **/
@@ -50,6 +51,9 @@ public abstract class CoreAdminParams
   
   /** If you specify a schema, what is its name **/
   public final static String SCHEMA = "schema";
+
+  /** If you specify a configset, what is its name **/
+  public final static String CONFIGSET = "configSet";
   
   /** If you specify a config, what is its name **/
   public final static String CONFIG = "config";

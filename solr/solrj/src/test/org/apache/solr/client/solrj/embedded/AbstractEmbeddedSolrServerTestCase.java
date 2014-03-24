@@ -51,6 +51,7 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends LuceneTestCase 
     super.setUp();
 
     System.setProperty("solr.solr.home", SOLR_HOME.getAbsolutePath());
+    System.setProperty("configSetBase", SolrTestCaseJ4.getFile("solrj/solr/configsets").getAbsolutePath());
     System.out.println("Solr home: " + SOLR_HOME.getAbsolutePath());
 
     //The index is always stored within a temporary directory

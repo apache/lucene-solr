@@ -168,6 +168,7 @@ public class ConfigSolrXmlOld extends ConfigSolr {
         config.getVal("solr/cores/@transientCacheSize", false));
     propMap.put(CfgProp.SOLR_ZKCLIENTTIMEOUT,
         config.getVal("solr/cores/@zkClientTimeout", false));
+    propMap.put(CfgProp.SOLR_CONFIGSETBASEDIR, config.getVal("solr/cores/@configSetBaseDir", false));
 
     // These have no counterpart in 5.0, asking, for any of these in Solr 5.0
     // will result in an error being
