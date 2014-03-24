@@ -73,6 +73,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -234,7 +235,7 @@ public class HttpSolrServer extends SolrServer {
   public HttpUriRequestResponse httpUriRequest(final SolrRequest request, final ResponseParser processor) throws SolrServerException, IOException {
     HttpUriRequestResponse mrr = new HttpUriRequestResponse();
     final HttpRequestBase method = createMethod(request);
-    ExecutorService pool = Executors.newFixedThreadPool(1);
+    ExecutorService pool = Executors.newFixedThreadPool(1, new SolrjNamedThreadFactory("httpUriRequest"));
     try {
       mrr.future = pool.submit(new Callable<NamedList<Object>>(){
 
@@ -244,7 +245,7 @@ public class HttpSolrServer extends SolrServer {
         }});
  
     } finally {
-      pool.shutdownNow();
+      pool.shutdown();
     }
     assert method != null;
     mrr.httpUriRequest = method;
