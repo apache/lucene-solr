@@ -30,6 +30,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.Diagnostics;
+import org.apache.solr.core.MockDirectoryFactory;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
@@ -69,6 +70,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     System.setProperty(ENABLE_UPDATE_LOG, "true");
     System.setProperty(REMOVE_VERSION_FIELD, "true");
     System.setProperty(ZOOKEEPER_FORCE_SYNC, "false");
+    System.setProperty(MockDirectoryFactory.SOLR_TESTS_ALLOW_READING_FILES_STILL_OPEN_FOR_WRITE, "true");
 
     String schema = getSchemaFile();
     if (schema == null) schema = "schema.xml";
@@ -224,6 +226,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     System.clearProperty("solr.test.sys.prop1");
     System.clearProperty("solr.test.sys.prop2");
     System.clearProperty(ZOOKEEPER_FORCE_SYNC);
+    System.clearProperty(MockDirectoryFactory.SOLR_TESTS_ALLOW_READING_FILES_STILL_OPEN_FOR_WRITE);
     
     resetExceptionIgnores();
     super.tearDown();

@@ -75,6 +75,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   boolean trackDiskUsage = false;
   boolean wrapLockFactory = true;
   boolean allowRandomFileNotFoundException = true;
+  boolean allowReadingFilesStillOpenForWrite = false;
   private Set<String> unSyncedFiles;
   private Set<String> createdFiles;
   private Set<String> openFilesForWrite = new HashSet<>();
@@ -145,6 +146,12 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
    *  NoSuchFileException. */
   public void setAllowRandomFileNotFoundException(boolean value) {
     allowRandomFileNotFoundException = value;
+  }
+  
+  /** If set to true, you can open an inputstream on a file
+   *  that is still open for writes. */
+  public void setAllowReadingFilesStillOpenForWrite(boolean value) {
+    allowReadingFilesStillOpenForWrite = value;
   }
 
   /**
@@ -564,7 +571,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
 
     // cannot open a file for input if it's still open for
     // output, except for segments.gen and segments_N
-    if (openFilesForWrite.contains(name) && !name.startsWith("segments")) {
+    if (!allowReadingFilesStillOpenForWrite && openFilesForWrite.contains(name) && !name.startsWith("segments")) {
       throw (IOException) fillOpenTrace(new IOException("MockDirectoryWrapper: file \"" + name + "\" is still open for writing"), name, false);
     }
 
@@ -1004,4 +1011,5 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
    *  e.g. from {@link MockDirectoryWrapper.Failure}. */
   public static class FakeIOException extends IOException {
   }
+
 }
