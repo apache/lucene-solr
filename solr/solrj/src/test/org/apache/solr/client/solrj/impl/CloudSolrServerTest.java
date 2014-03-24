@@ -30,6 +30,7 @@ import java.util.concurrent.TimeoutException;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -39,6 +40,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -316,6 +318,8 @@ public class CloudSolrServerTest extends AbstractFullDistribZkTestBase {
       server.setZkConnectTimeout(100);
       server.connect();
       fail("Expected exception");
+    } catch (SolrException e) {
+      assertTrue(e.getCause() instanceof TimeoutException);
     } catch (RuntimeException e) {
       assertTrue(e.getCause() instanceof TimeoutException);
     } finally {
