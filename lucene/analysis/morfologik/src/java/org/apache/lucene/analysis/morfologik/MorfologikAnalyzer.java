@@ -35,7 +35,7 @@ public class MorfologikAnalyzer extends Analyzer {
   private final Version version;
 
   /**
-   * Builds an analyzer with the default Morfologik's dictionary (polimorf).
+   * Builds an analyzer with an explicit dictionary resource.
    * 
    * @param version Lucene compatibility version
    * @param dictionaryResource A constant specifying which dictionary to choose. The
@@ -49,9 +49,14 @@ public class MorfologikAnalyzer extends Analyzer {
     this.version = version;
       this.dictionary = dictionaryResource;
   }
+  
+  /**
+   * Builds an analyzer with the default Morfologik's Polish dictionary.
+   */
   public MorfologikAnalyzer(final Version version) {
     this(version, MorfologikFilterFactory.DEFAULT_DICTIONARY_RESOURCE);
   }
+
   /**
    * Creates a
    * {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
