@@ -156,6 +156,8 @@ Optimizations
   index has not changed.  This reduces overhead in situations such as deletes that 
   do not modify the index, and/or redundant commits. (hossman)
   
+* SOLR-5884: When recovery is cancelled, any call to the leader to wait to see
+  the replica in the right state for recovery should be aborted. (Mark Miller)
 
 Other Changes
 ---------------------
