@@ -347,6 +347,7 @@ public class CoreContainer {
           }
         }
       }
+      zkSys.getZkController().checkOverseerDesignate();
     }
   }
 

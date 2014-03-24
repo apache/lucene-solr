@@ -302,7 +302,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     if(overseerDesignates.size() == 1 && overseerDesignates.contains(getLeaderNode(zk))) return;
     log.info("overseer designates {}", overseerDesignates);
 
-    List<String> nodeNames = getSortedNodeNames(zk);
+    List<String> nodeNames = getSortedOverseerNodeNames(zk);
     if(nodeNames.size()<2) return;
 
 //
@@ -339,7 +339,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(2500, TimeUnit.MILLISECONDS);
 
       while (System.nanoTime() < timeout) {
-        List<String> currentNodeNames = getSortedNodeNames(zk);
+        List<String> currentNodeNames = getSortedOverseerNodeNames(zk);
 
         int totalLeaders = 0;
 
@@ -360,7 +360,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       }
 
       if(!prioritizationComplete) {
-        log.warn("available designates and current state {} {} ", availableDesignates, getSortedNodeNames(zk));
+        log.warn("available designates and current state {} {} ", availableDesignates, getSortedOverseerNodeNames(zk));
       }
 
     } else {
@@ -378,7 +378,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     }
 
   }
-  public static List<String> getSortedNodeNames(SolrZkClient zk) throws KeeperException, InterruptedException {
+  public static List<String> getSortedOverseerNodeNames(SolrZkClient zk) throws KeeperException, InterruptedException {
     List<String> children = null;
     try {
       children = zk.getChildren(OverseerElectionContext.PATH + LeaderElector.ELECTION_NODE, null, true);
