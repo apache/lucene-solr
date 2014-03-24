@@ -140,9 +140,6 @@ Bug Fixes
 * SOLR-5839: ZookeeperInfoServlet does not trim path properly.
   (Furkan KAMACI via Mark Miller)
 
-* SOLR-5861: Recovery should not set onlyIfLeaderActive=true for slice in 'recovery'
-  state. (shalin)
-
 * SOLR-5550: shards.info is not returned by a short circuited distributed query.
   (Timothy Potter, shalin)
 
@@ -275,6 +272,9 @@ Bug Fixes
   (Mark Miller)
 
 * SOLR-5895: JavaBinLoader hides IOExceptions. (Mike Sokolov via shalin)
+
+* SOLR-5861: Recovery should not set onlyIfLeaderActive=true for slice in 'recovery'
+  state. (shalin)
 
 ==================  4.7.0 ==================
 
