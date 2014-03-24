@@ -52,6 +52,10 @@ Bug Fixes
 * LUCENE-5544: Exceptions during IndexWriter.rollback could leak file handles
   and the write lock. (Robert Muir)
 
+* LUCENE-4978: Spatial RecursivePrefixTree queries could result in false-negatives for
+  indexed shapes within 1/2 maxDistErr from the edge of the query shape.  This meant
+  searching for a point by the same point as a query rarely worked.  (David Smiley)
+
 Build
 
 * LUCENE-5511: "ant precommit" / "ant check-svn-working-copy" now work again
