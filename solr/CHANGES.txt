@@ -64,6 +64,9 @@ Bug Fixes
   Includes a few minor bug fixes.
   (Mark Miller)
 
+* SOLR-5818: distrib search with custom comparator does not quite work correctly
+  (Ryan Ernst)
+
 * SOLR-5895: JavaBinLoader hides IOExceptions. (Mike Sokolov via shalin)
 
 * SOLR-5861: Recovery should not set onlyIfLeaderActive=true for slice in 'recovery'

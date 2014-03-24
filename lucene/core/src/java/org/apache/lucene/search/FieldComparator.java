@@ -693,8 +693,7 @@ public abstract class FieldComparator<T> {
 
     @Override
     public int compare(int slot1, int slot2) {
-      // TODO: there are sneaky non-branch ways to compute
-      // -1/+1/0 sign
+      // In Java 6 there is no Long#compare(long,long):
       final long v1 = values[slot1];
       final long v2 = values[slot2];
       if (v1 > v2) {
@@ -717,6 +716,7 @@ public abstract class FieldComparator<T> {
         v2 = missingValue;
       }
 
+      // In Java 6 there is no Long#compare(long,long):
       if (bottom > v2) {
         return 1;
       } else if (bottom < v2) {
