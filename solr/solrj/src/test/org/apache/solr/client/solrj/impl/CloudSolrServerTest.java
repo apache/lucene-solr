@@ -312,6 +312,7 @@ public class CloudSolrServerTest extends AbstractFullDistribZkTestBase {
     indexDoc(doc);
   }
   
+  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5880")
   public void testShutdown() throws MalformedURLException {
     CloudSolrServer server = new CloudSolrServer("[ff01::114]:33332");
     try {
@@ -319,8 +320,6 @@ public class CloudSolrServerTest extends AbstractFullDistribZkTestBase {
       server.connect();
       fail("Expected exception");
     } catch (SolrException e) {
-      assertTrue(e.getCause() instanceof TimeoutException);
-    } catch (RuntimeException e) {
       assertTrue(e.getCause() instanceof TimeoutException);
     } finally {
       server.shutdown();
