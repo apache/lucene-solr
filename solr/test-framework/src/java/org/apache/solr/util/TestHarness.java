@@ -232,22 +232,19 @@ public class TestHarness extends BaseTestHarness {
    * @return The XML response to the update
    */
   public String update(String xml) {
-    SolrCore core = getCoreInc();
-    DirectSolrConnection connection = new DirectSolrConnection(core);
-    SolrRequestHandler handler = core.getRequestHandler("/update");
-    // prefer the handler mapped to /update, but use our generic backup handler
-    // if that lookup fails
-    if (handler == null) {
-      handler = updater;
-    }
-    try {
+    try (SolrCore core = getCoreInc()) {
+      DirectSolrConnection connection = new DirectSolrConnection(core);
+      SolrRequestHandler handler = core.getRequestHandler("/update");
+      // prefer the handler mapped to /update, but use our generic backup handler
+      // if that lookup fails
+      if (handler == null) {
+        handler = updater;
+      }
       return connection.request(handler, null, xml);
     } catch (SolrException e) {
       throw (SolrException)e;
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-    } finally {
-      core.close();
     }
   }
   
@@ -292,8 +289,7 @@ public class TestHarness extends BaseTestHarness {
    * @see LocalSolrQueryRequest
    */
   public String query(String handler, SolrQueryRequest req) throws Exception {
-    SolrCore core = getCoreInc();
-    try {
+    try (SolrCore core = getCoreInc()) {
       SolrQueryResponse rsp = new SolrQueryResponse();
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
       core.execute(core.getRequestHandler(handler),req,rsp);
@@ -310,23 +306,19 @@ public class TestHarness extends BaseTestHarness {
     } finally {
       req.close();
       SolrRequestInfo.clearRequestInfo();
-      core.close();
     }
   }
 
   /** It is the users responsibility to close the request object when done with it.
    * This method does not set/clear SolrRequestInfo */
   public SolrQueryResponse queryAndResponse(String handler, SolrQueryRequest req) throws Exception {
-    SolrCore core = getCoreInc();
-    try {
+    try (SolrCore core = getCoreInc()) {
       SolrQueryResponse rsp = new SolrQueryResponse();
-      core.execute(core.getRequestHandler(handler),req,rsp);
+      core.execute(core.getRequestHandler(handler), req, rsp);
       if (rsp.getException() != null) {
         throw rsp.getException();
       }
       return rsp;
-    } finally {
-      core.close();
     }
   }
 

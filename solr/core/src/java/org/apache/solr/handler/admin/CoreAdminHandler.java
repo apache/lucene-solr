@@ -34,7 +34,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
-import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -856,9 +855,8 @@ public class CoreAdminHandler extends RequestHandlerBase {
         if (cname == null) {
           cname = "";
         }
-        SolrCore core = null;
-        try {
-          core = coreContainer.getCore(cname);
+        try (SolrCore core = coreContainer.getCore(cname)) {
+
           if (core != null) {
             // try to publish as recovering right away
             try {
@@ -876,11 +874,6 @@ public class CoreAdminHandler extends RequestHandlerBase {
             core.getUpdateHandler().getSolrCoreState().doRecovery(coreContainer, core.getCoreDescriptor());
           } else {
             SolrException.log(log, "Could not find core to call recovery:" + cname);
-          }
-        } finally {
-          // no recoveryStrat close for now
-          if (core != null) {
-            core.close();
           }
         }
       }
@@ -903,10 +896,10 @@ public class CoreAdminHandler extends RequestHandlerBase {
     if (cname == null) {
       throw new IllegalArgumentException(CoreAdminParams.CORE + " is required");
     }
-    SolrCore core = null;
+
     SyncStrategy syncStrategy = null;
-    try {
-      core = coreContainer.getCore(cname);
+    try (SolrCore core = coreContainer.getCore(cname)) {
+
       if (core != null) {
         syncStrategy = new SyncStrategy(core.getCoreDescriptor().getCoreContainer());
         
@@ -942,9 +935,6 @@ public class CoreAdminHandler extends RequestHandlerBase {
       }
     } finally {
       // no recoveryStrat close for now
-      if (core != null) {
-        core.close();
-      }
       if (syncStrategy != null) {
         syncStrategy.close();
       }
@@ -977,9 +967,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
     boolean live = false;
     int retry = 0;
     while (true) {
-      SolrCore core = null;
-      try {
-        core = coreContainer.getCore(cname);
+      try (SolrCore core = coreContainer.getCore(cname)) {
         if (core == null && retry == 30) {
           throw new SolrException(ErrorCode.BAD_REQUEST, "core not found:"
               + cname);
@@ -1098,10 +1086,6 @@ public class CoreAdminHandler extends RequestHandlerBase {
             throw new SolrException(ErrorCode.SERVER_ERROR, null, e);
           }
         }
-      } finally {
-        if (core != null) {
-          core.close();
-        }
       }
       Thread.sleep(1000);
     }
@@ -1113,9 +1097,10 @@ public class CoreAdminHandler extends RequestHandlerBase {
   private void handleRequestApplyUpdatesAction(SolrQueryRequest req, SolrQueryResponse rsp) {
     SolrParams params = req.getParams();
     String cname = params.get(CoreAdminParams.NAME, "");
-    SolrCore core = coreContainer.getCore(cname);
     log.info("Applying buffered updates on core: " + cname);
-    try {
+    try (SolrCore core = coreContainer.getCore(cname)) {
+      if (core == null)
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Core [" + cname + "] not found");
       UpdateLog updateLog = core.getUpdateHandler().getUpdateLog();
       if (updateLog.getState() != UpdateLog.State.BUFFERING)  {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Core " + cname + " not in buffering state");
@@ -1145,8 +1130,6 @@ public class CoreAdminHandler extends RequestHandlerBase {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Could not apply buffered updates", e);
     } finally {
       if (req != null) req.close();
-      if (core != null)
-        core.close();
     }
     
   }
@@ -1154,9 +1137,11 @@ public class CoreAdminHandler extends RequestHandlerBase {
   private void handleRequestBufferUpdatesAction(SolrQueryRequest req, SolrQueryResponse rsp) {
     SolrParams params = req.getParams();
     String cname = params.get(CoreAdminParams.NAME, "");
-    SolrCore core = coreContainer.getCore(cname);
     log.info("Starting to buffer updates on core:" + cname);
-    try {
+
+    try (SolrCore core = coreContainer.getCore(cname)) {
+      if (core == null)
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Core [" + cname + "] does not exist");
       UpdateLog updateLog = core.getUpdateHandler().getUpdateLog();
       if (updateLog.getState() != UpdateLog.State.ACTIVE)  {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Core " + cname + " not in active state");
@@ -1171,8 +1156,6 @@ public class CoreAdminHandler extends RequestHandlerBase {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Could not start buffering updates", e);
     } finally {
       if (req != null) req.close();
-      if (core != null)
-        core.close();
     }
   }
 
@@ -1204,9 +1187,8 @@ public class CoreAdminHandler extends RequestHandlerBase {
         info.add("isLoaded", "false");
       }
     } else {
-      SolrCore core = cores.getCore(cname);
-      if (core != null) {
-        try {
+      try (SolrCore core = cores.getCore(cname)) {
+        if (core != null) {
           info.add("name", core.getName());
           info.add("isDefaultCore", core.getName().equals(cores.getDefaultCoreName()));
           info.add("instanceDir", normalizePath(core.getResourceLoader().getInstanceDir()));
@@ -1227,8 +1209,6 @@ public class CoreAdminHandler extends RequestHandlerBase {
               searcher.decref();
             }
           }
-        } finally {
-          core.close();
         }
       }
     }

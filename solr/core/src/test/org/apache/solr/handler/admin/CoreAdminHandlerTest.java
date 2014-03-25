@@ -144,15 +144,10 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
 
     final CoreAdminHandler admin = new CoreAdminHandler(cores);
 
-    String instDir = null;
-    {
-      SolrCore template = null;
-      try {
-        template = cores.getCore("collection1");
-        instDir = template.getCoreDescriptor().getInstanceDir();
-      } finally {
-        if (null != template) template.close();
-      }
+    String instDir;
+    try (SolrCore template = cores.getCore("collection1")) {
+      assertNotNull(template);
+      instDir = template.getCoreDescriptor().getInstanceDir();
     }
     
     final File instDirFile = new File(instDir);

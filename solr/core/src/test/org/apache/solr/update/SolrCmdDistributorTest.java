@@ -17,15 +17,6 @@ package org.apache.solr.update;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import javax.xml.parsers.ParserConfigurationException;
-
 import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -55,6 +46,14 @@ import org.apache.solr.update.SolrCmdDistributor.StdNode;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.junit.BeforeClass;
 import org.xml.sax.SAXException;
+
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   
@@ -279,23 +278,26 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     final AtomicInteger commits = new AtomicInteger();
     for(JettySolrRunner jetty : jettys) {
       CoreContainer cores = ((SolrDispatchFilter) jetty.getDispatchFilter().getFilter()).getCores();
-      SolrCore core = cores.getCore("collection1");
-      try {
+      try (SolrCore core = cores.getCore("collection1")) {
         core.getUpdateHandler().registerCommitCallback(new SolrEventListener() {
           @Override
-          public void init(NamedList args) {}
+          public void init(NamedList args) {
+          }
+
           @Override
-          public void postSoftCommit() {}
+          public void postSoftCommit() {
+          }
+
           @Override
           public void postCommit() {
             commits.incrementAndGet();
           }
+
           @Override
           public void newSearcher(SolrIndexSearcher newSearcher,
-              SolrIndexSearcher currentSearcher) {}
+                                  SolrIndexSearcher currentSearcher) {
+          }
         });
-      } finally {
-        core.close();
       }
     }
     params = new ModifiableSolrParams();

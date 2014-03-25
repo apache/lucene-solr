@@ -75,8 +75,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
   public void testOptimizeDiffSchemas() throws Exception {
     // load up a core (why not put it on disk?)
     CoreContainer cc = init();
-    SolrCore changed = cc.getCore("changed");
-    try {
+    try (SolrCore changed = cc.getCore("changed")) {
 
       // add some documents
       addDoc(changed, "id", "1", "which", "15", "text", "some stuff with which");
@@ -98,7 +97,6 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
       changed.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
       changed.getUpdateHandler().commit(new CommitUpdateCommand(req, true));
     } finally {
-      if (changed != null) changed.close();
       if (cc != null) cc.shutdown();
     }
   }
