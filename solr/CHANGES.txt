@@ -109,9 +109,6 @@ New Features
 Bug Fixes
 ----------------------
 
-* SOLR-5818: distrib search with custom comparator does not quite work correctly
-  (Ryan Ernst)
-
 * SOLR-5858, SOLR-4812: edismax and dismax query parsers can be used for parsing
   highlight queries. (Alan Woodward, Tien Nguyen Manh)
 
@@ -228,6 +225,9 @@ Bug Fixes
 * SOLR-5824: Merge up Solr MapReduce contrib code to latest external changes.
   Includes a few minor bug fixes.
   (Mark Miller)
+
+* SOLR-5818: distrib search with custom comparator does not quite work correctly
+  (Ryan Ernst)
 
 * SOLR-5895: JavaBinLoader hides IOExceptions. (Mike Sokolov via shalin)
 
