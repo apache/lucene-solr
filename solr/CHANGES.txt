@@ -118,6 +118,9 @@ Bug Fixes
 * SOLR-5905: CollapsingQParserPlugin throws a NPE if required 'field' param is missing.
   (Spyros Kapnissis via shalin)
 
+* SOLR-5906: Collection create API ignores property.instanceDir parameter.
+  (Varun Thacker, shalin)
+
 Other Changes
 ---------------------
 

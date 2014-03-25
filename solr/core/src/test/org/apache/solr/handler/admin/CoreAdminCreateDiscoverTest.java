@@ -22,6 +22,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CorePropertiesLocator;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.AfterClass;
@@ -190,6 +191,43 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
       assertTrue(e.getMessage().contains("already defined there"));
     }
 
+  }
+
+  @Test
+  public void testInstanceDirAsPropertyParam() throws Exception {
+
+    setupCore("testInstanceDirAsPropertyParam-XYZ", true);
+
+    // make sure workDir is different even if core name is used as instanceDir
+    File workDir = new File(solrHomeDirectory, "testInstanceDirAsPropertyParam-XYZ");
+    File data = new File(workDir, "data");
+
+    // Create one core
+    SolrQueryResponse resp = new SolrQueryResponse();
+    admin.handleRequestBody
+        (req(CoreAdminParams.ACTION,
+                CoreAdminParams.CoreAdminAction.CREATE.toString(),
+                CoreAdminParams.NAME, "testInstanceDirAsPropertyParam",
+                "property.instanceDir", workDir.getAbsolutePath(),
+                CoreAdminParams.CONFIG, "solrconfig_ren.xml",
+                CoreAdminParams.SCHEMA, "schema_ren.xml",
+                CoreAdminParams.DATA_DIR, data.getAbsolutePath()),
+            resp);
+    assertNull("Exception on create", resp.getException());
+
+    resp = new SolrQueryResponse();
+    admin.handleRequestBody
+        (req(CoreAdminParams.ACTION,
+                CoreAdminParams.CoreAdminAction.STATUS.toString(),
+                CoreAdminParams.CORE, "testInstanceDirAsPropertyParam"),
+            resp);
+    NamedList status = (NamedList) resp.getValues().get("status");
+    assertNotNull(status);
+    NamedList coreProps = (NamedList) status.get("testInstanceDirAsPropertyParam");
+    assertNotNull(status);
+    String instanceDir = (String) coreProps.get("instanceDir");
+    assertNotNull(instanceDir);
+    assertEquals("Instance dir does not match param given in property.instanceDir syntax", workDir.getAbsolutePath(), new File(instanceDir).getAbsolutePath());
   }
 
   @Test

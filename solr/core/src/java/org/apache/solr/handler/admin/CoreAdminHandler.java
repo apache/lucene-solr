@@ -449,11 +449,6 @@ public class CoreAdminHandler extends RequestHandlerBase {
 
     String name = checkNotEmpty(params.get(CoreAdminParams.NAME),
         "Missing parameter [" + CoreAdminParams.NAME + "]");
-    String instancedir = params.get(CoreAdminParams.INSTANCE_DIR);
-    if (StringUtils.isEmpty(instancedir)) {
-      instancedir = name; // will be resolved later against solr.home
-      //instancedir = container.getSolrHome() + "/" + name;
-    }
 
     Properties coreProps = new Properties();
     for (String param : paramToProp.keySet()) {
@@ -470,6 +465,14 @@ public class CoreAdminHandler extends RequestHandlerBase {
       String propName = param.substring(CoreAdminParams.PROPERTY_PREFIX.length());
       String propValue = params.get(param);
       coreProps.setProperty(propName, propValue);
+    }
+
+    String instancedir = params.get(CoreAdminParams.INSTANCE_DIR);
+    if (StringUtils.isEmpty(instancedir) && coreProps.getProperty(CoreAdminParams.INSTANCE_DIR) != null) {
+      instancedir = coreProps.getProperty(CoreAdminParams.INSTANCE_DIR);
+    } else if (StringUtils.isEmpty(instancedir)){
+      instancedir = name; // will be resolved later against solr.home
+      //instancedir = container.getSolrHome() + "/" + name;
     }
 
     return new CoreDescriptor(container, name, instancedir, coreProps, params);
