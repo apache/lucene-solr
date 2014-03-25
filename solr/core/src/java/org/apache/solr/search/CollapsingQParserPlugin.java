@@ -211,6 +211,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     public CollapsingPostFilter(SolrParams localParams, SolrParams params, SolrQueryRequest request) throws IOException {
       this.field = localParams.get("field");
+      if (this.field == null) {
+        throw new IllegalStateException("Required 'field' param is missing.");
+      }
       this.max = localParams.get("max");
       this.min = localParams.get("min");
       if(this.min != null || this.max != null) {

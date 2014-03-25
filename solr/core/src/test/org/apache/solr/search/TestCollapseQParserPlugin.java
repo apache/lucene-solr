@@ -18,6 +18,7 @@
 package org.apache.solr.search;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -296,4 +297,14 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     assertQ(req(params), "*[count(//doc)=2]");
 
   }
+
+  @Test
+  public void testMissingFieldParam() throws Exception {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "{!collapse}");
+    assertQEx("It should respond with a bad request when the 'field' param is missing", req(params),
+        SolrException.ErrorCode.BAD_REQUEST);
+  }
+
 }
