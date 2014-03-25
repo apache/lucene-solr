@@ -1015,7 +1015,8 @@ public final class ZkController {
         core.close();
       }
     }
-    log.info("publishing core={} state={}", cd.getName(), state);
+    String collection = cd.getCloudDescriptor().getCollectionName();
+    log.info("publishing core={} state={} collection={}", new Object[] { cd.getName(), state, collection });
     //System.out.println(Thread.currentThread().getStackTrace()[3]);
     Integer numShards = cd.getCloudDescriptor().getNumShards();
     if (numShards == null) { //XXX sys prop hack
@@ -1023,8 +1024,7 @@ public final class ZkController {
       numShards = Integer.getInteger(ZkStateReader.NUM_SHARDS_PROP);
     }
     
-    assert cd.getCloudDescriptor().getCollectionName() != null && cd.getCloudDescriptor()
-        .getCollectionName().length() > 0;
+    assert collection != null && collection.length() > 0;
     
     String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
     //assert cd.getCloudDescriptor().getShardId() != null;
@@ -1035,12 +1035,9 @@ public final class ZkController {
         ZkStateReader.ROLES_PROP, cd.getCloudDescriptor().getRoles(),
         ZkStateReader.NODE_NAME_PROP, getNodeName(),
         ZkStateReader.SHARD_ID_PROP, cd.getCloudDescriptor().getShardId(),
-        ZkStateReader.COLLECTION_PROP, cd.getCloudDescriptor()
-            .getCollectionName(),
-        ZkStateReader.NUM_SHARDS_PROP, numShards != null ? numShards.toString()
-            : null,
-        ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName != null ? coreNodeName
-            : null);
+        ZkStateReader.COLLECTION_PROP, collection,
+        ZkStateReader.NUM_SHARDS_PROP, numShards != null ? numShards.toString() : null,
+        ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName != null ? coreNodeName : null);
     if (updateLastState) {
       cd.getCloudDescriptor().lastPublished = state;
     }
@@ -1366,7 +1363,6 @@ public final class ZkController {
     // this also gets us our assigned shard id if it was not specified
     try {
       CloudDescriptor cloudDesc = cd.getCloudDescriptor();
-
 
       // make sure the node name is set on the descriptor
       if (cloudDesc.getCoreNodeName() == null) {
