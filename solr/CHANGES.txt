@@ -96,6 +96,9 @@ Bug Fixes
   explicitly, you should set it to false.
   (Mark Miller)
 
+* SOLR-5811: The Overseer will retry work items until success, which is a serious
+  problem if you hit a bad work item. (Mark Miller)
+
 ==================  4.7.0 ==================
 
 Versions of Major Components
