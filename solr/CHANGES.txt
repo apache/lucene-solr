@@ -84,6 +84,10 @@ Bug Fixes
 * SOLR-5734: We should use System.nanoTime rather than System.currentTimeMillis
   when calculating elapsed time. (Mark Miller, Ramkumar Aiyengar)
 
+* SOLR-5760: ConcurrentUpdateSolrServer has a blockUntilFinished call when
+  streamDeletes is true that should be tucked into the if statement below it.
+  (Mark Miller, Gregory Chanan)
+
 ==================  4.7.0 ==================
 
 Versions of Major Components
