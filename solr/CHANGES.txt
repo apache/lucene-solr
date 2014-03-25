@@ -109,9 +109,6 @@ New Features
 Bug Fixes
 ----------------------
 
-* SOLR-5761: HttpSolrServer has a few fields that can be set via setters but
-  are not volatile. (Mark Miller, Gregory Chanan)
-
 * SOLR-5811: The Overseer will retry work items until success, which is a serious
   problem if you hit a bad work item. (Mark Miller)
   
@@ -275,6 +272,9 @@ Bug Fixes
 * SOLR-5760: ConcurrentUpdateSolrServer has a blockUntilFinished call when
   streamDeletes is true that should be tucked into the if statement below it.
   (Mark Miller, Gregory Chanan)
+
+* SOLR-5761: HttpSolrServer has a few fields that can be set via setters but
+  are not volatile. (Mark Miller, Gregory Chanan)
 
 ==================  4.7.0 ==================
 
