@@ -53,6 +53,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 public class HttpShardHandler extends ShardHandler {
 
@@ -127,7 +128,7 @@ public class HttpShardHandler extends ShardHandler {
         srsp.setShard(shard);
         SimpleSolrResponse ssr = new SimpleSolrResponse();
         srsp.setSolrResponse(ssr);
-        long startTime = System.currentTimeMillis();
+        long startTime = System.nanoTime();
 
         try {
           params.remove(CommonParams.WT); // use default (currently javabin)
@@ -174,7 +175,7 @@ public class HttpShardHandler extends ShardHandler {
           }
         }
 
-        ssr.elapsedTime = System.currentTimeMillis() - startTime;
+        ssr.elapsedTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
 
         return srsp;
       }

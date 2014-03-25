@@ -2,6 +2,7 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.common.SolrException;
@@ -71,7 +72,7 @@ public abstract class ElectionContext {
     }
   }
 
-  abstract void runLeaderProcess(boolean weAreReplacement, int pauseTime) throws KeeperException, InterruptedException, IOException;
+  abstract void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs) throws KeeperException, InterruptedException, IOException;
 
   public void checkIfIamLeaderFired() {}
 
@@ -334,9 +335,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     return false;
   }
 
-  private void waitForReplicasToComeUp(boolean weAreReplacement,
-      int timeout) throws InterruptedException {
-    long timeoutAt = System.currentTimeMillis() + timeout;
+  private void waitForReplicasToComeUp(boolean weAreReplacement, int timeoutms) throws InterruptedException {
+    long timeoutAt = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeoutms, TimeUnit.MILLISECONDS);
     final String shardsElectZkPath = electionPath + LeaderElector.ELECTION_NODE;
     
     Slice slices = zkController.getClusterState().getSlice(collection, shardId);
@@ -360,11 +360,11 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           if (cnt % 40 == 0) {
             log.info("Waiting until we see more replicas up for shard " + shardId + ": total="
               + slices.getReplicasMap().size() + " found=" + found
-              + " timeoutin=" + (timeoutAt - System.currentTimeMillis()));
+              + " timeoutin=" + (timeoutAt - System.nanoTime() / (float)(10^9)) + "ms");
           }
         }
         
-        if (System.currentTimeMillis() > timeoutAt) {
+        if (System.nanoTime() > timeoutAt) {
           log.info("Was waiting for replicas to come up, but they are taking too long - assuming they won't come back till later");
           return;
         }
@@ -449,7 +449,7 @@ final class OverseerElectionContext extends ElectionContext {
   }
 
   @Override
-  void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStart) throws KeeperException,
+  void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs) throws KeeperException,
       InterruptedException {
     log.info("I am going to be the leader {}", id);
     final String id = leaderSeqPath
@@ -458,10 +458,11 @@ final class OverseerElectionContext extends ElectionContext {
 
     zkClient.makePath(leaderPath, ZkStateReader.toJSON(myProps),
         CreateMode.EPHEMERAL, true);
-    if(pauseBeforeStart >0){
+    if(pauseBeforeStartMs >0){
       try {
-        Thread.sleep(pauseBeforeStart);
+        Thread.sleep(pauseBeforeStartMs);
       } catch (InterruptedException e) {
+        Thread.interrupted();
         log.warn("Wait interrupted ", e);
       }
     }

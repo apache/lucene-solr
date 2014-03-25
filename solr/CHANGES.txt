@@ -81,6 +81,9 @@ Bug Fixes
 * SOLR-5777: Fix ordering of field values in JSON updates where
   field name key is repeated (hossman)
 
+* SOLR-5734: We should use System.nanoTime rather than System.currentTimeMillis
+  when calculating elapsed time. (Mark Miller, Ramkumar Aiyengar)
+
 ==================  4.7.0 ==================
 
 Versions of Major Components

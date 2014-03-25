@@ -17,6 +17,8 @@ package org.apache.solr.cloud;
  * the License.
  */
 
+import static java.util.Collections.singletonMap;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -26,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClosableThread;
@@ -45,8 +48,6 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.util.Collections.singletonMap;
 
 /**
  * Cluster leader. Responsible node assignments, cluster state file?
@@ -189,12 +190,12 @@ public class Overseer {
 
               stateUpdateQueue.poll();
 
-              if (System.currentTimeMillis() - lastUpdatedTime > STATE_UPDATE_DELAY) break;
+              if (System.nanoTime() - lastUpdatedTime > TimeUnit.NANOSECONDS.convert(STATE_UPDATE_DELAY, TimeUnit.MILLISECONDS)) break;
               
               // if an event comes in the next 100ms batch it together
               head = stateUpdateQueue.peek(100); 
             }
-            lastUpdatedTime = System.currentTimeMillis();
+            lastUpdatedTime = System.nanoTime();
             zkClient.setData(ZkStateReader.CLUSTER_STATE,
                 ZkStateReader.toJSON(clusterState), true);
             // clean work queue

@@ -35,6 +35,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.zip.Adler32;
@@ -800,7 +801,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   private long getTimeElapsed(SnapPuller snapPuller) {
     long timeElapsed = 0;
     if (snapPuller.getReplicationStartTime() > 0)
-      timeElapsed = (System.currentTimeMillis() - snapPuller.getReplicationStartTime()) / 1000;
+      timeElapsed = TimeUnit.SECONDS.convert(System.currentTimeMillis() - snapPuller.getReplicationStartTime(), TimeUnit.MILLISECONDS);
     return timeElapsed;
   }
 

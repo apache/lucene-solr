@@ -518,8 +518,8 @@ public class ZkStateReader {
    * Get shard leader properties, with retry if none exist.
    */
   public Replica getLeaderRetry(String collection, String shard, int timeout) throws InterruptedException {
-    long timeoutAt = System.currentTimeMillis() + timeout;
-    while (System.currentTimeMillis() < timeoutAt && !closed) {
+    long timeoutAt = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS);
+    while (System.nanoTime() < timeoutAt && !closed) {
       if (clusterState != null) {    
         Replica replica = clusterState.getLeader(collection, shard);
         if (replica != null && getClusterState().liveNodesContain(replica.getNodeName())) {

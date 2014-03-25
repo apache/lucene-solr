@@ -25,6 +25,7 @@ import org.apache.solr.update.SolrIndexWriter;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -75,7 +76,7 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
    * @param reserveTime  time in milliseconds for which the commit point is to be reserved
    */
   public void setReserveDuration(Long indexGen, long reserveTime) {
-    long timeToSet = System.currentTimeMillis() + reserveTime;
+    long timeToSet = System.nanoTime() + TimeUnit.NANOSECONDS.convert(reserveTime, TimeUnit.MILLISECONDS);
     for(;;) {
       Long previousTime = reserves.put(indexGen, timeToSet);
 
@@ -92,7 +93,7 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
   }
 
   private void cleanReserves() {
-    long currentTime = System.currentTimeMillis();
+    long currentTime = System.nanoTime();
     for (Map.Entry<Long, Long> entry : reserves.entrySet()) {
       if (entry.getValue() < currentTime) {
         reserves.remove(entry.getKey());
@@ -175,7 +176,7 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
     public void delete() {
       Long gen = delegate.getGeneration();
       Long reserve = reserves.get(gen);
-      if (reserve != null && System.currentTimeMillis() < reserve) return;
+      if (reserve != null && System.nanoTime() < reserve) return;
       if(savedCommits.containsKey(gen)) return;
       delegate.delete();
     }

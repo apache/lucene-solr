@@ -17,6 +17,7 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.common.SolrException;
@@ -65,7 +66,7 @@ public class ConnectionManager implements Watcher {
 
     public boolean isLikelyExpired(long timeToExpire) {
       return stateType == StateType.EXPIRED
-        || ( stateType == StateType.TRACKING_TIME && (System.currentTimeMillis() - lastDisconnectTime >  timeToExpire));
+        || ( stateType == StateType.TRACKING_TIME && (System.nanoTime() - lastDisconnectTime >  TimeUnit.NANOSECONDS.convert(timeToExpire, TimeUnit.MILLISECONDS)));
     }
   }
 
@@ -90,7 +91,7 @@ public class ConnectionManager implements Watcher {
     connected = false;
     // record the time we expired unless we are already likely expired
     if (!likelyExpiredState.isLikelyExpired(0)) {
-      likelyExpiredState = new LikelyExpiredState(LikelyExpiredState.StateType.TRACKING_TIME, System.currentTimeMillis());
+      likelyExpiredState = new LikelyExpiredState(LikelyExpiredState.StateType.TRACKING_TIME, System.nanoTime());
     }
     notifyAll();
   }
@@ -204,7 +205,7 @@ public class ConnectionManager implements Watcher {
   public synchronized void waitForConnected(long waitForConnection)
       throws TimeoutException {
     log.info("Waiting for client to connect to ZooKeeper");
-    long expire = System.currentTimeMillis() + waitForConnection;
+    long expire = System.nanoTime() + TimeUnit.NANOSECONDS.convert(waitForConnection, TimeUnit.MILLISECONDS);
     long left = 1;
     while (!connected && left > 0) {
       if (isClosed) {
@@ -216,7 +217,7 @@ public class ConnectionManager implements Watcher {
         Thread.currentThread().interrupt();
         break;
       }
-      left = expire - System.currentTimeMillis();
+      left = expire - System.nanoTime();
     }
     if (!connected) {
       throw new TimeoutException("Could not connect to ZooKeeper " + zkServerAddress + " within " + waitForConnection + " ms");
@@ -226,11 +227,11 @@ public class ConnectionManager implements Watcher {
 
   public synchronized void waitForDisconnected(long timeout)
       throws InterruptedException, TimeoutException {
-    long expire = System.currentTimeMillis() + timeout;
+    long expire = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS);
     long left = timeout;
     while (connected && left > 0) {
       wait(left);
-      left = expire - System.currentTimeMillis();
+      left = expire - System.nanoTime();
     }
     if (connected) {
       throw new TimeoutException("Did not disconnect");

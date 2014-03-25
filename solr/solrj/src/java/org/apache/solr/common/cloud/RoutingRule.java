@@ -17,12 +17,11 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
-import org.apache.solr.common.SolrException;
-import org.noggit.JSONUtil;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import org.noggit.JSONUtil;
 
 /**
  * Used for routing docs with particular keys into another collection
