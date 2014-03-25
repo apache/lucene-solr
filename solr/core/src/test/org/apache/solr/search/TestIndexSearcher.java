@@ -105,10 +105,13 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     int baseRefCount = rCtx3.reader().getRefCount();
     assertEquals(1, baseRefCount);
 
+    Object sr3SearcherRegAt = sr3.getSearcher().getStatistics().get("registeredAt");
     assertU(commit()); // nothing has changed
     SolrQueryRequest sr4 = req("q","foo");
     assertSame("nothing changed, searcher should be the same",
                sr3.getSearcher(), sr4.getSearcher());
+    assertEquals("nothing changed, searcher should not have been re-registered",
+                 sr3SearcherRegAt, sr4.getSearcher().getStatistics().get("registeredAt"));
     IndexReaderContext rCtx4 = sr4.getSearcher().getTopReaderContext();
 
     // force an index change so the registered searcher won't be the one we are testing (and
