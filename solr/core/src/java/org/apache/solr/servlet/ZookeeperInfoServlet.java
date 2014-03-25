@@ -195,7 +195,7 @@ public final class ZookeeperInfoServlet extends HttpServlet {
       if (path == null) {
         path = "/";
       } else {
-        path.trim();
+        path = path.trim();
         if (path.length() == 0) {
           path = "/";
         }

@@ -105,6 +105,9 @@ Bug Fixes
 * SOLR-5834: Overseer threads are only being interrupted and not closed.
   (hossman, Mark Miller)
 
+* SOLR-5839: ZookeeperInfoServlet does not trim path properly.
+  (Furkan KAMACI via Mark Miller)
+
 Other Changes
 ---------------------
 
