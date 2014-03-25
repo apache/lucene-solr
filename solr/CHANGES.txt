@@ -88,6 +88,9 @@ Bug Fixes
   streamDeletes is true that should be tucked into the if statement below it.
   (Mark Miller, Gregory Chanan)
 
+* SOLR-5761: HttpSolrServer has a few fields that can be set via setters but
+  are not volatile. (Mark Miller, Gregory Chanan)
+
 ==================  4.7.0 ==================
 
 Versions of Major Components
