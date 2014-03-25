@@ -84,13 +84,6 @@ Bug Fixes
 * SOLR-5734: We should use System.nanoTime rather than System.currentTimeMillis
   when calculating elapsed time. (Mark Miller, Ramkumar Aiyengar)
 
-<<<<<<< .mine
-* SOLR-5907: The hdfs write cache can cause a reader to see a corrupted state.
-  It now defaults to off, and if you were using solr.hdfs.blockcache.write.enabled
-  explicitly, you should set it to false.
-  (Mark Miller)
-
-=======
 * SOLR-5760: ConcurrentUpdateSolrServer has a blockUntilFinished call when
   streamDeletes is true that should be tucked into the if statement below it.
   (Mark Miller, Gregory Chanan)
@@ -98,7 +91,11 @@ Bug Fixes
 * SOLR-5761: HttpSolrServer has a few fields that can be set via setters but
   are not volatile. (Mark Miller, Gregory Chanan)
 
->>>>>>> .r1581173
+* SOLR-5907: The hdfs write cache can cause a reader to see a corrupted state.
+  It now defaults to off, and if you were using solr.hdfs.blockcache.write.enabled
+  explicitly, you should set it to false.
+  (Mark Miller)
+
 ==================  4.7.0 ==================
 
 Versions of Major Components
