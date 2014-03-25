@@ -106,9 +106,12 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory {
     
     boolean blockCacheEnabled = params.getBool(BLOCKCACHE_ENABLED, true);
     boolean blockCacheGlobal = params.getBool(BLOCKCACHE_GLOBAL, false); // default to false for back compat
-    boolean blockCacheReadEnabled = params.getBool(BLOCKCACHE_READ_ENABLED,
-        true);
+    boolean blockCacheReadEnabled = params.getBool(BLOCKCACHE_READ_ENABLED, true);
     boolean blockCacheWriteEnabled = params.getBool(BLOCKCACHE_WRITE_ENABLED, true);
+    
+    if (blockCacheWriteEnabled) {
+      LOG.warn("Using " + BLOCKCACHE_WRITE_ENABLED + " is currently buggy and can result in readers seeing a corrupted view of the index.");
+    }
     Directory dir = null;
     
     if (blockCacheEnabled && dirContext != DirContext.META_DATA) {
