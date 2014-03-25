@@ -165,9 +165,6 @@ Bug Fixes
 * SOLR-5818: distrib search with custom comparator does not quite work correctly
   (Ryan Ernst)
 
-* SOLR-5834: Overseer threads are only being interrupted and not closed.
-  (hossman, Mark Miller)
-
 * SOLR-5839: ZookeeperInfoServlet does not trim path properly.
   (Furkan KAMACI via Mark Miller)
 
@@ -329,6 +326,9 @@ Bug Fixes
 
 * SOLR-5796: Increase how long we are willing to wait for a core to see the ZK
   advertised leader in it's local state. (Timothy Potter, Mark Miller)
+
+* SOLR-5834: Overseer threads are only being interrupted and not closed.
+  (hossman, Mark Miller)
 
 Other Changes
 ---------------------
