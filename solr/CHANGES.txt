@@ -102,6 +102,9 @@ Bug Fixes
 * SOLR-5796: Increase how long we are willing to wait for a core to see the ZK
   advertised leader in it's local state. (Timothy Potter, Mark Miller)  
 
+* SOLR-5834: Overseer threads are only being interrupted and not closed.
+  (hossman, Mark Miller)
+
 Other Changes
 ---------------------
 
