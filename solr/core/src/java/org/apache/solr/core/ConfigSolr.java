@@ -142,6 +142,7 @@ public abstract class ConfigSolr {
 
   private static final int DEFAULT_ZK_CLIENT_TIMEOUT = 15000;
   private static final int DEFAULT_LEADER_VOTE_WAIT = 180000;  // 3 minutes
+  private static final int DEFAULT_LEADER_CONFLICT_RESOLVE_WAIT = 180000;
   private static final int DEFAULT_CORE_LOAD_THREADS = 3;
 
   protected static final String DEFAULT_CORE_ADMIN_PATH = "/admin/cores";
@@ -160,6 +161,10 @@ public abstract class ConfigSolr {
 
   public int getLeaderVoteWait() {
     return getInt(CfgProp.SOLR_LEADERVOTEWAIT, DEFAULT_LEADER_VOTE_WAIT);
+  }
+  
+  public int getLeaderConflictResolveWait() {
+    return getInt(CfgProp.SOLR_LEADERCONFLICTRESOLVEWAIT, DEFAULT_LEADER_CONFLICT_RESOLVE_WAIT);
   }
 
   public boolean getGenericCoreNodeNames() {
@@ -259,6 +264,7 @@ public abstract class ConfigSolr {
     SOLR_GENERICCORENODENAMES,
     SOLR_ZKCLIENTTIMEOUT,
     SOLR_ZKHOST,
+    SOLR_LEADERCONFLICTRESOLVEWAIT,
 
     //TODO: Remove all of these elements for 5.0
     SOLR_PERSISTENT,

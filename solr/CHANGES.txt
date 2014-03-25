@@ -99,6 +99,16 @@ Bug Fixes
 * SOLR-5811: The Overseer will retry work items until success, which is a serious
   problem if you hit a bad work item. (Mark Miller)
 
+* SOLR-5796: Increase how long we are willing to wait for a core to see the ZK
+  advertised leader in it's local state. (Timothy Potter, Mark Miller)  
+
+Other Changes
+---------------------
+
+* SOLR-5796: Make how long we are willing to wait for a core to see the ZK
+  advertised leader in it's local state configurable. 
+  (Timothy Potter via Mark Miller)
+
 ==================  4.7.0 ==================
 
 Versions of Major Components
