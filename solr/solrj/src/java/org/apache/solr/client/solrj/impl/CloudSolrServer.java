@@ -311,8 +311,8 @@ public class CloudSolrServer extends SolrServer {
       return null;
     }
 
-    NamedList exceptions = new NamedList();
-    NamedList shardResponses = new NamedList();
+    NamedList<Throwable> exceptions = new NamedList<Throwable>();
+    NamedList<NamedList> shardResponses = new NamedList<NamedList>();
 
     Map<String, LBHttpSolrServer.Req> routes = updateRequest.getRoutes(router, col, urlMap, routableParams, this.idField);
     if (routes == null) {
@@ -453,7 +453,7 @@ public class CloudSolrServer extends SolrServer {
     return condensed;
   }
 
-  class RouteResponse extends NamedList {
+  public static class RouteResponse extends NamedList {
     private NamedList routeResponses;
     private Map<String, LBHttpSolrServer.Req> routes;
 
@@ -475,19 +475,19 @@ public class CloudSolrServer extends SolrServer {
 
   }
 
-  class RouteException extends SolrException {
+  public static class RouteException extends SolrException {
 
-    private NamedList exceptions;
+    private NamedList<Throwable> throwables;
     private Map<String, LBHttpSolrServer.Req> routes;
 
-    public RouteException(ErrorCode errorCode, NamedList exceptions, Map<String, LBHttpSolrServer.Req> routes){
-      super(errorCode, ((Exception)exceptions.getVal(0)).getMessage(), (Exception)exceptions.getVal(0));
-      this.exceptions = exceptions;
+    public RouteException(ErrorCode errorCode, NamedList<Throwable> throwables, Map<String, LBHttpSolrServer.Req> routes){
+      super(errorCode, throwables.getVal(0).getMessage(), throwables.getVal(0));
+      this.throwables = throwables;
       this.routes = routes;
     }
 
-    public NamedList getExceptions() {
-      return exceptions;
+    public NamedList<Throwable> getThrowables() {
+      return throwables;
     }
 
     public Map<String, LBHttpSolrServer.Req> getRoutes() {

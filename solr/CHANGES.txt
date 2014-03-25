@@ -108,6 +108,13 @@ Bug Fixes
 * SOLR-5839: ZookeeperInfoServlet does not trim path properly.
   (Furkan KAMACI via Mark Miller)
 
+* SOLR-5874: Unsafe cast in CloudSolrServer's RouteException. Change
+  RouteException to handle Throwable rather than Exception.
+  (Mark Miller, David Arthur)
+
+* SOLR-5899: CloudSolrServer's RouteResponse and RouteException should be
+  publicly accessible. (Mark Miller, shalin)
+
 Other Changes
 ---------------------
 
