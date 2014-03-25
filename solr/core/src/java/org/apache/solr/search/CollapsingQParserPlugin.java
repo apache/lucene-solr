@@ -42,6 +42,7 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -206,6 +207,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     public CollapsingPostFilter(SolrParams localParams, SolrParams params, SolrQueryRequest request) throws IOException {
       this.field = localParams.get("field");
+      if (this.field == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Required 'field' param is missing.");
+      }
       this.max = localParams.get("max");
       this.min = localParams.get("min");
       if(this.min != null || this.max != null) {

@@ -115,6 +115,9 @@ Bug Fixes
 * SOLR-5899: CloudSolrServer's RouteResponse and RouteException should be
   publicly accessible. (Mark Miller, shalin)
 
+* SOLR-5905: CollapsingQParserPlugin throws a NPE if required 'field' param is missing.
+  (Spyros Kapnissis via shalin)
+
 Other Changes
 ---------------------
 
