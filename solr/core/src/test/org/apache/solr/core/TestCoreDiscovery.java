@@ -142,28 +142,27 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       TestLazyCores.checkInCores(cc, "core1");
       TestLazyCores.checkNotInCores(cc, "lazy1", "core2", "collection1");
 
-      SolrCore core1 = cc.getCore("core1");
+      // force loading of core2 and lazy1 by getting them from the CoreContainer
+      try (SolrCore core1 = cc.getCore("core1");
+           SolrCore core2 = cc.getCore("core2");
+           SolrCore lazy1 = cc.getCore("lazy1")) {
 
-      // Let's assert we did the right thing for implicit properties too.
-      CoreDescriptor desc = core1.getCoreDescriptor();
-      assertEquals("core1", desc.getName());
+        // Let's assert we did the right thing for implicit properties too.
+        CoreDescriptor desc = core1.getCoreDescriptor();
+        assertEquals("core1", desc.getName());
 
-      // This is too long and ugly to put in. Besides, it varies.
-      assertNotNull(desc.getInstanceDir());
+        // This is too long and ugly to put in. Besides, it varies.
+        assertNotNull(desc.getInstanceDir());
 
-      // Prove we're ignoring this even though it's set in the properties file
-      assertFalse("InstanceDir should be ignored", desc.getInstanceDir().contains("totallybogus"));
+        // Prove we're ignoring this even though it's set in the properties file
+        assertFalse("InstanceDir should be ignored", desc.getInstanceDir().contains("totallybogus"));
 
-      assertEquals("core1", desc.getDataDir());
-      assertEquals("solrconfig-minimal.xml", desc.getConfigName());
-      assertEquals("schema-tiny.xml", desc.getSchemaName());
+        assertEquals("core1", desc.getDataDir());
+        assertEquals("solrconfig-minimal.xml", desc.getConfigName());
+        assertEquals("schema-tiny.xml", desc.getSchemaName());
 
-      SolrCore core2 = cc.getCore("core2");
-      SolrCore lazy1 = cc.getCore("lazy1");
-      TestLazyCores.checkInCores(cc, "core1", "core2", "lazy1");
-      core1.close();
-      core2.close();
-      lazy1.close();
+        TestLazyCores.checkInCores(cc, "core1", "core2", "lazy1");
+      }
 
     } finally {
       cc.shutdown();
@@ -208,13 +207,10 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     addCoreWithProps(makeCorePropFile("core2", false, false, "dataDir=core2"),
         new File(alt, "core2" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
     CoreContainer cc = init();
-    try {
-      SolrCore core1 = cc.getCore("core1");
-      SolrCore core2 = cc.getCore("core2");
+    try (SolrCore core1 = cc.getCore("core1");
+         SolrCore core2 = cc.getCore("core2")) {
       assertNotNull(core1);
       assertNotNull(core2);
-      core1.close();
-      core2.close();
     } finally {
       cc.shutdown();
       if (alt.exists()) FileUtils.deleteDirectory(alt);
@@ -231,13 +227,10 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     addCoreWithProps(makeCorePropFile("core2", false, false),
         new File(noCoreDir, "core2" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
     CoreContainer cc = init();
-    try {
-      SolrCore core1 = cc.getCore("core1");
-      SolrCore core2 = cc.getCore("core2");
+    try (SolrCore core1 = cc.getCore("core1");
+         SolrCore core2 = cc.getCore("core2")) {
       assertNotNull(core1);
       assertNotNull(core2);
-      core1.close();
-      core2.close();
     } finally {
       cc.shutdown();
       if (noCoreDir.exists()) FileUtils.deleteDirectory(noCoreDir);

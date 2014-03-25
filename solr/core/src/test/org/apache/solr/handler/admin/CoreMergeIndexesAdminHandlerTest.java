@@ -34,7 +34,6 @@ import org.junit.rules.TestRule;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
 
 public class CoreMergeIndexesAdminHandlerTest extends SolrTestCaseJ4 {
   
@@ -80,8 +79,7 @@ public class CoreMergeIndexesAdminHandlerTest extends SolrTestCaseJ4 {
 
     final CoreAdminHandler admin = new CoreAdminHandler(cores);
 
-    SolrCore core = cores.getCore("collection1");
-    try {
+    try (SolrCore core = cores.getCore("collection1")) {
       FailingDirectoryFactory dirFactory = (FailingDirectoryFactory)core.getDirectoryFactory();
 
       try {
@@ -102,8 +100,6 @@ public class CoreMergeIndexesAdminHandlerTest extends SolrTestCaseJ4 {
         unIgnoreException(FAILING_MSG);
       }
       dirFactory.fail = false;
-    } finally {
-      core.close();
     }
 
     // cleanup

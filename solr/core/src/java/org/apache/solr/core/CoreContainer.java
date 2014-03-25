@@ -692,17 +692,12 @@ public class CoreContainer {
   }
 
   public void rename(String name, String toName) {
-    SolrCore core = getCore(name);
-    try {
+    try (SolrCore core = getCore(name)) {
       if (core != null) {
         registerCore(false, toName, core, false);
         name = checkDefault(name);
         SolrCore old = solrCores.remove(name, false);
         coresLocator.rename(this, old.getCoreDescriptor(), core.getCoreDescriptor());
-      }
-    } finally {
-      if (core != null) {
-        core.close();
       }
     }
   }

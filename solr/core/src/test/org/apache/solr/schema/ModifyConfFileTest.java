@@ -67,10 +67,9 @@ public class ModifyConfFileTest extends SolrTestCaseJ4 {
   public void testConfigWrite() throws Exception {
 
     final CoreContainer cc = init();
-    try {
+    try (SolrCore core = cc.getCore("core1")) {
       //final CoreAdminHandler admin = new CoreAdminHandler(cc);
 
-      SolrCore core = cc.getCore("core1");
       SolrQueryResponse rsp = new SolrQueryResponse();
       SolrRequestHandler handler = core.getRequestHandler("/admin/fileedit");
 
@@ -147,7 +146,6 @@ public class ModifyConfFileTest extends SolrTestCaseJ4 {
 
       assertTrue("Velocity should be a directory", (boolean)velocity.get("directory"));
 
-      core.close();
     } finally {
       cc.shutdown();
       if (solrHomeDirectory.exists()) {

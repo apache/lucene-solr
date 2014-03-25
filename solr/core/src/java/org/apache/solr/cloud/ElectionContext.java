@@ -1,9 +1,5 @@
 package org.apache.solr.cloud;
 
-import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -28,6 +24,10 @@ import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -194,12 +194,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     if (!weAreReplacement) {
       waitForReplicasToComeUp(weAreReplacement, leaderVoteWait);
     }
-    
-    SolrCore core = null;
-    try {
-      
-      core = cc.getCore(coreName);
-      
+
+    try (SolrCore core = cc.getCore(coreName)) {
+
       if (core == null) {
         cancelElection();
         throw new SolrException(ErrorCode.SERVER_ERROR,
@@ -287,10 +284,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       log.info("I am the new leader: "
           + ZkCoreNodeProps.getCoreUrl(leaderProps) + " " + shardId);
       core.getCoreDescriptor().getCloudDescriptor().setLeader(true);
-    } finally {
-      if (core != null) {
-        core.close();
-      }
     }
     boolean success = false;
     try {
@@ -299,8 +292,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     } catch (Exception e) {
       SolrException.log(log, "There was a problem trying to register as the leader", e);
   
-      try {
-        core = cc.getCore(coreName);
+      try (SolrCore core = cc.getCore(coreName)) {
+
         if (core == null) {
           throw new SolrException(ErrorCode.SERVER_ERROR,
               "Fatal Error, SolrCore not found:" + coreName + " in "
@@ -312,16 +305,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         // we could not publish ourselves as leader - rejoin election
         rejoinLeaderElection(leaderSeqPath, core);
       } finally {
-        try {
-          if (!success) {
-            cancelElection();
-          }
-        } finally {
-          if (core != null) {
-            core.close();
-          }
-        }
-        
+        if (!success)
+          cancelElection();
       }
     }
     

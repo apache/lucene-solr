@@ -237,6 +237,9 @@ Other Changes
 * SOLR-5228: Don't require <field> or <dynamicField> be inside of <fields> -- or
   that <fieldType> be inside of <types>. (Erick Erickson)
 
+* SOLR-5903: SolrCore implements Closeable, cut over to using try-with-resources
+  where possible. (Alan Woodward)
+
 ==================  4.7.1  ==================
 
 Versions of Major Components

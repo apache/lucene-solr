@@ -99,6 +99,7 @@ import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -137,7 +138,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  *
  */
-public final class SolrCore implements SolrInfoMBean {
+public final class SolrCore implements SolrInfoMBean, Closeable {
   public static final String version="1.0";  
 
   // These should *only* be used for debugging or monitoring purposes

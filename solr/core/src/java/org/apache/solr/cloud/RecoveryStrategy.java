@@ -17,14 +17,6 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
@@ -65,6 +57,14 @@ import org.apache.solr.util.RefCounted;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 public class RecoveryStrategy extends Thread implements ClosableThread {
   private static final int MAX_RETRIES = 500;
@@ -216,14 +216,15 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
 
   @Override
   public void run() {
-    SolrCore core = cc.getCore(coreName);
-    if (core == null) {
-      SolrException.log(log, "SolrCore not found - cannot recover:" + coreName);
-      return;
-    }
 
     // set request info for logging
-    try {
+    try (SolrCore core = cc.getCore(coreName)) {
+
+      if (core == null) {
+        SolrException.log(log, "SolrCore not found - cannot recover:" + coreName);
+        return;
+      }
+
       SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
       SolrQueryResponse rsp = new SolrQueryResponse();
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
@@ -243,7 +244,6 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
             "", e);
       }
     } finally {
-      if (core != null) core.close();
       SolrRequestInfo.clearRequestInfo();
     }
   }

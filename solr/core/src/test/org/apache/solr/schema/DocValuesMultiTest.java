@@ -17,8 +17,6 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfos;
@@ -29,6 +27,8 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 import org.junit.BeforeClass;
+
+import java.io.IOException;
 
 @SuppressCodecs({"Lucene40", "Lucene41"})
 public class DocValuesMultiTest extends SolrTestCaseJ4 {
@@ -46,8 +46,7 @@ public class DocValuesMultiTest extends SolrTestCaseJ4 {
   public void testDocValues() throws IOException {
     assertU(adoc("id", "1", "floatdv", "4.5", "intdv", "-1", "intdv", "3", "stringdv", "value1", "stringdv", "value2"));
     assertU(commit());
-    SolrCore core = h.getCoreInc();
-    try {
+    try (SolrCore core = h.getCoreInc()) {
       final RefCounted<SolrIndexSearcher> searcherRef = core.openNewSearcher(true, true);
       final SolrIndexSearcher searcher = searcherRef.get();
       try {
@@ -66,8 +65,6 @@ public class DocValuesMultiTest extends SolrTestCaseJ4 {
       } finally {
         searcherRef.decref();
       }
-    } finally {
-      core.close();
     }
   }
   

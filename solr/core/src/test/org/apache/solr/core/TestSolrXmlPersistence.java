@@ -410,15 +410,10 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
     SolrXMLCoresLocator.NonPersistingLocator locator
         = (SolrXMLCoresLocator.NonPersistingLocator) cores.getCoresLocator();
 
-    String instDir = null;
-    {
-      SolrCore template = null;
-      try {
-        template = cores.getCore("collection1");
-        instDir = template.getCoreDescriptor().getRawInstanceDir();
-      } finally {
-        if (null != template) template.close();
-      }
+    String instDir;
+    try (SolrCore template = cores.getCore("collection1")) {
+      assertNotNull(template);
+      instDir = template.getCoreDescriptor().getRawInstanceDir();
     }
 
     final File instDirFile = new File(cores.getSolrHome(), instDir);

@@ -85,14 +85,8 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     CoreAdminResponse response = req.process(server);
     assertThat((String) response.getResponse().get("core"), is("corewithconfigset"));
 
-    SolrCore core = null;
-    try {
-      core = cores.getCore("corewithconfigset");
+    try (SolrCore core = cores.getCore("corewithconfigset")) {
       assertThat(core, is(notNullValue()));
-    }
-    finally {
-      if (core != null)
-        core.close();
     }
 
   }
@@ -135,23 +129,19 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
 
     // Show that the newly-created core has values for load on startup and transient different than defaults due to the
     // above.
-
-    SolrCore coreProveIt = cores.getCore("collection1");
-    SolrCore core = cores.getCore("newcore");
-
-    assertTrue(core.getCoreDescriptor().isTransient());
-    assertFalse(coreProveIt.getCoreDescriptor().isTransient());
-
-    assertFalse(core.getCoreDescriptor().isLoadOnStartup());
-    assertTrue(coreProveIt.getCoreDescriptor().isLoadOnStartup());
-
     File logDir;
-    try {
+    try (SolrCore coreProveIt = cores.getCore("collection1");
+         SolrCore core = cores.getCore("newcore")) {
+
+      assertTrue(core.getCoreDescriptor().isTransient());
+      assertFalse(coreProveIt.getCoreDescriptor().isTransient());
+
+      assertFalse(core.getCoreDescriptor().isLoadOnStartup());
+      assertTrue(coreProveIt.getCoreDescriptor().isLoadOnStartup());
+
       logDir = new File(core.getUpdateHandler().getUpdateLog().getLogDir());
-    } finally {
-      coreProveIt.close();
-      core.close();
     }
+
     assertEquals(new File(dataDir, "ulog" + File.separator + "tlog").getAbsolutePath(), logDir.getAbsolutePath());
     server.shutdown();
     

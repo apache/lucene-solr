@@ -17,28 +17,6 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.net.URLEncoder;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
@@ -73,6 +51,28 @@ import org.apache.zookeeper.KeeperException.SessionExpiredException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.URLEncoder;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Handle ZooKeeper interactions.
@@ -802,13 +802,9 @@ public final class ZkController {
     String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
     log.info("We are " + ourUrl + " and leader is " + leaderUrl);
     boolean isLeader = leaderUrl.equals(ourUrl);
-    
 
-    SolrCore core = null;
-    try {
-      core = cc.getCore(desc.getName());
+    try (SolrCore core = cc.getCore(desc.getName())) {
 
- 
       // recover from local transaction log and wait for it to complete before
       // going active
       // TODO: should this be moved to another thread? To recoveryStrat?
@@ -837,12 +833,7 @@ public final class ZkController {
           publish(desc, ZkStateReader.ACTIVE);
         }
       }
-    } finally {
-      if (core != null) {
-        core.close();
-      }
     }
-
     
     // make sure we have an update cluster state right away
     zkStateReader.updateClusterState(true);
@@ -1028,16 +1019,10 @@ public final class ZkController {
    */
   public void publish(final CoreDescriptor cd, final String state, boolean updateLastState, boolean forcePublish) throws KeeperException, InterruptedException {
     if (!forcePublish) {
-      SolrCore core = cc.getCore(cd.getName());
-      if (core == null) {
-        return;
-      }
-      try {
-        if (core.isClosed()) {
+      try (SolrCore core = cc.getCore(cd.getName())) {
+        if (core == null || core.isClosed()) {
           return;
         }
-      } finally {
-        core.close();
       }
     }
     String collection = cd.getCloudDescriptor().getCollectionName();

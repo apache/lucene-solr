@@ -343,13 +343,9 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
 
   }
 
-  private final long getCoreStartTime(final CoreContainer cc, 
-                                      final String name) {
-    SolrCore tmp = cc.getCore(name);
-    try {
+  private long getCoreStartTime(final CoreContainer cc, final String name) {
+    try (SolrCore tmp = cc.getCore(name)) {
       return tmp.getStartTime();
-    } finally {
-      tmp.close();
     }
   }
 
