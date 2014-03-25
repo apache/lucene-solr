@@ -120,7 +120,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
 
   @Test
   public void testCarrotStc() throws Exception {
-    checkEngine(getClusteringEngine("stc"), 2);
+    checkEngine(getClusteringEngine("stc"), 3);
   }
 
   @Test

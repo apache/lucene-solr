@@ -25,7 +25,7 @@ $Id$
 Versions of Major Components
 ---------------------
 Apache Tika 1.5
-Carrot2 3.8.0
+Carrot2 3.9.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
@@ -71,7 +71,7 @@ Other Changes
 Versions of Major Components
 ---------------------
 Apache Tika 1.5
-Carrot2 3.8.0
+Carrot2 3.9.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
@@ -183,6 +183,8 @@ Optimizations
 
 Other Changes
 ---------------------
+
+* SOLR-5909: Upgrade Carrot2 clustering dependency to 3.9.0. (Dawid Weiss)
 
 * SOLR-5764: Fix recently added tests to not use absolute paths to load test-files,
   use SolrTestCaseJ4.getFile() and getResource() instead; fix morphlines/map-reduce
