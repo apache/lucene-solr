@@ -17,14 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.FieldsProducer;
@@ -38,6 +30,14 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.util.IOUtils;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /** Holds core readers that are shared (unchanged) when
  * SegmentReader is cloned or reopened */
@@ -173,19 +173,32 @@ final class SegmentCoreReaders {
   void decRef() throws IOException {
     if (ref.decrementAndGet() == 0) {
 //      System.err.println("--- closing core readers");
-      IOUtils.close(termVectorsLocal, fieldsReaderLocal, normsLocal, fields, termVectorsReaderOrig, fieldsReaderOrig, 
-          cfsReader, normsProducer);
-      notifyCoreClosedListeners();
+      Throwable th = null;
+      try {
+        IOUtils.close(termVectorsLocal, fieldsReaderLocal, normsLocal, fields, termVectorsReaderOrig, fieldsReaderOrig,
+            cfsReader, normsProducer);
+      } catch (Throwable throwable) {
+        th = throwable;
+      } finally {
+        notifyCoreClosedListeners(th);
+      }
     }
   }
   
-  private void notifyCoreClosedListeners() {
+  private void notifyCoreClosedListeners(Throwable th) {
     synchronized(coreClosedListeners) {
       for (CoreClosedListener listener : coreClosedListeners) {
         // SegmentReader uses our instance as its
         // coreCacheKey:
-        listener.onClose(this);
+        try {
+          listener.onClose(this);
+        } catch (Throwable t) {
+          if (th == null) {
+            th = t;
+          }
+        }
       }
+      IOUtils.reThrowUnchecked(th);
     }
   }
 

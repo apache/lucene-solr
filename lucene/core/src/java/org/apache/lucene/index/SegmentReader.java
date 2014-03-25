@@ -17,13 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.DocValuesProducer;
@@ -36,6 +29,14 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.CloseableThreadLocal;
+import org.apache.lucene.util.IOUtils;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * IndexReader implementation over a single segment. 
@@ -250,9 +251,11 @@ public final class SegmentReader extends AtomicReader {
       core.decRef();
     } finally {
       dvProducers.clear();
-      docValuesLocal.close();
-      docsWithFieldLocal.close();
-      segDocValues.decRef(dvGens);
+      try {
+        IOUtils.close(docValuesLocal, docsWithFieldLocal);
+      } finally {
+        segDocValues.decRef(dvGens);
+      }
     }
   }
 

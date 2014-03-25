@@ -56,6 +56,12 @@ Bug Fixes
   indexed shapes within 1/2 maxDistErr from the edge of the query shape.  This meant
   searching for a point by the same point as a query rarely worked.  (David Smiley)
 
+* LUCENE-5553: IndexReader#ReaderClosedListener is not always invoked when 
+  IndexReader#close() is called or if refCount is 0. If an exception is 
+  thrown during interal close or on any of the close listerns some or all
+  listerners might be missed. This can cause memory leaks if the core listeners
+  are used to clear caches. (Simon Willnauer)
+
 Build
 
 * LUCENE-5511: "ant precommit" / "ant check-svn-working-copy" now work again

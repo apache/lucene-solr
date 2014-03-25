@@ -17,6 +17,8 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import org.apache.lucene.store.Directory;
+
 import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
@@ -30,8 +32,6 @@ import java.lang.reflect.Method;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
-
-import org.apache.lucene.store.Directory;
 
 /** This class emulates the new Java 7 "Try-With-Resources" statement.
  * Remove once Lucene is on Java 7.
@@ -357,6 +357,17 @@ public final class IOUtils {
       if (th instanceof IOException) {
         throw (IOException) th;
       }
+      reThrowUnchecked(th);
+    }
+  }
+
+  /**
+   * Simple utilty method that takes a previously caught
+   * {@code Throwable} and rethrows it as an unchecked exception.
+   * If the argument is null then this method does nothing.
+   */
+  public static void reThrowUnchecked(Throwable th) {
+    if (th != null) {
       if (th instanceof RuntimeException) {
         throw (RuntimeException) th;
       }
