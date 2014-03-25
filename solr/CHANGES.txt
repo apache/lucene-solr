@@ -162,9 +162,6 @@ New Features
 Bug Fixes
 ----------------------
 
-* SOLR-5811: The Overseer will retry work items until success, which is a serious
-  problem if you hit a bad work item. (Mark Miller)
-  
 * SOLR-5796: Increase how long we are willing to wait for a core to see the ZK
   advertised leader in it's local state. (Timothy Potter, Mark Miller)  
 
@@ -333,6 +330,9 @@ Bug Fixes
   It now defaults to off, and if you were using solr.hdfs.blockcache.write.enabled
   explicitly, you should set it to false.
   (Mark Miller)
+
+* SOLR-5811: The Overseer will retry work items until success, which is a serious
+  problem if you hit a bad work item. (Mark Miller)
 
 ==================  4.7.0 ==================
 
