@@ -12,14 +12,10 @@ System Requirements
 
 Changes in Runtime Behavior
 
-* LUCENE-5472: IndexWriter.addDocument will now throw an IllegalArgumentException 
+* LUCENE-5472: IndexWriter.addDocument will now throw an IllegalArgumentException
   if a Term to be indexed exceeds IndexWriter.MAX_TERM_LENGTH.  To recreate previous
   behavior of silently ignoring these terms, use LengthFilter in your Analyzer.
   (hossman, Mike McCandless, Varun Thacker)
-
-* LUCENE-5532: AutomatonQuery.equals is no longer implemented as "accepts same language".
-  This was inconsistent with hashCode, and unnecessary for any subclasses in Lucene.
-  If you desire this in a custom subclass, minimize the automaton.  (Robert Muir)
 
 New Features
 
@@ -144,23 +140,6 @@ Optimizations
 
 Bug fixes
 
-* LUCENE-5450: Fix getField() NPE issues with SpanOr/SpanNear when they have an 
-  empty list of clauses. This can happen for example,  when a wildcard matches 
-  no terms.  (Tim Allison via Robert Muir)
-
-* LUCENE-5473: Throw IllegalArgumentException, not
-  NullPointerException, if the synonym map is empty when creating
-  SynonymFilter (帅广应 via Mike McCandless)
-
-* LUCENE-5432: EliasFanoDocIdSet: Fix number of index entry bits when the maximum
-  entry is a power of 2. (Paul Elschot via Adrien Grand)
-
-* LUCENE-5466: query is always null in countDocsWithClass() of SimpleNaiveBayesClassifier.
-  (Koji Sekiguchi)
-
-* LUCENE-5481: IndexWriter.forceMerge used to run a merge even if there was a
-  single segment in the index. (Adrien Grand, Mike McCandless)
-
 * LUCENE-5483: Fix inaccuracies in HunspellStemFilter. Multi-stage affix-stripping,
   prefix-suffix dependencies, and COMPLEXPREFIXES now work correctly according
   to the hunspell algorithm. Removed recursionCap parameter, as its no longer needed, rules for
@@ -176,33 +155,7 @@ Bug fixes
 * LUCENE-5507: Fix HunspellStemFilter loading of dictionaries with large amounts of aliases
   etc before the encoding declaration.  (Robert Muir)
 
-* LUCENE-5502: Fixed TermsFilter.equals that could return true for different
-  filters. (Igor Motov via Adrien Grand)
-  
-* LUCENE-5522: FacetsConfig didn't add drill-down terms for association facet 
-  fields labels. (Shai Erera)
-
-* LUCENE-5520: ToChildBlockJoinQuery would hit
-  ArrayIndexOutOfBoundsException if a parent document had no children
-  (Sally Ang via Mike McCandless)
-
-* LUCENE-5525: Implement MultiFacets.getAllDims, so you can do sparse
-  facets through DrillSideways, for example.  (Jose Peleteiro, Mike
-  McCandless)
-
-* LUCENE-5532: AutomatonQuery.hashCode was not thread-safe. (Robert Muir)
-
-* LUCENE-4978: Spatial RecursivePrefixTree queries could result in false-negatives for
-  indexed shapes within 1/2 maxDistErr from the edge of the query shape.  This meant
-  searching for a point by the same point as a query rarely worked.  (David Smiley)
-
 * LUCENE-5111: Fix WordDelimiterFilter to return offsets in correct order.  (Robert Muir)
-
-* LUCENE-5538: Fix FastVectorHighlighter bug with index-time synonyms when the
-  query is more complex than a single phrase.  (Robert Muir)
-
-* LUCENE-5544: Exceptions during IndexWriter.rollback could leak file handles
-  and the write lock. (Robert Muir)
 
 Test Framework
 
@@ -226,6 +179,59 @@ Documentation:
 
 * LUCENE-5534: Add javadocs to GreekStemmer methods. 
   (Stamatis Pitsios via Robert Muir)
+
+======================= Lucene 4.7.1 =======================
+
+Changes in Runtime Behavior
+
+* LUCENE-5532: AutomatonQuery.equals is no longer implemented as "accepts same language".
+  This was inconsistent with hashCode, and unnecessary for any subclasses in Lucene.
+  If you desire this in a custom subclass, minimize the automaton.  (Robert Muir)
+
+Bug Fixes
+
+* LUCENE-5450: Fix getField() NPE issues with SpanOr/SpanNear when they have an
+  empty list of clauses. This can happen for example,  when a wildcard matches
+  no terms.  (Tim Allison via Robert Muir)
+
+* LUCENE-5473: Throw IllegalArgumentException, not
+  NullPointerException, if the synonym map is empty when creating
+  SynonymFilter (帅广应 via Mike McCandless)
+
+* LUCENE-5432: EliasFanoDocIdSet: Fix number of index entry bits when the maximum
+  entry is a power of 2. (Paul Elschot via Adrien Grand)
+
+* LUCENE-5466: query is always null in countDocsWithClass() of SimpleNaiveBayesClassifier.
+  (Koji Sekiguchi)
+
+* LUCENE-5502: Fixed TermsFilter.equals that could return true for different
+  filters. (Igor Motov via Adrien Grand)
+
+* LUCENE-5522: FacetsConfig didn't add drill-down terms for association facet
+  fields labels. (Shai Erera)
+
+* LUCENE-5520: ToChildBlockJoinQuery would hit
+  ArrayIndexOutOfBoundsException if a parent document had no children
+  (Sally Ang via Mike McCandless)
+
+* LUCENE-5532: AutomatonQuery.hashCode was not thread-safe. (Robert Muir)
+
+* LUCENE-5525: Implement MultiFacets.getAllDims, so you can do sparse
+  facets through DrillSideways, for example.  (Jose Peleteiro, Mike
+  McCandless)
+
+* LUCENE-5481: IndexWriter.forceMerge used to run a merge even if there was a
+  single segment in the index. (Adrien Grand, Mike McCandless)
+
+* LUCENE-5538: Fix FastVectorHighlighter bug with index-time synonyms when the
+  query is more complex than a single phrase.  (Robert Muir)
+
+* LUCENE-5544: Exceptions during IndexWriter.rollback could leak file handles
+  and the write lock. (Robert Muir)
+
+* LUCENE-4978: Spatial RecursivePrefixTree queries could result in false-negatives for
+  indexed shapes within 1/2 maxDistErr from the edge of the query shape.  This meant
+  searching for a point by the same point as a query rarely worked.  (David Smiley)
 
 ======================= Lucene 4.7.0 =======================
 
