@@ -112,10 +112,7 @@ Bug Fixes
 * SOLR-5818: distrib search with custom comparator does not quite work correctly
   (Ryan Ernst)
 
-* SOLR-5839: ZookeeperInfoServlet does not trim path properly.
-  (Furkan KAMACI via Mark Miller)
-
-* SOLR-5858, SOLR-4812: edismax and dismax query parsers can be used for parsing 
+* SOLR-5858, SOLR-4812: edismax and dismax query parsers can be used for parsing
   highlight queries. (Alan Woodward, Tien Nguyen Manh)
 
 * SOLR-5893: On restarting overseer designate , move itself to front of the queue (Noble Paul)
@@ -276,6 +273,9 @@ Bug Fixes
 
 * SOLR-5834: Overseer threads are only being interrupted and not closed.
   (hossman, Mark Miller)
+
+* SOLR-5839: ZookeeperInfoServlet does not trim path properly.
+  (Furkan KAMACI via Mark Miller)
 
 Other Changes
 ---------------------
