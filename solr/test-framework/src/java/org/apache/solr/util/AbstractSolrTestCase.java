@@ -129,19 +129,6 @@ public abstract class AbstractSolrTestCase extends SolrTestCaseJ4 {
     return TestHarness.deleteByQuery(q, args);
   }
 
-
-  public static boolean recurseDelete(File f) {
-    if (f.isDirectory()) {
-      for (File sub : f.listFiles()) {
-        if (!recurseDelete(sub)) {
-          System.err.println("!!!! WARNING: best effort to remove " + sub.getAbsolutePath() + " FAILED !!!!!");
-          return false;
-        }
-      }
-    }
-    return f.delete();
-  }
-
   /** @see SolrTestCaseJ4#getFile */
   public static File getFile(String name) {
     return SolrTestCaseJ4.getFile(name);

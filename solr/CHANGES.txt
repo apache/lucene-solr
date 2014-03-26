@@ -187,6 +187,9 @@ Other Changes
 * SOLR-5903: SolrCore implements Closeable, cut over to using try-with-resources
   where possible. (Alan Woodward)
 
+* SOLR-5914: Cleanup and fix Solr's test cleanup code. 
+ (Mark Miller, Uwe Schindler)
+
 ==================  4.7.1  ==================
 
 Versions of Major Components

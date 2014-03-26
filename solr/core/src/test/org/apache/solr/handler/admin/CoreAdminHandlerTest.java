@@ -265,7 +265,6 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
       if (!runner.isStopped())  {
         runner.stop();
       }
-      recurseDelete(solrHomeDirectory);
     }
   }
 
