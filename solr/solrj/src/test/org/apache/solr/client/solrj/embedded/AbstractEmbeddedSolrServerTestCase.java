@@ -81,17 +81,6 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends LuceneTestCase 
 
     deleteAdditionalFiles();
 
-    File dataDir = new File(tempDir,"data");
-    String skip = System.getProperty("solr.test.leavedatadir");
-    if (null != skip && 0 != skip.trim().length()) {
-      log.info("NOTE: per solr.test.leavedatadir, dataDir will not be removed: " + dataDir.getAbsolutePath());
-    } else {
-      //Removing the temporary directory which contains the index (all other files should have been removed before)
-      if (!AbstractSolrTestCase.recurseDelete(tempDir)) {
-        log.warn("!!!! WARNING: best effort to remove " + dataDir.getAbsolutePath() + " FAILED !!!!!");
-      }
-    }
-
     super.tearDown();
   }
 

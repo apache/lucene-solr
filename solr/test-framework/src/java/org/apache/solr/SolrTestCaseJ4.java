@@ -30,11 +30,9 @@ import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -136,6 +134,19 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     public String bugUrl() default "None";
   }
   
+
+  /**
+   * Annotation for test classes to prevent TEMP_DIR cleanup.
+   */
+  @Documented
+  @Inherited
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.TYPE)
+  public @interface SuppressTempDirCleanUp {
+    /** Point to JIRA entry. */
+    public String bugUrl() default "None";
+  }
+  
   // these are meant to be accessed sequentially, but are volatile just to ensure any test
   // thread will read the latest value
   protected static volatile SSLTestConfig sslConfig;
@@ -174,23 +185,40 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   @AfterClass
   @SuppressWarnings("unused")
   private static void afterClass() throws Exception {
-    deleteCore();
-    resetExceptionIgnores();
-    endTrackingSearchers();
-    endTrackingZkClients();
-    resetFactory();
-    coreName = ConfigSolrXmlOld.DEFAULT_DEFAULT_CORE_NAME;
-    System.clearProperty("jetty.testMode");
-    System.clearProperty("tests.shardhandler.randomSeed");
-    System.clearProperty("enable.update.log");
-    System.clearProperty("useCompoundFile");
-    System.clearProperty("urlScheme");
-    
-    if(isSSLMode()) {
-      HttpClientUtil.setConfigurer(new HttpClientConfigurer());
+    try {
+      deleteCore();
+      resetExceptionIgnores();
+      endTrackingSearchers();
+      endTrackingZkClients();
+      resetFactory();
+      coreName = ConfigSolrXmlOld.DEFAULT_DEFAULT_CORE_NAME;
+    } finally {
+      try {
+        if (dataDir != null && dataDir.exists() && !recurseDelete(dataDir)) {
+          String msg = "!!!! WARNING: best effort to remove "
+              + dataDir.getAbsolutePath() + " FAILED !!!!!";
+          if (RandomizedContext.current().getTargetClass()
+              .isAnnotationPresent(SuppressTempDirCleanUp.class)) {
+            System.err.println(msg);
+          } else {
+            fail(msg);
+          }
+        }
+      } finally {
+        dataDir = null;
+        System.clearProperty("jetty.testMode");
+        System.clearProperty("tests.shardhandler.randomSeed");
+        System.clearProperty("enable.update.log");
+        System.clearProperty("useCompoundFile");
+        System.clearProperty("urlScheme");
+        
+        if (isSSLMode()) {
+          HttpClientUtil.setConfigurer(new HttpClientConfigurer());
+        }
+        // clean up static
+        sslConfig = null;
+      }
     }
-    // clean up static
-    sslConfig = null;
     
     IpTables.unblockAllPorts();
   }
@@ -514,7 +542,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   /**
    * The directory used to story the index managed by the TestHarness h
    */
-  protected static File dataDir;
+  protected static volatile File dataDir;
   
   // hack due to File dataDir
   protected static String hdfsDataDir;
@@ -634,22 +662,11 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static void deleteCore() {
     log.info("###deleteCore" );
     if (h != null) { h.close(); }
-    if (dataDir != null) {
-      String skip = System.getProperty("solr.test.leavedatadir");
-      if (null != skip && 0 != skip.trim().length()) {
-        System.err.println("NOTE: per solr.test.leavedatadir, dataDir will not be removed: " + dataDir.getAbsolutePath());
-      } else {
-        if (!recurseDelete(dataDir)) {
-          System.err.println("!!!! WARNING: best effort to remove " + dataDir.getAbsolutePath() + " FAILED !!!!!");
-        }
-      }
-    }
 
     if (factoryProp == null) {
       System.clearProperty("solr.directoryFactory");
     }
     
-    dataDir = null;
     solrConfig = null;
     h = null;
     lrf = null;

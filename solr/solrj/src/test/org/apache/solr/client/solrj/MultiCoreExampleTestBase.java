@@ -73,14 +73,6 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
   public void tearDown() throws Exception {
     super.tearDown();
     
-    String skip = System.getProperty("solr.test.leavedatadir");
-    if (null != skip && 0 != skip.trim().length()) {
-      System.err.println("NOTE: per solr.test.leavedatadir, dataDir2 will not be removed: " + dataDir2.getAbsolutePath());
-    } else {
-      if (!recurseDelete(dataDir2)) {
-        System.err.println("!!!! WARNING: best effort to remove " + dataDir2.getAbsolutePath() + " FAILED !!!!!");
-      }
-    }
     if(solrCore0 != null) solrCore0.shutdown();
     if(solrCore1 != null) solrCore1.shutdown();
     if(solrAdmin != null) solrAdmin.shutdown();

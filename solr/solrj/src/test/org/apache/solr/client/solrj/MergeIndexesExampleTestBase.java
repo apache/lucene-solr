@@ -87,15 +87,6 @@ public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
   @Override
   public void tearDown() throws Exception {
     super.tearDown();
-    
-    String skip = System.getProperty("solr.test.leavedatadir");
-    if (null != skip && 0 != skip.trim().length()) {
-      System.err.println("NOTE: per solr.test.leavedatadir, dataDir will not be removed: " + dataDir2.getAbsolutePath());
-    } else {
-      if (!recurseDelete(dataDir2)) {
-        System.err.println("!!!! WARNING: best effort to remove " + dataDir2.getAbsolutePath() + " FAILED !!!!!");
-      }
-    }
 
     cores.shutdown();
     

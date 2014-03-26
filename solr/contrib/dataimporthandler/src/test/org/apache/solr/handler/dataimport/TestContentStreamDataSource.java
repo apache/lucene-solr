@@ -58,7 +58,6 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
   @After
   public void tearDown() throws Exception {
     jetty.stop();
-    instance.tearDown();
     super.tearDown();
   }
 
@@ -174,9 +173,6 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
       FileUtils.copyFile(getFile(CONF_DIR + "dataconfig-contentstream.xml"), f);
     }
 
-    public void tearDown() throws Exception {
-      recurseDelete(homeDir);
-    }
   }
 
   private JettySolrRunner createJetty(SolrInstance instance) throws Exception {
