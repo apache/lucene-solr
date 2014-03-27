@@ -38,7 +38,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     initCore();
   }
 
-  private final File solrHomeDirectory = new File(TEMP_DIR, "org.apache.solr.core.TestCoreDiscovery" + File.separator + "solrHome");
+  private final File solrHomeDirectory = new File(dataDir, "org.apache.solr.core.TestCoreDiscovery" + File.separator + "solrHome");
 
   private void setMeUp(String alternateCoreDir) throws Exception {
     if (solrHomeDirectory.exists()) {
@@ -198,7 +198,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
   @Test
   public void testAlternateCoreDir() throws Exception {
-    File alt = new File(TEMP_DIR, "alternateCoreDir");
+    File alt = new File(dataDir, "alternateCoreDir");
     if (alt.exists()) FileUtils.deleteDirectory(alt);
     alt.mkdirs();
     setMeUp(alt.getAbsolutePath());
@@ -218,7 +218,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   }
   @Test
   public void testNoCoreDir() throws Exception {
-    File noCoreDir = new File(TEMP_DIR, "noCoreDir");
+    File noCoreDir = new File(dataDir, "noCoreDir");
     if (noCoreDir.exists()) FileUtils.deleteDirectory(noCoreDir);
     noCoreDir.mkdirs();
     setMeUp(noCoreDir.getAbsolutePath());

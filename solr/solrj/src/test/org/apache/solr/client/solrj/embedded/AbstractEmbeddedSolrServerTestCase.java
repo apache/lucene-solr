@@ -17,19 +17,17 @@ package org.apache.solr.client.solrj.embedded;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase;
+import java.io.File;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-
-public abstract class AbstractEmbeddedSolrServerTestCase extends LuceneTestCase {
+public abstract class AbstractEmbeddedSolrServerTestCase extends SolrTestCaseJ4 {
 
   protected static Logger log = LoggerFactory.getLogger(AbstractEmbeddedSolrServerTestCase.class);
 
@@ -40,7 +38,7 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends LuceneTestCase 
 
   protected void createTempDir() {
     if (tempDir == null) {
-      tempDir = new File(TEMP_DIR, "solrtest-" + getTestClass().getSimpleName() + "-" + System.currentTimeMillis());
+      tempDir = new File(dataDir, "solrtest-" + getTestClass().getSimpleName() + "-" + System.currentTimeMillis());
       tempDir.mkdirs();
     }
   }

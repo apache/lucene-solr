@@ -58,8 +58,7 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    createTempDir();
-    dfsCluster = HdfsTestUtil.setupClass(TEMP_DIR.getAbsolutePath()
+    dfsCluster = HdfsTestUtil.setupClass(dataDir.getAbsolutePath()
         + File.separator + HdfsDirectoryTest.class.getName() + "_hdfsdir-"
         + System.currentTimeMillis());
   }

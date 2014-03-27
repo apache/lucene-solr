@@ -68,7 +68,7 @@ public class CoreMergeIndexesAdminHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testMergeIndexesCoreAdminHandler() throws Exception {
-    final File workDir = new File(TEMP_DIR, this.getClass().getName());
+    final File workDir = new File(dataDir, this.getClass().getName());
 
     if (workDir.exists()) {
       FileUtils.deleteDirectory(workDir);

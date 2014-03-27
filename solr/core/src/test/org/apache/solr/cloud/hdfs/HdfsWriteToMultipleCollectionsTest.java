@@ -60,7 +60,7 @@ public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
   @BeforeClass
   public static void setupClass() throws Exception {
     schemaString = "schema15.xml";      // we need a string id
-    dfsCluster = HdfsTestUtil.setupClass(new File(TEMP_DIR,
+    dfsCluster = HdfsTestUtil.setupClass(new File(dataDir,
         HdfsBasicDistributedZk2Test.class.getName() + "_"
             + System.currentTimeMillis()).getAbsolutePath());
     System.setProperty(SOLR_HDFS_HOME, dfsCluster.getURI().toString() + "/solr");

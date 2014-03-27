@@ -42,7 +42,7 @@ import java.util.ArrayList;
 import static org.junit.internal.matchers.StringContains.containsString;
 
 public class ModifyConfFileTest extends SolrTestCaseJ4 {
-  private File solrHomeDirectory = new File(TEMP_DIR, this.getClass().getName());
+  private File solrHomeDirectory = new File(dataDir, this.getClass().getName());
 
   @Rule
   public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());

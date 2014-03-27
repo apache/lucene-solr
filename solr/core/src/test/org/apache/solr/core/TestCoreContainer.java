@@ -67,7 +67,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
   private CoreContainer init(String dirName) throws Exception {
 
-    solrHomeDirectory = new File(TEMP_DIR, this.getClass().getName() + dirName);
+    solrHomeDirectory = new File(dataDir, this.getClass().getName() + dirName);
 
     if (solrHomeDirectory.exists()) {
       FileUtils.deleteDirectory(solrHomeDirectory);
@@ -151,7 +151,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   @Test
   public void testNoCores() throws IOException, ParserConfigurationException, SAXException {
     //create solrHome
-    File solrHomeDirectory = new File(TEMP_DIR, this.getClass().getName()
+    File solrHomeDirectory = new File(dataDir, this.getClass().getName()
         + "_noCores");
     
     boolean oldSolrXml = random().nextBoolean();

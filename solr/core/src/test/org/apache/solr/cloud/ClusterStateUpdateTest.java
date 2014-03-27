@@ -68,7 +68,7 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
   private File dataDir4;
 
 
-  private static final File solrHomeDirectory = new File(TEMP_DIR, "ZkControllerTest");
+  private static volatile File solrHomeDirectory = new File(dataDir, "ZkControllerTest");
 
   @BeforeClass
   public static void beforeClass() throws IOException {
@@ -94,7 +94,6 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    createTempDir();
     System.setProperty("zkClientTimeout", "3000");
 
     zkDir = dataDir.getAbsolutePath() + File.separator

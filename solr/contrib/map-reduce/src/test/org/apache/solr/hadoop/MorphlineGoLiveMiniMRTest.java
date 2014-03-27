@@ -108,7 +108,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
   private final String inputAvroFile2;
   private final String inputAvroFile3;
 
-  private static final File solrHomeDirectory = new File(TEMP_DIR, MorphlineGoLiveMiniMRTest.class.getName());
+  private static final File solrHomeDirectory = new File(dataDir, MorphlineGoLiveMiniMRTest.class.getName());
   
   @Override
   public String getSolrHome() {
@@ -141,7 +141,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     AbstractZkTestCase.SOLRHOME = solrHomeDirectory;
     FileUtils.copyDirectory(MINIMR_INSTANCE_DIR, solrHomeDirectory);
 
-    tempDir = TEMP_DIR + "/test-morphlines-" + System.currentTimeMillis();
+    tempDir = dataDir + "/test-morphlines-" + System.currentTimeMillis();
     new File(tempDir).mkdirs();
     FileUtils.copyFile(new File(RESOURCES_DIR + "/custom-mimetypes.xml"), new File(tempDir + "/custom-mimetypes.xml"));
     
@@ -164,7 +164,6 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     conf.set(YarnConfiguration.DEFAULT_NM_LOG_DIRS, dataDir + File.separator +  "nm-logs");
 
     
-    createTempDir();
     new File(dataDir + File.separator +  "nm-local-dirs").mkdirs();
     
     System.setProperty("test.build.dir", dataDir + File.separator + "hdfs" + File.separator + "test-build-dir");

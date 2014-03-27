@@ -16,8 +16,10 @@ package org.apache.solr.cloud;
  * the License.
  */
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
-import com.google.common.base.Charsets;
+import java.io.File;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -32,11 +34,8 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.nio.charset.Charset;
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import com.google.common.base.Charsets;
 
 public class SolrXmlInZkTest extends SolrTestCaseJ4 {
 
@@ -61,8 +60,7 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
   }
 
   private void setUpZkAndDiskXml(boolean toZk, boolean leaveOnLocal) throws Exception {
-
-    createTempDir();
+    recurseDelete(dataDir);
     File solrHome = new File(dataDir, "home");
     copyMinConf(new File(solrHome, "myCollect"));
     if (leaveOnLocal) {

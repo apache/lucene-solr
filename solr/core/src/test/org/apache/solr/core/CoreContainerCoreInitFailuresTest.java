@@ -37,7 +37,7 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
   private void init(final String dirSuffix) {
     // would be nice to do this in an @Before method,
     // but junit doesn't let @Before methods have test names
-    solrHome = new File(TEMP_DIR, this.getClass().getName() + "_" + dirSuffix);
+    solrHome = new File(dataDir, this.getClass().getName() + "_" + dirSuffix);
     assertTrue("Failed to mkdirs solrhome [" + solrHome + "]", solrHome.mkdirs());
   }
 

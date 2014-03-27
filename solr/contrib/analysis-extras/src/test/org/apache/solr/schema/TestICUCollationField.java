@@ -62,7 +62,7 @@ public class TestICUCollationField extends SolrTestCaseJ4 {
    */
   public static String setupSolrHome() throws Exception {
     // make a solr home underneath the test's TEMP_DIR
-    File tmpFile = File.createTempFile("test", "tmp", TEMP_DIR);
+    File tmpFile = File.createTempFile("test", "tmp", dataDir);
     tmpFile.delete();
     tmpFile.mkdir();
     

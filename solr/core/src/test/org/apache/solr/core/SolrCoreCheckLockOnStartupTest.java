@@ -40,9 +40,6 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
 
     System.setProperty("solr.directoryFactory", "org.apache.solr.core.SimpleFSDirectoryFactory");
 
-    //explicitly creates the temp dataDir so we know where the index will be located
-    createTempDir();
-
     IndexWriterConfig indexWriterConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, null);
     Directory directory = newFSDirectory(new File(dataDir, "index"));
     //creates a new index on the known location

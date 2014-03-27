@@ -54,7 +54,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
 
     // sometimes randomly use an absolute File path instead 
     if (random().nextBoolean()) {
-      healthcheckFile = new File(TEMP_DIR, fileName);
+      healthcheckFile = new File(dataDir, fileName);
       fileNameParam = healthcheckFile.getAbsolutePath();
     } 
       

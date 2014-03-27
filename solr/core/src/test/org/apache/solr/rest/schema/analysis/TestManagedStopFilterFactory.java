@@ -44,8 +44,7 @@ public class TestManagedStopFilterFactory extends RestTestBase {
 
   @Before
   public void before() throws Exception {
-    createTempDir();
-    tmpSolrHome = new File(TEMP_DIR + File.separator + TestManagedStopFilterFactory.class.getSimpleName()
+    tmpSolrHome = new File(dataDir + File.separator + TestManagedStopFilterFactory.class.getSimpleName()
                           + System.currentTimeMillis());
     tmpConfDir = new File(tmpSolrHome, confDir);
     FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());

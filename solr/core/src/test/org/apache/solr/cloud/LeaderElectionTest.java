@@ -55,7 +55,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() {
-    createTempDir();
+
   }
   
   @AfterClass

@@ -42,7 +42,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
 
   public CoreContainer setupContainer(String testName, String configSetsBaseDir) {
 
-    File testDirectory = new File(TEMP_DIR, testName);
+    File testDirectory = new File(dataDir, testName);
     testDirectory.mkdirs();
 
     System.setProperty("configsets", configSetsBaseDir);
@@ -95,7 +95,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
 
   @Test
   public void testConfigSetOnCoreReload() throws IOException {
-    File testDirectory = new File(TEMP_DIR, "core-reload");
+    File testDirectory = new File(dataDir, "core-reload");
     testDirectory.mkdirs();
     File configSetsDir = new File(testDirectory, "configsets");
 

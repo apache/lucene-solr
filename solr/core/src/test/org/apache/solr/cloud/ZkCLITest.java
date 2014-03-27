@@ -74,7 +74,6 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     log.info("####SETUP_START " + getTestName());
-    createTempDir();
     
     boolean useNewSolrXml = random().nextBoolean();
     
@@ -231,7 +230,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     assertEquals(confsetname, collectionProps.getStr("configName"));
     
     // test down config
-    File confDir = new File(TEMP_DIR,
+    File confDir = new File(dataDir,
         "solrtest-confdropspot-" + this.getClass().getName() + "-" + System.currentTimeMillis());
     
     assertFalse(confDir.exists());
@@ -281,7 +280,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     byte [] data = new String("getFileNode-data").getBytes("UTF-8");
     this.zkClient.create(getNode, data, CreateMode.PERSISTENT, true);
 
-    File file = new File(TEMP_DIR,
+    File file = new File(dataDir,
         "solrtest-getfile-" + this.getClass().getName() + "-" + System.currentTimeMillis());
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
         "getfile", getNode, file.getAbsolutePath()};
@@ -295,7 +294,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   public void testGetFileNotExists() throws Exception {
     String getNode = "/getFileNotExistsNode";
 
-    File file = new File(TEMP_DIR,
+    File file = new File(dataDir,
         "solrtest-getfilenotexists-" + this.getClass().getName() + "-" + System.currentTimeMillis());
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
         "getfile", getNode, file.getAbsolutePath()};

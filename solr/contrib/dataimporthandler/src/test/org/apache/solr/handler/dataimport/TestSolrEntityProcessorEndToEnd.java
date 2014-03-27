@@ -317,7 +317,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
 
     public void setUp() throws Exception {
       
-      File home = new File(TEMP_DIR, getClass().getName() + "-"
+      File home = new File(dataDir, getClass().getName() + "-"
           + System.currentTimeMillis());
       
       homeDir = new File(home + "inst");

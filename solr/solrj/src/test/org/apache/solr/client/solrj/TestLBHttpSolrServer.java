@@ -284,7 +284,7 @@ public class TestLBHttpSolrServer extends SolrTestCaseJ4 {
 
 
     public void setUp() throws Exception {
-      File home = new File(LuceneTestCase.TEMP_DIR,
+      File home = new File(dataDir,
               getClass().getName() + "-" + System.currentTimeMillis());
 
 

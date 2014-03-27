@@ -62,7 +62,7 @@ public class TestSolrXmlPersistor  extends SolrTestCaseJ4 {
 
     final String solrxml = "<solr><cores></cores></solr>";
 
-    final File solrHomeDirectory = new File(TEMP_DIR, "ZkControllerTest");
+    final File solrHomeDirectory = new File(dataDir, "ZkControllerTest");
     try {
       if (solrHomeDirectory.exists()) {
         FileUtils.deleteDirectory(solrHomeDirectory);
