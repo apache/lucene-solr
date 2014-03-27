@@ -167,6 +167,9 @@ Bug Fixes
 
 * SOLR-5893: On restarting overseer designate , move itself to front of the queue (Noble Paul)
 
+* SOLR-5915: Attempts to specify the parserImpl for
+  solr.PreAnalyzedField fieldtype failed.  (Mike McCandless)
+
 Optimizations
 ----------------------
 * SOLR-1880: Distributed Search skips GET_FIELDS stage if EXECUTE_QUERY
