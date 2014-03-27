@@ -48,9 +48,11 @@ public class TestInputIterator extends LuceneTestCase {
     TreeMap<BytesRef, SimpleEntry<Long, BytesRef>> sorted = new TreeMap<>(comparator);
     TreeMap<BytesRef, Long> sortedWithoutPayload = new TreeMap<>(comparator);
     TreeMap<BytesRef, SimpleEntry<Long, Set<BytesRef>>> sortedWithContext = new TreeMap<>(comparator);
+    TreeMap<BytesRef, SimpleEntry<Long, SimpleEntry<BytesRef, Set<BytesRef>>>> sortedWithPayloadAndContext = new TreeMap<>(comparator);
     Input[] unsorted = new Input[num];
     Input[] unsortedWithoutPayload = new Input[num];
     Input[] unsortedWithContexts = new Input[num];
+    Input[] unsortedWithPayloadAndContext = new Input[num];
     Set<BytesRef> ctxs;
     for (int i = 0; i < num; i++) {
       BytesRef key;
@@ -67,9 +69,11 @@ public class TestInputIterator extends LuceneTestCase {
       sortedWithoutPayload.put(key, value);
       sorted.put(key, new SimpleEntry<>(value, payload));
       sortedWithContext.put(key, new SimpleEntry<>(value, ctxs));
+      sortedWithPayloadAndContext.put(key, new SimpleEntry<>(value, new SimpleEntry<>(payload, ctxs)));
       unsorted[i] = new Input(key, value, payload);
       unsortedWithoutPayload[i] = new Input(key, value);
       unsortedWithContexts[i] = new Input(key, value, ctxs);
+      unsortedWithPayloadAndContext[i] = new Input(key, value, payload, ctxs);
     }
     
     // test the sorted iterator wrapper with payloads
@@ -93,6 +97,20 @@ public class TestInputIterator extends LuceneTestCase {
       assertEquals(entry.getValue().getKey().longValue(), wrapper.weight());
       Set<BytesRef> actualCtxs = entry.getValue().getValue();
       assertEquals(actualCtxs, wrapper.contexts());
+    }
+    assertNull(wrapper.next());
+    
+    // test the sorted iterator wrapper with contexts and payload
+    wrapper = new SortedInputIterator(new InputArrayIterator(unsortedWithPayloadAndContext), comparator);
+    Iterator<Map.Entry<BytesRef, SimpleEntry<Long, SimpleEntry<BytesRef, Set<BytesRef>>>>> expectedPayloadContextEntries = sortedWithPayloadAndContext.entrySet().iterator();
+    while (expectedPayloadContextEntries.hasNext()) {
+      Map.Entry<BytesRef, SimpleEntry<Long, SimpleEntry<BytesRef, Set<BytesRef>>>> entry = expectedPayloadContextEntries.next();
+      assertEquals(entry.getKey(), wrapper.next());
+      assertEquals(entry.getValue().getKey().longValue(), wrapper.weight());
+      Set<BytesRef> actualCtxs = entry.getValue().getValue().getValue();
+      assertEquals(actualCtxs, wrapper.contexts());
+      BytesRef actualPayload = entry.getValue().getValue().getKey();
+      assertEquals(actualPayload, wrapper.payload());
     }
     assertNull(wrapper.next());
     
