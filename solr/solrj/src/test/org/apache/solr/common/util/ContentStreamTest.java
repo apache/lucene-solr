@@ -58,12 +58,14 @@ public class ContentStreamTest extends SolrTestCaseJ4
     FileInputStream fis = new FileInputStream(file);
     InputStreamReader isr = new InputStreamReader(
         new FileInputStream(file), "UTF-8");
+    Reader r = stream.getReader();
     try {
       assertEquals(file.length(), stream.getSize().intValue());
       assertTrue(IOUtils.contentEquals(fis, s));
-      assertTrue(IOUtils.contentEquals(isr, stream.getReader()));
+      assertTrue(IOUtils.contentEquals(isr, r));
     } finally {
       s.close();
+      r.close();
       isr.close();
       fis.close();
     }
