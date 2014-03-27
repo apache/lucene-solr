@@ -30,7 +30,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.store.hdfs.HdfsDirectory;
+import org.apache.lucene.util.TestUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -103,9 +103,7 @@ public class BlockDirectoryTest extends LuceneTestCase {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    file = new File(TEMP_DIR, HdfsDirectory.class.getName() + "-" + System.currentTimeMillis());
-    rm(file);
-    file.mkdirs();
+    file = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
     FSDirectory dir = FSDirectory.open(new File(file, "base"));
     mapperCache = new MapperCache();
     directory = new BlockDirectory("test", dir, mapperCache, null, true, true);

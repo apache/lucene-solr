@@ -447,7 +447,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
 
     public NodeState(Random random, int nodeID, int numNodes) throws IOException {
       myNodeID = nodeID;
-      dir = newFSDirectory(TestUtil.getTempDir("ShardSearchingTestBase"));
+      dir = newFSDirectory(TestUtil.createTempDir("ShardSearchingTestBase"));
       // TODO: set warmer
       MockAnalyzer analyzer = new MockAnalyzer(random());
       analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));

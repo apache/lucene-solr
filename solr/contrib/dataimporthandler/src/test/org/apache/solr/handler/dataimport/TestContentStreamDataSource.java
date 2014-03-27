@@ -16,7 +16,12 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import java.io.File;
+import java.util.List;
+
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.DirectXmlRequest;
@@ -25,13 +30,9 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.io.File;
-import java.util.List;
 
 /**
  * Test for ContentStreamDataSource
@@ -150,10 +151,7 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
 
 
     public void setUp() throws Exception {
-
-      File home = new File(TEMP_DIR,
-              getClass().getName() + "-" + System.currentTimeMillis());
-
+      File home = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
 
       homeDir = new File(home, "inst");
       dataDir = new File(homeDir + "/collection1", "data");

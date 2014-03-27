@@ -43,6 +43,8 @@ import org.apache.hadoop.util.JarFinder;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -108,8 +110,8 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
   private final String inputAvroFile2;
   private final String inputAvroFile3;
 
-  private static final File solrHomeDirectory = new File(TEMP_DIR, MorphlineGoLiveMiniMRTest.class.getName());
-  
+  private static File solrHomeDirectory;
+
   @Override
   public String getSolrHome() {
     return solrHomeDirectory.getPath();
@@ -138,11 +140,11 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     assumeFalse("FIXME: This test fails under Java 8 due to the Saxon dependency - see SOLR-1301", Constants.JRE_IS_MINIMUM_JAVA8);
     assumeFalse("FIXME: This test fails under J9 due to the Saxon dependency - see SOLR-1301", System.getProperty("java.vm.info", "<?>").contains("IBM J9"));
     
+    solrHomeDirectory = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
     AbstractZkTestCase.SOLRHOME = solrHomeDirectory;
-    FileUtils.copyDirectory(MINIMR_INSTANCE_DIR, solrHomeDirectory);
+    FileUtils.copyDirectory(MINIMR_INSTANCE_DIR, AbstractZkTestCase.SOLRHOME);
 
-    tempDir = TEMP_DIR + "/test-morphlines-" + System.currentTimeMillis();
-    new File(tempDir).mkdirs();
+    tempDir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName()).getAbsolutePath();
     FileUtils.copyFile(new File(RESOURCES_DIR + "/custom-mimetypes.xml"), new File(tempDir + "/custom-mimetypes.xml"));
     
     AbstractSolrMorphlineTestBase.setupMorphline(tempDir, "test-morphlines/solrCellDocumentTypes", true);

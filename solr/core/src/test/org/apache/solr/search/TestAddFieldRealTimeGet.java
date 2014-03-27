@@ -17,14 +17,15 @@ package org.apache.solr.search;
  * limitations under the License.
  */
 
-import org.apache.commons.io.FileUtils;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.TestManagedSchema;
-import org.junit.Before;
-
 import java.io.File;
 import java.util.Collections;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
+import org.junit.Before;
 
 public class TestAddFieldRealTimeGet extends TestRTGBase {
 
@@ -37,8 +38,7 @@ public class TestAddFieldRealTimeGet extends TestRTGBase {
   @Before
   private void initManagedSchemaCore() throws Exception {
     createTempDir();
-    final String tmpSolrHomePath
-        = TEMP_DIR + File.separator + TestManagedSchema.class.getSimpleName() + System.currentTimeMillis();
+    final String tmpSolrHomePath = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName()).getAbsolutePath();
     tmpSolrHome = new File(tmpSolrHomePath).getAbsoluteFile();
     tmpConfDir = new File(tmpSolrHome, confDir);
     File testHomeConfDir = new File(TEST_HOME(), confDir);
@@ -46,7 +46,7 @@ public class TestAddFieldRealTimeGet extends TestRTGBase {
     final String schemaFileName = "schema-id-and-version-fields-only.xml";
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, configFileName), tmpConfDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, schemaFileName), tmpConfDir);
-     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig.snippet.randomindexconfig.xml"), tmpConfDir);
+    FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig.snippet.randomindexconfig.xml"), tmpConfDir);
 
     // initCore will trigger an upgrade to managed schema, since the solrconfig has
     // <schemaFactory class="ManagedIndexSchemaFactory" ... />

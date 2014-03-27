@@ -26,6 +26,8 @@ import java.util.regex.Pattern;
 
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.BasicResponseHandler;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
@@ -415,15 +417,15 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("qt", "/replication");
     params.set("command", "backup");
-    File location = new File(TEMP_DIR, BasicDistributedZk2Test.class.getName() + "-backupdir-" + System.currentTimeMillis());
+    File location = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName() + "-backupdir");
     params.set("location", location.getAbsolutePath());
 
     QueryRequest request = new QueryRequest(params);
     NamedList<Object> results = client.request(request );
     
     checkForBackupSuccess(client, location);
-
   }
+
   private void checkForBackupSuccess(final HttpSolrServer client, File location)
       throws InterruptedException, IOException {
     class CheckStatus extends Thread {

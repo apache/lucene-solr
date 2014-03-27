@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.cloud.CollectionsAPIDistributedZkTest;
 import org.junit.AfterClass;
@@ -38,9 +39,7 @@ public class HdfsCollectionsAPIDistributedZkTest extends CollectionsAPIDistribut
   
   @BeforeClass
   public static void setupClass() throws Exception {
-    dfsCluster = HdfsTestUtil.setupClass(new File(TEMP_DIR,
-        HdfsCollectionsAPIDistributedZkTest.class.getName() + "_"
-            + System.currentTimeMillis()).getAbsolutePath());
+    dfsCluster = HdfsTestUtil.setupClass();
     
     System.setProperty("solr.hdfs.home", dfsCluster.getURI().toString() + "/solr");
     System.setProperty("solr.hdfs.blockcache.enabled", "false");

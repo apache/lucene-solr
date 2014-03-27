@@ -386,7 +386,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
    * Test WriteLineDoc and LineDocSource.
    */
   public void testLineDocFile() throws Exception {
-    File lineFile = new File(TEMP_DIR, "test.reuters.lines.txt");
+    File lineFile = TestUtil.createTempFile("test.reuters.lines", ".txt");
 
     // We will call WriteLineDocs this many times
     final int NUM_TRY_DOCS = 50;

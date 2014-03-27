@@ -438,7 +438,7 @@ void assertTermDocsCount(String msg,
   
 public void testFilesOpenClose() throws IOException {
       // Create initial data set
-      File dirFile = TestUtil.getTempDir("TestIndexReader.testFilesOpenClose");
+      File dirFile = TestUtil.createTempDir("TestIndexReader.testFilesOpenClose");
       Directory dir = newFSDirectory(dirFile);
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
       addDoc(writer, "test");
@@ -467,7 +467,7 @@ public void testFilesOpenClose() throws IOException {
   }
 
   public void testOpenReaderAfterDelete() throws IOException {
-    File dirFile = TestUtil.getTempDir("deletetest");
+    File dirFile = TestUtil.createTempDir("deletetest");
     Directory dir = newFSDirectory(dirFile);
     try {
       DirectoryReader.open(dir);
@@ -715,7 +715,7 @@ public void testFilesOpenClose() throws IOException {
   // DirectoryReader on a non-existent directory, you get a
   // good exception
   public void testNoDir() throws Throwable {
-    File tempDir = TestUtil.getTempDir("doesnotexist");
+    File tempDir = TestUtil.createTempDir("doesnotexist");
     TestUtil.rmDir(tempDir);
     Directory dir = newFSDirectory(tempDir);
     try {
@@ -1090,7 +1090,7 @@ public void testFilesOpenClose() throws IOException {
   }
 
   public void testIndexExistsOnNonExistentDirectory() throws Exception {
-    File tempDir = TestUtil.getTempDir("testIndexExistsOnNonExistentDirectory");
+    File tempDir = TestUtil.createTempDir("testIndexExistsOnNonExistentDirectory");
     tempDir.delete();
     Directory dir = newFSDirectory(tempDir);
     assertFalse(DirectoryReader.indexExists(dir));

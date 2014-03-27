@@ -941,10 +941,12 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
         map[origordinal] = newordinal;
       }
       in.close();
+
       // Delete the temporary file, which is no longer needed.
       if (!tmpfile.delete()) {
         tmpfile.deleteOnExit();
       }
+
       return map;
     }
   }

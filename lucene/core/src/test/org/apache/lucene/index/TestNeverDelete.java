@@ -35,7 +35,7 @@ import org.apache.lucene.util.TestUtil;
 public class TestNeverDelete extends LuceneTestCase {
 
   public void testIndexing() throws Exception {
-    final File tmpDir = TestUtil.getTempDir("TestNeverDelete");
+    final File tmpDir = TestUtil.createTempDir("TestNeverDelete");
     final BaseDirectoryWrapper d = newFSDirectory(tmpDir);
 
     // We want to "see" files removed if Lucene removed

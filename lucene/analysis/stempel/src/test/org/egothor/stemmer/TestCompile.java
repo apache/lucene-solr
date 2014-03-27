@@ -75,7 +75,7 @@ import org.apache.lucene.util.TestUtil;
 public class TestCompile extends LuceneTestCase {
   
   public void testCompile() throws Exception {
-    File dir = TestUtil.getTempDir("testCompile");
+    File dir = TestUtil.createTempDir("testCompile");
     dir.mkdirs();
     InputStream input = getClass().getResourceAsStream("testRules.txt");
     File output = new File(dir, "testRules.txt");
@@ -91,7 +91,7 @@ public class TestCompile extends LuceneTestCase {
   }
   
   public void testCompileBackwards() throws Exception {
-    File dir = TestUtil.getTempDir("testCompile");
+    File dir = TestUtil.createTempDir("testCompile");
     dir.mkdirs();
     InputStream input = getClass().getResourceAsStream("testRules.txt");
     File output = new File(dir, "testRules.txt");
@@ -107,7 +107,7 @@ public class TestCompile extends LuceneTestCase {
   }
   
   public void testCompileMulti() throws Exception {
-    File dir = TestUtil.getTempDir("testCompile");
+    File dir = TestUtil.createTempDir("testCompile");
     dir.mkdirs();
     InputStream input = getClass().getResourceAsStream("testRules.txt");
     File output = new File(dir, "testRules.txt");

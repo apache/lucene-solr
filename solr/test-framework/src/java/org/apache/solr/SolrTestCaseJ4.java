@@ -540,7 +540,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
 
   /**
-   * The directory used to story the index managed by the TestHarness h
+   * The directory used to story the index managed by the TestHarness
    */
   protected static volatile File dataDir;
   
@@ -563,10 +563,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   private static String factoryProp;
 
   public static void createTempDir() {
-    String cname = getSimpleClassName();
-    dataDir = new File(TEMP_DIR,
-            "solrtest-" + cname + "-" + System.currentTimeMillis());
-    dataDir.mkdirs();
+    dataDir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName() + "-datadir");
     System.err.println("Creating dataDir: " + dataDir.getAbsolutePath());
   }
 

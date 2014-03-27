@@ -45,7 +45,7 @@ public class Test2BFST extends LuceneTestCase {
     IntsRef input = new IntsRef(ints, 0, ints.length);
     long seed = random().nextLong();
 
-    Directory dir = new MMapDirectory(TestUtil.getTempDir("2BFST"));
+    Directory dir = new MMapDirectory(TestUtil.createTempDir("2BFST"));
 
     for(int doPackIter=0;doPackIter<2;doPackIter++) {
       boolean doPack = doPackIter == 1;

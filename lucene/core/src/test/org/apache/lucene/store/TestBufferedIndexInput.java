@@ -222,7 +222,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
     }
 
     public void testSetBufferSize() throws IOException {
-      File indexDir = TestUtil.getTempDir("testSetBufferSize");
+      File indexDir = TestUtil.createTempDir("testSetBufferSize");
       MockFSDirectory dir = new MockFSDirectory(indexDir, random());
       try {
         IndexWriter writer = new IndexWriter(

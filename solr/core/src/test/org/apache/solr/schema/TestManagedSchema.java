@@ -16,8 +16,17 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Pattern;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
@@ -28,13 +37,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.After;
 import org.junit.Before;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.regex.Pattern;
 
 public class TestManagedSchema extends AbstractBadConfigTestBase {
 
@@ -47,8 +49,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
   @Before
   private void initManagedSchemaCore() throws Exception {
     createTempDir();
-    final String tmpSolrHomePath 
-        = TEMP_DIR + File.separator + TestManagedSchema.class.getSimpleName() + System.currentTimeMillis();
+    final String tmpSolrHomePath = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName()).getAbsolutePath();
     tmpSolrHome = new File(tmpSolrHomePath).getAbsoluteFile();
     tmpConfDir = new File(tmpSolrHome, confDir);
     File testHomeConfDir = new File(TEST_HOME(), confDir);

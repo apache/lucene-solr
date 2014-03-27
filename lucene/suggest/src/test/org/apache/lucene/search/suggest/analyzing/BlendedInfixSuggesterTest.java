@@ -45,7 +45,7 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
         new Input("star wars: episode v - the empire strikes back", 8, payload)
     };
 
-    File tempDir = TestUtil.getTempDir("BlendedInfixSuggesterTest");
+    File tempDir = TestUtil.createTempDir("BlendedInfixSuggesterTest");
 
     Analyzer a = new StandardAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET);
     BlendedInfixSuggester suggester = new BlendedInfixSuggester(TEST_VERSION_CURRENT, newFSDirectory(tempDir), a, a,
@@ -84,7 +84,7 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
         new Input("top of the lake", w, pl)
     };
 
-    File tempDir = TestUtil.getTempDir("BlendedInfixSuggesterTest");
+    File tempDir = TestUtil.createTempDir("BlendedInfixSuggesterTest");
     Analyzer a = new StandardAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET);
 
     // BlenderType.LINEAR is used by default (remove position*10%)
@@ -125,7 +125,7 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
         new Input("the returned", 10, ret),
     };
 
-    File tempDir = TestUtil.getTempDir("BlendedInfixSuggesterTest");
+    File tempDir = TestUtil.createTempDir("BlendedInfixSuggesterTest");
     Analyzer a = new StandardAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET);
 
     // if factor is small, we don't get the expected element
@@ -175,7 +175,7 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
         new Input("the returned", 10, ret),
     };
 
-    File tempDir = TestUtil.getTempDir("BlendedInfixSuggesterTest");
+    File tempDir = TestUtil.createTempDir("BlendedInfixSuggesterTest");
     Analyzer a = new StandardAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET);
 
     // if factor is small, we don't get the expected element

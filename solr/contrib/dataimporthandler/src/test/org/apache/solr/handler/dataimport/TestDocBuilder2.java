@@ -20,6 +20,8 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.request.LocalSolrQueryRequest;
 
 import java.util.ArrayList;
@@ -240,10 +242,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   @Test
   @Ignore("Fix Me. See SOLR-4103.")
   public void testFileListEntityProcessor_lastIndexTime() throws Exception  {
-    File tmpdir = File.createTempFile("test", "tmp", TEMP_DIR);
-    tmpdir.delete();
-    tmpdir.mkdir();
-    tmpdir.deleteOnExit();
+    File tmpdir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
 
     Map<String, String> params = createMap("baseDir", tmpdir.getAbsolutePath());
 

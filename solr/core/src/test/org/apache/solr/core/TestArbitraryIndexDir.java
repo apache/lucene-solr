@@ -33,7 +33,8 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.Version;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.handler.SnapPuller;
@@ -73,11 +74,7 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
   public void setUp() throws Exception {
     super.setUp();
 
-    dataDir = new File(TEMP_DIR,
-        getClass().getName() + "-" + System.currentTimeMillis() + System.getProperty("file.separator") + "solr"
-        + System.getProperty("file.separator") + "data");
-    dataDir.mkdirs();
-
+    dataDir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
     solrConfig = TestHarness.createConfig(getSolrHome(), "solrconfig.xml");
     h = new TestHarness( dataDir.getAbsolutePath(),
         solrConfig,

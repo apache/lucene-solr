@@ -44,7 +44,7 @@ public class TestDemo extends LuceneTestCase {
 
   public void testIndexSearch() throws Exception {
     File dir = getDataFile("test-files/docs");
-    File indexDir = TestUtil.getTempDir("ContribDemoTest");
+    File indexDir = TestUtil.createTempDir("ContribDemoTest");
     IndexFiles.main(new String[] { "-create", "-docs", dir.getPath(), "-index", indexDir.getPath()});
     testOneSearch(indexDir, "apache", 3);
     testOneSearch(indexDir, "patent", 8);

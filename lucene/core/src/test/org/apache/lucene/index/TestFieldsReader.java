@@ -187,7 +187,7 @@ public class TestFieldsReader extends LuceneTestCase {
 
   // LUCENE-1262
   public void testExceptions() throws Throwable {
-    File indexDir = TestUtil.getTempDir("testfieldswriterexceptions");
+    File indexDir = TestUtil.createTempDir("testfieldswriterexceptions");
 
     try {
       Directory dir = new FaultyFSDirectory(indexDir);

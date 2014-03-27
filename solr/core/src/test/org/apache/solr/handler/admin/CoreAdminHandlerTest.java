@@ -17,9 +17,13 @@
 
 package org.apache.solr.handler.admin;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import java.io.File;
+import java.util.Map;
+
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
@@ -39,8 +43,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
-import java.io.File;
-import java.util.Map;
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
   
@@ -58,12 +61,8 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
   public void testCreateWithSysVars() throws Exception {
     useFactory(null); // I require FS-based indexes for this test.
 
-    final File workDir = new File(TEMP_DIR, getCoreName());
+    final File workDir = TestUtil.createTempDir(getCoreName());
 
-    if (workDir.exists()) {
-      FileUtils.deleteDirectory(workDir);
-    }
-    assertTrue("Failed to mkdirs workDir", workDir.mkdirs());
     String coreName = "with_sys_vars";
     File instDir = new File(workDir, coreName);
     File subHome = new File(instDir, "conf");
@@ -133,7 +132,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCoreAdminHandler() throws Exception {
-    final File workDir = new File(TEMP_DIR, this.getClass().getName());
+    final File workDir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
 
     if (workDir.exists()) {
       FileUtils.deleteDirectory(workDir);
@@ -224,9 +223,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testDeleteInstanceDir() throws Exception  {
-    File solrHomeDirectory = new File(TEMP_DIR, getClass().getName() + "-corex-"
-        + System.currentTimeMillis());
-    solrHomeDirectory.mkdirs();
+    File solrHomeDirectory = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
     copySolrHomeToTemp(solrHomeDirectory, "corex", true);
     File corex = new File(solrHomeDirectory, "corex");
     FileUtils.write(new File(corex, "core.properties"), "", Charsets.UTF_8.toString());

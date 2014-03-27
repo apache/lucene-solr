@@ -17,21 +17,24 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.core.Is.is;
+import static org.junit.internal.matchers.StringContains.containsString;
+
+import java.io.File;
+import java.io.IOException;
+
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
-import java.io.File;
-import java.io.IOException;
-
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.core.Is.is;
-import static org.junit.internal.matchers.StringContains.containsString;
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 public class TestConfigSets extends SolrTestCaseJ4 {
 
@@ -41,10 +44,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
   public static String solrxml = "<solr><str name=\"configSetBaseDir\">${configsets:configsets}</str></solr>";
 
   public CoreContainer setupContainer(String testName, String configSetsBaseDir) {
-
-    File testDirectory = new File(TEMP_DIR, testName);
-    testDirectory.mkdirs();
-
+    File testDirectory = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName() + "-" + testName);
     System.setProperty("configsets", configSetsBaseDir);
 
     SolrResourceLoader loader = new SolrResourceLoader(testDirectory.getAbsolutePath());
@@ -95,8 +95,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
 
   @Test
   public void testConfigSetOnCoreReload() throws IOException {
-    File testDirectory = new File(TEMP_DIR, "core-reload");
-    testDirectory.mkdirs();
+    File testDirectory = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName() + "-core-reload");
     File configSetsDir = new File(testDirectory, "configsets");
 
     FileUtils.copyDirectory(getFile("solr/configsets"), configSetsDir);

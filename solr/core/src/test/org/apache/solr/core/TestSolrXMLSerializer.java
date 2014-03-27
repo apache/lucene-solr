@@ -81,7 +81,7 @@ public class TestSolrXMLSerializer extends LuceneTestCase {
     assertResults(((StringWriter) w).getBuffer().toString().getBytes("UTF-8"));
     
     // again with default file
-    File tmpFile = TestUtil.createTempFile("solr.xml", null, TEMP_DIR);
+    File tmpFile = TestUtil.createTempFile("solr.xml", null);
     
     serializer.persistFile(tmpFile, solrXMLDef);
 

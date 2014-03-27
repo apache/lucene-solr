@@ -18,6 +18,8 @@ package org.apache.solr.request;
  */
 
 import org.apache.commons.io.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -48,12 +50,12 @@ import java.net.URLEncoder;
  */
 @SuppressSSL     // does not yet work with ssl yet - uses raw java.net.URL API rather than HttpClient
 public class TestRemoteStreaming extends SolrJettyTestBase {
-
-  private static final File solrHomeDirectory = new File(TEMP_DIR, "TestRemoteStreaming");
+  private static File solrHomeDirectory;
   
   @BeforeClass
   public static void beforeTest() throws Exception {
     //this one has handleSelect=true which a test here needs
+    solrHomeDirectory = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
     setupJettyTestHome(solrHomeDirectory, "collection1");
     createJetty(solrHomeDirectory.getAbsolutePath(), null, null);
   }

@@ -17,6 +17,8 @@
 package org.apache.solr.handler.dataimport;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -53,7 +55,7 @@ public class TestNonWritablePersistFile extends AbstractDataImportHandlerTestCas
   @BeforeClass
   public static void createTempSolrHomeAndCore() throws Exception {
     createTempDir();
-    tmpSolrHome = TEMP_DIR + File.separator + TestNonWritablePersistFile.class.getSimpleName() + System.currentTimeMillis();
+    tmpSolrHome = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName()).getAbsolutePath();
     FileUtils.copyDirectory(getFile("dih/solr"), new File(tmpSolrHome).getAbsoluteFile());
     initCore("dataimport-solrconfig.xml", "dataimport-schema.xml", 
              new File(tmpSolrHome).getAbsolutePath());

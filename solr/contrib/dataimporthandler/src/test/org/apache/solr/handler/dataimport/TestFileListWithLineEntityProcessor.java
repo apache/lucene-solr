@@ -2,6 +2,8 @@ package org.apache.solr.handler.dataimport;
 
 import java.io.File;
 
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.junit.BeforeClass;
 
@@ -29,10 +31,7 @@ public class TestFileListWithLineEntityProcessor extends AbstractDataImportHandl
   }
   
   public void test() throws Exception {
-    File tmpdir = File.createTempFile("test", "tmp", TEMP_DIR);
-    tmpdir.delete();
-    tmpdir.mkdir();
-    tmpdir.deleteOnExit();
+    File tmpdir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
     createFile(tmpdir, "a.txt", "a line one\na line two\na line three".getBytes("UTF-8"), false);
     createFile(tmpdir, "b.txt", "b line one\nb line two".getBytes("UTF-8"), false);
     createFile(tmpdir, "c.txt", "c line one\nc line two\nc line three\nc line four".getBytes("UTF-8"), false);

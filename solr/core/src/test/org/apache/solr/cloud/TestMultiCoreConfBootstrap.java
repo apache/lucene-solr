@@ -17,18 +17,19 @@
 
 package org.apache.solr.cloud;
 
+import java.io.File;
+
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
 
 public class TestMultiCoreConfBootstrap extends SolrTestCaseJ4 {
   protected static Logger log = LoggerFactory.getLogger(TestMultiCoreConfBootstrap.class);
@@ -45,9 +46,7 @@ public class TestMultiCoreConfBootstrap extends SolrTestCaseJ4 {
     super.setUp();
     
     createTempDir();
-    dataDir2 = new File(TEMP_DIR, getSimpleClassName() + "-core1-"
-        + System.currentTimeMillis());
-    dataDir2.mkdirs();
+    dataDir2 = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
 
     home = ExternalPaths.EXAMPLE_MULTICORE_HOME;
     System.setProperty("solr.solr.home", home);

@@ -17,9 +17,14 @@
 
 package org.apache.solr.client.solrj.request;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.core.Is.is;
+
+import java.io.File;
+
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.embedded.AbstractEmbeddedSolrServerTestCase;
@@ -38,10 +43,8 @@ import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.core.Is.is;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {SolrIgnoredThreadsFilter.class})
 public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
@@ -73,7 +76,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
   public void testConfigSet() throws Exception {
 
     SolrServer server = getSolrAdmin();
-    File testDir = createTestDirectory();
+    File testDir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
 
     File newCoreInstanceDir = new File(testDir, "newcore");
 
@@ -91,18 +94,12 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
 
   }
 
-  private File createTestDirectory() {
-    File tmp = new File(TEMP_DIR, "solrtest-" + getTestClass().getSimpleName() + "-" + System.currentTimeMillis());
-    assertTrue("Couldn't create temporary directory " + tmp.getAbsolutePath(), tmp.mkdirs());
-    return tmp;
-  }
-  
   @Test
   public void testCustomUlogDir() throws Exception {
     
     SolrServer server = getSolrAdmin();
     
-    File tmp = createTestDirectory();
+    File tmp = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
 
     log.info("Creating cores underneath {}", tmp);
     

@@ -290,16 +290,6 @@ public abstract class LuceneTestCase extends Assert {
   /** Throttling, see {@link MockDirectoryWrapper#setThrottling(Throttling)}. */
   public static final Throttling TEST_THROTTLING = TEST_NIGHTLY ? Throttling.SOMETIMES : Throttling.NEVER;
 
-  /** Create indexes in this directory, optimally use a subdir, named after the test */
-  public static final File TEMP_DIR;
-  static {
-    String s = System.getProperty("tempDir", System.getProperty("java.io.tmpdir"));
-    if (s == null)
-      throw new RuntimeException("To run tests, you need to define system property 'tempDir' or 'java.io.tmpdir'.");
-    TEMP_DIR = new File(s);
-    TEMP_DIR.mkdirs();
-  }
-
   /**
    * These property keys will be ignored in verification of altered properties.
    * @see SystemPropertiesInvariantRule
@@ -1164,7 +1154,7 @@ public abstract class LuceneTestCase extends Assert {
       final Class<? extends Directory> clazz = CommandLineUtil.loadDirectoryClass(clazzName);
       // If it is a FSDirectory type, try its ctor(File)
       if (FSDirectory.class.isAssignableFrom(clazz)) {
-        final File dir = TestUtil.getTempDir("index");
+        final File dir = TestUtil.createTempDir("index");
         dir.mkdirs(); // ensure it's created so we 'have' it.
         return newFSDirectoryImpl(clazz.asSubclass(FSDirectory.class), dir);
       }

@@ -17,8 +17,13 @@
 
 package org.apache.solr.schema;
 
+import java.io.File;
+import java.io.IOException;
+
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
@@ -31,16 +36,13 @@ import org.apache.solr.update.UpdateHandler;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.File;
-import java.io.IOException;
-
 public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore();
   }
 
-  private final File solrHomeDirectory = new File(TEMP_DIR, getSimpleClassName());
+  private File solrHomeDirectory;
   private File schemaFile = null;
 
   private void addDoc(SolrCore core, String... fieldValues) throws IOException {
@@ -51,11 +53,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
   }
 
   private CoreContainer init() throws Exception {
-
-    if (solrHomeDirectory.exists()) {
-      FileUtils.deleteDirectory(solrHomeDirectory);
-    }
-    assertTrue("Failed to mkdirs workDir", solrHomeDirectory.mkdirs());
+    solrHomeDirectory = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
     File changed = new File(solrHomeDirectory, "changed");
     copyMinConf(changed, "name=changed");
     // Overlay with my local schema

@@ -17,11 +17,11 @@ package org.apache.solr.cloud.hdfs;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.cloud.BasicDistributedZk2Test;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -38,9 +38,7 @@ public class HdfsBasicDistributedZk2Test extends BasicDistributedZk2Test {
   
   @BeforeClass
   public static void setupClass() throws Exception {
-    dfsCluster = HdfsTestUtil.setupClass(new File(TEMP_DIR,
-        HdfsBasicDistributedZk2Test.class.getName() + "_"
-            + System.currentTimeMillis()).getAbsolutePath());
+    dfsCluster = HdfsTestUtil.setupClass();
   }
   
   @AfterClass

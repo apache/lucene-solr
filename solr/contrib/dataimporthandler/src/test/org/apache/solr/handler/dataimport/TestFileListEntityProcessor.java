@@ -16,6 +16,8 @@ package org.apache.solr.handler.dataimport;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -37,10 +39,7 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
   @Test
   @SuppressWarnings("unchecked")
   public void testSimple() throws IOException {
-    File tmpdir = File.createTempFile("test", "tmp", TEMP_DIR);
-    tmpdir.delete();
-    tmpdir.mkdir();
-    tmpdir.deleteOnExit();
+    File tmpdir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
     createFile(tmpdir, "a.xml", "a.xml".getBytes("UTF-8"), false);
     createFile(tmpdir, "b.xml", "b.xml".getBytes("UTF-8"), false);
     createFile(tmpdir, "c.props", "c.props".getBytes("UTF-8"), false);
@@ -63,10 +62,7 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
   
   @Test
   public void testBiggerSmallerFiles() throws IOException {
-    File tmpdir = File.createTempFile("test", "tmp", TEMP_DIR);
-    tmpdir.delete();
-    tmpdir.mkdir();
-    tmpdir.deleteOnExit();
+    File tmpdir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
     long minLength = Long.MAX_VALUE;
     String smallestFile = "";
     byte[] content = "abcdefgij".getBytes("UTF-8");
@@ -133,10 +129,7 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
 
   @Test
   public void testNTOT() throws IOException {
-    File tmpdir = File.createTempFile("test", "tmp", TEMP_DIR);
-    tmpdir.delete();
-    tmpdir.mkdir();
-    tmpdir.deleteOnExit();
+    File tmpdir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
     createFile(tmpdir, "a.xml", "a.xml".getBytes("UTF-8"), true);
     createFile(tmpdir, "b.xml", "b.xml".getBytes("UTF-8"), true);
     createFile(tmpdir, "c.props", "c.props".getBytes("UTF-8"), true);
@@ -169,13 +162,8 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
 
   @Test
   public void testRECURSION() throws IOException {
-    File tmpdir = File.createTempFile("test", "tmp", TEMP_DIR);
-    tmpdir.delete();
-    tmpdir.mkdir();
-    tmpdir.deleteOnExit();
+    File tmpdir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
     File childdir = new File(tmpdir + "/child" );
-    childdir.mkdirs();
-    childdir.deleteOnExit();
     createFile(childdir, "a.xml", "a.xml".getBytes("UTF-8"), true);
     createFile(childdir, "b.xml", "b.xml".getBytes("UTF-8"), true);
     createFile(childdir, "c.props", "c.props".getBytes("UTF-8"), true);

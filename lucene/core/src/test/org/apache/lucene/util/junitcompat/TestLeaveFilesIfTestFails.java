@@ -33,7 +33,7 @@ public class TestLeaveFilesIfTestFails extends WithNestedTests {
   public static class Nested1 extends WithNestedTests.AbstractNestedTest {
     static File file;
     public void testDummy() {
-      file = TestUtil.getTempDir("leftover");
+      file = TestUtil.createTempDir("leftover");
       file.mkdirs();
       fail();
     }

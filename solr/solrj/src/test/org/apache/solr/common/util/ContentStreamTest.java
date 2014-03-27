@@ -27,6 +27,7 @@ import java.net.URL;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.core.SolrResourceLoader;
 
 /**
@@ -46,7 +47,7 @@ public class ContentStreamTest extends LuceneTestCase
   {
     InputStream is = new SolrResourceLoader(null, null).openResource( "solrj/README" );
     assertNotNull( is );
-    File file = new File(TEMP_DIR, "README");
+    File file = TestUtil.createTempFile("README", "");
     FileOutputStream os = new FileOutputStream(file);
     IOUtils.copy(is, os);
     os.close();
@@ -62,7 +63,7 @@ public class ContentStreamTest extends LuceneTestCase
   {
     InputStream is = new SolrResourceLoader(null, null).openResource( "solrj/README" );
     assertNotNull( is );
-    File file = new File(TEMP_DIR, "README");
+    File file = TestUtil.createTempFile("README", "");
     FileOutputStream os = new FileOutputStream(file);
     IOUtils.copy(is, os);
     os.close();

@@ -22,6 +22,8 @@ import java.io.FileOutputStream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 
@@ -62,7 +64,7 @@ public class TestICUCollationField extends SolrTestCaseJ4 {
    */
   public static String setupSolrHome() throws Exception {
     // make a solr home underneath the test's TEMP_DIR
-    File tmpFile = File.createTempFile("test", "tmp", TEMP_DIR);
+    File tmpFile = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
     tmpFile.delete();
     tmpFile.mkdir();
     

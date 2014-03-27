@@ -18,6 +18,7 @@ package org.apache.solr;
  */
 
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -43,7 +44,7 @@ public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     createTempDir();
-    tmpSolrHome = TEMP_DIR + File.separator + AnalysisAfterCoreReloadTest.class.getSimpleName() + System.currentTimeMillis();
+    tmpSolrHome = TestUtil.createTempDir(AnalysisAfterCoreReloadTest.class.getSimpleName()).getAbsolutePath();
     FileUtils.copyDirectory(new File(TEST_HOME()), new File(tmpSolrHome).getAbsoluteFile());
     initCore("solrconfig.xml", "schema.xml", new File(tmpSolrHome).getAbsolutePath());
   }

@@ -1,6 +1,8 @@
 package org.apache.lucene.util;
 
-import java.io.*;
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -25,10 +27,17 @@ import java.io.*;
 final class CloseableFile implements Closeable {
   private final File file;
   private final TestRuleMarkFailure failureMarker;
+  private final String creationStack;
 
   public CloseableFile(File file, TestRuleMarkFailure failureMarker) {
     this.file = file;
     this.failureMarker = failureMarker;
+
+    StringBuilder b = new StringBuilder();
+    for (StackTraceElement e : Thread.currentThread().getStackTrace()) {
+      b.append('\t').append(e.toString()).append('\n');
+    }
+    creationStack = b.toString();
   }
 
   @Override
@@ -36,6 +45,10 @@ final class CloseableFile implements Closeable {
     // only if there were no other test failures.
     if (failureMarker.wasSuccessful()) {
       if (file.exists()) {
+        if (file.listFiles().length > 0) {
+          // throw new IOException("Temporary folder not clean: " + file.getAbsolutePath() + ". Created at stack trace:\n" + creationStack); 
+        }
+
         try {
           TestUtil.rmDir(file);
         } catch (IOException e) {
@@ -45,9 +58,9 @@ final class CloseableFile implements Closeable {
         // Re-check.
         if (file.exists()) {
           throw new IOException(
-            "Could not remove: " + file.getAbsolutePath());
+            "Could not remove temporary folder: " + file.getAbsolutePath() + ". Created at stack trace:\n" + creationStack);
         }
-    }
+      }
     }
   }
 }

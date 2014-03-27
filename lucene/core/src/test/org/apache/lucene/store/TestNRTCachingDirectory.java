@@ -123,7 +123,7 @@ public class TestNRTCachingDirectory extends LuceneTestCase {
   
   // LUCENE-3382 -- make sure we get exception if the directory really does not exist.
   public void testNoDir() throws Throwable {
-    File tempDir = TestUtil.getTempDir("doesnotexist");
+    File tempDir = TestUtil.createTempDir("doesnotexist");
     TestUtil.rmDir(tempDir);
     Directory dir = new NRTCachingDirectory(newFSDirectory(tempDir), 2.0, 25.0);
     try {
@@ -137,7 +137,7 @@ public class TestNRTCachingDirectory extends LuceneTestCase {
   
   // LUCENE-3382 test that we can add a file, and then when we call list() we get it back
   public void testDirectoryFilter() throws IOException {
-    Directory dir = new NRTCachingDirectory(newFSDirectory(TestUtil.getTempDir("foo")), 2.0, 25.0);
+    Directory dir = new NRTCachingDirectory(newFSDirectory(TestUtil.createTempDir("foo")), 2.0, 25.0);
     String name = "file";
     try {
       dir.createOutput(name, newIOContext(random())).close();

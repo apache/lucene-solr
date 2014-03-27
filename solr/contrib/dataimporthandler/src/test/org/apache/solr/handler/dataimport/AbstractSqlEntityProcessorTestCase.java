@@ -16,6 +16,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.junit.After;
 import org.junit.Before;
 
@@ -54,9 +56,7 @@ public abstract class AbstractSqlEntityProcessorTestCase extends
   
   @Before
   public void beforeSqlEntitiyProcessorTestCase() throws Exception {
-    File tmpdir = File.createTempFile("test", "tmp", TEMP_DIR);
-    tmpdir.delete();
-    tmpdir.mkdir();
+    File tmpdir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
     fileLocation = tmpdir.getPath();
     fileName = "the.properties";
   } 

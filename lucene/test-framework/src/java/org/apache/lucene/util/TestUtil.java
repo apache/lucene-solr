@@ -103,34 +103,6 @@ public final class TestUtil {
   private static final int GET_TEMP_DIR_RETRY_THRESHOLD = 1000;
   
   /**
-   * Returns a temp directory, based on the given description. Creates the
-   * directory.
-   */
-  public static File getTempDir(String desc) {
-    if (desc.length() < 3) {
-      throw new IllegalArgumentException("description must be at least 3 characters");
-    }
-    // always pull a long from master random. that way, the randomness of the test
-    // is not affected by whether it initialized the counter (in genTempFile) or not.
-    // note that the Random used by genTempFile is *not* the master Random, and therefore
-    // does not affect the randomness of the test.
-    final Random random = new Random(RandomizedContext.current().getRandom().nextLong());
-    int attempt = 0;
-    File f;
-    do {
-      f = genTempFile(random, desc, "tmp", LuceneTestCase.TEMP_DIR);
-    } while (!f.mkdir() && (attempt++) < GET_TEMP_DIR_RETRY_THRESHOLD);
-    
-    if (attempt > GET_TEMP_DIR_RETRY_THRESHOLD) {
-      throw new RuntimeException(
-          "failed to get a temporary dir too many times. check your temp directory and consider manually cleaning it.");
-    }
-    
-    LuceneTestCase.closeAfterSuite(new CloseableFile(f, LuceneTestCase.suiteFailureMarker));
-    return f;
-  }
-
-  /**
    * Deletes a directory and everything underneath it.
    */
   public static void rmDir(File dir) throws IOException {
@@ -809,9 +781,45 @@ public final class TestUtil {
     Assert.assertEquals("Reflection does not produce same map", reflectedValues, map);
   }
   
+  /**
+   * Returns a new, empty temporary folder, based on the given name. The folder will be
+   * deleted at the end of the suite. Failure to delete the temporary folder will cause
+   * an exception (typically on Windows).
+   */
+  public static File createTempDir(String name) {
+    if (name.length() < 3) {
+      throw new IllegalArgumentException("description must be at least 3 characters");
+    }
+  
+    // always pull a long from master random. that way, the randomness of the test
+    // is not affected by whether it initialized the counter (in genTempFile) or not.
+    // note that the Random used by genTempFile is *not* the master Random, and therefore
+    // does not affect the randomness of the test.
+    final Random random = new Random(RandomizedContext.current().getRandom().nextLong());
+    int attempt = 0;
+    String tmpDir = System.getProperty("tempDir", System.getProperty("java.io.tmpdir"));
+    File f;
+    do {
+      f = genTempFile(random, name + "_", "", new File(tmpDir));
+    } while (!f.mkdir() && (attempt++) < GET_TEMP_DIR_RETRY_THRESHOLD);
+    
+    if (attempt > GET_TEMP_DIR_RETRY_THRESHOLD) {
+      throw new RuntimeException(
+          "failed to get a temporary dir too many times. check your temp directory and consider manually cleaning it.");
+    }
+  
+    LuceneTestCase.closeAfterSuite(new CloseableFile(f, LuceneTestCase.suiteFailureMarker));
+    return f;
+  }
+
+  public static File createTempFile(String prefix, String suffix) throws IOException {
+    String tmpDir = System.getProperty("tempDir", System.getProperty("java.io.tmpdir"));
+    return createTempFile(prefix, suffix, new File(tmpDir));
+  }
+
   /** 
-   * insecure, fast version of File.createTempFile
-   * uses Random instead of SecureRandom.
+   * Insecure, fast version of {@link File#createTempFile(String, String)}, uses 
+   * Random instead of SecureRandom.
    */
   public static File createTempFile(String prefix, String suffix, File directory)
       throws IOException {
@@ -828,6 +836,7 @@ public final class TestUtil {
     do {
       result = genTempFile(random, prefix, newSuffix, directory);
     } while (!result.createNewFile());
+    LuceneTestCase.closeAfterSuite(new CloseableFile(result, LuceneTestCase.suiteFailureMarker));
     return result;
   }
 

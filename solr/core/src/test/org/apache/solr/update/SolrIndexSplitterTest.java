@@ -17,11 +17,16 @@ package org.apache.solr.update;
  * limitations under the License.
  */
 
-import com.google.common.collect.Lists;
+import java.io.File;
+import java.io.UnsupportedEncodingException;
+import java.util.List;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -37,9 +42,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.File;
-import java.io.UnsupportedEncodingException;
-import java.util.List;
+import com.google.common.collect.Lists;
 
 public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
   File indexDir1 = null, indexDir2 = null, indexDir3 = null;
@@ -56,12 +59,10 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
     super.setUp();
     clearIndex();
     assertU(commit());
-    indexDir1 = new File(TEMP_DIR, this.getClass().getName()
-        + "_testSplit1");
-    indexDir2 = new File(TEMP_DIR, this.getClass().getName()
-        + "_testSplit2");
-    indexDir3 = new File(TEMP_DIR, this.getClass().getName()
-        + "_testSplit3");
+    File tempDir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+    indexDir1 = new File(tempDir, this.getClass().getName() + "_testSplit1");
+    indexDir2 = new File(tempDir, this.getClass().getName() + "_testSplit2");
+    indexDir3 = new File(tempDir, this.getClass().getName() + "_testSplit3");
 
     if (indexDir1.exists()) {
       FileUtils.deleteDirectory(indexDir1);
@@ -269,11 +270,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSplitByRouteKey() throws Exception  {
-    File indexDir = new File(TEMP_DIR, this.getClass().getName() + "testSplitByRouteKey");
-    if (indexDir.exists())  {
-      FileUtils.deleteDirectory(indexDir);
-    }
-    indexDir.mkdirs();
+    File indexDir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
 
     CompositeIdRouter r1 = new CompositeIdRouter();
     String splitKey = "sea-line!";

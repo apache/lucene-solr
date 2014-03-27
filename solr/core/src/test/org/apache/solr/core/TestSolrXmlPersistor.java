@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
 
@@ -62,7 +64,7 @@ public class TestSolrXmlPersistor  extends SolrTestCaseJ4 {
 
     final String solrxml = "<solr><cores></cores></solr>";
 
-    final File solrHomeDirectory = new File(TEMP_DIR, "ZkControllerTest");
+    final File solrHomeDirectory = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
     try {
       if (solrHomeDirectory.exists()) {
         FileUtils.deleteDirectory(solrHomeDirectory);

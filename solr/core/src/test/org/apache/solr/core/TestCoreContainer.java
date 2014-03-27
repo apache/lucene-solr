@@ -17,19 +17,9 @@
 
 package org.apache.solr.core;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.TestUtil;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.handler.admin.CollectionsHandler;
-import org.apache.solr.handler.admin.CoreAdminHandler;
-import org.apache.solr.handler.admin.InfoHandler;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.xml.sax.SAXException;
+import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
 
-import javax.xml.parsers.ParserConfigurationException;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -40,8 +30,20 @@ import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsInstanceOf.instanceOf;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.handler.admin.CollectionsHandler;
+import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.handler.admin.InfoHandler;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.xml.sax.SAXException;
 
 public class TestCoreContainer extends SolrTestCaseJ4 {
 
@@ -67,12 +69,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
   private CoreContainer init(String dirName) throws Exception {
 
-    solrHomeDirectory = new File(TEMP_DIR, this.getClass().getName() + dirName);
-
-    if (solrHomeDirectory.exists()) {
-      FileUtils.deleteDirectory(solrHomeDirectory);
-    }
-    assertTrue("Failed to mkdirs workDir", solrHomeDirectory.mkdirs());
+    solrHomeDirectory = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName() + dirName);
 
     FileUtils.copyDirectory(new File(SolrTestCaseJ4.TEST_HOME()), solrHomeDirectory);
     System.out.println("Using solrconfig from " + new File(SolrTestCaseJ4.TEST_HOME()).getAbsolutePath());
@@ -151,8 +148,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   @Test
   public void testNoCores() throws IOException, ParserConfigurationException, SAXException {
     //create solrHome
-    File solrHomeDirectory = new File(TEMP_DIR, this.getClass().getName()
-        + "_noCores");
+    File solrHomeDirectory = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName() + "_noCores");
     
     boolean oldSolrXml = random().nextBoolean();
     
@@ -238,7 +234,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
   @Test
   public void testSharedLib() throws Exception {
-    File tmpRoot = TestUtil.getTempDir("testSharedLib");
+    File tmpRoot = TestUtil.createTempDir("testSharedLib");
 
     File lib = new File(tmpRoot, "lib");
     lib.mkdirs();

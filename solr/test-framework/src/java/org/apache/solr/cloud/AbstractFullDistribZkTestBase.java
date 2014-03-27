@@ -40,6 +40,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.http.params.CoreConnectionPNames;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -284,8 +285,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     // System.clearProperty(ZkStateReader.NUM_SHARDS_PROP);
     System.setProperty(ZkStateReader.NUM_SHARDS_PROP, "1");
 
-    File controlJettyDir = new File(TEMP_DIR,
-            getClass().getName() + "-controljetty-" + System.currentTimeMillis());
+    File controlJettyDir = TestUtil.createTempDir(getClass().getSimpleName() + "-controljetty");
     setupJettySolrHome(controlJettyDir);
 
     controlJetty = createJetty(controlJettyDir, testDir + "/control/data");  // don't pass shard name... let it default to "shard1"
@@ -360,8 +360,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     for (int i = 1; i <= numJettys; i++) {
       if (sb.length() > 0) sb.append(',');
       int cnt = this.jettyIntCntr.incrementAndGet();
-      File jettyDir = new File(TEMP_DIR,
-          getClass().getName() + "-jetty" + cnt + "-" + System.currentTimeMillis());
+      File jettyDir = TestUtil.createTempDir(getClass().getSimpleName() + "-jetty" + cnt);
       jettyDir.mkdirs();
       setupJettySolrHome(jettyDir);
       log.info("create jetty " + i); 
@@ -417,7 +416,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
 
   protected SolrServer startCloudJetty(String collection, String shard) throws Exception {
-
     // TODO: use the collection string!!!!
     collection = DEFAULT_COLLECTION;
 
@@ -425,8 +423,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
 
     int cnt = this.jettyIntCntr.incrementAndGet();
-      File jettyDir = new File(TEMP_DIR,
-          getClass().getName() + "-jetty" + cnt + "-" + System.currentTimeMillis());
+      File jettyDir = TestUtil.createTempDir(getClass().getSimpleName() + "-jetty" + cnt);
       jettyDir.mkdirs();
       org.apache.commons.io.FileUtils.copyDirectory(new File(getSolrHome()), jettyDir);
       JettySolrRunner j = createJetty(jettyDir, testDir + "/jetty" + cnt, shard, "solrconfig.xml", null);

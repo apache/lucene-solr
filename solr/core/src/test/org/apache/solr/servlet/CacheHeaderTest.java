@@ -39,10 +39,11 @@ import com.google.common.base.Charsets;
  * A test case for the several HTTP cache headers emitted by Solr
  */
 public class CacheHeaderTest extends CacheHeaderTestBase {
-    private static final File solrHomeDirectory = new File(TEMP_DIR, "CacheHeaderTest");
+  private static File solrHomeDirectory;
     
   @BeforeClass
   public static void beforeTest() throws Exception {
+    solrHomeDirectory = TestUtil.createTempDir("CacheHeaderTest");
     setupJettyTestHome(solrHomeDirectory, "collection1");
     createJetty(solrHomeDirectory.getAbsolutePath(), null, null);
   }
@@ -253,7 +254,7 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
 
   protected File makeFile(String contents, String charset) {
     try {
-      File f = TestUtil.createTempFile("cachetest_csv", null, TEMP_DIR);
+      File f = TestUtil.createTempFile("cachetest_csv", null);
       Writer out = new OutputStreamWriter(new FileOutputStream(f), charset);
       out.write(contents);
       out.close();

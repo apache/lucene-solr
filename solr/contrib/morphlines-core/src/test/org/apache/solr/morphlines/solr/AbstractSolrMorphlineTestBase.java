@@ -32,6 +32,8 @@ import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
@@ -118,8 +120,7 @@ public class AbstractSolrMorphlineTestBase extends SolrTestCaseJ4 {
     testServer = new SolrServerDocumentLoader(solrServer, batchSize);
     deleteAllDocuments();
     
-    tempDir = new File(TEMP_DIR + "/test-morphlines-" + System.currentTimeMillis()).getAbsolutePath();
-    new File(tempDir).mkdirs();
+    tempDir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName()).getAbsolutePath();
   }
   
   @After

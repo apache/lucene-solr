@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ClusterState;
@@ -67,11 +68,11 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
   
   private File dataDir4;
 
-
-  private static final File solrHomeDirectory = new File(TEMP_DIR, "ZkControllerTest");
+  private static File solrHomeDirectory;
 
   @BeforeClass
   public static void beforeClass() throws IOException {
+    solrHomeDirectory = TestUtil.createTempDir(ClusterStateUpdateTest.class.getSimpleName());
     System.setProperty("solrcloud.skip.autorecovery", "true");
     System.setProperty("genericCoreNodeNames", "false");
     if (solrHomeDirectory.exists()) {

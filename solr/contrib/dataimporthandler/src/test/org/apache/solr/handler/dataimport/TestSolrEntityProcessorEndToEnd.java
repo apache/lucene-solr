@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
@@ -316,9 +318,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     }
 
     public void setUp() throws Exception {
-      
-      File home = new File(TEMP_DIR, getClass().getName() + "-"
-          + System.currentTimeMillis());
+      File home = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
       
       homeDir = new File(home + "inst");
       dataDir = new File(homeDir + "/collection1", "data");

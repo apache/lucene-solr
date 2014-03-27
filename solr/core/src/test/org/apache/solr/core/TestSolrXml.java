@@ -17,23 +17,32 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import java.io.File;
+import java.io.IOException;
+
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
-import java.io.File;
-import java.io.IOException;
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 public class TestSolrXml extends SolrTestCaseJ4 {
 
   @Rule
   public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
-  private final File solrHome = new File(TEMP_DIR, TestSolrXml.getClassName() + File.separator + "solrHome");
+  private File solrHome;
+  
+  @Before
+  public void setupTest() {
+    solrHome = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+  }
 
   @Test
   public void testAllInfoPresent() throws IOException {

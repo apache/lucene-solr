@@ -32,6 +32,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
@@ -62,10 +63,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
   
   @BeforeClass
   public static void setupClass() throws Exception {
-
-    dfsCluster = HdfsTestUtil.setupClass(new File(TEMP_DIR,
-        HdfsBasicDistributedZk2Test.class.getName() + "_"
-            + System.currentTimeMillis()).getAbsolutePath());
+    dfsCluster = HdfsTestUtil.setupClass();
     System.setProperty("solr.hdfs.home", dfsCluster.getURI().toString() + "/solr");
   }
   
@@ -182,8 +180,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
         NamedList<Object> response = c.query(
             new SolrQuery().setRequestHandler("/admin/system")).getResponse();
         NamedList<Object> coreInfo = (NamedList<Object>) response.get("core");
-        String dataDir = (String) ((NamedList<Object>) coreInfo
-            .get("directory")).get("data");
+        String dataDir = (String) ((NamedList<Object>) coreInfo.get("directory")).get("data");
         dataDirs.add(dataDir);
       } finally {
         c.shutdown();

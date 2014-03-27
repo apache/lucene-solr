@@ -30,7 +30,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.LuceneTestCase.BadApple;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -86,9 +87,7 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
     coreNames = new ArrayList<>();
     cumulativeDocs = 0;
 
-    solrHomeDirectory = new File(TEMP_DIR, "OpenCloseCoreStressTest_");
-    FileUtils.deleteDirectory(solrHomeDirectory); // Ensure that a failed test didn't leave something lying around.
-
+    solrHomeDirectory = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
     jetty = new JettySolrRunner(solrHomeDirectory.getAbsolutePath(), "/solr", 0, null, null, true, null, sslConfig);
   }
 

@@ -28,12 +28,8 @@ import org.apache.lucene.util.TestUtil;
 
 public class TestIndexSplitter extends LuceneTestCase {
   public void test() throws Exception {
-    File dir = new File(TEMP_DIR, "testfilesplitter");
-    TestUtil.rmDir(dir);
-    dir.mkdirs();
-    File destDir = new File(TEMP_DIR, "testfilesplitterdest");
-    TestUtil.rmDir(destDir);
-    destDir.mkdirs();
+    File dir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+    File destDir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
     Directory fsDir = newFSDirectory(dir);
     // IndexSplitter.split makes its own commit directly with SIPC/SegmentInfos,
     // so the unreferenced files are expected.
@@ -80,9 +76,7 @@ public class TestIndexSplitter extends LuceneTestCase {
     fsDirDest.close();
     
     // now test cmdline
-    File destDir2 = new File(TEMP_DIR, "testfilesplitterdest2");
-    TestUtil.rmDir(destDir2);
-    destDir2.mkdirs();
+    File destDir2 = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
     IndexSplitter.main(new String[] {dir.getAbsolutePath(), destDir2.getAbsolutePath(), splitSegName});
     assertEquals(5, destDir2.listFiles().length);
     Directory fsDirDest2 = newFSDirectory(destDir2);

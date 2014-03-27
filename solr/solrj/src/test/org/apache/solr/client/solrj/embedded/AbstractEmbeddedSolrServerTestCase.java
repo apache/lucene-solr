@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.embedded;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.core.CoreContainer;
@@ -38,13 +39,6 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends LuceneTestCase 
   protected CoreContainer cores = null;
   protected File tempDir;
 
-  protected void createTempDir() {
-    if (tempDir == null) {
-      tempDir = new File(TEMP_DIR, "solrtest-" + getTestClass().getSimpleName() + "-" + System.currentTimeMillis());
-      tempDir.mkdirs();
-    }
-  }
-
   @Override
   @Before
   public void setUp() throws Exception {
@@ -55,7 +49,7 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends LuceneTestCase 
     System.out.println("Solr home: " + SOLR_HOME.getAbsolutePath());
 
     //The index is always stored within a temporary directory
-    createTempDir();
+    tempDir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
     
     File dataDir = new File(tempDir,"data1");
     File dataDir2 = new File(tempDir,"data2");

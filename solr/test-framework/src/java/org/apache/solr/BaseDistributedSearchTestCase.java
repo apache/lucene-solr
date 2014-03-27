@@ -37,6 +37,7 @@ import junit.framework.Assert;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServer;
@@ -53,7 +54,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.TrieDateField;
-import org.apache.solr.util.AbstractSolrTestCase;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -278,8 +278,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     super.setUp();
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
-    testDir = new File(TEMP_DIR,
-            getClass().getName() + "-" + System.currentTimeMillis());
+    testDir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
     testDir.mkdirs();
   }
 

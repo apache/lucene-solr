@@ -52,7 +52,7 @@ public class Test10KPulsings extends LuceneTestCase {
     // we always run this test with pulsing codec.
     Codec cp = TestUtil.alwaysPostingsFormat(new Pulsing41PostingsFormat(1));
     
-    File f = TestUtil.getTempDir("10kpulsed");
+    File f = TestUtil.createTempDir("10kpulsed");
     BaseDirectoryWrapper dir = newFSDirectory(f);
     dir.setCheckIndexOnClose(false); // we do this ourselves explicitly
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, 
@@ -103,7 +103,7 @@ public class Test10KPulsings extends LuceneTestCase {
     int freqCutoff = TestUtil.nextInt(random(), 1, 10);
     Codec cp = TestUtil.alwaysPostingsFormat(new Pulsing41PostingsFormat(freqCutoff));
     
-    File f = TestUtil.getTempDir("10knotpulsed");
+    File f = TestUtil.createTempDir("10knotpulsed");
     BaseDirectoryWrapper dir = newFSDirectory(f);
     dir.setCheckIndexOnClose(false); // we do this ourselves explicitly
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, 

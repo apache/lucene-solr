@@ -17,16 +17,31 @@
 
 package org.apache.solr.core;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
-import com.google.common.base.Charsets;
+import static org.hamcrest.core.Is.is;
+
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.TestHarness;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -37,30 +52,23 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.hamcrest.core.Is.is;
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import com.google.common.base.Charsets;
 
 public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
 
-  private File solrHomeDirectory = new File(TEMP_DIR, this.getClass().getName());
+  private File solrHomeDirectory;
 
   @Rule
   public TestRule solrTestRules =
       RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
+  @Before
+  public void setupTest() {
+    solrHomeDirectory = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+  }
 
   private CoreContainer init(String solrXmlString, String... subDirs) throws Exception {
-
     createTempDir();
     solrHomeDirectory = dataDir;
 

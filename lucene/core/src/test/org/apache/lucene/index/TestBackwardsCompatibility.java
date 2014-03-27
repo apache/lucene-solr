@@ -227,7 +227,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     names.addAll(Arrays.asList(oldSingleSegmentNames));
     oldIndexDirs = new HashMap<>();
     for (String name : names) {
-      File dir = TestUtil.getTempDir(name);
+      File dir = TestUtil.createTempDir(name);
       File dataFile = new File(TestBackwardsCompatibility.class.getResource("index." + name + ".zip").toURI());
       TestUtil.unzip(dataFile, dir);
       oldIndexDirs.put(name, newFSDirectory(dir));
@@ -248,7 +248,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("TEST: index " + unsupportedNames[i]);
       }
-      File oldIndxeDir = TestUtil.getTempDir(unsupportedNames[i]);
+      File oldIndxeDir = TestUtil.createTempDir(unsupportedNames[i]);
       TestUtil.unzip(getDataFile("unsupported." + unsupportedNames[i] + ".zip"), oldIndxeDir);
       BaseDirectoryWrapper dir = newFSDirectory(oldIndxeDir);
       // don't checkindex, these are intentionally not supported
@@ -645,7 +645,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   public void testExactFileNames() throws IOException {
 
     String outputDirName = "lucene.backwardscompat0.index";
-    File outputDir = TestUtil.getTempDir(outputDirName);
+    File outputDir = TestUtil.createTempDir(outputDirName);
     TestUtil.rmDir(outputDir);
 
     try {
@@ -955,7 +955,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   public void testCommandLineArgs() throws Exception {
 
     for (String name : oldIndexDirs.keySet()) {
-      File dir = TestUtil.getTempDir(name);
+      File dir = TestUtil.createTempDir(name);
       File dataFile = new File(TestBackwardsCompatibility.class.getResource("index." + name + ".zip").toURI());
       TestUtil.unzip(dataFile, dir);
 
@@ -1048,7 +1048,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   public static final String moreTermsIndex = "moreterms.40.zip";
 
   public void testMoreTerms() throws Exception {
-    File oldIndexDir = TestUtil.getTempDir("moreterms");
+    File oldIndexDir = TestUtil.createTempDir("moreterms");
     TestUtil.unzip(getDataFile(moreTermsIndex), oldIndexDir);
     Directory dir = newFSDirectory(oldIndexDir);
     // TODO: more tests

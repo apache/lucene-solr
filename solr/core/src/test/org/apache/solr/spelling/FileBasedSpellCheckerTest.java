@@ -17,20 +17,21 @@
 
 package org.apache.solr.spelling;
 
+import java.io.File;
+import java.util.Collection;
+import java.util.Map;
+
+import org.apache.lucene.analysis.Token;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
-import org.apache.lucene.analysis.Token;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.io.File;
-import java.util.Date;
-import java.util.Map;
-import java.util.Collection;
 
 /**
  *
@@ -68,8 +69,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     spellchecker.add(AbstractLuceneSpellChecker.LOCATION, "spellings.txt");
     spellchecker.add(AbstractLuceneSpellChecker.FIELD, "teststop");
     spellchecker.add(FileBasedSpellChecker.SOURCE_FILE_CHAR_ENCODING, "UTF-8");
-    File indexDir = new File(TEMP_DIR, "spellingIdx" + new Date().getTime());
-    indexDir.mkdirs();
+    File indexDir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
     spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
     SolrCore core = h.getCore();
     String dictName = checker.init(spellchecker, core);
@@ -104,8 +104,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     spellchecker.add(AbstractLuceneSpellChecker.LOCATION, "spellings.txt");
     spellchecker.add(AbstractLuceneSpellChecker.FIELD, "teststop");
     spellchecker.add(FileBasedSpellChecker.SOURCE_FILE_CHAR_ENCODING, "UTF-8");
-    File indexDir = new File(TEMP_DIR, "spellingIdx" + new Date().getTime());
-    indexDir.mkdirs();
+    File indexDir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
     spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
     spellchecker.add(SolrSpellChecker.FIELD_TYPE, "teststop");
     spellchecker.add(AbstractLuceneSpellChecker.SPELLCHECKER_ARG_NAME, spellchecker);

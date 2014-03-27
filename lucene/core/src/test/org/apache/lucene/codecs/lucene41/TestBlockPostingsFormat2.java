@@ -43,7 +43,7 @@ public class TestBlockPostingsFormat2 extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    dir = newFSDirectory(TestUtil.getTempDir("testDFBlockSize"));
+    dir = newFSDirectory(TestUtil.createTempDir("testDFBlockSize"));
     iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat()));
     iw = new RandomIndexWriter(random(), dir, iwc.clone());

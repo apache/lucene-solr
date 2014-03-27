@@ -36,7 +36,7 @@ public abstract class BenchmarkTestCase extends LuceneTestCase {
   
   @BeforeClass
   public static void beforeClassBenchmarkTestCase() {
-    WORKDIR = TestUtil.getTempDir("benchmark");
+    WORKDIR = TestUtil.createTempDir("benchmark");
     WORKDIR.delete();
     WORKDIR.mkdirs();
   }

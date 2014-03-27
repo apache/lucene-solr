@@ -65,7 +65,7 @@ public class TestWindowsMMap extends LuceneTestCase {
     // sometimes the directory is not cleaned by rmDir, because on Windows it
     // may take some time until the files are finally dereferenced. So clean the
     // directory up front, or otherwise new IndexWriter will fail.
-    File dirPath = TestUtil.getTempDir("testLuceneMmap");
+    File dirPath = TestUtil.createTempDir("testLuceneMmap");
     rmDir(dirPath);
     MMapDirectory dir = new MMapDirectory(dirPath, null);
     

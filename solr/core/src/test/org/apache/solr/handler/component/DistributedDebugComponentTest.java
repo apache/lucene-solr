@@ -3,6 +3,7 @@ package org.apache.solr.handler.component;
 import java.io.File;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
@@ -48,7 +49,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
   }
   
   private static File createSolrHome() throws Exception {
-    File workDir = new File(TEMP_DIR, DistributedDebugComponentTest.class.getName());
+    File workDir = TestUtil.createTempDir(DistributedDebugComponentTest.class.getName());
     setupJettyTestHome(workDir, "collection1");
     FileUtils.copyDirectory(new File(workDir, "collection1"), new File(workDir, "collection2"));
     return workDir;

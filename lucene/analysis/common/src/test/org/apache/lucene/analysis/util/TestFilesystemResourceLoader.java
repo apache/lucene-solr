@@ -61,7 +61,7 @@ public class TestFilesystemResourceLoader extends LuceneTestCase {
   }
   
   public void testBaseDir() throws Exception {
-    final File base = TestUtil.getTempDir("fsResourceLoaderBase").getAbsoluteFile();
+    final File base = TestUtil.createTempDir("fsResourceLoaderBase").getAbsoluteFile();
     try {
       base.mkdirs();
       Writer os = new OutputStreamWriter(new FileOutputStream(new File(base, "template.txt")), IOUtils.CHARSET_UTF_8);

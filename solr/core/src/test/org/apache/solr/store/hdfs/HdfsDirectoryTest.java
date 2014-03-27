@@ -31,6 +31,8 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.junit.After;
@@ -59,9 +61,7 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     createTempDir();
-    dfsCluster = HdfsTestUtil.setupClass(TEMP_DIR.getAbsolutePath()
-        + File.separator + HdfsDirectoryTest.class.getName() + "_hdfsdir-"
-        + System.currentTimeMillis());
+    dfsCluster = HdfsTestUtil.setupClass();
   }
   
   @AfterClass

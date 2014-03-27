@@ -40,9 +40,7 @@ public class HdfsSyncSliceTest extends SyncSliceTest {
   
   @BeforeClass
   public static void setupClass() throws Exception {
-    dfsCluster = HdfsTestUtil.setupClass(new File(TEMP_DIR,
-        HdfsBasicDistributedZk2Test.class.getName() + "_"
-            + System.currentTimeMillis()).getAbsolutePath());
+    dfsCluster = HdfsTestUtil.setupClass();
   }
   
   @AfterClass

@@ -13,6 +13,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 
 /*
@@ -38,11 +39,11 @@ public class HdfsTestUtil {
   
   private static Map<MiniDFSCluster,Timer> timers = new ConcurrentHashMap<>();
 
-  public static MiniDFSCluster setupClass(String dataDir) throws Exception {
+  public static MiniDFSCluster setupClass() throws Exception {
     LuceneTestCase.assumeFalse("HDFS tests were disabled by -Dtests.disableHdfs",
       Boolean.parseBoolean(System.getProperty("tests.disableHdfs", "false")));
-    File dir = new File(dataDir);
-    new File(dataDir).mkdirs();
+
+    File dir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
 
     savedLocale = Locale.getDefault();
     // TODO: we HACK around HADOOP-9643

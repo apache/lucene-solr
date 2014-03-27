@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
@@ -54,7 +55,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
 
     // sometimes randomly use an absolute File path instead 
     if (random().nextBoolean()) {
-      healthcheckFile = new File(TEMP_DIR, fileName);
+      healthcheckFile = TestUtil.createTempFile(fileName, "");
       fileNameParam = healthcheckFile.getAbsolutePath();
     } 
       

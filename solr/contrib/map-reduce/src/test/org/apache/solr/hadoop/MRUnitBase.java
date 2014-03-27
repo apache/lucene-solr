@@ -21,6 +21,8 @@ import java.io.IOException;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.hadoop.morphline.MorphlineMapRunner;
 import org.apache.solr.morphlines.solr.AbstractSolrMorphlineTestBase;
@@ -45,11 +47,9 @@ public abstract class MRUnitBase extends SolrTestCaseJ4 {
   }
   
   protected void setupHadoopConfig(Configuration config) throws IOException {
-    
-    String tempDir = TEMP_DIR + "/test-morphlines-" + System.currentTimeMillis();
-    new File(tempDir).mkdirs();
+    String tempDir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName()).getAbsolutePath();
     FileUtils.copyFile(new File(RESOURCES_DIR + "/custom-mimetypes.xml"), new File(tempDir + "/custom-mimetypes.xml"));
-    
+
     AbstractSolrMorphlineTestBase.setupMorphline(tempDir, "test-morphlines/solrCellDocumentTypes", true);
     
     config.set(MorphlineMapRunner.MORPHLINE_FILE_PARAM, tempDir + "/test-morphlines/solrCellDocumentTypes.conf");

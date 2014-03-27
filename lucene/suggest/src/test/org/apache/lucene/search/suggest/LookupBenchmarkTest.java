@@ -162,7 +162,7 @@ public class LookupBenchmarkTest extends LuceneTestCase {
     } catch (InstantiationException e) {
       Analyzer a = new MockAnalyzer(random, MockTokenizer.KEYWORD, false);
       if (cls == AnalyzingInfixSuggester.class) {
-        lookup = new AnalyzingInfixSuggester(TEST_VERSION_CURRENT, FSDirectory.open(TestUtil.getTempDir("LookupBenchmarkTest")), a);
+        lookup = new AnalyzingInfixSuggester(TEST_VERSION_CURRENT, FSDirectory.open(TestUtil.createTempDir("LookupBenchmarkTest")), a);
       } else {
         Constructor<? extends Lookup> ctor = cls.getConstructor(Analyzer.class);
         lookup = ctor.newInstance(a);

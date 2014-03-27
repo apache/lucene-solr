@@ -598,7 +598,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
     // for this test we force a FS dir
     // we can't just use newFSDirectory, because this test doesn't really index anything.
     // so if we get NRTCachingDir+SimpleText, we make massive stored fields and OOM (LUCENE-4484)
-    Directory dir = new MockDirectoryWrapper(random(), new MMapDirectory(TestUtil.getTempDir("testBigDocuments")));
+    Directory dir = new MockDirectoryWrapper(random(), new MMapDirectory(TestUtil.createTempDir("testBigDocuments")));
     IndexWriterConfig iwConf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwConf.setMaxBufferedDocs(RandomInts.randomIntBetween(random(), 2, 30));
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConf);

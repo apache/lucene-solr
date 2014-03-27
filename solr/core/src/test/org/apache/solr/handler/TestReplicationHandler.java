@@ -44,6 +44,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.SimpleFSDirectory;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
@@ -1594,10 +1595,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       System.setProperty("solr.test.sys.prop1", "propone");
       System.setProperty("solr.test.sys.prop2", "proptwo");
 
-      File home = new File(TEMP_DIR, 
-                           getClass().getName() + "-" + 
-                           System.currentTimeMillis());
-                           
+      File home = TestUtil.createTempDir(getClass().getName());
 
       homeDir = new File(home, name);
       dataDir = new File(homeDir + "/collection1", "data");

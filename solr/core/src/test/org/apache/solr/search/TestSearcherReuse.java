@@ -23,6 +23,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.ManagedIndexSchema;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 import org.apache.commons.io.FileUtils;
@@ -55,7 +56,7 @@ public class TestSearcherReuse extends SolrTestCaseJ4 {
   @BeforeClass
   private static void setupTempDirAndCoreWithManagedSchema() throws Exception {
     createTempDir();
-    solrHome = new File(TEMP_DIR, TestSearcherReuse.class.getSimpleName());
+    solrHome = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
     solrHome = solrHome.getAbsoluteFile();
 
     File confDir = new File(solrHome, confPath);

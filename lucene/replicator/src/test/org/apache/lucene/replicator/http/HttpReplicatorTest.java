@@ -68,7 +68,7 @@ public class HttpReplicatorTest extends ReplicatorTestCase {
   public void setUp() throws Exception {
     super.setUp();
     System.setProperty("org.eclipse.jetty.LEVEL", "DEBUG"); // sets stderr logging to DEBUG level
-    clientWorkDir = TestUtil.getTempDir("httpReplicatorTest");
+    clientWorkDir = TestUtil.createTempDir("httpReplicatorTest");
     handlerIndexDir = newDirectory();
     serverIndexDir = newDirectory();
     serverReplicator = new LocalReplicator();

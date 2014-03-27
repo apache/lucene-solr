@@ -17,17 +17,19 @@
 
 package org.apache.solr.core;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.IOUtils;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrException;
-import org.junit.After;
-import org.xml.sax.SAXParseException;
-
 import java.io.File;
 import java.util.Collection;
 import java.util.Map;
 import java.util.regex.Pattern;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
+import org.junit.After;
+import org.xml.sax.SAXParseException;
 
 public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
   
@@ -37,8 +39,7 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
   private void init(final String dirSuffix) {
     // would be nice to do this in an @Before method,
     // but junit doesn't let @Before methods have test names
-    solrHome = new File(TEMP_DIR, this.getClass().getName() + "_" + dirSuffix);
-    assertTrue("Failed to mkdirs solrhome [" + solrHome + "]", solrHome.mkdirs());
+    solrHome = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName() + dirSuffix);
   }
 
   @After

@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
@@ -47,8 +48,8 @@ import com.google.common.collect.ListMultimap;
 import com.typesafe.config.Config;
 
 public abstract class AbstractSolrMorphlineZkTestBase extends AbstractFullDistribZkTestBase {
-  private static final File solrHomeDirectory = new File(TEMP_DIR, AbstractSolrMorphlineZkTestBase.class.getName());
-  
+  private static File solrHomeDirectory;
+
   protected static final String RESOURCES_DIR = getFile("morphlines-core.marker").getParent();  
   private static final File SOLR_INSTANCE_DIR = new File(RESOURCES_DIR + "/solr");
   private static final File SOLR_CONF_DIR = new File(RESOURCES_DIR + "/solr/collection1");
@@ -69,6 +70,7 @@ public abstract class AbstractSolrMorphlineZkTestBase extends AbstractFullDistri
   
   @BeforeClass
   public static void setupClass() throws Exception {
+    solrHomeDirectory = TestUtil.createTempDir(AbstractSolrMorphlineZkTestBase.class.getName());
     AbstractZkTestCase.SOLRHOME = solrHomeDirectory;
     FileUtils.copyDirectory(SOLR_INSTANCE_DIR, solrHomeDirectory);
     createTempDir();

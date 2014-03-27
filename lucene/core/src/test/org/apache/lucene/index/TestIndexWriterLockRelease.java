@@ -36,7 +36,7 @@ import org.apache.lucene.util.TestUtil;
 public class TestIndexWriterLockRelease extends LuceneTestCase {
   
   public void testIndexWriterLockRelease() throws IOException {
-    Directory dir = newFSDirectory(TestUtil.getTempDir("testLockRelease"));
+    Directory dir = newFSDirectory(TestUtil.createTempDir("testLockRelease"));
     try {
       new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
     } catch (FileNotFoundException | NoSuchFileException e) {

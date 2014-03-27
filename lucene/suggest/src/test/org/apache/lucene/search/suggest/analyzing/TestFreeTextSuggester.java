@@ -82,7 +82,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
                    toString(sug.lookup("b", 10)));
 
       // Try again after save/load:
-      File tmpDir = TestUtil.getTempDir("FreeTextSuggesterTest");
+      File tmpDir = TestUtil.createTempDir("FreeTextSuggesterTest");
       tmpDir.mkdir();
 
       File path = new File(tmpDir, "suggester");

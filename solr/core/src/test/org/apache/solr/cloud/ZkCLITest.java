@@ -28,6 +28,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.RegexFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -231,11 +233,9 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     assertEquals(confsetname, collectionProps.getStr("configName"));
     
     // test down config
-    File confDir = new File(TEMP_DIR,
-        "solrtest-confdropspot-" + this.getClass().getName() + "-" + System.currentTimeMillis());
-    
+    File confDir = new File(TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName()), "solrtest-confdropspot");
     assertFalse(confDir.exists());
-    
+
     args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
         "downconfig", "-confdir", confDir.getAbsolutePath(), "-confname", confsetname};
     ZkCLI.main(args);
@@ -281,8 +281,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     byte [] data = new String("getFileNode-data").getBytes("UTF-8");
     this.zkClient.create(getNode, data, CreateMode.PERSISTENT, true);
 
-    File file = new File(TEMP_DIR,
-        "solrtest-getfile-" + this.getClass().getName() + "-" + System.currentTimeMillis());
+    File file = TestUtil.createTempFile("solrtest-getfile", "");
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
         "getfile", getNode, file.getAbsolutePath()};
     ZkCLI.main(args);
@@ -295,8 +294,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   public void testGetFileNotExists() throws Exception {
     String getNode = "/getFileNotExistsNode";
 
-    File file = new File(TEMP_DIR,
-        "solrtest-getfilenotexists-" + this.getClass().getName() + "-" + System.currentTimeMillis());
+    File file = TestUtil.createTempFile("solrtest-getfilenotexists", "");
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
         "getfile", getNode, file.getAbsolutePath()};
     try {
