@@ -210,6 +210,8 @@ Bug fixes
 
 * LUCENE-5111: Fix WordDelimiterFilter to return offsets in correct order.  (Robert Muir)
 
+* LUCENE-5555: Fix SortedInputIterator to correctly encode/decode contexts in presence of payload (Areek Zillur)
+
 Test Framework
 
 * LUCENE-5449: Rename _TestUtil and _TestHelper to remove the leading _.
