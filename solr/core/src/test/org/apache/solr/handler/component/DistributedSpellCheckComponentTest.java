@@ -23,6 +23,7 @@ import java.util.List;
 
 import junit.framework.Assert;
 
+import org.apache.solr.SolrTestCaseJ4.SuppressTempDirCleanUp;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrServer;
@@ -40,6 +41,7 @@ import org.junit.BeforeClass;
  * @see org.apache.solr.handler.component.SpellCheckComponent
  */
 @Slow
+@SuppressTempDirCleanUp(bugUrl = "https://issues.apache.org/jira/browse/SOLR-1877 Spellcheck IndexReader leak bug?")
 public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTestCase {
   
   public DistributedSpellCheckComponentTest()

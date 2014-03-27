@@ -44,8 +44,7 @@ public class TestMultiCoreConfBootstrap extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     
-    createTempDir();
-    dataDir2 = new File(TEMP_DIR, getSimpleClassName() + "-core1-"
+    dataDir2 = new File(dataDir, getSimpleClassName() + "-core1-"
         + System.currentTimeMillis());
     dataDir2.mkdirs();
 

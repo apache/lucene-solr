@@ -56,11 +56,11 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
   @Override public void setUp() throws Exception {
     super.setUp();
 
-    dataDir1 = new File(TEMP_DIR, getClass().getName() + "-core0-"
+    dataDir1 = new File(dataDir, getClass().getName() + "-core0-"
         + System.currentTimeMillis());
     dataDir1.mkdirs();
     
-    dataDir2 = new File(TEMP_DIR, getClass().getName() + "-core1-"
+    dataDir2 = new File(dataDir, getClass().getName() + "-core1-"
         + System.currentTimeMillis());
     dataDir2.mkdirs();
     

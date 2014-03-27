@@ -45,7 +45,7 @@ public class TestSolrCoreProperties extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    File homeDir = new File(TEMP_DIR,
+    File homeDir = new File(dataDir,
                             "solrtest-TestSolrCoreProperties-" + System.currentTimeMillis());
     File collDir = new File(homeDir, "collection1");
     File dataDir = new File(collDir, "data");

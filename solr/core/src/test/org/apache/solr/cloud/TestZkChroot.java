@@ -43,7 +43,7 @@ public class TestZkChroot extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    createTempDir();
+
     zkDir = dataDir.getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
     zkServer = new ZkTestServer(zkDir);

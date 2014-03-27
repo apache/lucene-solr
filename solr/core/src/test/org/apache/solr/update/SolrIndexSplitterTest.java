@@ -56,11 +56,11 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
     super.setUp();
     clearIndex();
     assertU(commit());
-    indexDir1 = new File(TEMP_DIR, this.getClass().getName()
+    indexDir1 = new File(dataDir, this.getClass().getName()
         + "_testSplit1");
-    indexDir2 = new File(TEMP_DIR, this.getClass().getName()
+    indexDir2 = new File(dataDir, this.getClass().getName()
         + "_testSplit2");
-    indexDir3 = new File(TEMP_DIR, this.getClass().getName()
+    indexDir3 = new File(dataDir, this.getClass().getName()
         + "_testSplit3");
 
     if (indexDir1.exists()) {
@@ -269,7 +269,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSplitByRouteKey() throws Exception  {
-    File indexDir = new File(TEMP_DIR, this.getClass().getName() + "testSplitByRouteKey");
+    File indexDir = new File(dataDir, this.getClass().getName() + "testSplitByRouteKey");
     if (indexDir.exists())  {
       FileUtils.deleteDirectory(indexDir);
     }

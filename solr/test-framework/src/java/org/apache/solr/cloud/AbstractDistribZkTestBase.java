@@ -59,7 +59,6 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    createTempDir();
     
     String zkDir = testDir.getAbsolutePath() + File.separator
     + "zookeeper/server1/data";

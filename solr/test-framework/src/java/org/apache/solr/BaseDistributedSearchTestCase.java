@@ -278,7 +278,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     super.setUp();
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
-    testDir = new File(TEMP_DIR,
+    testDir = new File(dataDir,
             getClass().getName() + "-" + System.currentTimeMillis());
     testDir.mkdirs();
   }

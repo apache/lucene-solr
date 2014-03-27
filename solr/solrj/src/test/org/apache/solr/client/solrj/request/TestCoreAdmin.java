@@ -92,7 +92,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
   }
 
   private File createTestDirectory() {
-    File tmp = new File(TEMP_DIR, "solrtest-" + getTestClass().getSimpleName() + "-" + System.currentTimeMillis());
+    File tmp = new File(dataDir, "solrtest-" + getTestClass().getSimpleName() + "-" + System.currentTimeMillis());
     assertTrue("Couldn't create temporary directory " + tmp.getAbsolutePath(), tmp.mkdirs());
     return tmp;
   }

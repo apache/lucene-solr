@@ -151,7 +151,7 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
 
     public void setUp() throws Exception {
 
-      File home = new File(TEMP_DIR,
+      File home = new File(dataDir,
               getClass().getName() + "-" + System.currentTimeMillis());
 
 

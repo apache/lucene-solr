@@ -42,8 +42,7 @@ public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    createTempDir();
-    tmpSolrHome = TEMP_DIR + File.separator + AnalysisAfterCoreReloadTest.class.getSimpleName() + System.currentTimeMillis();
+    tmpSolrHome = dataDir + File.separator + AnalysisAfterCoreReloadTest.class.getSimpleName() + System.currentTimeMillis();
     FileUtils.copyDirectory(new File(TEST_HOME()), new File(tmpSolrHome).getAbsoluteFile());
     initCore("solrconfig.xml", "schema.xml", new File(tmpSolrHome).getAbsolutePath());
   }

@@ -52,7 +52,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     initCore("solrconfig-minimal.xml", "schema-tiny.xml");
   }
 
-  private final File solrHomeDirectory = new File(TEMP_DIR, TestLazyCores.getSimpleClassName());
+  private final File solrHomeDirectory = new File(dataDir, TestLazyCores.getSimpleClassName());
 
   private CoreContainer init() throws Exception {
 

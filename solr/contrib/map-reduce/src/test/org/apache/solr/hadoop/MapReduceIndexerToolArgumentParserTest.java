@@ -55,7 +55,7 @@ public class MapReduceIndexerToolArgumentParserTest extends SolrTestCaseJ4 {
     
   private static final Logger LOG = LoggerFactory.getLogger(MapReduceIndexerToolArgumentParserTest.class);
   
-  private static final File solrHomeDirectory = new File(TEMP_DIR, MorphlineGoLiveMiniMRTest.class.getName());
+  private static final File solrHomeDirectory = new File(dataDir, MorphlineGoLiveMiniMRTest.class.getName());
   
   @BeforeClass
   public static void beforeClass() {

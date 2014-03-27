@@ -73,7 +73,7 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
   public void setUp() throws Exception {
     super.setUp();
 
-    dataDir = new File(TEMP_DIR,
+    dataDir = new File(dataDir,
         getClass().getName() + "-" + System.currentTimeMillis() + System.getProperty("file.separator") + "solr"
         + System.getProperty("file.separator") + "data");
     dataDir.mkdirs();

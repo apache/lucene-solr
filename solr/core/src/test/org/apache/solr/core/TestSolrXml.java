@@ -33,7 +33,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
   @Rule
   public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
-  private final File solrHome = new File(TEMP_DIR, TestSolrXml.getClassName() + File.separator + "solrHome");
+  private final File solrHome = new File(dataDir, TestSolrXml.getClassName() + File.separator + "solrHome");
 
   @Test
   public void testAllInfoPresent() throws IOException {

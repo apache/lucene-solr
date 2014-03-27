@@ -74,7 +74,7 @@ public class SliceStateUpdateTest extends SolrTestCaseJ4 {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    createTempDir();
+
     System.setProperty("zkClientTimeout", "3000");
 
     zkDir = dataDir.getAbsolutePath() + File.separator

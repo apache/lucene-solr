@@ -53,9 +53,7 @@ public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
 
   @BeforeClass
   public static void beforeClass2() throws Exception {
-    if (dataDir == null) {
-      createTempDir();
-    }
+
   }
 
   protected void setupCoreContainer() {
@@ -73,7 +71,7 @@ public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
     // setup datadirs
     System.setProperty( "solr.core0.data.dir", SolrTestCaseJ4.dataDir.getCanonicalPath() );
 
-    dataDir2 = new File(TEMP_DIR, getClass().getName() + "-"
+    dataDir2 = new File(dataDir, getClass().getName() + "-"
         + System.currentTimeMillis());
     dataDir2.mkdirs();
 

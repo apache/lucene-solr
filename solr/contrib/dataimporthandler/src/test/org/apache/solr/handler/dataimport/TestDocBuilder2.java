@@ -240,7 +240,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   @Test
   @Ignore("Fix Me. See SOLR-4103.")
   public void testFileListEntityProcessor_lastIndexTime() throws Exception  {
-    File tmpdir = File.createTempFile("test", "tmp", TEMP_DIR);
+    File tmpdir = File.createTempFile("test", "tmp", dataDir);
     tmpdir.delete();
     tmpdir.mkdir();
     tmpdir.deleteOnExit();

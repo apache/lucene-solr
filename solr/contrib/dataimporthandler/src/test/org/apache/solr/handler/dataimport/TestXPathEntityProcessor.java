@@ -42,7 +42,7 @@ public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase 
   
   @Test
   public void withFieldsAndXpath() throws Exception {
-    File tmpdir = File.createTempFile("test", "tmp", TEMP_DIR);
+    File tmpdir = File.createTempFile("test", "tmp", dataDir);
     tmpdir.delete();
     tmpdir.mkdir();
     tmpdir.deleteOnExit();
@@ -333,7 +333,7 @@ public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase 
   
   @Test
   public void withDefaultSolrAndXsl() throws Exception {
-    File tmpdir = File.createTempFile("test", "tmp", TEMP_DIR);
+    File tmpdir = File.createTempFile("test", "tmp", dataDir);
     tmpdir.delete();
     tmpdir.mkdir();
     tmpdir.deleteOnExit();

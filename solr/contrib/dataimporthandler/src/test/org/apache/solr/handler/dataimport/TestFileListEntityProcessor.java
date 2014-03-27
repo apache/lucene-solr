@@ -37,7 +37,7 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
   @Test
   @SuppressWarnings("unchecked")
   public void testSimple() throws IOException {
-    File tmpdir = File.createTempFile("test", "tmp", TEMP_DIR);
+    File tmpdir = File.createTempFile("test", "tmp", dataDir);
     tmpdir.delete();
     tmpdir.mkdir();
     tmpdir.deleteOnExit();
@@ -63,7 +63,7 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
   
   @Test
   public void testBiggerSmallerFiles() throws IOException {
-    File tmpdir = File.createTempFile("test", "tmp", TEMP_DIR);
+    File tmpdir = File.createTempFile("test", "tmp", dataDir);
     tmpdir.delete();
     tmpdir.mkdir();
     tmpdir.deleteOnExit();
@@ -133,7 +133,7 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
 
   @Test
   public void testNTOT() throws IOException {
-    File tmpdir = File.createTempFile("test", "tmp", TEMP_DIR);
+    File tmpdir = File.createTempFile("test", "tmp", dataDir);
     tmpdir.delete();
     tmpdir.mkdir();
     tmpdir.deleteOnExit();
@@ -169,7 +169,7 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
 
   @Test
   public void testRECURSION() throws IOException {
-    File tmpdir = File.createTempFile("test", "tmp", TEMP_DIR);
+    File tmpdir = File.createTempFile("test", "tmp", dataDir);
     tmpdir.delete();
     tmpdir.mkdir();
     tmpdir.deleteOnExit();

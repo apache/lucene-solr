@@ -17,23 +17,6 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
-import org.apache.solr.core.SolrXMLSerializer.SolrCoreXMLDef;
-import org.apache.solr.core.SolrXMLSerializer.SolrXMLDef;
-import org.junit.Test;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.xml.sax.SAXException;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -46,8 +29,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 
-public class TestSolrXMLSerializer extends LuceneTestCase {
+import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.core.SolrXMLSerializer.SolrCoreXMLDef;
+import org.apache.solr.core.SolrXMLSerializer.SolrXMLDef;
+import org.junit.Test;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.xml.sax.SAXException;
+
+
+public class TestSolrXMLSerializer extends SolrTestCaseJ4 {
   private static final XPathFactory xpathFactory = XPathFactory.newInstance();
   private static final String defaultCoreNameKey = "defaultCoreName";
   private static final String defaultCoreNameVal = "collection1";
@@ -81,7 +82,7 @@ public class TestSolrXMLSerializer extends LuceneTestCase {
     assertResults(((StringWriter) w).getBuffer().toString().getBytes("UTF-8"));
     
     // again with default file
-    File tmpFile = TestUtil.createTempFile("solr.xml", null, TEMP_DIR);
+    File tmpFile = TestUtil.createTempFile("solr.xml", null, dataDir);
     
     serializer.persistFile(tmpFile, solrXMLDef);
 

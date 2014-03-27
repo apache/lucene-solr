@@ -35,7 +35,7 @@ public class TestBinaryField extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    File homeDir = new File(TEMP_DIR,
+    File homeDir = new File(dataDir,
                             "solrtest-TestBinaryField-" + System.currentTimeMillis());
     File collDir = new File(homeDir, "collection1");
     File dataDir = new File(collDir, "data");

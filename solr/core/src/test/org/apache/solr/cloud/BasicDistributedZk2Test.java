@@ -415,7 +415,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("qt", "/replication");
     params.set("command", "backup");
-    File location = new File(TEMP_DIR, BasicDistributedZk2Test.class.getName() + "-backupdir-" + System.currentTimeMillis());
+    File location = new File(dataDir, BasicDistributedZk2Test.class.getName() + "-backupdir-" + System.currentTimeMillis());
     params.set("location", location.getAbsolutePath());
 
     QueryRequest request = new QueryRequest(params);

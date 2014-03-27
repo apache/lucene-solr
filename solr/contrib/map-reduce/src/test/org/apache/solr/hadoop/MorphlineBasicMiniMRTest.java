@@ -79,7 +79,7 @@ public class MorphlineBasicMiniMRTest extends SolrTestCaseJ4 {
   
   private static String tempDir;
   
-  private static final File solrHomeDirectory = new File(TEMP_DIR, MorphlineBasicMiniMRTest.class.getName());
+  private static final File solrHomeDirectory = new File(dataDir, MorphlineBasicMiniMRTest.class.getName());
   
   protected MapReduceIndexerTool createTool() {
     return new MapReduceIndexerTool();
@@ -122,7 +122,7 @@ public class MorphlineBasicMiniMRTest extends SolrTestCaseJ4 {
     AbstractZkTestCase.SOLRHOME = solrHomeDirectory;
     FileUtils.copyDirectory(MINIMR_CONF_DIR, solrHomeDirectory);
     
-    tempDir = TEMP_DIR + "/test-morphlines-" + System.currentTimeMillis();
+    tempDir = dataDir + "/test-morphlines-" + System.currentTimeMillis();
     new File(tempDir).mkdirs();
     FileUtils.copyFile(new File(RESOURCES_DIR + "/custom-mimetypes.xml"), new File(tempDir + "/custom-mimetypes.xml"));
     
@@ -140,7 +140,6 @@ public class MorphlineBasicMiniMRTest extends SolrTestCaseJ4 {
 //      sb.append(",").append(i.getCanonicalHostName());
 //    }
     
-    createTempDir();
     new File(dataDir, "nm-local-dirs").mkdirs();
     
     System.setProperty("solr.hdfs.blockcache.enabled", "false");

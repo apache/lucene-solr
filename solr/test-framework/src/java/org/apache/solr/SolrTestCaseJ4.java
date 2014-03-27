@@ -160,6 +160,12 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   @BeforeClass 
   @SuppressWarnings("unused")
   private static void beforeClass() {
+    String cname = getSimpleClassName();
+    dataDir = new File(TEMP_DIR,
+            "solrtest-" + cname + "-" + System.currentTimeMillis());
+    dataDir.mkdirs();
+    System.err.println("Creating dataDir: " + dataDir.getAbsolutePath());
+    
     System.setProperty("jetty.testMode", "true");
     System.setProperty("enable.update.log", usually() ? "true" : "false");
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
@@ -191,14 +197,22 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       coreName = ConfigSolrXmlOld.DEFAULT_DEFAULT_CORE_NAME;
     } finally {
       try {
-        if (dataDir != null && dataDir.exists() && !recurseDelete(dataDir)) {
-          String msg = "!!!! WARNING: best effort to remove "
-              + dataDir.getAbsolutePath() + " FAILED !!!!!";
-          if (RandomizedContext.current().getTargetClass()
-              .isAnnotationPresent(SuppressTempDirCleanUp.class)) {
-            System.err.println(msg);
-          } else {
-            fail(msg);
+        boolean skip = Boolean.getBoolean("solr.test.leavedatadir");
+        if (skip) {
+          System.err
+              .println("NOTE: per solr.test.leavedatadir, dataDir will not be removed: "
+                  + dataDir.getAbsolutePath());
+        } else {
+          
+          if (dataDir != null && dataDir.exists() && !recurseDelete(dataDir)) {
+            String msg = "!!!! WARNING: best effort to remove "
+                + dataDir.getAbsolutePath() + " FAILED !!!!!";
+            if (RandomizedContext.current().getTargetClass()
+                .isAnnotationPresent(SuppressTempDirCleanUp.class)) {
+              System.err.println(msg);
+            } else {
+              fail(msg);
+            }
           }
         }
       } finally {
@@ -547,13 +561,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   private static String factoryProp;
 
-  public static void createTempDir() {
-    String cname = getSimpleClassName();
-    dataDir = new File(TEMP_DIR,
-            "solrtest-" + cname + "-" + System.currentTimeMillis());
-    dataDir.mkdirs();
-    System.err.println("Creating dataDir: " + dataDir.getAbsolutePath());
-  }
 
   public static void initCore() throws Exception {
     log.info("####initCore");
@@ -562,9 +569,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     factoryProp = System.getProperty("solr.directoryFactory");
     if (factoryProp == null) {
       System.setProperty("solr.directoryFactory","solr.RAMDirectoryFactory");
-    }
-    if (dataDir == null) {
-      createTempDir();
     }
 
     // other  methods like starting a jetty instance need these too
@@ -590,8 +594,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   public static CoreContainer createCoreContainer(String solrHome, String solrXML) {
     testSolrHome = checkNotNull(solrHome);
-    if (dataDir == null)
-      createTempDir();
     h = new TestHarness(solrHome, solrXML);
     lrf = h.getRequestFactory("standard", 0, 20, CommonParams.VERSION, "2.2");
     return h.getCoreContainer();
@@ -599,8 +601,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   public static CoreContainer createDefaultCoreContainer(String solrHome) {
     testSolrHome = checkNotNull(solrHome);
-    if (dataDir == null)
-      createTempDir();
     h = new TestHarness("collection1", dataDir.getAbsolutePath(), "solrconfig.xml", "schema.xml");
     lrf = h.getRequestFactory("standard", 0, 20, CommonParams.VERSION, "2.2");
     return h.getCoreContainer();

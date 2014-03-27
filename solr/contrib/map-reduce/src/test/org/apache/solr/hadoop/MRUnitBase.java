@@ -46,7 +46,7 @@ public abstract class MRUnitBase extends SolrTestCaseJ4 {
   
   protected void setupHadoopConfig(Configuration config) throws IOException {
     
-    String tempDir = TEMP_DIR + "/test-morphlines-" + System.currentTimeMillis();
+    String tempDir = dataDir + "/test-morphlines-" + System.currentTimeMillis();
     new File(tempDir).mkdirs();
     FileUtils.copyFile(new File(RESOURCES_DIR + "/custom-mimetypes.xml"), new File(tempDir + "/custom-mimetypes.xml"));
     

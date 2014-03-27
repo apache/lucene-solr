@@ -50,7 +50,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    createTempDir();
+
   }
 
   @AfterClass
