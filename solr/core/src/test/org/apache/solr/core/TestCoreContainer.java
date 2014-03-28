@@ -40,7 +40,6 @@ import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 
-import org.apache.lucene.util.Constants;
 
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
@@ -240,7 +239,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
   @Test
   public void testSharedLib() throws Exception {
-    assumeTrue("needs URLClassLoader.close() support", Constants.WINDOWS == false || Constants.JRE_IS_MINIMUM_JAVA7);
+
     File tmpRoot = TestUtil.getTempDir("testSharedLib");
 
     File lib = new File(tmpRoot, "lib");

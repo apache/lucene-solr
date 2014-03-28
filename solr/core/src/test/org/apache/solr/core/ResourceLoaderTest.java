@@ -19,7 +19,6 @@ package org.apache.solr.core;
 
 import junit.framework.Assert;
 
-import org.apache.lucene.util.Constants;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
 import org.apache.lucene.analysis.ngram.NGramFilterFactory;
@@ -171,7 +170,6 @@ public class ResourceLoaderTest extends SolrTestCaseJ4
   }
 
   public void testClassLoaderLibs() throws Exception {
-    assumeTrue("needs URLClassLoader.close() support", Constants.WINDOWS == false || Constants.JRE_IS_MINIMUM_JAVA7);
     File tmpRoot = TestUtil.getTempDir("testClassLoaderLibs");
 
     File lib = new File(tmpRoot, "lib");
