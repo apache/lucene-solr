@@ -127,8 +127,10 @@ public class TestNorms extends LuceneTestCase {
 
   public void buildIndex(Directory dir) throws IOException {
     Random random = random();
+    MockAnalyzer analyzer = new MockAnalyzer(random());
+    analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer(random()));
+        analyzer);
     Similarity provider = new MySimProvider();
     config.setSimilarity(provider);
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, config);

@@ -60,7 +60,6 @@ public class CommonTermsQueryTest extends LuceneTestCase {
   public void testBasics() throws IOException {
     Directory dir = newDirectory();
     MockAnalyzer analyzer = new MockAnalyzer(random());
-    analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, analyzer);
     String[] docs = new String[] {"this is the end of the world right",
         "is this it or maybe not",
@@ -191,7 +190,6 @@ public class CommonTermsQueryTest extends LuceneTestCase {
   public void testMinShouldMatch() throws IOException {
     Directory dir = newDirectory();
     MockAnalyzer analyzer = new MockAnalyzer(random());
-    analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, analyzer);
     String[] docs = new String[] {"this is the end of the world right",
         "is this it or maybe not",
@@ -351,7 +349,6 @@ public class CommonTermsQueryTest extends LuceneTestCase {
   public void testExtend() throws IOException {
     Directory dir = newDirectory();
     MockAnalyzer analyzer = new MockAnalyzer(random());
-    analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, analyzer);
     String[] docs = new String[] {"this is the end of the world right",
         "is this it or maybe not",
