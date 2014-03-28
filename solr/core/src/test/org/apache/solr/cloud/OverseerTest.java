@@ -43,7 +43,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.zookeeper.CreateMode;
@@ -204,7 +203,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testShardAssignment() throws Exception {
-    String zkDir = dataDir.getAbsolutePath() + File.separator
+    String zkDir = createTempDir().getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
 
     ZkTestServer server = new ZkTestServer(zkDir);
@@ -260,7 +259,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testBadQueueItem() throws Exception {
-    String zkDir = dataDir.getAbsolutePath() + File.separator
+    String zkDir = createTempDir().getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
 
     ZkTestServer server = new ZkTestServer(zkDir);
@@ -335,7 +334,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
   
   @Test
   public void testShardAssignmentBigger() throws Exception {
-    String zkDir = dataDir.getAbsolutePath() + File.separator
+    String zkDir = createTempDir().getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
 
     final int nodeCount = random().nextInt(50)+50;   //how many simulated nodes (num of threads)
@@ -506,7 +505,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
   
   @Test
   public void testStateChange() throws Exception {
-    String zkDir = dataDir.getAbsolutePath() + File.separator
+    String zkDir = createTempDir().getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
     
     ZkTestServer server = new ZkTestServer(zkDir);
@@ -603,7 +602,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testOverseerFailure() throws Exception {
-    String zkDir = dataDir.getAbsolutePath() + File.separator
+    String zkDir = createTempDir().getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
     ZkTestServer server = new ZkTestServer(zkDir);
     
@@ -726,7 +725,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
   
   @Test
   public void testShardLeaderChange() throws Exception {
-    String zkDir = dataDir.getAbsolutePath() + File.separator
+    String zkDir = createTempDir().getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
     final ZkTestServer server = new ZkTestServer(zkDir);
     SolrZkClient controllerClient = null;
@@ -782,7 +781,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testDoubleAssignment() throws Exception {
-    String zkDir = dataDir.getAbsolutePath() + File.separator
+    String zkDir = createTempDir().getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
     
     ZkTestServer server = new ZkTestServer(zkDir);
@@ -847,7 +846,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testPlaceholders() throws Exception {
-    String zkDir = dataDir.getAbsolutePath() + File.separator
+    String zkDir = createTempDir().getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
     
     ZkTestServer server = new ZkTestServer(zkDir);
@@ -896,7 +895,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
   
   @Test
   public void testReplay() throws Exception{
-    String zkDir = dataDir.getAbsolutePath() + File.separator
+    String zkDir = createTempDir().getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
     ZkTestServer server = new ZkTestServer(zkDir);
     SolrZkClient zkClient = null;

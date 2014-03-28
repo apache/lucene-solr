@@ -17,7 +17,6 @@ package org.apache.solr.store.hdfs;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Random;
@@ -31,8 +30,6 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.junit.After;
@@ -60,8 +57,7 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    createTempDir();
-    dfsCluster = HdfsTestUtil.setupClass();
+    dfsCluster = HdfsTestUtil.setupClass(createTempDir().getAbsolutePath());
   }
   
   @AfterClass
@@ -77,7 +73,7 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
     Configuration conf = new Configuration();
     conf.set("dfs.permissions.enabled", "false");
     
-    directory = new HdfsDirectory(new Path(dfsCluster.getURI().toString() + dataDir.getAbsolutePath() + "/hdfs"), conf);
+    directory = new HdfsDirectory(new Path(dfsCluster.getURI().toString() + createTempDir().getAbsolutePath() + "/hdfs"), conf);
     
     random = random();
   }

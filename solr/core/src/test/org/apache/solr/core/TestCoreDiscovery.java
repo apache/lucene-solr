@@ -25,8 +25,6 @@ import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.junit.After;
@@ -40,10 +38,9 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     initCore();
   }
 
-  private File solrHomeDirectory;
+  private final File solrHomeDirectory = createTempDir();
 
   private void setMeUp(String alternateCoreDir) throws Exception {
-    solrHomeDirectory = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName()); 
     System.setProperty("solr.solr.home", solrHomeDirectory.getAbsolutePath());
     String xmlStr = SOLR_XML;
     if (alternateCoreDir != null) {
@@ -196,7 +193,9 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
   @Test
   public void testAlternateCoreDir() throws Exception {
-    File alt = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+
+    File alt = createTempDir();
+
     setMeUp(alt.getAbsolutePath());
     addCoreWithProps(makeCorePropFile("core1", false, true, "dataDir=core1"),
         new File(alt, "core1" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
@@ -214,7 +213,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   }
   @Test
   public void testNoCoreDir() throws Exception {
-    File noCoreDir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+    File noCoreDir = new File(createTempDir(), "noCoreDir");
     setMeUp(noCoreDir.getAbsolutePath());
     addCoreWithProps(makeCorePropFile("core1", false, true),
         new File(noCoreDir, "core1" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));

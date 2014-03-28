@@ -49,7 +49,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
   }
   
   private static File createSolrHome() throws Exception {
-    File workDir = TestUtil.createTempDir(DistributedDebugComponentTest.class.getName());
+    File workDir = new File(createTempDir(), DistributedDebugComponentTest.class.getName());
     setupJettyTestHome(workDir, "collection1");
     FileUtils.copyDirectory(new File(workDir, "collection1"), new File(workDir, "collection2"));
     return workDir;

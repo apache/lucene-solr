@@ -43,8 +43,6 @@ import org.apache.hadoop.util.JarFinder;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -110,7 +108,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
   private final String inputAvroFile2;
   private final String inputAvroFile3;
 
-  private static File solrHomeDirectory;
+  private static final File solrHomeDirectory = createTempDir();
 
   @Override
   public String getSolrHome() {
@@ -140,17 +138,18 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     assumeFalse("FIXME: This test fails under Java 8 due to the Saxon dependency - see SOLR-1301", Constants.JRE_IS_MINIMUM_JAVA8);
     assumeFalse("FIXME: This test fails under J9 due to the Saxon dependency - see SOLR-1301", System.getProperty("java.vm.info", "<?>").contains("IBM J9"));
     
-    solrHomeDirectory = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
     AbstractZkTestCase.SOLRHOME = solrHomeDirectory;
     FileUtils.copyDirectory(MINIMR_INSTANCE_DIR, AbstractZkTestCase.SOLRHOME);
+    tempDir = createTempDir().getAbsolutePath();
 
-    tempDir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName()).getAbsolutePath();
+    new File(tempDir).mkdirs();
+
     FileUtils.copyFile(new File(RESOURCES_DIR + "/custom-mimetypes.xml"), new File(tempDir + "/custom-mimetypes.xml"));
     
     AbstractSolrMorphlineTestBase.setupMorphline(tempDir, "test-morphlines/solrCellDocumentTypes", true);
     
     
-    System.setProperty("hadoop.log.dir", new File(dataDir, "logs").getAbsolutePath());
+    System.setProperty("hadoop.log.dir", new File(tempDir, "logs").getAbsolutePath());
     
     int taskTrackers = 2;
     int dataNodes = 2;
@@ -162,16 +161,15 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     conf.set("dfs.permissions", "true");
     conf.set("hadoop.security.authentication", "simple");
 
-    conf.set(YarnConfiguration.NM_LOCAL_DIRS, dataDir + File.separator +  "nm-local-dirs");
-    conf.set(YarnConfiguration.DEFAULT_NM_LOG_DIRS, dataDir + File.separator +  "nm-logs");
+    conf.set(YarnConfiguration.NM_LOCAL_DIRS, tempDir + File.separator +  "nm-local-dirs");
+    conf.set(YarnConfiguration.DEFAULT_NM_LOG_DIRS, tempDir + File.separator +  "nm-logs");
 
     
-    createTempDir();
-    new File(dataDir + File.separator +  "nm-local-dirs").mkdirs();
+    new File(tempDir + File.separator +  "nm-local-dirs").mkdirs();
     
-    System.setProperty("test.build.dir", dataDir + File.separator + "hdfs" + File.separator + "test-build-dir");
-    System.setProperty("test.build.data", dataDir + File.separator + "hdfs" + File.separator + "build");
-    System.setProperty("test.cache.data", dataDir + File.separator + "hdfs" + File.separator + "cache");
+    System.setProperty("test.build.dir", tempDir + File.separator + "hdfs" + File.separator + "test-build-dir");
+    System.setProperty("test.build.data", tempDir + File.separator + "hdfs" + File.separator + "build");
+    System.setProperty("test.cache.data", tempDir + File.separator + "hdfs" + File.separator + "cache");
     
     dfsCluster = new MiniDFSCluster(conf, dataNodes, true, null);
     FileSystem fileSystem = dfsCluster.getFileSystem();
@@ -185,7 +183,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     fileSystem.setPermission(new Path("/hadoop/mapred/system"),
         FsPermission.valueOf("-rwx------"));
     
-    mrCluster = MiniMRClientClusterFactory.create(MorphlineGoLiveMiniMRTest.class, 1, conf, new File(dataDir, "mrCluster")); 
+    mrCluster = MiniMRClientClusterFactory.create(MorphlineGoLiveMiniMRTest.class, 1, conf, new File(tempDir, "mrCluster")); 
         
         //new MiniMRCluster(0, 0, taskTrackers, nnURI, numDirs, racks,
         //hosts, null, conf);

@@ -25,8 +25,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -59,10 +57,13 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
     super.setUp();
     clearIndex();
     assertU(commit());
-    File tempDir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
-    indexDir1 = new File(tempDir, this.getClass().getName() + "_testSplit1");
-    indexDir2 = new File(tempDir, this.getClass().getName() + "_testSplit2");
-    indexDir3 = new File(tempDir, this.getClass().getName() + "_testSplit3");
+    File dataDir = createTempDir();
+    indexDir1 = new File(dataDir, this.getClass().getName()
+        + "_testSplit1");
+    indexDir2 = new File(dataDir, this.getClass().getName()
+        + "_testSplit2");
+    indexDir3 = new File(dataDir, this.getClass().getName()
+        + "_testSplit3");
 
     if (indexDir1.exists()) {
       FileUtils.deleteDirectory(indexDir1);
@@ -270,7 +271,11 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSplitByRouteKey() throws Exception  {
-    File indexDir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+    File indexDir = createTempDir();
+    if (indexDir.exists())  {
+      FileUtils.deleteDirectory(indexDir);
+    }
+    indexDir.mkdirs();
 
     CompositeIdRouter r1 = new CompositeIdRouter();
     String splitKey = "sea-line!";

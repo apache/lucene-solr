@@ -50,7 +50,6 @@ import javax.management.ObjectName;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
@@ -335,8 +334,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     Create createCmd = new Create();
     createCmd.setCoreName("halfdeletedcollection_shard1_replica1");
     createCmd.setCollection(collectionName);
-    String dataDir = SolrTestCaseJ4.dataDir.getAbsolutePath() + File.separator
-        + System.currentTimeMillis() + "halfcollection" + "_hdn";
+    String dataDir = createTempDir().getAbsolutePath();
     createCmd.setDataDir(dataDir);
     createCmd.setNumShards(2);
     if (secondConfigSet) {
@@ -527,8 +525,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     Create createCmd = new Create();
     createCmd.setCoreName("halfcollection_shard1_replica1");
     createCmd.setCollection("halfcollectionblocker");
-    String dataDir = SolrTestCaseJ4.dataDir.getAbsolutePath() + File.separator
-        + System.currentTimeMillis() + "halfcollection" + "_3n";
+    String dataDir = createTempDir().getAbsolutePath();
     createCmd.setDataDir(dataDir);
     createCmd.setNumShards(1);
     if (secondConfigSet) {
@@ -539,8 +536,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     createCmd = new Create();
     createCmd.setCoreName("halfcollection_shard1_replica1");
     createCmd.setCollection("halfcollectionblocker2");
-    dataDir = SolrTestCaseJ4.dataDir.getAbsolutePath() + File.separator
-        + System.currentTimeMillis() + "halfcollection" + "_3n";
+    dataDir = createTempDir().getAbsolutePath();
     createCmd.setDataDir(dataDir);
     createCmd.setNumShards(1);
     if (secondConfigSet) {
@@ -589,8 +585,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     Create createCmd = new Create();
     createCmd.setCoreName("corewithnocollection");
     createCmd.setCollection("");
-    String dataDir = SolrTestCaseJ4.dataDir.getAbsolutePath() + File.separator
-        + System.currentTimeMillis() + "corewithnocollection" + "_1v";
+    String dataDir = createTempDir().getAbsolutePath();
     createCmd.setDataDir(dataDir);
     createCmd.setNumShards(1);
     if (secondConfigSet) {

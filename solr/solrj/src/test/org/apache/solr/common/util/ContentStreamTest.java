@@ -23,16 +23,17 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.net.URL;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.core.SolrResourceLoader;
 
 /**
  */
-public class ContentStreamTest extends LuceneTestCase 
+public class ContentStreamTest extends SolrTestCaseJ4 
 {  
   public void testStringStream() throws IOException 
   {
@@ -47,15 +48,26 @@ public class ContentStreamTest extends LuceneTestCase
   {
     InputStream is = new SolrResourceLoader(null, null).openResource( "solrj/README" );
     assertNotNull( is );
-    File file = TestUtil.createTempFile("README", "");
+    File file = TestUtil.createTempFile("README", "", createTempDir());
     FileOutputStream os = new FileOutputStream(file);
     IOUtils.copy(is, os);
     os.close();
+    is.close();
     
-    ContentStreamBase stream = new ContentStreamBase.FileStream( file );
-    assertEquals( file.length(), stream.getSize().intValue() );
-    assertTrue( IOUtils.contentEquals( new FileInputStream( file ), stream.getStream() ) );
-    assertTrue( IOUtils.contentEquals( new InputStreamReader(new FileInputStream(file), "UTF-8"), stream.getReader() ) );
+    ContentStreamBase stream = new ContentStreamBase.FileStream(file);
+    InputStream s = stream.getStream();
+    FileInputStream fis = new FileInputStream(file);
+    InputStreamReader isr = new InputStreamReader(
+        new FileInputStream(file), "UTF-8");
+    try {
+      assertEquals(file.length(), stream.getSize().intValue());
+      assertTrue(IOUtils.contentEquals(fis, s));
+      assertTrue(IOUtils.contentEquals(isr, stream.getReader()));
+    } finally {
+      s.close();
+      isr.close();
+      fis.close();
+    }
   }
   
 
@@ -63,15 +75,30 @@ public class ContentStreamTest extends LuceneTestCase
   {
     InputStream is = new SolrResourceLoader(null, null).openResource( "solrj/README" );
     assertNotNull( is );
-    File file = TestUtil.createTempFile("README", "");
+    File file = new File(createTempDir(), "README");
     FileOutputStream os = new FileOutputStream(file);
     IOUtils.copy(is, os);
     os.close();
+    is.close();
     
-    ContentStreamBase stream = new ContentStreamBase.URLStream( new URL(file.toURI().toASCIIString()) );
-    assertTrue( IOUtils.contentEquals( new FileInputStream( file ), stream.getStream() ) );
-    assertEquals( file.length(), stream.getSize().intValue() );
-    assertTrue( IOUtils.contentEquals( new InputStreamReader(new FileInputStream(file), "UTF-8"), stream.getReader() ) );
-    assertEquals( file.length(), stream.getSize().intValue() );
+    ContentStreamBase stream = new ContentStreamBase.URLStream(new URL(file
+        .toURI().toASCIIString()));
+    InputStream s = stream.getStream();
+    FileInputStream fis = new FileInputStream(file);
+    FileInputStream fis2 = new FileInputStream(file);
+    InputStreamReader isr = new InputStreamReader(fis, "UTF-8");
+    Reader r = stream.getReader();
+    try {
+      assertTrue(IOUtils.contentEquals(fis2, s));
+      assertEquals(file.length(), stream.getSize().intValue());
+      assertTrue(IOUtils.contentEquals(isr, r));
+      assertEquals(file.length(), stream.getSize().intValue());
+    } finally {
+      r.close();
+      s.close();
+      isr.close();
+      fis.close();
+      fis2.close();
+    }
   }
 }

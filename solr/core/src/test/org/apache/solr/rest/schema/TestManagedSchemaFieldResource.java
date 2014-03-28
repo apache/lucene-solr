@@ -22,8 +22,6 @@ import java.util.TreeMap;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.util.RestTestBase;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
@@ -42,8 +40,7 @@ public class TestManagedSchemaFieldResource extends RestTestBase {
 
   @Before
   public void before() throws Exception {
-    createTempDir();
-    tmpSolrHome = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+    tmpSolrHome = createTempDir();
     tmpConfDir = new File(tmpSolrHome, confDir);
     FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
 

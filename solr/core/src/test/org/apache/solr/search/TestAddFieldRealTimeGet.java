@@ -21,8 +21,6 @@ import java.io.File;
 import java.util.Collections;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.junit.Before;
@@ -37,8 +35,7 @@ public class TestAddFieldRealTimeGet extends TestRTGBase {
 
   @Before
   private void initManagedSchemaCore() throws Exception {
-    createTempDir();
-    final String tmpSolrHomePath = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName()).getAbsolutePath();
+    final String tmpSolrHomePath = createTempDir().getAbsolutePath();
     tmpSolrHome = new File(tmpSolrHomePath).getAbsoluteFile();
     tmpConfDir = new File(tmpSolrHome, confDir);
     File testHomeConfDir = new File(TEST_HOME(), confDir);

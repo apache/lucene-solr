@@ -40,7 +40,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.http.params.CoreConnectionPNames;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -285,7 +284,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     // System.clearProperty(ZkStateReader.NUM_SHARDS_PROP);
     System.setProperty(ZkStateReader.NUM_SHARDS_PROP, "1");
 
-    File controlJettyDir = TestUtil.createTempDir(getClass().getSimpleName() + "-controljetty");
+    File controlJettyDir = createTempDir();
     setupJettySolrHome(controlJettyDir);
 
     controlJetty = createJetty(controlJettyDir, testDir + "/control/data");  // don't pass shard name... let it default to "shard1"
@@ -360,7 +359,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     for (int i = 1; i <= numJettys; i++) {
       if (sb.length() > 0) sb.append(',');
       int cnt = this.jettyIntCntr.incrementAndGet();
-      File jettyDir = TestUtil.createTempDir(getClass().getSimpleName() + "-jetty" + cnt);
+
+      File jettyDir = createTempDir();
+
       jettyDir.mkdirs();
       setupJettySolrHome(jettyDir);
       log.info("create jetty " + i); 
@@ -423,7 +424,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
 
     int cnt = this.jettyIntCntr.incrementAndGet();
-      File jettyDir = TestUtil.createTempDir(getClass().getSimpleName() + "-jetty" + cnt);
+
+      File jettyDir = createTempDir("jetty");
       jettyDir.mkdirs();
       org.apache.commons.io.FileUtils.copyDirectory(new File(getSolrHome()), jettyDir);
       JettySolrRunner j = createJetty(jettyDir, testDir + "/jetty" + cnt, shard, "solrconfig.xml", null);

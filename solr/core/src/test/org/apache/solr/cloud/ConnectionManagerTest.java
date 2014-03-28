@@ -36,9 +36,8 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
   @Ignore
   public void testConnectionManager() throws Exception {
     
-    createTempDir();
     // setup a SolrZkClient to do some getBaseUrlForNodeName testing
-    String zkDir = dataDir.getAbsolutePath() + File.separator
+    String zkDir = createTempDir().getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
     
     ZkTestServer server = new ZkTestServer(zkDir);
@@ -72,9 +71,8 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
 
   public void testLikelyExpired() throws Exception {
 
-    createTempDir();
     // setup a SolrZkClient to do some getBaseUrlForNodeName testing
-    String zkDir = dataDir.getAbsolutePath() + File.separator
+    String zkDir = createTempDir().getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
 
     ZkTestServer server = new ZkTestServer(zkDir);

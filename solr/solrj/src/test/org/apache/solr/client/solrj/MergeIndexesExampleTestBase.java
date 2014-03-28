@@ -21,9 +21,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -46,6 +43,7 @@ public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
 
   protected CoreContainer cores;
   private String saveProp;
+  private File dataDir1;
   private File dataDir2;
 
   @Override
@@ -55,9 +53,7 @@ public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
 
   @BeforeClass
   public static void beforeClass2() throws Exception {
-    if (dataDir == null) {
-      createTempDir();
-    }
+
   }
 
   protected void setupCoreContainer() {
@@ -71,12 +67,11 @@ public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
     saveProp = System.getProperty("solr.directoryFactory");
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     super.setUp();
-
+    File dataDir1 = createTempDir();
     // setup datadirs
-    System.setProperty( "solr.core0.data.dir", SolrTestCaseJ4.dataDir.getCanonicalPath() );
+    System.setProperty( "solr.core0.data.dir", dataDir1.getCanonicalPath() );
 
-    dataDir2 = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
-    dataDir2.mkdirs();
+    dataDir2 = createTempDir();
 
     System.setProperty( "solr.core1.data.dir", this.dataDir2.getCanonicalPath() );
 

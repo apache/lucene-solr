@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.cloud.BasicDistributedZk2Test;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -38,7 +37,7 @@ public class HdfsBasicDistributedZk2Test extends BasicDistributedZk2Test {
   
   @BeforeClass
   public static void setupClass() throws Exception {
-    dfsCluster = HdfsTestUtil.setupClass();
+    dfsCluster = HdfsTestUtil.setupClass(createTempDir().getAbsolutePath());
   }
   
   @AfterClass

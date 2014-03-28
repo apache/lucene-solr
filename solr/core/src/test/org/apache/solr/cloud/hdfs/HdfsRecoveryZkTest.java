@@ -17,7 +17,6 @@ package org.apache.solr.cloud.hdfs;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 
 import org.apache.hadoop.hdfs.MiniDFSCluster;
@@ -38,7 +37,7 @@ public class HdfsRecoveryZkTest extends RecoveryZkTest {
   
   @BeforeClass
   public static void setupClass() throws Exception {
-    dfsCluster = HdfsTestUtil.setupClass();
+    dfsCluster = HdfsTestUtil.setupClass(createTempDir().getAbsolutePath());
     System.setProperty("solr.hdfs.blockcache.blocksperbank", "2048");
   }
   

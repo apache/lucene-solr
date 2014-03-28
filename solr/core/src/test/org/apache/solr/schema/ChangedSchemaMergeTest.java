@@ -22,8 +22,6 @@ import java.io.IOException;
 
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
@@ -42,7 +40,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
     initCore();
   }
 
-  private File solrHomeDirectory;
+  private final File solrHomeDirectory = createTempDir();
   private File schemaFile = null;
 
   private void addDoc(SolrCore core, String... fieldValues) throws IOException {
@@ -53,7 +51,6 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
   }
 
   private CoreContainer init() throws Exception {
-    solrHomeDirectory = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
     File changed = new File(solrHomeDirectory, "changed");
     copyMinConf(changed, "name=changed");
     // Overlay with my local schema

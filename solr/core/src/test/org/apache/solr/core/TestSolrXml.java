@@ -21,10 +21,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -37,12 +34,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
   @Rule
   public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
-  private File solrHome;
-  
-  @Before
-  public void setupTest() {
-    solrHome = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
-  }
+  private final File solrHome = createTempDir();
 
   @Test
   public void testAllInfoPresent() throws IOException {

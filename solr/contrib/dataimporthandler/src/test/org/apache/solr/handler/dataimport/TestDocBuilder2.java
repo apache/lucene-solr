@@ -16,18 +16,15 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
-
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
-import org.apache.solr.request.LocalSolrQueryRequest;
-
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.io.File;
+
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * <p>
@@ -242,7 +239,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   @Test
   @Ignore("Fix Me. See SOLR-4103.")
   public void testFileListEntityProcessor_lastIndexTime() throws Exception  {
-    File tmpdir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+    File tmpdir = File.createTempFile("test", "tmp", createTempDir());
 
     Map<String, String> params = createMap("baseDir", tmpdir.getAbsolutePath());
 

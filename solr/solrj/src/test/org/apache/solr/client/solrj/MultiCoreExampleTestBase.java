@@ -57,10 +57,9 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
 
   @Override public void setUp() throws Exception {
     super.setUp();
-
-    dataDir1 = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName() + "-core0"); 
-    dataDir2 = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName() + "-core1"); 
-
+    dataDir1 = createTempDir();
+    dataDir2 = createTempDir();
+    
     System.setProperty( "solr.core0.data.dir", this.dataDir1.getCanonicalPath() ); 
     System.setProperty( "solr.core1.data.dir", this.dataDir2.getCanonicalPath() );
   }

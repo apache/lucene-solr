@@ -16,6 +16,8 @@
  */
 package org.apache.solr.servlet;
 
+
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
@@ -43,7 +45,7 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
     
   @BeforeClass
   public static void beforeTest() throws Exception {
-    solrHomeDirectory = TestUtil.createTempDir("CacheHeaderTest");
+    solrHomeDirectory = new File(createTempDir(), "CacheHeaderTest");
     setupJettyTestHome(solrHomeDirectory, "collection1");
     createJetty(solrHomeDirectory.getAbsolutePath(), null, null);
   }
@@ -254,7 +256,7 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
 
   protected File makeFile(String contents, String charset) {
     try {
-      File f = TestUtil.createTempFile("cachetest_csv", null);
+      File f = TestUtil.createTempFile("cachetest_csv", null, initCoreDataDir);
       Writer out = new OutputStreamWriter(new FileOutputStream(f), charset);
       out.write(contents);
       out.close();

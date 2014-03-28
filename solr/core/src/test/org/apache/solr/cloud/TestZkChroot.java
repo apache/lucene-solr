@@ -17,19 +17,18 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.io.File;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
 
 public class TestZkChroot extends SolrTestCaseJ4 {
   protected static Logger log = LoggerFactory.getLogger(TestZkChroot.class);
@@ -43,8 +42,8 @@ public class TestZkChroot extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    createTempDir();
-    zkDir = dataDir.getAbsolutePath() + File.separator
+
+    zkDir = createTempDir().getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();

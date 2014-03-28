@@ -16,24 +16,18 @@
  */
 package org.apache.solr;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.util.Properties;
+
+import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.TestUtil;
-//import org.apache.lucene.util.LuceneTestCase;
-//import org.apache.solr.util.AbstractSolrTestCase;
-//import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-//import org.apache.solr.client.solrj.impl.HttpSolrServer;
-//import org.apache.solr.client.solrj.SolrServer;
-//import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-
-import org.apache.commons.io.FileUtils;
-
 import org.junit.BeforeClass;
-
-import java.io.*;
-import java.util.Properties;
 
 
 /**
@@ -46,7 +40,8 @@ public class TestSolrCoreProperties extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    File homeDir = TestUtil.createTempDir(TestSolrCoreProperties.class.getSimpleName());
+    File homeDir = createTempDir();
+
     File collDir = new File(homeDir, "collection1");
     File dataDir = new File(collDir, "data");
     File confDir = new File(collDir, "conf");

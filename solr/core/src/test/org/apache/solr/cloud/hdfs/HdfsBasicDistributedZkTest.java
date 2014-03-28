@@ -39,7 +39,7 @@ public class HdfsBasicDistributedZkTest extends BasicDistributedZkTest {
   
   @BeforeClass
   public static void setupClass() throws Exception {
-    dfsCluster = HdfsTestUtil.setupClass();
+    dfsCluster = HdfsTestUtil.setupClass(createTempDir().getAbsolutePath());
   }
   
   @AfterClass

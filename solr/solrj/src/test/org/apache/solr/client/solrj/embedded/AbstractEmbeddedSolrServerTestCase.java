@@ -17,20 +17,17 @@ package org.apache.solr.client.solrj.embedded;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
+import java.io.File;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-
-public abstract class AbstractEmbeddedSolrServerTestCase extends LuceneTestCase {
+public abstract class AbstractEmbeddedSolrServerTestCase extends SolrTestCaseJ4 {
 
   protected static Logger log = LoggerFactory.getLogger(AbstractEmbeddedSolrServerTestCase.class);
 
@@ -49,7 +46,7 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends LuceneTestCase 
     System.out.println("Solr home: " + SOLR_HOME.getAbsolutePath());
 
     //The index is always stored within a temporary directory
-    tempDir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+    tempDir = createTempDir();
     
     File dataDir = new File(tempDir,"data1");
     File dataDir2 = new File(tempDir,"data2");

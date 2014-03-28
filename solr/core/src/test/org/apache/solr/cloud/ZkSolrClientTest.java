@@ -40,7 +40,7 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
   }
   
   public void testConnect() throws Exception {
-    String zkDir = dataDir.getAbsolutePath() + File.separator
+    String zkDir = createTempDir().getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
     ZkTestServer server = null;
 
@@ -54,7 +54,7 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
   }
 
   public void testMakeRootNode() throws Exception {
-    String zkDir = dataDir.getAbsolutePath() + File.separator
+    String zkDir = createTempDir().getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
     ZkTestServer server = null;
 
@@ -73,7 +73,7 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
   }
   
   public void testClean() throws Exception {
-    String zkDir = dataDir.getAbsolutePath() + File.separator
+    String zkDir = createTempDir().getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
     ZkTestServer server = null;
 
@@ -99,7 +99,7 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
   }
 
   public void testReconnect() throws Exception {
-    String zkDir = dataDir.getAbsolutePath() + File.separator
+    String zkDir = createTempDir().getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
     ZkTestServer server = null;
     SolrZkClient zkClient = null;
@@ -193,7 +193,7 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
   }
 
   public void testWatchChildren() throws Exception {
-    String zkDir = dataDir.getAbsolutePath() + File.separator
+    String zkDir = createTempDir().getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
     
     final AtomicInteger cnt = new AtomicInteger();

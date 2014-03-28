@@ -22,8 +22,6 @@ import java.util.Map;
 
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
@@ -61,7 +59,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
   public void testCreateWithSysVars() throws Exception {
     useFactory(null); // I require FS-based indexes for this test.
 
-    final File workDir = TestUtil.createTempDir(getCoreName());
+    final File workDir = createTempDir(getCoreName());
 
     String coreName = "with_sys_vars";
     File instDir = new File(workDir, coreName);
@@ -132,7 +130,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCoreAdminHandler() throws Exception {
-    final File workDir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+    final File workDir = new File(initCoreDataDir, this.getClass().getName());
 
     if (workDir.exists()) {
       FileUtils.deleteDirectory(workDir);
@@ -223,7 +221,9 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testDeleteInstanceDir() throws Exception  {
-    File solrHomeDirectory = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+    File solrHomeDirectory = new File(initCoreDataDir, getClass().getName() + "-corex-"
+        + System.currentTimeMillis());
+    solrHomeDirectory.mkdirs();
     copySolrHomeToTemp(solrHomeDirectory, "corex", true);
     File corex = new File(solrHomeDirectory, "corex");
     FileUtils.write(new File(corex, "core.properties"), "", Charsets.UTF_8.toString());

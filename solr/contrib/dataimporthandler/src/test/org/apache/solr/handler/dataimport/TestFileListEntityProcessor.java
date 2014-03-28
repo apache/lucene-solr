@@ -39,7 +39,8 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
   @Test
   @SuppressWarnings("unchecked")
   public void testSimple() throws IOException {
-    File tmpdir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+    File tmpdir = createTempDir();
+
     createFile(tmpdir, "a.xml", "a.xml".getBytes("UTF-8"), false);
     createFile(tmpdir, "b.xml", "b.xml".getBytes("UTF-8"), false);
     createFile(tmpdir, "c.props", "c.props".getBytes("UTF-8"), false);
@@ -62,7 +63,10 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
   
   @Test
   public void testBiggerSmallerFiles() throws IOException {
-    File tmpdir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+    File tmpdir = File.createTempFile("test", "tmp", createTempDir());
+    tmpdir.delete();
+    tmpdir.mkdir();
+
     long minLength = Long.MAX_VALUE;
     String smallestFile = "";
     byte[] content = "abcdefgij".getBytes("UTF-8");
@@ -129,7 +133,8 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
 
   @Test
   public void testNTOT() throws IOException {
-    File tmpdir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+    File tmpdir = createTempDir();
+
     createFile(tmpdir, "a.xml", "a.xml".getBytes("UTF-8"), true);
     createFile(tmpdir, "b.xml", "b.xml".getBytes("UTF-8"), true);
     createFile(tmpdir, "c.props", "c.props".getBytes("UTF-8"), true);
@@ -162,8 +167,9 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
 
   @Test
   public void testRECURSION() throws IOException {
-    File tmpdir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+    File tmpdir = createTempDir();
     File childdir = new File(tmpdir + "/child" );
+    childdir.mkdir();
     createFile(childdir, "a.xml", "a.xml".getBytes("UTF-8"), true);
     createFile(childdir, "b.xml", "b.xml".getBytes("UTF-8"), true);
     createFile(childdir, "c.props", "c.props".getBytes("UTF-8"), true);

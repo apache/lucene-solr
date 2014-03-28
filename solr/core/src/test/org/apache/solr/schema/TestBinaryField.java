@@ -22,7 +22,6 @@ import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -36,7 +35,8 @@ public class TestBinaryField extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    File homeDir = TestUtil.createTempDir("solrtest-TestBinaryField");
+    File homeDir = createTempDir();
+
     File collDir = new File(homeDir, "collection1");
     File dataDir = new File(collDir, "data");
     File confDir = new File(collDir, "conf");

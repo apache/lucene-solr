@@ -17,7 +17,6 @@
 
 package org.apache.solr.cloud.hdfs;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -26,8 +25,6 @@ import java.util.List;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.NRTCachingDirectory;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -62,7 +59,7 @@ public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
   @BeforeClass
   public static void setupClass() throws Exception {
     schemaString = "schema15.xml";      // we need a string id
-    dfsCluster = HdfsTestUtil.setupClass();
+    dfsCluster = HdfsTestUtil.setupClass(createTempDir().getAbsolutePath());
     System.setProperty(SOLR_HDFS_HOME, dfsCluster.getURI().toString() + "/solr");
   }
   

@@ -49,8 +49,7 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
 
   @Before
   private void initManagedSchemaCore() throws Exception {
-    createTempDir();
-    final String tmpSolrHomePath = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName()).getAbsolutePath();
+    final String tmpSolrHomePath = createTempDir().getAbsolutePath();
     tmpSolrHome = new File(tmpSolrHomePath).getAbsoluteFile();
     tmpConfDir = new File(tmpSolrHome, confDir);
     File testHomeConfDir = new File(TEST_HOME(), confDir);

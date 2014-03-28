@@ -65,10 +65,7 @@ public class TestICUCollationFieldDocValues extends SolrTestCaseJ4 {
    * So its preferable to create this file on-the-fly.
    */
   public static String setupSolrHome() throws Exception {
-    // make a solr home underneath the test's TEMP_DIR
-    File tmpFile = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
-    tmpFile.delete();
-    tmpFile.mkdir();
+    File tmpFile = createTempDir();
     
     // make data and conf dirs
     new File(tmpFile + "/collection1", "data").mkdirs();

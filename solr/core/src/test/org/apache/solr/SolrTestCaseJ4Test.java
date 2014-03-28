@@ -17,14 +17,12 @@ package org.apache.solr;
  * limitations under the License.
  */
 
+import java.io.File;
+
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.io.File;
 
 
 public class SolrTestCaseJ4Test extends SolrTestCaseJ4 {
@@ -35,8 +33,7 @@ public class SolrTestCaseJ4Test extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     // Create a temporary directory that holds a core NOT named "collection1". Use the smallest configuration sets
     // we can so we don't copy that much junk around.
-    createTempDir();
-    tmpSolrHome = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName()).getAbsolutePath();
+    tmpSolrHome = createTempDir().getAbsolutePath();
 
     File subHome = new File(new File(tmpSolrHome, "core0"), "conf");
     assertTrue("Failed to make subdirectory ", subHome.mkdirs());

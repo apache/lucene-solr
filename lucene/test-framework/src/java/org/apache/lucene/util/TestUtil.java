@@ -787,6 +787,24 @@ public final class TestUtil {
    * an exception (typically on Windows).
    */
   public static File createTempDir(String name) {
+    return createTempDir(name, new File(System.getProperty("tempDir", System.getProperty("java.io.tmpdir"))));
+  }
+  
+  /**
+   * Returns a new, empty temporary folder, based on the given name. The folder will be
+   * deleted at the end of the suite. Failure to delete the temporary folder will cause
+   * an exception (typically on Windows).
+   */
+  public static File createTempDir(String name, File tmpDir) {
+    return createTempDir(name, tmpDir, true);
+  }
+  
+  /**
+   * Returns a new, empty temporary folder, based on the given name. The folder will be
+   * deleted at the end of the suite. Failure to delete the temporary folder will cause
+   * an exception (typically on Windows).
+   */
+  public static File createTempDir(String name, File tmpDir, boolean ensureCleanedUp) {
     if (name.length() < 3) {
       throw new IllegalArgumentException("description must be at least 3 characters");
     }
@@ -797,18 +815,18 @@ public final class TestUtil {
     // does not affect the randomness of the test.
     final Random random = new Random(RandomizedContext.current().getRandom().nextLong());
     int attempt = 0;
-    String tmpDir = System.getProperty("tempDir", System.getProperty("java.io.tmpdir"));
     File f;
     do {
-      f = genTempFile(random, name + "_", "", new File(tmpDir));
+      f = genTempFile(random, name + "_", "", tmpDir);
     } while (!f.mkdir() && (attempt++) < GET_TEMP_DIR_RETRY_THRESHOLD);
     
     if (attempt > GET_TEMP_DIR_RETRY_THRESHOLD) {
       throw new RuntimeException(
           "failed to get a temporary dir too many times. check your temp directory and consider manually cleaning it.");
     }
-  
-    LuceneTestCase.closeAfterSuite(new CloseableFile(f, LuceneTestCase.suiteFailureMarker));
+    if (ensureCleanedUp) {
+      LuceneTestCase.closeAfterSuite(new CloseableFile(f, LuceneTestCase.suiteFailureMarker));
+    }
     return f;
   }
 

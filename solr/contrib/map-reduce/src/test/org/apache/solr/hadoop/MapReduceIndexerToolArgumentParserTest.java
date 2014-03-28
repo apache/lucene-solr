@@ -27,8 +27,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.hadoop.dedup.NoChangeUpdateConflictResolver;
@@ -57,12 +55,11 @@ public class MapReduceIndexerToolArgumentParserTest extends SolrTestCaseJ4 {
     
   private static final Logger LOG = LoggerFactory.getLogger(MapReduceIndexerToolArgumentParserTest.class);
   
-  private static File solrHomeDirectory;
+  private final File solrHomeDirectory = createTempDir();
   
   @BeforeClass
   public static void beforeClass() {
     assumeFalse("Does not work on Windows, because it uses UNIX shell commands or POSIX paths", Constants.WINDOWS);
-    solrHomeDirectory = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
   }
   
   @Before

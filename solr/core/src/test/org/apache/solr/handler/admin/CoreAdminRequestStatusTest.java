@@ -20,8 +20,6 @@ package org.apache.solr.handler.admin;
 import java.io.File;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.CoreContainer;
@@ -39,7 +37,8 @@ public class CoreAdminRequestStatusTest extends SolrTestCaseJ4{
 
   @Test
   public void testCoreAdminRequestStatus() throws Exception {
-    final File workDir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+    final File workDir = createTempDir();
+
     final CoreContainer cores = h.getCoreContainer();
 
     final CoreAdminHandler admin = new CoreAdminHandler(cores);

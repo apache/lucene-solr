@@ -57,7 +57,7 @@ import com.google.common.base.Charsets;
 
 public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
 
-  private File solrHomeDirectory;
+  private File solrHomeDirectory = createTempDir();
 
   @Rule
   public TestRule solrTestRules =
@@ -69,8 +69,6 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
   }
 
   private CoreContainer init(String solrXmlString, String... subDirs) throws Exception {
-    createTempDir();
-    solrHomeDirectory = dataDir;
 
     for (String s : subDirs) {
       copyMinConf(new File(solrHomeDirectory, s));

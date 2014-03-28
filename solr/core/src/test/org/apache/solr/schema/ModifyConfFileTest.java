@@ -45,7 +45,7 @@ import org.junit.rules.TestRule;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 public class ModifyConfFileTest extends SolrTestCaseJ4 {
-  private File solrHomeDirectory;
+  private File solrHomeDirectory = createTempDir();
 
   @Rule
   public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());

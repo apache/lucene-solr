@@ -17,9 +17,14 @@
 
 package org.apache.solr.handler.admin;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.Properties;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -29,12 +34,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.Properties;
 
 public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
 
@@ -50,7 +49,7 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     useFactory(null); // I require FS-based indexes for this test.
 
-    solrHomeDirectory = TestUtil.createTempDir(CoreAdminCreateDiscoverTest.getClassName());
+    solrHomeDirectory = createTempDir();
     if (solrHomeDirectory.exists()) {
       FileUtils.deleteDirectory(solrHomeDirectory);
     }

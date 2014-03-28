@@ -74,10 +74,10 @@ public class SliceStateUpdateTest extends SolrTestCaseJ4 {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    createTempDir();
+
     System.setProperty("zkClientTimeout", "3000");
 
-    zkDir = dataDir.getAbsolutePath() + File.separator
+    zkDir = createTempDir().getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
@@ -99,11 +99,9 @@ public class SliceStateUpdateTest extends SolrTestCaseJ4 {
         CreateMode.PERSISTENT, true);
     zkClient.close();
 
-    dataDir1 = new File(dataDir + File.separator + "data1");
-    dataDir1.mkdirs();
+    dataDir1 = new File(createTempDir() + File.separator + "data1");
 
-    dataDir2 = new File(dataDir + File.separator + "data2");
-    dataDir2.mkdirs();
+    dataDir2 = new File(createTempDir() + File.separator + "data2");
 
     // set some system properties for use by tests
     System.setProperty("solr.test.sys.prop1", "propone");

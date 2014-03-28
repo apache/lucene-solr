@@ -59,7 +59,9 @@ public class JettyWebappTest extends SolrTestCaseJ4
     System.setProperty("solr.solr.home", ExternalPaths.EXAMPLE_HOME);
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
 
-    File dataDir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+    File dataDir = createTempDir();
+    dataDir.mkdirs();
+
     System.setProperty("solr.data.dir", dataDir.getCanonicalPath());
     String path = ExternalPaths.WEBAPP_HOME;
 

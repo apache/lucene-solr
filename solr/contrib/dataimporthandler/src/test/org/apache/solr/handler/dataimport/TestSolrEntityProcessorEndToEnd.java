@@ -26,8 +26,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
@@ -306,7 +304,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     }
     
     public String getDataDir() {
-      return dataDir.toString();
+      return initCoreDataDir.toString();
     }
     
     public String getSolrConfigFile() {
@@ -318,14 +316,13 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     }
 
     public void setUp() throws Exception {
-      File home = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
-      
-      homeDir = new File(home + "inst");
-      dataDir = new File(homeDir + "/collection1", "data");
+      String home = createTempDir().getAbsolutePath();
+      homeDir = new File(home  + "inst");
+      initCoreDataDir = new File(homeDir + "/collection1", "data");
       confDir = new File(homeDir + "/collection1", "conf");
       
       homeDir.mkdirs();
-      dataDir.mkdirs();
+      initCoreDataDir.mkdirs();
       confDir.mkdirs();
 
       FileUtils.copyFile(getFile(getSolrXmlFile()), new File(homeDir, "solr.xml"));

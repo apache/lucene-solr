@@ -17,8 +17,10 @@ package org.apache.solr;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.io.IOException;
+
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -30,9 +32,6 @@ import org.apache.solr.core.SolrCore;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-import java.io.File;
-import java.io.IOException;
-
 public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
   
   private static String tmpSolrHome;
@@ -43,8 +42,7 @@ public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    createTempDir();
-    tmpSolrHome = TestUtil.createTempDir(AnalysisAfterCoreReloadTest.class.getSimpleName()).getAbsolutePath();
+    tmpSolrHome = createTempDir().getAbsolutePath();
     FileUtils.copyDirectory(new File(TEST_HOME()), new File(tmpSolrHome).getAbsoluteFile());
     initCore("solrconfig.xml", "schema.xml", new File(tmpSolrHome).getAbsolutePath());
   }

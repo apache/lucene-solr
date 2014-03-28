@@ -17,23 +17,17 @@
 
 package org.apache.solr.handler;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 
-import org.apache.lucene.util.TestUtil;
+import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-
-import org.apache.commons.io.FileUtils;
-
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
 public class PingRequestHandlerTest extends SolrTestCaseJ4 {
 
@@ -48,14 +42,14 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
 
   @Before
   public void before() throws IOException {
-
+    File tmpDir = initCoreDataDir;
     // by default, use relative file in dataDir
-    healthcheckFile = new File(dataDir, fileName);
+    healthcheckFile = new File(tmpDir, fileName);
     String fileNameParam = fileName;
 
     // sometimes randomly use an absolute File path instead 
     if (random().nextBoolean()) {
-      healthcheckFile = TestUtil.createTempFile(fileName, "");
+      healthcheckFile = new File(tmpDir, fileName);
       fileNameParam = healthcheckFile.getAbsolutePath();
     } 
       
@@ -85,9 +79,10 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
     assertEquals("OK", rsp.getValues().get("status")); 
 
   }
+  
   public void testEnablingServer() throws Exception {
 
-    assertTrue(! healthcheckFile.exists());
+    assertTrue(!healthcheckFile.exists());
 
     // first make sure that ping responds back that the service is disabled
     SolrQueryResponse sqr = makeRequest(handler, req());

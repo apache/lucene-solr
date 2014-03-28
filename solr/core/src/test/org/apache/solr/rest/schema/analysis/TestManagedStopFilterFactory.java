@@ -46,8 +46,8 @@ public class TestManagedStopFilterFactory extends RestTestBase {
 
   @Before
   public void before() throws Exception {
-    createTempDir();
-    tmpSolrHome = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+    tmpSolrHome = new File(createTempDir() + File.separator + TestManagedStopFilterFactory.class.getSimpleName()
+                          + System.currentTimeMillis());
     tmpConfDir = new File(tmpSolrHome, confDir);
     FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
 

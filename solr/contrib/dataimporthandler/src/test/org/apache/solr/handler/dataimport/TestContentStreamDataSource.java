@@ -151,7 +151,8 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
 
 
     public void setUp() throws Exception {
-      File home = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+      File home = new File(dataDir,
+              getClass().getName() + "-" + System.currentTimeMillis());
 
       homeDir = new File(home, "inst");
       dataDir = new File(homeDir + "/collection1", "data");

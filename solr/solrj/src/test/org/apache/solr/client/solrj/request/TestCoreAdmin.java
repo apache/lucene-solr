@@ -99,7 +99,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     
     SolrServer server = getSolrAdmin();
     
-    File tmp = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+    File tmp = createTempDir();
 
     log.info("Creating cores underneath {}", tmp);
     

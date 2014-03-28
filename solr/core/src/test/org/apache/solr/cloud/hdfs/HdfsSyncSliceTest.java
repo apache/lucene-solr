@@ -17,9 +17,7 @@ package org.apache.solr.cloud.hdfs;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
-import java.util.Locale;
 
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -40,7 +38,7 @@ public class HdfsSyncSliceTest extends SyncSliceTest {
   
   @BeforeClass
   public static void setupClass() throws Exception {
-    dfsCluster = HdfsTestUtil.setupClass();
+    dfsCluster = HdfsTestUtil.setupClass(createTempDir().getAbsolutePath());
   }
   
   @AfterClass

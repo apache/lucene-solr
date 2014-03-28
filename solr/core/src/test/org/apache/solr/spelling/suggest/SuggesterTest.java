@@ -82,10 +82,10 @@ public class SuggesterTest extends SolrTestCaseJ4 {
     System.setProperty("solr.test.leavedatadir", "true");
     addDocs();
     assertU(commit());
-    File data = dataDir;
+    File data = initCoreDataDir;
     String config = configString;
     deleteCore();
-    dataDir = data;
+    initCoreDataDir = data;
     configString = config;
     initCore();
     assertQ(req("qt", requestUri, "q", "ac", SpellingParams.SPELLCHECK_COUNT, "2", SpellingParams.SPELLCHECK_ONLY_MORE_POPULAR, "true"),

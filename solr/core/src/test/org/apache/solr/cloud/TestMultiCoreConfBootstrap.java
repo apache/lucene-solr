@@ -19,8 +19,6 @@ package org.apache.solr.cloud;
 
 import java.io.File;
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.core.CoreContainer;
@@ -36,6 +34,7 @@ public class TestMultiCoreConfBootstrap extends SolrTestCaseJ4 {
   protected CoreContainer cores = null;
   private String home;
   
+  protected File dataDir1;
   protected File dataDir2;
   protected ZkTestServer zkServer;
   protected String zkDir;
@@ -44,16 +43,15 @@ public class TestMultiCoreConfBootstrap extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    
-    createTempDir();
-    dataDir2 = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+    dataDir1 = createTempDir();
+    dataDir2  = createTempDir();
 
     home = ExternalPaths.EXAMPLE_MULTICORE_HOME;
     System.setProperty("solr.solr.home", home);
-    System.setProperty( "solr.core0.data.dir", dataDir.getCanonicalPath() ); 
+    System.setProperty( "solr.core0.data.dir", dataDir1.getCanonicalPath() ); 
     System.setProperty( "solr.core1.data.dir", dataDir2.getCanonicalPath() ); 
     
-    zkDir = dataDir.getAbsolutePath() + File.separator
+    zkDir = dataDir1.getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();

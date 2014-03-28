@@ -38,8 +38,6 @@ import org.apache.hadoop.util.JarFinder;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.AbstractZkTestCase;
@@ -81,7 +79,7 @@ public class MorphlineBasicMiniMRTest extends SolrTestCaseJ4 {
   
   private static String tempDir;
   
-  private static File solrHomeDirectory;
+  private static final File solrHomeDirectory = createTempDir();
   
   protected MapReduceIndexerTool createTool() {
     return new MapReduceIndexerTool();
@@ -110,7 +108,6 @@ public class MorphlineBasicMiniMRTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void setupClass() throws Exception {
-    solrHomeDirectory = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
     
     assumeTrue(
         "Currently this test can only be run without the lucene test security policy in place",
@@ -125,8 +122,8 @@ public class MorphlineBasicMiniMRTest extends SolrTestCaseJ4 {
     
     AbstractZkTestCase.SOLRHOME = solrHomeDirectory;
     FileUtils.copyDirectory(MINIMR_CONF_DIR, solrHomeDirectory);
-
-    tempDir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName()).getAbsolutePath();
+    File dataDir = createTempDir();
+    tempDir = dataDir.getAbsolutePath();
     new File(tempDir).mkdirs();
     FileUtils.copyFile(new File(RESOURCES_DIR + "/custom-mimetypes.xml"), new File(tempDir + "/custom-mimetypes.xml"));
     
@@ -144,7 +141,6 @@ public class MorphlineBasicMiniMRTest extends SolrTestCaseJ4 {
 //      sb.append(",").append(i.getCanonicalHostName());
 //    }
     
-    createTempDir();
     new File(dataDir, "nm-local-dirs").mkdirs();
     
     System.setProperty("solr.hdfs.blockcache.enabled", "false");

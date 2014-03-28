@@ -50,7 +50,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    createTempDir();
+
   }
 
   @AfterClass
@@ -81,7 +81,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
                  ZkController.generateNodeName("foo-bar", "77", "/solr/sub_dir/"));
 
     // setup a SolrZkClient to do some getBaseUrlForNodeName testing
-    String zkDir = dataDir.getAbsolutePath() + File.separator
+    String zkDir = createTempDir().getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
 
     ZkTestServer server = new ZkTestServer(zkDir);
@@ -152,7 +152,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testReadConfigName() throws Exception {
-    String zkDir = dataDir.getAbsolutePath() + File.separator
+    String zkDir = createTempDir().getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
     CoreContainer cc = null;
 
@@ -208,7 +208,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testUploadToCloud() throws Exception {
-    String zkDir = dataDir.getAbsolutePath() + File.separator
+    String zkDir = createTempDir().getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
 
     ZkTestServer server = new ZkTestServer(zkDir);
@@ -261,7 +261,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testGetHostName() throws Exception {
-    String zkDir = dataDir.getAbsolutePath() + File.separator
+    String zkDir = createTempDir().getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
     CoreContainer cc = null;
 

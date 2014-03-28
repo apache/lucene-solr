@@ -68,11 +68,12 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
   
   private File dataDir4;
 
-  private static File solrHomeDirectory;
+
+  private static volatile File solrHomeDirectory;
 
   @BeforeClass
   public static void beforeClass() throws IOException {
-    solrHomeDirectory = TestUtil.createTempDir(ClusterStateUpdateTest.class.getSimpleName());
+    solrHomeDirectory = new File(createTempDir(), "ZkControllerTest");
     System.setProperty("solrcloud.skip.autorecovery", "true");
     System.setProperty("genericCoreNodeNames", "false");
     if (solrHomeDirectory.exists()) {
@@ -95,10 +96,9 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    createTempDir();
     System.setProperty("zkClientTimeout", "3000");
-
-    zkDir = dataDir.getAbsolutePath() + File.separator
+    File tmpDir = createTempDir();
+    zkDir = tmpDir.getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
@@ -107,16 +107,16 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
         .getZkAddress(), "solrconfig.xml", "schema.xml");
     
     log.info("####SETUP_START " + getTestName());
-    dataDir1 = new File(dataDir + File.separator + "data1");
+    dataDir1 = new File(tmpDir + File.separator + "data1");
     dataDir1.mkdirs();
     
-    dataDir2 = new File(dataDir + File.separator + "data2");
+    dataDir2 = new File(tmpDir + File.separator + "data2");
     dataDir2.mkdirs();
     
-    dataDir3 = new File(dataDir + File.separator + "data3");
+    dataDir3 = new File(tmpDir + File.separator + "data3");
     dataDir3.mkdirs();
     
-    dataDir4 = new File(dataDir + File.separator + "data4");
+    dataDir4 = new File(tmpDir + File.separator + "data4");
     dataDir4.mkdirs();
     
     // set some system properties for use by tests

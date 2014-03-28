@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
@@ -33,9 +32,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import org.kitesdk.morphline.api.Command;
 import org.kitesdk.morphline.api.Collector;
+import org.kitesdk.morphline.api.Command;
 import org.kitesdk.morphline.api.MorphlineContext;
 import org.kitesdk.morphline.api.Record;
 import org.kitesdk.morphline.base.Compiler;
@@ -48,8 +46,8 @@ import com.google.common.collect.ListMultimap;
 import com.typesafe.config.Config;
 
 public abstract class AbstractSolrMorphlineZkTestBase extends AbstractFullDistribZkTestBase {
-  private static File solrHomeDirectory;
-
+  private static final File solrHomeDirectory = createTempDir();
+  
   protected static final String RESOURCES_DIR = getFile("morphlines-core.marker").getParent();  
   private static final File SOLR_INSTANCE_DIR = new File(RESOURCES_DIR + "/solr");
   private static final File SOLR_CONF_DIR = new File(RESOURCES_DIR + "/solr/collection1");
@@ -70,10 +68,8 @@ public abstract class AbstractSolrMorphlineZkTestBase extends AbstractFullDistri
   
   @BeforeClass
   public static void setupClass() throws Exception {
-    solrHomeDirectory = TestUtil.createTempDir(AbstractSolrMorphlineZkTestBase.class.getName());
     AbstractZkTestCase.SOLRHOME = solrHomeDirectory;
     FileUtils.copyDirectory(SOLR_INSTANCE_DIR, solrHomeDirectory);
-    createTempDir();
   }
   
   @Override

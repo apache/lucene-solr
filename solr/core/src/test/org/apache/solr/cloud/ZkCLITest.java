@@ -28,8 +28,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.RegexFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -76,21 +74,20 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     log.info("####SETUP_START " + getTestName());
-    createTempDir();
     
     boolean useNewSolrXml = random().nextBoolean();
-    
+    File tmpDir = createTempDir();
     if (useNewSolrXml) {
       solrHome = ExternalPaths.EXAMPLE_HOME;
     } else {
-      File tmpSolrHome = new File(dataDir, "tmp-solr-home");
+      File tmpSolrHome = new File(tmpDir, "tmp-solr-home");
       FileUtils.copyDirectory(new File(ExternalPaths.EXAMPLE_HOME), tmpSolrHome);
       FileUtils.copyFile(getFile("old-solr-example/solr.xml"), new File(tmpSolrHome, "solr.xml"));
       solrHome = tmpSolrHome.getAbsolutePath();
     }
     
     
-    zkDir = dataDir.getAbsolutePath() + File.separator
+    zkDir = tmpDir.getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
     log.info("ZooKeeper dataDir:" + zkDir);
     zkServer = new ZkTestServer(zkDir);
@@ -206,6 +203,8 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   
   @Test
   public void testUpConfigLinkConfigClearZk() throws Exception {
+    File tmpDir = createTempDir();
+    
     // test upconfig
     String confsetname = "confsetone";
     String[] args = new String[] {
@@ -233,7 +232,8 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     assertEquals(confsetname, collectionProps.getStr("configName"));
     
     // test down config
-    File confDir = new File(TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName()), "solrtest-confdropspot");
+    File confDir = new File(tmpDir,
+        "solrtest-confdropspot-" + this.getClass().getName() + "-" + System.currentTimeMillis());
     assertFalse(confDir.exists());
 
     args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
@@ -277,11 +277,14 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
   @Test
   public void testGetFile() throws Exception {
+    File tmpDir = createTempDir();
+    
     String getNode = "/getFileNode";
     byte [] data = new String("getFileNode-data").getBytes("UTF-8");
     this.zkClient.create(getNode, data, CreateMode.PERSISTENT, true);
 
-    File file = TestUtil.createTempFile("solrtest-getfile", "");
+    File file = new File(tmpDir,
+        "solrtest-getfile-" + this.getClass().getName() + "-" + System.currentTimeMillis());
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
         "getfile", getNode, file.getAbsolutePath()};
     ZkCLI.main(args);
@@ -292,9 +295,10 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
   @Test
   public void testGetFileNotExists() throws Exception {
+    File tmpDir = createTempDir();
     String getNode = "/getFileNotExistsNode";
 
-    File file = TestUtil.createTempFile("solrtest-getfilenotexists", "");
+    File file = File.createTempFile("newfile", null, tmpDir);
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
         "getfile", getNode, file.getAbsolutePath()};
     try {

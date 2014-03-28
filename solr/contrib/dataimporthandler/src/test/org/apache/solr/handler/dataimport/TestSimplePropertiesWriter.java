@@ -6,16 +6,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.TimeZone;
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -48,7 +43,9 @@ public class TestSimplePropertiesWriter extends AbstractDIHJdbcTestCase {
   
   @Before
   public void spwBefore() throws Exception {
-    File tmpdir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+    File tmpdir = File.createTempFile("test", "tmp", createTempDir());
+    tmpdir.delete();
+    tmpdir.mkdir();
     fileLocation = tmpdir.getPath();
     fileName = "the.properties";
   }

@@ -23,15 +23,12 @@ import java.util.Map;
 import org.apache.lucene.analysis.Token;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressTempDirCleanUp;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.SpellCheckComponent;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
-import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

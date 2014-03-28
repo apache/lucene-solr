@@ -1595,7 +1595,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       System.setProperty("solr.test.sys.prop1", "propone");
       System.setProperty("solr.test.sys.prop2", "proptwo");
 
-      File home = TestUtil.createTempDir(getClass().getName());
+      File home = new File(dataDir, 
+                           getClass().getName() + "-" + 
+                           System.currentTimeMillis());
 
       homeDir = new File(home, name);
       dataDir = new File(homeDir + "/collection1", "data");

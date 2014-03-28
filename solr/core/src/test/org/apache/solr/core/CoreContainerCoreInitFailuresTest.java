@@ -24,8 +24,6 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.junit.After;
@@ -37,9 +35,7 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
   CoreContainer cc = null;
 
   private void init(final String dirSuffix) {
-    // would be nice to do this in an @Before method,
-    // but junit doesn't let @Before methods have test names
-    solrHome = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName() + dirSuffix);
+    solrHome = createTempDir(dirSuffix);
   }
 
   @After

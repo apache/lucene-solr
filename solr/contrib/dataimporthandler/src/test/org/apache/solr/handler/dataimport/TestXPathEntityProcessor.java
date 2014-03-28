@@ -16,10 +16,6 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.Reader;
 import java.io.StringReader;
@@ -28,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+
+import org.junit.Test;
 
 /**
  * <p>
@@ -44,7 +42,8 @@ public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase 
   
   @Test
   public void withFieldsAndXpath() throws Exception {
-    File tmpdir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+    File tmpdir = createTempDir();
+    
     createFile(tmpdir, "x.xsl", xsl.getBytes("UTF-8"), false);
     Map entityAttrs = createMap("name", "e", "url", "cd.xml",
             XPathEntityProcessor.FOR_EACH, "/catalog/cd");
@@ -332,8 +331,12 @@ public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase 
   
   @Test
   public void withDefaultSolrAndXsl() throws Exception {
-    File tmpdir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
-    AbstractDataImportHandlerTestCase.createFile(tmpdir, "x.xsl", xsl.getBytes("UTF-8"), false);
+    File tmpdir = File.createTempFile("test", "tmp", createTempDir());
+    tmpdir.delete();
+    tmpdir.mkdir();
+    AbstractDataImportHandlerTestCase.createFile(tmpdir, "x.xsl", xsl.getBytes("UTF-8"),
+            false);
+
     Map entityAttrs = createMap("name", "e",
             XPathEntityProcessor.USE_SOLR_ADD_SCHEMA, "true", "xsl", ""
             + new File(tmpdir, "x.xsl").toURI(), "url", "cd.xml");

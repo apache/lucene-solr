@@ -26,8 +26,6 @@ import java.util.regex.Pattern;
 
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.BasicResponseHandler;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
@@ -170,8 +168,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
       createCmd.setCoreName(ONE_NODE_COLLECTION + "core");
       createCmd.setCollection(ONE_NODE_COLLECTION);
       createCmd.setNumShards(1);
-      createCmd.setDataDir(getDataDir(dataDir.getAbsolutePath() + File.separator
-          + ONE_NODE_COLLECTION));
+      createCmd.setDataDir(getDataDir(createTempDir(ONE_NODE_COLLECTION).getAbsolutePath()));
       server.request(createCmd);
       server.shutdown();
     } catch (Exception e) {
@@ -417,7 +414,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("qt", "/replication");
     params.set("command", "backup");
-    File location = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName() + "-backupdir");
+    File location = createTempDir();
     params.set("location", location.getAbsolutePath());
 
     QueryRequest request = new QueryRequest(params);

@@ -73,10 +73,11 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
   @Override
   public void setUp() throws Exception {
     super.setUp();
+    
+    File tmpDataDir = createTempDir();
 
-    dataDir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
     solrConfig = TestHarness.createConfig(getSolrHome(), "solrconfig.xml");
-    h = new TestHarness( dataDir.getAbsolutePath(),
+    h = new TestHarness( tmpDataDir.getAbsolutePath(),
         solrConfig,
         "schema12.xml");
     lrf = h.getRequestFactory

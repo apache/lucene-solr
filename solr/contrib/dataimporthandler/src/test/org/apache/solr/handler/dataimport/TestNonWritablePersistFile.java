@@ -16,16 +16,14 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.commons.io.FileUtils;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class TestNonWritablePersistFile extends AbstractDataImportHandlerTestCase {
   private static final String FULLIMPORT_QUERY = "select * from x";
@@ -54,8 +52,7 @@ public class TestNonWritablePersistFile extends AbstractDataImportHandlerTestCas
 
   @BeforeClass
   public static void createTempSolrHomeAndCore() throws Exception {
-    createTempDir();
-    tmpSolrHome = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName()).getAbsolutePath();
+    tmpSolrHome = createTempDir().getAbsolutePath();
     FileUtils.copyDirectory(getFile("dih/solr"), new File(tmpSolrHome).getAbsoluteFile());
     initCore("dataimport-solrconfig.xml", "dataimport-schema.xml", 
              new File(tmpSolrHome).getAbsolutePath());

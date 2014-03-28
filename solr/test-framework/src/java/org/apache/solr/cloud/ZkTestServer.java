@@ -53,7 +53,7 @@ public class ZkTestServer {
 
   private int clientPort;
 
-  private Thread zooThread;
+  private volatile Thread zooThread;
   
   private int theTickTime = TICK_TIME;
 
@@ -105,9 +105,9 @@ public class ZkTestServer {
             config.getMaxClientCnxns());
         cnxnFactory.startup(zooKeeperServer);
         cnxnFactory.join();
-        if (zooKeeperServer.isRunning()) {
+       // if (zooKeeperServer.isRunning()) {
           zkServer.shutdown();
-        }
+       // }
       } catch (InterruptedException e) {
         // warn, but generally this is ok
         log.warn("Server interrupted", e);
@@ -121,14 +121,19 @@ public class ZkTestServer {
     protected void shutdown() throws IOException {
       zooKeeperServer.shutdown();
       ZKDatabase zkDb = zooKeeperServer.getZKDatabase();
-      if (zkDb != null) {
-        zkDb.close();
-      }
       if (cnxnFactory != null && cnxnFactory.getLocalPort() != 0) {
         waitForServerDown(getZkHost() + ":" + getPort(), 5000);
       }
       if (cnxnFactory != null) {
         cnxnFactory.shutdown();
+        try {
+          cnxnFactory.join();
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+      }
+      if (zkDb != null) {
+        zkDb.close();
       }
     }
 
@@ -251,11 +256,15 @@ public class ZkTestServer {
   }
 
   @SuppressWarnings("deprecation")
-  public void shutdown() throws IOException {
+  public void shutdown() throws IOException, InterruptedException {
     // TODO: this can log an exception while trying to unregister a JMX MBean
     zkServer.shutdown();
+    try {
+      zooThread.join();
+    } catch (NullPointerException e) {
+      // okay
+    }
   }
- 
   
   public static boolean waitForServerDown(String hp, long timeout) {
     long start = System.currentTimeMillis();

@@ -69,7 +69,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
   private CoreContainer init(String dirName) throws Exception {
 
-    solrHomeDirectory = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName() + dirName);
+    solrHomeDirectory = createTempDir(dirName);
 
     FileUtils.copyDirectory(new File(SolrTestCaseJ4.TEST_HOME()), solrHomeDirectory);
     System.out.println("Using solrconfig from " + new File(SolrTestCaseJ4.TEST_HOME()).getAbsolutePath());
@@ -148,7 +148,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   @Test
   public void testNoCores() throws IOException, ParserConfigurationException, SAXException {
     //create solrHome
-    File solrHomeDirectory = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName() + "_noCores");
+    File solrHomeDirectory = createTempDir();
     
     boolean oldSolrXml = random().nextBoolean();
     

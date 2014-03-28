@@ -56,7 +56,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
     ignoreException("maxWarmingSearchers");
 
     // this sets the property for jetty starting SolrDispatchFilter
-    System.setProperty( "solr.data.dir", dataDir.getCanonicalPath() );
+    System.setProperty( "solr.data.dir", createTempDir().getCanonicalPath() );
 
     context = context==null ? "/solr" : context;
     SolrJettyTestBase.context = context;

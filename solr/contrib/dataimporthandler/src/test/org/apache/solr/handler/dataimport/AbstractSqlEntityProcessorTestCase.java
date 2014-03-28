@@ -56,10 +56,11 @@ public abstract class AbstractSqlEntityProcessorTestCase extends
   
   @Before
   public void beforeSqlEntitiyProcessorTestCase() throws Exception {
-    File tmpdir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+    File tmpdir = createTempDir();
     fileLocation = tmpdir.getPath();
     fileName = "the.properties";
   } 
+  
   @After
   public void afterSqlEntitiyProcessorTestCase() {
     useSimpleCaches = false;

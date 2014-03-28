@@ -40,8 +40,6 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.hdfs.HdfsBasicDistributedZk2Test;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
@@ -78,7 +76,9 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    dfsCluster = HdfsTestUtil.setupClass();
+    dfsCluster = HdfsTestUtil.setupClass(new File(createTempDir(),
+        HdfsBasicDistributedZk2Test.class.getName() + "_"
+            + System.currentTimeMillis()).getAbsolutePath());
     hdfsUri = dfsCluster.getFileSystem().getUri().toString();
     
     try {
