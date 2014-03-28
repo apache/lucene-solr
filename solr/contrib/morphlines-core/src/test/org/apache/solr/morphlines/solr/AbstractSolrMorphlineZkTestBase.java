@@ -46,7 +46,7 @@ import com.google.common.collect.ListMultimap;
 import com.typesafe.config.Config;
 
 public abstract class AbstractSolrMorphlineZkTestBase extends AbstractFullDistribZkTestBase {
-  private static final File solrHomeDirectory = createTempDir();
+  private static File solrHomeDirectory;
   
   protected static final String RESOURCES_DIR = getFile("morphlines-core.marker").getParent();  
   private static final File SOLR_INSTANCE_DIR = new File(RESOURCES_DIR + "/solr");
@@ -68,6 +68,7 @@ public abstract class AbstractSolrMorphlineZkTestBase extends AbstractFullDistri
   
   @BeforeClass
   public static void setupClass() throws Exception {
+    solrHomeDirectory = createTempDir();
     AbstractZkTestCase.SOLRHOME = solrHomeDirectory;
     FileUtils.copyDirectory(SOLR_INSTANCE_DIR, solrHomeDirectory);
   }
