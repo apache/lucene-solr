@@ -241,7 +241,7 @@ public abstract class ConfigSolr {
   }
 
   public ConfigSetService createCoreConfigService(SolrResourceLoader loader, ZkController zkController) {
-    if (getZkHost() != null)
+    if (getZkHost() != null || System.getProperty("zkRun") != null)
       return new CloudConfigSetService(loader, zkController);
     if (hasSchemaCache())
       return new ConfigSetService.SchemaCaching(loader, getConfigSetBaseDirectory());
