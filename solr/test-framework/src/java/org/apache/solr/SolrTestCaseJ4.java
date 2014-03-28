@@ -173,7 +173,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     
     boolean ensureClosed = !(LEAVE_TEST_TMP_DIR || LEAVE_TEST_TMP_DIR_ANNOTATION);
     rootTmpDir = TestUtil.createTempDir("solrtest-" + cname, null, ensureClosed);
-    initCoreDataDir = TestUtil.createTempDir("solrtest-" + cname, rootTmpDir);
+    initCoreDataDir = TestUtil.createTempDir("solrtest-" + cname, rootTmpDir, ensureClosed);
 
     System.err.println("Creating dataDir: " + initCoreDataDir.getAbsolutePath());
     
@@ -513,7 +513,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
   
   public static File createTempDir(String tag) {
-    return TestUtil.createTempDir(getClassName() + (tag == null ? "" : "-" + tag), rootTmpDir);
+    return TestUtil.createTempDir(getClassName() + (tag == null ? "" : "-" + tag), rootTmpDir, !(LEAVE_TEST_TMP_DIR || LEAVE_TEST_TMP_DIR_ANNOTATION));
   }
   
   public static void resetExceptionIgnores() {
