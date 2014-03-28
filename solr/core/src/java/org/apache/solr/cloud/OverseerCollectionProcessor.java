@@ -657,12 +657,6 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   /**
    * Get collection status from cluster state.
    * Can return collection status by given shard name.
-   *
-   *
-   * @param clusterState
-   * @param name  collection name
-   * @param shardStr comma separated shard names
-   * @return map of collection properties
    */
   private Map<String, Object> getCollectionStatus(Map<String, Object> clusterState, String name, String shardStr) {
     Map<String, Object> docCollection = (Map<String, Object>) clusterState.get(name);
