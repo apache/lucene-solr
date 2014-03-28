@@ -88,6 +88,8 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERSTATUS;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.LIST;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.OVERSEERSTATUS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
 
@@ -135,7 +137,6 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   public static final String COLL_CONF = "collection.configName";
 
   public static final String COLL_PROP_PREFIX = "property.";
-
 
   public static final Set<String> KNOWN_CLUSTER_PROPS = ImmutableSet.of(ZkStateReader.LEGACY_CLOUD, ZkStateReader.URL_SCHEME);
 
@@ -474,9 +475,11 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         requestStatus(message, results);
       } else if (OVERSEERSTATUS.isEqual(operation)) {
         getOverseerStatus(message, results);
-      }
-
-      else {
+      } else if(LIST.isEqual(operation)) {
+        listCollections(zkStateReader.getClusterState(), results);
+      } else if (CLUSTERSTATUS.isEqual(operation)) {
+         getClusterStatus(zkStateReader.getClusterState(), message, results);
+      } else {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:"
             + operation);
       }
@@ -565,6 +568,131 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     results.add("overseer_internal_queue", workQueueStats);
     results.add("collection_queue", collectionQueueStats);
 
+  }
+
+  private void getClusterStatus(ClusterState clusterState, ZkNodeProps message, NamedList results) {
+    String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
+
+    // read aliases
+    Aliases aliases = zkStateReader.getAliases();
+    Map<String, List<String>> collectionVsAliases = new HashMap<>();
+    Map<String, String> aliasVsCollections = aliases.getCollectionAliasMap();
+    if (aliasVsCollections != null) {
+      for (Map.Entry<String, String> entry : aliasVsCollections.entrySet()) {
+        List<String> colls = StrUtils.splitSmart(entry.getValue(), ',');
+        String alias = entry.getKey();
+        for (String coll : colls) {
+          if (collection == null || collection.equals(coll))  {
+            List<String> list = collectionVsAliases.get(coll);
+            if (list == null) {
+              list = new ArrayList<>();
+              collectionVsAliases.put(coll, list);
+            }
+            list.add(alias);
+          }
+        }
+      }
+    }
+
+    // convert cluster state into a map of writable types
+    byte[] bytes = ZkStateReader.toJSON(clusterState);
+    Map<String, Object> stateMap = (Map<String, Object>) ZkStateReader.fromJSON(bytes);
+
+    String shard = message.getStr(ZkStateReader.SHARD_ID_PROP);
+    NamedList<Object> collectionProps = new SimpleOrderedMap<Object>();
+    if (collection == null) {
+      Set<String> collections = clusterState.getCollections();
+      for (String name : collections) {
+        Map<String, Object> collectionStatus = getCollectionStatus(stateMap, name, shard);
+        if (collectionVsAliases.containsKey(name) && !collectionVsAliases.get(name).isEmpty())  {
+          collectionStatus.put("aliases", collectionVsAliases.get(name));
+        }
+        collectionProps.add(name, collectionStatus);
+      }
+    } else {
+      String routeKey = message.getStr(ShardParams._ROUTE_);
+      if (routeKey == null) {
+        Map<String, Object> collectionStatus = getCollectionStatus(stateMap, collection, shard);
+        if (collectionVsAliases.containsKey(collection) && !collectionVsAliases.get(collection).isEmpty())  {
+          collectionStatus.put("aliases", collectionVsAliases.get(collection));
+        }
+        collectionProps.add(collection, collectionStatus);
+      } else {
+        DocCollection docCollection = clusterState.getCollection(collection);
+        DocRouter router = docCollection.getRouter();
+        Collection<Slice> slices = router.getSearchSlices(routeKey, null, docCollection);
+        String s = "";
+        for (Slice slice : slices) {
+          s += slice.getName() + ",";
+        }
+        if (shard != null)  {
+          s += shard;
+        }
+        Map<String, Object> collectionStatus = getCollectionStatus(stateMap, collection, s);
+        if (collectionVsAliases.containsKey(collection) && !collectionVsAliases.get(collection).isEmpty())  {
+          collectionStatus.put("aliases", collectionVsAliases.get(collection));
+        }
+        collectionProps.add(collection, collectionStatus);
+      }
+    }
+
+
+    NamedList<Object> clusterStatus = new SimpleOrderedMap<>();
+    clusterStatus.add("collections", collectionProps);
+
+    // read cluster properties
+    Map clusterProps = zkStateReader.getClusterProps();
+    if (clusterProps != null && !clusterProps.isEmpty())  {
+      clusterStatus.add("properties", clusterProps);
+    }
+
+    // add the alias map too
+    if (aliasVsCollections != null && !aliasVsCollections.isEmpty())  {
+      clusterStatus.add("aliases", aliasVsCollections);
+    }
+
+    results.add("cluster", clusterStatus);
+  }
+
+  /**
+   * Get collection status from cluster state.
+   * Can return collection status by given shard name.
+   *
+   *
+   * @param clusterState
+   * @param name  collection name
+   * @param shardStr comma separated shard names
+   * @return map of collection properties
+   */
+  private Map<String, Object> getCollectionStatus(Map<String, Object> clusterState, String name, String shardStr) {
+    Map<String, Object> docCollection = (Map<String, Object>) clusterState.get(name);
+    if (docCollection == null)  {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Collection: " + name + " not found");
+    }
+    if (shardStr == null) {
+      return docCollection;
+    } else {
+      Map<String, Object> shards = (Map<String, Object>) docCollection.get("shards");
+      Map<String, Object>  selected = new HashMap<>();
+      List<String> selectedShards = Arrays.asList(shardStr.split(","));
+      for (String selectedShard : selectedShards) {
+        if (!shards.containsKey(selectedShard)) {
+          throw new SolrException(ErrorCode.BAD_REQUEST, "Collection: " + name + " shard: " + selectedShard + " not found");
+        }
+        selected.put(selectedShard, shards.get(selectedShard));
+        docCollection.put("shards", selected);
+      }
+      return docCollection;
+    }
+  }
+
+  private void listCollections(ClusterState clusterState, NamedList results) {
+    Set<String> collections = clusterState.getCollections();
+    List<String> collectionList = new ArrayList<String>();
+    for (String collection : collections) {
+      collectionList.add(collection);
+    }
+    results.add("collections", collectionList);
   }
 
   private void processRoleCommand(ZkNodeProps message, String operation) throws KeeperException, InterruptedException {

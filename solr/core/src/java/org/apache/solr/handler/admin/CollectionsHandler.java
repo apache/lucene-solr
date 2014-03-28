@@ -211,6 +211,14 @@ public class CollectionsHandler extends RequestHandlerBase {
         this.handleOverseerStatus(req, rsp);
         break;
       }
+      case LIST: {
+        this.handleListAction(req, rsp);
+        break;
+      }
+      case CLUSTERSTATUS:  {
+        this.handleClusterStatus(req, rsp);
+        break;
+      }
       default: {
           throw new RuntimeException("Unknown action: " + action);
       }
@@ -573,6 +581,36 @@ public class CollectionsHandler extends RequestHandlerBase {
     ZkNodeProps m = new ZkNodeProps(props);
     handleResponse(CollectionAction.ADDREPLICA.toString(), m, rsp);
   }
+
+  /**
+   * Handle cluster status request.
+   * Can return status per specific collection/shard or per all collections.
+   *
+   * @param req solr request
+   * @param rsp solr response
+   */
+  private void handleClusterStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
+    Map<String,Object> props = new HashMap<>();
+    props.put(Overseer.QUEUE_OPERATION, CollectionAction.CLUSTERSTATUS.toLower());
+    copyIfNotNull(req.getParams(), props, COLLECTION_PROP, SHARD_ID_PROP, ShardParams._ROUTE_);
+    handleResponse(CollectionAction.CLUSTERSTATUS.toString(), new ZkNodeProps(props), rsp);
+  }
+
+  /**
+   * Handled list collection request.
+   * Do list collection request to zk host
+   *
+   * @param req solr request
+   * @param rsp solr response
+   * @throws KeeperException      zk connection failed
+   * @throws InterruptedException connection interrupted
+   */
+  private void handleListAction(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
+    Map<String, Object> props = ZkNodeProps.makeMap(
+        Overseer.QUEUE_OPERATION, CollectionAction.LIST.toString().toLowerCase(Locale.ROOT));
+    handleResponse(CollectionAction.LIST.toString(), new ZkNodeProps(props), rsp);
+  }
+
 
   public static ModifiableSolrParams params(String... params) {
     ModifiableSolrParams msp = new ModifiableSolrParams();
