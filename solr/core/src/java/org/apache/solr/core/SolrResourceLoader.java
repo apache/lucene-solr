@@ -212,7 +212,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
         }
       }
       ClassLoader oldParent = oldLoader.getParent();
-      closeHack(oldLoader); // best effort
+      IOUtils.closeWhileHandlingException(oldLoader); // best effort
       return URLClassLoader.newInstance(elements, oldParent);
     }
     // are we still here?
@@ -791,19 +791,9 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
     }
     throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, builder.toString() );
   }
-  
-  /** 
-   * We don't have URLClassLoader.close() until java7, but
-   * we still try to release resources with a Schindler-häck
-   */
-  private static void closeHack(URLClassLoader loader) {
-    if (loader instanceof Closeable) {
-      IOUtils.closeWhileHandlingException((Closeable)loader);
-    }
-  }
 
   @Override
   public void close() throws IOException {
-    closeHack(classLoader);
+    IOUtils.close(classLoader);
   }
 }
