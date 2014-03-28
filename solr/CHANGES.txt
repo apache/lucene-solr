@@ -106,6 +106,10 @@ New Features
 * SOLR-4478: Allow cores to use configuration from a configsets directory
   outside their instance directory. (Alan Woodward, Erick Erickson)
 
+* SOLR-5466: A new List collections and cluster status API which clients can use
+  to read collection and shard information instead of reading data directly from ZooKeeper.
+  (Dave Seltzer, Varun Thacker, Vitaliy Zhovtyuk, Erick Erickson, shalin)
+
 Bug Fixes
 ----------------------
 
