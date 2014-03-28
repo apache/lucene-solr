@@ -108,7 +108,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
   private final String inputAvroFile2;
   private final String inputAvroFile3;
 
-  private static final File solrHomeDirectory = createTempDir();
+  private static File solrHomeDirectory;
 
   @Override
   public String getSolrHome() {
@@ -127,6 +127,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
   
   @BeforeClass
   public static void setupClass() throws Exception {
+    solrHomeDirectory = createTempDir();
     assumeTrue(
             "Currently this test can only be run without the lucene test security policy in place",
             System.getProperty("java.security.manager", "").equals(""));
