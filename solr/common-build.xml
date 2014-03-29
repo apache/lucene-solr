@@ -454,6 +454,12 @@
   </macrodef>
 
   <!-- Solr contrib targets -->
+  <target name="-compile-analysis-extras">
+    <ant dir="${common-solr.dir}/contrib/analysis-extras" target="compile" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+
   <target name="compile-contrib" description="Compile contrib modules">
   	<contrib-crawl target="compile-core"/>
   </target>

@@ -32,18 +32,21 @@ import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.DateField;
 import org.apache.solr.search.CursorMark; //jdoc
 
 import org.noggit.ObjectBuilder;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
-import java.nio.ByteBuffer;
+import java.util.UUID;
 
 import org.junit.BeforeClass;
 import org.junit.After;
@@ -58,6 +61,9 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   public final static String TEST_SOLRCONFIG_NAME = "solrconfig-deeppaging.xml";
   /** schema.xml file name, shared with other cursor related tests */
   public final static String TEST_SCHEMAXML_NAME = "schema-sorts.xml";
+  /** values from enumConfig.xml */
+  public static final String[] SEVERITY_ENUM_VALUES =
+      { "Not Available", "Low", "Medium", "High", "Critical" };
 
   @BeforeClass
   public static void beforeTests() throws Exception {
@@ -678,7 +684,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     String cursorMark = CURSOR_MARK_START;
     int docsOnThisPage = Integer.MAX_VALUE;
     while (0 < docsOnThisPage) {
-      String json = assertJQ(req(params, 
+      String json = assertJQ(req(params,
                                  CURSOR_MARK_PARAM, cursorMark));
       Map rsp = (Map) ObjectBuilder.fromJSON(json);
       assertTrue("response doesn't contain " + CURSOR_MARK_NEXT + ": " + json,
@@ -895,13 +901,29 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     if (useField()) {
       doc.addField("str", skewed(randomUsableUnicodeString(),
                                  _TestUtil.randomSimpleString(random(),1,1)));
-
     }
     if (useField()) {
       int numBytes = (Integer) skewed(_TestUtil.nextInt(random(), 20, 50), 2);
       byte[] randBytes = new byte[numBytes];
       random().nextBytes(randBytes);
       doc.addField("bin", ByteBuffer.wrap(randBytes));
+    }
+    if (useField()) {
+      doc.addField("date", skewed(randomDate(),
+                                  dateWithRandomSecondOn2010_10_31_at_10_31()));
+    }
+    if (useField()) {
+      doc.addField("uuid", UUID.randomUUID().toString());
+    }
+    if (useField()) {
+      doc.addField("currency", skewed("" + (random().nextInt() / 100.) + "," + randomCurrency(),
+                                      "" + _TestUtil.nextInt(random(), 250, 320) + ",USD"));
+    }
+    if (useField()) {
+      doc.addField("bool", random().nextBoolean() ? "t" : "f");
+    }
+    if (useField()) {
+      doc.addField("enum", randomEnumValue());
     }
     return doc;
   }
@@ -941,6 +963,25 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     return result;
   }
 
+  private static String randomDate() {
+    return DateField.formatExternal(new Date(random().nextLong()));
+  }
+
+  private static String dateWithRandomSecondOn2010_10_31_at_10_31() {
+    return String.format("2010-10-31T10:31:%02d.000Z",
+                         _TestUtil.nextInt(random(), 0, 59));
+  }
+
+  private static final String[] currencies = { "USD", "EUR", "NOK" };
+
+  public static String randomCurrency() {
+    return currencies[random().nextInt(currencies.length)];
+  }
+
+  private static String randomEnumValue() {
+    return SEVERITY_ENUM_VALUES[random().nextInt(SEVERITY_ENUM_VALUES.length)];
+  }
+
   /**
    * Given a list of fieldNames, builds up a random sort string which is guaranteed to
    * have at least 3 clauses, ending with the "id" field for tie breaking
@@ -958,15 +999,16 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
       String field = shuffledNames.get(i);
 
       // wrap in a function sometimes
-      if ( (!"score".equals(field))
+      if ( (!"score".equals(field) && !field.contains("bcd"))
            && 
            (0 == _TestUtil.nextInt(random(), 0, 7)) ) {
         // specific function doesn't matter, just proving that we can handle the concept.
         // but we do have to be careful with non numeric fields
-        if (field.startsWith("str") || field.startsWith("bin")) {
-          field = "if(exists(" + field + "),47,83)";
-        } else {
+        if (field.contains("float") || field.contains("double")
+            || field.contains("int") || field.contains("long")) {
           field = "abs(" + field + ")";
+        } else {
+          field = "if(exists(" + field + "),47,83)";
         }
       }
       result.append(field).append(random().nextBoolean() ? " asc, " : " desc, ");

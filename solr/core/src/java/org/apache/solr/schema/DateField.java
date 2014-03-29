@@ -245,6 +245,16 @@ public class DateField extends PrimitiveFieldType implements DateValueFieldType 
   }
 
   @Override
+  public Object marshalSortValue(Object value) {
+    return marshalStringSortValue(value);
+  }
+
+  @Override
+  public Object unmarshalSortValue(Object value) {
+    return unmarshalStringSortValue(value);
+  }
+
+  @Override
   public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     writer.writeDate(name, toExternal(f));
   }

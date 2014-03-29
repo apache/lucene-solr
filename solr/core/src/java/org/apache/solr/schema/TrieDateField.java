@@ -81,6 +81,16 @@ public class TrieDateField extends DateField implements DateValueFieldType {
   }
 
   @Override
+  public Object marshalSortValue(Object value) {
+    return value;
+  }
+
+  @Override
+  public Object unmarshalSortValue(Object value) {
+    return value;
+  }
+
+  @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
     return wrappedField.getValueSource(field, parser);
   }

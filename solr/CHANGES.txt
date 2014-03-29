@@ -121,6 +121,9 @@ Bug Fixes
 * SOLR-5906: Collection create API ignores property.instanceDir parameter.
   (Varun Thacker, shalin)
 
+* SOLR-5920: Distributed sort on DateField, BoolField and BCD{Int,Long,Str}Field
+  returns string cast exception (Eric Bus, AJ Lemke, hossman, Steve Rowe)
+
 Other Changes
 ---------------------
 

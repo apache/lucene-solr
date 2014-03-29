@@ -17,10 +17,15 @@
 
 package org.apache.solr.search;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.schema.DateField;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.request.SolrQueryRequest;
@@ -28,11 +33,14 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.CursorPagingTest;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.UUID;
 
 import org.junit.BeforeClass;
 
@@ -51,7 +59,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
     initCore(CursorPagingTest.TEST_SOLRCONFIG_NAME, CursorPagingTest.TEST_SCHEMAXML_NAME);
   }
 
-  public void testNextCursorMark() {
+  public void testNextCursorMark() throws IOException {
     final Collection<String> allFieldNames = getAllFieldNames();
     final SolrQueryRequest req = req();
     final IndexSchema schema = req.getSchema();
@@ -113,7 +121,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
   }
 
 
-  public void testGarbageParsing() {
+  public void testGarbageParsing() throws IOException {
     final SolrQueryRequest req = req();
     final IndexSchema schema = req.getSchema();
     final SortSpec ss = QueryParsing.parseSortSpec("str asc, float desc, id asc", req);
@@ -160,7 +168,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void testRoundTripParsing() {
+  public void testRoundTripParsing() throws IOException {
 
     // for any valid SortSpec, and any legal values, we should be able to round 
     // trip serialize the totem and get the same values back.
@@ -196,7 +204,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
     }
   }
 
-  private static Object[] buildRandomSortObjects(SortSpec ss) {
+  private static Object[] buildRandomSortObjects(SortSpec ss) throws IOException {
     List<SchemaField> fields = ss.getSchemaFields();
     assertNotNull(fields);
     Object[] results = new Object[fields.size()];
@@ -225,14 +233,64 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
           byte[] randBytes = new byte[_TestUtil.nextInt(random(), 1, 50)];
           random().nextBytes(randBytes);
           val = new BytesRef(randBytes);
-        } else if (fieldName.startsWith("int")) {
-          val = (Integer) random().nextInt();
-        } else if (fieldName.startsWith("long")) {
-          val = (Long) random().nextLong();
-        } else if (fieldName.startsWith("float")) {
-          val = (Float) random().nextFloat() * random().nextInt(); break;
-        } else if (fieldName.startsWith("double")) {
-          val = (Double) random().nextDouble() * random().nextInt(); break;
+        } else if (fieldName.startsWith("bcd")) {
+          if (fieldName.startsWith("bcd_long")) {           // BCDLongField
+            val = Long.toString(random().nextLong());
+            val = sf.getType().toInternal((String)val);
+            val = sf.getType().unmarshalSortValue(val);
+          } else {                                          // BCDIntField & BCDStrField
+            val = Integer.toString(random().nextInt());
+            val = sf.getType().toInternal((String)val);
+            val = sf.getType().unmarshalSortValue(val);
+          }
+        } else if (fieldName.contains("int")) {
+          val = random().nextInt();                         // TrieIntField
+          if (fieldName.startsWith("legacy")) {             // IntField
+            val = Integer.toString((Integer)val);
+            if (fieldName.startsWith("legacy_sortable")) {  // SortableIntField
+              val = sf.getType().unmarshalSortValue(val);
+            }
+          }
+        } else if (fieldName.contains("long")) {
+          val = random().nextLong();                        // TrieLongField
+          if (fieldName.startsWith("legacy")) {             // LongField
+            val = Long.toString((Long)val);
+            if (fieldName.startsWith("legacy_sortable")) {  // SortableLongField
+              val = sf.getType().unmarshalSortValue(val);
+            }
+          }
+        } else if (fieldName.contains("float")) {
+          val = random().nextFloat() * random().nextInt();  // TrieFloatField
+          if (fieldName.startsWith("legacy")) {             // FloatField
+            val = Float.toString((Float)val);
+            if (fieldName.startsWith("legacy_sortable")) {  // SortableFloatField
+              val = sf.getType().unmarshalSortValue(val);
+            }
+          }
+        } else if (fieldName.contains("double")) {
+          val = random().nextDouble() * random().nextInt(); // TrieDoubleField
+          if (fieldName.startsWith("legacy")) {             // DoubleField
+            val = Double.toString((Double)val);
+            if (fieldName.startsWith("legacy_sortable")) {  // SortableDoubleField
+              val = sf.getType().unmarshalSortValue(val);
+            }
+          }
+        } else if (fieldName.contains("date")) {
+          val = random().nextLong();                        // TrieDateField
+          if (fieldName.startsWith("legacy_date")) {        // DateField
+            val = ((DateField)sf.getType()).toInternal(new Date((Long)val));
+            val = sf.getType().unmarshalSortValue(val);
+          }
+        } else if (fieldName.startsWith("currency")) {
+          val = random().nextDouble();
+        } else if (fieldName.startsWith("uuid")) {
+          val = sf.getType().unmarshalSortValue(UUID.randomUUID().toString());
+        } else if (fieldName.startsWith("bool")) {
+          val = sf.getType().unmarshalSortValue(random().nextBoolean() ? "t" : "f");
+        } else if (fieldName.startsWith("enum")) {
+          val = random().nextInt(CursorPagingTest.SEVERITY_ENUM_VALUES.length);
+        } else if (fieldName.contains("collation")) {
+          val = getRandomCollation(sf);
         } else {
           fail("fell through the rabbit hole, new field in schema? = " + fieldName);
         }
@@ -242,6 +300,28 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
       }
     }
     return results;
+  }
+
+  private static Object getRandomCollation(SchemaField sf) throws IOException {
+    Object val = null;
+    Analyzer analyzer = sf.getType().getAnalyzer();
+    String term = _TestUtil.randomRealisticUnicodeString(random());
+    TokenStream ts = analyzer.tokenStream("fake", term);
+    IOException priorException = null;
+    try {
+      TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
+      val = termAtt.getBytesRef();
+      ts.reset();
+      assertTrue(ts.incrementToken());
+      termAtt.fillBytesRef();
+      assertFalse(ts.incrementToken());
+      ts.end();
+    } catch (IOException e) {
+      priorException = e;
+    } finally {
+      IOUtils.closeWhileHandlingException(priorException, ts);
+    }
+    return val;
   }
   
   /**

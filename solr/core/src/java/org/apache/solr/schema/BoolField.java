@@ -150,6 +150,16 @@ public class BoolField extends PrimitiveFieldType {
   public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     writer.writeBool(name, f.stringValue().charAt(0) == 'T');
   }
+
+  @Override
+  public Object marshalSortValue(Object value) {
+    return marshalStringSortValue(value);
+  }
+
+  @Override
+  public Object unmarshalSortValue(Object value) {
+    return unmarshalStringSortValue(value);
+  }
 }
 
 // TODO - this can be much more efficient - use OpenBitSet or Bits

@@ -48,6 +48,7 @@ import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.response.TextResponseWriter;
@@ -967,5 +968,53 @@ public abstract class FieldType extends FieldProperties {
    */
   public Object unmarshalSortValue(Object value) {
     return value;
+  }
+
+  /**
+   * Marshals a string-based field value.
+   */
+  protected static Object marshalStringSortValue(Object value) {
+    if (null == value) {
+      return null;
+    }
+    CharsRef spare = new CharsRef();
+    UnicodeUtil.UTF8toUTF16((BytesRef)value, spare);
+    return spare.toString();
+  }
+
+  /**
+   * Unmarshals a string-based field value.
+   */
+  protected static Object unmarshalStringSortValue(Object value) {
+    if (null == value) {
+      return null;
+    }
+    BytesRef spare = new BytesRef();
+    String stringVal = (String)value;
+    UnicodeUtil.UTF16toUTF8(stringVal, 0, stringVal.length(), spare);
+    return spare;
+  }
+
+  /**
+   * Marshals a binary field value.
+   */
+  protected static Object marshalBase64SortValue(Object value) {
+    if (null == value) {
+      return null;
+    }
+    final BytesRef val = (BytesRef)value;
+    return Base64.byteArrayToBase64(val.bytes, val.offset, val.length);
+  }
+
+  /**
+   * Unmarshals a binary field value.
+   */
+  protected static Object unmarshalBase64SortValue(Object value) {
+    if (null == value) {
+      return null;
+    }
+    final String val = (String)value;
+    final byte[] bytes = Base64.base64ToByteArray(val);
+    return new BytesRef(bytes);
   }
 }
