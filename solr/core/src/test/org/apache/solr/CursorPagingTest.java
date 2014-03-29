@@ -45,6 +45,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -968,7 +969,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   }
 
   private static String dateWithRandomSecondOn2010_10_31_at_10_31() {
-    return String.format("2010-10-31T10:31:%02d.000Z",
+    return String.format(Locale.ROOT, "2010-10-31T10:31:%02d.000Z",
                          _TestUtil.nextInt(random(), 0, 59));
   }
 
