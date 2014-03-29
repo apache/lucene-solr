@@ -43,7 +43,6 @@ import org.apache.lucene.util.Version;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 
@@ -307,20 +306,11 @@ public class ICUCollationField extends FieldType {
 
   @Override
   public Object marshalSortValue(Object value) {
-    if (null == value) {
-      return null;
-    }
-    final BytesRef val = (BytesRef)value;
-    return Base64.byteArrayToBase64(val.bytes, val.offset, val.length);
+    return marshalBase64SortValue(value);
   }
 
   @Override
   public Object unmarshalSortValue(Object value) {
-    if (null == value) {
-      return null;
-    }
-    final String val = (String)value;
-    final byte[] bytes = Base64.base64ToByteArray(val);
-    return new BytesRef(bytes);
+    return unmarshalBase64SortValue(value);
   }
 }
