@@ -310,6 +310,9 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
       val = termAtt.getBytesRef();
       ts.reset();
       assertTrue(ts.incrementToken());
+      termAtt.fillBytesRef();
+      assertFalse(ts.incrementToken());
+      ts.end();
     }
     return val;
   }
