@@ -1137,27 +1137,23 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     Set<SolrDocument> onlyInB = new HashSet<>(setB);
     onlyInB.removeAll(setA);
 
-    if (onlyInA.size() > 0) {
-      for (SolrDocument doc : onlyInA) {
-        if (!addFails.contains(doc.getFirstValue("id"))) {
-          legal = false;
-        } else {
-          System.err.println("###### Only in " + aName + ": " + onlyInA
-              + ", but this is expected because we found an add fail for "
-              + doc.getFirstValue("id"));
-        }
+    for (SolrDocument doc : onlyInA) {
+      if (!addFails.contains(doc.getFirstValue("id"))) {
+        legal = false;
+      } else {
+        System.err.println("###### Only in " + aName + ": " + onlyInA
+            + ", but this is expected because we found an add fail for "
+            + doc.getFirstValue("id"));
       }
-      
     }
-    if (onlyInB.size() > 0) {
-      for (SolrDocument doc : onlyInB) {
-        if (!deleteFails.contains(doc.getFirstValue("id"))) {
-          legal = false;
-        } else {
-          System.err.println("###### Only in " + bName + ": " + onlyInB
-              + ", but this is expected because we found a delete fail for "
-              + doc.getFirstValue("id"));
-        }
+      
+    for (SolrDocument doc : onlyInB) {
+      if (!deleteFails.contains(doc.getFirstValue("id"))) {
+        legal = false;
+      } else {
+        System.err.println("###### Only in " + bName + ": " + onlyInB
+            + ", but this is expected because we found a delete fail for "
+            + doc.getFirstValue("id"));
       }
     }
     
@@ -1655,8 +1651,12 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     if (client == null) {
       final String baseUrl = getBaseUrl((HttpSolrServer) clients.get(clientIndex));
       SolrServer server = createNewSolrServer("", baseUrl);
-      res.setResponse(server.request(request));
-      server.shutdown();
+      try {
+        res.setResponse(server.request(request));
+        server.shutdown();
+      } finally {
+        if (server != null) server.shutdown();
+      }
     } else {
       res.setResponse(client.request(request));
     }

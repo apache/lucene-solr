@@ -250,6 +250,9 @@ Other Changes
 * SOLR-5914: Cleanup and fix Solr's test cleanup code. 
  (Mark Miller, Uwe Schindler)
 
+* SOLR-5934: LBHttpSolrServer exception handling improvement and small test
+  improvements. (Gregory Chanan via Mark Miller)
+
 ==================  4.7.1  ==================
 
 Versions of Major Components
