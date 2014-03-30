@@ -30,7 +30,7 @@
     <orderEntry type="module" scope="TEST" module-name="misc" />
     <orderEntry type="module" scope="TEST" module-name="join" />
     <orderEntry type="module" scope="TEST" module-name="expressions" />
-    <orderEntry type="module" scope="TEST" module-name="analysis-icu" />
+    <orderEntry type="module" scope="TEST" module-name="icu" />
     <orderEntry type="module" scope="TEST" module-name="analysis-extras" />
   </component>
 </module>
