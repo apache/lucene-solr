@@ -199,6 +199,9 @@ Other Changes
 
 * SOLR-5936: Deprecate non-Trie-based numeric & date field types. (Steve Rowe)
 
+* SOLR-5934: LBHttpSolrServer exception handling improvement and small test
+  improvements. (Gregory Chanan via Mark Miller)
+
 ==================  4.7.1  ==================
 
 Versions of Major Components
