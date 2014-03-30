@@ -19,8 +19,9 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.index.IndexableField;
 /**
- *
+ * @deprecated this class will be removed in 5.0 - use {@link TrieLongField} instead
  */
+@Deprecated
 public class BCDLongField extends BCDIntField {
   @Override
   public Long toObject(IndexableField f) {

@@ -50,7 +50,8 @@ import java.io.IOException;
  * </p>
  *
  * @see TrieFloatField
- * @deprecated use {@link FloatField} or {@link TrieFloatField} - will be removed in 5.x
+ *
+ * @deprecated this class will be removed in 5.0 - use {@link TrieFloatField} instead
  */
 @Deprecated
 public class SortableFloatField extends PrimitiveFieldType implements FloatValueFieldType {
@@ -123,8 +124,10 @@ public class SortableFloatField extends PrimitiveFieldType implements FloatValue
 }
 
 
-
-
+/**
+ * @deprecated this class will be removed in 5.0
+ */
+@Deprecated
 class SortableFloatFieldSource extends FieldCacheSource {
   protected float defVal;
 

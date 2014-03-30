@@ -50,7 +50,8 @@ import java.io.IOException;
  * </p>
  * 
  * @see TrieIntField
- * @deprecated use {@link IntField} or {@link TrieIntField} - will be removed in 5.x
+ *
+ * @deprecated this class will be removed in 5.0 - use {@link TrieIntField} instead
  */
 @Deprecated
 public class SortableIntField extends PrimitiveFieldType implements IntValueFieldType {
@@ -126,7 +127,10 @@ public class SortableIntField extends PrimitiveFieldType implements IntValueFiel
 }
 
 
-
+/**
+ * @deprecated this class will be removed in 5.0
+ */
+@Deprecated
 class SortableIntFieldSource extends FieldCacheSource {
   protected int defVal;
 

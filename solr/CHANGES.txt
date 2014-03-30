@@ -197,6 +197,8 @@ Other Changes
 * SOLR-5914: Cleanup and fix Solr's test cleanup code. 
  (Mark Miller, Uwe Schindler)
 
+* SOLR-5936: Deprecate non-Trie-based numeric & date field types. (Steve Rowe)
+
 ==================  4.7.1  ==================
 
 Versions of Major Components

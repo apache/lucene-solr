@@ -39,7 +39,10 @@ import java.io.IOException;
  * </p>
  * 
  * @see TrieFloatField
+ *
+ * @deprecated this class will be removed in 5.0 - use {@link TrieFloatField} instead
  */
+@Deprecated
 public class FloatField extends PrimitiveFieldType implements FloatValueFieldType {
   @Override
   protected void init(IndexSchema schema, Map<String,String> args) {

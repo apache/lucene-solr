@@ -40,7 +40,10 @@ import java.util.Map;
  * </p>
  * 
  * @see TrieDoubleField
+ *
+ * @deprecated this class will be removed in 5.0 - use {@link TrieDoubleField} instead
  */
+@Deprecated
 public class DoubleField extends PrimitiveFieldType implements DoubleValueFieldType {
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {

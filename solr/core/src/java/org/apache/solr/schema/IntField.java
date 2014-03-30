@@ -39,7 +39,10 @@ import java.io.IOException;
  * </p>
  * 
  * @see TrieIntField
+ *
+ * @deprecated this class will be removed in 5.0 - use {@link TrieIntField} instead
  */
+@Deprecated
 public class IntField extends PrimitiveFieldType implements IntValueFieldType {
   @Override
   protected void init(IndexSchema schema, Map<String,String> args) {

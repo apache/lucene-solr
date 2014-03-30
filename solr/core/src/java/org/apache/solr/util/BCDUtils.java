@@ -19,8 +19,9 @@ package org.apache.solr.util;
 
 
 /**
- *
+ * @deprecated this class will be removed in 5.0
  */
+@Deprecated
 public class BCDUtils {
   // idiv is expensive...
   // use fixed point math to multiply by 1/10

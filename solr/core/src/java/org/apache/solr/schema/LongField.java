@@ -39,7 +39,10 @@ import java.util.Map;
  * </p>
  * 
  * @see TrieLongField
+ *
+ * @deprecated this class will be removed in 5.0 - use {@link TrieLongField} instead
  */
+@Deprecated
 public class LongField extends PrimitiveFieldType implements LongValueFieldType {
   @Override
   protected void init(IndexSchema schema, Map<String,String> args) {

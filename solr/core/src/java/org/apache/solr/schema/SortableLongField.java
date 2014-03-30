@@ -49,7 +49,8 @@ import java.io.IOException;
  * </p>
  * 
  * @see TrieLongField
- * @deprecated use {@link LongField} or {@link TrieLongField} - will be removed in 5.x
+ *
+ * @deprecated this class will be removed in 5.0 - use {@link TrieLongField} instead
  */
 @Deprecated
 public class SortableLongField extends PrimitiveFieldType {
@@ -122,9 +123,10 @@ public class SortableLongField extends PrimitiveFieldType {
 }
 
 
-
-
-
+/**
+ * @deprecated this class will be removed in 5.0
+ */
+@Deprecated
 class SortableLongFieldSource extends FieldCacheSource {
   protected long defVal;
 

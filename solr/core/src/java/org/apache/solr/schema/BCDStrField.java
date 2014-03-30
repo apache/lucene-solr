@@ -19,8 +19,9 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.index.IndexableField;
 /**
- *
+ * @deprecated this class will be removed in 5.0 - use {@link TrieIntField} instead
  */
+@Deprecated
 public class BCDStrField extends BCDIntField {
   /**
    * This only works for strings that represent an interger.  If the string

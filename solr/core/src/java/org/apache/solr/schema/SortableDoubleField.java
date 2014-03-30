@@ -49,7 +49,8 @@ import java.io.IOException;
  * </p>
  * 
  * @see TrieDoubleField
- * @deprecated use {@link DoubleField} or {@link TrieDoubleField} - will be removed in 5.x
+ *
+ * @deprecated this class will be removed in 5.0 - use {@link TrieDoubleField} instead
  */
 @Deprecated
 public class SortableDoubleField extends PrimitiveFieldType implements DoubleValueFieldType {
@@ -121,6 +122,10 @@ public class SortableDoubleField extends PrimitiveFieldType implements DoubleVal
   }
 }
 
+/**
+ * @deprecated this class will be removed in 5.0
+ */
+@Deprecated
 class SortableDoubleFieldSource extends FieldCacheSource {
   protected double defVal;
 
