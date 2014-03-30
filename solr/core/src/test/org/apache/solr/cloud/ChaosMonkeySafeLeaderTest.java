@@ -58,14 +58,14 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
     SolrCmdDistributor.testing_errorHook = null;
   }
   
-  protected static final String[] fieldNames = new String[]{"f_i", "f_f", "f_d", "f_l", "f_dt"};
-  protected static final RandVal[] randVals = new RandVal[]{rint, rfloat, rdouble, rlong, rdate};
+  public static String[] fieldNames = new String[]{"f_i", "f_f", "f_d", "f_l", "f_dt"};
+  public static RandVal[] randVals = new RandVal[]{rint, rfloat, rdouble, rlong, rdate};
   
-  public String[] getFieldNames() {
+  protected String[] getFieldNames() {
     return fieldNames;
   }
 
-  public RandVal[] getRandValues() {
+  protected RandVal[] getRandValues() {
     return randVals;
   }
   
