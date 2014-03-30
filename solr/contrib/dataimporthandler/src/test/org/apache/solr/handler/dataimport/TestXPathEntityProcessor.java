@@ -331,9 +331,7 @@ public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase 
   
   @Test
   public void withDefaultSolrAndXsl() throws Exception {
-    File tmpdir = File.createTempFile("test", "tmp", createTempDir());
-    tmpdir.delete();
-    tmpdir.mkdir();
+    File tmpdir = createTempDir();
     AbstractDataImportHandlerTestCase.createFile(tmpdir, "x.xsl", xsl.getBytes("UTF-8"),
             false);
 

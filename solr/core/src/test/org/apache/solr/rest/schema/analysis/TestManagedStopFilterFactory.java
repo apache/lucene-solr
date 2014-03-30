@@ -22,8 +22,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.util.RestTestBase;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
@@ -46,8 +44,7 @@ public class TestManagedStopFilterFactory extends RestTestBase {
 
   @Before
   public void before() throws Exception {
-    tmpSolrHome = new File(createTempDir() + File.separator + TestManagedStopFilterFactory.class.getSimpleName()
-                          + System.currentTimeMillis());
+    tmpSolrHome = createTempDir();
     tmpConfDir = new File(tmpSolrHome, confDir);
     FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
 
@@ -67,7 +64,6 @@ public class TestManagedStopFilterFactory extends RestTestBase {
   private void after() throws Exception {
     jetty.stop();
     jetty = null;
-    FileUtils.deleteDirectory(tmpSolrHome);
     System.clearProperty("managed.schema.mutable");
     System.clearProperty("enable.update.log");
   }

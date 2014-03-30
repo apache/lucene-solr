@@ -79,8 +79,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
     
     System.setProperty("zkClientTimeout", "8000");
     
-    zkDir = createTempDir().getAbsolutePath() + File.separator
-        + "zookeeper/server1/data";
+    zkDir = createTempDir("zkData").getAbsolutePath();
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
     System.setProperty("zkHost", zkServer.getZkAddress());

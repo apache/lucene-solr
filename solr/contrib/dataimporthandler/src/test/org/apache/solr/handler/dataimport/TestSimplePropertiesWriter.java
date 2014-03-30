@@ -43,21 +43,10 @@ public class TestSimplePropertiesWriter extends AbstractDIHJdbcTestCase {
   
   @Before
   public void spwBefore() throws Exception {
-    File tmpdir = File.createTempFile("test", "tmp", createTempDir());
-    tmpdir.delete();
-    tmpdir.mkdir();
-    fileLocation = tmpdir.getPath();
+    fileLocation = createTempDir().getAbsolutePath();
     fileName = "the.properties";
   }
-  @After
-  public void spwAfter() throws Exception {
-    //If an Assume was tripped while setting up the test, 
-    //the file might not ever have been created...
-    if(fileLocation!=null) {
-      new File(fileLocation + File.separatorChar + fileName).delete();
-      new File(fileLocation).delete();
-    }
-  }  
+ 
   @Test
   public void testSimplePropertiesWriter() throws Exception { 
     

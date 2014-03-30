@@ -17,7 +17,6 @@ package org.apache.solr.handler.dataimport;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -50,8 +49,7 @@ public class TestZKPropertiesWriter extends AbstractDataImportHandlerTestCase {
 
   @BeforeClass
   public static void dihZk_beforeClass() throws Exception {
-    zkDir = createTempDir().getAbsolutePath() + File.separator
-        + "zookeeper/server1/data";
+    zkDir = createTempDir("zkData").getAbsolutePath();
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
 

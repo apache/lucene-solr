@@ -57,11 +57,6 @@ public class TestNonWritablePersistFile extends AbstractDataImportHandlerTestCas
     initCore("dataimport-solrconfig.xml", "dataimport-schema.xml", 
              new File(tmpSolrHome).getAbsolutePath());
   }  
-  
-  @AfterClass
-  public static void destroyTempSolrHomeAndCore() throws Exception {
-    FileUtils.deleteDirectory(new File(tmpSolrHome).getAbsoluteFile());
-  }
 
   @Test
   @SuppressWarnings("unchecked")

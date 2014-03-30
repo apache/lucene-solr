@@ -311,15 +311,6 @@ public class EditFileRequestHandler extends RequestHandlerBase {
       rsp.setException(new SolrException(ErrorCode.SERVER_ERROR,
           "Caught IO exception when trying to verify configs. " + ex.getMessage()));
       return false;
-    } finally {
-      if (home != null) {
-        try {
-          FileUtils.deleteDirectory(home);
-        } catch (IOException e) {
-          log.warn("Caught IO exception trying to delete temporary directory " + home + e.getMessage());
-          return true; // Don't fail for this reason!
-        }
-      }
     }
   }
 

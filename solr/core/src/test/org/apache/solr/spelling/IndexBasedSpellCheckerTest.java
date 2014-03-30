@@ -186,7 +186,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     NamedList spellchecker = new NamedList();
     spellchecker.add("classname", IndexBasedSpellChecker.class.getName());
 
-    File indexDir = new File(createTempDir(), "spellingIdx");
+    File indexDir = createTempDir();
     indexDir.mkdirs();
     spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
     spellchecker.add(AbstractLuceneSpellChecker.FIELD, "title");
@@ -244,7 +244,6 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     spellchecker.add("classname", IndexBasedSpellChecker.class.getName());
 
     File indexDir = createTempDir();
-    indexDir.mkdirs();
     spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
     spellchecker.add(AbstractLuceneSpellChecker.FIELD, "title");
     spellchecker.add(AbstractLuceneSpellChecker.SPELLCHECKER_ARG_NAME, spellchecker);

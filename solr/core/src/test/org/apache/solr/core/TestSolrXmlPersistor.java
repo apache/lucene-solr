@@ -59,35 +59,26 @@ public class TestSolrXmlPersistor  extends SolrTestCaseJ4 {
 
   @Test
   public void simpleCoreDescriptorIsPersisted() throws IOException {
-
+    
     final String solrxml = "<solr><cores></cores></solr>";
-
+    
     final File solrHomeDirectory = createTempDir();
-
-    try {
-      if (solrHomeDirectory.exists()) {
-        FileUtils.deleteDirectory(solrHomeDirectory);
-      }
-      copyMinFullSetup(solrHomeDirectory);
-
-      CoreContainer cc = new CoreContainer(solrHomeDirectory.getAbsolutePath());
-
-      final CoreDescriptor cd = new CoreDescriptor(cc, "testcore", "instance/dir/");
-      List<CoreDescriptor> cds = ImmutableList.of(cd);
-
-      SolrXMLCoresLocator persistor = new SolrXMLCoresLocator(solrxml, null);
-      String xml = persistor.buildSolrXML(cds);
-      
-      assertTrue(xml.contains("<solr><cores>"));
-      assertTrue(xml.contains("name=\"testcore\""));
-      assertTrue(xml.contains("instanceDir=\"instance/dir/\""));
-      assertTrue(xml.contains("</cores></solr>"));
-    } finally {
-      if (solrHomeDirectory.exists()) {
-        FileUtils.deleteDirectory(solrHomeDirectory);
-      }
-
-    }
+    
+    copyMinFullSetup(solrHomeDirectory);
+    
+    CoreContainer cc = new CoreContainer(solrHomeDirectory.getAbsolutePath());
+    
+    final CoreDescriptor cd = new CoreDescriptor(cc, "testcore",
+        "instance/dir/");
+    List<CoreDescriptor> cds = ImmutableList.of(cd);
+    
+    SolrXMLCoresLocator persistor = new SolrXMLCoresLocator(solrxml, null);
+    String xml = persistor.buildSolrXML(cds);
+    
+    assertTrue(xml.contains("<solr><cores>"));
+    assertTrue(xml.contains("name=\"testcore\""));
+    assertTrue(xml.contains("instanceDir=\"instance/dir/\""));
+    assertTrue(xml.contains("</cores></solr>"));
   }
 
   @Test

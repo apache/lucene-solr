@@ -76,9 +76,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    dfsCluster = HdfsTestUtil.setupClass(new File(createTempDir(),
-        HdfsBasicDistributedZk2Test.class.getName() + "_"
-            + System.currentTimeMillis()).getAbsolutePath());
+    dfsCluster = HdfsTestUtil.setupClass(createTempDir().getAbsolutePath());
     hdfsUri = dfsCluster.getFileSystem().getUri().toString();
     
     try {

@@ -50,10 +50,6 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
     useFactory(null); // I require FS-based indexes for this test.
 
     solrHomeDirectory = createTempDir();
-    if (solrHomeDirectory.exists()) {
-      FileUtils.deleteDirectory(solrHomeDirectory);
-    }
-    assertTrue("Failed to mkdirs workDir", solrHomeDirectory.mkdirs());
 
     setupNoCoreTest(solrHomeDirectory, null);
 
@@ -63,9 +59,6 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
   @AfterClass
   public static void afterClass() throws Exception {
     admin = null; // Release it or the test harness complains.
-    if (solrHomeDirectory.exists()) {
-      FileUtils.deleteDirectory(solrHomeDirectory);
-    }
   }
 
   private static void setupCore(String coreName, boolean blivet) throws IOException {

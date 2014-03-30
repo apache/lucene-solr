@@ -62,7 +62,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
 
   @AfterClass
   public static void afterTest() throws Exception {
-    cleanUpJettyHome(solrHomeDirectory);
+
   }
 
   @Before

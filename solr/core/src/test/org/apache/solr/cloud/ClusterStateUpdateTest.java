@@ -73,12 +73,9 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
 
   @BeforeClass
   public static void beforeClass() throws IOException {
-    solrHomeDirectory = new File(createTempDir(), "ZkControllerTest");
+    solrHomeDirectory = createTempDir();
     System.setProperty("solrcloud.skip.autorecovery", "true");
     System.setProperty("genericCoreNodeNames", "false");
-    if (solrHomeDirectory.exists()) {
-      FileUtils.deleteDirectory(solrHomeDirectory);
-    }
     copyMinFullSetup(solrHomeDirectory);
 
   }
@@ -87,9 +84,6 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
   public static void afterClass() throws InterruptedException, IOException {
     System.clearProperty("solrcloud.skip.autorecovery");
     System.clearProperty("genericCoreNodeNames");
-    if (solrHomeDirectory.exists()) {
-      FileUtils.deleteDirectory(solrHomeDirectory);
-    }
   }
 
 
@@ -97,9 +91,8 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
   public void setUp() throws Exception {
     super.setUp();
     System.setProperty("zkClientTimeout", "3000");
-    File tmpDir = createTempDir();
-    zkDir = tmpDir.getAbsolutePath() + File.separator
-        + "zookeeper/server1/data";
+    File tmpDir = createTempDir("zkData");
+    zkDir = tmpDir.getAbsolutePath();
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
     System.setProperty("zkHost", zkServer.getZkAddress());

@@ -110,9 +110,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
   @After
   public void after() throws Exception {
-    if (solrHomeDirectory.exists()) {
-      FileUtils.deleteDirectory(solrHomeDirectory);
-    }
+
   }
 
   // Test the basic setup, create some dirs with core.properties files in them, but solr.xml has discoverCores
@@ -208,12 +206,11 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       assertNotNull(core2);
     } finally {
       cc.shutdown();
-      if (alt.exists()) FileUtils.deleteDirectory(alt);
     }
   }
   @Test
   public void testNoCoreDir() throws Exception {
-    File noCoreDir = new File(createTempDir(), "noCoreDir");
+    File noCoreDir = createTempDir();
     setMeUp(noCoreDir.getAbsolutePath());
     addCoreWithProps(makeCorePropFile("core1", false, true),
         new File(noCoreDir, "core1" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
@@ -226,7 +223,6 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       assertNotNull(core2);
     } finally {
       cc.shutdown();
-      if (noCoreDir.exists()) FileUtils.deleteDirectory(noCoreDir);
     }
   }
   // For testing whether finding a solr.xml overrides looking at solr.properties

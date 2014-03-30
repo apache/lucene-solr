@@ -49,7 +49,7 @@ public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
 
   @AfterClass
   public static void AfterClass() throws Exception {
-    FileUtils.deleteDirectory(new File(tmpSolrHome).getAbsoluteFile());
+    
   }
   
   public void testStopwordsAfterCoreReload() throws Exception {

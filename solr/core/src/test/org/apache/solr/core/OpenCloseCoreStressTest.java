@@ -86,7 +86,6 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
     cumulativeDocs = 0;
 
     solrHomeDirectory = createTempDir();
-    FileUtils.deleteDirectory(solrHomeDirectory); // Ensure that a failed test didn't leave something lying around.
 
     jetty = new JettySolrRunner(solrHomeDirectory.getAbsolutePath(), "/solr", 0, null, null, true, null, sslConfig);
   }
@@ -94,7 +93,6 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
   @After
   public void tearDownServer() throws Exception {
     if (jetty != null) jetty.stop();
-    FileUtils.deleteDirectory(solrHomeDirectory);
     for(SolrServer server:indexingServers) {
       server.shutdown();
     }

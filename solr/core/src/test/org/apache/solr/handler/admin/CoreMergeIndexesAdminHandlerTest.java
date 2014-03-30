@@ -73,11 +73,6 @@ public class CoreMergeIndexesAdminHandlerTest extends SolrTestCaseJ4 {
   public void testMergeIndexesCoreAdminHandler() throws Exception {
     final File workDir = createTempDir();
 
-    if (workDir.exists()) {
-      FileUtils.deleteDirectory(workDir);
-    }
-    assertTrue("Failed to mkdirs workDir", workDir.mkdirs());
-
     final CoreContainer cores = h.getCoreContainer();
 
     final CoreAdminHandler admin = new CoreAdminHandler(cores);
@@ -104,8 +99,5 @@ public class CoreMergeIndexesAdminHandlerTest extends SolrTestCaseJ4 {
       }
       dirFactory.fail = false;
     }
-
-    // cleanup
-    FileUtils.deleteDirectory(workDir);
   }
 }

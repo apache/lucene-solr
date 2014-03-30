@@ -41,9 +41,8 @@ public class TestConfigSets extends SolrTestCaseJ4 {
 
   public static String solrxml = "<solr><str name=\"configSetBaseDir\">${configsets:configsets}</str></solr>";
 
-  public CoreContainer setupContainer(String testName, String configSetsBaseDir) {
-    File testDirectory = new File(createTempDir(), testName);
-    testDirectory.mkdirs();
+  public CoreContainer setupContainer(String configSetsBaseDir) {
+    File testDirectory = createTempDir();
 
     System.setProperty("configsets", configSetsBaseDir);
 
@@ -58,7 +57,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
   public void testConfigSetServiceFindsConfigSets() {
     CoreContainer container = null;
     try {
-      container = setupContainer("findsConfigSets", getFile("solr/configsets").getAbsolutePath());
+      container = setupContainer(getFile("solr/configsets").getAbsolutePath());
       String testDirectory = container.getResourceLoader().getInstanceDir();
 
       SolrCore core1 = container.create("core1", testDirectory + "/core1", "configSet", "configset-2");
@@ -77,7 +76,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
   public void testNonExistentConfigSetThrowsException() {
     CoreContainer container = null;
     try {
-      container = setupContainer("badConfigSet", getFile("solr/configsets").getAbsolutePath());
+      container = setupContainer(getFile("solr/configsets").getAbsolutePath());
       String testDirectory = container.getResourceLoader().getInstanceDir();
 
       container.create("core1", testDirectory + "/core1", "configSet", "nonexistent");

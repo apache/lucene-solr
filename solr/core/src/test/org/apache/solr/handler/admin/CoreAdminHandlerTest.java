@@ -122,20 +122,11 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     assertTrue("Should have found index dir at " + test.getAbsolutePath(), test.exists());
     test = new File(test,"segments.gen");
     assertTrue("Should have found segments.gen at " + test.getAbsolutePath(), test.exists());
-
-    // Cleanup
-    FileUtils.deleteDirectory(workDir);
-
   }
 
   @Test
   public void testCoreAdminHandler() throws Exception {
-    final File workDir = new File(initCoreDataDir, this.getClass().getName());
-
-    if (workDir.exists()) {
-      FileUtils.deleteDirectory(workDir);
-    }
-    assertTrue("Failed to mkdirs workDir", workDir.mkdirs());
+    final File workDir = createTempDir();
     
     final CoreContainer cores = h.getCoreContainer();
 
@@ -213,9 +204,6 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
 
                
     // :TODO: because of SOLR-3665 we can't ask for status from all cores
-
-    // cleanup
-    FileUtils.deleteDirectory(workDir);
 
   }
 

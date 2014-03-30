@@ -34,7 +34,6 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.handler.admin.CollectionsHandler;
@@ -184,7 +183,6 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       assertNull(ret);
     } finally {
       cores.shutdown();
-      FileUtils.deleteDirectory(solrHomeDirectory);
     }
 
   }
@@ -194,22 +192,15 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     assertNotNull(h.getCoreContainer().getLogging());
   }
   
-  private void SetUpHome(File solrHomeDirectory, String xmlFile) throws IOException {
-    if (solrHomeDirectory.exists()) {
-      FileUtils.deleteDirectory(solrHomeDirectory);
-    }
-    assertTrue("Failed to mkdirs workDir", solrHomeDirectory.mkdirs());
-    try {
-      File solrXmlFile = new File(solrHomeDirectory, "solr.xml");
-      BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(solrXmlFile), IOUtils.CHARSET_UTF_8));
-      out.write(xmlFile);
-      out.close();
-    } catch (IOException e) {
-      FileUtils.deleteDirectory(solrHomeDirectory);
-      throw e;
-    }
-
-    //init
+  private void SetUpHome(File solrHomeDirectory, String xmlFile)
+      throws IOException {
+    File solrXmlFile = new File(solrHomeDirectory, "solr.xml");
+    BufferedWriter out = new BufferedWriter(new OutputStreamWriter(
+        new FileOutputStream(solrXmlFile), IOUtils.CHARSET_UTF_8));
+    out.write(xmlFile);
+    out.close();
+    
+    // init
     System.setProperty(SOLR_HOME_PROP, solrHomeDirectory.getAbsolutePath());
   }
 

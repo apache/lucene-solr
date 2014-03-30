@@ -17,21 +17,18 @@
 
 package org.apache.solr.update.processor;
 
+import java.io.File;
+import java.util.Date;
+
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.TestManagedSchema;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
 import org.junit.After;
 import org.junit.Before;
-
-import java.io.File;
-import java.util.Date;
 
 /**
  * Tests for the field mutating update processors
@@ -49,8 +46,7 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
 
   @Before
   private void initManagedSchemaCore() throws Exception {
-    final String tmpSolrHomePath = createTempDir().getAbsolutePath();
-    tmpSolrHome = new File(tmpSolrHomePath).getAbsoluteFile();
+    tmpSolrHome = createTempDir();
     tmpConfDir = new File(tmpSolrHome, confDir);
     File testHomeConfDir = new File(TEST_HOME(), confDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, SOLRCONFIG_XML), tmpConfDir);
@@ -59,12 +55,6 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     // initCore will trigger an upgrade to managed schema, since the solrconfig*.xml has
     // <schemaFactory class="ManagedIndexSchemaFactory" ... />
     initCore(SOLRCONFIG_XML, SCHEMA_XML, tmpSolrHome.getPath());
-  }
-
-  @After
-  private void deleteCoreAndTempSolrHomeDirectory() throws Exception {
-    deleteCore();
-    FileUtils.deleteDirectory(tmpSolrHome);
   }
 
   public void testSingleField() throws Exception {
@@ -219,5 +209,10 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
         ,"//arr[@name='" + fieldName3 + "']/str[.='" + field3String1 + "']"
         ,"//arr[@name='" + fieldName3 + "']/str[.='" + field3String2 + "']"
         ,"//arr[@name='" + fieldName4 + "']/date[.='" + field4Value1String + "']");
+  }
+  
+  @After
+  private void deleteCoreAndTempSolrHomeDirectory() throws Exception {
+    deleteCore();
   }
 }

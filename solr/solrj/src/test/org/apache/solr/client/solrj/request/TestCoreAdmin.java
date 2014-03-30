@@ -99,15 +99,9 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     
     SolrServer server = getSolrAdmin();
     
-    File tmp = createTempDir();
-
-    log.info("Creating cores underneath {}", tmp);
+    File dataDir = createTempDir("data");
     
-    File dataDir = new File(tmp, this.getTestName()
-        + System.currentTimeMillis() + "-" + "data");
-    
-    File newCoreInstanceDir = new File(tmp, this.getTestName()
-        + System.currentTimeMillis() + "-" + "instance");
+    File newCoreInstanceDir = createTempDir("instance");
     
     File instanceDir = new File(cores.getSolrHome());
     FileUtils.copyDirectory(instanceDir, new File(newCoreInstanceDir,

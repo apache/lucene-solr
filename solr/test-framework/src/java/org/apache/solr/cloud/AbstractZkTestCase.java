@@ -63,8 +63,7 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void azt_beforeClass() throws Exception {
-    zkDir = createTempDir().getAbsolutePath() + File.separator
-        + "zookeeper/server1/data";
+    zkDir = createTempDir("zkData").getAbsolutePath();
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
     

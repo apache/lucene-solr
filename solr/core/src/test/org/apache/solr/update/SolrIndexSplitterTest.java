@@ -57,28 +57,9 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
     super.setUp();
     clearIndex();
     assertU(commit());
-    File dataDir = createTempDir();
-    indexDir1 = new File(dataDir, this.getClass().getName()
-        + "_testSplit1");
-    indexDir2 = new File(dataDir, this.getClass().getName()
-        + "_testSplit2");
-    indexDir3 = new File(dataDir, this.getClass().getName()
-        + "_testSplit3");
-
-    if (indexDir1.exists()) {
-      FileUtils.deleteDirectory(indexDir1);
-    }
-    assertTrue("Failed to mkdirs indexDir1 for split index", indexDir1.mkdirs());
-
-    if (indexDir2.exists()) {
-      FileUtils.deleteDirectory(indexDir2);
-    }
-    assertTrue("Failed to mkdirs indexDir2 for split index", indexDir2.mkdirs());
-
-    if (indexDir3.exists()) {
-      FileUtils.deleteDirectory(indexDir3);
-    }
-    assertTrue("Failed to mkdirs indexDir3 for split index", indexDir3.mkdirs());
+    indexDir1 = createTempDir("_testSplit1");
+    indexDir2 = createTempDir("_testSplit2");
+    indexDir3 = createTempDir("_testSplit3");
   }
 
   @Test
@@ -272,10 +253,6 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
   @Test
   public void testSplitByRouteKey() throws Exception  {
     File indexDir = createTempDir();
-    if (indexDir.exists())  {
-      FileUtils.deleteDirectory(indexDir);
-    }
-    indexDir.mkdirs();
 
     CompositeIdRouter r1 = new CompositeIdRouter();
     String splitKey = "sea-line!";

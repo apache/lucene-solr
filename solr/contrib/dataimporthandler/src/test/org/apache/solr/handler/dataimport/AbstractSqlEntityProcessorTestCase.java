@@ -16,12 +16,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
+import junit.framework.Assert;
+
 import org.junit.After;
 import org.junit.Before;
-
-import junit.framework.Assert;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

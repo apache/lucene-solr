@@ -116,7 +116,6 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
   public void tearDown() throws Exception {
     super.tearDown();
     directory.close();
-    FileUtils.deleteDirectory(file);
   }
 
   @Test

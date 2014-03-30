@@ -45,12 +45,7 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
       cc = null;
     }
 
-    if (null != solrHome) {
-      if (solrHome.exists()) {
-        FileUtils.deleteDirectory(solrHome);
-      }
-      solrHome = null;
-    }
+    solrHome = null;
   }
 
   public void testFlowWithEmpty() throws Exception {

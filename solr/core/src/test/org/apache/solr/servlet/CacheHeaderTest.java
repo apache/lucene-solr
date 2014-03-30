@@ -45,14 +45,14 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
     
   @BeforeClass
   public static void beforeTest() throws Exception {
-    solrHomeDirectory = new File(createTempDir(), "CacheHeaderTest");
+    solrHomeDirectory = createTempDir();
     setupJettyTestHome(solrHomeDirectory, "collection1");
     createJetty(solrHomeDirectory.getAbsolutePath(), null, null);
   }
 
   @AfterClass
   public static void afterTest() throws Exception {
-    cleanUpJettyHome(solrHomeDirectory);
+
   }
 
   protected static final String CONTENTS = "id\n100\n101\n102";

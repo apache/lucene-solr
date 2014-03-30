@@ -98,9 +98,6 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
       origMatchesPersist(cc, SOLR_XML_LOTS_SYSVARS);
     } finally {
       cc.shutdown();
-      if (solrHomeDirectory.exists()) {
-        FileUtils.deleteDirectory(solrHomeDirectory);
-      }
     }
   }
 
@@ -259,9 +256,6 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
       origMatchesPersist(cc, SOLR_XML_MINIMAL);
     } finally {
       cc.shutdown();
-      if (solrHomeDirectory.exists()) {
-        FileUtils.deleteDirectory(solrHomeDirectory);
-      }
     }
   }
 
@@ -399,10 +393,6 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
 
     } finally {
       cc.shutdown();
-      if (solrHomeDirectory.exists()) {
-        FileUtils.deleteDirectory(solrHomeDirectory);
-      }
-
     }
   }
 

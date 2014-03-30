@@ -51,7 +51,7 @@ public class SolrTestCaseJ4Test extends SolrTestCaseJ4 {
 
   @AfterClass
   public static void AfterClass() throws Exception {
-    FileUtils.deleteDirectory(new File(tmpSolrHome).getAbsoluteFile());
+
   }
 
   @Test
