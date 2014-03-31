@@ -767,7 +767,7 @@ public class SolrDispatchFilter implements Filter
         binWriter.write(response.getOutputStream(), solrReq, solrRsp);
       } else {
         String charset = ContentStreamBase.getCharsetFromContentType(ct);
-        Writer out = (charset == null || charset.equalsIgnoreCase("UTF-8"))
+        Writer out = (charset == null)
           ? new OutputStreamWriter(response.getOutputStream(), UTF8)
           : new OutputStreamWriter(response.getOutputStream(), charset);
         out = new FastWriter(out);

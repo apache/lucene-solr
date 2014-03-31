@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -72,21 +73,21 @@ public class TestSolrXMLSerializer extends SolrTestCaseJ4 {
         sharedLibVal, adminPathKey, adminPathVal, shareSchemaKey,
         shareSchemaVal, instanceDirKey, instanceDirVal);
     
-    Writer w = new StringWriter();
+    StringWriter w = new StringWriter();
     try {
       serializer.persist(w, solrXMLDef);
     } finally {
       w.close();
     }
     
-    assertResults(((StringWriter) w).getBuffer().toString().getBytes("UTF-8"));
+    assertResults(w.toString().getBytes(StandardCharsets.UTF_8));
     
     // again with default file
     File tmpFile = TestUtil.createTempFile("solr.xml", null, dataDir);
     
     serializer.persistFile(tmpFile, solrXMLDef);
 
-    assertResults(FileUtils.readFileToString(tmpFile, "UTF-8").getBytes("UTF-8"));
+    assertResults(FileUtils.readFileToByteArray(tmpFile));
     tmpFile.delete();
   }
 

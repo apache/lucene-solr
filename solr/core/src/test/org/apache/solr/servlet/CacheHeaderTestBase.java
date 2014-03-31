@@ -18,6 +18,7 @@ package org.apache.solr.servlet;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 import org.apache.http.HttpResponse;
@@ -49,7 +50,7 @@ public abstract class CacheHeaderTestBase extends SolrJettyTestBase {
     }
 
     URI uri = URI.create(httpserver.getBaseURL() + "/select?" +
-                         URLEncodedUtils.format(qparams, "UTF-8"));
+                         URLEncodedUtils.format(qparams, StandardCharsets.UTF_8));
    
     if ("GET".equals(method)) {
       m = new HttpGet(uri);
@@ -72,7 +73,7 @@ public abstract class CacheHeaderTestBase extends SolrJettyTestBase {
     }
 
     URI uri = URI.create(httpserver.getBaseURL() + "/update?" + 
-                         URLEncodedUtils.format(qparams, "UTF-8"));
+                         URLEncodedUtils.format(qparams, StandardCharsets.UTF_8));
     
     if ("GET".equals(method)) {
       m=new HttpGet(uri);

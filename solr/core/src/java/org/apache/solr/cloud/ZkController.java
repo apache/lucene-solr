@@ -1626,7 +1626,7 @@ public final class ZkController {
       return hostName + ':' + hostPort + '_' + 
         URLEncoder.encode(trimLeadingAndTrailingSlashes(hostContext), "UTF-8");
     } catch (UnsupportedEncodingException e) {
-      throw new IllegalStateException("JVM Does not seem to support UTF-8", e);
+      throw new Error("JVM Does not seem to support UTF-8", e);
     }
   }
   

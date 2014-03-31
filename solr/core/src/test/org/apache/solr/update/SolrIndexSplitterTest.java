@@ -18,6 +18,7 @@ package org.apache.solr.update;
  */
 
 import com.google.common.collect.Lists;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Term;
@@ -39,6 +40,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
@@ -326,9 +328,9 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
 
   private List<DocRouter.Range> getRanges(String id1, String id2) throws UnsupportedEncodingException {
     // find minHash/maxHash hash ranges
-    byte[] bytes = id1.getBytes("UTF-8");
+    byte[] bytes = id1.getBytes(StandardCharsets.UTF_8);
     int minHash = Hash.murmurhash3_x86_32(bytes, 0, bytes.length, 0);
-    bytes = id2.getBytes("UTF-8");
+    bytes = id2.getBytes(StandardCharsets.UTF_8);
     int maxHash = Hash.murmurhash3_x86_32(bytes, 0, bytes.length, 0);
 
     if (minHash > maxHash)  {

@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
@@ -102,7 +103,7 @@ public class NoOpResponseParserTest extends SolrJettyTestBase {
     NoOpResponseParser parser = new NoOpResponseParser();
     try (final InputStream is = getResponse()) {
       assertNotNull(is);
-      Reader in = new InputStreamReader(is, "UTF-8");
+      Reader in = new InputStreamReader(is, StandardCharsets.UTF_8);
       NamedList<Object> response = parser.processResponse(in);
       assertNotNull(response.get("response"));
       String expectedResponse = IOUtils.toString(getResponse(), "UTF-8");

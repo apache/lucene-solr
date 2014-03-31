@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 
 /**
  * <p> Writes documents to SOLR. </p>
@@ -147,7 +148,7 @@ public class SolrWriter extends DIHWriterBase implements DIHWriter {
 
       }
     }
-    return new String(baos.toByteArray(), "UTF-8");
+    return new String(baos.toByteArray(), StandardCharsets.UTF_8);
   }
 
   static String getDocCount() {

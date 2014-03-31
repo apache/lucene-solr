@@ -428,7 +428,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
       }
 
       try {
-        return bos.toString("UTF-8");
+        return bos.toString(IOUtils.UTF_8);
       } catch (UnsupportedEncodingException bogus) {
         throw new RuntimeException(bogus);
       }

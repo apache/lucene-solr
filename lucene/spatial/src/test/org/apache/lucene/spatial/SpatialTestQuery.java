@@ -18,6 +18,7 @@ package org.apache.lucene.spatial;
  */
 
 import com.spatial4j.core.context.SpatialContext;
+
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialArgsParser;
 
@@ -25,6 +26,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -51,7 +53,7 @@ public class SpatialTestQuery {
 
     List<SpatialTestQuery> results = new ArrayList<>();
 
-    BufferedReader bufInput = new BufferedReader(new InputStreamReader(in,"UTF-8"));
+    BufferedReader bufInput = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
     try {
       String line;
       for (int lineNumber = 1; (line = bufInput.readLine()) != null; lineNumber++) {

@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -213,7 +214,7 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
       sb.append("Disallow: /disallow # Disallow this path\n");
       sb.append("Disallow: /nonexistingpath # Disallow this path\n");
       this.robotsCache.put("[ff01::114]", SimplePostTool.pageFetcher.
-          parseRobotsTxt(new ByteArrayInputStream(sb.toString().getBytes("UTF-8"))));
+          parseRobotsTxt(new ByteArrayInputStream(sb.toString().getBytes(StandardCharsets.UTF_8))));
     }
     
     @Override
@@ -225,11 +226,7 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
       }
       res.httpStatus = 200;
       res.contentType = "text/html";
-      try {
-        res.content = htmlMap.get(u.toString()).getBytes("UTF-8");
-      } catch (UnsupportedEncodingException e) {
-        throw new RuntimeException();
-      }
+      res.content = htmlMap.get(u.toString()).getBytes(StandardCharsets.UTF_8);
       return res;
     }
     

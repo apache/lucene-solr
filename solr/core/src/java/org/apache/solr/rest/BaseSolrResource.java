@@ -162,7 +162,7 @@ public abstract class BaseSolrResource extends ServerResource {
           binWriter.write(outputStream, solrRequest, solrResponse);
         } else {
           String charset = ContentStreamBase.getCharsetFromContentType(contentType);
-          Writer out = (charset == null || charset.equalsIgnoreCase("UTF-8"))
+          Writer out = (charset == null)
               ? new OutputStreamWriter(outputStream, UTF8)
               : new OutputStreamWriter(outputStream, charset);
           out = new FastWriter(out);

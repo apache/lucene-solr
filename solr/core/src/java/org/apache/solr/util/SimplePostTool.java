@@ -18,37 +18,37 @@ package org.apache.solr.util;
  */
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ByteArrayInputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.ProtocolException;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.HashSet;
 import java.util.TimeZone;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.ProtocolException;
-import java.net.URL;
-import java.net.URLEncoder;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -893,13 +893,7 @@ public class SimplePostTool {
    * @return the input stream
    */
   public static InputStream stringToStream(String s) {
-    InputStream is = null;
-    try {
-      is = new ByteArrayInputStream(s.getBytes("UTF-8"));
-    } catch (UnsupportedEncodingException e) {
-      fatal("Shouldn't happen: UTF-8 not supported?!?!?!");
-    }
-    return is;
+    return new ByteArrayInputStream(s.getBytes(StandardCharsets.UTF_8));
   }
 
   /**
@@ -961,10 +955,9 @@ public class SimplePostTool {
   /**
    * Takes a string as input and returns a DOM 
    */
-  public static Document makeDom(String in, String inputEncoding) throws SAXException, IOException,
+  public static Document makeDom(byte[] in) throws SAXException, IOException,
   ParserConfigurationException {
-    InputStream is = new ByteArrayInputStream(in
-        .getBytes(inputEncoding));
+    InputStream is = new ByteArrayInputStream(in);
     Document dom = DocumentBuilderFactory.newInstance()
         .newDocumentBuilder().parse(is);
     return dom;
@@ -1105,7 +1098,7 @@ public class SimplePostTool {
      */
     protected List<String> parseRobotsTxt(InputStream is) throws IOException {
       List<String> disallows = new ArrayList<>();
-      BufferedReader r = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+      BufferedReader r = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
       String l;
       while((l = r.readLine()) != null) {
         String[] arr = l.split("#");
@@ -1137,10 +1130,9 @@ public class SimplePostTool {
         URL extractUrl = new URL(appendParam(postUrl.toString(), "extractOnly=true"));
         boolean success = postData(is, null, os, type, extractUrl);
         if(success) {
-          String rawXml = os.toString("UTF-8");
-          Document d = makeDom(rawXml, "UTF-8");
+          Document d = makeDom(os.toByteArray());
           String innerXml = getXP(d, "/response/str/text()[1]", false);
-          d = makeDom(innerXml, "UTF-8");
+          d = makeDom(innerXml.getBytes(StandardCharsets.UTF_8));
           NodeList links = getNodesFromXP(d, "/html/body//a/@href");
           for(int i = 0; i < links.getLength(); i++) {
             String link = links.item(i).getTextContent();

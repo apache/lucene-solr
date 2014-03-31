@@ -336,7 +336,7 @@ public class HttpSolrServer extends SolrServer {
                 if (vals != null) {
                   for (String v : vals) {
                     if (isMultipart) {
-                      parts.add(new FormBodyPart(p, new StringBody(v, Charset.forName("UTF-8"))));
+                      parts.add(new FormBodyPart(p, new StringBody(v, StandardCharsets.UTF_8)));
                     } else {
                       postParams.add(new BasicNameValuePair(p, v));
                     }
@@ -370,7 +370,7 @@ public class HttpSolrServer extends SolrServer {
                 post.setEntity(entity);
               } else {
                 //not using multipart
-                post.setEntity(new UrlEncodedFormEntity(postParams, "UTF-8"));
+                post.setEntity(new UrlEncodedFormEntity(postParams, StandardCharsets.UTF_8));
               }
 
               method = post;

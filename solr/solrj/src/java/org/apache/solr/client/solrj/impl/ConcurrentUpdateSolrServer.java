@@ -198,7 +198,7 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
                           byte[] content = String.format(Locale.ROOT,
                               fmt,
                               params.getBool(UpdateParams.WAIT_SEARCHER, false)
-                                  + "").getBytes("UTF-8");
+                                  + "").getBytes(StandardCharsets.UTF_8);
                           out.write(content);
                         }
                       }

@@ -29,6 +29,7 @@ import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
@@ -89,14 +90,14 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
   private String getFileContentFromZooKeeper(SolrZkClient zkClient, String fileName)
       throws IOException, SolrServerException, KeeperException, InterruptedException {
 
-    return (new String(zkClient.getData(fileName, null, null, true), "UTF-8"));
+    return (new String(zkClient.getData(fileName, null, null, true), StandardCharsets.UTF_8));
 
   }
   protected final void assertFileNotInZooKeeper(SolrZkClient zkClient, String parent, String fileName) throws Exception {
     List<String> kids = zkClient.getChildren(parent, null, true);
     for (String kid : kids) {
       if (kid.equalsIgnoreCase(fileName)) {
-        String rawContent = new String(zkClient.getData(fileName, null, null, true), "UTF-8");
+        String rawContent = new String(zkClient.getData(fileName, null, null, true), StandardCharsets.UTF_8);
         fail("File '" + fileName + "' was unexpectedly found in ZooKeeper.  Content starts with '"
             + rawContent.substring(0, 100) + " [...]'");
       }
