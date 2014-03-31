@@ -132,8 +132,8 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
 
     // Smoke test PrintTaxonomyStats:
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    PrintTaxonomyStats.printStats(taxoReader, new PrintStream(bos, false, "UTF-8"), true);
-    String result = bos.toString("UTF-8");
+    PrintTaxonomyStats.printStats(taxoReader, new PrintStream(bos, false, IOUtils.UTF_8), true);
+    String result = bos.toString(IOUtils.UTF_8);
     assertTrue(result.indexOf("/Author: 4 immediate children; 5 total categories") != -1);
     assertTrue(result.indexOf("/Publish Date: 3 immediate children; 12 total categories") != -1);
     // Make sure at least a few nodes of the tree came out:

@@ -19,6 +19,7 @@ package org.apache.lucene.analysis.hunspell;
 
 import java.io.File;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -173,7 +174,7 @@ public class TestAllDictionaries2 extends LuceneTestCase {
       File f = new File(DICTIONARY_HOME, tests[i]);
       assert f.exists();
       
-      try (ZipFile zip = new ZipFile(f, IOUtils.CHARSET_UTF_8)) {
+      try (ZipFile zip = new ZipFile(f, StandardCharsets.UTF_8)) {
         ZipEntry dicEntry = zip.getEntry(tests[i+1]);
         assert dicEntry != null;
         ZipEntry affEntry = zip.getEntry(tests[i+2]);
@@ -202,7 +203,7 @@ public class TestAllDictionaries2 extends LuceneTestCase {
         File f = new File(DICTIONARY_HOME, tests[i]);
         assert f.exists();
         
-        try (ZipFile zip = new ZipFile(f, IOUtils.CHARSET_UTF_8)) {
+        try (ZipFile zip = new ZipFile(f, StandardCharsets.UTF_8)) {
           ZipEntry dicEntry = zip.getEntry(tests[i+1]);
           assert dicEntry != null;
           ZipEntry affEntry = zip.getEntry(tests[i+2]);

@@ -18,12 +18,11 @@ package org.apache.lucene.store;
  */
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
-import org.apache.lucene.util.IOUtils;
 
 /**
  * Abstract base class for performing read operations of Lucene's low-level
@@ -188,7 +187,7 @@ public abstract class DataInput implements Cloneable {
     int length = readVInt();
     final byte[] bytes = new byte[length];
     readBytes(bytes, 0, length);
-    return new String(bytes, 0, length, IOUtils.CHARSET_UTF_8);
+    return new String(bytes, 0, length, StandardCharsets.UTF_8);
   }
 
   /** Returns a clone of this stream.

@@ -68,7 +68,7 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
     }
 
     File solrXml = new File(solrHomeDirectory, "solr.xml");
-    FileUtils.write(solrXml, solrXmlString, IOUtils.CHARSET_UTF_8.toString());
+    FileUtils.write(solrXml, solrXmlString, IOUtils.UTF_8);
 
     final CoreContainer cores = createCoreContainer(solrHomeDirectory.getAbsolutePath(), solrXmlString);
     return cores;

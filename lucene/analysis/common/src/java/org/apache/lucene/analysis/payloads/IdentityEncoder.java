@@ -19,6 +19,7 @@ package org.apache.lucene.analysis.payloads;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.lucene.util.BytesRef;
 
@@ -28,7 +29,7 @@ import org.apache.lucene.util.BytesRef;
  *
  **/
 public class IdentityEncoder extends AbstractEncoder implements PayloadEncoder{
-  protected Charset charset = Charset.forName("UTF-8");
+  protected Charset charset = StandardCharsets.UTF_8;
   
   public IdentityEncoder() {
   }

@@ -1,9 +1,10 @@
 package org.apache.solr.spelling.suggest.fst;
 
+import java.nio.charset.StandardCharsets;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.analyzing.FreeTextSuggester;
-import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
@@ -71,7 +72,7 @@ public class FreeTextLookupFactory extends LookupFactory {
         : FreeTextSuggester.DEFAULT_GRAMS;
     
     byte separator = (params.get(SEPARATOR) != null) 
-        ? params.get(SEPARATOR).toString().getBytes(IOUtils.CHARSET_UTF_8)[0]
+        ? params.get(SEPARATOR).toString().getBytes(StandardCharsets.UTF_8)[0]
         : FreeTextSuggester.DEFAULT_SEPARATOR;
     
     return new FreeTextSuggester(indexAnalyzer, queryAnalyzer, grams, separator);

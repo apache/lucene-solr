@@ -3,6 +3,7 @@ package org.apache.lucene.search.suggest;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.List;
@@ -74,7 +75,7 @@ public class FileDictionaryTest extends LuceneTestCase {
   @Test
   public void testFileWithTerm() throws IOException {
     Map.Entry<List<List<String>>,String> fileInput = generateFileInput(atLeast(100), FileDictionary.DEFAULT_FIELD_DELIMITER, false, false);
-    InputStream inputReader = new ByteArrayInputStream(fileInput.getValue().getBytes("UTF-8"));
+    InputStream inputReader = new ByteArrayInputStream(fileInput.getValue().getBytes(StandardCharsets.UTF_8));
     FileDictionary dictionary = new FileDictionary(inputReader);
     List<List<String>> entries = fileInput.getKey();
     InputIterator inputIter = dictionary.getEntryIterator();
@@ -96,7 +97,7 @@ public class FileDictionaryTest extends LuceneTestCase {
   @Test
   public void testFileWithWeight() throws IOException {
     Map.Entry<List<List<String>>,String> fileInput = generateFileInput(atLeast(100), FileDictionary.DEFAULT_FIELD_DELIMITER, true, false);
-    InputStream inputReader = new ByteArrayInputStream(fileInput.getValue().getBytes("UTF-8"));
+    InputStream inputReader = new ByteArrayInputStream(fileInput.getValue().getBytes(StandardCharsets.UTF_8));
     FileDictionary dictionary = new FileDictionary(inputReader);
     List<List<String>> entries = fileInput.getKey();
     InputIterator inputIter = dictionary.getEntryIterator();
@@ -118,7 +119,7 @@ public class FileDictionaryTest extends LuceneTestCase {
   @Test
   public void testFileWithWeightAndPayload() throws IOException {
     Map.Entry<List<List<String>>,String> fileInput = generateFileInput(atLeast(100), FileDictionary.DEFAULT_FIELD_DELIMITER, true, true);
-    InputStream inputReader = new ByteArrayInputStream(fileInput.getValue().getBytes("UTF-8"));
+    InputStream inputReader = new ByteArrayInputStream(fileInput.getValue().getBytes(StandardCharsets.UTF_8));
     FileDictionary dictionary = new FileDictionary(inputReader);
     List<List<String>> entries = fileInput.getKey();
     InputIterator inputIter = dictionary.getEntryIterator();
@@ -144,7 +145,7 @@ public class FileDictionaryTest extends LuceneTestCase {
   @Test
   public void testFileWithOneEntry() throws IOException {
     Map.Entry<List<List<String>>,String> fileInput = generateFileInput(1, FileDictionary.DEFAULT_FIELD_DELIMITER, true, true);
-    InputStream inputReader = new ByteArrayInputStream(fileInput.getValue().getBytes("UTF-8"));
+    InputStream inputReader = new ByteArrayInputStream(fileInput.getValue().getBytes(StandardCharsets.UTF_8));
     FileDictionary dictionary = new FileDictionary(inputReader);
     List<List<String>> entries = fileInput.getKey();
     InputIterator inputIter = dictionary.getEntryIterator();
@@ -171,7 +172,7 @@ public class FileDictionaryTest extends LuceneTestCase {
   @Test
   public void testFileWithDifferentDelimiter() throws IOException {
     Map.Entry<List<List<String>>,String> fileInput = generateFileInput(atLeast(100), " , ", true, true);
-    InputStream inputReader = new ByteArrayInputStream(fileInput.getValue().getBytes("UTF-8"));
+    InputStream inputReader = new ByteArrayInputStream(fileInput.getValue().getBytes(StandardCharsets.UTF_8));
     FileDictionary dictionary = new FileDictionary(inputReader, " , ");
     List<List<String>> entries = fileInput.getKey();
     InputIterator inputIter = dictionary.getEntryIterator();

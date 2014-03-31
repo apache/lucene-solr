@@ -1,5 +1,7 @@
 package org.apache.lucene.util;
 
+import java.nio.charset.StandardCharsets;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -88,7 +90,7 @@ package org.apache.lucene.util;
 /**
  * Class to encode java's UTF16 char[] into UTF8 byte[]
  * without always allocating a new byte[] as
- * String.getBytes("UTF-8") does.
+ * String.getBytes(StandardCharsets.UTF_8) does.
  *
  * @lucene.internal
  */

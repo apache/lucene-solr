@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
@@ -41,7 +42,7 @@ public class WriteEnwikiLineDocTask extends WriteLineDocTask {
   public WriteEnwikiLineDocTask(PerfRunData runData) throws Exception {
     super(runData);
     OutputStream out = StreamUtils.outputStream(categoriesLineFile(new File(fname)));
-    categoryLineFileOut = new PrintWriter(new BufferedWriter(new OutputStreamWriter(out, "UTF-8"), StreamUtils.BUFFER_SIZE));
+    categoryLineFileOut = new PrintWriter(new BufferedWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8), StreamUtils.BUFFER_SIZE));
     writeHeader(categoryLineFileOut);
   }
 

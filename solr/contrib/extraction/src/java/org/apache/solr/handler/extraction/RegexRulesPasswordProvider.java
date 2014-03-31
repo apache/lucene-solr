@@ -20,6 +20,7 @@ package org.apache.solr.handler.extraction;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
@@ -73,7 +74,7 @@ public class RegexRulesPasswordProvider implements PasswordProvider {
    */
   public static LinkedHashMap<Pattern,String> parseRulesFile(InputStream is) {
     LinkedHashMap<Pattern,String> rules = new LinkedHashMap<>();
-    BufferedReader br = new BufferedReader(IOUtils.getDecodingReader(is, IOUtils.CHARSET_UTF_8));
+    BufferedReader br = new BufferedReader(IOUtils.getDecodingReader(is, StandardCharsets.UTF_8));
     String line;
     try {
       int linenum = 0;

@@ -217,15 +217,15 @@ public final class TestUtil {
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
     CheckIndex checker = new CheckIndex(dir);
     checker.setCrossCheckTermVectors(crossCheckTermVectors);
-    checker.setInfoStream(new PrintStream(bos, false, "UTF-8"), false);
+    checker.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8), false);
     CheckIndex.Status indexStatus = checker.checkIndex(null);
     if (indexStatus == null || indexStatus.clean == false) {
       System.out.println("CheckIndex failed");
-      System.out.println(bos.toString("UTF-8"));
+      System.out.println(bos.toString(IOUtils.UTF_8));
       throw new RuntimeException("CheckIndex failed");
     } else {
       if (LuceneTestCase.INFOSTREAM) {
-        System.out.println(bos.toString("UTF-8"));
+        System.out.println(bos.toString(IOUtils.UTF_8));
       }
       return indexStatus;
     }
@@ -241,7 +241,7 @@ public final class TestUtil {
   
   public static void checkReader(AtomicReader reader, boolean crossCheckTermVectors) throws IOException {
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
-    PrintStream infoStream = new PrintStream(bos, false, "UTF-8");
+    PrintStream infoStream = new PrintStream(bos, false, IOUtils.UTF_8);
 
     FieldNormStatus fieldNormStatus = CheckIndex.testFieldNorms(reader, infoStream);
     TermIndexStatus termIndexStatus = CheckIndex.testPostings(reader, infoStream);
@@ -255,11 +255,11 @@ public final class TestUtil {
       termVectorStatus.error != null ||
       docValuesStatus.error != null) {
       System.out.println("CheckReader failed");
-      System.out.println(bos.toString("UTF-8"));
+      System.out.println(bos.toString(IOUtils.UTF_8));
       throw new RuntimeException("CheckReader failed");
     } else {
       if (LuceneTestCase.INFOSTREAM) {
-        System.out.println(bos.toString("UTF-8"));
+        System.out.println(bos.toString(IOUtils.UTF_8));
       }
     }
   }

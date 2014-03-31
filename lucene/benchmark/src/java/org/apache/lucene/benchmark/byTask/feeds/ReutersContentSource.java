@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
@@ -30,7 +31,6 @@ import java.util.Date;
 import java.util.Locale;
 
 import org.apache.lucene.benchmark.byTask.utils.Config;
-import org.apache.lucene.util.IOUtils;
 
 /**
  * A {@link ContentSource} reading from the Reuters collection.
@@ -114,7 +114,7 @@ public class ReutersContentSource extends ContentSource {
       name = f.getCanonicalPath() + "_" + iteration;
     }
 
-    BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(f), IOUtils.CHARSET_UTF_8));
+    BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(f), StandardCharsets.UTF_8));
     try {
       // First line is the date, 3rd is the title, rest is body
       String dateStr = reader.readLine();

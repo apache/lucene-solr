@@ -24,6 +24,7 @@ import java.io.Reader;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -158,7 +159,7 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
    * Load synonyms with the given {@link SynonymMap.Parser} class.
    */
   private SynonymMap loadSynonyms(ResourceLoader loader, String cname, boolean dedup, Analyzer analyzer) throws IOException, ParseException {
-    CharsetDecoder decoder = Charset.forName("UTF-8").newDecoder()
+    CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder()
         .onMalformedInput(CodingErrorAction.REPORT)
         .onUnmappableCharacter(CodingErrorAction.REPORT);
 

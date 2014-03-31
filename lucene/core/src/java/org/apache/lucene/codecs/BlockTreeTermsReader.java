@@ -391,7 +391,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
       final ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
       PrintStream out;
       try {
-        out = new PrintStream(bos, false, "UTF-8");
+        out = new PrintStream(bos, false, IOUtils.UTF_8);
       } catch (UnsupportedEncodingException bogus) {
         throw new RuntimeException(bogus);
       }

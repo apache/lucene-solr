@@ -32,6 +32,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 
 /**
  * {@link Analyzer} for Czech language.
@@ -60,7 +61,7 @@ public final class CzechAnalyzer extends StopwordAnalyzerBase {
     static {
       try {
         DEFAULT_SET = WordlistLoader.getWordSet(IOUtils.getDecodingReader(CzechAnalyzer.class, 
-            DEFAULT_STOPWORD_FILE, IOUtils.CHARSET_UTF_8), "#", Version.LUCENE_CURRENT);
+            DEFAULT_STOPWORD_FILE, StandardCharsets.UTF_8), "#", Version.LUCENE_CURRENT);
       } catch (IOException ex) {
         // default set should always be present as it is part of the
         // distribution (JAR)

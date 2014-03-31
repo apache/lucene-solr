@@ -22,6 +22,7 @@ import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -92,7 +93,7 @@ public class LookupBenchmarkTest extends LuceneTestCase {
     LookupBenchmarkTest.benchmarkInput = input;
   }
 
-  static final Charset UTF_8 = Charset.forName("UTF-8");
+  static final Charset UTF_8 = StandardCharsets.UTF_8;
 
   /**
    * Collect the multilingual input for benchmarks/ tests.

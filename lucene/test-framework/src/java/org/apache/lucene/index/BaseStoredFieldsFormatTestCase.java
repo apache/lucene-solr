@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -351,7 +352,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
     ft.freeze();
 
     final String string = TestUtil.randomSimpleString(random(), 50);
-    final byte[] bytes = string.getBytes("UTF-8");
+    final byte[] bytes = string.getBytes(StandardCharsets.UTF_8);
     final long l = random().nextBoolean() ? random().nextInt(42) : random().nextLong();
     final int i = random().nextBoolean() ? random().nextInt(42) : random().nextInt();
     final float f = random().nextFloat();

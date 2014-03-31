@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -51,7 +52,7 @@ public final class LoadAdminUiServlet extends HttpServlet {
       try {
         response.setCharacterEncoding("UTF-8");
         response.setContentType("text/html");
-        Writer out = new OutputStreamWriter(response.getOutputStream(), "UTF-8");
+        Writer out = new OutputStreamWriter(response.getOutputStream(), StandardCharsets.UTF_8);
 
         String html = IOUtils.toString(in, "UTF-8");
         Package pack = SolrCore.class.getPackage();

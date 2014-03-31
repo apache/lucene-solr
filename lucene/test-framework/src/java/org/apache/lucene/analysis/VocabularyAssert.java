@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.zip.ZipFile;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -34,9 +35,9 @@ public class VocabularyAssert {
   public static void assertVocabulary(Analyzer a, InputStream voc, InputStream out)
   throws IOException {
     BufferedReader vocReader = new BufferedReader(
-        new InputStreamReader(voc, "UTF-8"));
+        new InputStreamReader(voc, StandardCharsets.UTF_8));
     BufferedReader outputReader = new BufferedReader(
-        new InputStreamReader(out, "UTF-8"));
+        new InputStreamReader(out, StandardCharsets.UTF_8));
     String inputWord = null;
     while ((inputWord = vocReader.readLine()) != null) {
       String expectedWord = outputReader.readLine();
@@ -49,7 +50,7 @@ public class VocabularyAssert {
   public static void assertVocabulary(Analyzer a, InputStream vocOut)
   throws IOException {
     BufferedReader vocReader = new BufferedReader(
-        new InputStreamReader(vocOut, "UTF-8"));
+        new InputStreamReader(vocOut, StandardCharsets.UTF_8));
     String inputLine = null;
     while ((inputLine = vocReader.readLine()) != null) {
       if (inputLine.startsWith("#") || inputLine.trim().length() == 0)

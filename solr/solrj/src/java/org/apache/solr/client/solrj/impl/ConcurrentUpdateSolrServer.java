@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
 import java.util.Locale;
 import java.util.Queue;
@@ -172,7 +173,7 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
               public void writeTo(OutputStream out) throws IOException {
                 try {
                   if (isXml) {
-                    out.write("<stream>".getBytes("UTF-8")); // can be anything
+                    out.write("<stream>".getBytes(StandardCharsets.UTF_8)); // can be anything
                   }
                   UpdateRequest req = updateRequest;
                   while (req != null) {
@@ -206,7 +207,7 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
                     req = queue.poll(pollQueueTime, TimeUnit.MILLISECONDS);
                   }
                   if (isXml) {
-                    out.write("</stream>".getBytes("UTF-8"));
+                    out.write("</stream>".getBytes(StandardCharsets.UTF_8));
                   }
 
                 } catch (InterruptedException e) {

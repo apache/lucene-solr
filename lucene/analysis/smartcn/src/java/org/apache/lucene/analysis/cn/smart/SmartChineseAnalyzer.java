@@ -18,18 +18,16 @@
 package org.apache.lucene.analysis.cn.smart;
 
 import java.io.IOException;
-import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.en.PorterStemFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.WordlistLoader;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.cn.smart.SentenceTokenizer;
-import org.apache.lucene.analysis.cn.smart.WordTokenFilter;
-import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 
@@ -90,7 +88,7 @@ public final class SmartChineseAnalyzer extends Analyzer {
       // make sure it is unmodifiable as we expose it in the outer class
       return CharArraySet.unmodifiableSet(WordlistLoader.getWordSet(IOUtils
           .getDecodingReader(SmartChineseAnalyzer.class, DEFAULT_STOPWORD_FILE,
-              IOUtils.CHARSET_UTF_8), STOPWORD_FILE_COMMENT,
+              StandardCharsets.UTF_8), STOPWORD_FILE_COMMENT,
           Version.LUCENE_CURRENT));
     }
   }

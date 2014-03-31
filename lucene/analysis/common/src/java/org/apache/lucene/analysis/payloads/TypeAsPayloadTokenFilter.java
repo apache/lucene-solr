@@ -45,8 +45,8 @@ public class TypeAsPayloadTokenFilter extends TokenFilter {
   public final boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
       String type = typeAtt.type();
-      if (type != null && type.equals("") == false) {
-        payloadAtt.setPayload(new BytesRef(type.getBytes("UTF-8")));
+      if (type != null && !type.isEmpty()) {
+        payloadAtt.setPayload(new BytesRef(type));
       }
       return true;
     } else {

@@ -17,21 +17,29 @@
 
 package org.apache.solr.response;
 
-import org.apache.lucene.util.IOUtils;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.util.Properties;
+
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.runtime.RuntimeConstants;
-import org.apache.velocity.tools.generic.*;
-
-import java.io.*;
-import java.util.Properties;
+import org.apache.velocity.tools.generic.ComparisonDateTool;
+import org.apache.velocity.tools.generic.EscapeTool;
+import org.apache.velocity.tools.generic.ListTool;
+import org.apache.velocity.tools.generic.MathTool;
+import org.apache.velocity.tools.generic.NumberTool;
+import org.apache.velocity.tools.generic.SortTool;
 
 public class VelocityResponseWriter implements QueryResponseWriter {
 
@@ -132,7 +140,7 @@ public class VelocityResponseWriter implements QueryResponseWriter {
         try {
           is = resourceLoader.getResourceStream(propFile);
           Properties props = new Properties();
-          props.load(new InputStreamReader(is, IOUtils.CHARSET_UTF_8));
+          props.load(new InputStreamReader(is, StandardCharsets.UTF_8));
           engine.init(props);
         }
         finally {

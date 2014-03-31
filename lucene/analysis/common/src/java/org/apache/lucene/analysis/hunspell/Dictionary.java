@@ -50,6 +50,7 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -672,7 +673,7 @@ public class Dictionary {
             int flagSep = line.lastIndexOf(FLAG_SEPARATOR);
             if (flagSep == -1) {
               CharSequence cleansed = cleanInput(line, sb);
-              writer.write(cleansed.toString().getBytes(IOUtils.CHARSET_UTF_8));
+              writer.write(cleansed.toString().getBytes(StandardCharsets.UTF_8));
             } else {
               String text = line.substring(0, flagSep);
               CharSequence cleansed = cleanInput(text, sb);
@@ -681,10 +682,10 @@ public class Dictionary {
                 sb.append(cleansed);
               }
               sb.append(line.substring(flagSep));
-              writer.write(sb.toString().getBytes(IOUtils.CHARSET_UTF_8));
+              writer.write(sb.toString().getBytes(StandardCharsets.UTF_8));
             }
           } else {
-            writer.write(line.getBytes(IOUtils.CHARSET_UTF_8));
+            writer.write(line.getBytes(StandardCharsets.UTF_8));
           }
         }
       }

@@ -99,6 +99,7 @@ import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -108,6 +109,7 @@ import java.io.InputStreamReader;
 import java.io.Writer;
 import java.lang.reflect.Constructor;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -274,7 +276,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       if (input != null) {
         final InputStream is = new PropertiesInputStream(input);
         try {
-          p.load(new InputStreamReader(is, "UTF-8"));
+          p.load(new InputStreamReader(is, StandardCharsets.UTF_8));
           
           String s = p.getProperty("index");
           if (s != null && s.trim().length() > 0) {

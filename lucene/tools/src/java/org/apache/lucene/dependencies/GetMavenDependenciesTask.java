@@ -41,6 +41,7 @@ import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -58,6 +59,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -200,7 +202,7 @@ public class GetMavenDependenciesTask extends Task {
     Writer writer = null;
     try {
       FileOutputStream outputStream = new FileOutputStream(mavenDependenciesFiltersFile);
-      writer = new OutputStreamWriter(outputStream, "ISO-8859-1");
+      writer = new OutputStreamWriter(outputStream, StandardCharsets.ISO_8859_1);
       allProperties.store(writer, null);
     } catch (FileNotFoundException e) {
       throw new BuildException("Can't find file: '" + mavenDependenciesFiltersFile.getPath() + "'", e);
@@ -808,7 +810,7 @@ public class GetMavenDependenciesTask extends Task {
       throw new BuildException("Properties file does not exist: " + file.getPath());
     }
     // Properties files are encoded as Latin-1
-    final Reader reader = new InputStreamReader(stream, Charset.forName("ISO-8859-1"));
+    final Reader reader = new InputStreamReader(stream, StandardCharsets.ISO_8859_1);
     final Properties properties = new Properties(); 
     try {
       properties.load(reader);

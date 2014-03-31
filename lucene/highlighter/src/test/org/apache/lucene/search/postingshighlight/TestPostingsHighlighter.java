@@ -20,6 +20,7 @@ package org.apache.lucene.search.postingshighlight;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.text.BreakIterator;
 import java.util.Arrays;
 import java.util.Map;
@@ -489,7 +490,7 @@ public class TestPostingsHighlighter extends LuceneTestCase {
 
   public void testCambridgeMA() throws Exception {
     BufferedReader r = new BufferedReader(new InputStreamReader(
-                     this.getClass().getResourceAsStream("CambridgeMA.utf8"), "UTF-8"));
+                     this.getClass().getResourceAsStream("CambridgeMA.utf8"), StandardCharsets.UTF_8));
     String text = r.readLine();
     r.close();
     Directory dir = newDirectory();
