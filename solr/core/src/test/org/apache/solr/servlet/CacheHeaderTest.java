@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Date;
 
@@ -32,8 +33,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import com.google.common.base.Charsets;
 
 /**
  * A test case for the several HTTP cache headers emitted by Solr
@@ -248,7 +247,7 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
   }
 
   protected File makeFile(String contents) {
-    return makeFile(contents, Charsets.UTF_8.toString());
+    return makeFile(contents, StandardCharsets.UTF_8.name());
   }
 
   protected File makeFile(String contents, String charset) {

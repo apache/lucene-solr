@@ -83,7 +83,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.kitesdk.morphline.base.Fields;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.io.ByteStreams;
 
@@ -1264,7 +1263,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
       byte[] bytes = ByteStreams.toByteArray(in);
       in.close();
       Preconditions.checkArgument(bytes.length > 0);
-      int solrShard = Integer.parseInt(new String(bytes, Charsets.UTF_8));
+      int solrShard = Integer.parseInt(new String(bytes, StandardCharsets.UTF_8));
       if (!delete(solrShardNumberFile, false, fs)) {
         return false;
       }

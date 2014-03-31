@@ -17,7 +17,6 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import com.google.common.base.Charsets;
 import com.google.common.io.ByteStreams;
 
 import org.apache.commons.io.IOUtils;
@@ -78,7 +77,7 @@ public abstract class ConfigSolr {
   }
 
   public static ConfigSolr fromString(SolrResourceLoader loader, String xml) {
-    return fromInputStream(loader, new ByteArrayInputStream(xml.getBytes(Charsets.UTF_8)));
+    return fromInputStream(loader, new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
   }
 
   public static ConfigSolr fromInputStream(SolrResourceLoader loader, InputStream is) {
