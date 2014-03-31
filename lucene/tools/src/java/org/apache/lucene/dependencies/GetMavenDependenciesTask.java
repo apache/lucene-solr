@@ -38,7 +38,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
-import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -206,8 +205,6 @@ public class GetMavenDependenciesTask extends Task {
       allProperties.store(writer, null);
     } catch (FileNotFoundException e) {
       throw new BuildException("Can't find file: '" + mavenDependenciesFiltersFile.getPath() + "'", e);
-    } catch (UnsupportedEncodingException e) {
-      throw new BuildException(e);
     } catch (IOException e) {
       throw new BuildException("Exception writing out '" + mavenDependenciesFiltersFile.getPath() + "'", e);
     } finally {
