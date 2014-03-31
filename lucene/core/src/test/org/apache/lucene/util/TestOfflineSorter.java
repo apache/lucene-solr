@@ -21,6 +21,7 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -60,7 +61,7 @@ public class TestOfflineSorter extends LuceneTestCase {
 
   public void testSingleLine() throws Exception {
     checkSort(new OfflineSorter(), new byte [][] {
-        "Single line only.".getBytes("UTF-8")
+        "Single line only.".getBytes(StandardCharsets.UTF_8)
     });
   }
 

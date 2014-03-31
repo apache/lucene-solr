@@ -18,10 +18,10 @@ package org.apache.solr.handler.dataimport;
 
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Properties;
 
-import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.slf4j.Logger;
@@ -67,7 +67,7 @@ public class ZKPropertiesWriter extends SimplePropertiesWriter {
     StringWriter output = new StringWriter();
     try {
       existing.store(output, null);
-      byte[] bytes = output.toString().getBytes(IOUtils.CHARSET_UTF_8);
+      byte[] bytes = output.toString().getBytes(StandardCharsets.UTF_8);
       if (!zkClient.exists(path, false)) {
         try {
           zkClient.makePath(path, false);

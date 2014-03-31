@@ -24,6 +24,7 @@ import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 
 
 /**
@@ -68,7 +69,7 @@ final class MockPayloadFilter extends TokenFilter {
   @Override
   public boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
-      payloadAttr.setPayload(new BytesRef(("pos: " + pos).getBytes("UTF-8")));
+      payloadAttr.setPayload(new BytesRef(("pos: " + pos).getBytes(StandardCharsets.UTF_8)));
       int posIncr;
       if (pos == 0 || i % 2 == 1) {
         posIncr = 1;

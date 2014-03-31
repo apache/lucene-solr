@@ -26,12 +26,11 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-
 import org.apache.commons.io.FileUtils;
-
 import org.junit.BeforeClass;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
 
@@ -68,7 +67,7 @@ public class TestSolrCoreProperties extends SolrJettyTestBase {
     Properties p = new Properties();
     p.setProperty("foo.foo1", "f1");
     p.setProperty("foo.foo2", "f2");
-    Writer fos = new OutputStreamWriter(new FileOutputStream(new File(confDir, "solrcore.properties")), IOUtils.CHARSET_UTF_8);
+    Writer fos = new OutputStreamWriter(new FileOutputStream(new File(confDir, "solrcore.properties")), StandardCharsets.UTF_8);
     p.store(fos, null);
     IOUtils.close(fos);
 

@@ -26,6 +26,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -314,7 +315,7 @@ public class ZkTestServer {
       BufferedReader reader = null;
       try {
           OutputStream outstream = sock.getOutputStream();
-          outstream.write(cmd.getBytes("US-ASCII"));
+          outstream.write(cmd.getBytes(StandardCharsets.US_ASCII));
           outstream.flush();
           // this replicates NC - close the output stream before reading
           sock.shutdownOutput();

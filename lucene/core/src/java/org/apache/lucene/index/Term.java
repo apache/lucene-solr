@@ -21,9 +21,9 @@ import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IOUtils;
 
 /**
   A Term represents a word from text.  This is the unit of search.  It is
@@ -83,7 +83,7 @@ public final class Term implements Comparable<Term> {
    * the raw bytes will be printed instead. */
   public static final String toString(BytesRef termText) {
     // the term might not be text, but usually is. so we make a best effort
-    CharsetDecoder decoder = IOUtils.CHARSET_UTF_8.newDecoder()
+    CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder()
         .onMalformedInput(CodingErrorAction.REPORT)
         .onUnmappableCharacter(CodingErrorAction.REPORT);
     try {

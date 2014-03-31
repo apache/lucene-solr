@@ -19,6 +19,7 @@ package org.apache.lucene.analysis.hunspell;
 
 import java.io.File;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -173,16 +174,14 @@ public class TestAllDictionaries2 extends LuceneTestCase {
       File f = new File(DICTIONARY_HOME, tests[i]);
       assert f.exists();
       
-      ZipFile zip = new ZipFile(f);
-      try {
+      try (ZipFile zip = new ZipFile(f, StandardCharsets.UTF_8)) {
         ZipEntry dicEntry = zip.getEntry(tests[i+1]);
         assert dicEntry != null;
         ZipEntry affEntry = zip.getEntry(tests[i+2]);
         assert affEntry != null;
       
-        InputStream dictionary = zip.getInputStream(dicEntry);
-        InputStream affix = zip.getInputStream(affEntry);
-        try {
+        try (InputStream dictionary = zip.getInputStream(dicEntry);
+             InputStream affix = zip.getInputStream(affEntry)) {
           Dictionary dic = new Dictionary(affix, dictionary);
           System.out.println(tests[i] + "\t" + RamUsageEstimator.humanSizeOf(dic) + "\t(" +
                              "words=" + RamUsageEstimator.humanSizeOf(dic.words) + ", " +
@@ -192,11 +191,7 @@ public class TestAllDictionaries2 extends LuceneTestCase {
                              "affixData=" + RamUsageEstimator.humanSizeOf(dic.affixData) + ", " +
                              "prefixes=" + RamUsageEstimator.humanSizeOf(dic.prefixes) + ", " +
                              "suffixes=" + RamUsageEstimator.humanSizeOf(dic.suffixes) + ")");
-        } finally {
-          IOUtils.closeWhileHandlingException(dictionary, affix);
         }
-      } finally {
-        zip.close();
       }
     }
   }
@@ -208,22 +203,16 @@ public class TestAllDictionaries2 extends LuceneTestCase {
         File f = new File(DICTIONARY_HOME, tests[i]);
         assert f.exists();
         
-        ZipFile zip = new ZipFile(f);
-        try {
+        try (ZipFile zip = new ZipFile(f, StandardCharsets.UTF_8)) {
           ZipEntry dicEntry = zip.getEntry(tests[i+1]);
           assert dicEntry != null;
           ZipEntry affEntry = zip.getEntry(tests[i+2]);
           assert affEntry != null;
         
-          InputStream dictionary = zip.getInputStream(dicEntry);
-          InputStream affix = zip.getInputStream(affEntry); 
-          try {
+          try (InputStream dictionary = zip.getInputStream(dicEntry);
+               InputStream affix = zip.getInputStream(affEntry)) {
             new Dictionary(affix, dictionary);
-          } finally {
-            IOUtils.closeWhileHandlingException(affix, dictionary);
           }
-        } finally {
-          zip.close();
         }
       }
     }    

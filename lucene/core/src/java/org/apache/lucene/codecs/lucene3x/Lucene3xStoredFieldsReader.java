@@ -37,6 +37,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 
 import java.io.Closeable;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Class responsible for access to stored document fields.
@@ -273,7 +274,7 @@ final class Lucene3xStoredFieldsReader extends StoredFieldsReader implements Clo
       if ((bits & FIELD_IS_BINARY) != 0) {
         visitor.binaryField(info, bytes);
       } else {
-        visitor.stringField(info, new String(bytes, 0, bytes.length, IOUtils.CHARSET_UTF_8));
+        visitor.stringField(info, new String(bytes, 0, bytes.length, StandardCharsets.UTF_8));
       }
     }
   }

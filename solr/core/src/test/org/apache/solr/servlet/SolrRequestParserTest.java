@@ -25,6 +25,7 @@ import java.io.ByteArrayInputStream;
 import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -207,7 +208,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
   public void testStandardParseParamsAndFillStreams() throws Exception
   {
     final String getParams = "qt=%C3%BC&dup=foo", postParams = "q=hello&d%75p=bar";
-    final byte[] postBytes = postParams.getBytes("US-ASCII");
+    final byte[] postBytes = postParams.getBytes(StandardCharsets.US_ASCII);
     
     // Set up the expected behavior
     final String[] ct = new String[] {
@@ -246,7 +247,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
   public void testStandardParseParamsAndFillStreamsISO88591() throws Exception
   {
     final String getParams = "qt=%FC&dup=foo&ie=iso-8859-1&dup=%FC", postParams = "qt2=%FC&q=hello&d%75p=bar";
-    final byte[] postBytes = postParams.getBytes("US-ASCII");
+    final byte[] postBytes = postParams.getBytes(StandardCharsets.US_ASCII);
     final String contentType = "application/x-www-form-urlencoded; charset=iso-8859-1";
     
     // Set up the expected behavior
@@ -291,7 +292,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     expect(request.getContentLength()).andReturn(-1).anyTimes();
     expect(request.getQueryString()).andReturn(null).anyTimes();
     expect(request.getInputStream()).andReturn(new ServletInputStream() {
-      private final ByteArrayInputStream in = new ByteArrayInputStream(large.toString().getBytes("US-ASCII"));
+      private final ByteArrayInputStream in = new ByteArrayInputStream(large.toString().getBytes(StandardCharsets.US_ASCII));
       @Override public int read() { return in.read(); }
     });
     replay(request);

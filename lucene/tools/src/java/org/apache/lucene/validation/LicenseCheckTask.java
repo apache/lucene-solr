@@ -22,14 +22,13 @@ import java.io.FileInputStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.IOException;
-
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -302,7 +301,7 @@ outer:
     BufferedReader reader = null;
     try {
       reader = new BufferedReader(new InputStreamReader
-                                  (new FileInputStream(f), "UTF-8"));
+                                  (new FileInputStream(f), StandardCharsets.UTF_8));
       try {
         String checksum = reader.readLine();
         if (null == checksum || 0 == checksum.length()) {

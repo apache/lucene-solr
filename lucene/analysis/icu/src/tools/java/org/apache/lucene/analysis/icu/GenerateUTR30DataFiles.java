@@ -35,6 +35,7 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -106,7 +107,7 @@ public class GenerateUTR30DataFiles {
 
   private static void expandDataFileRules(File file) throws IOException {
     final FileInputStream stream = new FileInputStream(file);
-    final InputStreamReader reader = new InputStreamReader(stream, "UTF-8");
+    final InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
     final BufferedReader bufferedReader = new BufferedReader(reader);
     StringBuilder builder = new StringBuilder();
     String line;
@@ -154,7 +155,7 @@ public class GenerateUTR30DataFiles {
     if (modified) {
       System.err.println("Expanding rules in and overwriting " + file.getName());
       final FileOutputStream out = new FileOutputStream(file, false);
-      Writer writer = new OutputStreamWriter(out, "UTF-8");
+      Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8);
       try {
         writer.write(builder.toString());
       } finally {
@@ -178,8 +179,8 @@ public class GenerateUTR30DataFiles {
     System.err.print("Downloading " + NFKC_CF_TXT + " and making diacritic rules one-way ... ");
     URLConnection connection = openConnection(new URL(norm2url, NFC_TXT));
     BufferedReader reader = new BufferedReader
-        (new InputStreamReader(connection.getInputStream(), "UTF-8"));
-    Writer writer = new OutputStreamWriter(new FileOutputStream(NFC_TXT), "UTF-8");
+        (new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
+    Writer writer = new OutputStreamWriter(new FileOutputStream(NFC_TXT), StandardCharsets.UTF_8);
     try {
       String line;
 

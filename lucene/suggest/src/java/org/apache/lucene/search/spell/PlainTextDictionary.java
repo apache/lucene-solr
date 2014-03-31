@@ -17,6 +17,7 @@ package org.apache.lucene.search.spell;
  * limitations under the License.
  */
 
+import java.nio.charset.StandardCharsets;
 
 import java.util.Comparator;
 import java.io.*;
@@ -45,7 +46,7 @@ public class PlainTextDictionary implements Dictionary {
    * NOTE: content is treated as UTF-8
    */
   public PlainTextDictionary(File file) throws IOException {
-    in = new BufferedReader(IOUtils.getDecodingReader(file, IOUtils.CHARSET_UTF_8));
+    in = new BufferedReader(IOUtils.getDecodingReader(file, StandardCharsets.UTF_8));
   }
 
   /**
@@ -54,7 +55,7 @@ public class PlainTextDictionary implements Dictionary {
    * NOTE: content is treated as UTF-8
    */
   public PlainTextDictionary(InputStream dictFile) {
-    in = new BufferedReader(IOUtils.getDecodingReader(dictFile, IOUtils.CHARSET_UTF_8));
+    in = new BufferedReader(IOUtils.getDecodingReader(dictFile, StandardCharsets.UTF_8));
   }
 
   /**

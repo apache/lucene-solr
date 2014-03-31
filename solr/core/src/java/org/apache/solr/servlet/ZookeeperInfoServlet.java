@@ -18,10 +18,10 @@
 package org.apache.solr.servlet;
 
 import java.io.IOException;
-import java.io.BufferedWriter;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
 
@@ -31,9 +31,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IOUtils;
-import org.noggit.CharArr;
-import org.noggit.JSONWriter;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -42,6 +39,8 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.FastWriter;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
+import org.noggit.CharArr;
+import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,7 +95,7 @@ public final class ZookeeperInfoServlet extends HttpServlet {
     response.setCharacterEncoding("UTF-8");
     response.setContentType("application/json");
 
-    Writer out = new FastWriter(new OutputStreamWriter(response.getOutputStream(), IOUtils.CHARSET_UTF_8));
+    Writer out = new FastWriter(new OutputStreamWriter(response.getOutputStream(), StandardCharsets.UTF_8));
 
     ZKPrinter printer = new ZKPrinter(response, out, cores.getZkController(), addr);
     printer.detail = detail;

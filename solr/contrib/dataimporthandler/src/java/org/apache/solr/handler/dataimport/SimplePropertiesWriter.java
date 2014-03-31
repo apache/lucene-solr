@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -192,7 +193,7 @@ public class SimplePropertiesWriter extends DIHProperties {
         filePath += File.separator;
       }
       filePath += filename;
-      propOutput = new OutputStreamWriter(new FileOutputStream(filePath), IOUtils.CHARSET_UTF_8);
+      propOutput = new OutputStreamWriter(new FileOutputStream(filePath), StandardCharsets.UTF_8);
       existingProps.store(propOutput, null);
       log.info("Wrote last indexed time to " + filename);
     } catch (Exception e) {
@@ -214,7 +215,7 @@ public class SimplePropertiesWriter extends DIHProperties {
       }
       filePath += filename;
       propInput = new FileInputStream(filePath);
-      props.load(new InputStreamReader(propInput, IOUtils.CHARSET_UTF_8));
+      props.load(new InputStreamReader(propInput, StandardCharsets.UTF_8));
       log.info("Read " + filename);
     } catch (Exception e) {
       log.warn("Unable to read: " + filename);

@@ -25,6 +25,7 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 
@@ -892,7 +893,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   }
 
   protected void toDotFile(Analyzer a, String inputText, String localFileName) throws IOException {
-    Writer w = new OutputStreamWriter(new FileOutputStream(localFileName), "UTF-8");
+    Writer w = new OutputStreamWriter(new FileOutputStream(localFileName), StandardCharsets.UTF_8);
     final TokenStream ts = a.tokenStream("field", inputText);
     ts.reset();
     new TokenStreamToDot(inputText, ts, new PrintWriter(w)).toDot();

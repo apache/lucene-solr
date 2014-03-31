@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 
 public class TypeAsPayloadTokenFilterTest extends BaseTokenStreamTestCase {
 
@@ -41,8 +42,8 @@ public class TypeAsPayloadTokenFilterTest extends BaseTokenStreamTestCase {
     while (nptf.incrementToken()) {
       assertTrue(typeAtt.type() + " is not null and it should be", typeAtt.type().equals(String.valueOf(Character.toUpperCase(termAtt.buffer()[0]))));
       assertTrue("nextToken.getPayload() is null and it shouldn't be", payloadAtt.getPayload() != null);
-      String type = new String(payloadAtt.getPayload().bytes, "UTF-8");
-      assertTrue(type + " is not equal to " + typeAtt.type(), type.equals(typeAtt.type()) == true);
+      String type = payloadAtt.getPayload().utf8ToString();
+      assertTrue(type + " is not equal to " + typeAtt.type(), type.equals(typeAtt.type()));
       count++;
     }
 

@@ -18,6 +18,8 @@ package org.apache.lucene.document;
  */
 
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.index.DirectoryReader;
@@ -53,8 +55,8 @@ public class TestDocument extends LuceneTestCase {
     FieldType ft = new FieldType();
     ft.setStored(true);
     IndexableField stringFld = new Field("string", binaryVal, ft);
-    IndexableField binaryFld = new StoredField("binary", binaryVal.getBytes("UTF-8"));
-    IndexableField binaryFld2 = new StoredField("binary", binaryVal2.getBytes("UTF-8"));
+    IndexableField binaryFld = new StoredField("binary", binaryVal.getBytes(StandardCharsets.UTF_8));
+    IndexableField binaryFld2 = new StoredField("binary", binaryVal2.getBytes(StandardCharsets.UTF_8));
     
     doc.add(stringFld);
     doc.add(binaryFld);

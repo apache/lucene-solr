@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -505,22 +506,17 @@ public class SolrZkClient {
     }
     string.append(dent + path + " (" + children.size() + ")" + NEWL);
     if (data != null) {
-      try {
-        String dataString = new String(data, "UTF-8");
-        if ((!path.endsWith(".txt") && !path.endsWith(".xml")) || path.endsWith(ZkStateReader.CLUSTER_STATE)) {
-          if (path.endsWith(".xml")) {
-            // this is the cluster state in xml format - lets pretty print
-            dataString = prettyPrint(dataString);
-          }
-          
-          string.append(dent + "DATA:\n" + dent + "    "
-              + dataString.replaceAll("\n", "\n" + dent + "    ") + NEWL);
-        } else {
-          string.append(dent + "DATA: ...supressed..." + NEWL);
+      String dataString = new String(data, StandardCharsets.UTF_8);
+      if ((!path.endsWith(".txt") && !path.endsWith(".xml")) || path.endsWith(ZkStateReader.CLUSTER_STATE)) {
+        if (path.endsWith(".xml")) {
+          // this is the cluster state in xml format - lets pretty print
+          dataString = prettyPrint(dataString);
         }
-      } catch (UnsupportedEncodingException e) {
-        // can't happen - UTF-8
-        throw new RuntimeException(e);
+        
+        string.append(dent + "DATA:\n" + dent + "    "
+            + dataString.replaceAll("\n", "\n" + dent + "    ") + NEWL);
+      } else {
+        string.append(dent + "DATA: ...supressed..." + NEWL);
       }
     }
 

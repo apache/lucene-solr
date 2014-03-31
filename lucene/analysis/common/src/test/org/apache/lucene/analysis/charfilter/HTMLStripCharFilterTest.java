@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -78,7 +79,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   //Some sanity checks, but not a full-fledged check
   public void testHTML() throws Exception {
     InputStream stream = getClass().getResourceAsStream("htmlStripReaderTest.html");
-    HTMLStripCharFilter reader = new HTMLStripCharFilter(new InputStreamReader(stream, "UTF-8"));
+    HTMLStripCharFilter reader = new HTMLStripCharFilter(new InputStreamReader(stream, StandardCharsets.UTF_8));
     StringBuilder builder = new StringBuilder();
     int ch = -1;
     while ((ch = reader.read()) != -1){
@@ -95,7 +96,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
 
   public void testMSWord14GeneratedHTML() throws Exception {
     InputStream stream = getClass().getResourceAsStream("MS-Word 14 generated.htm");
-    HTMLStripCharFilter reader = new HTMLStripCharFilter(new InputStreamReader(stream, "UTF-8"));
+    HTMLStripCharFilter reader = new HTMLStripCharFilter(new InputStreamReader(stream, StandardCharsets.UTF_8));
     String gold = "This is a test";
     StringBuilder builder = new StringBuilder();
     int ch = 0;

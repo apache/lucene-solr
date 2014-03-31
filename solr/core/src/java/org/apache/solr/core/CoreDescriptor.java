@@ -31,6 +31,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.Properties;
 
@@ -213,7 +214,7 @@ public class CoreDescriptor {
       try {
         in = new FileInputStream(propertiesFile);
         Properties externalProps = new Properties();
-        externalProps.load(new InputStreamReader(in, "UTF-8"));
+        externalProps.load(new InputStreamReader(in, StandardCharsets.UTF_8));
         coreProperties.putAll(externalProps);
       } catch (IOException e) {
         String message = String.format(Locale.ROOT, "Could not load properties from %s: %s:",

@@ -20,6 +20,7 @@ package org.apache.lucene.collation;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.text.Collator;
 import java.text.ParseException;
 import java.text.RuleBasedCollator;
@@ -188,7 +189,7 @@ public class CollationKeyFilterFactory extends TokenFilterFactory implements Mul
   private String toUTF8String(InputStream in) throws IOException {
     StringBuilder sb = new StringBuilder();
     char buffer[] = new char[1024];
-    Reader r = IOUtils.getDecodingReader(in, IOUtils.CHARSET_UTF_8);
+    Reader r = IOUtils.getDecodingReader(in, StandardCharsets.UTF_8);
     int len = 0;
     while ((len = r.read(buffer)) > 0) {
       sb.append(buffer, 0, len);

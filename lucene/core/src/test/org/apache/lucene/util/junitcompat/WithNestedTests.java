@@ -20,8 +20,10 @@ package org.apache.lucene.util.junitcompat;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestRuleIgnoreAfterMaxFailures;
 import org.apache.lucene.util.TestRuleIgnoreTestSuites;
@@ -121,9 +123,9 @@ public abstract class WithNestedTests {
 
       try {
         sysout = new ByteArrayOutputStream();
-        System.setOut(new PrintStream(sysout, true, "UTF-8"));
+        System.setOut(new PrintStream(sysout, true, IOUtils.UTF_8));
         syserr = new ByteArrayOutputStream();
-        System.setErr(new PrintStream(syserr, true, "UTF-8"));
+        System.setErr(new PrintStream(syserr, true, IOUtils.UTF_8));
       } catch (UnsupportedEncodingException e) {
         throw new RuntimeException(e);
       }
@@ -146,20 +148,12 @@ public abstract class WithNestedTests {
   protected String getSysOut() {
     Assert.assertTrue(suppressOutputStreams);
     System.out.flush();
-    try {
-      return new String(sysout.toByteArray(), "UTF-8");
-    } catch (UnsupportedEncodingException e) {
-      throw new RuntimeException(e);
-    }
+    return new String(sysout.toByteArray(), StandardCharsets.UTF_8);
   }
 
   protected String getSysErr() {
     Assert.assertTrue(suppressOutputStreams);
     System.err.flush();
-    try {
-      return new String(syserr.toByteArray(), "UTF-8");
-    } catch (UnsupportedEncodingException e) {
-      throw new RuntimeException(e);
-    }
+    return new String(syserr.toByteArray(), StandardCharsets.UTF_8);
   }  
 }

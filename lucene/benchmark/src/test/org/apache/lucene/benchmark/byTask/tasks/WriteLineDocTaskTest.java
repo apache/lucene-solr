@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
@@ -168,7 +169,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
       default:
         assertFalse("Unknown file type!",true); //fail, should not happen
     }
-    BufferedReader br = new BufferedReader(new InputStreamReader(in, "utf-8"));
+    BufferedReader br = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
     try {
       String line = br.readLine();
       assertHeaderLine(line);
@@ -274,7 +275,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     wldt.doLogic();
     wldt.close();
     
-    BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), "utf-8"));
+    BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
     try {
       String line = br.readLine();
       assertHeaderLine(line);
@@ -292,7 +293,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     wldt.doLogic();
     wldt.close();
     
-    BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), "utf-8"));
+    BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
     try {
       String line = br.readLine();
       assertHeaderLine(line);
@@ -310,7 +311,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     wldt.doLogic();
     wldt.close();
     
-    BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), "utf-8"));
+    BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
     try {
       String line = br.readLine();
       assertHeaderLine(line);
@@ -345,7 +346,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     wldt.close();
     
     Set<String> ids = new HashSet<>();
-    BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), "utf-8"));
+    BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
     try {
       String line = br.readLine();
       assertHeaderLine(line); // header line is written once, no matter how many threads there are

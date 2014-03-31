@@ -25,6 +25,7 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -118,7 +119,7 @@ public class GenerateJflexTLDMacros {
     connection.connect();
     tldFileLastModified = connection.getLastModified();
     BufferedReader reader = new BufferedReader
-      (new InputStreamReader(connection.getInputStream(), "US-ASCII"));
+      (new InputStreamReader(connection.getInputStream(), StandardCharsets.US_ASCII));
     try {
       String line;
       while (null != (line = reader.readLine())) {
@@ -150,7 +151,7 @@ public class GenerateJflexTLDMacros {
       (DateFormat.FULL, DateFormat.FULL, Locale.ROOT);
     dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
     final Writer writer = new OutputStreamWriter
-      (new FileOutputStream(outputFile), "UTF-8");
+      (new FileOutputStream(outputFile), StandardCharsets.UTF_8);
     try {
       writer.write(APACHE_LICENSE);
       writer.write("// Generated from IANA Root Zone Database <");
