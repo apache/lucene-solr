@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -62,7 +63,7 @@ public class LegacyHTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   //Some sanity checks, but not a full-fledged check
   public void testHTML() throws Exception {
     InputStream stream = getClass().getResourceAsStream("htmlStripReaderTest.html");
-    LegacyHTMLStripCharFilter reader = new LegacyHTMLStripCharFilter(new InputStreamReader(stream, "UTF-8"));
+    LegacyHTMLStripCharFilter reader = new LegacyHTMLStripCharFilter(new InputStreamReader(stream, StandardCharsets.UTF_8));
     StringBuilder builder = new StringBuilder();
     int ch = -1;
     while ((ch = reader.read()) != -1){

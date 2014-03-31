@@ -27,10 +27,12 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 
 abstract public class BaseTestHarness {
   private static final ThreadLocal<DocumentBuilder> builderTL = new ThreadLocal<>();
@@ -79,7 +81,7 @@ abstract public class BaseTestHarness {
     Document document = null;
     try {
       document = getXmlDocumentBuilder().parse(new ByteArrayInputStream
-          (xml.getBytes("UTF-8")));
+          (xml.getBytes(StandardCharsets.UTF_8)));
     } catch (UnsupportedEncodingException e1) {
       throw new RuntimeException("Totally weird UTF-8 exception", e1);
     } catch (IOException e2) {

@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
@@ -1030,9 +1031,9 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       dis.close();
 
       // Now make a newer log file with just the IDs changed.  NOTE: this may not work if log format changes too much!
-      findReplace("AAAAAA".getBytes("UTF-8"), "aaaaaa".getBytes("UTF-8"), content);
-      findReplace("BBBBBB".getBytes("UTF-8"), "bbbbbb".getBytes("UTF-8"), content);
-      findReplace("CCCCCC".getBytes("UTF-8"), "cccccc".getBytes("UTF-8"), content);
+      findReplace("AAAAAA".getBytes(StandardCharsets.UTF_8), "aaaaaa".getBytes(StandardCharsets.UTF_8), content);
+      findReplace("BBBBBB".getBytes(StandardCharsets.UTF_8), "bbbbbb".getBytes(StandardCharsets.UTF_8), content);
+      findReplace("CCCCCC".getBytes(StandardCharsets.UTF_8), "cccccc".getBytes(StandardCharsets.UTF_8), content);
 
       // WARNING... assumes format of .00000n where n is less than 9
       long logNumber = Long.parseLong(fname.substring(fname.lastIndexOf(".") + 1));

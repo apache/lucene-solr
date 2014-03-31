@@ -90,7 +90,7 @@ public class ZKPropertiesWriter extends SimplePropertiesWriter {
     try {
       byte[] data = zkClient.getData(path, null, null, false);
       if (data != null) {
-        props.load(new StringReader(new String(data, "UTF-8")));
+        props.load(new StringReader(new String(data, StandardCharsets.UTF_8)));
       }
     } catch (Exception e) {
       log.warn(

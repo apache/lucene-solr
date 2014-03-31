@@ -21,6 +21,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.Reader;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +47,7 @@ public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase 
     tmpdir.delete();
     tmpdir.mkdir();
     tmpdir.deleteOnExit();
-    createFile(tmpdir, "x.xsl", xsl.getBytes("UTF-8"), false);
+    createFile(tmpdir, "x.xsl", xsl.getBytes(StandardCharsets.UTF_8), false);
     Map entityAttrs = createMap("name", "e", "url", "cd.xml",
             XPathEntityProcessor.FOR_EACH, "/catalog/cd");
     List fields = new ArrayList();
@@ -337,7 +338,7 @@ public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase 
     tmpdir.delete();
     tmpdir.mkdir();
     tmpdir.deleteOnExit();
-    AbstractDataImportHandlerTestCase.createFile(tmpdir, "x.xsl", xsl.getBytes("UTF-8"),
+    AbstractDataImportHandlerTestCase.createFile(tmpdir, "x.xsl", xsl.getBytes(StandardCharsets.UTF_8),
             false);
     Map entityAttrs = createMap("name", "e",
             XPathEntityProcessor.USE_SOLR_ADD_SCHEMA, "true", "xsl", ""

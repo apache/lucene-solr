@@ -20,6 +20,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -30,7 +31,7 @@ import java.util.*;
  * @since solr 1.3
  */
 public class TestBuiltInEvaluators extends AbstractDataImportHandlerTestCase {
-  private static final String ENCODING = "UTF-8";
+  private static final String ENCODING = StandardCharsets.UTF_8.name();
 
   VariableResolver resolver;
 

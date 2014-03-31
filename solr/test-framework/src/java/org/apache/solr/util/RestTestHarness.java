@@ -18,6 +18,7 @@ package org.apache.solr.util;
 
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 import javax.xml.xpath.XPathExpressionException;
 
@@ -104,7 +105,7 @@ public class RestTestHarness extends BaseTestHarness {
   public String put(String request, String content) throws IOException {
     HttpPut httpPut = new HttpPut(getBaseURL() + request);
     httpPut.setEntity(new StringEntity(content, ContentType.create(
-        "application/json", "utf-8")));
+        "application/json", StandardCharsets.UTF_8)));
     
     return getResponse(httpPut);
   }
@@ -120,7 +121,7 @@ public class RestTestHarness extends BaseTestHarness {
   public String post(String request, String content) throws IOException {
     HttpPost httpPost = new HttpPost(getBaseURL() + request);
     httpPost.setEntity(new StringEntity(content, ContentType.create(
-        "application/json", "utf-8")));
+        "application/json", StandardCharsets.UTF_8)));
     
     return getResponse(httpPost);
   }
@@ -165,7 +166,7 @@ public class RestTestHarness extends BaseTestHarness {
     HttpEntity entity = null;
     try {
       entity = httpClient.execute(request).getEntity();
-      return EntityUtils.toString(entity, "UTF-8");
+      return EntityUtils.toString(entity, StandardCharsets.UTF_8);
     } finally {
       EntityUtils.consumeQuietly(entity);
     }

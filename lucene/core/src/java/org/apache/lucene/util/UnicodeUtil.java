@@ -294,7 +294,7 @@ public final class UnicodeUtil {
   private static boolean matches(char[] source, int offset, int length, byte[] result, int upto) {
     try {
       String s1 = new String(source, offset, length);
-      String s2 = new String(result, 0, upto, "UTF-8");
+      String s2 = new String(result, 0, upto, StandardCharsets.UTF_8);
       if (!s1.equals(s2)) {
         //System.out.println("DIFF: s1 len=" + s1.length());
         //for(int i=0;i<s1.length();i++)
@@ -320,7 +320,7 @@ public final class UnicodeUtil {
   private static boolean matches(String source, int offset, int length, byte[] result, int upto) {
     try {
       String s1 = source.substring(offset, offset+length);
-      String s2 = new String(result, 0, upto, "UTF-8");
+      String s2 = new String(result, 0, upto, StandardCharsets.UTF_8);
       if (!s1.equals(s2)) {
         // Allow a difference if s1 is not valid UTF-16
 
