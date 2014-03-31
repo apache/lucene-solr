@@ -17,7 +17,6 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import com.google.common.base.Charsets;
 import com.google.common.io.ByteStreams;
 
 import org.apache.commons.io.IOUtils;
@@ -66,7 +65,7 @@ public abstract class ConfigSolr {
               "solr.xml does not exist in " + configFile.getAbsolutePath() + " cannot start Solr");
         }
         log.info("{} does not exist, using default configuration", configFile.getAbsolutePath());
-        inputStream = new ByteArrayInputStream(ConfigSolrXmlOld.DEF_SOLR_XML.getBytes(Charsets.UTF_8));
+        inputStream = new ByteArrayInputStream(ConfigSolrXmlOld.DEF_SOLR_XML.getBytes(StandardCharsets.UTF_8));
       } else {
         inputStream = new FileInputStream(configFile);
       }
@@ -82,7 +81,7 @@ public abstract class ConfigSolr {
   }
 
   public static ConfigSolr fromString(SolrResourceLoader loader, String xml) {
-    return fromInputStream(loader, new ByteArrayInputStream(xml.getBytes(Charsets.UTF_8)));
+    return fromInputStream(loader, new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
   }
 
   public static ConfigSolr fromInputStream(SolrResourceLoader loader, InputStream is) {
