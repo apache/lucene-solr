@@ -2086,7 +2086,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
         rollbackInternal();
       }
     }
-    assert assertEventQueueAfterClose();
   }
 
   private void rollbackInternal() throws IOException {
@@ -2181,11 +2180,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
         }
         closed = true;
         closing = false;
-        try {
-          processEvents(false, true);
-        } finally {
-          notifyAll();
-        }
       }
     }
   }
