@@ -33,6 +33,8 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Class which computes the set of {@link AnalyticsRequest}s.
@@ -43,6 +45,7 @@ public class AnalyticsStats {
   protected SolrIndexSearcher searcher;
   protected SolrQueryRequest req;
   protected AnalyticsStatisticsCollector statsCollector;
+  private static final Logger log = LoggerFactory.getLogger(AnalyticsStats.class);
   
   public AnalyticsStats(SolrQueryRequest req, DocSet docs, SolrParams params, AnalyticsStatisticsCollector statsCollector) {
     this.req = req;
@@ -69,6 +72,10 @@ public class AnalyticsStats {
       return res;
     }
     statsCollector.addRequests(requests.size());
+    
+    // Get filter to all docs
+    Filter filter = docs.getTopFilter();
+    
     // Computing each Analytics Request Seperately
     for( AnalyticsRequest areq : requests ){
       // The Accumulator which will control the statistics generation
@@ -84,7 +91,7 @@ public class AnalyticsStats {
           accumulator = FacetingAccumulator.create(searcher, docs, areq, req);
         }
       } catch (IOException e) {
-        System.err.println(e.getMessage());
+        log.warn("Analytics request '"+areq.getName()+"' failed", e);
         continue;
       }
 
@@ -96,7 +103,6 @@ public class AnalyticsStats {
       statsCollector.addQueries(((BasicAccumulator)accumulator).getNumQueries());
       
       // Loop through the documents returned by the query and add to accumulator
-      Filter filter = docs.getTopFilter();
       List<AtomicReaderContext> contexts = searcher.getTopReaderContext().leaves();
       for (int leafNum = 0; leafNum < contexts.size(); leafNum++) {
         AtomicReaderContext context = contexts.get(leafNum);

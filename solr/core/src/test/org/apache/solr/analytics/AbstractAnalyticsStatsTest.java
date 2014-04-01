@@ -107,8 +107,8 @@ public class AbstractAnalyticsStatsTest extends SolrTestCaseJ4 {
         case DOUBLE:  return Double.parseDouble(val);
         case FLOAT:   return Float.parseFloat(val);
         case LONG:    return Long.parseLong(val);
-        case STRING:  return val;
-        case DATE:    return val;
+        case STRING:  assertTrue(rawResponse, val != null && val.length() > 0 ); return val;
+        case DATE:    assertTrue(rawResponse, val != null && val.length() > 0 ); return val;
       }
     } catch (Exception e) {
       e.printStackTrace();

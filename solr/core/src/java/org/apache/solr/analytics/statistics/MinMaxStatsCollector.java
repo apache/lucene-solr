@@ -74,7 +74,7 @@ public class MinMaxStatsCollector implements StatsCollector{
     if (stat.equals("min")&&min!=null) {
       return (Comparable)min.toObject();
     }
-    if (stat.equals("max")&&min!=null) {
+    if (stat.equals("max")&&max!=null) {
       return (Comparable)max.toObject();
     }
     if (stat.equals("count")) {
@@ -83,7 +83,9 @@ public class MinMaxStatsCollector implements StatsCollector{
     if (stat.equals("missing")) {
       return new Long(missingCount);
     }
+
     return null;
+//    throw new IllegalArgumentException("No stat named '"+stat+"' in this collector " + this);
   }
   
   public Set<String> getStatsList() {

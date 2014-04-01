@@ -18,17 +18,18 @@
 package org.apache.solr.analytics.facet;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.Ignore;
 
 
 @SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Appending","Asserting"})
-@Ignore // failing after https://issues.apache.org/jira/browse/SOLR-5685
 public class FieldFacetTest extends AbstractAnalyticsFacetTest{
   static String fileName = "/analytics/requestFiles/fieldFacets.txt";
 
@@ -390,8 +391,13 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
       }
     }
     
-    assertU(commit()); 
-    setResponse(h.query(request(fileToStringArr(FieldFacetTest.class, fileName))));
+    assertU(commit());
+    String[] reqFacetParamas = fileToStringArr(FieldFacetTest.class, fileName);
+    String[] reqParamas = new String[reqFacetParamas.length + 2];
+    System.arraycopy(reqFacetParamas, 0, reqParamas, 0, reqFacetParamas.length);
+    reqParamas[reqFacetParamas.length] = "solr";
+    reqParamas[reqFacetParamas.length+1] = "asc";
+    setResponse(h.query(request(reqFacetParamas)));
   }
   
   @SuppressWarnings("unchecked")
@@ -1063,11 +1069,18 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
   }
 
   private void checkStddevs(ArrayList<Double> list1, ArrayList<Double> list2) {
+    Collections.sort(list1);
+    Collections.sort(list2);
     for (int i = 0; i<list1.size(); i++) {
       if ((Math.abs(list1.get(i)-list2.get(i))<.00000000001) == false) {
-        assertEquals(getRawResponse(), list1.get(i), list2.get(i), 0.00000000001);
+        Assert.assertEquals(getRawResponse(), list1.get(i), list2.get(i), 0.00000000001);
       }
     }
   }
 
+  public static void assertEquals(String mes, Object actual, Object expected) {
+    Collections.sort((List<Comparable>) actual);
+    Collections.sort((List<Comparable>)  expected);
+    Assert.assertEquals(mes, actual, expected);
+  }
 }

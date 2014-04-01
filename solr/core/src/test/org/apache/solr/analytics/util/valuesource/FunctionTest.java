@@ -90,6 +90,7 @@ public class FunctionTest extends AbstractAnalyticsStatsTest {
     double result = (Double)getStatResult("ar", "sum", VAL_TYPE.DOUBLE);
     double calculated = (Double)getStatResult("ar", "sumc", VAL_TYPE.DOUBLE);
     assertEquals(getRawResponse(), result, calculated, 0.0);
+    // TODO checfk why asserted 2times
     assertEquals(getRawResponse(), result, calculated, 0.0);
 
     result = (Double)getStatResult("ar", "mean", VAL_TYPE.DOUBLE);
@@ -170,24 +171,24 @@ public class FunctionTest extends AbstractAnalyticsStatsTest {
   
   @Test
   public void dateMathTest() throws Exception {
-    String result = (String)getStatResult("dmr", "median", VAL_TYPE.STRING);
-    String calculated = (String)getStatResult("dmr", "medianc", VAL_TYPE.STRING);
+    String result = (String)getStatResult("dmr", "median", VAL_TYPE.DATE);
+    String calculated = (String)getStatResult("dmr", "medianc", VAL_TYPE.DATE);
     assertEquals(getRawResponse(), result, calculated);
     
-    result = (String)getStatResult("dmr", "max", VAL_TYPE.STRING);
-    calculated = (String)getStatResult("dmr", "maxc", VAL_TYPE.STRING);
+    result = (String)getStatResult("dmr", "max", VAL_TYPE.DATE);
+    calculated = (String)getStatResult("dmr", "maxc", VAL_TYPE.DATE);
     assertEquals(getRawResponse(), result, calculated);
   }
   
   @Test
   public void constantDateTest() throws Exception { 
-    String result = (String)getStatResult("cdr", "median", VAL_TYPE.STRING);
-    String calculated = (String)getStatResult("cdr", "medianc", VAL_TYPE.STRING);
+    String result = (String)getStatResult("cdr", "median", VAL_TYPE.DATE);
+    String calculated = (String)getStatResult("cdr", "medianc", VAL_TYPE.DATE);
     assertEquals(getRawResponse(), result, calculated);
     assertEquals(getRawResponse(), result, calculated);
     
-    result = (String)getStatResult("cdr", "max", VAL_TYPE.STRING);
-    calculated = (String)getStatResult("cdr", "maxc", VAL_TYPE.STRING);
+    result = (String)getStatResult("cdr", "max", VAL_TYPE.DATE);
+    calculated = (String)getStatResult("cdr", "maxc", VAL_TYPE.DATE);
     assertEquals(getRawResponse(), result, calculated);
   }
   

@@ -18,8 +18,10 @@
 package org.apache.solr.analytics.accumulator;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.index.AtomicReaderContext;
@@ -35,6 +37,8 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Supplier;
 
@@ -42,6 +46,7 @@ import com.google.common.base.Supplier;
  * A <code>BasicAccumulator</code> manages the ValueCounters and Expressions without regard to Facets.
  */
 public class BasicAccumulator extends ValueAccumulator {
+  private static final Logger log = LoggerFactory.getLogger(BasicAccumulator.class);
   protected final SolrIndexSearcher searcher;
   protected final AnalyticsRequest request;
   protected final DocSet docs;
@@ -57,14 +62,16 @@ public class BasicAccumulator extends ValueAccumulator {
     this.searcher = searcher;
     this.docs = docs;
     this.request = request;
-    statsCollectorArraySupplier = StatsCollectorSupplierFactory.create(searcher.getSchema(), request);
+    final List<ExpressionRequest> exRequests = new ArrayList<ExpressionRequest>(request.getExpressions()); // make a copy here
+    Collections.sort(exRequests);
+    log.info("Processing request '"+request.getName()+"'");
+    statsCollectorArraySupplier = StatsCollectorSupplierFactory.create(searcher.getSchema(), exRequests);
     statsCollectors = statsCollectorArraySupplier.get();
-    int size = request.getExpressions().size();
+    int size = exRequests.size();
     expressionNames = new String[size];
     expressionStrings = new String[size];
     int count = 0;
-    Collections.sort(request.getExpressions());
-    for (ExpressionRequest expRequest : request.getExpressions()) {
+    for (ExpressionRequest expRequest : exRequests) {
       expressionNames[count] = expRequest.getName();
       expressionStrings[count++] = expRequest.getExpressionString();
     }
