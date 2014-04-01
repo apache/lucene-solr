@@ -71,6 +71,9 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   private static final String CONFIG_NAME = "myconfig";
   
   private static DistributedQueue workQueueMock;
+  private static DistributedMap runningMapMock;
+  private static DistributedMap completedMapMock;
+  private static DistributedMap failureMapMock;
   private static ShardHandler shardHandlerMock;
   private static ZkStateReader zkStateReaderMock;
   private static ClusterState clusterStateMock;
@@ -81,7 +84,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   private OverseerCollectionProcessorToBeTested underTest;
   
   private Thread thread;
-  private Queue<QueueEvent> queue = new BlockingArrayQueue<QueueEvent>();
+  private Queue<QueueEvent> queue = new BlockingArrayQueue<>();
 
   private class OverseerCollectionProcessorToBeTested extends
       OverseerCollectionProcessor {
@@ -90,8 +93,10 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
     
     public OverseerCollectionProcessorToBeTested(ZkStateReader zkStateReader,
         String myId, ShardHandler shardHandler, String adminPath,
-        DistributedQueue workQueue) {
-      super(zkStateReader, myId, shardHandler, adminPath, workQueue);
+        DistributedQueue workQueue, DistributedMap runningMap,
+        DistributedMap completedMap,
+        DistributedMap failureMap) {
+      super(zkStateReader, myId, shardHandler, adminPath, new Overseer.Stats(), workQueue, runningMap, completedMap, failureMap);
     }
     
     @Override
@@ -111,6 +116,9 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void setUpOnce() throws Exception {
     workQueueMock = createMock(DistributedQueue.class);
+    runningMapMock = createMock(DistributedMap.class);
+    completedMapMock = createMock(DistributedMap.class);
+    failureMapMock = createMock(DistributedMap.class);
     shardHandlerMock = createMock(ShardHandler.class);
     zkStateReaderMock = createMock(ZkStateReader.class);
     clusterStateMock = createMock(ClusterState.class);
@@ -120,6 +128,9 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   @AfterClass
   public static void tearDownOnce() {
     workQueueMock = null;
+    runningMapMock = null;
+    completedMapMock = null;
+    failureMapMock = null;
     shardHandlerMock = null;
     zkStateReaderMock = null;
     clusterStateMock = null;
@@ -131,13 +142,16 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
     super.setUp();
     queue.clear();
     reset(workQueueMock);
-    reset(workQueueMock);
+    reset(runningMapMock);
+    reset(completedMapMock);
+    reset(failureMapMock);
     reset(shardHandlerMock);
     reset(zkStateReaderMock);
     reset(clusterStateMock);
     reset(solrZkClientMock);
     underTest = new OverseerCollectionProcessorToBeTested(zkStateReaderMock,
-        "1234", shardHandlerMock, ADMIN_PATH, workQueueMock);
+        "1234", shardHandlerMock, ADMIN_PATH, workQueueMock, runningMapMock,
+        completedMapMock, failureMapMock);
     zkMap.clear();
     collectionsSet.clear();
   }
@@ -202,7 +216,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
         return collectionsSet;
       }
     }).anyTimes();
-    final Set<String> liveNodes = new HashSet<String>();
+    final Set<String> liveNodes = new HashSet<>();
     for (int i = 0; i < liveNodesCount; i++) {
       final String address = "localhost:" + (8963 + i) + "_solr";
       liveNodes.add(address);
@@ -218,6 +232,13 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
       }).anyTimes();
       
     }
+    zkStateReaderMock.getClusterProps();
+    expectLastCall().andAnswer(new IAnswer<Map>() {
+      @Override
+      public Map answer() throws Throwable {
+        return new HashMap();
+      }
+    });
     
     solrZkClientMock.getZkClientTimeout();
     expectLastCall().andAnswer(new IAnswer<Object>() {
@@ -309,14 +330,14 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   }
   
   private class SubmitCapture {
-    public Capture<ShardRequest> shardRequestCapture = new Capture<ShardRequest>();
-    public Capture<String> nodeUrlsWithoutProtocolPartCapture = new Capture<String>();
-    public Capture<ModifiableSolrParams> params = new Capture<ModifiableSolrParams>();
+    public Capture<ShardRequest> shardRequestCapture = new Capture<>();
+    public Capture<String> nodeUrlsWithoutProtocolPartCapture = new Capture<>();
+    public Capture<ModifiableSolrParams> params = new Capture<>();
   }
   
   protected List<SubmitCapture> mockShardHandlerForCreateJob(
       Integer numberOfSlices, Integer numberOfReplica) {
-    List<SubmitCapture> submitCaptures = new ArrayList<SubmitCapture>();
+    List<SubmitCapture> submitCaptures = new ArrayList<>();
     for (int i = 0; i < (numberOfSlices * numberOfReplica); i++) {
       SubmitCapture submitCapture = new SubmitCapture();
       shardHandlerMock.submit(capture(submitCapture.shardRequestCapture),
@@ -363,9 +384,9 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   
   protected void verifySubmitCaptures(List<SubmitCapture> submitCaptures,
       Integer numberOfSlices, Integer numberOfReplica, Collection<String> createNodes) {
-    List<String> coreNames = new ArrayList<String>();
-    Map<String,Map<String,Integer>> sliceToNodeUrlsWithoutProtocolPartToNumberOfShardsRunningMapMap = new HashMap<String,Map<String,Integer>>();
-    List<String> nodeUrlWithoutProtocolPartForLiveNodes = new ArrayList<String>(
+    List<String> coreNames = new ArrayList<>();
+    Map<String,Map<String,Integer>> sliceToNodeUrlsWithoutProtocolPartToNumberOfShardsRunningMapMap = new HashMap<>();
+    List<String> nodeUrlWithoutProtocolPartForLiveNodes = new ArrayList<>(
         createNodes.size());
     for (String nodeName : createNodes) {
       String nodeUrlWithoutProtocolPart = nodeName.replaceAll("_", "/");
@@ -503,7 +524,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
     assertTrue("Wrong usage of testTemplage. createNodeListOption has to be " + CreateNodeListOptions.SEND + " when numberOfNodes and numberOfNodesToCreateOn are unequal", ((createNodeListOption == CreateNodeListOptions.SEND) || (numberOfNodes.intValue() == numberOfNodesToCreateOn.intValue())));
     
     Set<String> liveNodes = commonMocks(numberOfNodes);
-    List<String> createNodeList = new ArrayList<String>();
+    List<String> createNodeList = new ArrayList<>();
     int i = 0;
     for (String node : liveNodes) {
       if (i++ < numberOfNodesToCreateOn) {

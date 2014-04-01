@@ -18,7 +18,6 @@
 package org.apache.solr.core;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
-import com.google.common.base.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.IOUtils;
@@ -45,6 +44,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,7 +52,7 @@ import static org.hamcrest.core.Is.is;
 
 public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
 
-  private File solrHomeDirectory = new File(TEMP_DIR, this.getClass().getName());
+  private File solrHomeDirectory = new File(dataDir, this.getClass().getName());
 
   @Rule
   public TestRule solrTestRules =
@@ -61,7 +61,6 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
 
   private CoreContainer init(String solrXmlString, String... subDirs) throws Exception {
 
-    createTempDir();
     solrHomeDirectory = dataDir;
 
     for (String s : subDirs) {
@@ -69,7 +68,7 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
     }
 
     File solrXml = new File(solrHomeDirectory, "solr.xml");
-    FileUtils.write(solrXml, solrXmlString, IOUtils.CHARSET_UTF_8.toString());
+    FileUtils.write(solrXml, solrXmlString, IOUtils.UTF_8);
 
     final CoreContainer cores = createCoreContainer(solrHomeDirectory.getAbsolutePath(), solrXmlString);
     return cores;
@@ -405,20 +404,15 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
 
     String defXml = FileUtils.readFileToString(
         new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"),
-        Charsets.UTF_8.toString());
+        StandardCharsets.UTF_8.name());
     final CoreContainer cores = init(defXml, "collection1");
     SolrXMLCoresLocator.NonPersistingLocator locator
         = (SolrXMLCoresLocator.NonPersistingLocator) cores.getCoresLocator();
 
-    String instDir = null;
-    {
-      SolrCore template = null;
-      try {
-        template = cores.getCore("collection1");
-        instDir = template.getCoreDescriptor().getRawInstanceDir();
-      } finally {
-        if (null != template) template.close();
-      }
+    String instDir;
+    try (SolrCore template = cores.getCore("collection1")) {
+      assertNotNull(template);
+      instDir = template.getCoreDescriptor().getRawInstanceDir();
     }
 
     final File instDirFile = new File(cores.getSolrHome(), instDir);
@@ -497,7 +491,7 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
 
 
   private String[] getAllNodes(InputStream is) throws ParserConfigurationException, IOException, SAXException {
-    List<String> expressions = new ArrayList<String>(); // XPATH and value for all elements in the indicated XML
+    List<String> expressions = new ArrayList<>(); // XPATH and value for all elements in the indicated XML
     DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory
         .newInstance();
     DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
@@ -513,7 +507,7 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
   }
 
   private String[] getAllNodes(String xmlString) throws ParserConfigurationException, IOException, SAXException {
-    return getAllNodes(new ByteArrayInputStream(xmlString.getBytes(Charsets.UTF_8)));
+    return getAllNodes(new ByteArrayInputStream(xmlString.getBytes(StandardCharsets.UTF_8)));
   }
 
   /*

@@ -248,9 +248,9 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     int numDocs = randomValues.length * 5;
     int numFields = 2 + random().nextInt(5);
     int numTerms = 2 + random().nextInt(3);
-    List<Doc> docs = new ArrayList<Doc>(numDocs);
-    List<Document> documents = new ArrayList<Document>(numDocs);
-    Map<String, Set<Integer>> valueToDocId = new HashMap<String, Set<Integer>>();
+    List<Doc> docs = new ArrayList<>(numDocs);
+    List<Document> documents = new ArrayList<>(numDocs);
+    Map<String, Set<Integer>> valueToDocId = new HashMap<>();
     for (int i = 0; i < numDocs; i++) {
       Document document = new Document();
       String[][] fields = new String[numFields][numTerms];
@@ -277,7 +277,7 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
       for (int highlightIter = 0; highlightIter < highlightIters; highlightIter++) {
         String queryTerm = randomValues[random().nextInt(randomValues.length)];
         int randomHit = valueToDocId.get(queryTerm).iterator().next();
-        List<StringBuilder> builders = new ArrayList<StringBuilder>();
+        List<StringBuilder> builders = new ArrayList<>();
         for (String[] fieldValues : docs.get(randomHit).fieldValues) {
           StringBuilder builder = new StringBuilder();
           boolean hit = false;

@@ -88,8 +88,8 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
     this.textFieldNames = textFieldNames;
     this.classFieldName = classFieldName;
     this.analyzer = analyzer;
-    this.docsWithClassSize = countDocsWithClass();
     this.query = query;
+    this.docsWithClassSize = countDocsWithClass();
   }
 
   private int countDocsWithClass() throws IOException {
@@ -109,7 +109,7 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
   }
 
   private String[] tokenizeDoc(String doc) throws IOException {
-    Collection<String> result = new LinkedList<String>();
+    Collection<String> result = new LinkedList<>();
     for (String textFieldName : textFieldNames) {
       try (TokenStream tokenStream = analyzer.tokenStream(textFieldName, doc)) {
         CharTermAttribute charTermAttribute = tokenStream.addAttribute(CharTermAttribute.class);
@@ -146,7 +146,7 @@ public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
       }
     }
     double score = 10 / Math.abs(max);
-    return new ClassificationResult<BytesRef>(foundClass, score);
+    return new ClassificationResult<>(foundClass, score);
   }
 
 

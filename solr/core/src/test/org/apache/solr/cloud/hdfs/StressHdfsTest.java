@@ -63,7 +63,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
   @BeforeClass
   public static void setupClass() throws Exception {
 
-    dfsCluster = HdfsTestUtil.setupClass(new File(TEMP_DIR,
+    dfsCluster = HdfsTestUtil.setupClass(new File(dataDir,
         HdfsBasicDistributedZk2Test.class.getName() + "_"
             + System.currentTimeMillis()).getAbsolutePath());
     System.setProperty("solr.hdfs.home", dfsCluster.getURI().toString() + "/solr");
@@ -100,28 +100,34 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     }
 
     if (testRestartIntoSafeMode) {
-      createCollection(DELETE_DATA_DIR_COLLECTION, 1, 1, 1);
-      
-      waitForRecoveriesToFinish(DELETE_DATA_DIR_COLLECTION, false);
-      
-      ChaosMonkey.stop(jettys.get(0));
-      
-      // enter safe mode and restart a node
-      NameNodeAdapter.enterSafeMode(dfsCluster.getNameNode(), false);
-      
-      int rnd = LuceneTestCase.random().nextInt(10000);
       Timer timer = new Timer();
-      timer.schedule(new TimerTask() {
+      
+      try {
+        createCollection(DELETE_DATA_DIR_COLLECTION, 1, 1, 1);
         
-        @Override
-        public void run() {
-          NameNodeAdapter.leaveSafeMode(dfsCluster.getNameNode());
-        }
-      }, rnd);
-      
-      ChaosMonkey.start(jettys.get(0));
-      
-      waitForRecoveriesToFinish(DELETE_DATA_DIR_COLLECTION, false);
+        waitForRecoveriesToFinish(DELETE_DATA_DIR_COLLECTION, false);
+        
+        ChaosMonkey.stop(jettys.get(0));
+        
+        // enter safe mode and restart a node
+        NameNodeAdapter.enterSafeMode(dfsCluster.getNameNode(), false);
+        
+        int rnd = LuceneTestCase.random().nextInt(10000);
+        
+        timer.schedule(new TimerTask() {
+          
+          @Override
+          public void run() {
+            NameNodeAdapter.leaveSafeMode(dfsCluster.getNameNode());
+          }
+        }, rnd);
+        
+        ChaosMonkey.start(jettys.get(0));
+        
+        waitForRecoveriesToFinish(DELETE_DATA_DIR_COLLECTION, false);
+      } finally {
+        timer.cancel();
+      }
     }
   }
 
@@ -155,7 +161,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     }
     
     // collect the data dirs
-    List<String> dataDirs = new ArrayList<String>();
+    List<String> dataDirs = new ArrayList<>();
     
     int i = 0;
     for (SolrServer client : clients) {

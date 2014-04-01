@@ -89,7 +89,7 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
     // TODO: make log level configurable as well, or is that overkill?
     // (ryan) maybe?  I added it mostly to show that it *can* be configurable
 
-    this.toLog = new SimpleOrderedMap<Object>();
+    this.toLog = new SimpleOrderedMap<>();
   }
   
   @Override
@@ -101,7 +101,7 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
 
     // Add a list of added id's to the response
     if (adds == null) {
-      adds = new ArrayList<String>();
+      adds = new ArrayList<>();
       toLog.add("add",adds);
     }
 
@@ -122,7 +122,7 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
 
     if (cmd.isDeleteById()) {
       if (deletes == null) {
-        deletes = new ArrayList<String>();
+        deletes = new ArrayList<>();
         toLog.add("delete",deletes);
       }
       if (deletes.size() < maxNumToLog) {

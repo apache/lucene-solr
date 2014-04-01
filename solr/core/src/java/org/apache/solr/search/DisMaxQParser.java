@@ -91,11 +91,13 @@ public class DisMaxQParser extends QParser {
   protected String[] boostParams;
   protected List<Query> boostQueries;
   protected Query altUserQuery;
-  protected QParser altQParser;
+
+  private boolean parsed = false;
 
 
   @Override
   public Query parse() throws SyntaxError {
+    parsed = true;
     SolrParams solrParams = SolrParams.wrapDefaults(localParams, params);
 
     queryFields = parseQueryFields(req.getSchema(), solrParams);
@@ -137,7 +139,7 @@ public class DisMaxQParser extends QParser {
     //List<Query> boostQueries = SolrPluginUtils.parseQueryStrings(req, boostParams);
     boostQueries = null;
     if (boostParams != null && boostParams.length > 0) {
-      boostQueries = new ArrayList<Query>();
+      boostQueries = new ArrayList<>();
       for (String qs : boostParams) {
         if (qs.trim().length() == 0) continue;
         Query q = subQuery(qs, null).getQuery();
@@ -263,6 +265,8 @@ public class DisMaxQParser extends QParser {
 
   @Override
   public Query getHighlightQuery() throws SyntaxError {
+    if (!parsed)
+      parse();
     return parsedUserQuery == null ? altUserQuery : parsedUserQuery;
   }
 

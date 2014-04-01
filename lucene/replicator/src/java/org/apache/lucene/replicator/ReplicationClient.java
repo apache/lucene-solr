@@ -188,8 +188,8 @@ public class ReplicationClient implements Closeable {
   
   private void doUpdate() throws IOException {
     SessionToken session = null;
-    final Map<String,Directory> sourceDirectory = new HashMap<String,Directory>();
-    final Map<String,List<String>> copiedFiles = new HashMap<String,List<String>>();
+    final Map<String,Directory> sourceDirectory = new HashMap<>();
+    final Map<String,List<String>> copiedFiles = new HashMap<>();
     boolean notify = false;
     try {
       final String version = handler.currentVersion();
@@ -209,7 +209,7 @@ public class ReplicationClient implements Closeable {
         String source = e.getKey();
         Directory dir = factory.getDirectory(session.id, source);
         sourceDirectory.put(source, dir);
-        List<String> cpFiles = new ArrayList<String>();
+        List<String> cpFiles = new ArrayList<>();
         copiedFiles.put(source, cpFiles);
         for (RevisionFile file : e.getValue()) {
           if (closed) {
@@ -298,16 +298,16 @@ public class ReplicationClient implements Closeable {
       return newRevisionFiles;
     }
     
-    Map<String,List<RevisionFile>> requiredFiles = new HashMap<String,List<RevisionFile>>();
+    Map<String,List<RevisionFile>> requiredFiles = new HashMap<>();
     for (Entry<String,List<RevisionFile>> e : handlerRevisionFiles.entrySet()) {
       // put the handler files in a Set, for faster contains() checks later
-      Set<String> handlerFiles = new HashSet<String>();
+      Set<String> handlerFiles = new HashSet<>();
       for (RevisionFile file : e.getValue()) {
         handlerFiles.add(file.fileName);
       }
       
       // make sure to preserve revisionFiles order
-      ArrayList<RevisionFile> res = new ArrayList<RevisionFile>();
+      ArrayList<RevisionFile> res = new ArrayList<>();
       String source = e.getKey();
       assert newRevisionFiles.containsKey(source) : "source not found in newRevisionFiles: " + newRevisionFiles;
       for (RevisionFile file : newRevisionFiles.get(source)) {

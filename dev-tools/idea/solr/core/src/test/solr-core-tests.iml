@@ -15,6 +15,7 @@
     <orderEntry type="library" scope="TEST" name="Solrj library" level="project" />
     <orderEntry type="library" scope="TEST" name="Solr example library" level="project" />
     <orderEntry type="library" scope="TEST" name="Solr test framework library" level="project" />
+    <orderEntry type="library" scope="TEST" name="ICU library" level="project" />
     <orderEntry type="module" scope="TEST" module-name="lucene-test-framework" />
     <orderEntry type="module" scope="TEST" module-name="solr-test-framework" />
     <orderEntry type="module" scope="TEST" module-name="solr-core-test-files" />
@@ -28,5 +29,8 @@
     <orderEntry type="module" scope="TEST" module-name="spatial" />
     <orderEntry type="module" scope="TEST" module-name="misc" />
     <orderEntry type="module" scope="TEST" module-name="join" />
+    <orderEntry type="module" scope="TEST" module-name="expressions" />
+    <orderEntry type="module" scope="TEST" module-name="icu" />
+    <orderEntry type="module" scope="TEST" module-name="analysis-extras" />
   </component>
 </module>

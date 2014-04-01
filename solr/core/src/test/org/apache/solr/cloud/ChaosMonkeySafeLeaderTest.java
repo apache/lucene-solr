@@ -20,6 +20,7 @@ package org.apache.solr.cloud;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.util.LuceneTestCase.BadApple;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
@@ -32,6 +33,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 
 @Slow
+@BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5735")
 public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
   
   private static final Integer RUN_LENGTH = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.runlength", "-1"));
@@ -56,14 +58,14 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
     SolrCmdDistributor.testing_errorHook = null;
   }
   
-  public static String[] fieldNames = new String[]{"f_i", "f_f", "f_d", "f_l", "f_dt"};
-  public static RandVal[] randVals = new RandVal[]{rint, rfloat, rdouble, rlong, rdate};
+  protected static final String[] fieldNames = new String[]{"f_i", "f_f", "f_d", "f_l", "f_dt"};
+  protected static final RandVal[] randVals = new RandVal[]{rint, rfloat, rdouble, rlong, rdate};
   
-  protected String[] getFieldNames() {
+  public String[] getFieldNames() {
     return fieldNames;
   }
 
-  protected RandVal[] getRandValues() {
+  public RandVal[] getRandValues() {
     return randVals;
   }
   
@@ -103,10 +105,10 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
 
     del("*:*");
     
-    List<StopableIndexingThread> threads = new ArrayList<StopableIndexingThread>();
+    List<StopableIndexingThread> threads = new ArrayList<>();
     int threadCount = 2;
     for (int i = 0; i < threadCount; i++) {
-      StopableIndexingThread indexThread = new StopableIndexingThread(Integer.toString(i), true);
+      StopableIndexingThread indexThread = new StopableIndexingThread(controlClient, cloudClient, Integer.toString(i), true);
       threads.add(indexThread);
       indexThread.start();
     }
@@ -167,7 +169,7 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
     } finally {
       client.shutdown();
     }
-    List<Integer> numShardsNumReplicas = new ArrayList<Integer>(2);
+    List<Integer> numShardsNumReplicas = new ArrayList<>(2);
     numShardsNumReplicas.add(1);
     numShardsNumReplicas.add(1);
     checkForCollection("testcollection",numShardsNumReplicas, null);

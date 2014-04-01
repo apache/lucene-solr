@@ -46,7 +46,7 @@ import org.apache.lucene.util.Version;
 public final class QueryAutoStopWordAnalyzer extends AnalyzerWrapper {
 
   private final Analyzer delegate;
-  private final Map<String, Set<String>> stopWordsPerField = new HashMap<String, Set<String>>();
+  private final Map<String, Set<String>> stopWordsPerField = new HashMap<>();
   //The default maximum percentage (40%) of index documents which
   //can contain a term, after which the term is considered to be a stop word.
   public static final float defaultMaxDocFreqPercent = 0.4f;
@@ -153,7 +153,7 @@ public final class QueryAutoStopWordAnalyzer extends AnalyzerWrapper {
     this.delegate = delegate;
     
     for (String field : fields) {
-      Set<String> stopWords = new HashSet<String>();
+      Set<String> stopWords = new HashSet<>();
       Terms terms = MultiFields.getTerms(indexReader, field);
       CharsRef spare = new CharsRef();
       if (terms != null) {
@@ -204,7 +204,7 @@ public final class QueryAutoStopWordAnalyzer extends AnalyzerWrapper {
    * @return the stop words (as terms)
    */
   public Term[] getStopWords() {
-    List<Term> allStopWords = new ArrayList<Term>();
+    List<Term> allStopWords = new ArrayList<>();
     for (String fieldName : stopWordsPerField.keySet()) {
       Set<String> stopWords = stopWordsPerField.get(fieldName);
       for (String text : stopWords) {

@@ -118,7 +118,7 @@ public class MultiPassIndexSplitter {
       System.err.println("\t-seq\tsequential docid-range split (default is round-robin)");
       System.exit(-1);
     }
-    ArrayList<IndexReader> indexes = new ArrayList<IndexReader>();
+    ArrayList<IndexReader> indexes = new ArrayList<>();
     String outDir = null;
     int numParts = -1;
     boolean seq = false;

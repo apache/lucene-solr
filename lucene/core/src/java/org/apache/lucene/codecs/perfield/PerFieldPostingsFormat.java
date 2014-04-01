@@ -75,7 +75,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
   /** Group of fields written by one PostingsFormat */
   static class FieldsGroup {
-    final Set<String> fields = new TreeSet<String>();
+    final Set<String> fields = new TreeSet<>();
     int suffix;
 
     /** Custom SegmentWriteState for this group of fields,
@@ -111,10 +111,10 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
       // Maps a PostingsFormat instance to the suffix it
       // should use
-      Map<PostingsFormat,FieldsGroup> formatToGroups = new HashMap<PostingsFormat,FieldsGroup>();
+      Map<PostingsFormat,FieldsGroup> formatToGroups = new HashMap<>();
 
       // Holds last suffix of each PostingFormat name
-      Map<String,Integer> suffixes = new HashMap<String,Integer>();
+      Map<String,Integer> suffixes = new HashMap<>();
 
       // First pass: assign field -> PostingsFormat
       for(String field : fields) {
@@ -182,8 +182,8 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
   private class FieldsReader extends FieldsProducer {
 
-    private final Map<String,FieldsProducer> fields = new TreeMap<String,FieldsProducer>();
-    private final Map<String,FieldsProducer> formats = new HashMap<String,FieldsProducer>();
+    private final Map<String,FieldsProducer> fields = new TreeMap<>();
+    private final Map<String,FieldsProducer> formats = new HashMap<>();
 
     public FieldsReader(final SegmentReadState readState) throws IOException {
 

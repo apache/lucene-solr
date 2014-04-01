@@ -34,7 +34,7 @@ public final class LuceneJUnit3MethodProvider implements TestMethodProvider {
   @Override
   public Collection<Method> getTestMethods(Class<?> suiteClass, ClassModel classModel) {
     Map<Method,MethodModel> methods = classModel.getMethods();
-    ArrayList<Method> result = new ArrayList<Method>();
+    ArrayList<Method> result = new ArrayList<>();
     for (MethodModel mm : methods.values()) {
       // Skip any methods that have overrieds/ shadows.
       if (mm.getDown() != null) continue;

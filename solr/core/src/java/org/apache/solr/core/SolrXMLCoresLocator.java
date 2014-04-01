@@ -17,7 +17,6 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
@@ -29,6 +28,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -143,7 +143,7 @@ public class SolrXMLCoresLocator implements CoresLocator {
 
   @Override
   public synchronized final void persist(CoreContainer cc, CoreDescriptor... coreDescriptors) {
-    List<CoreDescriptor> cds = new ArrayList<CoreDescriptor>(cc.getCoreDescriptors().size() + coreDescriptors.length);
+    List<CoreDescriptor> cds = new ArrayList<>(cc.getCoreDescriptors().size() + coreDescriptors.length);
     
     cds.addAll(cc.getCoreDescriptors());
     cds.addAll(Arrays.asList(coreDescriptors));
@@ -157,7 +157,7 @@ public class SolrXMLCoresLocator implements CoresLocator {
     FileOutputStream fos = null;
     try {
       fos = new FileOutputStream(file);
-      writer = new OutputStreamWriter(fos, Charsets.UTF_8);
+      writer = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
       writer.write(xml);
       writer.close();
       logger.info("Persisted core descriptions to {}", file.getAbsolutePath());

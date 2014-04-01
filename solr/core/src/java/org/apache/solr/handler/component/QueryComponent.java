@@ -17,6 +17,21 @@
 
 package org.apache.solr.handler.component;
 
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
+import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.ReaderUtil;
@@ -25,12 +40,15 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -80,22 +98,6 @@ import org.apache.solr.search.grouping.endresulttransformer.GroupedEndResultTran
 import org.apache.solr.search.grouping.endresulttransformer.MainEndResultTransformer;
 import org.apache.solr.search.grouping.endresulttransformer.SimpleEndResultTransformer;
 import org.apache.solr.util.SolrPluginUtils;
-
-import org.apache.commons.lang.StringUtils;
-
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 
 /**
  * TODO!
@@ -161,7 +163,7 @@ public class QueryComponent extends SearchComponent
       if (fqs!=null && fqs.length!=0) {
         List<Query> filters = rb.getFilters();
         // if filters already exists, make a copy instead of modifying the original
-        filters = filters == null ? new ArrayList<Query>(fqs.length) : new ArrayList<Query>(filters);
+        filters = filters == null ? new ArrayList<Query>(fqs.length) : new ArrayList<>(filters);
         for (String fq : fqs) {
           if (fq != null && fq.trim().length()!=0) {
             QParser fqp = QParser.getParser(fq, null, req);
@@ -289,7 +291,7 @@ public class QueryComponent extends SearchComponent
       res.docList = new DocSlice(0, docs, luceneIds, null, docs, 0);
       if (rb.isNeedDocSet()) {
         // TODO: create a cache for this!
-        List<Query> queries = new ArrayList<Query>();
+        List<Query> queries = new ArrayList<>();
         queries.add(rb.getQuery());
         List<Query> filters = rb.getFilters();
         if (filters != null) queries.addAll(filters);
@@ -351,9 +353,9 @@ public class QueryComponent extends SearchComponent
               topGroupsParam = new String[0];
             }
 
-            List<SearchGroup<BytesRef>> topGroups = new ArrayList<SearchGroup<BytesRef>>(topGroupsParam.length);
+            List<SearchGroup<BytesRef>> topGroups = new ArrayList<>(topGroupsParam.length);
             for (String topGroup : topGroupsParam) {
-              SearchGroup<BytesRef> searchGroup = new SearchGroup<BytesRef>();
+              SearchGroup<BytesRef> searchGroup = new SearchGroup<>();
               if (!topGroup.equals(TopGroupsShardRequestFactory.GROUP_NULL_VALUE)) {
                 searchGroup.groupValue = new BytesRef(searcher.getSchema().getField(field).getType().readableToIndexed(topGroup));
               }
@@ -486,7 +488,7 @@ public class QueryComponent extends SearchComponent
     // TODO: See SOLR-5595
     boolean fsv = req.getParams().getBool(ResponseBuilder.FIELD_SORT_VALUES,false);
     if(fsv){
-      NamedList<Object[]> sortVals = new NamedList<Object[]>(); // order is important for the sort fields
+      NamedList<Object[]> sortVals = new NamedList<>(); // order is important for the sort fields
       IndexReaderContext topReaderContext = searcher.getTopReaderContext();
       List<AtomicReaderContext> leaves = topReaderContext.leaves();
       AtomicReaderContext currentLeaf = null;
@@ -500,12 +502,32 @@ public class QueryComponent extends SearchComponent
 
       // sort ids from lowest to highest so we can access them in order
       int nDocs = docList.size();
-      long[] sortedIds = new long[nDocs];
-      DocIterator it = rb.getResults().docList.iterator();
+      final long[] sortedIds = new long[nDocs];
+      final float[] scores = new float[nDocs]; // doc scores, parallel to sortedIds
+      DocList docs = rb.getResults().docList;
+      DocIterator it = docs.iterator();
       for (int i=0; i<nDocs; i++) {
         sortedIds[i] = (((long)it.nextDoc()) << 32) | i;
+        scores[i] = docs.hasScores() ? it.score() : Float.NaN;
       }
-      Arrays.sort(sortedIds);
+
+      // sort ids and scores together
+      new InPlaceMergeSorter() {
+        @Override
+        protected void swap(int i, int j) {
+          long tmpId = sortedIds[i];
+          float tmpScore = scores[i];
+          sortedIds[i] = sortedIds[j];
+          scores[i] = scores[j];
+          sortedIds[j] = tmpId;
+          scores[j] = tmpScore;
+        }
+
+        @Override
+        protected int compare(int i, int j) {
+          return Long.compare(sortedIds[i], sortedIds[j]);
+        }
+      }.sort(0, sortedIds.length);
 
       SortSpec sortSpec = rb.getSortSpec();
       Sort sort = searcher.weightSort(sortSpec.getSort());
@@ -527,7 +549,9 @@ public class QueryComponent extends SearchComponent
         int lastIdx = -1;
         int idx = 0;
 
-        for (long idAndPos : sortedIds) {
+        for (int i = 0; i < sortedIds.length; ++i) {
+          long idAndPos = sortedIds[i];
+          float score = scores[i];
           int doc = (int)(idAndPos >>> 32);
           int position = (int)idAndPos;
 
@@ -546,6 +570,7 @@ public class QueryComponent extends SearchComponent
           }
 
           doc -= currentLeaf.docBase;  // adjust for what segment this is in
+          comparator.setScorer(new FakeScorer(doc, score));
           comparator.copy(0, doc);
           Object val = comparator.value(0);
           if (null != ft) val = ft.marshalSortValue(val); 
@@ -625,7 +650,7 @@ public class QueryComponent extends SearchComponent
       return ResponseBuilder.STAGE_GET_FIELDS;
     }
     if (rb.stage < ResponseBuilder.STAGE_GET_FIELDS) return ResponseBuilder.STAGE_GET_FIELDS;
-    if (rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
+    if (rb.stage == ResponseBuilder.STAGE_GET_FIELDS && !rb.onePassDistributedQuery) {
       createRetrieveDocs(rb);
       return ResponseBuilder.STAGE_DONE;
     }
@@ -689,7 +714,7 @@ public class QueryComponent extends SearchComponent
       for (String field : groupSpec.getFields()) {
         rb.mergedTopGroups.put(field, new TopGroups(null, null, 0, 0, new GroupDocs[]{}, Float.NaN));
       }
-      rb.resultIds = new HashMap<Object, ShardDoc>();
+      rb.resultIds = new HashMap<>();
     }
 
     EndResultTransformer.SolrDocumentSource solrDocumentSource = new EndResultTransformer.SolrDocumentSource() {
@@ -711,7 +736,7 @@ public class QueryComponent extends SearchComponent
     } else {
       return;
     }
-    Map<String, Object> combinedMap = new LinkedHashMap<String, Object>();
+    Map<String, Object> combinedMap = new LinkedHashMap<>();
     combinedMap.putAll(rb.mergedTopGroups);
     combinedMap.putAll(rb.mergedQueryCommandResults);
     endResultTransformer.transform(combinedMap, rb, solrDocumentSource);
@@ -741,6 +766,17 @@ public class QueryComponent extends SearchComponent
   private void createMainQuery(ResponseBuilder rb) {
     ShardRequest sreq = new ShardRequest();
     sreq.purpose = ShardRequest.PURPOSE_GET_TOP_IDS;
+
+    String keyFieldName = rb.req.getSchema().getUniqueKeyField().getName();
+
+    // one-pass algorithm if only id and score fields are requested, but not if fl=score since that's the same as fl=*,score
+    ReturnFields fields = rb.rsp.getReturnFields();
+
+    if(fields != null && fields.wantsField(keyFieldName)
+        && fields.getRequestedFieldNames() != null && Arrays.asList(keyFieldName, "score").containsAll(fields.getRequestedFieldNames())) {
+      sreq.purpose |= ShardRequest.PURPOSE_GET_FIELDS;
+      rb.onePassDistributedQuery = true;
+    }
 
     sreq.params = new ModifiableSolrParams(rb.req.getParams());
     // TODO: base on current params or original params?
@@ -772,9 +808,9 @@ public class QueryComponent extends SearchComponent
     sreq.params.set(ResponseBuilder.FIELD_SORT_VALUES,"true");
 
     if ( (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES)!=0 || rb.getSortSpec().includesScore()) {
-      sreq.params.set(CommonParams.FL, rb.req.getSchema().getUniqueKeyField().getName() + ",score");
+      sreq.params.set(CommonParams.FL, keyFieldName + ",score");
     } else {
-      sreq.params.set(CommonParams.FL, rb.req.getSchema().getUniqueKeyField().getName());      
+      sreq.params.set(CommonParams.FL, keyFieldName);
     }
 
     rb.addRequest(this, sreq);
@@ -799,7 +835,7 @@ public class QueryComponent extends SearchComponent
 
 
       // id to shard mapping, to eliminate any accidental dups
-      HashMap<Object,String> uniqueDoc = new HashMap<Object,String>();    
+      HashMap<Object,String> uniqueDoc = new HashMap<>();
 
       // Merge the docs via a priority queue so we don't have to sort *all* of the
       // documents... we only need to order the top (rows+start)
@@ -808,7 +844,7 @@ public class QueryComponent extends SearchComponent
 
       NamedList<Object> shardInfo = null;
       if(rb.req.getParams().getBool(ShardParams.SHARDS_INFO, false)) {
-        shardInfo = new SimpleOrderedMap<Object>();
+        shardInfo = new SimpleOrderedMap<>();
         rb.rsp.getValues().add(ShardParams.SHARDS_INFO,shardInfo);
       }
       
@@ -819,7 +855,7 @@ public class QueryComponent extends SearchComponent
         SolrDocumentList docs = null;
 
         if(shardInfo!=null) {
-          SimpleOrderedMap<Object> nl = new SimpleOrderedMap<Object>();
+          SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>();
           
           if (srsp.getException() != null) {
             Throwable t = srsp.getException();
@@ -868,6 +904,7 @@ public class QueryComponent extends SearchComponent
         numFound += docs.getNumFound();
 
         NamedList sortFieldValues = (NamedList)(srsp.getSolrResponse().getResponse().get("sort_values"));
+        NamedList unmarshalledSortFieldValues = unmarshalSortValues(ss, sortFieldValues, schema);
 
         // go through every doc in this response, construct a ShardDoc, and
         // put it in the priority queue so it can be ordered.
@@ -904,7 +941,7 @@ public class QueryComponent extends SearchComponent
             }
           }
 
-          shardDoc.sortFieldValues = unmarshalSortValues(ss, sortFieldValues, schema);
+          shardDoc.sortFieldValues = unmarshalledSortFieldValues;
 
           queue.insertWithOverflow(shardDoc);
         } // end for-each-doc-in-response
@@ -916,7 +953,7 @@ public class QueryComponent extends SearchComponent
       int resultSize = queue.size() - ss.getOffset();
       resultSize = Math.max(0, resultSize);  // there may not be any docs in range
 
-      Map<Object,ShardDoc> resultIds = new HashMap<Object,ShardDoc>();
+      Map<Object,ShardDoc> resultIds = new HashMap<>();
       for (int i=resultSize-1; i>=0; i--) {
         ShardDoc shardDoc = queue.pop();
         shardDoc.positionInResponse = i;
@@ -985,7 +1022,7 @@ public class QueryComponent extends SearchComponent
       }
     }
     SortField[] sortFields = lastCursorMark.getSortSpec().getSort().getSort();
-    List<Object> nextCursorMarkValues = new ArrayList<Object>(sortFields.length);
+    List<Object> nextCursorMarkValues = new ArrayList<>(sortFields.length);
     for (SortField sf : sortFields) {
       if (sf.getType().equals(SortField.Type.SCORE)) {
         assert null != lastDoc.score : "lastDoc has null score";
@@ -1048,11 +1085,11 @@ public class QueryComponent extends SearchComponent
     // unless those requests always go to the final destination shard
 
     // for each shard, collect the documents for that shard.
-    HashMap<String, Collection<ShardDoc>> shardMap = new HashMap<String,Collection<ShardDoc>>();
+    HashMap<String, Collection<ShardDoc>> shardMap = new HashMap<>();
     for (ShardDoc sdoc : rb.resultIds.values()) {
       Collection<ShardDoc> shardDocs = shardMap.get(sdoc.shard);
       if (shardDocs == null) {
-        shardDocs = new ArrayList<ShardDoc>();
+        shardDocs = new ArrayList<>();
         shardMap.put(sdoc.shard, shardDocs);
       }
       shardDocs.add(sdoc);
@@ -1083,7 +1120,7 @@ public class QueryComponent extends SearchComponent
         sreq.params.add(CommonParams.FL, uniqueField.getName());
       }
     
-      ArrayList<String> ids = new ArrayList<String>(shardDocs.size());
+      ArrayList<String> ids = new ArrayList<>(shardDocs.size());
       for (ShardDoc shardDoc : shardDocs) {
         // TODO: depending on the type, we may need more tha a simple toString()?
         ids.add(shardDoc.id.toString());
@@ -1105,24 +1142,24 @@ public class QueryComponent extends SearchComponent
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0) {
       boolean returnScores = (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0;
 
-      assert(sreq.responses.size() == 1);
-      ShardResponse srsp = sreq.responses.get(0);
-      SolrDocumentList docs = (SolrDocumentList)srsp.getSolrResponse().getResponse().get("response");
-
       String keyFieldName = rb.req.getSchema().getUniqueKeyField().getName();
       boolean removeKeyField = !rb.rsp.getReturnFields().wantsField(keyFieldName);
 
-      for (SolrDocument doc : docs) {
-        Object id = doc.getFieldValue(keyFieldName);
-        ShardDoc sdoc = rb.resultIds.get(id.toString());
-        if (sdoc != null) {
-          if (returnScores && sdoc.score != null) {
+      for (ShardResponse srsp : sreq.responses) {
+        SolrDocumentList docs = (SolrDocumentList) srsp.getSolrResponse().getResponse().get("response");
+
+        for (SolrDocument doc : docs) {
+          Object id = doc.getFieldValue(keyFieldName);
+          ShardDoc sdoc = rb.resultIds.get(id.toString());
+          if (sdoc != null) {
+            if (returnScores && sdoc.score != null) {
               doc.setField("score", sdoc.score);
+            }
+            if (removeKeyField) {
+              doc.removeFields(keyFieldName);
+            }
+            rb._responseDocs.set(sdoc.positionInResponse, doc);
           }
-          if(removeKeyField) {
-            doc.removeFields(keyFieldName);
-          }
-          rb._responseDocs.set(sdoc.positionInResponse, doc);
         }
       }
     }
@@ -1145,5 +1182,61 @@ public class QueryComponent extends SearchComponent
   @Override
   public URL[] getDocs() {
     return null;
+  }
+
+  /**
+   * Fake scorer for a single document
+   *
+   * TODO: when SOLR-5595 is fixed, this wont be needed, as we dont need to recompute sort values here from the comparator
+   */
+  private static class FakeScorer extends Scorer {
+    final int docid;
+    final float score;
+
+    FakeScorer(int docid, float score) {
+      super(null);
+      this.docid = docid;
+      this.score = score;
+    }
+
+    @Override
+    public int docID() {
+      return docid;
+    }
+
+    @Override
+    public float score() throws IOException {
+      return score;
+    }
+
+    @Override
+    public int freq() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long cost() {
+      return 1;
+    }
+
+    @Override
+    public Weight getWeight() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Collection<ChildScorer> getChildren() {
+      throw new UnsupportedOperationException();
+    }
   }
 }

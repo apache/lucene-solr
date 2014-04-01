@@ -87,7 +87,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     if (!TokenizerChain.class.isInstance(analyzer)) {
 
       try (TokenStream tokenStream = analyzer.tokenStream(context.getFieldName(), value)) {
-        NamedList<List<NamedList>> namedList = new NamedList<List<NamedList>>();
+        NamedList<List<NamedList>> namedList = new NamedList<>();
         namedList.add(tokenStream.getClass().getName(), convertTokensToNamedLists(analyzeTokenStream(tokenStream), context));
         return namedList;
       } catch (IOException e) {
@@ -100,7 +100,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     TokenizerFactory tfac = tokenizerChain.getTokenizerFactory();
     TokenFilterFactory[] filtfacs = tokenizerChain.getTokenFilterFactories();
 
-    NamedList<Object> namedList = new NamedList<Object>();
+    NamedList<Object> namedList = new NamedList<>();
 
     if( cfiltfacs != null ){
       String source = value;
@@ -144,7 +144,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
    */
   protected Set<BytesRef> getQueryTokenSet(String query, Analyzer analyzer) {
     try (TokenStream tokenStream = analyzer.tokenStream("", query)){
-      final Set<BytesRef> tokens = new HashSet<BytesRef>();
+      final Set<BytesRef> tokens = new HashSet<>();
       final TermToBytesRefAttribute bytesAtt = tokenStream.getAttribute(TermToBytesRefAttribute.class);
       final BytesRef bytes = bytesAtt.getBytesRef();
 
@@ -170,7 +170,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
    * @return List of tokens produced from the TokenStream
    */
   private List<AttributeSource> analyzeTokenStream(TokenStream tokenStream) {
-    final List<AttributeSource> tokens = new ArrayList<AttributeSource>();
+    final List<AttributeSource> tokens = new ArrayList<>();
     final PositionIncrementAttribute posIncrAtt = tokenStream.addAttribute(PositionIncrementAttribute.class);
     final TokenTrackingAttribute trackerAtt = tokenStream.addAttribute(TokenTrackingAttribute.class);
     // for backwards compatibility, add all "common" attributes
@@ -212,7 +212,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
    * @return List of NamedLists containing the relevant information taken from the tokens
    */
   private List<NamedList> convertTokensToNamedLists(final List<AttributeSource> tokenList, AnalysisContext context) {
-    final List<NamedList> tokensNamedLists = new ArrayList<NamedList>();
+    final List<NamedList> tokensNamedLists = new ArrayList<>();
     final FieldType fieldType = context.getFieldType();
     final AttributeSource[] tokens = tokenList.toArray(new AttributeSource[tokenList.size()]);
     
@@ -241,7 +241,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
 
     for (int i = 0; i < tokens.length; i++) {
       AttributeSource token = tokens[i];
-      final NamedList<Object> tokenNamedList = new SimpleOrderedMap<Object>();
+      final NamedList<Object> tokenNamedList = new SimpleOrderedMap<>();
       final TermToBytesRefAttribute termAtt = token.getAttribute(TermToBytesRefAttribute.class);
       BytesRef rawBytes = termAtt.getBytesRef();
       termAtt.fillBytesRef();

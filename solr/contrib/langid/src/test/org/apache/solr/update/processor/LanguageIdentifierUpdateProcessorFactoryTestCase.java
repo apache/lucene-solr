@@ -124,7 +124,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     assertEquals("zh", liProcessor.resolveLanguage("zh_cn", "NA"));
     assertEquals("zh", liProcessor.resolveLanguage("zh_tw", "NA"));
     assertEquals("no", liProcessor.resolveLanguage("no", "NA"));
-    List<DetectedLanguage> langs = new ArrayList<DetectedLanguage>();
+    List<DetectedLanguage> langs = new ArrayList<>();
     langs.add(new DetectedLanguage("zh_cn", 0.8));
     assertEquals("zh", liProcessor.resolveLanguage(langs, "NA"));
   }
@@ -246,7 +246,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     liProcessor = createLangIdProcessor(parameters);
 
     // No detected languages
-    langs = new ArrayList<DetectedLanguage>();
+    langs = new ArrayList<>();
     assertEquals("", liProcessor.resolveLanguage(langs, null));
     assertEquals("fallback", liProcessor.resolveLanguage(langs, "fallback"));
 
@@ -255,7 +255,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     assertEquals("one", liProcessor.resolveLanguage(langs, "fallback"));    
 
     // One detected language under default threshold
-    langs = new ArrayList<DetectedLanguage>();
+    langs = new ArrayList<>();
     langs.add(new DetectedLanguage("under", 0.1));
     assertEquals("fallback", liProcessor.resolveLanguage(langs, "fallback"));    
   }

@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
 
@@ -74,7 +75,6 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     log.info("####SETUP_START " + getTestName());
-    createTempDir();
     
     boolean useNewSolrXml = random().nextBoolean();
     
@@ -83,7 +83,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     } else {
       File tmpSolrHome = new File(dataDir, "tmp-solr-home");
       FileUtils.copyDirectory(new File(ExternalPaths.EXAMPLE_HOME), tmpSolrHome);
-      FileUtils.copyFile(new File(ExternalPaths.SOURCE_HOME, "core/src/test-files/old-solr-example/solr.xml"), new File(tmpSolrHome, "solr.xml"));
+      FileUtils.copyFile(getFile("old-solr-example/solr.xml"), new File(tmpSolrHome, "solr.xml"));
       solrHome = tmpSolrHome.getAbsolutePath();
     }
     
@@ -157,7 +157,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
     zkClient.getData("/data.txt", null, null, true);
 
-    assertArrayEquals(zkClient.getData("/data.txt", null, null, true), data.getBytes("UTF-8"));
+    assertArrayEquals(zkClient.getData("/data.txt", null, null, true), data.getBytes(StandardCharsets.UTF_8));
   }
 
   @Test
@@ -167,12 +167,12 @@ public class ZkCLITest extends SolrTestCaseJ4 {
         "putfile", "/solr.xml", SOLR_HOME + File.separator + "solr-stress-new.xml"};
     ZkCLI.main(args);
 
-    String fromZk = new String(zkClient.getData("/solr.xml", null, null, true), "UTF-8");
+    String fromZk = new String(zkClient.getData("/solr.xml", null, null, true), StandardCharsets.UTF_8);
     File locFile = new File(SOLR_HOME + File.separator + "solr-stress-new.xml");
     InputStream is = new FileInputStream(locFile);
     String fromLoc;
     try {
-      fromLoc = new String(IOUtils.toByteArray(is), "UTF-8");
+      fromLoc = new String(IOUtils.toByteArray(is), StandardCharsets.UTF_8);
     } finally {
       IOUtils.closeQuietly(is);
     }
@@ -231,7 +231,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     assertEquals(confsetname, collectionProps.getStr("configName"));
     
     // test down config
-    File confDir = new File(TEMP_DIR,
+    File confDir = new File(dataDir,
         "solrtest-confdropspot-" + this.getClass().getName() + "-" + System.currentTimeMillis());
     
     assertFalse(confDir.exists());
@@ -268,7 +268,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   @Test
   public void testGet() throws Exception {
     String getNode = "/getNode";
-    byte [] data = new String("getNode-data").getBytes("UTF-8");
+    byte [] data = new String("getNode-data").getBytes(StandardCharsets.UTF_8);
     this.zkClient.create(getNode, data, CreateMode.PERSISTENT, true);
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
         "get", getNode};
@@ -278,10 +278,10 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   @Test
   public void testGetFile() throws Exception {
     String getNode = "/getFileNode";
-    byte [] data = new String("getFileNode-data").getBytes("UTF-8");
+    byte [] data = new String("getFileNode-data").getBytes(StandardCharsets.UTF_8);
     this.zkClient.create(getNode, data, CreateMode.PERSISTENT, true);
 
-    File file = new File(TEMP_DIR,
+    File file = new File(dataDir,
         "solrtest-getfile-" + this.getClass().getName() + "-" + System.currentTimeMillis());
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
         "getfile", getNode, file.getAbsolutePath()};
@@ -295,7 +295,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   public void testGetFileNotExists() throws Exception {
     String getNode = "/getFileNotExistsNode";
 
-    File file = new File(TEMP_DIR,
+    File file = new File(dataDir,
         "solrtest-getfilenotexists-" + this.getClass().getName() + "-" + System.currentTimeMillis());
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
         "getfile", getNode, file.getAbsolutePath()};

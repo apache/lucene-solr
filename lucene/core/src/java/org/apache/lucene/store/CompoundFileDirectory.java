@@ -130,7 +130,7 @@ public final class CompoundFileDirectory extends BaseDirectory {
       entriesStream = dir.openInput(entriesFileName, IOContext.READONCE);
       CodecUtil.checkHeader(entriesStream, CompoundFileWriter.ENTRY_CODEC, CompoundFileWriter.VERSION_START, CompoundFileWriter.VERSION_START);
       final int numEntries = entriesStream.readVInt();
-      final Map<String, FileEntry> mapping = new HashMap<String,FileEntry>(numEntries);
+      final Map<String, FileEntry> mapping = new HashMap<>(numEntries);
       for (int i = 0; i < numEntries; i++) {
         final FileEntry fileEntry = new FileEntry();
         final String id = entriesStream.readString();
@@ -140,6 +140,9 @@ public final class CompoundFileDirectory extends BaseDirectory {
         }
         fileEntry.offset = entriesStream.readLong();
         fileEntry.length = entriesStream.readLong();
+      }
+      if (entriesStream.getFilePointer() != entriesStream.length()) {
+        throw new CorruptIndexException("did not read all bytes from file \"" + entriesFileName + "\": read " + entriesStream.getFilePointer() + " vs size " + entriesStream.length() + " (resource: " + entriesStream + ")");
       }
       return mapping;
     } catch (IOException ioe) {
@@ -202,16 +205,6 @@ public final class CompoundFileDirectory extends BaseDirectory {
       }
     }
     return res;
-  }
-  
-  /** Returns true iff a file with the given name exists. */
-  @Override
-  public boolean fileExists(String name) {
-    ensureOpen();
-    if (this.writer != null) {
-      return writer.fileExists(name);
-    }
-    return entries.containsKey(IndexFileNames.stripSegmentName(name));
   }
   
   /** Not implemented

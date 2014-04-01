@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.util.BytesRef;
@@ -47,7 +48,7 @@ public class PlainTextDictionary implements Dictionary {
    * NOTE: content is treated as UTF-8
    */
   public PlainTextDictionary(File file) throws IOException {
-    in = new BufferedReader(IOUtils.getDecodingReader(file, IOUtils.CHARSET_UTF_8));
+    in = new BufferedReader(IOUtils.getDecodingReader(file, StandardCharsets.UTF_8));
   }
 
   /**
@@ -56,7 +57,7 @@ public class PlainTextDictionary implements Dictionary {
    * NOTE: content is treated as UTF-8
    */
   public PlainTextDictionary(InputStream dictFile) {
-    in = new BufferedReader(IOUtils.getDecodingReader(dictFile, IOUtils.CHARSET_UTF_8));
+    in = new BufferedReader(IOUtils.getDecodingReader(dictFile, StandardCharsets.UTF_8));
   }
 
   /**

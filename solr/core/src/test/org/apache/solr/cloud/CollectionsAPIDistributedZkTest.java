@@ -17,6 +17,8 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import static org.apache.solr.cloud.OverseerCollectionProcessor.MAX_SHARDS_PER_NODE;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 
@@ -25,14 +27,15 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
@@ -77,7 +80,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -171,8 +173,8 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     
     sliceCount = 2;
     shardCount = 4;
-    completionService = new ExecutorCompletionService<Object>(executor);
-    pending = new HashSet<Future<Object>>();
+    completionService = new ExecutorCompletionService<>(executor);
+    pending = new HashSet<>();
     checkCreatedVsState = false;
     
   }
@@ -201,12 +203,14 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     testCollectionsAPI();
     testCollectionsAPIAddRemoveStress();
     testErrorHandling();
+    testNoCollectionSpecified();
     deletePartiallyCreatedCollection();
     deleteCollectionRemovesStaleZkCollectionsNode();
     clusterPropTest();
-
+    addReplicaTest();
     // last
     deleteCollectionWithDownNodes();
+    
     if (DEBUG) {
       super.printLayout();
     }
@@ -219,7 +223,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     
     String collectionName = "out_of_sync_collection";
     
-    List<Integer> numShardsNumReplicaList = new ArrayList<Integer>();
+    List<Integer> numShardsNumReplicaList = new ArrayList<>();
     numShardsNumReplicaList.add(2);
     numShardsNumReplicaList.add(1);
     
@@ -574,6 +578,40 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     String val2 = failure.getVal(0).toString();
     assertTrue(val1.contains("SolrException") || val2.contains("SolrException"));
   }
+  
+  private void testNoCollectionSpecified() throws Exception {
+    
+    cloudClient.getZkStateReader().updateClusterState(true);
+    assertFalse(cloudClient.getZkStateReader().getAllCollections().contains("corewithnocollection"));
+    assertFalse(cloudClient.getZkStateReader().getAllCollections().contains("corewithnocollection2"));
+    
+    // try and create a SolrCore with no collection name
+    Create createCmd = new Create();
+    createCmd.setCoreName("corewithnocollection");
+    createCmd.setCollection("");
+    String dataDir = SolrTestCaseJ4.dataDir.getAbsolutePath() + File.separator
+        + System.currentTimeMillis() + "corewithnocollection" + "_1v";
+    createCmd.setDataDir(dataDir);
+    createCmd.setNumShards(1);
+    if (secondConfigSet) {
+      createCmd.setCollectionConfigName("conf1");
+    }
+    
+    createNewSolrServer("", getBaseUrl((HttpSolrServer) clients.get(1)))
+        .request(createCmd);
+    
+    // try and create a SolrCore with no collection name
+    createCmd.setCollection(null);
+    createCmd.setCoreName("corewithnocollection2");
+    
+    createNewSolrServer("", getBaseUrl((HttpSolrServer) clients.get(1)))
+        .request(createCmd);
+    
+    // in both cases, the collection should have default to the core name
+    cloudClient.getZkStateReader().updateClusterState(true);
+    assertTrue(cloudClient.getZkStateReader().getAllCollections().contains("corewithnocollection"));
+    assertTrue(cloudClient.getZkStateReader().getAllCollections().contains("corewithnocollection2"));
+  }
 
   private void testNodesUsedByCreate() throws Exception {
     // we can use this client because we just want base url
@@ -596,12 +634,12 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     request.setPath("/admin/collections");
     createNewSolrServer("", baseUrl).request(request);
     
-    List<Integer> numShardsNumReplicaList = new ArrayList<Integer>();
+    List<Integer> numShardsNumReplicaList = new ArrayList<>();
     numShardsNumReplicaList.add(2);
     numShardsNumReplicaList.add(2);
     checkForCollection("nodes_used_collection", numShardsNumReplicaList , null);
 
-    List<String> createNodeList = new ArrayList<String>();
+    List<String> createNodeList = new ArrayList<>();
 
     Set<String> liveNodes = cloudClient.getZkStateReader().getClusterState()
         .getLiveNodes();
@@ -623,15 +661,24 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
   }
 
   private void testCollectionsAPI() throws Exception {
- 
+
+    boolean disableLegacy = random().nextBoolean();
+    CloudSolrServer client1 = null;
+
+    if (disableLegacy) {
+      log.info("legacyCloud=false");
+      client1 = createCloudClient(null);
+      setClusterProp(client1, ZkStateReader.LEGACY_CLOUD, "false");
+    }
+
     // TODO: fragile - because we dont pass collection.confName, it will only
     // find a default if a conf set with a name matching the collection name is found, or 
     // if there is only one conf set. That and the fact that other tests run first in this
     // env make this pretty fragile
     
     // create new collections rapid fire
-    Map<String,List<Integer>> collectionInfos = new HashMap<String,List<Integer>>();
-    int cnt = random().nextInt(TEST_NIGHTLY ? 6 : 3) + 1;
+    Map<String,List<Integer>> collectionInfos = new HashMap<>();
+    int cnt = random().nextInt(TEST_NIGHTLY ? 6 : 1) + 1;
     
     for (int i = 0; i < cnt; i++) {
       int numShards = TestUtil.nextInt(random(), 0, shardCount) + 1;
@@ -685,6 +732,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
       
       // poll for a second - it can take a moment before we are ready to serve
       waitForNon403or404or503(collectionClient);
+      collectionClient.shutdown();
     }
     
     // sometimes we restart one of the jetty nodes
@@ -704,6 +752,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
         
         // poll for a second - it can take a moment before we are ready to serve
         waitForNon403or404or503(collectionClient);
+        collectionClient.shutdown();
       }
     }
 
@@ -740,7 +789,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     
     checkInstanceDirs(jettys.get(0)); 
     
-    List<String> collectionNameList = new ArrayList<String>();
+    List<String> collectionNameList = new ArrayList<>();
     collectionNameList.addAll(collectionInfos.keySet());
     String collectionName = collectionNameList.get(random().nextInt(collectionNameList.size()));
     
@@ -766,11 +815,13 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     collectionClient.commit();
     
     assertEquals(3, collectionClient.query(new SolrQuery("*:*")).getResults().getNumFound());
+    collectionClient.shutdown();
+    collectionClient = null;
     
     // lets try a collection reload
     
     // get core open times
-    Map<String,Long> urlToTimeBefore = new HashMap<String,Long>();
+    Map<String,Long> urlToTimeBefore = new HashMap<>();
     collectStartTimes(collectionName, urlToTimeBefore);
     assertTrue(urlToTimeBefore.size() > 0);
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -836,7 +887,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     request.setPath("/admin/collections");
     createNewSolrServer("", baseUrl).request(request);
     
-    List<Integer> list = new ArrayList<Integer> (2);
+    List<Integer> list = new ArrayList<>(2);
     list.add(1);
     list.add(2);
     checkForCollection(collectionName, list, null);
@@ -847,6 +898,8 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     
     // poll for a second - it can take a moment before we are ready to serve
     waitForNon403or404or503(collectionClient);
+    collectionClient.shutdown();
+    collectionClient = null;
     
     for (int j = 0; j < cnt; j++) {
       waitForRecoveriesToFinish(collectionName, zkStateReader, false);
@@ -857,7 +910,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     int numShards = (numLiveNodes/2) + 1;
     int replicationFactor = 2;
     int maxShardsPerNode = 1;
-    collectionInfos = new HashMap<String,List<Integer>>();
+    collectionInfos = new HashMap<>();
     CloudSolrServer client = createCloudClient("awholynewcollection_" + cnt);
     try {
       exp = false;
@@ -875,7 +928,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     
     // Test createNodeSet
     numLiveNodes = getCommonCloudSolrServer().getZkStateReader().getClusterState().getLiveNodes().size();
-    List<String> createNodeList = new ArrayList<String>();
+    List<String> createNodeList = new ArrayList<>();
     int numOfCreateNodes = numLiveNodes/2;
     assertFalse("createNodeSet test is pointless with only " + numLiveNodes + " nodes running", numOfCreateNodes == 0);
     int i = 0;
@@ -890,16 +943,21 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     maxShardsPerNode = 2;
     numShards = createNodeList.size() * maxShardsPerNode;
     replicationFactor = 1;
-    collectionInfos = new HashMap<String,List<Integer>>();
+    collectionInfos = new HashMap<>();
     client = createCloudClient("awholynewcollection_" + (cnt+1));
     try {
-      createCollection(collectionInfos, "awholynewcollection_" + (cnt+1), numShards, replicationFactor, maxShardsPerNode, client, StrUtils.join(createNodeList, ','), "conf1");
+      CollectionAdminResponse res = createCollection(collectionInfos, "awholynewcollection_" + (cnt+1), numShards, replicationFactor, maxShardsPerNode, client, StrUtils.join(createNodeList, ','), "conf1");
+      assertTrue(res.isSuccess());
     } finally {
       client.shutdown();
     }
     checkForCollection(collectionInfos.keySet().iterator().next(), collectionInfos.entrySet().iterator().next().getValue(), createNodeList);
     
     checkNoTwoShardsUseTheSameIndexDir();
+    if(disableLegacy) {
+      setClusterProp(client1, ZkStateReader.LEGACY_CLOUD, null);
+      client1.shutdown();
+    }
   }
   
   private void testCollectionsAPIAddRemoveStress() throws Exception {
@@ -914,8 +972,8 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
       
       public void run() {
         // create new collections rapid fire
-        Map<String,List<Integer>> collectionInfos = new HashMap<String,List<Integer>>();
-        int cnt = random().nextInt(TEST_NIGHTLY ? 13 : 3) + 1;
+        Map<String,List<Integer>> collectionInfos = new HashMap<>();
+        int cnt = random().nextInt(TEST_NIGHTLY ? 13 : 1) + 1;
         
         for (int i = 0; i < cnt; i++) {
           String collectionName = "awholynewstresscollection_" + name + "_" + i;
@@ -961,7 +1019,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
         }
       }
     }
-    List<Thread> threads = new ArrayList<Thread>();
+    List<Thread> threads = new ArrayList<>();
     int numThreads = TEST_NIGHTLY ? 6 : 2;
     for (int i = 0; i < numThreads; i++) {
       CollectionThread thread = new CollectionThread("collection" + i);
@@ -1003,7 +1061,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
 
     boolean allTimesAreCorrect = false;
     while (System.currentTimeMillis() < timeoutAt) {
-      Map<String,Long> urlToTimeAfter = new HashMap<String,Long>();
+      Map<String,Long> urlToTimeAfter = new HashMap<>();
       collectStartTimes(collectionName, urlToTimeAfter);
       
       boolean retry = false;
@@ -1131,13 +1189,13 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
   }
 
   private void checkNoTwoShardsUseTheSameIndexDir() throws Exception {
-    Map<String, Set<String>> indexDirToShardNamesMap = new HashMap<String, Set<String>>();
+    Map<String, Set<String>> indexDirToShardNamesMap = new HashMap<>();
     
-    List<MBeanServer> servers = new LinkedList<MBeanServer>();
+    List<MBeanServer> servers = new LinkedList<>();
     servers.add(ManagementFactory.getPlatformMBeanServer());
     servers.addAll(MBeanServerFactory.findMBeanServer(null));
     for (final MBeanServer server : servers) {
-      Set<ObjectName> mbeans = new HashSet<ObjectName>();
+      Set<ObjectName> mbeans = new HashSet<>();
       mbeans.addAll(server.queryNames(null, null));
       for (final ObjectName mbean : mbeans) {
         Object value;
@@ -1177,6 +1235,67 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     }
 
   }
+  private void addReplicaTest()throws Exception{
+    String collectionName = "addReplicaColl";
+    CloudSolrServer client = createCloudClient(null);
+    try {
+      createCollection(collectionName, client,2,2);
+      String newReplicaName = Assign.assignNode(collectionName , client.getZkStateReader().getClusterState() );
+      ArrayList<String> nodeList = new ArrayList<>(client.getZkStateReader().getClusterState().getLiveNodes());
+      Collections.shuffle(nodeList);
+      Map m = makeMap(
+          "action", CollectionAction.ADDREPLICA.toString(),
+          ZkStateReader.COLLECTION_PROP, collectionName,
+          ZkStateReader.SHARD_ID_PROP, "shard1",
+          "node", nodeList.get(0));
+
+      SolrRequest request = new QueryRequest(new MapSolrParams(m));
+      request.setPath("/admin/collections");
+      client.request(request);
+
+      long timeout = System.currentTimeMillis() + 3000;
+      Replica newReplica = null;
+
+      for(; System.currentTimeMillis()<timeout;){
+        Slice slice = client.getZkStateReader().getClusterState().getSlice(collectionName, "shard1");
+        newReplica = slice.getReplica(newReplicaName);
+      }
+
+      assertNotNull(newReplica);
+
+      log.info("newReplica {},\n{} ", newReplica,client.getZkStateReader().getBaseUrlForNodeName(nodeList.get(0)));
+//
+      assertEquals("Replica should be created on the right node",
+          client.getZkStateReader().getBaseUrlForNodeName(nodeList.get(0)), newReplica.getStr(ZkStateReader.BASE_URL_PROP));
+
+      newReplicaName = Assign.assignNode(collectionName , client.getZkStateReader().getClusterState() );
+      m = makeMap(
+          "action", CollectionAction.ADDREPLICA.toString(),
+          ZkStateReader.COLLECTION_PROP, collectionName,
+          ZkStateReader.SHARD_ID_PROP, "shard2");
+
+      request = new QueryRequest(new MapSolrParams(m));
+      request.setPath("/admin/collections");
+      client.request(request);
+
+      timeout = System.currentTimeMillis() + 3000;
+      newReplica = null;
+
+      for(; System.currentTimeMillis()<timeout;){
+        Slice slice = client.getZkStateReader().getClusterState().getSlice(collectionName, "shard2");
+        newReplica = slice.getReplica(newReplicaName);
+      }
+
+      assertNotNull(newReplica);
+
+
+    } finally {
+      client.shutdown();
+    }
+
+  }
+
+
 
   @Override
   protected QueryResponse queryServer(ModifiableSolrParams params) throws SolrServerException {
@@ -1189,6 +1308,19 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
 
     QueryResponse rsp = getCommonCloudSolrServer().query(params);
     return rsp;
+  }
+
+  protected void createCollection(String COLL_NAME, CloudSolrServer client,int replicationFactor , int numShards ) throws Exception {
+    int maxShardsPerNode = ((((numShards+1) * replicationFactor) / getCommonCloudSolrServer()
+        .getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
+
+    Map<String, Object> props = makeMap(
+        REPLICATION_FACTOR, replicationFactor,
+        MAX_SHARDS_PER_NODE, maxShardsPerNode,
+        NUM_SLICES, numShards);
+    Map<String,List<Integer>> collectionInfos = new HashMap<>();
+    createCollection(collectionInfos, COLL_NAME, props, client,"conf1");
+    waitForRecoveriesToFinish(COLL_NAME, false);
   }
   
   @Override
@@ -1203,17 +1335,31 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
   }
 
   private void clusterPropTest() throws Exception {
-      Map m = makeMap(
-          "action", CollectionAction.CLUSTERPROP.toString().toLowerCase(Locale.ROOT),
-          "name", "legacyCloud",
-          "val", "true");
-      SolrParams params = new MapSolrParams(m);
-      SolrRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
     CloudSolrServer client = createCloudClient(null);
+
+    assertTrue("cluster property not set", setClusterProp(client, ZkStateReader.LEGACY_CLOUD, "false"));
+    assertTrue("cluster property not unset ", setClusterProp(client, ZkStateReader.LEGACY_CLOUD, null));
+
+    client.shutdown();
+  }
+
+  public static boolean setClusterProp(CloudSolrServer client, String name , String val) throws SolrServerException, IOException, InterruptedException {
+    Map m = makeMap(
+        "action", CollectionAction.CLUSTERPROP.toLower(),
+        "name",name);
+
+    if(val != null) m.put("val", val);
+    SolrRequest request = new QueryRequest(new MapSolrParams(m));
+    request.setPath("/admin/collections");
     client.request(request);
 
-    assertEquals("cluster property not set", "true", client.getZkStateReader().getClusterProps().get("legacyCloud"));
-    client.shutdown();
+    long tomeOut = System.currentTimeMillis() + 3000;
+    boolean changed = false;
+    while(System.currentTimeMillis() <tomeOut){
+      Thread.sleep(10);
+      changed = Objects.equals(val,client.getZkStateReader().getClusterProps().get(name));
+      if(changed) break;
+    }
+    return changed;
   }
 }

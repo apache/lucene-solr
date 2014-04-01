@@ -76,7 +76,7 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
       
       DocList docs = qr.getDocList();
       assertEquals("wrong docs size", 3, docs.size());
-      Set<String> fields = new HashSet<String>();
+      Set<String> fields = new HashSet<>();
       fields.add("val_dynamic");
       fields.add("dynamic_val");
       fields.add("range_facet_l"); // copied from id
@@ -149,7 +149,7 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
   @Test
   public void testParseFieldBoosts() throws Exception {
 
-    Map<String,Float> e1 = new HashMap<String,Float>();
+    Map<String,Float> e1 = new HashMap<>();
     e1.put("fieldOne",2.3f);
     e1.put("fieldTwo",null);
     e1.put("fieldThree",-0.4f);
@@ -165,7 +165,7 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
                                "  fieldTwo fieldThree^-0.4   ",
                                " "}));
 
-    Map<String,Float> e2 = new HashMap<String,Float>();
+    Map<String,Float> e2 = new HashMap<>();
     assertEquals("empty e2", e2, SolrPluginUtils.parseFieldBoosts
                  (""));
     assertEquals("spacey e2", e2, SolrPluginUtils.parseFieldBoosts

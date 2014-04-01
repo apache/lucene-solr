@@ -26,6 +26,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,7 +54,7 @@ public class ZkTestServer {
 
   private int clientPort;
 
-  private Thread zooThread;
+  private volatile Thread zooThread;
   
   private int theTickTime = TICK_TIME;
 
@@ -105,9 +106,9 @@ public class ZkTestServer {
             config.getMaxClientCnxns());
         cnxnFactory.startup(zooKeeperServer);
         cnxnFactory.join();
-        if (zooKeeperServer.isRunning()) {
+       // if (zooKeeperServer.isRunning()) {
           zkServer.shutdown();
-        }
+       // }
       } catch (InterruptedException e) {
         // warn, but generally this is ok
         log.warn("Server interrupted", e);
@@ -121,14 +122,19 @@ public class ZkTestServer {
     protected void shutdown() throws IOException {
       zooKeeperServer.shutdown();
       ZKDatabase zkDb = zooKeeperServer.getZKDatabase();
-      if (zkDb != null) {
-        zkDb.close();
-      }
       if (cnxnFactory != null && cnxnFactory.getLocalPort() != 0) {
         waitForServerDown(getZkHost() + ":" + getPort(), 5000);
       }
       if (cnxnFactory != null) {
         cnxnFactory.shutdown();
+        try {
+          cnxnFactory.join();
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+      }
+      if (zkDb != null) {
+        zkDb.close();
       }
     }
 
@@ -251,11 +257,15 @@ public class ZkTestServer {
   }
 
   @SuppressWarnings("deprecation")
-  public void shutdown() throws IOException {
+  public void shutdown() throws IOException, InterruptedException {
     // TODO: this can log an exception while trying to unregister a JMX MBean
     zkServer.shutdown();
+    try {
+      zooThread.join();
+    } catch (NullPointerException e) {
+      // okay
+    }
   }
- 
   
   public static boolean waitForServerDown(String hp, long timeout) {
     long start = System.currentTimeMillis();
@@ -305,7 +315,7 @@ public class ZkTestServer {
       BufferedReader reader = null;
       try {
           OutputStream outstream = sock.getOutputStream();
-          outstream.write(cmd.getBytes("US-ASCII"));
+          outstream.write(cmd.getBytes(StandardCharsets.US_ASCII));
           outstream.flush();
           // this replicates NC - close the output stream before reading
           sock.shutdownOutput();
@@ -328,7 +338,7 @@ public class ZkTestServer {
   }
   
   public static List<HostPort> parseHostPortList(String hplist) {
-    ArrayList<HostPort> alist = new ArrayList<HostPort>();
+    ArrayList<HostPort> alist = new ArrayList<>();
     for (String hp : hplist.split(",")) {
       int idx = hp.lastIndexOf(':');
       String host = hp.substring(0, idx);

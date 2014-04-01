@@ -18,14 +18,16 @@ package org.apache.lucene.analysis.hunspell;
  */
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.hunspell.HunspellStemmer.Stem;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.util.CharsRef;
 
 /**
  * TokenFilter that uses hunspell affix rules and words to stem tokens.  Since hunspell supports a word having multiple
@@ -41,71 +43,55 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
  * {@link org.apache.lucene.analysis.miscellaneous.KeywordRepeatFilterFactory}
  * </p>
  *
- *
+ * @lucene.experimental
  */
 public final class HunspellStemFilter extends TokenFilter {
   
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
   private final KeywordAttribute keywordAtt = addAttribute(KeywordAttribute.class);
-  private final HunspellStemmer stemmer;
+  private final Stemmer stemmer;
   
-  private List<Stem> buffer;
+  private List<CharsRef> buffer;
   private State savedState;
   
   private final boolean dedup;
+  private final boolean longestOnly;
 
-  /** Create a {@link HunspellStemFilter} which deduplicates stems and has a maximum
-   *  recursion level of 2. 
-   *  @see #HunspellStemFilter(TokenStream, HunspellDictionary, int) */
-  public HunspellStemFilter(TokenStream input, HunspellDictionary dictionary) {
-    this(input, dictionary, 2);
+  /** Create a {@link HunspellStemFilter} outputting all possible stems.
+   *  @see #HunspellStemFilter(TokenStream, Dictionary, boolean) */
+  public HunspellStemFilter(TokenStream input, Dictionary dictionary) {
+    this(input, dictionary, true);
   }
 
+  /** Create a {@link HunspellStemFilter} outputting all possible stems. 
+   *  @see #HunspellStemFilter(TokenStream, Dictionary, boolean, boolean) */
+  public HunspellStemFilter(TokenStream input, Dictionary dictionary, boolean dedup) {
+    this(input, dictionary, dedup, false);
+  }
+  
   /**
    * Creates a new HunspellStemFilter that will stem tokens from the given TokenStream using affix rules in the provided
-   * HunspellDictionary
+   * Dictionary
    *
    * @param input TokenStream whose tokens will be stemmed
    * @param dictionary HunspellDictionary containing the affix rules and words that will be used to stem the tokens
-   * @param recursionCap maximum level of recursion stemmer can go into, defaults to <code>2</code>
+   * @param longestOnly true if only the longest term should be output.
    */
-  public HunspellStemFilter(TokenStream input, HunspellDictionary dictionary, int recursionCap) {
-    this(input, dictionary, true, recursionCap);
-  }
-
-  /** Create a {@link HunspellStemFilter} which has a maximum recursion level of 2. 
-   *  @see #HunspellStemFilter(TokenStream, HunspellDictionary, boolean, int) */
-  public HunspellStemFilter(TokenStream input, HunspellDictionary dictionary, boolean dedup) {
-    this(input, dictionary, dedup, 2);
-  }
-
-  /**
-   * Creates a new HunspellStemFilter that will stem tokens from the given TokenStream using affix rules in the provided
-   * HunspellDictionary
-   *
-   * @param input TokenStream whose tokens will be stemmed
-   * @param dictionary HunspellDictionary containing the affix rules and words that will be used to stem the tokens
-   * @param dedup true if only unique terms should be output.
-   * @param recursionCap maximum level of recursion stemmer can go into, defaults to <code>2</code>
-   */
-  public HunspellStemFilter(TokenStream input, HunspellDictionary dictionary, boolean dedup, int recursionCap) {
+  public HunspellStemFilter(TokenStream input, Dictionary dictionary, boolean dedup,  boolean longestOnly) {
     super(input);
-    this.dedup = dedup;
-    this.stemmer = new HunspellStemmer(dictionary, recursionCap);
+    this.dedup = dedup && longestOnly == false; // don't waste time deduping if longestOnly is set
+    this.stemmer = new Stemmer(dictionary);
+    this.longestOnly = longestOnly;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public boolean incrementToken() throws IOException {
     if (buffer != null && !buffer.isEmpty()) {
-      Stem nextStem = buffer.remove(0);
+      CharsRef nextStem = buffer.remove(0);
       restoreState(savedState);
       posIncAtt.setPositionIncrement(0);
-      termAtt.copyBuffer(nextStem.getStem(), 0, nextStem.getStemLength());
-      termAtt.setLength(nextStem.getStemLength());
+      termAtt.setEmpty().append(nextStem);
       return true;
     }
     
@@ -122,24 +108,41 @@ public final class HunspellStemFilter extends TokenFilter {
     if (buffer.isEmpty()) { // we do not know this word, return it unchanged
       return true;
     }     
+    
+    if (longestOnly && buffer.size() > 1) {
+      Collections.sort(buffer, lengthComparator);
+    }
 
-    Stem stem = buffer.remove(0);
-    termAtt.copyBuffer(stem.getStem(), 0, stem.getStemLength());
-    termAtt.setLength(stem.getStemLength());
+    CharsRef stem = buffer.remove(0);
+    termAtt.setEmpty().append(stem);
 
-    if (!buffer.isEmpty()) {
-      savedState = captureState();
+    if (longestOnly) {
+      buffer.clear();
+    } else {
+      if (!buffer.isEmpty()) {
+        savedState = captureState();
+      }
     }
 
     return true;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void reset() throws IOException {
     super.reset();
     buffer = null;
   }
+  
+  static final Comparator<CharsRef> lengthComparator = new Comparator<CharsRef>() {
+    @Override
+    public int compare(CharsRef o1, CharsRef o2) {
+      int cmp = Integer.compare(o2.length, o1.length);
+      if (cmp == 0) {
+        // tie break on text
+        return o2.compareTo(o1);
+      } else {
+        return cmp;
+      }
+    }
+  };
 }

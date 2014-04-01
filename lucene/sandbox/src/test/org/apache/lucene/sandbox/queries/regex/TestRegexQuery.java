@@ -73,8 +73,8 @@ public class TestRegexQuery extends LuceneTestCase {
   }
 
   private int  spanRegexQueryNrHits(String regex1, String regex2, int slop, boolean ordered) throws Exception {
-    SpanQuery srq1 = new SpanMultiTermQueryWrapper<RegexQuery>(new RegexQuery(newTerm(regex1)));
-    SpanQuery srq2 = new SpanMultiTermQueryWrapper<RegexQuery>(new RegexQuery(newTerm(regex2)));
+    SpanQuery srq1 = new SpanMultiTermQueryWrapper<>(new RegexQuery(newTerm(regex1)));
+    SpanQuery srq2 = new SpanMultiTermQueryWrapper<>(new RegexQuery(newTerm(regex2)));
     SpanNearQuery query = new SpanNearQuery( new SpanQuery[]{srq1, srq2}, slop, ordered);
 
     return searcher.search(query, null, 1000).totalHits;

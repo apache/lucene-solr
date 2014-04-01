@@ -55,14 +55,14 @@ final class ZooKeeperInspector {
 
     DocCollection docCollection = extractDocCollection(zkHost, collection);
     List<Slice> slices = getSortedSlices(docCollection.getSlices());
-    List<List<String>> solrUrls = new ArrayList<List<String>>(slices.size());
+    List<List<String>> solrUrls = new ArrayList<>(slices.size());
     for (Slice slice : slices) {
       if (slice.getLeader() == null) {
         throw new IllegalArgumentException("Cannot find SolrCloud slice leader. " +
             "It looks like not all of your shards are registered in ZooKeeper yet");
       }
       Collection<Replica> replicas = slice.getReplicas();
-      List<String> urls = new ArrayList<String>(replicas.size());
+      List<String> urls = new ArrayList<>(replicas.size());
       for (Replica replica : replicas) {
         ZkCoreNodeProps props = new ZkCoreNodeProps(replica);
         urls.add(props.getCoreUrl());
@@ -194,7 +194,23 @@ final class ZooKeeperInspector {
       dir = confDir.getParentFile();
     }
     FileUtils.writeStringToFile(new File(dir, "solr.xml"), "<solr><cores><core name=\"collection1\" instanceDir=\".\" /></cores></solr>", "UTF-8");
+    verifyConfigDir(confDir);
     return dir;
+  }
+  
+  private void verifyConfigDir(File confDir) throws IOException {
+    File solrConfigFile = new File(confDir, "solrconfig.xml");
+    if (!solrConfigFile.exists()) {
+      throw new IOException("Detected invalid Solr config dir in ZooKeeper - Reason: File not found: "
+          + solrConfigFile.getName());
+    }
+    if (!solrConfigFile.isFile()) {
+      throw new IOException("Detected invalid Solr config dir in ZooKeeper - Reason: Not a file: "
+          + solrConfigFile.getName());
+    }
+    if (!solrConfigFile.canRead()) {
+      throw new IOException("Insufficient permissions to read file: " + solrConfigFile);
+    }    
   }
 
 }

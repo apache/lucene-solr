@@ -1,8 +1,5 @@
 package org.apache.solr.cloud;
 
-import java.io.IOException;
-import java.util.Map;
-
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -14,6 +11,8 @@ import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.RetryUtil;
+import org.apache.solr.common.util.RetryUtil.RetryCmd;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -22,8 +21,13 @@ import org.apache.solr.util.RefCounted;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
+import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -71,7 +75,7 @@ public abstract class ElectionContext {
     }
   }
 
-  abstract void runLeaderProcess(boolean weAreReplacement, int pauseTime) throws KeeperException, InterruptedException, IOException;
+  abstract void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs) throws KeeperException, InterruptedException, IOException;
 
   public void checkIfIamLeaderFired() {}
 
@@ -79,24 +83,28 @@ public abstract class ElectionContext {
 }
 
 class ShardLeaderElectionContextBase extends ElectionContext {
-  private static Logger log = LoggerFactory.getLogger(ShardLeaderElectionContextBase.class);
+  private static Logger log = LoggerFactory
+      .getLogger(ShardLeaderElectionContextBase.class);
   protected final SolrZkClient zkClient;
   protected String shardId;
   protected String collection;
   protected LeaderElector leaderElector;
-
-  public ShardLeaderElectionContextBase(LeaderElector leaderElector, final String shardId,
-      final String collection, final String coreNodeName, ZkNodeProps props, ZkStateReader zkStateReader) {
-    super(coreNodeName, ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/leader_elect/"
-        + shardId, ZkStateReader.getShardLeadersPath(collection, shardId),
-        props, zkStateReader.getZkClient());
+  
+  public ShardLeaderElectionContextBase(LeaderElector leaderElector,
+      final String shardId, final String collection, final String coreNodeName,
+      ZkNodeProps props, ZkStateReader zkStateReader) {
+    super(coreNodeName, ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection
+        + "/leader_elect/" + shardId, ZkStateReader.getShardLeadersPath(
+        collection, shardId), props, zkStateReader.getZkClient());
     this.leaderElector = leaderElector;
     this.zkClient = zkStateReader.getZkClient();
     this.shardId = shardId;
     this.collection = collection;
     
     try {
-      new ZkCmdExecutor(zkStateReader.getZkClient().getZkClientTimeout()).ensureExists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection, zkClient);
+      new ZkCmdExecutor(zkStateReader.getZkClient().getZkClientTimeout())
+          .ensureExists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection,
+              zkClient);
     } catch (KeeperException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     } catch (InterruptedException e) {
@@ -104,24 +112,40 @@ class ShardLeaderElectionContextBase extends ElectionContext {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
   }
-
+  
   @Override
-  void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStart) throws KeeperException,
-      InterruptedException, IOException {
+  void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs)
+      throws KeeperException, InterruptedException, IOException {
+    // register as leader - if an ephemeral is already there, wait just a bit
+    // to see if it goes away
+    try {
+      RetryUtil.retryOnThrowable(NodeExistsException.class, 15000, 1000,
+          new RetryCmd() {
+            
+            @Override
+            public void execute() throws Throwable {
+              zkClient.makePath(leaderPath, ZkStateReader.toJSON(leaderProps),
+                  CreateMode.EPHEMERAL, true);
+            }
+          });
+    } catch (Throwable t) {
+      if (t instanceof OutOfMemoryError) {
+        throw (OutOfMemoryError) t;
+      }
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Could not register as the leader because creating the ephemeral registration node in ZooKeeper failed", t);
+    }
     
-    zkClient.makePath(leaderPath, ZkStateReader.toJSON(leaderProps),
-        CreateMode.EPHEMERAL, true);
     assert shardId != null;
-    ZkNodeProps m = ZkNodeProps.fromKeyVals(Overseer.QUEUE_OPERATION, ZkStateReader.LEADER_PROP,
-        ZkStateReader.SHARD_ID_PROP, shardId, ZkStateReader.COLLECTION_PROP,
-        collection, ZkStateReader.BASE_URL_PROP, leaderProps.getProperties()
-            .get(ZkStateReader.BASE_URL_PROP), ZkStateReader.CORE_NAME_PROP,
+    ZkNodeProps m = ZkNodeProps.fromKeyVals(Overseer.QUEUE_OPERATION,
+        ZkStateReader.LEADER_PROP, ZkStateReader.SHARD_ID_PROP, shardId,
+        ZkStateReader.COLLECTION_PROP, collection, ZkStateReader.BASE_URL_PROP,
+        leaderProps.getProperties().get(ZkStateReader.BASE_URL_PROP),
+        ZkStateReader.CORE_NAME_PROP,
         leaderProps.getProperties().get(ZkStateReader.CORE_NAME_PROP),
         ZkStateReader.STATE_PROP, ZkStateReader.ACTIVE);
     Overseer.getInQueue(zkClient).offer(ZkStateReader.toJSON(m));
-    
   }
-
+  
 }
 
 // add core container and stop passing core around...
@@ -170,12 +194,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     if (!weAreReplacement) {
       waitForReplicasToComeUp(weAreReplacement, leaderVoteWait);
     }
-    
-    SolrCore core = null;
-    try {
-      
-      core = cc.getCore(coreName);
-      
+
+    try (SolrCore core = cc.getCore(coreName)) {
+
       if (core == null) {
         cancelElection();
         throw new SolrException(ErrorCode.SERVER_ERROR,
@@ -263,10 +284,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       log.info("I am the new leader: "
           + ZkCoreNodeProps.getCoreUrl(leaderProps) + " " + shardId);
       core.getCoreDescriptor().getCloudDescriptor().setLeader(true);
-    } finally {
-      if (core != null) {
-        core.close();
-      }
     }
     boolean success = false;
     try {
@@ -275,8 +292,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     } catch (Exception e) {
       SolrException.log(log, "There was a problem trying to register as the leader", e);
   
-      try {
-        core = cc.getCore(coreName);
+      try (SolrCore core = cc.getCore(coreName)) {
+
         if (core == null) {
           throw new SolrException(ErrorCode.SERVER_ERROR,
               "Fatal Error, SolrCore not found:" + coreName + " in "
@@ -288,16 +305,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         // we could not publish ourselves as leader - rejoin election
         rejoinLeaderElection(leaderSeqPath, core);
       } finally {
-        try {
-          if (!success) {
-            cancelElection();
-          }
-        } finally {
-          if (core != null) {
-            core.close();
-          }
-        }
-        
+        if (!success)
+          cancelElection();
       }
     }
     
@@ -334,9 +343,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     return false;
   }
 
-  private void waitForReplicasToComeUp(boolean weAreReplacement,
-      int timeout) throws InterruptedException {
-    long timeoutAt = System.currentTimeMillis() + timeout;
+  private void waitForReplicasToComeUp(boolean weAreReplacement, int timeoutms) throws InterruptedException {
+    long timeoutAt = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeoutms, TimeUnit.MILLISECONDS);
     final String shardsElectZkPath = electionPath + LeaderElector.ELECTION_NODE;
     
     Slice slices = zkController.getClusterState().getSlice(collection, shardId);
@@ -360,11 +368,11 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           if (cnt % 40 == 0) {
             log.info("Waiting until we see more replicas up for shard " + shardId + ": total="
               + slices.getReplicasMap().size() + " found=" + found
-              + " timeoutin=" + (timeoutAt - System.currentTimeMillis()));
+              + " timeoutin=" + (timeoutAt - System.nanoTime() / (float)(10^9)) + "ms");
           }
         }
         
-        if (System.currentTimeMillis() > timeoutAt) {
+        if (System.nanoTime() > timeoutAt) {
           log.info("Was waiting for replicas to come up, but they are taking too long - assuming they won't come back till later");
           return;
         }
@@ -449,7 +457,7 @@ final class OverseerElectionContext extends ElectionContext {
   }
 
   @Override
-  void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStart) throws KeeperException,
+  void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs) throws KeeperException,
       InterruptedException {
     log.info("I am going to be the leader {}", id);
     final String id = leaderSeqPath
@@ -458,10 +466,11 @@ final class OverseerElectionContext extends ElectionContext {
 
     zkClient.makePath(leaderPath, ZkStateReader.toJSON(myProps),
         CreateMode.EPHEMERAL, true);
-    if(pauseBeforeStart >0){
+    if(pauseBeforeStartMs >0){
       try {
-        Thread.sleep(pauseBeforeStart);
+        Thread.sleep(pauseBeforeStartMs);
       } catch (InterruptedException e) {
+        Thread.interrupted();
         log.warn("Wait interrupted ", e);
       }
     }

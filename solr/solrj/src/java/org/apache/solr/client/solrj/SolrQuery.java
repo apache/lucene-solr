@@ -620,7 +620,7 @@ public class SolrQuery extends ModifiableSolrParams
    * @since 4.2
    */
   public SolrQuery setSorts(List<SortClause> value) {
-    sortClauses = new ArrayList<SortClause>(value);
+    sortClauses = new ArrayList<>(value);
     serializeSorts();
     return this;
   }
@@ -674,7 +674,7 @@ public class SolrQuery extends ModifiableSolrParams
    * @since 4.2
    */
   public SolrQuery addSort(SortClause sortClause) {
-    if (sortClauses == null) sortClauses = new ArrayList<SortClause>();
+    if (sortClauses == null) sortClauses = new ArrayList<>();
     sortClauses.add(sortClause);
     serializeSorts();
     return this;

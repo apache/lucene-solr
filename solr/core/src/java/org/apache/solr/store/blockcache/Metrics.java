@@ -29,6 +29,9 @@ import org.apache.hadoop.metrics.MetricsUtil;
 import org.apache.hadoop.metrics.Updater;
 import org.apache.hadoop.metrics.jvm.JvmMetrics;
 
+/**
+ * @lucene.experimental
+ */
 public class Metrics implements Updater {
   
   public static class MethodCall {
@@ -50,7 +53,7 @@ public class Metrics implements Updater {
   public AtomicLong shardBuffercacheAllocate8192 = new AtomicLong(0);
   public AtomicLong shardBuffercacheAllocateOther = new AtomicLong(0);
   public AtomicLong shardBuffercacheLost = new AtomicLong(0);
-  public Map<String,MethodCall> methodCalls = new ConcurrentHashMap<String, MethodCall>();
+  public Map<String,MethodCall> methodCalls = new ConcurrentHashMap<>();
   
   public AtomicLong tableCount = new AtomicLong(0);
   public AtomicLong rowCount = new AtomicLong(0);

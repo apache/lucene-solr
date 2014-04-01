@@ -18,7 +18,6 @@
 package org.apache.solr.core;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.handler.admin.CollectionsHandler;
@@ -30,11 +29,13 @@ import org.junit.Test;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.jar.JarEntry;
@@ -67,7 +68,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
   private CoreContainer init(String dirName) throws Exception {
 
-    solrHomeDirectory = new File(TEMP_DIR, this.getClass().getName() + dirName);
+    solrHomeDirectory = new File(dataDir, this.getClass().getName() + dirName);
 
     if (solrHomeDirectory.exists()) {
       FileUtils.deleteDirectory(solrHomeDirectory);
@@ -87,8 +88,6 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     System.setProperty("shareSchema", "true");
     final CoreContainer cores = init("_shareSchema");
     try {
-      assertTrue(cores.isShareSchema());
-      
       CoreDescriptor descriptor1 = new CoreDescriptor(cores, "core1", "./collection1");
       SolrCore core1 = cores.create(descriptor1);
       
@@ -130,7 +129,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
         }
       }
 
-      List<Thread> threads = new ArrayList<Thread>();
+      List<Thread> threads = new ArrayList<>();
       int numThreads = 4;
       for (int i = 0; i < numThreads; i++) {
         threads.add(new TestThread());
@@ -153,7 +152,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   @Test
   public void testNoCores() throws IOException, ParserConfigurationException, SAXException {
     //create solrHome
-    File solrHomeDirectory = new File(TEMP_DIR, this.getClass().getName()
+    File solrHomeDirectory = new File(dataDir, this.getClass().getName()
         + "_noCores");
     
     boolean oldSolrXml = random().nextBoolean();
@@ -207,7 +206,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     assertTrue("Failed to mkdirs workDir", solrHomeDirectory.mkdirs());
     try {
       File solrXmlFile = new File(solrHomeDirectory, "solr.xml");
-      BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(solrXmlFile), IOUtils.CHARSET_UTF_8));
+      BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(solrXmlFile), StandardCharsets.UTF_8));
       out.write(xmlFile);
       out.close();
     } catch (IOException e) {

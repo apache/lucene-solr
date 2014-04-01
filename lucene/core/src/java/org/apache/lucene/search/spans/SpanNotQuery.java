@@ -175,7 +175,7 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
       public Collection<byte[]> getPayload() throws IOException {
         ArrayList<byte[]> result = null;
         if (includeSpans.isPayloadAvailable()) {
-          result = new ArrayList<byte[]>(includeSpans.getPayload());
+          result = new ArrayList<>(includeSpans.getPayload());
         }
         return result;
       }

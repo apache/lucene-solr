@@ -35,6 +35,7 @@ import static org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsWriter.FIELD
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import org.apache.lucene.codecs.CodecUtil;
@@ -122,6 +123,9 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       version = CodecUtil.checkHeader(indexStream, codecNameIdx, VERSION_START, VERSION_CURRENT);
       assert CodecUtil.headerLength(codecNameIdx) == indexStream.getFilePointer();
       indexReader = new CompressingStoredFieldsIndexReader(indexStream, si);
+      if (indexStream.getFilePointer() != indexStream.length()) {
+        throw new CorruptIndexException("did not read all bytes from file \"" + indexStreamFN + "\": read " + indexStream.getFilePointer() + " vs size " + indexStream.length() + " (resource: " + indexStream + ")");
+      }
       indexStream.close();
       indexStream = null;
 
@@ -184,7 +188,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
         length = in.readVInt();
         data = new byte[length];
         in.readBytes(data, 0, length);
-        visitor.stringField(info, new String(data, IOUtils.CHARSET_UTF_8));
+        visitor.stringField(info, new String(data, StandardCharsets.UTF_8));
         break;
       case NUMERIC_INT:
         visitor.intField(info, in.readInt());

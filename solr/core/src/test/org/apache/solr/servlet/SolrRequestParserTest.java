@@ -25,6 +25,7 @@ import java.io.ByteArrayInputStream;
 import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -76,23 +77,23 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     
     SolrCore core = h.getCore();
     
-    Map<String,String[]> args = new HashMap<String, String[]>();
+    Map<String,String[]> args = new HashMap<>();
     args.put( CommonParams.STREAM_BODY, new String[] {body1} );
     
     // Make sure it got a single stream in and out ok
-    List<ContentStream> streams = new ArrayList<ContentStream>();
+    List<ContentStream> streams = new ArrayList<>();
     SolrQueryRequest req = parser.buildRequestFrom( core, new MultiMapSolrParams( args ), streams );
     assertEquals( 1, streams.size() );
     assertEquals( body1, IOUtils.toString( streams.get(0).getReader() ) );
     req.close();
 
     // Now add three and make sure they come out ok
-    streams = new ArrayList<ContentStream>();
+    streams = new ArrayList<>();
     args.put( CommonParams.STREAM_BODY, new String[] {body1,body2,body3} );
     req = parser.buildRequestFrom( core, new MultiMapSolrParams( args ), streams );
     assertEquals( 3, streams.size() );
-    ArrayList<String> input  = new ArrayList<String>();
-    ArrayList<String> output = new ArrayList<String>();
+    ArrayList<String> input  = new ArrayList<>();
+    ArrayList<String> output = new ArrayList<>();
     input.add( body1 );
     input.add( body2 );
     input.add( body3 );
@@ -107,7 +108,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
 
     // set the contentType and make sure tat gets set
     String ctype = "text/xxx";
-    streams = new ArrayList<ContentStream>();
+    streams = new ArrayList<>();
     args.put( CommonParams.STREAM_CONTENTTYPE, new String[] {ctype} );
     req = parser.buildRequestFrom( core, new MultiMapSolrParams( args ), streams );
     for( ContentStream s : streams ) {
@@ -138,11 +139,11 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
 
     SolrCore core = h.getCore();
     
-    Map<String,String[]> args = new HashMap<String, String[]>();
+    Map<String,String[]> args = new HashMap<>();
     args.put( CommonParams.STREAM_URL, new String[] {url} );
     
     // Make sure it got a single stream in and out ok
-    List<ContentStream> streams = new ArrayList<ContentStream>();
+    List<ContentStream> streams = new ArrayList<>();
     SolrQueryRequest req = parser.buildRequestFrom( core, new MultiMapSolrParams( args ), streams );
     assertEquals( 1, streams.size() );
     try {
@@ -207,7 +208,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
   public void testStandardParseParamsAndFillStreams() throws Exception
   {
     final String getParams = "qt=%C3%BC&dup=foo", postParams = "q=hello&d%75p=bar";
-    final byte[] postBytes = postParams.getBytes("US-ASCII");
+    final byte[] postBytes = postParams.getBytes(StandardCharsets.US_ASCII);
     
     // Set up the expected behavior
     final String[] ct = new String[] {
@@ -246,7 +247,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
   public void testStandardParseParamsAndFillStreamsISO88591() throws Exception
   {
     final String getParams = "qt=%FC&dup=foo&ie=iso-8859-1&dup=%FC", postParams = "qt2=%FC&q=hello&d%75p=bar";
-    final byte[] postBytes = postParams.getBytes("US-ASCII");
+    final byte[] postBytes = postParams.getBytes(StandardCharsets.US_ASCII);
     final String contentType = "application/x-www-form-urlencoded; charset=iso-8859-1";
     
     // Set up the expected behavior
@@ -291,7 +292,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     expect(request.getContentLength()).andReturn(-1).anyTimes();
     expect(request.getQueryString()).andReturn(null).anyTimes();
     expect(request.getInputStream()).andReturn(new ServletInputStream() {
-      private final ByteArrayInputStream in = new ByteArrayInputStream(large.toString().getBytes("US-ASCII"));
+      private final ByteArrayInputStream in = new ByteArrayInputStream(large.toString().getBytes(StandardCharsets.US_ASCII));
       @Override public int read() { return in.read(); }
     });
     replay(request);
@@ -358,11 +359,11 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     expect(request.getMethod()).andReturn("GET").anyTimes();
     expect(request.getContentType()).andReturn( "application/x-www-form-urlencoded" ).anyTimes();
     expect(request.getQueryString()).andReturn("q=title:solr").anyTimes();
-    Map<String, String> headers = new HashMap<String,String>();
+    Map<String, String> headers = new HashMap<>();
     headers.put("X-Forwarded-For", "10.0.0.1");
-    expect(request.getHeaderNames()).andReturn(new Vector<String>(headers.keySet()).elements()).anyTimes();
+    expect(request.getHeaderNames()).andReturn(new Vector<>(headers.keySet()).elements()).anyTimes();
     for(Map.Entry<String,String> entry:headers.entrySet()) {
-      Vector<String> v = new Vector<String>();
+      Vector<String> v = new Vector<>();
       v.add(entry.getValue());
       expect(request.getHeaders(entry.getKey())).andReturn(v.elements()).anyTimes();
     }

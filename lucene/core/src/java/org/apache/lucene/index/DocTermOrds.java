@@ -342,7 +342,7 @@ public class DocTermOrds {
         } catch (UnsupportedOperationException uoe) {
           // Reader cannot provide ord support, so we wrap
           // our own support by creating our own terms index:
-          indexedTerms = new ArrayList<BytesRef>();
+          indexedTerms = new ArrayList<>();
           indexedTermsBytes = new PagedBytes(15);
           //System.out.println("NO ORDS");
         }

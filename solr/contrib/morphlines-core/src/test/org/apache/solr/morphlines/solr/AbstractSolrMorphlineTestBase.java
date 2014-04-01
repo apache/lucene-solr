@@ -20,12 +20,15 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.io.FileUtils;
@@ -37,7 +40,6 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.util.ExternalPaths;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -69,7 +71,7 @@ public class AbstractSolrMorphlineTestBase extends SolrTestCaseJ4 {
   protected static final String EXTERNAL_SOLR_SERVER_URL = System.getProperty("externalSolrServer");
 //  protected static final String EXTERNAL_SOLR_SERVER_URL = "http://127.0.0.1:8983/solr";
 
-  protected static final String RESOURCES_DIR = ExternalPaths.SOURCE_HOME + "/contrib/map-reduce/src/test-files"; 
+  protected static final String RESOURCES_DIR = getFile("morphlines-core.marker").getParent();
   protected static final String DEFAULT_BASE_DIR = "solr";
   protected static final AtomicInteger SEQ_NUM = new AtomicInteger();
   protected static final AtomicInteger SEQ_NUM2 = new AtomicInteger();
@@ -88,10 +90,9 @@ public class AbstractSolrMorphlineTestBase extends SolrTestCaseJ4 {
   protected static void myInitCore(String baseDirName) throws Exception {
     Joiner joiner = Joiner.on(File.separator);
     initCore(
-        joiner.join(RESOURCES_DIR, baseDirName, "collection1", "conf", "solrconfig.xml"),
-        joiner.join(RESOURCES_DIR, baseDirName, "collection1", "conf", "schema.xml"),
+        "solrconfig.xml", "schema.xml",
         joiner.join(RESOURCES_DIR, baseDirName)
-        );    
+    );    
   }
   
   @Before
@@ -117,13 +118,14 @@ public class AbstractSolrMorphlineTestBase extends SolrTestCaseJ4 {
     testServer = new SolrServerDocumentLoader(solrServer, batchSize);
     deleteAllDocuments();
     
-    tempDir = new File(TEMP_DIR + "/test-morphlines-" + System.currentTimeMillis()).getAbsolutePath();
+    tempDir = new File(dataDir + "/test-morphlines-" + System.currentTimeMillis()).getAbsolutePath();
     new File(tempDir).mkdirs();
   }
   
   @After
   public void tearDown() throws Exception {
     collector = null;
+    solrServer.shutdown();
     solrServer = null;
     super.tearDown();
   }
@@ -132,7 +134,9 @@ public class AbstractSolrMorphlineTestBase extends SolrTestCaseJ4 {
       String[] files, 
       Map<String,Integer> expectedRecords, 
       Map<String, Map<String, Object>> expectedRecordContents) throws Exception {
-    
+
+    assumeTrue("This test has issues with this locale: https://issues.apache.org/jira/browse/SOLR-5778", 
+        "GregorianCalendar".equals(Calendar.getInstance(TimeZone.getDefault(), Locale.getDefault()).getClass().getSimpleName()));
     deleteAllDocuments();
     int numDocs = 0;    
     for (int i = 0; i < 1; i++) {
@@ -288,9 +292,9 @@ public class AbstractSolrMorphlineTestBase extends SolrTestCaseJ4 {
   
   public static void setupMorphline(String tempDir, String file, boolean replaceSolrLocator) throws IOException {
     String morphlineText = FileUtils.readFileToString(new File(RESOURCES_DIR + "/" + file + ".conf"), "UTF-8");
-    morphlineText = morphlineText.replaceAll("RESOURCES_DIR", new File(tempDir).getAbsolutePath());
+    morphlineText = morphlineText.replace("RESOURCES_DIR", new File(tempDir).getAbsolutePath());
     if (replaceSolrLocator) {
-      morphlineText = morphlineText.replaceAll("\\$\\{SOLR_LOCATOR\\}",
+      morphlineText = morphlineText.replace("${SOLR_LOCATOR}",
           "{ collection : collection1 }");
     }
     new File(tempDir + "/" + file + ".conf").getParentFile().mkdirs();

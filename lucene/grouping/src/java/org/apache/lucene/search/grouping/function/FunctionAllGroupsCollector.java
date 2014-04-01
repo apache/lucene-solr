@@ -45,7 +45,7 @@ public class FunctionAllGroupsCollector extends AbstractAllGroupsCollector<Mutab
 
   private final Map<?, ?> vsContext;
   private final ValueSource groupBy;
-  private final SortedSet<MutableValue> groups = new TreeSet<MutableValue>();
+  private final SortedSet<MutableValue> groups = new TreeSet<>();
 
   private FunctionValues.ValueFiller filler;
   private MutableValue mval;

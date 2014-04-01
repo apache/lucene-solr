@@ -280,9 +280,9 @@ public class TieredMergePolicy extends MergePolicy {
       return null;
     }
     final Collection<SegmentCommitInfo> merging = writer.get().getMergingSegments();
-    final Collection<SegmentCommitInfo> toBeMerged = new HashSet<SegmentCommitInfo>();
+    final Collection<SegmentCommitInfo> toBeMerged = new HashSet<>();
 
-    final List<SegmentCommitInfo> infosSorted = new ArrayList<SegmentCommitInfo>(infos.asList());
+    final List<SegmentCommitInfo> infosSorted = new ArrayList<>(infos.asList());
     Collections.sort(infosSorted, new SegmentByteSizeDescending());
 
     // Compute total index bytes & print details about the index
@@ -341,7 +341,7 @@ public class TieredMergePolicy extends MergePolicy {
       // Gather eligible segments for merging, ie segments
       // not already being merged and not already picked (by
       // prior iteration of this loop) for merging:
-      final List<SegmentCommitInfo> eligible = new ArrayList<SegmentCommitInfo>();
+      final List<SegmentCommitInfo> eligible = new ArrayList<>();
       for(int idx = tooBigCount; idx<infosSorted.size(); idx++) {
         final SegmentCommitInfo info = infosSorted.get(idx);
         if (merging.contains(info)) {
@@ -374,7 +374,7 @@ public class TieredMergePolicy extends MergePolicy {
 
           long totAfterMergeBytes = 0;
 
-          final List<SegmentCommitInfo> candidate = new ArrayList<SegmentCommitInfo>();
+          final List<SegmentCommitInfo> candidate = new ArrayList<>();
           boolean hitTooLarge = false;
           for(int idx = startIdx;idx<eligible.size() && candidate.size() < maxMergeAtOnce;idx++) {
             final SegmentCommitInfo info = eligible.get(idx);
@@ -497,7 +497,7 @@ public class TieredMergePolicy extends MergePolicy {
       message("findForcedMerges maxSegmentCount=" + maxSegmentCount + " infos=" + writer.get().segString(infos) + " segmentsToMerge=" + segmentsToMerge);
     }
 
-    List<SegmentCommitInfo> eligible = new ArrayList<SegmentCommitInfo>();
+    List<SegmentCommitInfo> eligible = new ArrayList<>();
     boolean forceMergeRunning = false;
     final Collection<SegmentCommitInfo> merging = writer.get().getMergingSegments();
     boolean segmentIsOriginal = false;
@@ -518,7 +518,7 @@ public class TieredMergePolicy extends MergePolicy {
     }
 
     if ((maxSegmentCount > 1 && eligible.size() <= maxSegmentCount) ||
-        (maxSegmentCount == 1 && eligible.size() == 1 && (!segmentIsOriginal || isMerged(eligible.get(0))))) {
+        (maxSegmentCount == 1 && eligible.size() == 1 && (!segmentIsOriginal || isMerged(infos, eligible.get(0))))) {
       if (verbose()) {
         message("already merged");
       }
@@ -568,7 +568,7 @@ public class TieredMergePolicy extends MergePolicy {
     if (verbose()) {
       message("findForcedDeletesMerges infos=" + writer.get().segString(infos) + " forceMergeDeletesPctAllowed=" + forceMergeDeletesPctAllowed);
     }
-    final List<SegmentCommitInfo> eligible = new ArrayList<SegmentCommitInfo>();
+    final List<SegmentCommitInfo> eligible = new ArrayList<>();
     final Collection<SegmentCommitInfo> merging = writer.get().getMergingSegments();
     for(SegmentCommitInfo info : infos) {
       double pctDeletes = 100.*((double) writer.get().numDeletedDocs(info))/info.info.getDocCount();

@@ -50,7 +50,7 @@ public class SolrInputField implements Iterable<Object>, Serializable
 
     if( v instanceof Object[] ) {
       Object[] arr = (Object[])v;
-      Collection<Object> c = new ArrayList<Object>( arr.length );
+      Collection<Object> c = new ArrayList<>( arr.length );
       for( Object o : arr ) {
         c.add( o );
       }
@@ -69,7 +69,7 @@ public class SolrInputField implements Iterable<Object>, Serializable
   public void addValue(Object v, float b) {
     if( value == null ) {
       if ( v instanceof Collection ) {
-        Collection<Object> c = new ArrayList<Object>( 3 );
+        Collection<Object> c = new ArrayList<>( 3 );
         for ( Object o : (Collection<Object>)v ) {
           c.add( o );
         }
@@ -92,7 +92,7 @@ public class SolrInputField implements Iterable<Object>, Serializable
       vals = (Collection<Object>)value;
     }
     else {
-      vals = new ArrayList<Object>( 3 );
+      vals = new ArrayList<>( 3 );
       vals.add( value );
       value = vals;
     }
@@ -146,7 +146,7 @@ public class SolrInputField implements Iterable<Object>, Serializable
       return (Collection<Object>)value;
     }
     if( value != null ) {
-      Collection<Object> vals = new ArrayList<Object>(1);
+      Collection<Object> vals = new ArrayList<>(1);
       vals.add( value );
       return vals;
     }
@@ -221,7 +221,7 @@ public class SolrInputField implements Iterable<Object>, Serializable
     // We can't clone here, so we rely on simple primitives
     if (value instanceof Collection) {
       Collection<Object> values = (Collection<Object>) value;
-      Collection<Object> cloneValues = new ArrayList<Object>(values.size());
+      Collection<Object> cloneValues = new ArrayList<>(values.size());
       cloneValues.addAll(values);
       clone.value = cloneValues;
     } else {

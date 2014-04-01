@@ -126,7 +126,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
   
   private List<TypeMapping> typeMappings = Collections.emptyList();
   private SelectorParams inclusions = new SelectorParams();
-  private Collection<SelectorParams> exclusions = new ArrayList<SelectorParams>();
+  private Collection<SelectorParams> exclusions = new ArrayList<>();
   private FieldNameSelector selector = null;
   private String defaultFieldType;
 
@@ -191,7 +191,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
   }
 
   private static List<TypeMapping> parseTypeMappings(NamedList args) {
-    List<TypeMapping> typeMappings = new ArrayList<TypeMapping>();
+    List<TypeMapping> typeMappings = new ArrayList<>();
     List<Object> typeMappingsParams = args.getAll(TYPE_MAPPING_PARAM);
     for (Object typeMappingObj : typeMappingsParams) {
       if (null == typeMappingObj) {
@@ -262,7 +262,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
       if (null == schema.getFieldTypeByName(fieldTypeName)) {
         throw new SolrException(SERVER_ERROR, "fieldType '" + fieldTypeName + "' not found in the schema");
       }
-      valueClasses = new HashSet<Class<?>>();
+      valueClasses = new HashSet<>();
       for (String valueClassName : valueClassNames) {
         try {
           valueClasses.add(loader.loadClass(valueClassName));
@@ -289,7 +289,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
       final SolrCore core = cmd.getReq().getCore();
       for (;;) {
         final IndexSchema oldSchema = core.getLatestSchema();
-        List<SchemaField> newFields = new ArrayList<SchemaField>();
+        List<SchemaField> newFields = new ArrayList<>();
         for (final String fieldName : doc.getFieldNames()) {
           if (selector.shouldMutate(fieldName)) {
             String fieldTypeName = mapValueClassesToFieldType(doc.getField(fieldName));

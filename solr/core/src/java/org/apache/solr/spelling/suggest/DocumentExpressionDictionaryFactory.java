@@ -68,7 +68,7 @@ public class DocumentExpressionDictionaryFactory extends DictionaryFactory {
     String field = (String) params.get(FIELD);
     String payloadField = (String) params.get(PAYLOAD_FIELD);
     String weightExpression = (String) params.get(WEIGHT_EXPRESSION);
-    Set<SortField> sortFields = new HashSet<SortField>();
+    Set<SortField> sortFields = new HashSet<>();
     
     if (field == null) {
       throw new IllegalArgumentException(FIELD + " is a mandatory parameter");

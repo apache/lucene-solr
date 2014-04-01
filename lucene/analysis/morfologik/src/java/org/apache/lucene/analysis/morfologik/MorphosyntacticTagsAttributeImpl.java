@@ -82,7 +82,7 @@ public class MorphosyntacticTagsAttributeImpl extends AttributeImpl
   public void copyTo(AttributeImpl target) {
     List<StringBuilder> cloned = null;
     if (tags != null) {
-      cloned = new ArrayList<StringBuilder>(tags.size());
+      cloned = new ArrayList<>(tags.size());
       for (StringBuilder b : tags) {
         cloned.add(new StringBuilder(b));
       }

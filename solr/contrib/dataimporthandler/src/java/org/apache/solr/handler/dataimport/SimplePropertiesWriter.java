@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -90,7 +91,7 @@ public class SimplePropertiesWriter extends DIHProperties {
     if(params.get(LOCALE) != null) {
       String localeStr = params.get(LOCALE);
       for (Locale l : Locale.getAvailableLocales()) {
-        if(localeStr.equals(l.getDisplayName())) {
+        if(localeStr.equals(l.getDisplayName(Locale.ROOT))) {
           locale = l;
           break;
         }
@@ -171,7 +172,7 @@ public class SimplePropertiesWriter extends DIHProperties {
    * already converted them.
    */
   protected Map<String,Object> propertiesToMap(Properties p) {
-    Map<String,Object> theMap = new HashMap<String,Object>();
+    Map<String,Object> theMap = new HashMap<>();
     for(Map.Entry<Object,Object> entry : p.entrySet()) {
       String key = entry.getKey().toString();
       Object val = entry.getValue().toString();
@@ -192,7 +193,7 @@ public class SimplePropertiesWriter extends DIHProperties {
         filePath += File.separator;
       }
       filePath += filename;
-      propOutput = new OutputStreamWriter(new FileOutputStream(filePath), IOUtils.CHARSET_UTF_8);
+      propOutput = new OutputStreamWriter(new FileOutputStream(filePath), StandardCharsets.UTF_8);
       existingProps.store(propOutput, null);
       log.info("Wrote last indexed time to " + filename);
     } catch (Exception e) {
@@ -214,7 +215,7 @@ public class SimplePropertiesWriter extends DIHProperties {
       }
       filePath += filename;
       propInput = new FileInputStream(filePath);
-      props.load(new InputStreamReader(propInput, IOUtils.CHARSET_UTF_8));
+      props.load(new InputStreamReader(propInput, StandardCharsets.UTF_8));
       log.info("Read " + filename);
     } catch (Exception e) {
       log.warn("Unable to read: " + filename);

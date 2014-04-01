@@ -84,5 +84,18 @@ public class TestFacetsConfig extends FacetTestCase {
     
     IOUtils.close(indexDir, taxoDir);
   }
-  
+
+  /** LUCENE-5479 */
+  public void testCustomDefault() {
+    FacetsConfig config = new FacetsConfig() {
+        @Override
+        protected DimConfig getDefaultDimConfig() {
+          DimConfig config = new DimConfig();
+          config.hierarchical = true;
+          return config;
+        }
+      };
+
+    assertTrue(config.getDimConfig("foobar").hierarchical);
+  }
 }

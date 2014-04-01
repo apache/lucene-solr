@@ -23,10 +23,6 @@ import java.util.Comparator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.StringHelper;
 
-// TODO(simonw) -- for cleaner transition, maybe we should make
-// a new SortField that subclasses this one and always uses
-// index values?
-
 /**
  * Stores information about how to sort documents by terms in an individual
  * field.  Fields must be indexed in order to sort by them.
@@ -105,9 +101,6 @@ public class SortField {
 
   // Used for 'sortMissingFirst/Last'
   public Object missingValue = null;
-
-  // Only used with type=STRING
-  public boolean sortMissingLast;
 
   /** Creates a sort by terms in the given field with the type of term
    * values explicitly given.

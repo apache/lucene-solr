@@ -83,9 +83,9 @@ public class Entity {
     this.allAttributes = Collections.unmodifiableMap(modAttributes);
     
     List<Element> n = ConfigParseUtil.getChildNodes(element, "field");
-    List<EntityField> modFields = new ArrayList<EntityField>(n.size());
-    Map<String,Set<EntityField>> modColNameVsField = new HashMap<String,Set<EntityField>>();
-    List<Map<String,String>> modAllFieldAttributes = new ArrayList<Map<String,String>>();
+    List<EntityField> modFields = new ArrayList<>(n.size());
+    Map<String,Set<EntityField>> modColNameVsField = new HashMap<>();
+    List<Map<String,String>> modAllFieldAttributes = new ArrayList<>();
     for (Element elem : n) {
       EntityField.Builder fieldBuilder = new EntityField.Builder(elem);
       if (config.getSchema() != null) {
@@ -115,7 +115,7 @@ public class Entity {
       }
       Set<EntityField> fieldSet = modColNameVsField.get(fieldBuilder.column);
       if (fieldSet == null) {
-        fieldSet = new HashSet<EntityField>();
+        fieldSet = new HashSet<>();
         modColNameVsField.put(fieldBuilder.column, fieldSet);
       }
       fieldBuilder.allAttributes.put("boost", Float
@@ -128,7 +128,7 @@ public class Entity {
       fieldSet.add(field);
       modFields.add(field);
     }
-    Map<String,Set<EntityField>> modColNameVsField1 = new HashMap<String,Set<EntityField>>();
+    Map<String,Set<EntityField>> modColNameVsField1 = new HashMap<>();
     for (Map.Entry<String,Set<EntityField>> entry : modColNameVsField
         .entrySet()) {
       if (entry.getValue().size() > 0) {
@@ -161,7 +161,7 @@ public class Entity {
     }
     pkMappingFromSchema = modPkMappingFromSchema;
     n = ConfigParseUtil.getChildNodes(element, "entity");
-    List<Entity> modEntities = new ArrayList<Entity>();
+    List<Entity> modEntities = new ArrayList<>();
     for (Element elem : n) {
       modEntities.add(new Entity((docRootFound || this.docRoot), elem, di, config, this));
     }

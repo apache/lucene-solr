@@ -16,18 +16,24 @@
  */
 package org.apache.solr.core;
 
-import java.lang.management.ManagementFactory;
-import java.util.*;
-import javax.management.*;
-
-import org.apache.lucene.util.Constants;
 import org.apache.solr.core.JmxMonitoredMap.SolrDynamicMBean;
 import org.apache.solr.util.AbstractSolrTestCase;
-import org.junit.Assume;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import javax.management.AttributeNotFoundException;
+import javax.management.MBeanAttributeInfo;
+import javax.management.MBeanInfo;
+import javax.management.MBeanServer;
+import javax.management.MalformedObjectNameException;
+import javax.management.ObjectInstance;
+import javax.management.ObjectName;
+import java.lang.management.ManagementFactory;
+import java.util.Hashtable;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Test for JMX Integration
@@ -156,8 +162,7 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
     Set<ObjectInstance> newBeans = mbeanServer.queryMBeans(null, null);
     int newNumberOfObjects = 0;
     int registrySize = 0;
-    SolrCore core = h.getCoreContainer().getCore(coreName);
-    try {
+    try (SolrCore core = h.getCoreContainer().getCore(coreName)) {
       registrySize = core.getInfoRegistry().size();
       for (ObjectInstance bean : newBeans) {
         try {
@@ -168,8 +173,6 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
           // expected
         }
       }
-    } finally {
-      core.close();
     }
 
     log.info("After Reload: Size of infoRegistry: " + registrySize + " MBeans: " + newNumberOfObjects);
@@ -178,7 +181,7 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
 
   private ObjectName getObjectName(String key, SolrInfoMBean infoBean)
           throws MalformedObjectNameException {
-    Hashtable<String, String> map = new Hashtable<String, String>();
+    Hashtable<String, String> map = new Hashtable<>();
     map.put("type", key);
     map.put("id", infoBean.getName());
     String coreName = h.getCore().getName();

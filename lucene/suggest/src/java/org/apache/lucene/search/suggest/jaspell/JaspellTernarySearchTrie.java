@@ -33,13 +33,14 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Locale;
 import java.util.Vector;
 import java.util.zip.GZIPInputStream;
 
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Implementation of a Ternary Search Trie, a data structure for storing
@@ -75,7 +76,7 @@ public class JaspellTernarySearchTrie {
     protected Object data;
 
     /** The relative nodes. */
-    protected TSTNode[] relatives = new TSTNode[4];
+    protected final TSTNode[] relatives = new TSTNode[4];
 
     /** The char used in the split. */
     protected char splitchar;
@@ -92,6 +93,18 @@ public class JaspellTernarySearchTrie {
       this.splitchar = splitchar;
       relatives[PARENT] = parent;
     }
+
+    /** Return an approximate memory usage for this node and its sub-nodes. */
+    public long sizeInBytes() {
+      long mem = RamUsageEstimator.shallowSizeOf(this) + RamUsageEstimator.shallowSizeOf(relatives);
+      for (TSTNode node : relatives) {
+        if (node != null) {
+          mem += node.sizeInBytes();
+        }
+      }
+      return mem;
+    }
+
   }
 
   /**
@@ -211,15 +224,13 @@ public class JaspellTernarySearchTrie {
     BufferedReader in;
     if (compression)
       in = new BufferedReader(IOUtils.getDecodingReader(new GZIPInputStream(
-              new FileInputStream(file)), IOUtils.CHARSET_UTF_8));
+              new FileInputStream(file)), StandardCharsets.UTF_8));
     else in = new BufferedReader(IOUtils.getDecodingReader((new FileInputStream(
-            file)), IOUtils.CHARSET_UTF_8));
+            file)), StandardCharsets.UTF_8));
     String word;
     int pos;
     Float occur, one = new Float(1);
-    int numWords = 0;
     while ((word = in.readLine()) != null) {
-      numWords++;
       pos = word.indexOf("\t");
       occur = one;
       if (pos != -1) {
@@ -669,7 +680,7 @@ public class JaspellTernarySearchTrie {
    *@return A <code>List</code> with the results
    */
   public List<String> matchPrefix(CharSequence prefix, int numReturnValues) {
-    Vector<String> sortKeysResult = new Vector<String>();
+    Vector<String> sortKeysResult = new Vector<>();
     TSTNode startNode = getNode(prefix);
     if (startNode == null) {
       return sortKeysResult;
@@ -871,6 +882,16 @@ public class JaspellTernarySearchTrie {
             sortKeysNumReturnValues, sortKeysResult);
     return sortKeysRecursion(currentNode.relatives[TSTNode.HIKID],
             sortKeysNumReturnValues, sortKeysResult);
+  }
+
+  /** Return an approximate memory usage for this trie. */
+  public long sizeInBytes() {
+    long mem = RamUsageEstimator.shallowSizeOf(this);
+    final TSTNode root = getRoot();
+    if (root != null) {
+      mem += root.sizeInBytes();
+    }
+    return mem;
   }
 
 }

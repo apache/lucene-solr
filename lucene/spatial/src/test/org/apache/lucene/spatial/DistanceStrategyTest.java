@@ -42,7 +42,7 @@ public class DistanceStrategyTest extends StrategyTestCase {
 
   @ParametersFactory
   public static Iterable<Object[]> parameters() {
-    List<Object[]> ctorArgs = new ArrayList<Object[]>();
+    List<Object[]> ctorArgs = new ArrayList<>();
 
     SpatialContext ctx = SpatialContext.GEO;
     SpatialPrefixTree grid;

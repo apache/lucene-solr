@@ -16,6 +16,7 @@
  */
 package org.apache.solr.spelling;
 
+import org.apache.solr.SolrTestCaseJ4.SuppressTempDirCleanUp;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -50,6 +51,7 @@ import java.util.Map;
 /**
  * @since solr 1.3
  */
+@SuppressTempDirCleanUp(bugUrl = "https://issues.apache.org/jira/browse/SOLR-1877 Spellcheck IndexReader leak bug?")
 public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
   protected static SpellingQueryConverter queryConverter;
 
@@ -108,7 +110,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     NamedList spellchecker = new NamedList();
     spellchecker.add("classname", IndexBasedSpellChecker.class.getName());
 
-    File indexDir = new File(TEMP_DIR, "spellingIdx" + new Date().getTime());
+    File indexDir = new File(dataDir, "spellingIdx" + new Date().getTime());
     indexDir.mkdirs();
     spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
     spellchecker.add(AbstractLuceneSpellChecker.FIELD, "title");
@@ -184,7 +186,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     NamedList spellchecker = new NamedList();
     spellchecker.add("classname", IndexBasedSpellChecker.class.getName());
 
-    File indexDir = new File(TEMP_DIR, "spellingIdx" + new Date().getTime());
+    File indexDir = new File(dataDir, "spellingIdx" + new Date().getTime());
     indexDir.mkdirs();
     spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
     spellchecker.add(AbstractLuceneSpellChecker.FIELD, "title");
@@ -241,7 +243,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     NamedList spellchecker = new NamedList();
     spellchecker.add("classname", IndexBasedSpellChecker.class.getName());
 
-    File indexDir = new File(TEMP_DIR, "spellingIdx" + new Date().getTime());
+    File indexDir = new File(dataDir, "spellingIdx" + new Date().getTime());
     indexDir.mkdirs();
     spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
     spellchecker.add(AbstractLuceneSpellChecker.FIELD, "title");
@@ -281,9 +283,9 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     NamedList spellchecker = new NamedList();
     spellchecker.add("classname", IndexBasedSpellChecker.class.getName());
 
-    File indexDir = new File(TEMP_DIR, "spellingIdx" + new Date().getTime());
+    File indexDir = new File(dataDir, "spellingIdx" + new Date().getTime());
     //create a standalone index
-    File altIndexDir = new File(TEMP_DIR, "alternateIdx" + new Date().getTime());
+    File altIndexDir = new File(dataDir, "alternateIdx" + new Date().getTime());
     Directory dir = newFSDirectory(altIndexDir);
     IndexWriter iw = new IndexWriter(
         dir,

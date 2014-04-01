@@ -33,11 +33,13 @@ import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 
 import javax.xml.xpath.XPath;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -92,7 +94,7 @@ public final class ManagedIndexSchema extends IndexSchema {
         }
       }
       final FileOutputStream out = new FileOutputStream(managedSchemaFile);
-      writer = new OutputStreamWriter(out, "UTF-8");
+      writer = new OutputStreamWriter(out, StandardCharsets.UTF_8);
       persist(writer);
       log.info("Upgraded to managed schema at " + managedSchemaFile.getPath());
     } catch (IOException e) {
@@ -132,7 +134,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       StringWriter writer = new StringWriter();
       persist(writer);
 
-      final byte[] data = writer.toString().getBytes("UTF-8");
+      final byte[] data = writer.toString().getBytes(StandardCharsets.UTF_8);
       if (createOnly) {
         try {
           zkClient.create(managedSchemaPath, data, CreateMode.PERSISTENT, true);

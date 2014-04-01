@@ -37,6 +37,7 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 
 /**
  * A test for {@link DocumentAnalysisRequestHandler}.
@@ -145,7 +146,7 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
       "  <field name=\"id\">Müller</field>\r\n" +
       " </doc>" +
       "</docs>"
-    ).getBytes("ISO-8859-1");
+    ).getBytes(StandardCharsets.ISO_8859_1);
     
     // we declare a content stream without charset:
     final ContentStream cs = new ByteStream(xmlBytes, "application/xml");
@@ -177,7 +178,7 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
       "  <field name=\"id\">Müller</field>\r\n" +
       " </doc>" +
       "</docs>"
-    ).getBytes("ISO-8859-1");
+    ).getBytes(StandardCharsets.ISO_8859_1);
     
     // we declare a content stream with charset:
     final ContentStream cs = new ByteStream(xmlBytes, "application/xml; charset=ISO-8859-1");

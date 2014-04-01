@@ -111,7 +111,7 @@ public class RealTimeGetComponent extends SearchComponent
     String[] allIds = id==null ? new String[0] : id;
 
     if (ids != null) {
-      List<String> lst = new ArrayList<String>();
+      List<String> lst = new ArrayList<>();
       for (String s : allIds) {
         lst.add(s);
       }
@@ -305,7 +305,7 @@ public class RealTimeGetComponent extends SearchComponent
         if (sf != null && schema.isCopyFieldTarget(sf)) continue;
 
         if (sf != null && sf.multiValued()) {
-          List<Object> vals = new ArrayList<Object>();
+          List<Object> vals = new ArrayList<>();
           vals.add( f );
           out.setField( f.name(), vals );
         }
@@ -354,7 +354,7 @@ public class RealTimeGetComponent extends SearchComponent
       return ResponseBuilder.STAGE_DONE;
     }
 
-    List<String> allIds = new ArrayList<String>();
+    List<String> allIds = new ArrayList<>();
     if (id1 != null) {
       for (String s : id1) {
         allIds.add(s);
@@ -379,13 +379,13 @@ public class RealTimeGetComponent extends SearchComponent
       DocCollection coll = clusterState.getCollection(collection);
 
 
-      Map<String, List<String>> sliceToId = new HashMap<String, List<String>>();
+      Map<String, List<String>> sliceToId = new HashMap<>();
       for (String id : allIds) {
         Slice slice = coll.getRouter().getTargetSlice(id, null, params, coll);
 
         List<String> idsForShard = sliceToId.get(slice.getName());
         if (idsForShard == null) {
-          idsForShard = new ArrayList<String>(2);
+          idsForShard = new ArrayList<>(2);
           sliceToId.put(slice.getName(), idsForShard);
         }
         idsForShard.add(id);
@@ -582,7 +582,7 @@ public class RealTimeGetComponent extends SearchComponent
     List<String> versions = StrUtils.splitSmart(versionsStr, ",", true);
 
 
-    List<Object> updates = new ArrayList<Object>(versions.size());
+    List<Object> updates = new ArrayList<>(versions.size());
 
     long minVersion = Long.MAX_VALUE;
 

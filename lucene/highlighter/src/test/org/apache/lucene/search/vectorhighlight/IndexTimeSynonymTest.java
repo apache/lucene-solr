@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.vectorhighlight.FieldTermStack.TermInfo;
 import org.apache.lucene.util.AttributeImpl;
 
 public class IndexTimeSynonymTest extends AbstractTestCase {
@@ -47,12 +48,11 @@ public class IndexTimeSynonymTest extends AbstractTestCase {
     bq.add( tq( "MacBook" ), Occur.SHOULD );
     FieldQuery fq = new FieldQuery( bq, true, true );
     FieldTermStack stack = new FieldTermStack( reader, 0, F, fq );
-    assertEquals( 2, stack.termList.size() );
-    Set<String> expectedSet = new HashSet<String>();
-    expectedSet.add( "Mac(11,20,3)" );
-    expectedSet.add( "MacBook(11,20,3)" );
-    assertTrue( expectedSet.contains( stack.pop().toString() ) );
-    assertTrue( expectedSet.contains( stack.pop().toString() ) );
+    assertEquals( 1, stack.termList.size() );
+    TermInfo ti = stack.pop();
+    assertEquals("Mac(11,20,3)", ti.toString());
+    assertEquals("MacBook(11,20,3)", ti.getNext().toString());
+    assertSame(ti, ti.getNext().getNext());
   }
   
   public void testFieldTermStackIndex1w2wSearch1term() throws Exception {
@@ -91,12 +91,11 @@ public class IndexTimeSynonymTest extends AbstractTestCase {
     bq.add( pqF( "personal", "computer" ), Occur.SHOULD );
     FieldQuery fq = new FieldQuery( bq, true, true );
     FieldTermStack stack = new FieldTermStack( reader, 0, F, fq );
-    assertEquals( 3, stack.termList.size() );
-    Set<String> expectedSet = new HashSet<String>();
-    expectedSet.add( "pc(3,5,1)" );
-    expectedSet.add( "personal(3,5,1)" );
-    assertTrue( expectedSet.contains( stack.pop().toString() ) );
-    assertTrue( expectedSet.contains( stack.pop().toString() ) );
+    assertEquals( 2, stack.termList.size() );
+    TermInfo ti = stack.pop();
+    assertEquals( "pc(3,5,1)", ti.toString());
+    assertEquals( "personal(3,5,1)", ti.getNext().toString());
+    assertSame(ti, ti.getNext().getNext());
     assertEquals( "computer(3,5,2)", stack.pop().toString() );
   }
   
@@ -136,12 +135,11 @@ public class IndexTimeSynonymTest extends AbstractTestCase {
     bq.add( pqF( "personal", "computer" ), Occur.SHOULD );
     FieldQuery fq = new FieldQuery( bq, true, true );
     FieldTermStack stack = new FieldTermStack( reader, 0, F, fq );
-    assertEquals( 3, stack.termList.size() );
-    Set<String> expectedSet = new HashSet<String>();
-    expectedSet.add( "pc(3,20,1)" );
-    expectedSet.add( "personal(3,20,1)" );
-    assertTrue( expectedSet.contains( stack.pop().toString() ) );
-    assertTrue( expectedSet.contains( stack.pop().toString() ) );
+    assertEquals( 2, stack.termList.size() );
+    TermInfo ti = stack.pop();
+    assertEquals("pc(3,20,1)", ti.toString());
+    assertEquals("personal(3,20,1)", ti.getNext().toString());
+    assertSame(ti, ti.getNext().getNext());
     assertEquals( "computer(3,20,2)", stack.pop().toString() );
   }
   

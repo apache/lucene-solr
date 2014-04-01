@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 /**
  * Simple tests to ensure the Thai word filter factory is working.
  */
+@Deprecated
 public class TestThaiWordFilterFactory extends BaseTokenStreamFactoryTestCase {
   /**
    * Ensure the filter actually decomposes text.

@@ -1133,6 +1133,9 @@ public class TestIndexWriter extends LuceneTestCase {
       }
 
       if (!failed) {
+        if (VERBOSE) {
+          System.out.println("TEST: now rollback");
+        }
         // clear interrupt state:
         Thread.interrupted();
         if (w != null) {
@@ -1161,7 +1164,12 @@ public class TestIndexWriter extends LuceneTestCase {
         }
       }
       try {
-        IOUtils.close(dir, adder);
+        IOUtils.close(dir);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+      try {
+        IOUtils.close(adder);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -1361,7 +1369,7 @@ public class TestIndexWriter extends LuceneTestCase {
         r = DirectoryReader.open(dir);
       }
 
-      List<String> files = new ArrayList<String>(Arrays.asList(dir.listAll()));
+      List<String> files = new ArrayList<>(Arrays.asList(dir.listAll()));
 
       // RAMDir won't have a write.lock, but fs dirs will:
       files.remove("write.lock");
@@ -1660,32 +1668,32 @@ public class TestIndexWriter extends LuceneTestCase {
     // This contents produces a too-long term:
     String contents = "abc xyz x" + bigTerm + " another term";
     doc.add(new TextField("content", contents, Field.Store.NO));
-    w.addDocument(doc);
+    try {
+      w.addDocument(doc);
+      fail("should have hit exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
 
     // Make sure we can add another normal document
     doc = new Document();
     doc.add(new TextField("content", "abc bbb ccc", Field.Store.NO));
     w.addDocument(doc);
 
+    // So we remove the deleted doc:
+    w.forceMerge(1);
+
     IndexReader reader = w.getReader();
     w.close();
 
     // Make sure all terms < max size were indexed
-    assertEquals(2, reader.docFreq(new Term("content", "abc")));
+    assertEquals(1, reader.docFreq(new Term("content", "abc")));
     assertEquals(1, reader.docFreq(new Term("content", "bbb")));
-    assertEquals(1, reader.docFreq(new Term("content", "term")));
-    assertEquals(1, reader.docFreq(new Term("content", "another")));
+    assertEquals(0, reader.docFreq(new Term("content", "term")));
 
-    // Make sure position is still incremented when
-    // massive term is skipped:
-    DocsAndPositionsEnum tps = MultiFields.getTermPositionsEnum(reader, null, "content", new BytesRef("another"));
-    assertEquals(0, tps.nextDoc());
-    assertEquals(1, tps.freq());
-    assertEquals(3, tps.nextPosition());
-
-    // Make sure the doc that has the massive term is in
+    // Make sure the doc that has the massive term is NOT in
     // the index:
-    assertEquals("document with wicked long term should is not in the index!", 2, reader.numDocs());
+    assertEquals("document with wicked long term is in the index!", 1, reader.numDocs());
 
     reader.close();
     dir.close();
@@ -1820,7 +1828,7 @@ public class TestIndexWriter extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir,
                                     new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
 
-    final List<Document> docs = new ArrayList<Document>();
+    final List<Document> docs = new ArrayList<>();
     docs.add(new Document());
     w.updateDocuments(new Term("foo", "bar"),
                       docs);
@@ -1931,7 +1939,7 @@ public class TestIndexWriter extends LuceneTestCase {
       
       new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random()))).close();
       
-      assertTrue(dir.fileExists("myrandomfile"));
+      assertTrue(slowFileExists(dir, "myrandomfile"));
     } finally {
       dir.close();
     }
@@ -2009,14 +2017,14 @@ public class TestIndexWriter extends LuceneTestCase {
       
       new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random()))).close();
       
-      assertTrue(dir.fileExists("_a.frq"));
+      assertTrue(slowFileExists(dir, "_a.frq"));
       
       IndexWriter iw = new IndexWriter(dir, 
           newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
       iw.addDocument(new Document());
       iw.close();
       
-      assertFalse(dir.fileExists("_a.frq"));
+      assertFalse(slowFileExists(dir, "_a.frq"));
     } finally {
       dir.close();
     }
@@ -2135,9 +2143,9 @@ public class TestIndexWriter extends LuceneTestCase {
     int iters = atLeast(100);
     int docCount = 0;
     int docId = 0;
-    Set<String> liveIds = new HashSet<String>();
+    Set<String> liveIds = new HashSet<>();
     for (int i = 0; i < iters; i++) {
-      List<Document> docs = new ArrayList<Document>();
+      List<Document> docs = new ArrayList<>();
       FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
       FieldType idFt = new FieldType(TextField.TYPE_STORED);
       
@@ -2316,7 +2324,7 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testMergeAllDeleted() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    final SetOnce<IndexWriter> iwRef = new SetOnce<IndexWriter>();
+    final SetOnce<IndexWriter> iwRef = new SetOnce<>();
     iwc.setInfoStream(new RandomIndexWriter.TestPointInfoStream(iwc.getInfoStream(), new RandomIndexWriter.TestPoint() {
       @Override
       public void apply(String message) {

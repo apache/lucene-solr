@@ -47,9 +47,8 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
 
   @Before
   private void initManagedSchemaCore() throws Exception {
-    createTempDir();
     final String tmpSolrHomePath
-        = TEMP_DIR + File.separator + TestManagedSchema.class.getSimpleName() + System.currentTimeMillis();
+        = dataDir + File.separator + TestManagedSchema.class.getSimpleName() + System.currentTimeMillis();
     tmpSolrHome = new File(tmpSolrHomePath).getAbsoluteFile();
     tmpConfDir = new File(tmpSolrHome, confDir);
     File testHomeConfDir = new File(TEST_HOME(), confDir);

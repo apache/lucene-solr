@@ -69,7 +69,7 @@ public class TestStressVersions extends TestRTGBase {
 
     final AtomicInteger numCommitting = new AtomicInteger();
 
-    List<Thread> threads = new ArrayList<Thread>();
+    List<Thread> threads = new ArrayList<>();
 
     for (int i=0; i<nWriteThreads; i++) {
       Thread thread = new Thread("WRITER"+i) {
@@ -87,7 +87,7 @@ public class TestStressVersions extends TestRTGBase {
                   long version;
 
                   synchronized(globalLock) {
-                    newCommittedModel = new HashMap<Integer,DocInfo>(model);  // take a snapshot
+                    newCommittedModel = new HashMap<>(model);  // take a snapshot
                     version = snapshotCount++;
                   }
 

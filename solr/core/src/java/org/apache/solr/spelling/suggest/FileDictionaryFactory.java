@@ -19,10 +19,10 @@ package org.apache.solr.spelling.suggest;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.search.suggest.FileDictionary;
-import org.apache.lucene.util.IOUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
 
@@ -53,7 +53,7 @@ public class FileDictionaryFactory extends DictionaryFactory {
     
     try {
       return new FileDictionary(new InputStreamReader(
-          core.getResourceLoader().openResource(sourceLocation), IOUtils.CHARSET_UTF_8), fieldDelimiter);
+          core.getResourceLoader().openResource(sourceLocation), StandardCharsets.UTF_8), fieldDelimiter);
     } catch (IOException e) {
       throw new RuntimeException();
     }

@@ -18,13 +18,16 @@
 package org.apache.solr.search;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import com.carrotsearch.hppc.IntOpenHashSet;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.Random;
 
 public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
 
@@ -144,6 +147,51 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
                          "//result/doc[2]/float[@name='id'][.='2.0']",
                          "//result/doc[3]/float[@name='id'][.='3.0']",
                          "//result/doc[4]/float[@name='id'][.='6.0']");
+
+    //Test SOLR-5773 with score collapse criteria
+    params = new ModifiableSolrParams();
+    params.add("q", "YYYY");
+    params.add("fq", "{!collapse field=group_s nullPolicy=collapse}");
+    params.add("defType", "edismax");
+    params.add("bf", "field(test_ti)");
+    params.add("qf", "term_s");
+    params.add("qt", "/elevate");
+    params.add("elevateIds", "1,5");
+    assertQ(req(params), "*[count(//doc)=3]",
+        "//result/doc[1]/float[@name='id'][.='1.0']",
+        "//result/doc[2]/float[@name='id'][.='5.0']",
+        "//result/doc[3]/float[@name='id'][.='3.0']");
+
+    //Test SOLR-5773 with max field collapse criteria
+    params = new ModifiableSolrParams();
+    params.add("q", "YYYY");
+    params.add("fq", "{!collapse field=group_s min=test_ti nullPolicy=collapse}");
+    params.add("defType", "edismax");
+    params.add("bf", "field(test_ti)");
+    params.add("qf", "term_s");
+    params.add("qt", "/elevate");
+    params.add("elevateIds", "1,5");
+    assertQ(req(params), "*[count(//doc)=3]",
+        "//result/doc[1]/float[@name='id'][.='1.0']",
+        "//result/doc[2]/float[@name='id'][.='5.0']",
+        "//result/doc[3]/float[@name='id'][.='4.0']");
+
+
+    //Test SOLR-5773 elevating documents with null group
+    params = new ModifiableSolrParams();
+    params.add("q", "YYYY");
+    params.add("fq", "{!collapse field=group_s}");
+    params.add("defType", "edismax");
+    params.add("bf", "field(test_ti)");
+    params.add("qf", "term_s");
+    params.add("qt", "/elevate");
+    params.add("elevateIds", "3,4");
+    assertQ(req(params), "*[count(//doc)=4]",
+        "//result/doc[1]/float[@name='id'][.='3.0']",
+        "//result/doc[2]/float[@name='id'][.='4.0']",
+        "//result/doc[3]/float[@name='id'][.='2.0']",
+        "//result/doc[4]/float[@name='id'][.='6.0']");
+
 
 
     //Test collapse by min int field and sort
@@ -296,4 +344,14 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     assertQ(req(params), "*[count(//doc)=2]");
 
   }
+
+  @Test
+  public void testMissingFieldParam() throws Exception {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("q", "*:*");
+    params.add("fq", "{!collapse}");
+    assertQEx("It should respond with a bad request when the 'field' param is missing", req(params),
+        SolrException.ErrorCode.BAD_REQUEST);
+  }
+
 }

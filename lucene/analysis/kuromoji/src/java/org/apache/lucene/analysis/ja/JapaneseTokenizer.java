@@ -132,7 +132,7 @@ public final class JapaneseTokenizer extends Tokenizer {
   private static final int MAX_UNKNOWN_WORD_LENGTH = 1024;
   private static final int MAX_BACKTRACE_GAP = 1024;
 
-  private final EnumMap<Type, Dictionary> dictionaryMap = new EnumMap<Type, Dictionary>(Type.class);
+  private final EnumMap<Type, Dictionary> dictionaryMap = new EnumMap<>(Type.class);
 
   private final TokenInfoFST fst;
   private final TokenInfoDictionary dictionary;
@@ -141,7 +141,7 @@ public final class JapaneseTokenizer extends Tokenizer {
   private final UserDictionary userDictionary;
   private final CharacterDefinition characterDefinition;
 
-  private final FST.Arc<Long> arc = new FST.Arc<Long>();
+  private final FST.Arc<Long> arc = new FST.Arc<>();
   private final FST.BytesReader fstReader;
   private final IntsRef wordIdRef = new IntsRef();
 
@@ -174,7 +174,7 @@ public final class JapaneseTokenizer extends Tokenizer {
   private int pos;
 
   // Already parsed, but not yet passed to caller, tokens:
-  private final List<Token> pending = new ArrayList<Token>();
+  private final List<Token> pending = new ArrayList<>();
 
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);

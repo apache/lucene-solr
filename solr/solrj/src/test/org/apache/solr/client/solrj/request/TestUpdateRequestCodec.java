@@ -18,6 +18,9 @@ package org.apache.solr.client.solrj.request;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.InputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -70,7 +73,7 @@ public class TestUpdateRequestCodec extends LuceneTestCase {
     updateRequest.add(doc);
 
     doc = new SolrInputDocument();
-    Collection<String> foobar = new HashSet<String>();
+    Collection<String> foobar = new HashSet<>();
     foobar.add("baz1");
     foobar.add("baz2");
     doc.addField("foobar",foobar);
@@ -82,7 +85,7 @@ public class TestUpdateRequestCodec extends LuceneTestCase {
     JavaBinUpdateRequestCodec codec = new JavaBinUpdateRequestCodec();
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     codec.marshal(updateRequest, baos);
-    final List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
+    final List<SolrInputDocument> docs = new ArrayList<>();
     JavaBinUpdateRequestCodec.StreamingUpdateHandler handler = new JavaBinUpdateRequestCodec.StreamingUpdateHandler() {
       @Override
       public void update(SolrInputDocument document, UpdateRequest req, Integer commitWithin, Boolean overwrite) {
@@ -111,7 +114,7 @@ public class TestUpdateRequestCodec extends LuceneTestCase {
 
   @Test
   public void testIteratable() throws IOException {
-    final List<String> values = new ArrayList<String>();
+    final List<String> values = new ArrayList<>();
     values.add("iterItem1");
     values.add("iterItem2");
 
@@ -133,7 +136,7 @@ public class TestUpdateRequestCodec extends LuceneTestCase {
     JavaBinUpdateRequestCodec codec = new JavaBinUpdateRequestCodec();
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     codec.marshal(updateRequest, baos);
-    final List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
+    final List<SolrInputDocument> docs = new ArrayList<>();
     JavaBinUpdateRequestCodec.StreamingUpdateHandler handler = new JavaBinUpdateRequestCodec.StreamingUpdateHandler() {
       @Override
       public void update(SolrInputDocument document, UpdateRequest req, Integer commitWithin, Boolean overwrite) {
@@ -156,6 +159,76 @@ public class TestUpdateRequestCodec extends LuceneTestCase {
                       iterVal instanceof Collection);
     Assert.assertEquals("iterVal contents", values, iterVal);
 
+  }
+
+
+
+  public void testBackCompat4_5() throws IOException {
+
+    UpdateRequest updateRequest = new UpdateRequest();
+    updateRequest.deleteById("*:*");
+    updateRequest.deleteById("id:5");
+    updateRequest.deleteByQuery("2*");
+    updateRequest.deleteByQuery("1*");
+    updateRequest.setParam("a", "b");
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", 1);
+    doc.addField("desc", "one", 2.0f);
+    doc.addField("desc", "1");
+    updateRequest.add(doc);
+
+    doc = new SolrInputDocument();
+    doc.addField("id", 2);
+    doc.setDocumentBoost(10.0f);
+    doc.addField("desc", "two", 3.0f);
+    doc.addField("desc", "2");
+    updateRequest.add(doc);
+
+    doc = new SolrInputDocument();
+    doc.addField("id", 3);
+    doc.addField("desc", "three", 3.0f);
+    doc.addField("desc", "3");
+    updateRequest.add(doc);
+
+    doc = new SolrInputDocument();
+    Collection<String> foobar = new HashSet<>();
+    foobar.add("baz1");
+    foobar.add("baz2");
+    doc.addField("foobar",foobar);
+    updateRequest.add(doc);
+
+    updateRequest.deleteById("2");
+    updateRequest.deleteByQuery("id:3");
+
+
+
+    InputStream is = getClass().getResourceAsStream("/solrj/updateReq_4_5.bin");
+    assertNotNull("updateReq_4_5.bin was not found", is);
+    UpdateRequest updateUnmarshalled = new JavaBinUpdateRequestCodec().unmarshal(is, new JavaBinUpdateRequestCodec.StreamingUpdateHandler() {
+      @Override
+      public void update(SolrInputDocument document, UpdateRequest req, Integer commitWithin, Boolean override) {
+        if(commitWithin == null ){
+                    req.add(document);
+        }
+        System.err.println("Doc" + document + " ,commitWithin:"+commitWithin+ " , override:"+ override);
+      }
+    });
+
+    System.err.println(updateUnmarshalled.getDocumentsMap());
+    System.err.println(updateUnmarshalled.getDocuments());
+
+    for (int i = 0; i < updateRequest.getDocuments().size(); i++) {
+      SolrInputDocument inDoc = updateRequest.getDocuments().get(i);
+      SolrInputDocument outDoc = updateUnmarshalled.getDocuments().get(i);
+      compareDocs("doc#"+i, inDoc, outDoc);
+    }
+    Assert.assertEquals(updateUnmarshalled.getDeleteById().get(0) ,
+        updateRequest.getDeleteById().get(0));
+    Assert.assertEquals(updateUnmarshalled.getDeleteQuery().get(0) ,
+        updateRequest.getDeleteQuery().get(0));
+
+    assertEquals("b", updateUnmarshalled.getParams().get("a"));
+    is.close();
   }
 
 

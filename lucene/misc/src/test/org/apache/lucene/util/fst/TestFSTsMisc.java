@@ -67,7 +67,7 @@ public class TestFSTsMisc extends LuceneTestCase {
       }
       for(int inputMode=0;inputMode<2;inputMode++) {
         final int numWords = random.nextInt(maxNumWords+1);
-        Set<IntsRef> termsSet = new HashSet<IntsRef>();
+        Set<IntsRef> termsSet = new HashSet<>();
         IntsRef[] terms = new IntsRef[numWords];
         while(termsSet.size() < numWords) {
           final String term = getRandomString(random);
@@ -88,7 +88,7 @@ public class TestFSTsMisc extends LuceneTestCase {
         System.out.println("TEST: now test UpToTwoPositiveIntOutputs");
       }
       final UpToTwoPositiveIntOutputs outputs = UpToTwoPositiveIntOutputs.getSingleton(true);
-      final List<FSTTester.InputOutput<Object>> pairs = new ArrayList<FSTTester.InputOutput<Object>>(terms.length);
+      final List<FSTTester.InputOutput<Object>> pairs = new ArrayList<>(terms.length);
       long lastOutput = 0;
       for(int idx=0;idx<terms.length;idx++) {
         // Sometimes go backwards
@@ -102,14 +102,14 @@ public class TestFSTsMisc extends LuceneTestCase {
           while(value2 < 0) {
             value2 = lastOutput + TestUtil.nextInt(random(), -100, 1000);
           }
-          List<Long> values = new ArrayList<Long>();
+          List<Long> values = new ArrayList<>();
           values.add(value);
           values.add(value2);
           output = values;
         } else {
           output = outputs.get(value);
         }
-        pairs.add(new FSTTester.InputOutput<Object>(terms[idx], output));
+        pairs.add(new FSTTester.InputOutput<>(terms[idx], output));
       }
       new FSTTester<Object>(random(), dir, inputMode, pairs, outputs, false) {
         @Override
@@ -133,13 +133,13 @@ public class TestFSTsMisc extends LuceneTestCase {
         System.out.println("TEST: now test OneOrMoreOutputs");
       }
       final PositiveIntOutputs _outputs = PositiveIntOutputs.getSingleton();
-      final ListOfOutputs<Long> outputs = new ListOfOutputs<Long>(_outputs);
-      final List<FSTTester.InputOutput<Object>> pairs = new ArrayList<FSTTester.InputOutput<Object>>(terms.length);
+      final ListOfOutputs<Long> outputs = new ListOfOutputs<>(_outputs);
+      final List<FSTTester.InputOutput<Object>> pairs = new ArrayList<>(terms.length);
       long lastOutput = 0;
       for(int idx=0;idx<terms.length;idx++) {
         
         int outputCount = TestUtil.nextInt(random(), 1, 7);
-        List<Long> values = new ArrayList<Long>();
+        List<Long> values = new ArrayList<>();
         for(int i=0;i<outputCount;i++) {
           // Sometimes go backwards
           long value = lastOutput + TestUtil.nextInt(random(), -100, 1000);
@@ -157,16 +157,16 @@ public class TestFSTsMisc extends LuceneTestCase {
           output = values;
         }
 
-        pairs.add(new FSTTester.InputOutput<Object>(terms[idx], output));
+        pairs.add(new FSTTester.InputOutput<>(terms[idx], output));
       }
-      new FSTTester<Object>(random(), dir, inputMode, pairs, outputs, false).doTest(false);
+      new FSTTester<>(random(), dir, inputMode, pairs, outputs, false).doTest(false);
     }
   }
 
   public void testListOfOutputs() throws Exception {
     PositiveIntOutputs _outputs = PositiveIntOutputs.getSingleton();
-    ListOfOutputs<Long> outputs = new ListOfOutputs<Long>(_outputs);
-    final Builder<Object> builder = new Builder<Object>(FST.INPUT_TYPE.BYTE1, outputs);
+    ListOfOutputs<Long> outputs = new ListOfOutputs<>(_outputs);
+    final Builder<Object> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
 
     final IntsRef scratch = new IntsRef();
     // Add the same input more than once and the outputs
@@ -194,8 +194,8 @@ public class TestFSTsMisc extends LuceneTestCase {
 
   public void testListOfOutputsEmptyString() throws Exception {
     PositiveIntOutputs _outputs = PositiveIntOutputs.getSingleton();
-    ListOfOutputs<Long> outputs = new ListOfOutputs<Long>(_outputs);
-    final Builder<Object> builder = new Builder<Object>(FST.INPUT_TYPE.BYTE1, outputs);
+    ListOfOutputs<Long> outputs = new ListOfOutputs<>(_outputs);
+    final Builder<Object> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
 
     final IntsRef scratch = new IntsRef();
     builder.add(scratch, 0L);

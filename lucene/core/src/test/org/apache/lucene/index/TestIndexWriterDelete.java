@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -43,8 +44,8 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TestUtil;
 
 public class TestIndexWriterDelete extends LuceneTestCase {
@@ -525,6 +526,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       }
       MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), new RAMDirectory(startDir, newIOContext(random())));
       dir.setPreventDoubleWrite(false);
+      dir.setAllowRandomFileNotFoundException(false);
       IndexWriter modifier = new IndexWriter(dir,
                                              newIndexWriterConfig(
                                                                   TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false))
@@ -727,7 +729,8 @@ public class TestIndexWriterDelete extends LuceneTestCase {
             boolean seen = false;
             StackTraceElement[] trace = new Exception().getStackTrace();
             for (int i = 0; i < trace.length; i++) {
-              if ("applyDeletesAndUpdates".equals(trace[i].getMethodName())) {
+              if ("applyDeletesAndUpdates".equals(trace[i].getMethodName()) ||
+                  "slowFileExists".equals(trace[i].getMethodName())) {
                 seen = true;
                 break;
               }
@@ -939,7 +942,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     final Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     final int NUM_DOCS = atLeast(1000);
-    final List<Integer> ids = new ArrayList<Integer>(NUM_DOCS);
+    final List<Integer> ids = new ArrayList<>(NUM_DOCS);
     for(int id=0;id<NUM_DOCS;id++) {
       ids.add(id);
     }
@@ -1042,7 +1045,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       w.updateDocument(delTerm, doc);
       // Eventually segment 0 should get a del docs:
       // TODO: fix this test
-      if (dir.fileExists("_0_1.del") || dir.fileExists("_0_1.liv") ) {
+      if (slowFileExists(dir, "_0_1.del") || slowFileExists(dir, "_0_1.liv") ) {
         if (VERBOSE) {
           System.out.println("TEST: deletes created @ count=" + count);
         }
@@ -1088,7 +1091,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       w.updateDocument(delTerm, doc);
       // Eventually segment 0 should get a del docs:
       // TODO: fix this test
-      if (dir.fileExists("_0_1.del") || dir.fileExists("_0_1.liv")) {
+      if (slowFileExists(dir, "_0_1.del") || slowFileExists(dir, "_0_1.liv")) {
         break;
       }
       count++;
@@ -1135,7 +1138,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       w.updateDocument(new Term("id", ""+id), doc);
       docsInSegment.incrementAndGet();
       // TODO: fix this test
-      if (dir.fileExists("_0_1.del") || dir.fileExists("_0_1.liv")) {
+      if (slowFileExists(dir, "_0_1.del") || slowFileExists(dir, "_0_1.liv")) {
         if (VERBOSE) {
           System.out.println("TEST: deletes created @ id=" + id);
         }
@@ -1172,10 +1175,10 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
     CheckIndex checker = new CheckIndex(dir);
-    checker.setInfoStream(new PrintStream(bos, false, "UTF-8"), false);
+    checker.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8), false);
     CheckIndex.Status indexStatus = checker.checkIndex(null);
     assertTrue(indexStatus.clean);
-    String s = bos.toString("UTF-8");
+    String s = bos.toString(IOUtils.UTF_8);
 
     // Segment should have deletions:
     assertTrue(s.contains("has deletions"));
@@ -1184,10 +1187,10 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     w.close();
 
     bos = new ByteArrayOutputStream(1024);
-    checker.setInfoStream(new PrintStream(bos, false, "UTF-8"), false);
+    checker.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8), false);
     indexStatus = checker.checkIndex(null);
     assertTrue(indexStatus.clean);
-    s = bos.toString("UTF-8");
+    s = bos.toString(IOUtils.UTF_8);
     assertFalse(s.contains("has deletions"));
     dir.close();
   }

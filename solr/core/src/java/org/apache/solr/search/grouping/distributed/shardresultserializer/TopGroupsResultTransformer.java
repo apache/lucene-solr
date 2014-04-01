@@ -66,7 +66,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
    */
   @Override
   public NamedList transform(List<Command> data) throws IOException {
-    NamedList<NamedList> result = new NamedList<NamedList>();
+    NamedList<NamedList> result = new NamedList<>();
     final IndexSchema schema = rb.req.getSearcher().getSchema();
     for (Command command : data) {
       NamedList commandResult;
@@ -91,7 +91,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
    */
   @Override
   public Map<String, ?> transformToNative(NamedList<NamedList> shardResponse, Sort groupSort, Sort sortWithinGroup, String shard) {
-    Map<String, Object> result = new HashMap<String, Object>();
+    Map<String, Object> result = new HashMap<>();
 
     final IndexSchema schema = rb.req.getSearcher().getSchema();
 
@@ -147,7 +147,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
 
       Integer totalHitCount = (Integer) commandResult.get("totalHitCount");
 
-      List<GroupDocs<BytesRef>> groupDocs = new ArrayList<GroupDocs<BytesRef>>();
+      List<GroupDocs<BytesRef>> groupDocs = new ArrayList<>();
       for (int i = 2; i < commandResult.size(); i++) {
         String groupValue = commandResult.getName(i);
         @SuppressWarnings("unchecked")
@@ -182,12 +182,12 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
         }
 
         BytesRef groupValueRef = groupValue != null ? new BytesRef(groupValue) : null;
-        groupDocs.add(new GroupDocs<BytesRef>(Float.NaN, maxScore, totalGroupHits, scoreDocs, groupValueRef, null));
+        groupDocs.add(new GroupDocs<>(Float.NaN, maxScore, totalGroupHits, scoreDocs, groupValueRef, null));
       }
 
       @SuppressWarnings("unchecked")
       GroupDocs<BytesRef>[] groupDocsArr = groupDocs.toArray(new GroupDocs[groupDocs.size()]);
-      TopGroups<BytesRef> topGroups = new TopGroups<BytesRef>(
+      TopGroups<BytesRef> topGroups = new TopGroups<>(
            groupSort.getSort(), sortWithinGroup.getSort(), totalHitCount, totalGroupedHitCount, groupDocsArr, Float.NaN
       );
 
@@ -198,7 +198,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
   }
 
   protected NamedList serializeTopGroups(TopGroups<BytesRef> data, SchemaField groupField) throws IOException {
-    NamedList<Object> result = new NamedList<Object>();
+    NamedList<Object> result = new NamedList<>();
     result.add("totalGroupedHitCount", data.totalGroupedHitCount);
     result.add("totalHitCount", data.totalHitCount);
     if (data.totalGroupCount != null) {
@@ -209,15 +209,15 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
     final IndexSchema schema = rb.req.getSearcher().getSchema();
     SchemaField uniqueField = schema.getUniqueKeyField();
     for (GroupDocs<BytesRef> searchGroup : data.groups) {
-      NamedList<Object> groupResult = new NamedList<Object>();
+      NamedList<Object> groupResult = new NamedList<>();
       groupResult.add("totalHits", searchGroup.totalHits);
       if (!Float.isNaN(searchGroup.maxScore)) {
         groupResult.add("maxScore", searchGroup.maxScore);
       }
 
-      List<NamedList<Object>> documents = new ArrayList<NamedList<Object>>();
+      List<NamedList<Object>> documents = new ArrayList<>();
       for (int i = 0; i < searchGroup.scoreDocs.length; i++) {
-        NamedList<Object> document = new NamedList<Object>();
+        NamedList<Object> document = new NamedList<>();
         documents.add(document);
 
         StoredDocument doc = retrieveDocument(uniqueField, searchGroup.scoreDocs[i].doc);
@@ -254,20 +254,20 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
   }
 
   protected NamedList serializeTopDocs(QueryCommandResult result) throws IOException {
-    NamedList<Object> queryResult = new NamedList<Object>();
+    NamedList<Object> queryResult = new NamedList<>();
     queryResult.add("matches", result.getMatches());
     queryResult.add("totalHits", result.getTopDocs().totalHits);
     if (rb.getGroupingSpec().isNeedScore()) {
       queryResult.add("maxScore", result.getTopDocs().getMaxScore());
     }
-    List<NamedList> documents = new ArrayList<NamedList>();
+    List<NamedList> documents = new ArrayList<>();
     queryResult.add("documents", documents);
 
     final IndexSchema schema = rb.req.getSearcher().getSchema();
     SchemaField uniqueField = schema.getUniqueKeyField();
     CharsRef spare = new CharsRef();
     for (ScoreDoc scoreDoc : result.getTopDocs().scoreDocs) {
-      NamedList<Object> document = new NamedList<Object>();
+      NamedList<Object> document = new NamedList<>();
       documents.add(document);
 
       StoredDocument doc = retrieveDocument(uniqueField, scoreDoc.doc);

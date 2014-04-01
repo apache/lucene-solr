@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.util.Constants;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -46,6 +48,13 @@ import org.junit.Test;
  * 
  */
 public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
+
+  @BeforeClass
+  public static void betterNotBeJ9() {
+    assumeFalse("FIXME: SOLR-5793: This test fails under IBM J9", 
+                Constants.JAVA_VENDOR.startsWith("IBM"));
+  }
+
 
   /** modified by tests as needed */
   private String chain = "dedupe";
@@ -244,7 +253,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
   public void testFailNonIndexedSigWithOverwriteDupes() throws Exception {
     SolrCore core = h.getCore();
     SignatureUpdateProcessorFactory f = new SignatureUpdateProcessorFactory();
-    NamedList<String> initArgs = new NamedList<String>();
+    NamedList<String> initArgs = new NamedList<>();
     initArgs.add("overwriteDupes", "true");
     initArgs.add("signatureField", "signatureField_sS");
     f.init(initArgs);
@@ -269,7 +278,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
         .getFactories()[0]);
     factory.setEnabled(true);
     
-    Map<String,String[]> params = new HashMap<String,String[]>();
+    Map<String,String[]> params = new HashMap<>();
     MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
     params.put(UpdateParams.UPDATE_CHAIN, new String[] {chain});
     
@@ -298,7 +307,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
       SolrInputDocument docA = new SolrInputDocument();
       SolrInputDocument docB = new SolrInputDocument();
 
-      UnusualList<Integer> ints = new UnusualList<Integer>(3);
+      UnusualList<Integer> ints = new UnusualList<>(3);
       for (int val : new int[] {42, 66, 34}) {
         docA.addField("ints_is", new Integer(val));
         ints.add(val);
@@ -324,7 +333,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     }
         
 
-    ArrayList<ContentStream> streams = new ArrayList<ContentStream>(2);
+    ArrayList<ContentStream> streams = new ArrayList<>(2);
     streams.add(new BinaryRequestWriter().getContentStream(ureq));
     LocalSolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), mmparams);
     try {
@@ -359,7 +368,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
   }
 
   static void addDoc(String doc, String chain) throws Exception {
-    Map<String, String[]> params = new HashMap<String, String[]>();
+    Map<String, String[]> params = new HashMap<>();
     MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
     params.put(UpdateParams.UPDATE_CHAIN, new String[] { chain });
     SolrQueryRequestBase req = new SolrQueryRequestBase(h.getCore(),
@@ -368,7 +377,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 
     UpdateRequestHandler handler = new UpdateRequestHandler();
     handler.init(null);
-    ArrayList<ContentStream> streams = new ArrayList<ContentStream>(2);
+    ArrayList<ContentStream> streams = new ArrayList<>(2);
     streams.add(new ContentStreamBase.StringStream(doc));
     req.setContentStreams(streams);
     handler.handleRequestBody(req, new SolrQueryResponse());

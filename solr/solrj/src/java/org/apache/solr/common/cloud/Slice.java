@@ -54,7 +54,7 @@ public class Slice extends ZkNodeProps {
    * @param props  The properties of the slice - a shallow copy will always be made.
    */
   public Slice(String name, Map<String,Replica> replicas, Map<String,Object> props) {
-    super( props==null ? new LinkedHashMap<String,Object>(2) : new LinkedHashMap<String,Object>(props));
+    super( props==null ? new LinkedHashMap<String,Object>(2) : new LinkedHashMap<>(props));
     this.name = name;
 
     Object rangeObj = propMap.get(RANGE);
@@ -92,7 +92,7 @@ public class Slice extends ZkNodeProps {
 
     Map<String, Object> rules = (Map<String, Object>) propMap.get("routingRules");
     if (rules != null) {
-      this.routingRules = new HashMap<String, RoutingRule>();
+      this.routingRules = new HashMap<>();
       for (Map.Entry<String, Object> entry : rules.entrySet()) {
         Object o = entry.getValue();
         if (o instanceof Map) {
@@ -112,8 +112,8 @@ public class Slice extends ZkNodeProps {
 
 
   private Map<String,Replica> makeReplicas(Map<String,Object> genericReplicas) {
-    if (genericReplicas == null) return new HashMap<String,Replica>(1);
-    Map<String,Replica> result = new LinkedHashMap<String, Replica>(genericReplicas.size());
+    if (genericReplicas == null) return new HashMap<>(1);
+    Map<String,Replica> result = new LinkedHashMap<>(genericReplicas.size());
     for (Map.Entry<String,Object> entry : genericReplicas.entrySet()) {
       String name = entry.getKey();
       Object val = entry.getValue();
@@ -157,7 +157,7 @@ public class Slice extends ZkNodeProps {
   }
 
   public Map<String,Replica> getReplicasCopy() {
-    return new LinkedHashMap<String,Replica>(replicas);
+    return new LinkedHashMap<>(replicas);
   }
 
   public Replica getLeader() {

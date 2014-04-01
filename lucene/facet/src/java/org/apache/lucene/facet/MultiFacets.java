@@ -18,6 +18,7 @@ package org.apache.lucene.facet;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -65,7 +66,25 @@ public class MultiFacets extends Facets {
 
   @Override
   public List<FacetResult> getAllDims(int topN) throws IOException {
-    // TODO
-    throw new UnsupportedOperationException();
+
+    List<FacetResult> results = new ArrayList<FacetResult>();
+
+    // First add the specific dim's facets:
+    for(Map.Entry<String,Facets> ent : dimToFacets.entrySet()) {
+      results.add(ent.getValue().getTopChildren(topN, ent.getKey()));
+    }
+
+    if (defaultFacets != null) {
+
+      // Then add all default facets as long as we didn't
+      // already add that dim:
+      for(FacetResult result : defaultFacets.getAllDims(topN)) {
+        if (dimToFacets.containsKey(result.dim) == false) {
+          results.add(result);
+        }
+      }
+    }
+
+    return results;
   }
 }

@@ -119,7 +119,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
       this.field = field;
       this.doPackFST = doPackFST;
       this.acceptableOverheadRatio = acceptableOverheadRatio;
-      builder = new Builder<BytesRef>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, null, doPackFST, acceptableOverheadRatio, true, 15);
+      builder = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, null, doPackFST, acceptableOverheadRatio, true, 15);
     }
 
     private class PostingsWriter {
@@ -740,7 +740,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
 
     public FSTTermsEnum(FieldInfo field, FST<BytesRef> fst) {
       this.field = field;
-      fstEnum = new BytesRefFSTEnum<BytesRef>(fst);
+      fstEnum = new BytesRefFSTEnum<>(fst);
     }
 
     private void decodeMetaData() {
@@ -895,7 +895,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
       sumDocFreq = in.readVLong();
       docCount = in.readVInt();
       
-      fst = new FST<BytesRef>(in, outputs);
+      fst = new FST<>(in, outputs);
     }
 
     @Override
@@ -953,7 +953,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     final String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, EXTENSION);
     final IndexInput in = state.directory.openInput(fileName, IOContext.READONCE);
 
-    final SortedMap<String,TermsReader> fields = new TreeMap<String,TermsReader>();
+    final SortedMap<String,TermsReader> fields = new TreeMap<>();
 
     try {
       while(true) {

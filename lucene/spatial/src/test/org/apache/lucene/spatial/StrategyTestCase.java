@@ -89,7 +89,7 @@ public abstract class StrategyTestCase extends SpatialTestCase {
   }
 
   protected List<Document> getDocuments(Iterator<SpatialTestData> sampleData) {
-    List<Document> documents = new ArrayList<Document>();
+    List<Document> documents = new ArrayList<>();
     while (sampleData.hasNext()) {
       SpatialTestData data = sampleData.next();
       Document document = new Document();
@@ -161,7 +161,7 @@ public abstract class StrategyTestCase extends SpatialTestCase {
     } else {
       // We are looking at how the results overlap
       if (concern.resultsAreSuperset) {
-        Set<String> found = new HashSet<String>();
+        Set<String> found = new HashSet<>();
         for (SearchResult r : got.results) {
           found.add(r.document.get("id"));
         }
@@ -171,7 +171,7 @@ public abstract class StrategyTestCase extends SpatialTestCase {
           }
         }
       } else {
-        List<String> found = new ArrayList<String>();
+        List<String> found = new ArrayList<>();
         for (SearchResult r : got.results) {
           found.add(r.document.get("id"));
         }
@@ -237,7 +237,7 @@ public abstract class StrategyTestCase extends SpatialTestCase {
   protected void assertOperation(Map<String,Shape> indexedDocs,
                                  SpatialOperation operation, Shape queryShape) {
     //Generate truth via brute force
-    Set<String> expectedIds = new HashSet<String>();
+    Set<String> expectedIds = new HashSet<>();
     for (Map.Entry<String, Shape> stringShapeEntry : indexedDocs.entrySet()) {
       if (operation.evaluate(stringShapeEntry.getValue(), queryShape))
         expectedIds.add(stringShapeEntry.getKey());
@@ -245,7 +245,7 @@ public abstract class StrategyTestCase extends SpatialTestCase {
 
     SpatialTestQuery testQuery = new SpatialTestQuery();
     testQuery.args = new SpatialArgs(operation, queryShape);
-    testQuery.ids = new ArrayList<String>(expectedIds);
+    testQuery.ids = new ArrayList<>(expectedIds);
     runTestQuery(SpatialMatchConcern.FILTER, testQuery);
   }
 

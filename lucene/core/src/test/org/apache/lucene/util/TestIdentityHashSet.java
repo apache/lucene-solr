@@ -28,7 +28,7 @@ public class TestIdentityHashSet extends LuceneTestCase {
     Random rnd = random();
     Set<Object> jdk = Collections.newSetFromMap(
         new IdentityHashMap<Object,Boolean>());
-    RamUsageEstimator.IdentityHashSet<Object> us = new RamUsageEstimator.IdentityHashSet<Object>();
+    RamUsageEstimator.IdentityHashSet<Object> us = new RamUsageEstimator.IdentityHashSet<>();
 
     int max = 100000;
     int threshold = 256;

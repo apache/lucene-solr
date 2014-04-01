@@ -123,9 +123,7 @@ public class IndexReplicationHandler implements ReplicationHandler {
   public static void cleanupFilesOnFailure(Directory dir, List<String> files) {
     for (String file : files) {
       try {
-        if (dir.fileExists(file)) {
-          dir.deleteFile(file);
-        }
+        dir.deleteFile(file);
       } catch (Throwable t) {
         // suppress any exception because if we're here, it means copy
         // failed, and we must cleanup after ourselves.
@@ -150,7 +148,7 @@ public class IndexReplicationHandler implements ReplicationHandler {
       // if there were any IO errors reading the expected commit point (i.e.
       // segments files mismatch), then ignore that commit either.
       if (commit != null && commit.getSegmentsFileName().equals(segmentsFile)) {
-        Set<String> commitFiles = new HashSet<String>();
+        Set<String> commitFiles = new HashSet<>();
         commitFiles.addAll(commit.getFileNames());
         commitFiles.add(IndexFileNames.SEGMENTS_GEN);
         Matcher matcher = IndexFileNames.CODEC_FILE_PATTERN.matcher("");
@@ -194,9 +192,7 @@ public class IndexReplicationHandler implements ReplicationHandler {
       SegmentInfos.writeSegmentsGen(dir, SegmentInfos.generationFromSegmentsFileName(segmentsFile));
     } else {
       try {
-        if (dir.fileExists(IndexFileNames.SEGMENTS_GEN)) {
-          dir.deleteFile(IndexFileNames.SEGMENTS_GEN);
-        }
+        dir.deleteFile(IndexFileNames.SEGMENTS_GEN);
       } catch (Throwable t) {
         // suppress any errors while deleting this file.
       }

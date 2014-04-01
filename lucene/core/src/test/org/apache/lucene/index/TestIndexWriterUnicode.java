@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Random;
@@ -137,7 +138,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
 
     BytesRef last = new BytesRef();
 
-    Set<String> seenTerms = new HashSet<String>();
+    Set<String> seenTerms = new HashSet<>();
 
     while(true) {
       final BytesRef term = terms.next();
@@ -181,7 +182,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
 
       UnicodeUtil.UTF16toUTF8(buffer, 0, 20, utf8);
       if (!hasIllegal) {
-        byte[] b = new String(buffer, 0, 20).getBytes("UTF-8");
+        byte[] b = new String(buffer, 0, 20).getBytes(StandardCharsets.UTF_8);
         assertEquals(b.length, utf8.length);
         for(int i=0;i<b.length;i++)
           assertEquals(b[i], utf8.bytes[i]);
@@ -217,13 +218,13 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
       UnicodeUtil.UTF16toUTF8(chars, 0, len, utf8);
 
       String s1 = new String(chars, 0, len);
-      String s2 = new String(utf8.bytes, 0, utf8.length, "UTF-8");
+      String s2 = new String(utf8.bytes, 0, utf8.length, StandardCharsets.UTF_8);
       assertEquals("codepoint " + ch, s1, s2);
 
       UnicodeUtil.UTF8toUTF16(utf8.bytes, 0, utf8.length, utf16);
       assertEquals("codepoint " + ch, s1, new String(utf16.chars, 0, utf16.length));
 
-      byte[] b = s1.getBytes("UTF-8");
+      byte[] b = s1.getBytes(StandardCharsets.UTF_8);
       assertEquals(utf8.length, b.length);
       for(int j=0;j<utf8.length;j++)
         assertEquals(utf8.bytes[j], b[j]);
@@ -279,7 +280,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
     Field f = newStringField("f", "", Field.Store.NO);
     d.add(f);
     char[] chars = new char[2];
-    final Set<String> allTerms = new HashSet<String>();
+    final Set<String> allTerms = new HashSet<>();
 
     int num = atLeast(200);
     for (int i = 0; i < num; i++) {

@@ -39,10 +39,12 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
   Directory rd;
   protected Analyzer analyzer;
   
-  DocData docsContent[] = { new DocData("john smith", "1"),
-      new DocData("johathon smith", "2"),
-      new DocData("john percival smith", "3"),
-      new DocData("jackson waits tom", "4") };
+  DocData docsContent[] = { 
+    new DocData("john smith", "1", "developer"),
+    new DocData("johathon smith", "2", "developer"),
+    new DocData("john percival smith", "3", "designer"),
+    new DocData("jackson waits tom", "4", "project manager") 
+  };
 
   private IndexSearcher searcher;
   private IndexReader reader;
@@ -117,6 +119,18 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
     assertEquals(qString + " missing some matches ", 0, expecteds.size());
 
   }
+  
+  public void testFieldedQuery() throws Exception {
+    checkMatches("name:\"john smith\"", "1");
+    checkMatches("name:\"j*   smyth~\"", "1,2");
+    checkMatches("role:\"developer\"", "1,2");
+    checkMatches("role:\"p* manager\"", "4");
+    checkMatches("role:de*", "1,2,3");
+    checkMatches("name:\"j* smyth~\"~5", "1,2,3");
+    checkMatches("role:\"p* manager\" AND name:jack*", "4");
+    checkMatches("+role:developer +name:jack*", "");
+    checkMatches("name:\"john smith\"~2 AND role:designer AND id:3", "3");
+  }
 
   @Override
   public void setUp() throws Exception {
@@ -129,6 +143,7 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
       Document doc = new Document();
       doc.add(newTextField("name", docsContent[i].name, Field.Store.YES));
       doc.add(newTextField("id", docsContent[i].id, Field.Store.YES));
+      doc.add(newTextField("role", docsContent[i].role, Field.Store.YES));
       w.addDocument(doc);
     }
     w.close();
@@ -147,11 +162,14 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
     String name;
 
     String id;
+    
+    String role;
 
-    public DocData(String name, String id) {
+    public DocData(String name, String id, String role) {
       super();
       this.name = name;
       this.id = id;
+      this.role = role;
     }
   }
 

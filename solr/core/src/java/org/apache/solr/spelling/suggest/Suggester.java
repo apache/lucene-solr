@@ -23,6 +23,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 
@@ -131,7 +132,7 @@ public class Suggester extends SolrSpellChecker {
     } else {
       try {
         dictionary = new FileDictionary(new InputStreamReader(
-                core.getResourceLoader().openResource(sourceLocation), IOUtils.CHARSET_UTF_8));
+                core.getResourceLoader().openResource(sourceLocation), StandardCharsets.UTF_8));
       } catch (UnsupportedEncodingException e) {
         // should not happen
         LOG.error("should not happen", e);

@@ -57,7 +57,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
   protected StringBuilder catchAllBuilder = new StringBuilder(2048);
   protected IndexSchema schema;
   protected Map<String, StringBuilder> fieldBuilders = Collections.emptyMap();
-  private LinkedList<StringBuilder> bldrStack = new LinkedList<StringBuilder>();
+  private LinkedList<StringBuilder> bldrStack = new LinkedList<>();
 
   protected boolean captureAttribs;
   protected boolean lowerNames;
@@ -89,7 +89,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
     this.defaultField = params.get(DEFAULT_FIELD, "");
     String[] captureFields = params.getParams(CAPTURE_ELEMENTS);
     if (captureFields != null && captureFields.length > 0) {
-      fieldBuilders = new HashMap<String, StringBuilder>();
+      fieldBuilders = new HashMap<>();
       for (int i = 0; i < captureFields.length; i++) {
         fieldBuilders.put(captureFields[i], new StringBuilder());
       }
@@ -158,7 +158,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
    */
   protected void addLiterals() {
     Iterator<String> paramNames = params.getParameterNamesIterator();
-    literalFieldNames = new HashSet<String>();
+    literalFieldNames = new HashSet<>();
     while (paramNames.hasNext()) {
       String pname = paramNames.next();
       if (!pname.startsWith(LITERALS_PREFIX)) continue;

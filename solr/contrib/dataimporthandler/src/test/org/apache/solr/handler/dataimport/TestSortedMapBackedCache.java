@@ -79,11 +79,11 @@ public class TestSortedMapBackedCache extends AbstractDIHCacheTestCase {
     DIHCache cache = null;
     try {
       cache = new SortedMapBackedCache();
-      Map<String, String> cacheProps = new HashMap<String, String>();
+      Map<String, String> cacheProps = new HashMap<>();
       cacheProps.put(DIHCacheSupport.CACHE_PRIMARY_KEY, "a_id");
       cache.open(getContext(cacheProps));
       
-      Map<String,Object> data = new HashMap<String,Object>();
+      Map<String,Object> data = new HashMap<>();
       data.put("a_id", null);
       data.put("bogus", "data");
       cache.add(data);
@@ -108,7 +108,7 @@ public class TestSortedMapBackedCache extends AbstractDIHCacheTestCase {
   public void testCacheReopensWithUpdate() {
     DIHCache cache = null;
     try {      
-      Map<String, String> cacheProps = new HashMap<String, String>();
+      Map<String, String> cacheProps = new HashMap<>();
       cacheProps.put(DIHCacheSupport.CACHE_PRIMARY_KEY, "a_id");
       
       cache = new SortedMapBackedCache();
@@ -120,7 +120,7 @@ public class TestSortedMapBackedCache extends AbstractDIHCacheTestCase {
       // Close the cache.
       cache.close();
 
-      List<ControlData> newControlData = new ArrayList<ControlData>();
+      List<ControlData> newControlData = new ArrayList<>();
       Object[] newIdEqualsThree = null;
       int j = 0;
       for (int i = 0; i < data.size(); i++) {

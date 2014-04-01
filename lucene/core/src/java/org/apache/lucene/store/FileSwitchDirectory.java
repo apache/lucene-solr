@@ -77,7 +77,7 @@ public class FileSwitchDirectory extends BaseDirectory {
   
   @Override
   public String[] listAll() throws IOException {
-    Set<String> files = new HashSet<String>();
+    Set<String> files = new HashSet<>();
     // LUCENE-3380: either or both of our dirs could be FSDirs,
     // but if one underlying delegate is an FSDir and mkdirs() has not
     // yet been called, because so far everything is written to the other,
@@ -133,11 +133,6 @@ public class FileSwitchDirectory extends BaseDirectory {
   }
 
   @Override
-  public boolean fileExists(String name) throws IOException {
-    return getDirectory(name).fileExists(name);
-  }
-
-  @Override
   public void deleteFile(String name) throws IOException {
     getDirectory(name).deleteFile(name);
   }
@@ -154,8 +149,8 @@ public class FileSwitchDirectory extends BaseDirectory {
 
   @Override
   public void sync(Collection<String> names) throws IOException {
-    List<String> primaryNames = new ArrayList<String>();
-    List<String> secondaryNames = new ArrayList<String>();
+    List<String> primaryNames = new ArrayList<>();
+    List<String> secondaryNames = new ArrayList<>();
 
     for (String name : names)
       if (primaryExtensions.contains(getExtension(name)))

@@ -79,7 +79,7 @@ public class TestStressLucene extends TestRTGBase {
 
     final AtomicInteger numCommitting = new AtomicInteger();
 
-    List<Thread> threads = new ArrayList<Thread>();
+    List<Thread> threads = new ArrayList<>();
 
 
     final FieldType idFt = new FieldType();
@@ -143,7 +143,7 @@ public class TestStressLucene extends TestRTGBase {
                   if (reopenLock != null) reopenLock.lock();
 
                   synchronized(globalLock) {
-                    newCommittedModel = new HashMap<Integer,DocInfo>(model);  // take a snapshot
+                    newCommittedModel = new HashMap<>(model);  // take a snapshot
                     version = snapshotCount++;
                     oldReader = reader;
                     oldReader.incRef();  // increment the reference since we will use this for reopening

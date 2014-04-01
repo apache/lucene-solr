@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -78,7 +79,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   //Some sanity checks, but not a full-fledged check
   public void testHTML() throws Exception {
     InputStream stream = getClass().getResourceAsStream("htmlStripReaderTest.html");
-    HTMLStripCharFilter reader = new HTMLStripCharFilter(new InputStreamReader(stream, "UTF-8"));
+    HTMLStripCharFilter reader = new HTMLStripCharFilter(new InputStreamReader(stream, StandardCharsets.UTF_8));
     StringBuilder builder = new StringBuilder();
     int ch = -1;
     while ((ch = reader.read()) != -1){
@@ -95,7 +96,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
 
   public void testMSWord14GeneratedHTML() throws Exception {
     InputStream stream = getClass().getResourceAsStream("MS-Word 14 generated.htm");
-    HTMLStripCharFilter reader = new HTMLStripCharFilter(new InputStreamReader(stream, "UTF-8"));
+    HTMLStripCharFilter reader = new HTMLStripCharFilter(new InputStreamReader(stream, StandardCharsets.UTF_8));
     String gold = "This is a test";
     StringBuilder builder = new StringBuilder();
     int ch = 0;
@@ -114,7 +115,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   public void testGamma() throws Exception {
     String test = "&Gamma;";
     String gold = "\u0393";
-    Set<String> set = new HashSet<String>();
+    Set<String> set = new HashSet<>();
     set.add("reserved");
     Reader reader = new HTMLStripCharFilter(new StringReader(test), set);
     StringBuilder builder = new StringBuilder();
@@ -129,7 +130,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   public void testEntities() throws Exception {
     String test = "&nbsp; &lt;foo&gt; &Uuml;bermensch &#61; &Gamma; bar &#x393;";
     String gold = "  <foo> \u00DCbermensch = \u0393 bar \u0393";
-    Set<String> set = new HashSet<String>();
+    Set<String> set = new HashSet<>();
     set.add("reserved");
     Reader reader = new HTMLStripCharFilter(new StringReader(test), set);
     StringBuilder builder = new StringBuilder();
@@ -144,7 +145,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   public void testMoreEntities() throws Exception {
     String test = "&nbsp; &lt;junk/&gt; &nbsp; &#33; &#64; and &#8217;";
     String gold = "  <junk/>   ! @ and ’";
-    Set<String> set = new HashSet<String>();
+    Set<String> set = new HashSet<>();
     set.add("reserved");
     Reader reader = new HTMLStripCharFilter(new StringReader(test), set);
     StringBuilder builder = new StringBuilder();
@@ -158,7 +159,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
 
   public void testReserved() throws Exception {
     String test = "aaa bbb <reserved ccc=\"ddddd\"> eeee </reserved> ffff <reserved ggg=\"hhhh\"/> <other/>";
-    Set<String> set = new HashSet<String>();
+    Set<String> set = new HashSet<>();
     set.add("reserved");
     Reader reader = new HTMLStripCharFilter(new StringReader(test), set);
     StringBuilder builder = new StringBuilder();
@@ -588,7 +589,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   public void testEscapeScript() throws Exception {
     String test = "one<script no-value-attr>callSomeMethod();</script>two";
     String gold = "one<script no-value-attr></script>two";
-    Set<String> escapedTags = new HashSet<String>(Arrays.asList("SCRIPT"));
+    Set<String> escapedTags = new HashSet<>(Arrays.asList("SCRIPT"));
     Reader reader = new HTMLStripCharFilter
         (new StringReader(test), escapedTags);
     int ch = 0;
@@ -628,7 +629,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   public void testEscapeStyle() throws Exception {
     String test = "one<style type=\"text/css\"> body,font,a { font-family:arial; } </style>two";
     String gold = "one<style type=\"text/css\"></style>two";
-    Set<String> escapedTags = new HashSet<String>(Arrays.asList("STYLE"));
+    Set<String> escapedTags = new HashSet<>(Arrays.asList("STYLE"));
     Reader reader = new HTMLStripCharFilter
         (new StringReader(test), escapedTags);
     int ch = 0;
@@ -668,7 +669,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   public void testEscapeBR() throws Exception {
     String test = "one<BR class='whatever'>two</\nBR\n>";
     String gold = "one<BR class='whatever'>two</\nBR\n>";
-    Set<String> escapedTags = new HashSet<String>(Arrays.asList("BR"));
+    Set<String> escapedTags = new HashSet<>(Arrays.asList("BR"));
     Reader reader = new HTMLStripCharFilter
         (new StringReader(test), escapedTags);
     int ch = 0;

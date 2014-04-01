@@ -26,10 +26,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.lucene.benchmark.BenchmarkTestCase;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 import org.junit.After;
 import org.junit.Before;
@@ -87,7 +87,7 @@ public class StreamUtilsTest extends BenchmarkTestCase {
   
   private File rawTextFile(String ext) throws Exception {
     File f = new File(testDir,"testfile." +  ext);
-    BufferedWriter w = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(f), IOUtils.CHARSET_UTF_8));
+    BufferedWriter w = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(f), StandardCharsets.UTF_8));
     w.write(TEXT);
     w.newLine();
     w.close();
@@ -116,7 +116,7 @@ public class StreamUtilsTest extends BenchmarkTestCase {
   }
 
   private void writeText(OutputStream os) throws IOException {
-    BufferedWriter w = new BufferedWriter(new OutputStreamWriter(os, IOUtils.CHARSET_UTF_8));
+    BufferedWriter w = new BufferedWriter(new OutputStreamWriter(os, StandardCharsets.UTF_8));
     w.write(TEXT);
     w.newLine();
     w.close();
@@ -124,7 +124,7 @@ public class StreamUtilsTest extends BenchmarkTestCase {
 
   private void assertReadText(File f) throws Exception {
     InputStream ir = StreamUtils.inputStream(f);
-    InputStreamReader in = new InputStreamReader(ir, IOUtils.CHARSET_UTF_8);
+    InputStreamReader in = new InputStreamReader(ir, StandardCharsets.UTF_8);
     BufferedReader r = new BufferedReader(in);
     String line = r.readLine();
     assertEquals("Wrong text found in "+f.getName(), TEXT, line);

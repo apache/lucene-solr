@@ -180,7 +180,7 @@ public class TestCodecs extends LuceneTestCase {
     //final int numTerms = 2;
     final TermData[] terms = new TermData[numTerms];
 
-    final HashSet<String> termsSeen = new HashSet<String>();
+    final HashSet<String> termsSeen = new HashSet<>();
 
     for(int i=0;i<numTerms;i++) {
 

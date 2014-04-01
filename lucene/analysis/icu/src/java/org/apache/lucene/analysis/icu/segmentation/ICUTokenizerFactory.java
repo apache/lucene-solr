@@ -20,7 +20,7 @@ package org.apache.lucene.analysis.icu.segmentation;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -84,7 +84,7 @@ public class ICUTokenizerFactory extends TokenizerFactory implements ResourceLoa
   /** Creates a new ICUTokenizerFactory */
   public ICUTokenizerFactory(Map<String,String> args) {
     super(args);
-    tailored = new HashMap<Integer,String>();
+    tailored = new HashMap<>();
     String rulefilesArg = get(args, RULEFILES);
     if (rulefilesArg != null) {
       List<String> scriptAndResourcePaths = splitFileNames(rulefilesArg);
@@ -132,7 +132,7 @@ public class ICUTokenizerFactory extends TokenizerFactory implements ResourceLoa
     StringBuilder rules = new StringBuilder();
     InputStream rulesStream = loader.openResource(filename);
     BufferedReader reader = new BufferedReader
-        (IOUtils.getDecodingReader(rulesStream, IOUtils.CHARSET_UTF_8));
+        (IOUtils.getDecodingReader(rulesStream, StandardCharsets.UTF_8));
     String line = null;
     while ((line = reader.readLine()) != null) {
       if ( ! line.startsWith("#"))

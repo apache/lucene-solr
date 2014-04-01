@@ -45,7 +45,7 @@ public class TermFilterTest extends LuceneTestCase {
 
   public void testCachability() throws Exception {
     TermFilter a = termFilter("field1", "a");
-    HashSet<Filter> cachedFilters = new HashSet<Filter>();
+    HashSet<Filter> cachedFilters = new HashSet<>();
     cachedFilters.add(a);
     assertTrue("Must be cached", cachedFilters.contains(termFilter("field1", "a")));
     assertFalse("Must not be cached", cachedFilters.contains(termFilter("field1", "b")));
@@ -84,7 +84,7 @@ public class TermFilterTest extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     int num = atLeast(100);
-    List<Term> terms = new ArrayList<Term>();
+    List<Term> terms = new ArrayList<>();
     for (int i = 0; i < num; i++) {
       String field = "field" + i;
       String string = TestUtil.randomRealisticUnicodeString(random());

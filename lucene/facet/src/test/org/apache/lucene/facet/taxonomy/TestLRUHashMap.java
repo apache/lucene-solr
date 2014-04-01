@@ -27,7 +27,7 @@ public class TestLRUHashMap extends FacetTestCase {
   // recently used
   @Test
   public void testLRU() throws Exception {
-    LRUHashMap<String, String> lru = new LRUHashMap<String, String>(3);
+    LRUHashMap<String, String> lru = new LRUHashMap<>(3);
     assertEquals(0, lru.size());
     lru.put("one", "Hello world");
     assertEquals(1, lru.size());

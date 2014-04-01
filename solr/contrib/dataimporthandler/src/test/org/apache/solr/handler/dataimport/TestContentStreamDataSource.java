@@ -58,7 +58,6 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
   @After
   public void tearDown() throws Exception {
     jetty.stop();
-    instance.tearDown();
     super.tearDown();
   }
 
@@ -79,6 +78,7 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
     SolrDocument doc = results.get(0);
     assertEquals("1", doc.getFieldValue("id"));
     assertEquals("Hello C1", ((List)doc.getFieldValue("desc")).get(0));
+    solrServer.shutdown();
   }
 
   @Test
@@ -100,6 +100,7 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
       qres = solrServer.query(queryAll);
       results = qres.getResults();
       if (2 == results.getNumFound()) {
+        solrServer.shutdown();
         return;
       }
       Thread.sleep(500);
@@ -150,7 +151,7 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
 
     public void setUp() throws Exception {
 
-      File home = new File(TEMP_DIR,
+      File home = new File(dataDir,
               getClass().getName() + "-" + System.currentTimeMillis());
 
 
@@ -172,9 +173,6 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
       FileUtils.copyFile(getFile(CONF_DIR + "dataconfig-contentstream.xml"), f);
     }
 
-    public void tearDown() throws Exception {
-      recurseDelete(homeDir);
-    }
   }
 
   private JettySolrRunner createJetty(SolrInstance instance) throws Exception {

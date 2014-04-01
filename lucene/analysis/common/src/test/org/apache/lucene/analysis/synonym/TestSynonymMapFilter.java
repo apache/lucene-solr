@@ -396,8 +396,8 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
     final int numSyn = atLeast(5);
     //final int numSyn = 2;
 
-    final Map<String,OneSyn> synMap = new HashMap<String,OneSyn>();
-    final List<OneSyn> syns = new ArrayList<OneSyn>();
+    final Map<String,OneSyn> synMap = new HashMap<>();
+    final List<OneSyn> syns = new ArrayList<>();
     final boolean dedup = random().nextBoolean();
     if (VERBOSE) {
       System.out.println("  dedup=" + dedup);
@@ -410,7 +410,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
         s = new OneSyn();
         s.in = synIn;
         syns.add(s);
-        s.out = new ArrayList<String>();
+        s.out = new ArrayList<>();
         synMap.put(synIn, s);
         s.keepOrig = random().nextBoolean();
       }
@@ -453,7 +453,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
   }
 
   private void pruneDups(List<OneSyn> syns) {
-    Set<String> seen = new HashSet<String>();
+    Set<String> seen = new HashSet<>();
     for(OneSyn syn : syns) {
       int idx = 0;
       while(idx < syn.out.size()) {
@@ -925,5 +925,17 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
         new int[] { 0, 0, 9, 16 },
         new int[] { 8, 22, 15, 22 },
         new int[] { 1, 0, 1, 1 });
+  }
+
+  public void testEmpty() throws Exception {
+    Tokenizer tokenizer = new MockTokenizer();
+    tokenizer.setReader(new StringReader("aa bb"));
+    try {
+      new SynonymFilter(tokenizer, new SynonymMap.Builder(true).build(), true);
+      fail("did not hit expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+      assertEquals("fst must be non-null", iae.getMessage());
+    }
   }
 }

@@ -60,6 +60,7 @@ import org.apache.lucene.search.FieldCache.Longs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
@@ -139,7 +140,7 @@ public class TestFieldCache extends LuceneTestCase {
     try {
       FieldCache cache = FieldCache.DEFAULT;
       ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
-      cache.setInfoStream(new PrintStream(bos, false, "UTF-8"));
+      cache.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8));
       cache.getDoubles(reader, "theDouble", false);
       cache.getFloats(reader, "theDouble", new FieldCache.FloatParser() {
         @Override
@@ -151,7 +152,7 @@ public class TestFieldCache extends LuceneTestCase {
           return NumericUtils.sortableIntToFloat((int) NumericUtils.prefixCodedToLong(term));
         }
       }, false);
-      assertTrue(bos.toString("UTF-8").indexOf("WARNING") != -1);
+      assertTrue(bos.toString(IOUtils.UTF_8).indexOf("WARNING") != -1);
     } finally {
       FieldCache.DEFAULT.purgeAllCaches();
     }
@@ -278,7 +279,7 @@ public class TestFieldCache extends LuceneTestCase {
     for (int i = 0; i < NUM_DOCS; i++) {
       termOrds.setDocument(i);
       // This will remove identical terms. A DocTermOrds doesn't return duplicate ords for a docId
-      List<BytesRef> values = new ArrayList<BytesRef>(new LinkedHashSet<BytesRef>(Arrays.asList(multiValued[i])));
+      List<BytesRef> values = new ArrayList<>(new LinkedHashSet<>(Arrays.asList(multiValued[i])));
       for (BytesRef v : values) {
         if (v == null) {
           // why does this test use null values... instead of an empty list: confusing

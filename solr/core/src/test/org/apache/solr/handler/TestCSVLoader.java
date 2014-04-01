@@ -29,6 +29,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -41,7 +42,6 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
   }
 
   String filename;
-  String def_charset = "UTF-8";
   File file;
 
   @Override
@@ -66,12 +66,8 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
   }
 
   void makeFile(String contents) {
-    makeFile(contents,def_charset);
-  }
-
-  void makeFile(String contents, String charset) {
     try {
-      Writer out = new OutputStreamWriter(new FileOutputStream(filename), charset);
+      Writer out = new OutputStreamWriter(new FileOutputStream(filename), StandardCharsets.UTF_8);
       out.write(contents);
       out.close();
     } catch (Exception e) {
@@ -93,7 +89,7 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
 
     // TODO: stop using locally defined streams once stream.file and
     // stream.body work everywhere
-    List<ContentStream> cs = new ArrayList<ContentStream>(1);
+    List<ContentStream> cs = new ArrayList<>(1);
     ContentStreamBase f = new ContentStreamBase.FileStream(new File(filename));
     f.setContentType("text/csv");
     cs.add(f);

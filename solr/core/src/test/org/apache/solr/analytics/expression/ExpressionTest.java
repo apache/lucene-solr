@@ -18,24 +18,27 @@
 package org.apache.solr.analytics.expression;
 
 import com.google.common.collect.ObjectArrays;
+
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase.BadApple;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.AbstractAnalyticsStatsTest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.util.DateMathParser;
-import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Scanner;
 
 @SuppressCodecs({"Lucene3x", "Lucene40", "Lucene41", "Lucene42", "Appending", "Asserting"})
+@BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5302")
 public class ExpressionTest extends AbstractAnalyticsStatsTest {
-  private static final String fileName = "core/src/test-files/analytics/requestFiles/expressions.txt";
+  private static final String fileName = "/analytics/requestFiles/expressions.txt";
 
   private static final String[] BASEPARMS = new String[]{"q", "*:*", "indent", "true", "stats", "true", "olap", "true", "rows", "0"};
 
@@ -70,7 +73,7 @@ public class ExpressionTest extends AbstractAnalyticsStatsTest {
 
     assertU(commit());
 
-    setResponse(h.query(request(fileToStringArr(fileName))));
+    setResponse(h.query(request(fileToStringArr(ExpressionTest.class, fileName))));
   }
 
   @Test
@@ -229,18 +232,24 @@ public class ExpressionTest extends AbstractAnalyticsStatsTest {
     return SolrTestCaseJ4.req(ObjectArrays.concat(BASEPARMS, args, String.class));
   }
 
-  public static String[] fileToStringArr(String fileName) throws FileNotFoundException {
-    Scanner file = new Scanner(new File(ExternalPaths.SOURCE_HOME, fileName), "UTF-8");
-    ArrayList<String> strList = new ArrayList<String>();
-    while (file.hasNextLine()) {
-      String line = file.nextLine();
-      if (line.length() < 2) {
-        continue;
+  public static String[] fileToStringArr(Class<?> clazz, String fileName) throws FileNotFoundException {
+    InputStream in = clazz.getResourceAsStream(fileName);
+    if (in == null) throw new FileNotFoundException("Resource not found: " + fileName);
+    Scanner file = new Scanner(in, "UTF-8");
+    try { 
+      ArrayList<String> strList = new ArrayList<>();
+      while (file.hasNextLine()) {
+        String line = file.nextLine();
+        if (line.length()<2) {
+          continue;
+        }
+        String[] param = line.split("=");
+        strList.add(param[0]);
+        strList.add(param[1]);
       }
-      String[] param = line.split("=");
-      strList.add(param[0]);
-      strList.add(param[1]);
+      return strList.toArray(new String[0]);
+    } finally {
+      IOUtils.closeWhileHandlingException(file, in);
     }
-    return strList.toArray(new String[0]);
   }
 }

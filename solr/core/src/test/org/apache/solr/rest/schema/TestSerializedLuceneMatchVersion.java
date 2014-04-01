@@ -30,9 +30,9 @@ public class TestSerializedLuceneMatchVersion extends RestTestBase {
 
   @BeforeClass
   public static void init() throws Exception {
-    final SortedMap<ServletHolder,String> extraServlets = new TreeMap<ServletHolder,String>();
-    final ServletHolder solrRestApi = new ServletHolder("SolrRestApi", ServerServlet.class);
-    solrRestApi.setInitParameter("org.restlet.application", "org.apache.solr.rest.SolrRestApi");
+    final SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
+    final ServletHolder solrRestApi = new ServletHolder("SolrSchemaRestApi", ServerServlet.class);
+    solrRestApi.setInitParameter("org.restlet.application", "org.apache.solr.rest.SolrSchemaRestApi");
     extraServlets.put(solrRestApi, "/schema/*");  // '/schema/*' matches '/schema', '/schema/', and '/schema/whatever...'
 
     createJettyAndHarness(TEST_HOME(), "solrconfig-minimal.xml", "schema-rest-lucene-match-version.xml",

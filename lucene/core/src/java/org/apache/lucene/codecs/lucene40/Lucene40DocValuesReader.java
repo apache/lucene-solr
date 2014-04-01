@@ -57,11 +57,11 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
 
   // ram instances we have already loaded
   private final Map<Integer,NumericDocValues> numericInstances =
-      new HashMap<Integer,NumericDocValues>();
+      new HashMap<>();
   private final Map<Integer,BinaryDocValues> binaryInstances =
-      new HashMap<Integer,BinaryDocValues>();
+      new HashMap<>();
   private final Map<Integer,SortedDocValues> sortedInstances =
-      new HashMap<Integer,SortedDocValues>();
+      new HashMap<>();
 
   private final AtomicLong ramBytesUsed;
 

@@ -29,6 +29,7 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.RandomAccessOrds;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
@@ -45,22 +46,22 @@ import org.apache.lucene.util.RamUsageEstimator;
 
 class DirectDocValuesProducer extends DocValuesProducer {
   // metadata maps (just file pointers and minimal stuff)
-  private final Map<Integer,NumericEntry> numerics = new HashMap<Integer,NumericEntry>();
-  private final Map<Integer,BinaryEntry> binaries = new HashMap<Integer,BinaryEntry>();
-  private final Map<Integer,SortedEntry> sorteds = new HashMap<Integer,SortedEntry>();
-  private final Map<Integer,SortedSetEntry> sortedSets = new HashMap<Integer,SortedSetEntry>();
+  private final Map<Integer,NumericEntry> numerics = new HashMap<>();
+  private final Map<Integer,BinaryEntry> binaries = new HashMap<>();
+  private final Map<Integer,SortedEntry> sorteds = new HashMap<>();
+  private final Map<Integer,SortedSetEntry> sortedSets = new HashMap<>();
   private final IndexInput data;
   
   // ram instances we have already loaded
   private final Map<Integer,NumericDocValues> numericInstances = 
-      new HashMap<Integer,NumericDocValues>();
+      new HashMap<>();
   private final Map<Integer,BinaryDocValues> binaryInstances =
-      new HashMap<Integer,BinaryDocValues>();
+      new HashMap<>();
   private final Map<Integer,SortedDocValues> sortedInstances =
-      new HashMap<Integer,SortedDocValues>();
+      new HashMap<>();
   private final Map<Integer,SortedSetRawValues> sortedSetInstances =
-      new HashMap<Integer,SortedSetRawValues>();
-  private final Map<Integer,Bits> docsWithFieldInstances = new HashMap<Integer,Bits>();
+      new HashMap<>();
+  private final Map<Integer,Bits> docsWithFieldInstances = new HashMap<>();
   
   private final int maxDoc;
   private final AtomicLong ramBytesUsed;
@@ -350,7 +351,8 @@ class DirectDocValuesProducer extends DocValuesProducer {
     final BinaryDocValues values = instance.values;
 
     // Must make a new instance since the iterator has state:
-    return new SortedSetDocValues() {
+    return new RandomAccessOrds() {
+      int ordStart;
       int ordUpto;
       int ordLimit;
 
@@ -365,7 +367,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
       
       @Override
       public void setDocument(int docID) {
-        ordUpto = (int) docToOrdAddress.get(docID);
+        ordStart = ordUpto = (int) docToOrdAddress.get(docID);
         ordLimit = (int) docToOrdAddress.get(docID+1);
       }
 
@@ -377,6 +379,16 @@ class DirectDocValuesProducer extends DocValuesProducer {
       @Override
       public long getValueCount() {
         return entry.values.count;
+      }
+
+      @Override
+      public long ordAt(int index) {
+        return ords.get(ordStart + index);
+      }
+
+      @Override
+      public int cardinality() {
+        return ordLimit - ordStart;
       }
 
       // Leave lookupTerm to super's binary search

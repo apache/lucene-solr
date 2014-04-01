@@ -71,7 +71,7 @@ public class StreamUtils {
     }
   }
 
-  private static final Map<String,Type> extensionToType = new HashMap<String,Type>();
+  private static final Map<String,Type> extensionToType = new HashMap<>();
   static {
     // these in are lower case, we will lower case at the test as well
     extensionToType.put(".bz2", Type.BZIP2);

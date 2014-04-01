@@ -28,7 +28,7 @@ import org.apache.solr.analytics.util.MedianCalculator;
  */
 public class MedianStatsCollector extends AbstractDelegatingStatsCollector{
 
-  private final List<Double> values = new ArrayList<Double>();
+  private final List<Double> values = new ArrayList<>();
   protected double median;
   
   public MedianStatsCollector(StatsCollector delegate) {

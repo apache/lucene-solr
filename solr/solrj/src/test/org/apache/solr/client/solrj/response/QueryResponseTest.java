@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.response;
 
 import junit.framework.Assert;
+
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.SolrDocumentList;
@@ -29,6 +30,7 @@ import org.junit.Test;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
@@ -42,7 +44,7 @@ public class QueryResponseTest extends LuceneTestCase {
     XMLResponseParser parser = new XMLResponseParser();
     InputStream is = new SolrResourceLoader(null, null).openResource("solrj/sampleDateFacetResponse.xml");
     assertNotNull(is);
-    Reader in = new InputStreamReader(is, "UTF-8");
+    Reader in = new InputStreamReader(is, StandardCharsets.UTF_8);
     NamedList<Object> response = parser.processResponse(in);
     in.close();
     
@@ -66,7 +68,7 @@ public class QueryResponseTest extends LuceneTestCase {
     XMLResponseParser parser = new XMLResponseParser();
     InputStream is = new SolrResourceLoader(null, null).openResource("solrj/sampleDateFacetResponse.xml");
     assertNotNull(is);
-    Reader in = new InputStreamReader(is, "UTF-8");
+    Reader in = new InputStreamReader(is, StandardCharsets.UTF_8);
     NamedList<Object> response = parser.processResponse(in);
     in.close();
 
@@ -123,7 +125,7 @@ public class QueryResponseTest extends LuceneTestCase {
     XMLResponseParser parser = new XMLResponseParser();
     InputStream is = new SolrResourceLoader(null, null).openResource("solrj/sampleGroupResponse.xml");
     assertNotNull(is);
-    Reader in = new InputStreamReader(is, "UTF-8");
+    Reader in = new InputStreamReader(is, StandardCharsets.UTF_8);
     NamedList<Object> response = parser.processResponse(in);
     in.close();
 
@@ -225,7 +227,7 @@ public class QueryResponseTest extends LuceneTestCase {
     XMLResponseParser parser = new XMLResponseParser();
     InputStream is = new SolrResourceLoader(null, null).openResource("solrj/sampleSimpleGroupResponse.xml");
     assertNotNull(is);
-    Reader in = new InputStreamReader(is, "UTF-8");
+    Reader in = new InputStreamReader(is, StandardCharsets.UTF_8);
     NamedList<Object> response = parser.processResponse(in);
     in.close();
 

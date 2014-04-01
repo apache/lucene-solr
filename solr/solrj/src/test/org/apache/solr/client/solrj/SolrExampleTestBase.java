@@ -36,9 +36,7 @@ abstract public class SolrExampleTestBase extends AbstractSolrTestCase
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    if (dataDir == null) {
-      createTempDir();
-    }
+
   }
  
   @Override

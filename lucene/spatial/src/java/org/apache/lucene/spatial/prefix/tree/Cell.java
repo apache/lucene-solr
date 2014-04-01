@@ -174,7 +174,7 @@ public abstract class Cell implements Comparable<Cell> {
     }
 
     //TODO change API to return a filtering iterator
-    List<Cell> copy = new ArrayList<Cell>(cells.size());
+    List<Cell> copy = new ArrayList<>(cells.size());
     for (Cell cell : cells) {
       SpatialRelation rel = cell.getShape().relate(shapeFilter);
       if (rel == SpatialRelation.DISJOINT)

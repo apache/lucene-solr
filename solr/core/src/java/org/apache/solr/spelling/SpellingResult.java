@@ -37,7 +37,7 @@ public class SpellingResult {
    * Key == token
    * Value = Map  -> key is the suggestion, value is the frequency of the token in the collection
    */
-  private Map<Token, LinkedHashMap<String, Integer>> suggestions = new LinkedHashMap<Token, LinkedHashMap<String, Integer>>();
+  private Map<Token, LinkedHashMap<String, Integer>> suggestions = new LinkedHashMap<>();
   private Map<Token, Integer> tokenFrequency;
   public static final int NO_FREQUENCY_INFO = -1;
 
@@ -58,7 +58,7 @@ public class SpellingResult {
   public void add(Token token, List<String> suggestions) {
     LinkedHashMap<String, Integer> map = this.suggestions.get(token);
     if (map == null ) {
-      map = new LinkedHashMap<String, Integer>();
+      map = new LinkedHashMap<>();
       this.suggestions.put(token, map);
     }
     for (String suggestion : suggestions) {
@@ -74,7 +74,7 @@ public class SpellingResult {
    */
   public void addFrequency(Token token, int docFreq) {
     if (tokenFrequency == null) {
-      tokenFrequency = new LinkedHashMap<Token, Integer>();
+      tokenFrequency = new LinkedHashMap<>();
     }
     tokenFrequency.put(token, docFreq);
   }
@@ -89,7 +89,7 @@ public class SpellingResult {
     LinkedHashMap<String, Integer> map = this.suggestions.get(token);
     //Don't bother adding if we already have this token
     if (map == null) {
-      map = new LinkedHashMap<String, Integer>();
+      map = new LinkedHashMap<>();
       this.suggestions.put(token, map);
     }
     map.put(suggestion, docFreq);

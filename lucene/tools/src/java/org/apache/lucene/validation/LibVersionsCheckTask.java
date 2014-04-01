@@ -33,6 +33,7 @@ import org.xml.sax.helpers.DefaultHandler;
 import org.xml.sax.helpers.XMLReaderFactory;
 
 import javax.xml.parsers.ParserConfigurationException;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -44,6 +45,7 @@ import java.io.Reader;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Locale;
@@ -98,7 +100,7 @@ public class LibVersionsCheckTask extends Task {
    * All /org/name version keys found in ivy-versions.properties, and whether they
    * are referenced in any ivy.xml file.
    */
-  private Map<String,Boolean> referencedCoordinateKeys = new LinkedHashMap<String,Boolean>();
+  private Map<String,Boolean> referencedCoordinateKeys = new LinkedHashMap<>();
 
   /**
    * Adds a set of ivy.xml resources to check.
@@ -188,7 +190,7 @@ public class LibVersionsCheckTask extends Task {
           + centralizedVersionsFile.getPath());
     }
     // Properties files are encoded as Latin-1
-    final Reader reader = new InputStreamReader(stream, Charset.forName("ISO-8859-1"));
+    final Reader reader = new InputStreamReader(stream, StandardCharsets.ISO_8859_1);
     final BufferedReader bufferedReader = new BufferedReader(reader);
     
     String line = null;
@@ -320,7 +322,7 @@ public class LibVersionsCheckTask extends Task {
 
   private class DependencyRevChecker extends DefaultHandler {
     private final File ivyXmlFile;
-    private final Stack<String> tags = new Stack<String>();
+    private final Stack<String> tags = new Stack<>();
     
     public boolean fail = false;
 

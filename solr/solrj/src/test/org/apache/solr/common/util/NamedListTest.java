@@ -25,7 +25,7 @@ import org.apache.solr.common.SolrException;
 
 public class NamedListTest extends LuceneTestCase {
   public void testRemove() {
-    NamedList<String> nl = new NamedList<String>();
+    NamedList<String> nl = new NamedList<>();
     nl.add("key1", "value1");
     nl.add("key2", "value2");
     assertEquals(2, nl.size());
@@ -39,7 +39,7 @@ public class NamedListTest extends LuceneTestCase {
   }
   
   public void testRemoveAll() {
-    NamedList<String> nl = new NamedList<String>();
+    NamedList<String> nl = new NamedList<>();
     nl.add("key1", "value1-1");
     nl.add("key2", "value2-1");
     nl.add("key1", "value1-2");
@@ -64,7 +64,7 @@ public class NamedListTest extends LuceneTestCase {
   }
   
   public void testRemoveArgs() {
-    NamedList<Object> nl = new NamedList<Object>();
+    NamedList<Object> nl = new NamedList<>();
     nl.add("key1", "value1-1");
     nl.add("key2", "value2-1");
     nl.add("key1", "value1-2");
@@ -114,23 +114,23 @@ public class NamedListTest extends LuceneTestCase {
     // - key3c
     
     // this is a varied NL structure.
-    NamedList<String> nl2b = new NamedList<String>();
+    NamedList<String> nl2b = new NamedList<>();
     nl2b.add("key2b1", "value2b1");
     nl2b.add("key2b2", "value2b2");
-    NamedList<String> nl3a = new NamedList<String>();
+    NamedList<String> nl3a = new NamedList<>();
     nl3a.add("key3a1", "value3a1");
     nl3a.add("key3a2", "value3a2");
     nl3a.add("key3a3", "value3a3");
-    NamedList<Object> nl2 = new NamedList<Object>();
+    NamedList<Object> nl2 = new NamedList<>();
     nl2.add("key2a", "value2a");
     nl2.add("key2b", nl2b);
     nl2.add("k2int1", (int) 5);
-    NamedList<Object> nl3 = new NamedList<Object>();
+    NamedList<Object> nl3 = new NamedList<>();
     nl3.add("key3a", nl3a);
     nl3.add("key3b", "value3b");
     nl3.add("key3c", "value3c");
     nl3.add("key3c", "value3c2");
-    NamedList<Object> nl = new NamedList<Object>();
+    NamedList<Object> nl = new NamedList<>();
     nl.add("key1", "value1");
     nl.add("key2", nl2);
     nl.add("key3", nl3);
@@ -165,8 +165,8 @@ public class NamedListTest extends LuceneTestCase {
     // - key1a
     // - key1b
     // key2 (null list)
-    NamedList<NamedList<String>> enl = new NamedList<NamedList<String>>();
-    NamedList<String> enlkey1 = new NamedList<String>();
+    NamedList<NamedList<String>> enl = new NamedList<>();
+    NamedList<String> enlkey1 = new NamedList<>();
     NamedList<String> enlkey2 = null;
     enlkey1.add("key1a", "value1a");
     enlkey1.add("key1b", "value1b");

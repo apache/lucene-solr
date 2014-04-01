@@ -43,7 +43,7 @@ public class TestZkChroot extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    createTempDir();
+
     zkDir = dataDir.getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
     zkServer = new ZkTestServer(zkDir);
@@ -63,17 +63,6 @@ public class TestZkChroot extends SolrTestCaseJ4 {
     }
     
     zkServer.shutdown();
-    
-    String skip = System.getProperty("solr.test.leavedatadir");
-    if (null != skip && 0 != skip.trim().length()) {
-      log.info("NOTE: per solr.test.leavedatadir, dataDir will not be removed: "
-          + dataDir.getAbsolutePath());
-    } else {
-      if (!AbstractSolrTestCase.recurseDelete(dataDir)) {
-        log.warn("!!!! WARNING: best effort to remove "
-            + dataDir.getAbsolutePath() + " FAILED !!!!!");
-      }
-    }
     
     zkServer = null;
     zkDir = null;

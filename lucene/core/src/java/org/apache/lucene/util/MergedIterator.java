@@ -59,12 +59,12 @@ public final class MergedIterator<T extends Comparable<T>> implements Iterator<T
   @SuppressWarnings({"unchecked","rawtypes"})
   public MergedIterator(boolean removeDuplicates, Iterator<T>... iterators) {
     this.removeDuplicates = removeDuplicates;
-    queue = new TermMergeQueue<T>(iterators.length);
+    queue = new TermMergeQueue<>(iterators.length);
     top = new SubIterator[iterators.length];
     int index = 0;
     for (Iterator<T> iterator : iterators) {
       if (iterator.hasNext()) {
-        SubIterator<T> sub = new SubIterator<T>();
+        SubIterator<T> sub = new SubIterator<>();
         sub.current = iterator.next();
         sub.iterator = iterator;
         sub.index = index++;

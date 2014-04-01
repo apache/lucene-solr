@@ -144,7 +144,7 @@ public final class QueryResultKey {
     // (And of course: if the SolrIndexSearcher / QueryCommmand was ever changed to
     // sort the filter query list, then this whole method could be eliminated).
 
-    final ArrayList<Query> set2 = new ArrayList<Query>(fqList2.subList(start, sz));
+    final ArrayList<Query> set2 = new ArrayList<>(fqList2.subList(start, sz));
     for (int i = start; i < sz; i++) {
       Query q1 = fqList1.get(i);
       if ( ! set2.remove(q1) ) {

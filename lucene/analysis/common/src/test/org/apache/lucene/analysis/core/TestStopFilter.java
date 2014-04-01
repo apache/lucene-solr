@@ -59,7 +59,7 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
    */
   public void testStopPositons() throws IOException {
     StringBuilder sb = new StringBuilder();
-    ArrayList<String> a = new ArrayList<String>();
+    ArrayList<String> a = new ArrayList<>();
     for (int i=0; i<20; i++) {
       String w = English.intToEnglish(i).trim();
       sb.append(w).append(" ");
@@ -76,8 +76,8 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
     StopFilter stpf = new StopFilter(Version.LUCENE_40, in, stopSet);
     doTestStopPositons(stpf);
     // with increments, concatenating two stop filters
-    ArrayList<String> a0 = new ArrayList<String>();
-    ArrayList<String> a1 = new ArrayList<String>();
+    ArrayList<String> a0 = new ArrayList<>();
+    ArrayList<String> a1 = new ArrayList<>();
     for (int i=0; i<a.size(); i++) {
       if (i%2==0) { 
         a0.add(a.get(i));

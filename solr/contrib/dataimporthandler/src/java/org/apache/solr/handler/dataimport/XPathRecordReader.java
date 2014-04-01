@@ -162,7 +162,7 @@ public class XPathRecordReader {
    * @return results a List of emitted records
    */
   public List<Map<String, Object>> getAllRecords(Reader r) {
-    final List<Map<String, Object>> results = new ArrayList<Map<String, Object>>();
+    final List<Map<String, Object>> results = new ArrayList<>();
     streamRecords(r, new Handler() {
       @Override
       public void handle(Map<String, Object> record, String s) {
@@ -249,7 +249,7 @@ public class XPathRecordReader {
         // prepare for the clean up that will occurr when the record
         // is emitted after its END_ELEMENT is matched 
         recordStarted = true;
-        valuesAddedinThisFrame = new HashSet<String>();
+        valuesAddedinThisFrame = new HashSet<>();
         stack.push(valuesAddedinThisFrame);
       } else if (recordStarted) {
         // This node is a child of some parent which matched against forEach 
@@ -274,7 +274,7 @@ public class XPathRecordReader {
           }
         }
 
-        Set<Node> childrenFound = new HashSet<Node>();
+        Set<Node> childrenFound = new HashSet<>();
         int event = -1;
         int flattenedStarts=0; // our tag depth when flattening elements
         StringBuilder text = new StringBuilder();
@@ -342,7 +342,7 @@ public class XPathRecordReader {
                                     Stack<Set<String>> stack, boolean recordStarted)
             throws IOException, XMLStreamException {
       Node n = getMatchingNode(parser,childNodes);
-      Map<String, Object> decends=new HashMap<String, Object>();
+      Map<String, Object> decends=new HashMap<>();
       if (n != null) {
         childrenFound.add(n);
         n.parse(parser, handler, values, stack, recordStarted);
@@ -466,7 +466,7 @@ public class XPathRecordReader {
       if (multiValued) {
         List<String> v = (List<String>) values.get(fieldName);
         if (v == null) {
-          v = new ArrayList<String>();
+          v = new ArrayList<>();
           values.put(fieldName, v);
         }
         v.add(value);
@@ -510,7 +510,7 @@ public class XPathRecordReader {
         // we have reached end of element portion of Xpath and can now only
         // have an element attribute. Add it to this nodes list of attributes
         if (attributes == null) {
-          attributes = new ArrayList<Node>();
+          attributes = new ArrayList<>();
         }
         xpseg = xpseg.substring(1); // strip the '@'
         attributes.add(new Node(xpseg, fieldName, multiValued));
@@ -518,7 +518,7 @@ public class XPathRecordReader {
       else if ( xpseg.length() == 0) {
         // we have a '//' selector for all decendents of the current nodes
         xpseg = paths.remove(0); // shift out next Xpath segment
-        if (wildCardNodes == null) wildCardNodes = new ArrayList<Node>();
+        if (wildCardNodes == null) wildCardNodes = new ArrayList<>();
         Node n = getOrAddNode(xpseg, wildCardNodes);
         if (paths.isEmpty()) {
           // We are current a leaf node.
@@ -535,7 +535,7 @@ public class XPathRecordReader {
       }
       else {
         if (childNodes == null)
-          childNodes = new ArrayList<Node>();
+          childNodes = new ArrayList<>();
         // does this "name" already exist as a child node.
         Node n = getOrAddNode(xpseg,childNodes);
         if (paths.isEmpty()) {
@@ -572,13 +572,13 @@ public class XPathRecordReader {
         n.name = m.group(1);
         int start = m.start(2);
         while (true) {
-          HashMap<String, String> attribs = new HashMap<String, String>();
+          HashMap<String, String> attribs = new HashMap<>();
           if (!m.find(start))
             break;
           attribs.put(m.group(3), m.group(5));
           start = m.end(6);
           if (n.attribAndValues == null)
-            n.attribAndValues = new ArrayList<Map.Entry<String, String>>();
+            n.attribAndValues = new ArrayList<>();
           n.attribAndValues.addAll(attribs.entrySet());
         }
       }
@@ -592,7 +592,7 @@ public class XPathRecordReader {
      * deep-copied for thread safety
      */
     private static Map<String, Object> getDeepCopy(Map<String, Object> values) {
-      Map<String, Object> result = new HashMap<String, Object>();
+      Map<String, Object> result = new HashMap<>();
       for (Map.Entry<String, Object> entry : values.entrySet()) {
         if (entry.getValue() instanceof List) {
           result.put(entry.getKey(), new ArrayList((List) entry.getValue()));
@@ -616,7 +616,7 @@ public class XPathRecordReader {
    * seperator or if a sequence of multiple seperator's appear. 
    */
   private static List<String> splitEscapeQuote(String str) {
-    List<String> result = new LinkedList<String>();
+    List<String> result = new LinkedList<>();
     String[] ss = str.split("/");
     for (int i=0; i<ss.length; i++) { // i=1: skip seperator at start of string
       StringBuilder sb = new StringBuilder();

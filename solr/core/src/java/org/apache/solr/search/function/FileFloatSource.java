@@ -22,7 +22,6 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IOUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.RequestHandlerUtils;
@@ -39,6 +38,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -252,7 +252,7 @@ public class FileFloatSource extends ValueSource {
       return vals;
     }
 
-    BufferedReader r = new BufferedReader(new InputStreamReader(is, IOUtils.CHARSET_UTF_8));
+    BufferedReader r = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 
     String idName = ffs.keyField.getName();
     FieldType idType = ffs.keyField.getType();
@@ -261,7 +261,7 @@ public class FileFloatSource extends ValueSource {
     // because of this, simply ask the reader for a new termEnum rather than
     // trying to use skipTo()
 
-    List<String> notFound = new ArrayList<String>();
+    List<String> notFound = new ArrayList<>();
     int notFoundCount=0;
     int otherErrors=0;
 

@@ -78,6 +78,7 @@ public class PreAnalyzedField extends FieldType {
           parser = new JsonPreAnalyzedParser();
         }
       }
+      args.remove(PARSER_IMPL);
     }
   }
 
@@ -168,7 +169,7 @@ public class PreAnalyzedField extends FieldType {
   public static class ParseResult {
     public String str;
     public byte[] bin;
-    public List<State> states = new LinkedList<State>();
+    public List<State> states = new LinkedList<>();
   }
   
   /**
@@ -247,7 +248,7 @@ public class PreAnalyzedField extends FieldType {
    * Token stream that works from a list of saved states.
    */
   private static class PreAnalyzedTokenizer extends Tokenizer {
-    private final List<AttributeSource.State> cachedStates = new LinkedList<AttributeSource.State>();
+    private final List<AttributeSource.State> cachedStates = new LinkedList<>();
     private Iterator<AttributeSource.State> it = null;
     private String stringValue = null;
     private byte[] binaryValue = null;

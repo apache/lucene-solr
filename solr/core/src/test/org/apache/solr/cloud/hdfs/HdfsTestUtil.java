@@ -36,7 +36,7 @@ public class HdfsTestUtil {
   
   private static Locale savedLocale;
   
-  private static Map<MiniDFSCluster,Timer> timers = new ConcurrentHashMap<MiniDFSCluster,Timer>();
+  private static Map<MiniDFSCluster,Timer> timers = new ConcurrentHashMap<>();
 
   public static MiniDFSCluster setupClass(String dataDir) throws Exception {
     LuceneTestCase.assumeFalse("HDFS tests were disabled by -Dtests.disableHdfs",
@@ -63,6 +63,8 @@ public class HdfsTestUtil {
     System.setProperty("solr.lock.type", "hdfs");
     
     System.setProperty("solr.hdfs.home", "/solr_hdfs_home");
+    
+    System.setProperty("solr.hdfs.blockcache.global", Boolean.toString(LuceneTestCase.random().nextBoolean()));
     
     final MiniDFSCluster dfsCluster = new MiniDFSCluster(conf, dataNodes, true, null);
     dfsCluster.waitActive();
@@ -92,6 +94,7 @@ public class HdfsTestUtil {
     System.clearProperty("test.build.data");
     System.clearProperty("test.cache.data");
     System.clearProperty("solr.hdfs.home");
+    System.clearProperty("solr.hdfs.blockcache.global");
     if (dfsCluster != null) {
       timers.remove(dfsCluster);
       dfsCluster.shutdown();

@@ -56,7 +56,7 @@
   <property name="dev.version" value="${dev.version.base}-${dev.version.suffix}"/>
   <property name="version" value="${dev.version}"/>
   <property name="spec.version" value="${version}"/>	
-  
+
   <property name="year" value="2000-${current.year}"/>
   
   <!-- Lucene modules unfortunately don't have the "lucene-" prefix, so we add it if no prefix is given in $name: -->
@@ -576,6 +576,7 @@
     <attribute name="implementation.title"/>
     <attribute name="spec.version"/>
     <attribute name="manifest.file" default="${manifest.file}"/>
+    <element name="additional-manifest-attributes" optional="true"/>
     <sequential>
       <!-- If possible, include the svnversion -->
       <exec dir="." executable="${svnversion.exe}" outputproperty="svnversion" failifexecutionfails="false"/>
@@ -615,7 +616,7 @@
                    value="The Apache Software Foundation"/>
         <attribute name="X-Compile-Source-JDK" value="${javac.source}"/>
         <attribute name="X-Compile-Target-JDK" value="${javac.target}"/>
-        <attribute name="Main-Class" value="${main.class}"/>
+        <additional-manifest-attributes />
       </manifest>
     </sequential>
   </macrodef>
@@ -629,19 +630,24 @@
     <attribute name="implementation.title" default="org.apache.lucene"/>
     <attribute name="spec.version" default="${spec.version}"/>
     <attribute name="manifest.file" default="${manifest.file}"/>
-    <element name="nested" optional="true" implicit="true"/>
+    <element name="filesets" optional="true"/>
+    <element name="jarify-additional-manifest-attributes" optional="true"/>
     <sequential>
       <build-manifest title="@{title}"
                       implementation.title="@{implementation.title}"
                       spec.version="@{spec.version}"
-                      manifest.file="@{manifest.file}"/>
+                      manifest.file="@{manifest.file}">
+        <additional-manifest-attributes>
+          <jarify-additional-manifest-attributes />
+        </additional-manifest-attributes>
+      </build-manifest>
     	
       <jar destfile="@{destfile}"
            basedir="@{basedir}"
            manifest="@{manifest.file}"
            excludes="@{excludes}">
         <metainf dir="@{metainf.source.dir}" includes="LICENSE.txt,NOTICE.txt"/>
-        <nested />
+        <filesets />
       </jar>
     </sequential>
   </macrodef>
@@ -963,7 +969,7 @@
             <sysproperty key="java.security.manager" value="org.apache.lucene.util.TestSecurityManager" />
             <sysproperty key="java.security.policy" file="${common.dir}/tools/junit4/tests.policy" />
 
-            <sysproperty key="lucene.version" value="${dev.version}"/>
+            <sysproperty key="lucene.version" value="${version}"/>
 
             <sysproperty key="jetty.testMode" value="1"/>
             <sysproperty key="jetty.insecurerandom" value="1"/>
@@ -983,6 +989,7 @@
                 <propertyref prefix="tests.timeoutSuite" />
                 <propertyref prefix="tests.jettyConnector" />
                 <propertyref prefix="tests.disableHdfs" />
+                <propertyref prefix="tests.filter" />
             </syspropertyset>
 
             <!-- Pass randomized settings to the forked JVM. -->
@@ -1327,7 +1334,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
   
 ]]></fail>
     <echo>Code coverage with Atlassian Clover enabled.</echo>
-    <ivy:cachepath organisation="com.cenqua.clover" module="clover" revision="3.2.0"
+    <ivy:cachepath organisation="com.cenqua.clover" module="clover" revision="3.2.2"
       inline="true" conf="master" pathid="clover.classpath"/>
     <taskdef resource="cloverlib.xml" classpathref="clover.classpath" />
     <mkdir dir="${clover.db.dir}"/>
@@ -1400,7 +1407,9 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     <sequential>
       <mkdir dir="${build.dir}" />
       <jarify basedir="${src.dir}" destfile="${build.dir}/${final.name}-src.jar">
-        <fileset dir="${resources.dir}" erroronmissingdir="no"/>
+        <filesets>
+          <fileset dir="${resources.dir}" erroronmissingdir="no"/>
+        </filesets>
       </jarify>
     </sequential>
   </target>
@@ -2164,7 +2173,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
 
   <!-- JFlex task -->
   <target name="-install-jflex" unless="jflex.loaded" depends="ivy-availability-check,ivy-configure">
-    <ivy:cachepath organisation="de.jflex" module="jflex" revision="1.5.0"
+    <ivy:cachepath organisation="de.jflex" module="jflex" revision="1.5.1"
                    inline="true" conf="default" transitive="true" pathid="jflex.classpath"/>
     <taskdef name="jflex" classname="jflex.anttask.JFlexTask" classpathref="jflex.classpath"/>
     <property name="jflex.loaded" value="true"/>
@@ -2172,7 +2181,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
 
   <!-- GROOVY scripting engine for ANT tasks -->
   <target name="resolve-groovy" unless="groovy.loaded" depends="ivy-availability-check,ivy-configure">
-    <ivy:cachepath organisation="org.codehaus.groovy" module="groovy-all" revision="2.2.1"
+    <ivy:cachepath organisation="org.codehaus.groovy" module="groovy-all" revision="2.2.2"
       inline="true" conf="default" type="jar" transitive="true" pathid="groovy.classpath"/>
     <taskdef name="groovy"
       classname="org.codehaus.groovy.ant.Groovy"
@@ -2184,9 +2193,10 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <property name="forbidden-base-excludes" value=""/>
   <property name="forbidden-tests-excludes" value=""/>
   <property name="forbidden-sysout-excludes" value=""/>
+  <property name="forbidden-rue-excludes" value=""/>
   
   <target name="-install-forbidden-apis" unless="forbidden-apis.loaded" depends="ivy-availability-check,ivy-configure">
-    <ivy:cachepath organisation="de.thetaphi" module="forbiddenapis" revision="1.4"
+    <ivy:cachepath organisation="de.thetaphi" module="forbiddenapis" revision="1.4.1"
       inline="true" conf="default" transitive="true" pathid="forbidden-apis.classpath"/>
     <taskdef name="forbidden-apis" classname="de.thetaphi.forbiddenapis.AntTask" classpathref="forbidden-apis.classpath"/>
     <property name="forbidden-apis.loaded" value="true"/>
@@ -2203,9 +2213,10 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
     </path>
   </target>  
 
-  <target name="check-forbidden-apis" depends="-check-forbidden-base,-check-forbidden-tests,-check-forbidden-sysout" description="Check forbidden API calls in compiled class files"/>
+  <target name="check-forbidden-apis" depends="-check-forbidden-all,-check-forbidden-core,-check-forbidden-tests" description="Check forbidden API calls in compiled class files"/>
   
-  <target name="-check-forbidden-base" depends="-init-forbidden-apis,compile-core,compile-test">
+  <!-- applies to both source and test code -->
+  <target name="-check-forbidden-all" depends="-init-forbidden-apis,compile-core,compile-test">
     <forbidden-apis internalRuntimeForbidden="true" classpathref="forbidden-apis.allclasses.classpath">
       <bundledSignatures name="jdk-unsafe-${javac.target}"/>
       <bundledSignatures name="jdk-deprecated-${javac.target}"/>
@@ -2215,12 +2226,22 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
     </forbidden-apis>
   </target>
   
+  <!-- applies to only test code -->
   <target name="-check-forbidden-tests" depends="-init-forbidden-apis,compile-test">
     <forbidden-apis signaturesFile="${common.dir}/tools/forbiddenApis/tests.txt" classpathref="forbidden-apis.allclasses.classpath"> 
       <fileset dir="${build.dir}/classes/test" excludes="${forbidden-tests-excludes}"/>
     </forbidden-apis>
   </target>
-    
+ 
+  <!-- applies to only source code -->
+  <target name="-check-forbidden-core" depends="-init-forbidden-apis,compile-core,-check-forbidden-sysout,-check-forbidden-rue" />
+
+  <target name="-check-forbidden-rue" depends="-init-forbidden-apis,compile-core">
+    <forbidden-apis signaturesFile="${common.dir}/tools/forbiddenApis/rue.txt" classpathref="forbidden-apis.allclasses.classpath">
+      <fileset dir="${build.dir}/classes/java" excludes="${forbidden-rue-excludes}"/>
+    </forbidden-apis>
+  </target>
+
   <target name="-check-forbidden-sysout" depends="-init-forbidden-apis,compile-core">
     <forbidden-apis bundledSignatures="jdk-system-out" classpathref="forbidden-apis.allclasses.classpath">
       <fileset dir="${build.dir}/classes/java" excludes="${forbidden-sysout-excludes}"/>
@@ -2230,7 +2251,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <!-- PEGDOWN macro: Before using depend on the target "resolve-pegdown,resolve-groovy" -->
   
   <target name="resolve-pegdown" unless="pegdown.loaded" depends="ivy-availability-check,ivy-configure">
-    <ivy:cachepath organisation="org.pegdown" module="pegdown" revision="1.4.1"
+    <ivy:cachepath organisation="org.pegdown" module="pegdown" revision="1.4.2"
       inline="true" conf="default" transitive="true" pathid="pegdown.classpath"/>
     <property name="pegdown.loaded" value="true"/>
   </target>
@@ -2390,7 +2411,7 @@ The following arguments can be provided to ant to alter its behaviour and target
 
         <junit4:pickseed property="pitest.seed" />
 
-        <property name="pitest.sysprops" value="-Dlucene.version=${dev.version},-Dtest.seed=${pitest.seed},-Djava.security.manager=org.apache.lucene.util.TestSecurityManager,-Djava.security.policy=${common.dir}/tools/junit4/tests.policy,-Djava.io.tmpdir=${tests.workDir},-Djunit4.childvm.cwd=${tests.workDir},-Djunit4.tempDir=${tests.workDir}" />
+        <property name="pitest.sysprops" value="-Dlucene.version=${version},-Dtest.seed=${pitest.seed},-Djava.security.manager=org.apache.lucene.util.TestSecurityManager,-Djava.security.policy=${common.dir}/tools/junit4/tests.policy,-Djava.io.tmpdir=${tests.workDir},-Djunit4.childvm.cwd=${tests.workDir},-Djunit4.tempDir=${tests.workDir}" />
 
         <pitest
             classPath="pitest.classpath"

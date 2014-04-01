@@ -43,7 +43,7 @@ import org.apache.lucene.util.FixedBitSet;
  */
 public class BooleanFilter extends Filter implements Iterable<FilterClause> {
 
-  private final List<FilterClause> clauses = new ArrayList<FilterClause>();
+  private final List<FilterClause> clauses = new ArrayList<>();
 
   /**
    * Returns the a DocIdSetIterator representing the Boolean composition

@@ -237,7 +237,7 @@ public class TestSort extends SolrTestCaseJ4 {
         final boolean sortMissingLast = !luceneSort && r.nextBoolean();
         final boolean sortMissingFirst = !luceneSort && !sortMissingLast;
         final boolean reverse = r.nextBoolean();
-        List<SortField> sfields = new ArrayList<SortField>();
+        List<SortField> sfields = new ArrayList<>();
 
         final boolean secondary = r.nextBoolean();
         final boolean luceneSort2 = r.nextBoolean();
@@ -263,7 +263,7 @@ public class TestSort extends SolrTestCaseJ4 {
         boolean scoreInOrder = r.nextBoolean();
         final TopFieldCollector topCollector = TopFieldCollector.create(sort, top, true, trackScores, trackMaxScores, scoreInOrder);
 
-        final List<MyDoc> collectedDocs = new ArrayList<MyDoc>();
+        final List<MyDoc> collectedDocs = new ArrayList<>();
         // delegate and collect docs ourselves
         Collector myCollector = new Collector() {
           int docBase;

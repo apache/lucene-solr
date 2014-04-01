@@ -9,6 +9,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -54,7 +55,7 @@ public class FileBasedQueryMaker extends AbstractQueryMaker implements QueryMake
     QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, defaultField, anlzr);
     qp.setAllowLeadingWildcard(true);
 
-    List<Query> qq = new ArrayList<Query>();
+    List<Query> qq = new ArrayList<>();
     String fileName = config.get("file.query.maker.file", null);
     if (fileName != null)
     {
@@ -62,12 +63,12 @@ public class FileBasedQueryMaker extends AbstractQueryMaker implements QueryMake
       Reader reader = null;
       // note: we use a decoding reader, so if your queries are screwed up you know
       if (file.exists()) {
-        reader = IOUtils.getDecodingReader(file, IOUtils.CHARSET_UTF_8);
+        reader = IOUtils.getDecodingReader(file, StandardCharsets.UTF_8);
       } else {
         //see if we can find it as a resource
         InputStream asStream = FileBasedQueryMaker.class.getClassLoader().getResourceAsStream(fileName);
         if (asStream != null) {
-          reader = IOUtils.getDecodingReader(asStream, IOUtils.CHARSET_UTF_8);
+          reader = IOUtils.getDecodingReader(asStream, StandardCharsets.UTF_8);
         }
       }
       if (reader != null) {

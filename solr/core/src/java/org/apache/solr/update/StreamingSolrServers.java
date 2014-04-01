@@ -43,7 +43,7 @@ public class StreamingSolrServers {
   
   private HttpClient httpClient;
   
-  private Map<String,ConcurrentUpdateSolrServer> solrServers = new HashMap<String,ConcurrentUpdateSolrServer>();
+  private Map<String,ConcurrentUpdateSolrServer> solrServers = new HashMap<>();
   private List<Error> errors = Collections.synchronizedList(new ArrayList<Error>());
 
   private ExecutorService updateExecutor;
@@ -82,7 +82,7 @@ public class StreamingSolrServers {
       server.setParser(new BinaryResponseParser());
       server.setRequestWriter(new BinaryRequestWriter());
       server.setPollQueueTime(0);
-      Set<String> queryParams = new HashSet<String>(2);
+      Set<String> queryParams = new HashSet<>(2);
       queryParams.add(DistributedUpdateProcessor.DISTRIB_FROM);
       queryParams.add(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM);
       server.setQueryParams(queryParams);

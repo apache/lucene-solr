@@ -23,6 +23,7 @@ import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
 
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -41,7 +42,7 @@ import java.util.List;
  */
 public abstract class SpatialPrefixTree {
 
-  protected static final Charset UTF8 = Charset.forName("UTF-8");
+  protected static final Charset UTF8 = StandardCharsets.UTF_8;
 
   protected final int maxLevels;
 
@@ -164,7 +165,7 @@ public abstract class SpatialPrefixTree {
     if (shape instanceof Point) {
       return getCells((Point) shape, detailLevel, inclParents);
     }
-    List<Cell> cells = new ArrayList<Cell>(inclParents ? 4096 : 2048);
+    List<Cell> cells = new ArrayList<>(inclParents ? 4096 : 2048);
     recursiveGetCells(getWorldCell(), shape, detailLevel, inclParents, simplify, cells);
     return cells;
   }
@@ -226,9 +227,9 @@ public abstract class SpatialPrefixTree {
 
     String endToken = cell.getTokenString();
     assert endToken.length() == detailLevel;
-    List<Cell> cells = new ArrayList<Cell>(detailLevel);
+    List<Cell> cells = new ArrayList<>(detailLevel);
     for (int i = 1; i < detailLevel; i++) {
-      cells.add(getCell(endToken.substring(0, i)));
+      cells.add(getCell(endToken.substring(0, i)));//TODO refactor: add a cell.getParent()
     }
     cells.add(cell);
     return cells;
@@ -236,9 +237,10 @@ public abstract class SpatialPrefixTree {
 
   /**
    * Will add the trailing leaf byte for leaves. This isn't particularly efficient.
+   * @deprecated TODO remove; not used and not interesting, don't need collection in & out
    */
   public static List<String> cellsToTokenStrings(Collection<Cell> cells) {
-    List<String> tokens = new ArrayList<String>((cells.size()));
+    List<String> tokens = new ArrayList<>((cells.size()));
     for (Cell cell : cells) {
       final String token = cell.getTokenString();
       if (cell.isLeaf()) {

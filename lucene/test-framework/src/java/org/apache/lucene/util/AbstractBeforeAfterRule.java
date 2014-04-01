@@ -39,7 +39,7 @@ abstract class AbstractBeforeAfterRule implements TestRule {
     return new Statement() {
       @Override
       public void evaluate() throws Throwable {
-        final ArrayList<Throwable> errors = new ArrayList<Throwable>();
+        final ArrayList<Throwable> errors = new ArrayList<>();
 
         try {
           before();

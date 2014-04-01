@@ -32,7 +32,7 @@ import org.apache.solr.request.SolrQueryRequest;
  */
 public class DocTransformers extends DocTransformer
 {
-  final List<DocTransformer> children = new ArrayList<DocTransformer>();
+  final List<DocTransformer> children = new ArrayList<>();
 
   @Override
   public String getName()

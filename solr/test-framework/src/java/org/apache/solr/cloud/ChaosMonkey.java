@@ -17,15 +17,6 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import javax.servlet.Filter;
-
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -42,6 +33,14 @@ import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.servlet.Filter;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The monkey can stop random or specific jetties used with SolrCloud.
@@ -80,7 +79,7 @@ public class ChaosMonkey {
   private Map<String,CloudJettyRunner> shardToLeaderJetty;
   private volatile long startTime;
   
-  private List<CloudJettyRunner> deadPool = new ArrayList<CloudJettyRunner>();
+  private List<CloudJettyRunner> deadPool = new ArrayList<>();
 
   private Thread monkeyThread;
   
@@ -305,7 +304,7 @@ public class ChaosMonkey {
   private String getRandomSlice() {
     Map<String,Slice> slices = zkStateReader.getClusterState().getSlicesMap(collection);
     
-    List<String> sliceKeyList = new ArrayList<String>(slices.size());
+    List<String> sliceKeyList = new ArrayList<>(slices.size());
     sliceKeyList.addAll(slices.keySet());
     String sliceName = sliceKeyList.get(LuceneTestCase.random().nextInt(sliceKeyList.size()));
     return sliceName;
@@ -381,19 +380,17 @@ public class ChaosMonkey {
         monkeyLog("selected jetty not running correctly - skip");
         return null;
       }
-      SolrCore core = cores.getCore(leader.getStr(ZkStateReader.CORE_NAME_PROP));
-      if (core == null) {
-        monkeyLog("selected jetty not running correctly - skip");
-        return null;
-      }
+
       // cluster state can be stale - also go by our 'near real-time' is leader prop
       boolean rtIsLeader;
-      try {
+      try (SolrCore core = cores.getCore(leader.getStr(ZkStateReader.CORE_NAME_PROP))) {
+        if (core == null) {
+          monkeyLog("selected jetty not running correctly - skip");
+          return null;
+        }
         rtIsLeader = core.getCoreDescriptor().getCloudDescriptor().isLeader();
-      } finally {
-        core.close();
       }
-      
+
       boolean isLeader = leader.getStr(ZkStateReader.NODE_NAME_PROP).equals(jetties.get(index).nodeName)
           || rtIsLeader;
       if (!aggressivelyKillLeaders && isLeader) {

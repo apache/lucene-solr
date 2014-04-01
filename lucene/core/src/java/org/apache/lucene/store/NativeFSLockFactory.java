@@ -146,7 +146,7 @@ class NativeFSLock extends Lock {
    * (same FileChannel instance or not), so we may want to 
    * change this when Lucene moves to Java 1.6.
    */
-  private static HashSet<String> LOCK_HELD = new HashSet<String>();
+  private static HashSet<String> LOCK_HELD = new HashSet<>();
 
   public NativeFSLock(File lockDir, String lockFileName) {
     this.lockDir = lockDir;

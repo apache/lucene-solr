@@ -415,7 +415,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     // test something that's definitely a SortedSet
 
     special = new SolrInputField("foo_s");
-    special.setValue(new TreeSet<String>
+    special.setValue(new TreeSet<>
                      (Arrays.asList("ggg", "first", "last", "hhh")), 1.2F);
     
     d = processAdd("last-value", 
@@ -443,7 +443,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     // (ie: get default behavior of Collection using iterator)
 
     special = new SolrInputField("foo_s");
-    special.setValue(new LinkedHashSet<String>
+    special.setValue(new LinkedHashSet<>
                      (Arrays.asList("first", "ggg", "hhh", "last")), 1.2F);
     
     d = processAdd("last-value", 

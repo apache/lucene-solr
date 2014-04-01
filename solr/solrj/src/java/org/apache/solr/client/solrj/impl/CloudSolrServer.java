@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -61,6 +60,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
@@ -97,7 +97,7 @@ public class CloudSolrServer extends SolrServer {
   private String idField = "id";
   private final Set<String> NON_ROUTABLE_PARAMS;
   {
-    NON_ROUTABLE_PARAMS = new HashSet<String>();
+    NON_ROUTABLE_PARAMS = new HashSet<>();
     NON_ROUTABLE_PARAMS.add(UpdateParams.EXPUNGE_DELETES);
     NON_ROUTABLE_PARAMS.add(UpdateParams.MAX_OPTIMIZE_SEGMENTS);
     NON_ROUTABLE_PARAMS.add(UpdateParams.COMMIT);
@@ -311,8 +311,8 @@ public class CloudSolrServer extends SolrServer {
       return null;
     }
 
-    NamedList exceptions = new NamedList();
-    NamedList shardResponses = new NamedList();
+    NamedList<Throwable> exceptions = new NamedList<Throwable>();
+    NamedList<NamedList> shardResponses = new NamedList<NamedList>();
 
     Map<String, LBHttpSolrServer.Req> routes = updateRequest.getRoutes(router, col, urlMap, routableParams, this.idField);
     if (routes == null) {
@@ -322,7 +322,7 @@ public class CloudSolrServer extends SolrServer {
     long start = System.nanoTime();
 
     if (parallelUpdates) {
-      final Map<String, Future<NamedList<?>>> responseFutures = new HashMap<String, Future<NamedList<?>>>(routes.size());
+      final Map<String, Future<NamedList<?>>> responseFutures = new HashMap<>(routes.size());
       for (final Map.Entry<String, LBHttpSolrServer.Req> entry : routes.entrySet()) {
         final String url = entry.getKey();
         final LBHttpSolrServer.Req lbRequest = entry.getValue();
@@ -373,7 +373,7 @@ public class CloudSolrServer extends SolrServer {
     
     Set<String> paramNames = nonRoutableParams.getParameterNames();
     
-    Set<String> intersection = new HashSet<String>(paramNames);
+    Set<String> intersection = new HashSet<>(paramNames);
     intersection.retainAll(NON_ROUTABLE_PARAMS);
     
     if (nonRoutableRequest != null || intersection.size() > 0) {
@@ -381,7 +381,7 @@ public class CloudSolrServer extends SolrServer {
         nonRoutableRequest = new UpdateRequest();
       }
       nonRoutableRequest.setParams(nonRoutableParams);
-      List<String> urlList = new ArrayList<String>();
+      List<String> urlList = new ArrayList<>();
       urlList.addAll(routes.keySet());
       Collections.shuffle(urlList, rand);
       LBHttpSolrServer.Req req = new LBHttpSolrServer.Req(nonRoutableRequest, urlList);
@@ -402,13 +402,13 @@ public class CloudSolrServer extends SolrServer {
   }
 
   private Map<String,List<String>> buildUrlMap(DocCollection col) {
-    Map<String, List<String>> urlMap = new HashMap<String, List<String>>();
+    Map<String, List<String>> urlMap = new HashMap<>();
     Collection<Slice> slices = col.getActiveSlices();
     Iterator<Slice> sliceIterator = slices.iterator();
     while (sliceIterator.hasNext()) {
       Slice slice = sliceIterator.next();
       String name = slice.getName();
-      List<String> urls = new ArrayList<String>();
+      List<String> urls = new ArrayList<>();
       Replica leader = slice.getLeader();
       if (leader == null) {
         // take unoptimized general path - we cannot find a leader yet
@@ -453,7 +453,7 @@ public class CloudSolrServer extends SolrServer {
     return condensed;
   }
 
-  class RouteResponse extends NamedList {
+  public static class RouteResponse extends NamedList {
     private NamedList routeResponses;
     private Map<String, LBHttpSolrServer.Req> routes;
 
@@ -475,19 +475,19 @@ public class CloudSolrServer extends SolrServer {
 
   }
 
-  class RouteException extends SolrException {
+  public static class RouteException extends SolrException {
 
-    private NamedList exceptions;
+    private NamedList<Throwable> throwables;
     private Map<String, LBHttpSolrServer.Req> routes;
 
-    public RouteException(ErrorCode errorCode, NamedList exceptions, Map<String, LBHttpSolrServer.Req> routes){
-      super(errorCode, ((Exception)exceptions.getVal(0)).getMessage(), (Exception)exceptions.getVal(0));
-      this.exceptions = exceptions;
+    public RouteException(ErrorCode errorCode, NamedList<Throwable> throwables, Map<String, LBHttpSolrServer.Req> routes){
+      super(errorCode, throwables.getVal(0).getMessage(), throwables.getVal(0));
+      this.throwables = throwables;
       this.routes = routes;
     }
 
-    public NamedList getExceptions() {
-      return exceptions;
+    public NamedList<Throwable> getThrowables() {
+      return throwables;
     }
 
     public Map<String, LBHttpSolrServer.Req> getRoutes() {
@@ -514,14 +514,14 @@ public class CloudSolrServer extends SolrServer {
         }
       }
       sendToLeaders = true;
-      replicas = new ArrayList<String>();
+      replicas = new ArrayList<>();
     }
     
     SolrParams reqParams = request.getParams();
     if (reqParams == null) {
       reqParams = new ModifiableSolrParams();
     }
-    List<String> theUrlList = new ArrayList<String>();
+    List<String> theUrlList = new ArrayList<>();
     if (request.getPath().equals("/admin/collections")
         || request.getPath().equals("/admin/cores")) {
       Set<String> liveNodes = clusterState.getLiveNodes();
@@ -542,6 +542,11 @@ public class CloudSolrServer extends SolrServer {
             "Could not find collection: " + collection);
       }
 
+      String shardKeys =  reqParams.get(ShardParams._ROUTE_);
+      if(shardKeys == null) {
+        shardKeys = reqParams.get(ShardParams.SHARD_KEYS); // deprecated
+      }
+
       // TODO: not a big deal because of the caching, but we could avoid looking
       // at every shard
       // when getting leaders if we tweaked some things
@@ -549,26 +554,22 @@ public class CloudSolrServer extends SolrServer {
       // Retrieve slices from the cloud state and, for each collection
       // specified,
       // add it to the Map of slices.
-      Map<String,Slice> slices = new HashMap<String,Slice>();
+      Map<String,Slice> slices = new HashMap<>();
       for (String collectionName : collectionsList) {
-        Collection<Slice> colSlices = clusterState
-            .getActiveSlices(collectionName);
-        if (colSlices == null) {
-          throw new SolrServerException("Could not find collection:"
-              + collectionName);
-        }
-        ClientUtils.addSlices(slices, collectionName, colSlices, true);
+        DocCollection col = clusterState.getCollection(collectionName);
+        Collection<Slice> routeSlices = col.getRouter().getSearchSlices(shardKeys, reqParams , col);
+        ClientUtils.addSlices(slices, collectionName, routeSlices, true);
       }
       Set<String> liveNodes = clusterState.getLiveNodes();
-      
+
       List<String> leaderUrlList = null;
       List<String> urlList = null;
       List<String> replicasList = null;
       
       // build a map of unique nodes
       // TODO: allow filtering by group, role, etc
-      Map<String,ZkNodeProps> nodes = new HashMap<String,ZkNodeProps>();
-      List<String> urlList2 = new ArrayList<String>();
+      Map<String,ZkNodeProps> nodes = new HashMap<>();
+      List<String> urlList2 = new ArrayList<>();
       for (Slice slice : slices.values()) {
         for (ZkNodeProps nodeProps : slice.getReplicasMap().values()) {
           ZkCoreNodeProps coreNodeProps = new ZkCoreNodeProps(nodeProps);
@@ -609,15 +610,15 @@ public class CloudSolrServer extends SolrServer {
       }
       
       if (sendToLeaders) {
-        theUrlList = new ArrayList<String>(leaderUrlList.size());
+        theUrlList = new ArrayList<>(leaderUrlList.size());
         theUrlList.addAll(leaderUrlList);
       } else {
-        theUrlList = new ArrayList<String>(urlList.size());
+        theUrlList = new ArrayList<>(urlList.size());
         theUrlList.addAll(urlList);
       }
       Collections.shuffle(theUrlList, rand);
       if (sendToLeaders) {
-        ArrayList<String> theReplicas = new ArrayList<String>(
+        ArrayList<String> theReplicas = new ArrayList<>(
             replicasList.size());
         theReplicas.addAll(replicasList);
         Collections.shuffle(theReplicas, rand);
@@ -640,7 +641,7 @@ public class CloudSolrServer extends SolrServer {
       String collection) {
     // Extract each comma separated collection name and store in a List.
     List<String> rawCollectionsList = StrUtils.splitSmart(collection, ",", true);
-    Set<String> collectionsList = new HashSet<String>();
+    Set<String> collectionsList = new HashSet<>();
     // validate collections
     for (String collectionName : rawCollectionsList) {
       if (!clusterState.getCollections().contains(collectionName)) {

@@ -23,8 +23,9 @@ import java.io.IOException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.analyzing.AnalyzingInfixSuggester;
-import org.apache.lucene.search.suggest.analyzing.BlendedInfixSuggester;
 import org.apache.lucene.search.suggest.analyzing.BlendedInfixSuggester.BlenderType;
+import org.apache.lucene.search.suggest.analyzing.BlendedInfixSuggester;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
@@ -94,7 +95,9 @@ public class BlendedInfixLookupFactory extends AnalyzingInfixLookupFactory {
     
     try {
       return new BlendedInfixSuggester(core.getSolrConfig().luceneMatchVersion, 
-          new File(indexPath), indexAnalyzer, queryAnalyzer, minPrefixChars, blenderType, numFactor);
+                                       FSDirectory.open(new File(indexPath)),
+                                       indexAnalyzer, queryAnalyzer, minPrefixChars,
+                                       blenderType, numFactor);
     } catch (IOException e) {
       throw new RuntimeException();
     }

@@ -20,9 +20,9 @@ package org.apache.lucene.util;
 public class TestVirtualMethod extends LuceneTestCase {
 
   private static final VirtualMethod<TestVirtualMethod> publicTestMethod =
-    new VirtualMethod<TestVirtualMethod>(TestVirtualMethod.class, "publicTest", String.class);
+    new VirtualMethod<>(TestVirtualMethod.class, "publicTest", String.class);
   private static final VirtualMethod<TestVirtualMethod> protectedTestMethod =
-    new VirtualMethod<TestVirtualMethod>(TestVirtualMethod.class, "protectedTest", int.class);
+    new VirtualMethod<>(TestVirtualMethod.class, "protectedTest", int.class);
 
   public void publicTest(String test) {}
   protected void protectedTest(int test) {}
@@ -80,14 +80,14 @@ public class TestVirtualMethod extends LuceneTestCase {
     }
     
     try {
-      new VirtualMethod<TestVirtualMethod>(TestVirtualMethod.class, "bogus");
+      new VirtualMethod<>(TestVirtualMethod.class, "bogus");
       fail("Method bogus() does not exist, so IAE should be thrown");
     } catch (IllegalArgumentException arg) {
       // pass
     }
     
     try {
-      new VirtualMethod<TestClass2>(TestClass2.class, "publicTest", String.class);
+      new VirtualMethod<>(TestClass2.class, "publicTest", String.class);
       fail("Method publicTest(String) is not declared in TestClass2, so IAE should be thrown");
     } catch (IllegalArgumentException arg) {
       // pass
@@ -95,7 +95,7 @@ public class TestVirtualMethod extends LuceneTestCase {
 
     try {
       // try to create a second instance of the same baseClass / method combination
-      new VirtualMethod<TestVirtualMethod>(TestVirtualMethod.class, "publicTest", String.class);
+      new VirtualMethod<>(TestVirtualMethod.class, "publicTest", String.class);
       fail("Violating singleton status succeeded");
     } catch (UnsupportedOperationException arg) {
       // pass

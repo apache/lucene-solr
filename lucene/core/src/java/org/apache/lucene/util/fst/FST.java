@@ -25,6 +25,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -379,7 +380,7 @@ public final class FST<T> {
 
     /*
     if (bytes.length == 665) {
-      Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"), "UTF-8");
+      Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"), StandardCharsets.UTF_8);
       Util.toDot(this, w, false, false);
       w.close();
       System.out.println("Wrote FST to out.dot");
@@ -437,7 +438,7 @@ public final class FST<T> {
   }
   
   public void readRootArcs(Arc<T>[] arcs) throws IOException {
-    final Arc<T> arc = new Arc<T>();
+    final Arc<T> arc = new Arc<>();
     getFirstArc(arc);
     final BytesReader in = getBytesReader();
     if (targetHasArcs(arc)) {
@@ -592,7 +593,7 @@ public final class FST<T> {
     InputStream is = new BufferedInputStream(new FileInputStream(file));
     boolean success = false;
     try {
-      FST<T> fst = new FST<T>(new InputStreamDataInput(is), outputs);
+      FST<T> fst = new FST<>(new InputStreamDataInput(is), outputs);
       success = true;
       return fst;
     } finally {
@@ -1349,7 +1350,7 @@ public final class FST<T> {
     // TODO: must assert this FST was built with
     // "willRewrite"
 
-    final List<ArcAndState<T>> queue = new ArrayList<ArcAndState<T>>();
+    final List<ArcAndState<T>> queue = new ArrayList<>();
 
     // TODO: use bitset to not revisit nodes already
     // visited
@@ -1358,7 +1359,7 @@ public final class FST<T> {
     int saved = 0;
 
     queue.add(new ArcAndState<T>(getFirstArc(new Arc<T>()), new IntsRef()));
-    Arc<T> scratchArc = new Arc<T>();
+    Arc<T> scratchArc = new Arc<>();
     while(queue.size() > 0) {
       //System.out.println("cycle size=" + queue.size());
       //for(ArcAndState<T> ent : queue) {
@@ -1499,7 +1500,7 @@ public final class FST<T> {
       throw new IllegalArgumentException("this FST was not built with willPackFST=true");
     }
 
-    Arc<T> arc = new Arc<T>();
+    Arc<T> arc = new Arc<>();
 
     final BytesReader r = getBytesReader();
 
@@ -1526,7 +1527,7 @@ public final class FST<T> {
     // Free up RAM:
     inCounts = null;
 
-    final Map<Integer,Integer> topNodeMap = new HashMap<Integer,Integer>();
+    final Map<Integer,Integer> topNodeMap = new HashMap<>();
     for(int downTo=q.size()-1;downTo>=0;downTo--) {
       NodeAndInCount n = q.pop();
       topNodeMap.put(n.node, downTo);
@@ -1558,7 +1559,7 @@ public final class FST<T> {
       // for assert:
       boolean negDelta = false;
 
-      fst = new FST<T>(inputType, outputs, bytes.getBlockBits());
+      fst = new FST<>(inputType, outputs, bytes.getBlockBits());
       
       final BytesStore writer = fst.bytes;
 

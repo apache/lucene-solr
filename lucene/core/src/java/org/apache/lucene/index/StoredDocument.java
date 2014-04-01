@@ -34,7 +34,7 @@ import org.apache.lucene.util.BytesRef;
 // TODO: shouldn't this really be in the .document package?
 public class StoredDocument implements Iterable<StorableField> {
 
-  private final List<StorableField> fields = new ArrayList<StorableField>();
+  private final List<StorableField> fields = new ArrayList<>();
 
   /** Sole constructor. */
   public StoredDocument() {
@@ -61,7 +61,7 @@ public class StoredDocument implements Iterable<StorableField> {
    * @return a <code>StorableField[]</code> array
    */
   public StorableField[] getFields(String name) {
-    List<StorableField> result = new ArrayList<StorableField>();
+    List<StorableField> result = new ArrayList<>();
     for (StorableField field : fields) {
       if (field.name().equals(name)) {
         result.add(field);
@@ -112,7 +112,7 @@ public class StoredDocument implements Iterable<StorableField> {
    * @return a <code>BytesRef[]</code> of binary field values
    */
    public final BytesRef[] getBinaryValues(String name) {
-     final List<BytesRef> result = new ArrayList<BytesRef>();
+     final List<BytesRef> result = new ArrayList<>();
      for (StorableField field : fields) {
        if (field.name().equals(name)) {
          final BytesRef bytes = field.binaryValue();
@@ -158,7 +158,7 @@ public class StoredDocument implements Iterable<StorableField> {
     * @return a <code>String[]</code> of field values
     */
    public final String[] getValues(String name) {
-     List<String> result = new ArrayList<String>();
+     List<String> result = new ArrayList<>();
      for (StorableField field : fields) {
        if (field.name().equals(name) && field.stringValue() != null) {
          result.add(field.stringValue());

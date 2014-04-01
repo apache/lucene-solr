@@ -305,7 +305,7 @@ public class QueryBuilder {
           // phrase query:
           MultiPhraseQuery mpq = newMultiPhraseQuery();
           mpq.setSlop(phraseSlop);
-          List<Term> multiTerms = new ArrayList<Term>();
+          List<Term> multiTerms = new ArrayList<>();
           int position = -1;
           for (int i = 0; i < numTokens; i++) {
             int positionIncrement = 1;

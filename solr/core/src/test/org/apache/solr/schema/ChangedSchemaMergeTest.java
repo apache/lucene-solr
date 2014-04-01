@@ -40,12 +40,12 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
     initCore();
   }
 
-  private final File solrHomeDirectory = new File(TEMP_DIR, getSimpleClassName());
+  private final File solrHomeDirectory = new File(dataDir, getSimpleClassName());
   private File schemaFile = null;
 
   private void addDoc(SolrCore core, String... fieldValues) throws IOException {
     UpdateHandler updater = core.getUpdateHandler();
-    AddUpdateCommand cmd = new AddUpdateCommand(new LocalSolrQueryRequest(core, new NamedList<Object>()));
+    AddUpdateCommand cmd = new AddUpdateCommand(new LocalSolrQueryRequest(core, new NamedList<>()));
     cmd.solrDoc = sdoc((Object[]) fieldValues);
     updater.addDoc(cmd);
   }
@@ -75,15 +75,14 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
   public void testOptimizeDiffSchemas() throws Exception {
     // load up a core (why not put it on disk?)
     CoreContainer cc = init();
-    SolrCore changed = cc.getCore("changed");
-    try {
+    try (SolrCore changed = cc.getCore("changed")) {
 
       // add some documents
       addDoc(changed, "id", "1", "which", "15", "text", "some stuff with which");
       addDoc(changed, "id", "2", "which", "15", "text", "some stuff with which");
       addDoc(changed, "id", "3", "which", "15", "text", "some stuff with which");
       addDoc(changed, "id", "4", "which", "15", "text", "some stuff with which");
-      SolrQueryRequest req = new LocalSolrQueryRequest(changed, new NamedList<Object>());
+      SolrQueryRequest req = new LocalSolrQueryRequest(changed, new NamedList<>());
       changed.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
 
       // write the new schema out and make it current
@@ -98,7 +97,6 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
       changed.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
       changed.getUpdateHandler().commit(new CommitUpdateCommand(req, true));
     } finally {
-      if (changed != null) changed.close();
       if (cc != null) cc.shutdown();
     }
   }

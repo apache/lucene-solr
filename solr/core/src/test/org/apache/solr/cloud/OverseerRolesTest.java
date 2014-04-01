@@ -20,7 +20,7 @@ package org.apache.solr.cloud;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.getSortedNodeNames;
+import static org.apache.solr.cloud.OverseerCollectionProcessor.getSortedOverseerNodeNames;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.getLeaderNode;
 import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 
@@ -34,6 +34,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
@@ -45,13 +46,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 @LuceneTestCase.Slow
+@SuppressSSL     // Currently unknown why SSL does not work
 public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
   private CloudSolrServer client;
-
-  static {
-    // SSL does not work with this feature for some reason
-    ALLOW_SSL = false;
-  }
   
   @BeforeClass
   public static void beforeThisClass2() throws Exception {
@@ -98,7 +95,7 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
     createCollection(collectionName, client);
 
     waitForRecoveriesToFinish(collectionName, false);
-    List<String> l = OverseerCollectionProcessor.getSortedNodeNames(client.getZkStateReader().getZkClient()) ;
+    List<String> l = OverseerCollectionProcessor.getSortedOverseerNodeNames(client.getZkStateReader().getZkClient()) ;
 
     log.info("All nodes {}", l);
     String currentLeader = OverseerCollectionProcessor.getLeaderNode(client.getZkStateReader().getZkClient());
@@ -121,15 +118,9 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
       }
       Thread.sleep(100);
     }
-    /*if(!leaderchanged){
-
-      log.warn("expected {}, current order {}",
-          overseerDesignate,
-          getSortedNodeNames(client.getZkStateReader().getZkClient())+ " ldr :"+ OverseerCollectionProcessor.getLeaderNode(client.getZkStateReader().getZkClient()) );
-    }*/
     assertTrue("could not set the new overseer . expected "+
         overseerDesignate + " current order : " +
-        getSortedNodeNames(client.getZkStateReader().getZkClient()) +
+        getSortedOverseerNodeNames(client.getZkStateReader().getZkClient()) +
         " ldr :"+ OverseerCollectionProcessor.getLeaderNode(client.getZkStateReader().getZkClient()) ,leaderchanged);
 
 
@@ -148,7 +139,7 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
     timeout = System.currentTimeMillis()+10000;
     leaderchanged = false;
     for(;System.currentTimeMillis() < timeout;){
-      List<String> sortedNodeNames = getSortedNodeNames(client.getZkStateReader().getZkClient());
+      List<String> sortedNodeNames = getSortedOverseerNodeNames(client.getZkStateReader().getZkClient());
       if(sortedNodeNames.get(1) .equals(anotherOverseer) || sortedNodeNames.get(0).equals(anotherOverseer)){
         leaderchanged =true;
         break;
@@ -156,14 +147,18 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
       Thread.sleep(100);
     }
 
-    assertTrue("New overseer not the frontrunner : "+ getSortedNodeNames(client.getZkStateReader().getZkClient()) + " expected : "+ anotherOverseer, leaderchanged);
+    assertTrue("New overseer not the frontrunner : "+ getSortedOverseerNodeNames(client.getZkStateReader().getZkClient()) + " expected : "+ anotherOverseer, leaderchanged);
 
 
     String currentOverseer = getLeaderNode(client.getZkStateReader().getZkClient());
 
+    String killedOverseer = currentOverseer;
+
     log.info("Current Overseer {}", currentOverseer);
     Pattern pattern = Pattern.compile("(.*):(\\d*)(.*)");
     Matcher m = pattern.matcher(currentOverseer);
+    JettySolrRunner stoppedJetty =null;
+
     if(m.matches()){
       String hostPort =  m.group(1)+":"+m.group(2);
 
@@ -174,7 +169,7 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
         if(s.contains(hostPort)){
           log.info("leader node {}",s);
           ChaosMonkey.stop(jetty);
-
+          stoppedJetty = jetty;
           timeout = System.currentTimeMillis()+10000;
           leaderchanged = false;
           for(;System.currentTimeMillis() < timeout;){
@@ -191,6 +186,25 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
       }
 
     }
+
+    ChaosMonkey.start(stoppedJetty);
+
+    timeout = System.currentTimeMillis()+10000;
+    leaderchanged = false;
+    for(;System.currentTimeMillis() < timeout;){
+      List<String> sortedNodeNames = getSortedOverseerNodeNames(client.getZkStateReader().getZkClient());
+      if(sortedNodeNames.get(1).equals(killedOverseer) || sortedNodeNames.get(0).equals(killedOverseer)){
+        leaderchanged =true;
+        break;
+      }
+      Thread.sleep(100);
+    }
+
+    assertTrue("New overseer not the frontrunner : "+ getSortedOverseerNodeNames(client.getZkStateReader().getZkClient()) + " expected : "+ killedOverseer, leaderchanged);
+
+
+
+
 
     client.shutdown();
 
@@ -219,7 +233,7 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
         REPLICATION_FACTOR, replicationFactor,
         MAX_SHARDS_PER_NODE, maxShardsPerNode,
         NUM_SLICES, numShards);
-    Map<String,List<Integer>> collectionInfos = new HashMap<String,List<Integer>>();
+    Map<String,List<Integer>> collectionInfos = new HashMap<>();
     createCollection(collectionInfos, COLL_NAME, props, client);
   }
 

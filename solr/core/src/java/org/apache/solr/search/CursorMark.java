@@ -160,7 +160,7 @@ public final class CursorMark {
     } else {
       assert input.size() == sortSpec.getSort().getSort().length;
       // defensive copy
-      this.values = new ArrayList<Object>(input);
+      this.values = new ArrayList<>(input);
     }
   }
 
@@ -170,7 +170,7 @@ public final class CursorMark {
    */
   public List<Object> getSortValues() {
     // defensive copy
-    return null == this.values ? null : new ArrayList<Object>(this.values);
+    return null == this.values ? null : new ArrayList<>(this.values);
   }
 
   /**
@@ -218,7 +218,7 @@ public final class CursorMark {
     }
 
 
-    this.values = new ArrayList<Object>(sortFields.length);
+    this.values = new ArrayList<>(sortFields.length);
 
     final BytesRef tmpBytes = new BytesRef();
     for (int i = 0; i < sortFields.length; i++) {
@@ -248,7 +248,7 @@ public final class CursorMark {
     }
 
     final List<SchemaField> schemaFields = sortSpec.getSchemaFields();
-    final ArrayList<Object> marshalledValues = new ArrayList<Object>(values.size()+1);
+    final ArrayList<Object> marshalledValues = new ArrayList<>(values.size()+1);
     for (int i = 0; i < schemaFields.size(); i++) {
       SchemaField fld = schemaFields.get(i);
       Object safeValue = values.get(i);

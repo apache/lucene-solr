@@ -132,7 +132,7 @@ public class SearcherLifetimeManager implements Closeable {
   // TODO: we could get by w/ just a "set"; need to have
   // Tracker hash by its version and have compareTo(Long)
   // compare to its version
-  private final ConcurrentHashMap<Long,SearcherTracker> searchers = new ConcurrentHashMap<Long,SearcherTracker>();
+  private final ConcurrentHashMap<Long,SearcherTracker> searchers = new ConcurrentHashMap<>();
 
   private void ensureOpen() {
     if (closed) {
@@ -246,7 +246,7 @@ public class SearcherLifetimeManager implements Closeable {
     // (not thread-safe since the values can change while
     // ArrayList is init'ing itself); must instead iterate
     // ourselves:
-    final List<SearcherTracker> trackers = new ArrayList<SearcherTracker>();
+    final List<SearcherTracker> trackers = new ArrayList<>();
     for(SearcherTracker tracker : searchers.values()) {
       trackers.add(tracker);
     }
@@ -285,7 +285,7 @@ public class SearcherLifetimeManager implements Closeable {
   @Override
   public synchronized void close() throws IOException {
     closed = true;
-    final List<SearcherTracker> toClose = new ArrayList<SearcherTracker>(searchers.values());
+    final List<SearcherTracker> toClose = new ArrayList<>(searchers.values());
 
     // Remove up front in case exc below, so we don't
     // over-decRef on double-close:

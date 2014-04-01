@@ -48,7 +48,7 @@ public class PortedSolr3Test extends StrategyTestCase {
 
   @ParametersFactory
   public static Iterable<Object[]> parameters() {
-    List<Object[]> ctorArgs = new ArrayList<Object[]>();
+    List<Object[]> ctorArgs = new ArrayList<>();
 
     SpatialContext ctx = SpatialContext.GEO;
     SpatialPrefixTree grid;
@@ -176,7 +176,7 @@ public class PortedSolr3Test extends StrategyTestCase {
     SearchResults results = executeQuery(query, 100);
     assertEquals(""+shape,assertNumFound,results.numFound);
     if (assertIds != null) {
-      Set<Integer> resultIds = new HashSet<Integer>();
+      Set<Integer> resultIds = new HashSet<>();
       for (SearchResult result : results.results) {
         resultIds.add(Integer.valueOf(result.document.get("id")));
       }

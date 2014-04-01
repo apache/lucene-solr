@@ -88,7 +88,7 @@ public final class QueryTermExtractor
    */
   public static final WeightedTerm[] getTerms(Query query, boolean prohibited, String fieldName)
   {
-    HashSet<WeightedTerm> terms=new HashSet<WeightedTerm>();
+    HashSet<WeightedTerm> terms=new HashSet<>();
     getTerms(query,terms,prohibited,fieldName);
     return terms.toArray(new WeightedTerm[0]);
   }
@@ -112,7 +112,7 @@ public final class QueryTermExtractor
       else if (query instanceof FilteredQuery)
         getTermsFromFilteredQuery((FilteredQuery) query, terms, prohibited, fieldName);
       else {
-        HashSet<Term> nonWeightedTerms = new HashSet<Term>();
+        HashSet<Term> nonWeightedTerms = new HashSet<>();
         query.extractTerms(nonWeightedTerms);
         for (Iterator<Term> iter = nonWeightedTerms.iterator(); iter.hasNext(); ) {
           Term term = iter.next();

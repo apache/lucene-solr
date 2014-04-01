@@ -17,13 +17,14 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Test;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
-
-import org.apache.lucene.util.LuceneTestCase;
-import org.junit.Test;
 
 public class TestNoMergeScheduler extends LuceneTestCase {
 
@@ -31,7 +32,7 @@ public class TestNoMergeScheduler extends LuceneTestCase {
   public void testNoMergeScheduler() throws Exception {
     MergeScheduler ms = NoMergeScheduler.INSTANCE;
     ms.close();
-    ms.merge(null);
+    ms.merge(null, RandomPicks.randomFrom(random(), MergeTrigger.values()), random().nextBoolean());
   }
 
   @Test

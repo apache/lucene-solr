@@ -68,7 +68,7 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
   private File dataDir4;
 
 
-  private static final File solrHomeDirectory = new File(TEMP_DIR, "ZkControllerTest");
+  private static volatile File solrHomeDirectory = new File(dataDir, "ZkControllerTest");
 
   @BeforeClass
   public static void beforeClass() throws IOException {
@@ -94,7 +94,6 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    createTempDir();
     System.setProperty("zkClientTimeout", "3000");
 
     zkDir = dataDir.getAbsolutePath() + File.separator
@@ -152,7 +151,7 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
     System.setProperty("solrcloud.update.delay", "1");
     
    
-    Map<String,Object> props2 = new HashMap<String,Object>();
+    Map<String,Object> props2 = new HashMap<>();
     props2.put("configName", "conf1");
     ZkNodeProps zkProps2 = new ZkNodeProps(props2);
     

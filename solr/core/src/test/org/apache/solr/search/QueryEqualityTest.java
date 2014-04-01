@@ -71,9 +71,9 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   /** @see #testParserCoverage */
   private static boolean doAssertParserCoverage = false;
   /** @see #testParserCoverage */
-  private static final Set<String> qParsersTested = new HashSet<String>();
+  private static final Set<String> qParsersTested = new HashSet<>();
   /** @see #testParserCoverage */
-  private static final Set<String> valParsersTested = new HashSet<String>();
+  private static final Set<String> valParsersTested = new HashSet<>();
 
 
   public void testDateMathParsingEquality() throws Exception {
@@ -342,6 +342,13 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   public void testQuerySurround() throws Exception {
     assertQueryEquals("surround", "{!surround}and(apache,solr)", 
                       "and(apache,solr)", "apache AND solr");
+  }
+
+  public void testQueryComplexPhrase() throws Exception {
+    assertQueryEquals("complexphrase", "{!complexphrase df=text}\"jo* smith\"",
+        "text:\"jo* smith\"");
+    assertQueryEquals("complexphrase", "{!complexphrase df=title}\"jo* smith\"",
+        "title:\"jo* smith\"");
   }
 
   public void testFuncTestfunc() throws Exception {

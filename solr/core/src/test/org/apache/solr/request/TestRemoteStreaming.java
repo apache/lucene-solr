@@ -19,6 +19,7 @@ package org.apache.solr.request;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -41,18 +42,15 @@ import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 /**
  * See SOLR-2854.
  */
+@SuppressSSL     // does not yet work with ssl yet - uses raw java.net.URL API rather than HttpClient
 public class TestRemoteStreaming extends SolrJettyTestBase {
 
   private static final File solrHomeDirectory = new File(TEMP_DIR, "TestRemoteStreaming");
-
-  static {
-    // does not yet work with ssl - uses raw URL
-    ALLOW_SSL = false;
-  }
   
   @BeforeClass
   public static void beforeTest() throws Exception {
@@ -100,7 +98,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
       InputStream inputStream = (InputStream) obj;
       try {
         StringWriter strWriter = new StringWriter();
-        IOUtils.copy(new InputStreamReader(inputStream, "UTF-8"),strWriter);
+        IOUtils.copy(new InputStreamReader(inputStream, StandardCharsets.UTF_8),strWriter);
         return strWriter.toString();
       } finally {
         IOUtils.closeQuietly(inputStream);

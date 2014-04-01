@@ -71,7 +71,7 @@ public abstract class Evaluator {
    * @return a List of objects which can either be a string, number or a variable wrapper
    */
   List<Object> parseParams(String expression, VariableResolver vr) {
-    List<Object> result = new ArrayList<Object>();
+    List<Object> result = new ArrayList<>();
     expression = expression.trim();
     String[] ss = expression.split(",");
     for (int i = 0; i < ss.length; i++) {

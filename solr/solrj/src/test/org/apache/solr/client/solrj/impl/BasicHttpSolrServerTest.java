@@ -99,7 +99,7 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
     
     private void setHeaders(HttpServletRequest req) {
       Enumeration<String> headerNames = req.getHeaderNames();
-      headers = new HashMap<String,String>();
+      headers = new HashMap<>();
       while (headerNames.hasMoreElements()) {
         final String name = headerNames.nextElement();
         headers.put(name, req.getHeader(name));
@@ -139,26 +139,6 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
         .addServletWithMapping(SlowServlet.class, "/slow/*");
     jetty.getDispatchFilter().getServletHandler()
         .addServletWithMapping(DebugServlet.class, "/debug/*");
-  }
-  
-  // what is this actually testing? this test WILL randomly fail.
-  // not a good unit test!
-  @Test
-  public void testConnectionRefused() throws MalformedURLException {
-    int unusedPort = findUnusedPort(); // XXX even if fwe found an unused port
-                                       // it might not be unused anymore
-    HttpSolrServer server = new HttpSolrServer(buildUrl(unusedPort, "/solr"));
-    server.setConnectionTimeout(500);
-    SolrQuery q = new SolrQuery("*:*");
-    try {
-      QueryResponse response = server.query(q);
-      fail("Should have thrown an exception.");
-    } catch (SolrServerException e) {
-      assumeFalse("blackholed!", e.getMessage().contains("IOException occured when talking to server"));
-      assertTrue(e.getMessage().contains("refused"));
-    } finally {
-      server.shutdown();
-    }
   }
   
   @Test

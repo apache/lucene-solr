@@ -30,6 +30,7 @@ import static org.apache.lucene.codecs.simpletext.SimpleTextDocValuesWriter.TYPE
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.ParseException;
@@ -67,7 +68,7 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
   final int maxDoc;
   final IndexInput data;
   final BytesRef scratch = new BytesRef();
-  final Map<String,OneField> fields = new HashMap<String,OneField>();
+  final Map<String,OneField> fields = new HashMap<>();
   
   public SimpleTextDocValuesReader(SegmentReadState state, String ext) throws IOException {
     // System.out.println("dir=" + state.directory + " seg=" + state.segmentInfo.name + " file=" + IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, ext));
@@ -225,7 +226,7 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
           assert StringHelper.startsWith(scratch, LENGTH);
           int len;
           try {
-            len = decoder.parse(new String(scratch.bytes, scratch.offset + LENGTH.length, scratch.length - LENGTH.length, "UTF-8")).intValue();
+            len = decoder.parse(new String(scratch.bytes, scratch.offset + LENGTH.length, scratch.length - LENGTH.length, StandardCharsets.UTF_8)).intValue();
           } catch (ParseException pe) {
             CorruptIndexException e = new CorruptIndexException("failed to parse int length (resource=" + in + ")");
             e.initCause(pe);
@@ -257,7 +258,7 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
           assert StringHelper.startsWith(scratch, LENGTH);
           int len;
           try {
-            len = decoder.parse(new String(scratch.bytes, scratch.offset + LENGTH.length, scratch.length - LENGTH.length, "UTF-8")).intValue();
+            len = decoder.parse(new String(scratch.bytes, scratch.offset + LENGTH.length, scratch.length - LENGTH.length, StandardCharsets.UTF_8)).intValue();
           } catch (ParseException pe) {
             CorruptIndexException e = new CorruptIndexException("failed to parse int length (resource=" + in + ")");
             e.initCause(pe);
@@ -326,7 +327,7 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
           assert StringHelper.startsWith(scratch, LENGTH): "got " + scratch.utf8ToString() + " in=" + in;
           int len;
           try {
-            len = decoder.parse(new String(scratch.bytes, scratch.offset + LENGTH.length, scratch.length - LENGTH.length, "UTF-8")).intValue();
+            len = decoder.parse(new String(scratch.bytes, scratch.offset + LENGTH.length, scratch.length - LENGTH.length, StandardCharsets.UTF_8)).intValue();
           } catch (ParseException pe) {
             CorruptIndexException e = new CorruptIndexException("failed to parse int length (resource=" + in + ")");
             e.initCause(pe);
@@ -404,7 +405,7 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
           assert StringHelper.startsWith(scratch, LENGTH): "got " + scratch.utf8ToString() + " in=" + in;
           int len;
           try {
-            len = decoder.parse(new String(scratch.bytes, scratch.offset + LENGTH.length, scratch.length - LENGTH.length, "UTF-8")).intValue();
+            len = decoder.parse(new String(scratch.bytes, scratch.offset + LENGTH.length, scratch.length - LENGTH.length, StandardCharsets.UTF_8)).intValue();
           } catch (ParseException pe) {
             CorruptIndexException e = new CorruptIndexException("failed to parse int length (resource=" + in + ")");
             e.initCause(pe);
@@ -460,7 +461,7 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
 
   /** Used only in ctor: */
   private String stripPrefix(BytesRef prefix) throws IOException {
-    return new String(scratch.bytes, scratch.offset + prefix.length, scratch.length - prefix.length, "UTF-8");
+    return new String(scratch.bytes, scratch.offset + prefix.length, scratch.length - prefix.length, StandardCharsets.UTF_8);
   }
 
   @Override

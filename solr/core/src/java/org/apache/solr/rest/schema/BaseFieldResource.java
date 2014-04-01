@@ -18,6 +18,7 @@ package org.apache.solr.rest.schema;
 
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.rest.BaseSolrResource;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.restlet.resource.ResourceException;
@@ -28,7 +29,7 @@ import java.util.LinkedHashSet;
 /**
  * Base class for Schema Field and DynamicField requests.
  */
-abstract class BaseFieldResource extends BaseSchemaResource {
+abstract class BaseFieldResource extends BaseSolrResource {
   protected static final String INCLUDE_DYNAMIC_PARAM = "includeDynamic";
   private static final String DYNAMIC_BASE = "dynamicBase";
 
@@ -64,7 +65,7 @@ abstract class BaseFieldResource extends BaseSchemaResource {
       if (null != flParam) {
         String[] fields = flParam.trim().split("[,\\s]+");
         if (fields.length > 0) {
-          requestedFields = new LinkedHashSet<String>();
+          requestedFields = new LinkedHashSet<>();
           for (String field : fields) {
             if ( ! field.trim().isEmpty()) {
               requestedFields.add(field.trim());

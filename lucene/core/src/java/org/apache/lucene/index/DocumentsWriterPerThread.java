@@ -464,7 +464,7 @@ class DocumentsWriterPerThread {
     try {
       consumer.flush(flushState);
       pendingUpdates.terms.clear();
-      segmentInfo.setFiles(new HashSet<String>(directory.getCreatedFiles()));
+      segmentInfo.setFiles(new HashSet<>(directory.getCreatedFiles()));
 
       final SegmentCommitInfo segmentInfoPerCommit = new SegmentCommitInfo(segmentInfo, 0, -1L, -1L);
       if (infoStream.isEnabled("DWPT")) {
@@ -480,7 +480,7 @@ class DocumentsWriterPerThread {
       }
 
       final BufferedUpdates segmentDeletes;
-      if (pendingUpdates.queries.isEmpty() && pendingUpdates.numericUpdates.isEmpty()) {
+      if (pendingUpdates.queries.isEmpty() && pendingUpdates.numericUpdates.isEmpty() && pendingUpdates.binaryUpdates.isEmpty()) {
         pendingUpdates.clear();
         segmentDeletes = null;
       } else {
@@ -510,7 +510,7 @@ class DocumentsWriterPerThread {
     }
   }
   
-  private final Set<String> filesToDelete = new HashSet<String>(); 
+  private final Set<String> filesToDelete = new HashSet<>();
   
   public Set<String> pendingFilesToDelete() {
     return filesToDelete;

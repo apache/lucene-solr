@@ -79,14 +79,14 @@ public class IndexRevisionTest extends ReplicatorTestCase {
       Revision rev1 = new IndexRevision(writer);
       // releasing that revision should not delete the files
       rev1.release();
-      assertTrue(dir.fileExists(IndexFileNames.SEGMENTS + "_1"));
+      assertTrue(slowFileExists(dir, IndexFileNames.SEGMENTS + "_1"));
       
       rev1 = new IndexRevision(writer); // create revision again, so the files are snapshotted
       writer.addDocument(new Document());
       writer.commit();
       assertNotNull(new IndexRevision(writer));
       rev1.release(); // this release should trigger the delete of segments_1
-      assertFalse(dir.fileExists(IndexFileNames.SEGMENTS + "_1"));
+      assertFalse(slowFileExists(dir, IndexFileNames.SEGMENTS + "_1"));
     } finally {
       IOUtils.close(writer, dir);
     }

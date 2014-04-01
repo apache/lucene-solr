@@ -35,7 +35,7 @@ public class SimpleQQParser implements QualityQueryParser {
 
   private String qqNames[];
   private String indexField;
-  ThreadLocal<QueryParser> queryParser = new ThreadLocal<QueryParser>();
+  ThreadLocal<QueryParser> queryParser = new ThreadLocal<>();
 
   /**
    * Constructor of a simple qq parser.

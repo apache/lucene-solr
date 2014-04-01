@@ -77,7 +77,7 @@ public class TestSearchPerf extends AbstractSolrTestCase {
 
   // Skip encoding for updating the index
   void createIndex2(int nDocs, String... fields) throws IOException {
-    Set<String> fieldSet = new HashSet<String>(Arrays.asList(fields));
+    Set<String> fieldSet = new HashSet<>(Arrays.asList(fields));
 
     SolrQueryRequest req = lrf.makeRequest();
     SolrQueryResponse rsp = new SolrQueryResponse();
@@ -233,7 +233,7 @@ public class TestSearchPerf extends AbstractSolrTestCase {
 
     QParser parser = QParser.getParser("foomany_s:[" + l + " TO " + u + "]", null, req);
     Query rangeQ = parser.getQuery();
-    List<Query> filters = new ArrayList<Query>();
+    List<Query> filters = new ArrayList<>();
     filters.add(rangeQ);
     req.close();
 

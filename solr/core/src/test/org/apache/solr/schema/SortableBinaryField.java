@@ -24,7 +24,6 @@ import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FieldComparatorSource;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
-import org.apache.solr.common.util.Base64;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -45,7 +44,7 @@ public class SortableBinaryField extends BinaryField {
   @Override
   public List<StorableField> createFields(SchemaField field, Object value, float boost) {
     if (field.hasDocValues()) {
-      List<StorableField> fields = new ArrayList<StorableField>();
+      List<StorableField> fields = new ArrayList<>();
       StorableField storedField = createField(field, value, boost);
       fields.add(storedField);
       ByteBuffer byteBuffer = toObject(storedField);
@@ -81,20 +80,11 @@ public class SortableBinaryField extends BinaryField {
   
   @Override
   public Object marshalSortValue(Object value) {
-    if (null == value) {
-      return null;
-    }
-    final BytesRef val = (BytesRef)value;
-    return Base64.byteArrayToBase64(val.bytes, val.offset, val.length);
+    return marshalBase64SortValue(value);
   }
   
   @Override
   public Object unmarshalSortValue(Object value) {
-    if (null == value) {
-      return null;
-    }
-    final String val = (String)value;
-    final byte[] bytes = Base64.base64ToByteArray(val);
-    return new BytesRef(bytes);
+    return unmarshalBase64SortValue(value);
   }
 }

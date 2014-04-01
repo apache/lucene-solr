@@ -36,7 +36,7 @@ public class DIHCacheSupport {
       .getLogger(DIHCacheSupport.class);
   private String cacheForeignKey;
   private String cacheImplName;
-  private Map<String,DIHCache> queryVsCache = new HashMap<String,DIHCache>();
+  private Map<String,DIHCache> queryVsCache = new HashMap<>();
   private Map<String,Iterator<Map<String,Object>>> queryVsCacheIterator;
   private Iterator<Map<String,Object>> dataSourceRowCache;
   private boolean cacheDoKeyLookup;
@@ -94,7 +94,7 @@ public class DIHCacheSupport {
   
   public void initNewParent(Context context) {
     dataSourceRowCache = null;
-    queryVsCacheIterator = new HashMap<String,Iterator<Map<String,Object>>>();
+    queryVsCacheIterator = new HashMap<>();
     for (Map.Entry<String,DIHCache> entry : queryVsCache.entrySet()) {
       queryVsCacheIterator.put(entry.getKey(), entry.getValue().iterator());
     }

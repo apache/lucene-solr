@@ -17,9 +17,6 @@ package org.apache.solr;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.IOException;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
@@ -29,8 +26,11 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
-import org.junit.BeforeClass;
 import org.junit.AfterClass;
+import org.junit.BeforeClass;
+
+import java.io.File;
+import java.io.IOException;
 
 public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
   
@@ -42,8 +42,7 @@ public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    createTempDir();
-    tmpSolrHome = TEMP_DIR + File.separator + AnalysisAfterCoreReloadTest.class.getSimpleName() + System.currentTimeMillis();
+    tmpSolrHome = dataDir + File.separator + AnalysisAfterCoreReloadTest.class.getSimpleName() + System.currentTimeMillis();
     FileUtils.copyDirectory(new File(TEST_HOME()), new File(tmpSolrHome).getAbsoluteFile());
     initCore("solrconfig.xml", "schema.xml", new File(tmpSolrHome).getAbsolutePath());
   }
@@ -116,26 +115,20 @@ public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
   }
   
   private void overwriteStopwords(String stopwords) throws IOException {
-    SolrCore core = h.getCoreContainer().getCore(collection);
-    try {
+    try (SolrCore core = h.getCoreContainer().getCore(collection)) {
       String configDir = core.getResourceLoader().getConfigDir();
       FileUtils.moveFile(new File(configDir, "stopwords.txt"), new File(configDir, "stopwords.txt.bak"));
       File file = new File(configDir, "stopwords.txt");
       FileUtils.writeStringToFile(file, stopwords, "UTF-8");
      
-    } finally {
-      core.close();
     }
   }
   
   @Override
   public void tearDown() throws Exception {
-    SolrCore core = h.getCoreContainer().getCore(collection);
     String configDir;
-    try {
+    try (SolrCore core = h.getCoreContainer().getCore(collection)) {
       configDir = core.getResourceLoader().getConfigDir();
-    } finally {
-      core.close();
     }
     super.tearDown();
     if (new File(configDir, "stopwords.txt.bak").exists()) {

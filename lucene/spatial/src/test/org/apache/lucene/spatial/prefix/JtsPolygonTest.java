@@ -44,7 +44,7 @@ public class JtsPolygonTest extends StrategyTestCase {
 
   public JtsPolygonTest() {
     try {
-      HashMap<String, String> args = new HashMap<String, String>();
+      HashMap<String, String> args = new HashMap<>();
       args.put("spatialContextFactory",
           "com.spatial4j.core.context.jts.JtsSpatialContextFactory");
       ctx = SpatialContextFactory.makeSpatialContext(args, getClass().getClassLoader());

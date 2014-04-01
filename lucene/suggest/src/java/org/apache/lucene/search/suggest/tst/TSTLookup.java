@@ -20,6 +20,7 @@ package org.apache.lucene.search.suggest.tst;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup;
@@ -55,13 +56,16 @@ public class TSTLookup extends Lookup {
     if (iterator.hasPayloads()) {
       throw new IllegalArgumentException("this suggester doesn't support payloads");
     }
+    if (iterator.hasContexts()) {
+      throw new IllegalArgumentException("this suggester doesn't support contexts");
+    }
     root = new TernaryTreeNode();
 
     // make sure it's sorted and the comparator uses UTF16 sort order
     iterator = new SortedInputIterator(iterator, BytesRef.getUTF8SortedAsUTF16Comparator());
     count = 0;
-    ArrayList<String> tokens = new ArrayList<String>();
-    ArrayList<Number> vals = new ArrayList<Number>();
+    ArrayList<String> tokens = new ArrayList<>();
+    ArrayList<Number> vals = new ArrayList<>();
     BytesRef spare;
     CharsRef charsSpare = new CharsRef();
     while ((spare = iterator.next()) != null) {
@@ -117,9 +121,12 @@ public class TSTLookup extends Lookup {
   }
 
   @Override
-  public List<LookupResult> lookup(CharSequence key, boolean onlyMorePopular, int num) {
+  public List<LookupResult> lookup(CharSequence key, Set<BytesRef> contexts, boolean onlyMorePopular, int num) {
+    if (contexts != null) {
+      throw new IllegalArgumentException("this suggester doesn't support contexts");
+    }
     List<TernaryTreeNode> list = autocomplete.prefixCompletion(root, key, 0);
-    List<LookupResult> res = new ArrayList<LookupResult>();
+    List<LookupResult> res = new ArrayList<>();
     if (list == null || list.size() == 0) {
       return res;
     }
@@ -216,7 +223,11 @@ public class TSTLookup extends Lookup {
   /** Returns byte size of the underlying TST */
   @Override
   public long sizeInBytes() {
-    return RamUsageEstimator.sizeOf(autocomplete);
+    long mem = RamUsageEstimator.shallowSizeOf(this);
+    if (root != null) {
+      mem += root.sizeInBytes();
+    }
+    return mem;
   }
   
   @Override

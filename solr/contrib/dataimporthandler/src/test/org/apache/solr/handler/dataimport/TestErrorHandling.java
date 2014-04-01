@@ -83,7 +83,7 @@ public class TestErrorHandling extends AbstractDataImportHandlerTestCase {
 
   public void testTransformerErrorContinue() throws Exception {
     StringDataSource.xml = wellformedXml;
-    List<Map<String, Object>> rows = new ArrayList<Map<String, Object>>();
+    List<Map<String, Object>> rows = new ArrayList<>();
     rows.add(createMap("id", "3", "desc", "exception-transformer"));
     MockDataSource.setIterator("select * from foo", rows.iterator());
     runFullImport(dataConfigWithTransformer);

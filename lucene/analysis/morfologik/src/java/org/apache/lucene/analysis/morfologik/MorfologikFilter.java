@@ -56,25 +56,34 @@ public class MorfologikFilter extends TokenFilter {
   private final IStemmer stemmer;
   
   private List<WordData> lemmaList;
-  private final ArrayList<StringBuilder> tagsList = new ArrayList<StringBuilder>();
+  private final ArrayList<StringBuilder> tagsList = new ArrayList<>();
 
   private int lemmaListIndex;
 
   /**
-   * Creates MorfologikFilter
-   * @param in   input token stream
-   * @param version Lucene version compatibility for lowercasing.
+   * Creates a filter with the default (Polish) dictionary.
    */
   public MorfologikFilter(final TokenStream in, final Version version) {
+    this(in, MorfologikFilterFactory.DEFAULT_DICTIONARY_RESOURCE, version);
+  }
+
+  /**
+   * Creates a filter with a given dictionary resource.
+   *
+   * @param in input token stream.
+   * @param dict Dictionary resource from classpath.
+   * @param version Lucene version compatibility for lowercasing.
+   */
+  public MorfologikFilter(final TokenStream in, final String dict, final Version version) {
     super(in);
     this.input = in;
-    
+
     // SOLR-4007: temporarily substitute context class loader to allow finding dictionary resources.
     Thread me = Thread.currentThread();
     ClassLoader cl = me.getContextClassLoader();
     try {
-      me.setContextClassLoader(PolishStemmer.class.getClassLoader());
-      this.stemmer = new PolishStemmer();
+      me.setContextClassLoader(morfologik.stemming.Dictionary.class.getClassLoader());
+      this.stemmer = new DictionaryLookup(morfologik.stemming.Dictionary.getForLanguage(dict));
       this.charUtils = CharacterUtils.getInstance(version);
       this.lemmaList = Collections.emptyList();
     } finally {

@@ -17,10 +17,11 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import com.google.common.base.Charsets;
 import com.google.common.io.ByteStreams;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.solr.cloud.CloudConfigSetService;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.util.DOMUtil;
@@ -40,6 +41,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -75,19 +77,17 @@ public abstract class ConfigSolr {
   }
 
   public static ConfigSolr fromString(SolrResourceLoader loader, String xml) {
-    return fromInputStream(loader, new ByteArrayInputStream(xml.getBytes(Charsets.UTF_8)));
+    return fromInputStream(loader, new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
   }
 
   public static ConfigSolr fromInputStream(SolrResourceLoader loader, InputStream is) {
     try {
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      ByteStreams.copy(is, baos);
-      String originalXml = IOUtils.toString(new ByteArrayInputStream(baos.toByteArray()), "UTF-8");
-      ByteArrayInputStream dup = new ByteArrayInputStream(baos.toByteArray());
+      byte[] buf = IOUtils.toByteArray(is);
+      String originalXml = new String(buf, StandardCharsets.UTF_8);
+      ByteArrayInputStream dup = new ByteArrayInputStream(buf);
       Config config = new Config(loader, null, new InputSource(dup), null, false);
       return fromConfig(config, originalXml);
-    }
-    catch (Exception e) {
+    } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
@@ -138,6 +138,7 @@ public abstract class ConfigSolr {
 
   private static final int DEFAULT_ZK_CLIENT_TIMEOUT = 15000;
   private static final int DEFAULT_LEADER_VOTE_WAIT = 180000;  // 3 minutes
+  private static final int DEFAULT_LEADER_CONFLICT_RESOLVE_WAIT = 180000;
   private static final int DEFAULT_CORE_LOAD_THREADS = 3;
 
   protected static final String DEFAULT_CORE_ADMIN_PATH = "/admin/cores";
@@ -156,6 +157,10 @@ public abstract class ConfigSolr {
 
   public int getLeaderVoteWait() {
     return getInt(CfgProp.SOLR_LEADERVOTEWAIT, DEFAULT_LEADER_VOTE_WAIT);
+  }
+  
+  public int getLeaderConflictResolveWait() {
+    return getInt(CfgProp.SOLR_LEADERCONFLICTRESOLVEWAIT, DEFAULT_LEADER_CONFLICT_RESOLVE_WAIT);
   }
 
   public boolean getGenericCoreNodeNames() {
@@ -216,6 +221,10 @@ public abstract class ConfigSolr {
     return get(CfgProp.SOLR_MANAGEMENTPATH, null);
   }
 
+  public String getConfigSetBaseDirectory() {
+    return get(CfgProp.SOLR_CONFIGSETBASEDIR, "configsets");
+  }
+
   public LogWatcherConfig getLogWatcherConfig() {
     return new LogWatcherConfig(
         getBool(CfgProp.SOLR_LOGGING_ENABLED, true),
@@ -227,6 +236,14 @@ public abstract class ConfigSolr {
 
   public int getTransientCacheSize() {
     return getInt(CfgProp.SOLR_TRANSIENTCACHESIZE, Integer.MAX_VALUE);
+  }
+
+  public ConfigSetService createCoreConfigService(SolrResourceLoader loader, ZkController zkController) {
+    if (getZkHost() != null || System.getProperty("zkRun") != null)
+      return new CloudConfigSetService(loader, zkController);
+    if (hasSchemaCache())
+      return new ConfigSetService.SchemaCaching(loader, getConfigSetBaseDirectory());
+    return new ConfigSetService.Default(loader, getConfigSetBaseDirectory());
   }
 
   // Ugly for now, but we'll at least be able to centralize all of the differences between 4x and 5x.
@@ -255,6 +272,8 @@ public abstract class ConfigSolr {
     SOLR_GENERICCORENODENAMES,
     SOLR_ZKCLIENTTIMEOUT,
     SOLR_ZKHOST,
+    SOLR_LEADERCONFLICTRESOLVEWAIT,
+    SOLR_CONFIGSETBASEDIR,
 
     //TODO: Remove all of these elements for 5.0
     SOLR_PERSISTENT,
@@ -263,7 +282,7 @@ public abstract class ConfigSolr {
   }
 
   protected Config config;
-  protected Map<CfgProp, String> propMap = new HashMap<CfgProp, String>();
+  protected Map<CfgProp, String> propMap = new HashMap<>();
 
   public ConfigSolr(Config config) {
     this.config = config;

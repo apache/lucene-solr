@@ -62,12 +62,12 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
   @Override
   public final Q rewrite(final IndexReader reader, final MultiTermQuery query) throws IOException {
     final int maxSize = Math.min(size, getMaxSize());
-    final PriorityQueue<ScoreTerm> stQueue = new PriorityQueue<ScoreTerm>();
+    final PriorityQueue<ScoreTerm> stQueue = new PriorityQueue<>();
     collectTerms(reader, query, new TermCollector() {
       private final MaxNonCompetitiveBoostAttribute maxBoostAtt =
         attributes.addAttribute(MaxNonCompetitiveBoostAttribute.class);
       
-      private final Map<BytesRef,ScoreTerm> visitedTerms = new HashMap<BytesRef,ScoreTerm>();
+      private final Map<BytesRef,ScoreTerm> visitedTerms = new HashMap<>();
       
       private TermsEnum termsEnum;
       private BoostAttribute boostAtt;        

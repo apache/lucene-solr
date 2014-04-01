@@ -119,7 +119,7 @@ public class JavaBinCodec {
 
   public SimpleOrderedMap<Object> readOrderedMap(DataInputInputStream dis) throws IOException {
     int sz = readSize(dis);
-    SimpleOrderedMap<Object> nl = new SimpleOrderedMap<Object>();
+    SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>();
     for (int i = 0; i < sz; i++) {
       String name = (String) readVal(dis);
       Object val = readVal(dis);
@@ -130,7 +130,7 @@ public class JavaBinCodec {
 
   public NamedList<Object> readNamedList(DataInputInputStream dis) throws IOException {
     int sz = readSize(dis);
-    NamedList<Object> nl = new NamedList<Object>();
+    NamedList<Object> nl = new NamedList<>();
     for (int i = 0; i < sz; i++) {
       String name = (String) readVal(dis);
       Object val = readVal(dis);
@@ -364,7 +364,7 @@ public class JavaBinCodec {
   public void writeSolrDocumentList(SolrDocumentList docs)
           throws IOException {
     writeTag(SOLRDOCLST);
-    List<Number> l = new ArrayList<Number>(3);
+    List<Number> l = new ArrayList<>(3);
     l.add(docs.getNumFound());
     l.add(docs.getStart());
     l.add(docs.getMaxScore());
@@ -419,7 +419,7 @@ public class JavaBinCodec {
   public Map<Object,Object> readMap(DataInputInputStream dis)
           throws IOException {
     int sz = readVInt(dis);
-    Map<Object,Object> m = new LinkedHashMap<Object,Object>();
+    Map<Object,Object> m = new LinkedHashMap<>();
     for (int i = 0; i < sz; i++) {
       Object key = readVal(dis);
       Object val = readVal(dis);
@@ -438,7 +438,7 @@ public class JavaBinCodec {
   }
 
   public List<Object> readIterator(DataInputInputStream fis) throws IOException {
-    ArrayList<Object> l = new ArrayList<Object>();
+    ArrayList<Object> l = new ArrayList<>();
     while (true) {
       Object o = readVal(fis);
       if (o == END_OBJ) break;
@@ -472,7 +472,7 @@ public class JavaBinCodec {
 
   public List<Object> readArray(DataInputInputStream dis) throws IOException {
     int sz = readSize(dis);
-    ArrayList<Object> l = new ArrayList<Object>(sz);
+    ArrayList<Object> l = new ArrayList<>(sz);
     for (int i = 0; i < sz; i++) {
       l.add(readVal(dis));
     }
@@ -521,7 +521,7 @@ public class JavaBinCodec {
       public Object getValue() {
         return value;
       }
-      
+
       @Override
       public String toString() {
         return "MapEntry[" + key.toString() + ":" + value.toString() + "]";
@@ -530,7 +530,28 @@ public class JavaBinCodec {
       @Override
       public Object setValue(Object value) {
         throw new UnsupportedOperationException();
-      }};
+      }
+
+      @Override
+      public int hashCode() {
+        int result = 31;
+        result *=31 + getKey().hashCode();
+        result *=31 + getValue().hashCode();
+        return result;
+      }
+
+      @Override
+      public boolean equals(Object obj) {
+        if(this == obj) {
+          return true;
+        }
+        if(!(obj instanceof Entry)) {
+          return false;
+        }
+        Map.Entry<Object, Object> entry = (Entry<Object, Object>) obj;
+        return (this.getKey().equals(entry.getKey()) && this.getValue().equals(entry.getValue()));
+      }
+    };
   }
 
   /**
@@ -757,7 +778,7 @@ public class JavaBinCodec {
     writeTag(EXTERN_STRING, idx);
     if (idx == 0) {
       writeStr(s);
-      if (stringsMap == null) stringsMap = new HashMap<String, Integer>();
+      if (stringsMap == null) stringsMap = new HashMap<>();
       stringsMap.put(s, ++stringsCount);
     }
 
@@ -769,7 +790,7 @@ public class JavaBinCodec {
       return stringsList.get(idx - 1);
     } else {// idx == 0 means it has a string value
       String s = (String) readVal(fis);
-      if (stringsList == null) stringsList = new ArrayList<String>();
+      if (stringsList == null) stringsList = new ArrayList<>();
       stringsList.add(s);
       return s;
     }

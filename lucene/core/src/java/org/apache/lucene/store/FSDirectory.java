@@ -234,14 +234,6 @@ public abstract class FSDirectory extends BaseDirectory {
     return listAll(directory);
   }
 
-  /** Returns true iff a file with the given name exists. */
-  @Override
-  public boolean fileExists(String name) {
-    ensureOpen();
-    File file = new File(directory, name);
-    return file.exists();
-  }
-
   /** Returns the length in bytes of a file in the directory. */
   @Override
   public long fileLength(String name) throws IOException {
@@ -295,7 +287,7 @@ public abstract class FSDirectory extends BaseDirectory {
   @Override
   public void sync(Collection<String> names) throws IOException {
     ensureOpen();
-    Set<String> toSync = new HashSet<String>(names);
+    Set<String> toSync = new HashSet<>(names);
     toSync.retainAll(staleFiles);
 
     for (String name : toSync)

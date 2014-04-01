@@ -69,7 +69,7 @@ public class TestPhrasePrefixQuery extends LuceneTestCase {
     query1.add(new Term("body", "blueberry"));
     query2.add(new Term("body", "strawberry"));
     
-    LinkedList<Term> termsWithPrefix = new LinkedList<Term>();
+    LinkedList<Term> termsWithPrefix = new LinkedList<>();
     
     // this TermEnum gives "piccadilly", "pie" and "pizza".
     String prefix = "pi";

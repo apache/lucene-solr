@@ -27,6 +27,7 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -76,7 +77,7 @@ public class SolrRequestParsers
   private static final byte[] INPUT_ENCODING_BYTES = INPUT_ENCODING_KEY.getBytes(CHARSET_US_ASCII);
 
   private final HashMap<String, SolrRequestParser> parsers =
-      new HashMap<String, SolrRequestParser>();
+      new HashMap<>();
   private final boolean enableRemoteStreams;
   private StandardRequestParser standard;
   private boolean handleSelect = true;
@@ -141,7 +142,7 @@ public class SolrRequestParsers
     // TODO -- in the future, we could pick a different parser based on the request
     
     // Pick the parser from the request...
-    ArrayList<ContentStream> streams = new ArrayList<ContentStream>(1);
+    ArrayList<ContentStream> streams = new ArrayList<>(1);
     SolrParams params = parser.parseParamsAndFillStreams( req, streams );
     SolrQueryRequest sreq = buildRequestFrom( core, params, streams );
 
@@ -213,7 +214,7 @@ public class SolrRequestParsers
    * Given a url-encoded query string (UTF-8), map it into solr params
    */
   public static MultiMapSolrParams parseQueryString(String queryString) {
-    Map<String,String[]> map = new HashMap<String, String[]>();
+    Map<String,String[]> map = new HashMap<>();
     parseQueryString(queryString, map);
     return new MultiMapSolrParams(map);
   }
@@ -244,7 +245,7 @@ public class SolrRequestParsers
             }
           }
         };
-        parseFormDataContent(in, Long.MAX_VALUE, IOUtils.CHARSET_UTF_8, map, true);
+        parseFormDataContent(in, Long.MAX_VALUE, StandardCharsets.UTF_8, map, true);
       } catch (IOException ioe) {
         throw new SolrException(ErrorCode.BAD_REQUEST, ioe);
       }
@@ -261,7 +262,7 @@ public class SolrRequestParsers
   @SuppressWarnings({"fallthrough", "resource"})
   static long parseFormDataContent(final InputStream postContent, final long maxLen, Charset charset, final Map<String,String[]> map, boolean supportCharsetParam) throws IOException {
     CharsetDecoder charsetDecoder = supportCharsetParam ? null : getCharsetDecoder(charset);
-    final LinkedList<Object> buffer = supportCharsetParam ? new LinkedList<Object>() : null;
+    final LinkedList<Object> buffer = supportCharsetParam ? new LinkedList<>() : null;
     long len = 0L, keyPos = 0L, valuePos = 0L;
     final ByteArrayOutputStream keyStream = new ByteArrayOutputStream(),
       valueStream = new ByteArrayOutputStream();
@@ -580,7 +581,7 @@ public class SolrRequestParsers
         throw new SolrException( ErrorCode.BAD_REQUEST, "Not application/x-www-form-urlencoded content: "+req.getContentType() );
       }
 
-      final Map<String,String[]> map = new HashMap<String, String[]>();
+      final Map<String,String[]> map = new HashMap<>();
       
       // also add possible URL parameters and include into the map (parsed using UTF-8):
       final String qs = req.getQueryString();
@@ -598,7 +599,7 @@ public class SolrRequestParsers
 
       // get query String from request body, using the charset given in content-type:
       final String cs = ContentStreamBase.getCharsetFromContentType(req.getContentType());
-      final Charset charset = (cs == null) ? IOUtils.CHARSET_UTF_8 : Charset.forName(cs);
+      final Charset charset = (cs == null) ? StandardCharsets.UTF_8 : Charset.forName(cs);
       InputStream in = null;
       try {
         in = req.getInputStream();
@@ -665,7 +666,9 @@ public class SolrRequestParsers
     {
       String method = req.getMethod().toUpperCase(Locale.ROOT);
       if ("GET".equals(method) || "HEAD".equals(method) 
-          || ("PUT".equals(method) && req.getRequestURI().contains("/schema"))) {
+          || (("PUT".equals(method) || "DELETE".equals(method))
+              && (req.getRequestURI().contains("/schema")
+                  || req.getRequestURI().contains("/config")))) {
         return parseQueryString(req.getQueryString());
       }
       if ("POST".equals( method ) ) {

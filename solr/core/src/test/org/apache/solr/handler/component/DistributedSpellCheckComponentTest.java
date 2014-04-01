@@ -23,6 +23,7 @@ import java.util.List;
 
 import junit.framework.Assert;
 
+import org.apache.solr.SolrTestCaseJ4.SuppressTempDirCleanUp;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrServer;
@@ -40,6 +41,7 @@ import org.junit.BeforeClass;
  * @see org.apache.solr.handler.component.SpellCheckComponent
  */
 @Slow
+@SuppressTempDirCleanUp(bugUrl = "https://issues.apache.org/jira/browse/SOLR-1877 Spellcheck IndexReader leak bug?")
 public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTestCase {
   
   public DistributedSpellCheckComponentTest()
@@ -187,7 +189,7 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
         collate, "true", maxCollationTries, "0", maxCollations, "1", collateExtended, "true"));
   }
   private Object[] buildRequest(String q, boolean useSpellcheckQ, String handlerName, boolean useGrouping, String... addlParams) {
-    List<Object> params = new ArrayList<Object>();
+    List<Object> params = new ArrayList<>();
     
     params.add("q");
     params.add(useSpellcheckQ ? "*:*" : q);

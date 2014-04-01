@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -177,8 +178,8 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
   }
 
   static class MockPageFetcher extends PageFetcher {
-    HashMap<String,String> htmlMap = new HashMap<String,String>();
-    HashMap<String,Set<URL>> linkMap = new HashMap<String,Set<URL>>();
+    HashMap<String,String> htmlMap = new HashMap<>();
+    HashMap<String,Set<URL>> linkMap = new HashMap<>();
     
     public MockPageFetcher() throws IOException {
       (new SimplePostTool()).super();
@@ -190,18 +191,18 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
       htmlMap.put("http://[ff01::114]/page2", "<html><body><a href=\"http://[ff01::114]/\"><a href=\"http://[ff01::114]/disallowed\"/></body></html>");
       htmlMap.put("http://[ff01::114]/disallowed", "<html><body><a href=\"http://[ff01::114]/\"></body></html>");
 
-      Set<URL> s = new HashSet<URL>();
+      Set<URL> s = new HashSet<>();
       s.add(new URL("http://[ff01::114]/page1"));
       s.add(new URL("http://[ff01::114]/page2"));
       linkMap.put("http://[ff01::114]", s);
       linkMap.put("http://[ff01::114]/index.html", s);
-      s = new HashSet<URL>();
+      s = new HashSet<>();
       s.add(new URL("http://[ff01::114]/page1/foo"));
       linkMap.put("http://[ff01::114]/page1", s);
-      s = new HashSet<URL>();
+      s = new HashSet<>();
       s.add(new URL("http://[ff01::114]/page1/foo/bar"));
       linkMap.put("http://[ff01::114]/page1/foo", s);
-      s = new HashSet<URL>();
+      s = new HashSet<>();
       s.add(new URL("http://[ff01::114]/disallowed"));
       linkMap.put("http://[ff01::114]/page2", s);
       
@@ -213,7 +214,7 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
       sb.append("Disallow: /disallow # Disallow this path\n");
       sb.append("Disallow: /nonexistingpath # Disallow this path\n");
       this.robotsCache.put("[ff01::114]", SimplePostTool.pageFetcher.
-          parseRobotsTxt(new ByteArrayInputStream(sb.toString().getBytes("UTF-8"))));
+          parseRobotsTxt(new ByteArrayInputStream(sb.toString().getBytes(StandardCharsets.UTF_8))));
     }
     
     @Override
@@ -225,11 +226,7 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
       }
       res.httpStatus = 200;
       res.contentType = "text/html";
-      try {
-        res.content = htmlMap.get(u.toString()).getBytes("UTF-8");
-      } catch (UnsupportedEncodingException e) {
-        throw new RuntimeException();
-      }
+      res.content = htmlMap.get(u.toString()).getBytes(StandardCharsets.UTF_8);
       return res;
     }
     
@@ -237,7 +234,7 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
     public Set<URL> getLinksFromWebPage(URL u, InputStream is, String type, URL postUrl) {
       Set<URL> s = linkMap.get(SimplePostTool.normalizeUrlEnding(u.toString()));
       if(s == null)
-        s = new HashSet<URL>();
+        s = new HashSet<>();
       return s;
     }
   }

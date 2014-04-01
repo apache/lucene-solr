@@ -168,6 +168,7 @@ public class ConfigSolrXmlOld extends ConfigSolr {
         config.getVal("solr/cores/@transientCacheSize", false));
     propMap.put(CfgProp.SOLR_ZKCLIENTTIMEOUT,
         config.getVal("solr/cores/@zkClientTimeout", false));
+    propMap.put(CfgProp.SOLR_CONFIGSETBASEDIR, config.getVal("solr/cores/@configSetBaseDir", false));
 
     // These have no counterpart in 5.0, asking, for any of these in Solr 5.0
     // will result in an error being
@@ -186,8 +187,8 @@ public class ConfigSolrXmlOld extends ConfigSolr {
     coreNodes = (NodeList) config.evaluate("solr/cores/core",
         XPathConstants.NODESET);
     // Check a couple of error conditions
-    Set<String> names = new HashSet<String>(); // for duplicate names
-    Map<String,String> dirs = new HashMap<String,String>(); // for duplicate
+    Set<String> names = new HashSet<>(); // for duplicate names
+    Map<String,String> dirs = new HashMap<>(); // for duplicate
                                                             // data dirs.
     
     for (int idx = 0; idx < coreNodes.getLength(); ++idx) {
@@ -236,7 +237,7 @@ public class ConfigSolrXmlOld extends ConfigSolr {
   }
 
   public List<String> getAllCoreNames() {
-    List<String> ret = new ArrayList<String>();
+    List<String> ret = new ArrayList<>();
     
     synchronized (coreNodes) {
       for (int idx = 0; idx < coreNodes.getLength(); ++idx) {

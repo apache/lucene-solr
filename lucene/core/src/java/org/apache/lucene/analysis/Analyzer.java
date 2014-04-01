@@ -73,7 +73,7 @@ public abstract class Analyzer implements Closeable {
   private final ReuseStrategy reuseStrategy;
 
   // non final as it gets nulled if closed; pkg private for access by ReuseStrategy's final helper methods:
-  CloseableThreadLocal<Object> storedValue = new CloseableThreadLocal<Object>();
+  CloseableThreadLocal<Object> storedValue = new CloseableThreadLocal<>();
 
   /**
    * Create a new Analyzer, reusing the same set of components per-thread
@@ -417,7 +417,7 @@ public abstract class Analyzer implements Closeable {
     public void setReusableComponents(Analyzer analyzer, String fieldName, TokenStreamComponents components) {
       Map<String, TokenStreamComponents> componentsPerField = (Map<String, TokenStreamComponents>) getStoredValue(analyzer);
       if (componentsPerField == null) {
-        componentsPerField = new HashMap<String, TokenStreamComponents>();
+        componentsPerField = new HashMap<>();
         setStoredValue(analyzer, componentsPerField);
       }
       componentsPerField.put(fieldName, components);

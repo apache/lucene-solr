@@ -26,7 +26,9 @@ import org.apache.lucene.util.AttributeSource.AttributeFactory;
 /**
  * Factory for the SmartChineseAnalyzer {@link SentenceTokenizer}
  * @lucene.experimental
+ * @deprecated Use {@link HMMChineseTokenizerFactory} instead
  */
+@Deprecated
 public class SmartChineseSentenceTokenizerFactory extends TokenizerFactory {
   
   /** Creates a new SmartChineseSentenceTokenizerFactory */

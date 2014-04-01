@@ -17,6 +17,8 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import org.apache.lucene.store.Directory;
+
 import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
@@ -29,8 +31,7 @@ import java.io.Reader;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
-
-import org.apache.lucene.store.Directory;
+import java.nio.charset.StandardCharsets;
 
 /** This class emulates the new Java 7 "Try-With-Resources" statement.
  * Remove once Lucene is on Java 7.
@@ -38,16 +39,21 @@ import org.apache.lucene.store.Directory;
 public final class IOUtils {
   
   /**
-   * UTF-8 charset string
-   * @see Charset#forName(String)
-   */
-  public static final String UTF_8 = "UTF-8";
-  
-  /**
    * UTF-8 {@link Charset} instance to prevent repeated
    * {@link Charset#forName(String)} lookups
+   * @deprecated Use {@link StandardCharsets#UTF_8} instead.
    */
-  public static final Charset CHARSET_UTF_8 = Charset.forName("UTF-8");
+  @Deprecated
+  public static final Charset CHARSET_UTF_8 = StandardCharsets.UTF_8;
+  
+  /**
+   * UTF-8 charset string.
+   * <p>Where possible, use {@link StandardCharsets#UTF_8} instead,
+   * as using the String constant may slow things down.
+   * @see StandardCharsets#UTF_8
+   */
+  public static final String UTF_8 = StandardCharsets.UTF_8.name();
+  
   private IOUtils() {} // no instance
 
   /**
@@ -340,6 +346,17 @@ public final class IOUtils {
       if (th instanceof IOException) {
         throw (IOException) th;
       }
+      reThrowUnchecked(th);
+    }
+  }
+
+  /**
+   * Simple utilty method that takes a previously caught
+   * {@code Throwable} and rethrows it as an unchecked exception.
+   * If the argument is null then this method does nothing.
+   */
+  public static void reThrowUnchecked(Throwable th) {
+    if (th != null) {
       if (th instanceof RuntimeException) {
         throw (RuntimeException) th;
       }

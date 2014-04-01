@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.index.BufferedUpdatesStream.QueryAndLimit;
+import org.apache.lucene.index.DocValuesUpdate.BinaryDocValuesUpdate;
+import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -48,7 +50,10 @@ class FrozenBufferedUpdates {
   final int[] queryLimits;
   
   // numeric DV update term and their updates
-  final NumericUpdate[] updates;
+  final NumericDocValuesUpdate[] numericDVUpdates;
+  
+  // binary DV update term and their updates
+  final BinaryDocValuesUpdate[] binaryDVUpdates;
   
   final int bytesUsed;
   final int numTermDeletes;
@@ -83,17 +88,34 @@ class FrozenBufferedUpdates {
     // so that it maps to all fields it affects, sorted by their docUpto, and traverse
     // that Term only once, applying the update to all fields that still need to be
     // updated. 
-    List<NumericUpdate> allUpdates = new ArrayList<NumericUpdate>();
+    List<NumericDocValuesUpdate> allNumericUpdates = new ArrayList<>();
     int numericUpdatesSize = 0;
-    for (LinkedHashMap<Term,NumericUpdate> fieldUpdates : deletes.numericUpdates.values()) {
-      for (NumericUpdate update : fieldUpdates.values()) {
-        allUpdates.add(update);
+    for (LinkedHashMap<Term,NumericDocValuesUpdate> numericUpdates : deletes.numericUpdates.values()) {
+      for (NumericDocValuesUpdate update : numericUpdates.values()) {
+        allNumericUpdates.add(update);
         numericUpdatesSize += update.sizeInBytes();
       }
     }
-    updates = allUpdates.toArray(new NumericUpdate[allUpdates.size()]);
+    numericDVUpdates = allNumericUpdates.toArray(new NumericDocValuesUpdate[allNumericUpdates.size()]);
     
-    bytesUsed = (int) terms.getSizeInBytes() + queries.length * BYTES_PER_DEL_QUERY + numericUpdatesSize + updates.length * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
+    // TODO if a Term affects multiple fields, we could keep the updates key'd by Term
+    // so that it maps to all fields it affects, sorted by their docUpto, and traverse
+    // that Term only once, applying the update to all fields that still need to be
+    // updated. 
+    List<BinaryDocValuesUpdate> allBinaryUpdates = new ArrayList<>();
+    int binaryUpdatesSize = 0;
+    for (LinkedHashMap<Term,BinaryDocValuesUpdate> binaryUpdates : deletes.binaryUpdates.values()) {
+      for (BinaryDocValuesUpdate update : binaryUpdates.values()) {
+        allBinaryUpdates.add(update);
+        binaryUpdatesSize += update.sizeInBytes();
+      }
+    }
+    binaryDVUpdates = allBinaryUpdates.toArray(new BinaryDocValuesUpdate[allBinaryUpdates.size()]);
+    
+    bytesUsed = (int) terms.getSizeInBytes() + queries.length * BYTES_PER_DEL_QUERY 
+        + numericUpdatesSize + numericDVUpdates.length * RamUsageEstimator.NUM_BYTES_OBJECT_REF
+        + binaryUpdatesSize + binaryDVUpdates.length * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
+    
     numTermDeletes = deletes.numTermDeletes.get();
   }
   
@@ -161,6 +183,6 @@ class FrozenBufferedUpdates {
   }
   
   boolean any() {
-    return termCount > 0 || queries.length > 0 || updates.length > 0;
+    return termCount > 0 || queries.length > 0 || numericDVUpdates.length > 0 || binaryDVUpdates.length > 0;
   }
 }

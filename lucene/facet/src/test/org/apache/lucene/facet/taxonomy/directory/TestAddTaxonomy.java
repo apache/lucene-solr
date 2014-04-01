@@ -229,7 +229,7 @@ public class TestAddTaxonomy extends FacetTestCase {
     DirectoryTaxonomyReader dtr = new DirectoryTaxonomyReader(dest);
     // +2 to account for the root category + "a"
     assertEquals(numCategories + 2, dtr.getSize());
-    HashSet<FacetLabel> categories = new HashSet<FacetLabel>();
+    HashSet<FacetLabel> categories = new HashSet<>();
     for (int i = 1; i < dtr.getSize(); i++) {
       FacetLabel cat = dtr.getPath(i);
       assertTrue("category " + cat + " already existed", categories.add(cat));

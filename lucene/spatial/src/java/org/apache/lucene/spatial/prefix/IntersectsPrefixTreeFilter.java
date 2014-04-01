@@ -81,15 +81,7 @@ public class IntersectsPrefixTreeFilter extends AbstractVisitingPrefixTreeFilter
 
       @Override
       protected void visitScanned(Cell cell) throws IOException {
-        Shape cShape;
-        //if this cell represents a point, use the cell center vs the box
-        // TODO this behavior is debatable; might want to be configurable
-        // (points never have isLeaf())
-        if (cell.getLevel() == grid.getMaxLevels() && !cell.isLeaf())
-          cShape = cell.getCenter();
-        else
-          cShape = cell.getShape();
-        if (queryShape.relate(cShape).intersects())
+        if (queryShape.relate(cell.getShape()).intersects())
           collectDocs(results);
       }
 

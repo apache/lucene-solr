@@ -27,12 +27,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,6 +41,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
@@ -81,9 +81,8 @@ import org.apache.solr.hadoop.morphline.MorphlineMapRunner;
 import org.apache.solr.hadoop.morphline.MorphlineMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.kitesdk.morphline.base.Fields;
-import com.google.common.base.Charsets;
+
 import com.google.common.base.Preconditions;
 import com.google.common.io.ByteStreams;
 
@@ -183,11 +182,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
         .action(new HelpArgumentAction() {
           @Override
           public void run(ArgumentParser parser, Argument arg, Map<String, Object> attrs, String flag, Object value) throws ArgumentParserException {
-            try {
-              parser.printHelp(new PrintWriter(new OutputStreamWriter(System.out, "UTF-8")));
-            } catch (UnsupportedEncodingException e) {
-              throw new RuntimeException("Won't Happen for UTF-8");
-            }  
+            parser.printHelp();
             System.out.println();
             System.out.print(ToolRunnerHelpFormatter.getGenericCommandUsage());
             //ToolRunner.printGenericCommandUsage(System.out);
@@ -206,31 +201,6 @@ public class MapReduceIndexerTool extends Configured implements Tool {
               "  --output-dir hdfs://c2202.mycompany.com/user/$USER/test \\\n" + 
               "  --shards 1 \\\n" + 
               "  hdfs:///user/$USER/test-documents/sample-statuses-20120906-141433.avro\n" +
-              "\n" +
-              "# (Re)index all files that match all of the following conditions:\n" +
-              "# 1) File is contained in dir tree hdfs:///user/$USER/solrloadtest/twitter/tweets\n" +
-              "# 2) file name matches the glob pattern 'sample-statuses*.gz'\n" +
-              "# 3) file was last modified less than 100000 minutes ago\n" +
-              "# 4) file size is between 1 MB and 1 GB\n" +
-              "# Also include extra library jar file containing JSON tweet Java parser:\n" +
-              "hadoop jar target/solr-map-reduce-*.jar " + "com.cloudera.cdk.morphline.hadoop.find.HdfsFindTool" + " \\\n" + 
-              "  -find hdfs:///user/$USER/solrloadtest/twitter/tweets \\\n" + 
-              "  -type f \\\n" + 
-              "  -name 'sample-statuses*.gz' \\\n" + 
-              "  -mmin -1000000 \\\n" + 
-              "  -size -100000000c \\\n" + 
-              "  -size +1000000c \\\n" + 
-              "| sudo -u hdfs hadoop \\\n" + 
-              "  --config /etc/hadoop/conf.cloudera.mapreduce1 \\\n" + 
-              "  jar target/solr-map-reduce-*.jar \\\n" +
-              "  -D 'mapred.child.java.opts=-Xmx500m' \\\n" + 
-//            "  -D 'mapreduce.child.java.opts=-Xmx500m' \\\n" + 
-              "  --log4j src/test/resources/log4j.properties \\\n" + 
-              "  --morphline-file ../search-core/src/test/resources/test-morphlines/tutorialReadJsonTestTweets.conf \\\n" + 
-              "  --solr-home-dir src/test/resources/solr/minimr \\\n" + 
-              "  --output-dir hdfs://c2202.mycompany.com/user/$USER/test \\\n" + 
-              "  --shards 100 \\\n" + 
-              "  --input-list -\n" +
               "\n" +
               "# Go live by merging resulting index shards into a live Solr cluster\n" +
               "# (explicitly specify Solr URLs - for a SolrCloud cluster see next example):\n" +
@@ -352,11 +322,12 @@ public class MapReduceIndexerTool extends Configured implements Tool {
       Argument reducersArg = parser.addArgument("--reducers")
         .metavar("INTEGER")
         .type(Integer.class)
-        .choices(new RangeArgumentChoice(-1, Integer.MAX_VALUE)) // TODO: also support X% syntax where X is an integer
+        .choices(new RangeArgumentChoice(-2, Integer.MAX_VALUE)) // TODO: also support X% syntax where X is an integer
         .setDefault(-1)
         .help("Tuning knob that indicates the number of reducers to index into. " +
+            "0 is reserved for a mapper-only feature that may ship in a future release. " +
             "-1 indicates use all reduce slots available on the cluster. " +
-            "0 indicates use one reducer per output shard, which disables the mtree merge MR algorithm. " +
+            "-2 indicates use one reducer per output shard, which disables the mtree merge MR algorithm. " +
             "The mtree merge MR algorithm improves scalability by spreading load " +
             "(in particular CPU load) among a number of parallel reducers that can be much larger than the number " +
             "of solr shards expected by the user. It can be seen as an extension of concurrent lucene merges " +
@@ -541,6 +512,9 @@ public class MapReduceIndexerTool extends Configured implements Tool {
       opts.collection = ns.getString(collectionArg.getDest());
 
       try {
+        if (opts.reducers == 0) {
+          throw new ArgumentParserException("--reducers must not be zero", parser); 
+        }
         verifyGoLiveArgs(opts, parser);
       } catch (ArgumentParserException e) {
         parser.handleError(e);
@@ -571,7 +545,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
 
   static List<List<String>> buildShardUrls(List<Object> urls, Integer numShards) {
     if (urls == null) return null;
-    List<List<String>> shardUrls = new ArrayList<List<String>>(urls.size());
+    List<List<String>> shardUrls = new ArrayList<>(urls.size());
     List<String> list = null;
     
     int sz;
@@ -581,7 +555,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
     sz = (int) Math.ceil(urls.size() / (float)numShards);
     for (int i = 0; i < urls.size(); i++) {
       if (i % sz == 0) {
-        list = new ArrayList<String>();
+        list = new ArrayList<>();
         shardUrls.add(list);
       }
       list.add((String) urls.get(i));
@@ -636,15 +610,14 @@ public class MapReduceIndexerTool extends Configured implements Tool {
   
   /** API for Java clients; visible for testing; may become a public API eventually */
   int run(Options options) throws Exception {
-
-    if ("local".equals(getConf().get("mapred.job.tracker"))) {
+    if (getConf().getBoolean("isMR1", false) && "local".equals(getConf().get("mapred.job.tracker"))) {
       throw new IllegalStateException(
         "Running with LocalJobRunner (i.e. all of Hadoop inside a single JVM) is not supported " +
         "because LocalJobRunner does not (yet) implement the Hadoop Distributed Cache feature, " +
         "which is required for passing files via --files and --libjars");
     }
 
-    long programStartTime = System.currentTimeMillis();
+    long programStartTime = System.nanoTime();
     if (options.fairSchedulerPool != null) {
       getConf().set("mapred.fairscheduler.pool", options.fairSchedulerPool);
     }
@@ -715,7 +688,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
         
     
     LOG.info("Randomizing list of {} input files to spread indexing load more evenly among mappers", numFiles);
-    long startTime = System.currentTimeMillis();      
+    long startTime = System.nanoTime();      
     if (numFiles < job.getConfiguration().getInt(MAIN_MEMORY_RANDOMIZATION_THRESHOLD, 100001)) {
       // If there are few input files reduce latency by directly running main memory randomization 
       // instead of launching a high latency MapReduce job
@@ -729,7 +702,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
         return -1; // job failed
       }
     }
-    float secs = (System.currentTimeMillis() - startTime) / 1000.0f;
+    float secs = (System.nanoTime() - startTime) / (float)(10^9);
     LOG.info("Done. Randomizing list of {} input files took {} secs", numFiles, secs);
     
     
@@ -796,9 +769,9 @@ public class MapReduceIndexerTool extends Configured implements Tool {
     MorphlineMapRunner runner = setupMorphline(options);
     if (options.isDryRun && runner != null) {
       LOG.info("Indexing {} files in dryrun mode", numFiles);
-      startTime = System.currentTimeMillis();
+      startTime = System.nanoTime();
       dryRun(runner, fs, fullInputList);
-      secs = (System.currentTimeMillis() - startTime) / 1000.0f;
+      secs = (System.nanoTime() - startTime) / (float)(10^9);
       LOG.info("Done. Indexing {} files in dryrun mode took {} secs", numFiles, secs);
       goodbye(null, programStartTime);
       return 0;
@@ -809,12 +782,12 @@ public class MapReduceIndexerTool extends Configured implements Tool {
     job.setOutputKeyClass(Text.class);
     job.setOutputValueClass(SolrInputDocumentWritable.class);
     LOG.info("Indexing {} files using {} real mappers into {} reducers", new Object[] {numFiles, realMappers, reducers});
-    startTime = System.currentTimeMillis();
+    startTime = System.nanoTime();
     if (!waitForCompletion(job, options.isVerbose)) {
       return -1; // job failed
     }
 
-    secs = (System.currentTimeMillis() - startTime) / 1000.0f;
+    secs = (System.nanoTime() - startTime) / (float)(10^9);
     LOG.info("Done. Indexing {} files using {} real mappers into {} reducers took {} secs", new Object[] {numFiles, realMappers, reducers, secs});
 
     int mtreeMergeIterations = 0;
@@ -847,14 +820,14 @@ public class MapReduceIndexerTool extends Configured implements Tool {
       
       LOG.info("MTree merge iteration {}/{}: Merging {} shards into {} shards using fanout {}", new Object[] { 
           mtreeMergeIteration, mtreeMergeIterations, reducers, (reducers / options.fanout), options.fanout});
-      startTime = System.currentTimeMillis();
+      startTime = System.nanoTime();
       if (!waitForCompletion(job, options.isVerbose)) {
         return -1; // job failed
       }
       if (!renameTreeMergeShardDirs(outputTreeMergeStep, job, fs)) {
         return -1;
       }
-      secs = (System.currentTimeMillis() - startTime) / 1000.0f;
+      secs = (System.nanoTime() - startTime) / (float)(10^9);
       LOG.info("MTree merge iteration {}/{}: Done. Merging {} shards into {} shards using fanout {} took {} secs",
           new Object[] {mtreeMergeIteration, mtreeMergeIterations, reducers, (reducers / options.fanout), options.fanout, secs});
       
@@ -914,11 +887,14 @@ public class MapReduceIndexerTool extends Configured implements Tool {
     //reducers = job.getCluster().getClusterStatus().getReduceSlotCapacity(); // Yarn only      
     LOG.info("Cluster reports {} reduce slots", reducers);
 
-    if (options.reducers == 0) {
+    if (options.reducers == -2) {
       reducers = options.shards;
     } else if (options.reducers == -1) {
       reducers = Math.min(reducers, realMappers); // no need to use many reducers when using few mappers
     } else {
+      if (options.reducers == 0) {
+        throw new IllegalStateException("Illegal zero reducers");
+      }
       reducers = options.reducers;
     }
     reducers = Math.max(reducers, options.shards);
@@ -948,15 +924,15 @@ public class MapReduceIndexerTool extends Configured implements Tool {
     FileSystem fs = fullInputList.getFileSystem(conf);
     FSDataOutputStream out = fs.create(fullInputList);
     try {
-      Writer writer = new BufferedWriter(new OutputStreamWriter(out, "UTF-8"));
+      Writer writer = new BufferedWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8));
       
       for (Path inputFile : inputFiles) {
         FileSystem inputFileFs = inputFile.getFileSystem(conf);
         if (inputFileFs.exists(inputFile)) {
           PathFilter pathFilter = new PathFilter() {      
             @Override
-            public boolean accept(Path path) {
-              return !path.getName().startsWith("."); // ignore "hidden" files and dirs
+            public boolean accept(Path path) { // ignore "hidden" files and dirs
+              return !(path.getName().startsWith(".") || path.getName().startsWith("_")); 
             }
           };
           numFiles += addInputFilesRecursively(inputFile, writer, inputFileFs, pathFilter);
@@ -973,7 +949,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
           in = inputList.getFileSystem(conf).open(inputList);
         }
         try {
-          BufferedReader reader = new BufferedReader(new InputStreamReader(in, "UTF-8"));
+          BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
           String line;
           while ((line = reader.readLine()) != null) {
             writer.write(line + "\n");
@@ -1012,7 +988,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
   
   private void randomizeFewInputFiles(FileSystem fs, Path outputStep2Dir, Path fullInputList) throws IOException {    
     List<String> lines = new ArrayList();
-    BufferedReader reader = new BufferedReader(new InputStreamReader(fs.open(fullInputList), "UTF-8"));
+    BufferedReader reader = new BufferedReader(new InputStreamReader(fs.open(fullInputList), StandardCharsets.UTF_8));
     try {
       String line;
       while ((line = reader.readLine()) != null) {
@@ -1025,7 +1001,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
     Collections.shuffle(lines, new Random(421439783L)); // constant seed for reproducability
     
     FSDataOutputStream out = fs.create(new Path(outputStep2Dir, FULL_INPUT_LIST));
-    Writer writer = new BufferedWriter(new OutputStreamWriter(out, "UTF-8"));
+    Writer writer = new BufferedWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8));
     try {
       for (String line : lines) {
         writer.write(line + "\n");
@@ -1114,7 +1090,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
      * like this:
      * 
      * ... caused by compilation failed: mfm:///MyJavaClass1.java:2: package
-     * com.cloudera.cdk.morphline.api does not exist
+     * org.kitesdk.morphline.api does not exist
      */
     LOG.trace("dryRun: java.class.path: {}", System.getProperty("java.class.path"));
     String fullClassPath = "";
@@ -1159,7 +1135,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
    * turnaround during trial & debug sessions
    */
   private void dryRun(MorphlineMapRunner runner, FileSystem fs, Path fullInputList) throws IOException {    
-    BufferedReader reader = new BufferedReader(new InputStreamReader(fs.open(fullInputList), "UTF-8"));
+    BufferedReader reader = new BufferedReader(new InputStreamReader(fs.open(fullInputList), StandardCharsets.UTF_8));
     try {
       String line;
       while ((line = reader.readLine()) != null) {
@@ -1178,7 +1154,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
     int numFiles = 0;
     FSDataOutputStream out = fs.create(fullInputList);
     try {
-      Writer writer = new BufferedWriter(new OutputStreamWriter(out, "UTF-8"));
+      Writer writer = new BufferedWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8));
       for (FileStatus stat : dirs) {
         LOG.debug("Adding path {}", stat.getPath());
         Path dir = new Path(stat.getPath(), "data/index");
@@ -1287,7 +1263,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
       byte[] bytes = ByteStreams.toByteArray(in);
       in.close();
       Preconditions.checkArgument(bytes.length > 0);
-      int solrShard = Integer.parseInt(new String(bytes, Charsets.UTF_8));
+      int solrShard = Integer.parseInt(new String(bytes, StandardCharsets.UTF_8));
       if (!delete(solrShardNumberFile, false, fs)) {
         return false;
       }
@@ -1374,7 +1350,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
   }
 
   private void goodbye(Job job, long startTime) {
-    float secs = (System.currentTimeMillis() - startTime) / 1000.0f;
+    float secs = (System.nanoTime() - startTime) / (float)(10^9);
     if (job != null) {
       LOG.info("Succeeded with job: " + getJobInfo(job));
     }

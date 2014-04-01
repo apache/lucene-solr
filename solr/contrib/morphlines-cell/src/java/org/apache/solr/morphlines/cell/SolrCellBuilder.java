@@ -151,7 +151,7 @@ public final class SolrCellBuilder implements CommandBuilder {
         cellParams.put(ExtractingParams.XPATH_EXPRESSION, xpathExpr);
       }
       
-      this.dateFormats = getConfigs().getStringList(config, "dateFormats", new ArrayList<String>(DateUtil.DEFAULT_DATE_FORMATS));
+      this.dateFormats = getConfigs().getStringList(config, "dateFormats", new ArrayList<>(DateUtil.DEFAULT_DATE_FORMATS));
       
       String handlerStr = getConfigs().getString(config, "solrContentHandlerFactory", TrimSolrContentHandlerFactory.class.getName());
       Class<? extends SolrContentHandlerFactory> factoryClass;
@@ -165,7 +165,7 @@ public final class SolrCellBuilder implements CommandBuilder {
 
       this.locale = getLocale(getConfigs().getString(config, "locale", ""));
       
-      this.mediaTypeToParserMap = new HashMap<MediaType, Parser>();
+      this.mediaTypeToParserMap = new HashMap<>();
       //MimeTypes mimeTypes = MimeTypes.getDefaultMimeTypes(); // FIXME getMediaTypeRegistry.normalize() 
 
       List<? extends Config> parserConfigs = getConfigs().getConfigList(config, "parsers");

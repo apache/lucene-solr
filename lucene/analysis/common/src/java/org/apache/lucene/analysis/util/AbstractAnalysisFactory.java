@@ -27,6 +27,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -65,7 +66,7 @@ public abstract class AbstractAnalysisFactory {
    * Initialize this factory via a set of key-value pairs.
    */
   protected AbstractAnalysisFactory(Map<String,String> args) {
-    originalArgs = Collections.unmodifiableMap(new HashMap<String,String>(args));
+    originalArgs = Collections.unmodifiableMap(new HashMap<>(args));
     String version = get(args, LUCENE_MATCH_VERSION_PARAM);
     luceneMatchVersion = version == null ? null : Version.parseLeniently(version);
     args.remove(CLASS_NAME);  // consume the class arg
@@ -202,7 +203,7 @@ public abstract class AbstractAnalysisFactory {
       Set<String> set = null;
       Matcher matcher = ITEM_PATTERN.matcher(s);
       if (matcher.find()) {
-        set = new HashSet<String>();
+        set = new HashSet<>();
         set.add(matcher.group(0));
         while (matcher.find()) {
           set.add(matcher.group(0));
@@ -252,7 +253,7 @@ public abstract class AbstractAnalysisFactory {
    * Returns the resource's lines (with content treated as UTF-8)
    */
   protected final List<String> getLines(ResourceLoader loader, String resource) throws IOException {
-    return WordlistLoader.getLines(loader.openResource(resource), IOUtils.CHARSET_UTF_8);
+    return WordlistLoader.getLines(loader.openResource(resource), StandardCharsets.UTF_8);
   }
 
   /** same as {@link #getWordSet(ResourceLoader, String, boolean)},
@@ -272,7 +273,7 @@ public abstract class AbstractAnalysisFactory {
         Reader reader = null;
         try {
           stream = loader.openResource(file.trim());
-          CharsetDecoder decoder = IOUtils.CHARSET_UTF_8.newDecoder()
+          CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder()
               .onMalformedInput(CodingErrorAction.REPORT)
               .onUnmappableCharacter(CodingErrorAction.REPORT);
           reader = new InputStreamReader(stream, decoder);
@@ -296,7 +297,7 @@ public abstract class AbstractAnalysisFactory {
     if (fileNames == null)
       return Collections.<String>emptyList();
 
-    List<String> result = new ArrayList<String>();
+    List<String> result = new ArrayList<>();
     for (String file : fileNames.split("(?<!\\\\),")) {
       result.add(file.replaceAll("\\\\(?=,)", ""));
     }

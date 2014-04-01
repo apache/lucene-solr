@@ -57,7 +57,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
   @Override
   public Map<Object,Object> getContext() {
     // SolrQueryRequest as a whole isn't thread safe, and this isn't either.
-    if (context==null) context = new HashMap<Object,Object>();
+    if (context==null) context = new HashMap<>();
     return context;
   }
 

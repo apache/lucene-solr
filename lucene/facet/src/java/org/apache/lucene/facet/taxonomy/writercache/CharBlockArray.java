@@ -60,7 +60,7 @@ class CharBlockArray implements Appendable, Serializable, CharSequence {
   }
 
   CharBlockArray(int blockSize) {
-    this.blocks = new ArrayList<Block>();
+    this.blocks = new ArrayList<>();
     this.blockSize = blockSize;
     addBlock();
   }

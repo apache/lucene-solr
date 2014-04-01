@@ -130,7 +130,7 @@ public class SolrSynonymParser extends SynonymMap.Parser {
   }
   
   private static String[] split(String s, String separator) {
-    ArrayList<String> list = new ArrayList<String>(2);
+    ArrayList<String> list = new ArrayList<>(2);
     StringBuilder sb = new StringBuilder();
     int pos=0, end=s.length();
     while (pos < end) {

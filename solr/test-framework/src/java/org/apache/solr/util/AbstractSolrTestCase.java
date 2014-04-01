@@ -67,7 +67,7 @@ public abstract class AbstractSolrTestCase extends SolrTestCaseJ4 {
     /** Causes an exception matching the regex pattern to not be logged. */
   public static void ignoreException(String pattern) {
     if (SolrException.ignorePatterns == null)
-      SolrException.ignorePatterns = new HashSet<String>();
+      SolrException.ignorePatterns = new HashSet<>();
     SolrException.ignorePatterns.add(pattern);
   }
 
@@ -127,19 +127,6 @@ public abstract class AbstractSolrTestCase extends SolrTestCaseJ4 {
    */
   public String delQ(String q, String... args) {
     return TestHarness.deleteByQuery(q, args);
-  }
-
-
-  public static boolean recurseDelete(File f) {
-    if (f.isDirectory()) {
-      for (File sub : f.listFiles()) {
-        if (!recurseDelete(sub)) {
-          System.err.println("!!!! WARNING: best effort to remove " + sub.getAbsolutePath() + " FAILED !!!!!");
-          return false;
-        }
-      }
-    }
-    return f.delete();
   }
 
   /** @see SolrTestCaseJ4#getFile */

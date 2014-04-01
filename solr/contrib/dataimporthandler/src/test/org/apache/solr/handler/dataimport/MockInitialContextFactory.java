@@ -28,7 +28,7 @@ import org.easymock.IAnswer;
 import org.easymock.IMocksControl;
 
 public class MockInitialContextFactory implements InitialContextFactory {
-  private static final Map<String, Object> objects = new HashMap<String, Object>();
+  private static final Map<String, Object> objects = new HashMap<>();
   private final IMocksControl mockControl;
   private final javax.naming.Context context;
 

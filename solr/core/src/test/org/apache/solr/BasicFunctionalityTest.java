@@ -20,6 +20,7 @@ package org.apache.solr;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -351,7 +352,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     final String BAD_VALUE = "NOT_A_NUMBER";
     ignoreException(BAD_VALUE);
 
-    final List<String> FIELDS = new LinkedList<String>();
+    final List<String> FIELDS = new LinkedList<>();
     for (String type : new String[] { "ti", "tf", "td", "tl" }) {
       FIELDS.add("malformed_" + type);
     }
@@ -468,7 +469,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
     DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
     builder.parse(new ByteArrayInputStream
-                  (writer.toString().getBytes("UTF-8")));
+                  (writer.toString().getBytes(StandardCharsets.UTF_8)));
     req.close();
   }
 
@@ -550,7 +551,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     nl.add("bt","true");
     nl.add("bf","false");
 
-    Map<String,String> m = new HashMap<String,String>();
+    Map<String,String> m = new HashMap<>();
     m.put("f.field1.i", "1000");
     m.put("s", "BBB");
     m.put("ss", "SSS");

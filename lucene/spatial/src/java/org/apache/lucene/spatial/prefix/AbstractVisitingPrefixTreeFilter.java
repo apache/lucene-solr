@@ -17,9 +17,7 @@ package org.apache.lucene.spatial.prefix;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Iterator;
-
+import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSet;
@@ -28,7 +26,9 @@ import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.StringHelper;
-import com.spatial4j.core.shape.Shape;
+
+import java.io.IOException;
+import java.util.Iterator;
 
 /**
  * Traverses a {@link SpatialPrefixTree} indexed field, using the template &
@@ -60,9 +60,7 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
   public boolean equals(Object o) {
     if (!super.equals(o)) return false;//checks getClass == o.getClass & instanceof
 
-    AbstractVisitingPrefixTreeFilter that = (AbstractVisitingPrefixTreeFilter) o;
-
-    if (prefixGridScanLevel != that.prefixGridScanLevel) return false;
+    //Ignore prefixGridScanLevel as it is merely a tuning parameter.
 
     return true;
   }
@@ -70,7 +68,6 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
   @Override
   public int hashCode() {
     int result = super.hashCode();
-    result = 31 * result + prefixGridScanLevel;
     return result;
   }
 
@@ -90,7 +87,7 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
    * method then it's short-circuited until it finds one, at which point
    * {@link #visit(org.apache.lucene.spatial.prefix.tree.Cell)} is called. At
    * some depths, of the tree, the algorithm switches to a scanning mode that
-   * finds calls {@link #visitScanned(org.apache.lucene.spatial.prefix.tree.Cell)}
+   * calls {@link #visitScanned(org.apache.lucene.spatial.prefix.tree.Cell)}
    * for each leaf cell found.
    *
    * @lucene.internal
@@ -218,7 +215,7 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
       if (hasIndexedLeaves && cell.getLevel() != 0) {
         //If the next indexed term just adds a leaf marker ('+') to cell,
         // then add all of those docs
-        assert StringHelper.startsWith(thisTerm, curVNodeTerm);
+        assert StringHelper.startsWith(thisTerm, curVNodeTerm);//TODO refactor to use method on curVNode.cell
         scanCell = grid.getCell(thisTerm.bytes, thisTerm.offset, thisTerm.length, scanCell);
         if (scanCell.getLevel() == cell.getLevel() && scanCell.isLeaf()) {
           visitLeaf(scanCell);
@@ -268,15 +265,17 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
      */
     protected void scan(int scanDetailLevel) throws IOException {
       for (;
-           thisTerm != null && StringHelper.startsWith(thisTerm, curVNodeTerm);
+           thisTerm != null && StringHelper.startsWith(thisTerm, curVNodeTerm);//TODO refactor to use method on curVNode.cell
            thisTerm = termsEnum.next()) {
         scanCell = grid.getCell(thisTerm.bytes, thisTerm.offset, thisTerm.length, scanCell);
 
         int termLevel = scanCell.getLevel();
-        if (termLevel > scanDetailLevel)
-          continue;
-        if (termLevel == scanDetailLevel || scanCell.isLeaf()) {
-          visitScanned(scanCell);
+        if (termLevel < scanDetailLevel) {
+          if (scanCell.isLeaf())
+            visitScanned(scanCell);
+        } else if (termLevel == scanDetailLevel) {
+          if (!scanCell.isLeaf())//LUCENE-5529
+            visitScanned(scanCell);
         }
       }//term loop
     }

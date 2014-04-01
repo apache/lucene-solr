@@ -120,7 +120,7 @@ public class NRTCachingDirectory extends Directory {
 
   @Override
   public synchronized String[] listAll() throws IOException {
-    final Set<String> files = new HashSet<String>();
+    final Set<String> files = new HashSet<>();
     for(String f : cache.listAll()) {
       files.add(f);
     }
@@ -152,17 +152,11 @@ public class NRTCachingDirectory extends Directory {
   }
 
   @Override
-  public synchronized boolean fileExists(String name) throws IOException {
-    return cache.fileExists(name) || delegate.fileExists(name);
-  }
-
-  @Override
   public synchronized void deleteFile(String name) throws IOException {
     if (VERBOSE) {
       System.out.println("nrtdir.deleteFile name=" + name);
     }
-    if (cache.fileExists(name)) {
-      assert !delegate.fileExists(name): "name=" + name;
+    if (cache.fileNameExists(name)) {
       cache.deleteFile(name);
     } else {
       delegate.deleteFile(name);
@@ -171,7 +165,7 @@ public class NRTCachingDirectory extends Directory {
 
   @Override
   public synchronized long fileLength(String name) throws IOException {
-    if (cache.fileExists(name)) {
+    if (cache.fileNameExists(name)) {
       return cache.fileLength(name);
     } else {
       return delegate.fileLength(name);
@@ -223,7 +217,7 @@ public class NRTCachingDirectory extends Directory {
     if (VERBOSE) {
       System.out.println("nrtdir.openInput name=" + name);
     }
-    if (cache.fileExists(name)) {
+    if (cache.fileNameExists(name)) {
       if (VERBOSE) {
         System.out.println("  from cache");
       }
@@ -239,7 +233,7 @@ public class NRTCachingDirectory extends Directory {
     if (VERBOSE) {
       System.out.println("nrtdir.openInput name=" + name);
     }
-    if (cache.fileExists(name)) {
+    if (cache.fileNameExists(name)) {
       if (VERBOSE) {
         System.out.println("  from cache");
       }
@@ -289,12 +283,9 @@ public class NRTCachingDirectory extends Directory {
       if (VERBOSE) {
         System.out.println("nrtdir.unCache name=" + fileName);
       }
-      if (!cache.fileExists(fileName)) {
+      if (!cache.fileNameExists(fileName)) {
         // Another thread beat us...
         return;
-      }
-      if (delegate.fileExists(fileName)) {
-        throw new IOException("cannot uncache file=\"" + fileName + "\": it was separately also created in the delegate directory");
       }
       final IOContext context = IOContext.DEFAULT;
       final IndexOutput out = delegate.createOutput(fileName, context);
@@ -309,7 +300,7 @@ public class NRTCachingDirectory extends Directory {
       // Lock order: uncacheLock -> this
       synchronized(this) {
         // Must sync here because other sync methods have
-        // if (cache.fileExists(name)) { ... } else { ... }:
+        // if (cache.fileNameExists(name)) { ... } else { ... }:
         cache.deleteFile(fileName);
       }
     }

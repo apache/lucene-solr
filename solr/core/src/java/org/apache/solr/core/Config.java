@@ -301,14 +301,14 @@ public class Config {
    * or null if all attributes are known.
    */
   public Set<String> getUnknownAttributes(Element element, String... knownAttributes) {
-    Set<String> knownAttributeSet = new HashSet<String>(Arrays.asList(knownAttributes));
+    Set<String> knownAttributeSet = new HashSet<>(Arrays.asList(knownAttributes));
     Set<String> unknownAttributeSet = null;
     NamedNodeMap attributes = element.getAttributes();
     for (int i = 0 ; i < attributes.getLength() ; ++i) {
       final String attributeName = attributes.item(i).getNodeName();
       if ( ! knownAttributeSet.contains(attributeName)) {
         if (null == unknownAttributeSet) {
-          unknownAttributeSet = new HashSet<String>();
+          unknownAttributeSet = new HashSet<>();
         }
         unknownAttributeSet.add(attributeName);
       }
@@ -321,7 +321,7 @@ public class Config {
    * contains an attribute name that is not among knownAttributes. 
    */
   public void complainAboutUnknownAttributes(String elementXpath, String... knownAttributes) {
-    SortedMap<String,SortedSet<String>> problems = new TreeMap<String,SortedSet<String>>(); 
+    SortedMap<String,SortedSet<String>> problems = new TreeMap<>();
     NodeList nodeList = getNodeList(elementXpath, false);
     for (int i = 0 ; i < nodeList.getLength() ; ++i) {
       Element element = (Element)nodeList.item(i);
@@ -330,7 +330,7 @@ public class Config {
         String elementName = element.getNodeName();
         SortedSet<String> allUnknownAttributes = problems.get(elementName);
         if (null == allUnknownAttributes) {
-          allUnknownAttributes = new TreeSet<String>();
+          allUnknownAttributes = new TreeSet<>();
           problems.put(elementName, allUnknownAttributes);
         }
         allUnknownAttributes.addAll(unknownAttributes);

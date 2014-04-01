@@ -31,6 +31,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.Properties;
 
@@ -58,6 +59,7 @@ public class CoreDescriptor {
   public static final String CORE_LOADONSTARTUP = "loadOnStartup";
   public static final String CORE_TRANSIENT = "transient";
   public static final String CORE_NODE_NAME = "coreNodeName";
+  public static final String CORE_CONFIGSET = "configSet";
   public static final String SOLR_CORE_PROP_PREFIX = "solr.core.";
 
   public static final String DEFAULT_EXTERNAL_PROPERTIES_FILE = "conf" + File.separator + "solrcore.properties";
@@ -100,6 +102,7 @@ public class CoreDescriptor {
       CORE_PROPERTIES,
       CORE_LOADONSTARTUP,
       CORE_TRANSIENT,
+      CORE_CONFIGSET,
       // cloud props
       CORE_SHARD,
       CORE_COLLECTION,
@@ -211,7 +214,7 @@ public class CoreDescriptor {
       try {
         in = new FileInputStream(propertiesFile);
         Properties externalProps = new Properties();
-        externalProps.load(new InputStreamReader(in, "UTF-8"));
+        externalProps.load(new InputStreamReader(in, StandardCharsets.UTF_8));
         coreProperties.putAll(externalProps);
       } catch (IOException e) {
         String message = String.format(Locale.ROOT, "Could not load properties from %s: %s:",
@@ -389,5 +392,9 @@ public class CoreDescriptor {
         .append(this.getInstanceDir())
         .append("]")
         .toString();
+  }
+
+  public String getConfigSet() {
+    return coreProperties.getProperty(CORE_CONFIGSET);
   }
 }

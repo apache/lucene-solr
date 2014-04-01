@@ -17,6 +17,7 @@ package org.apache.lucene.search.suggest.analyzing;
  */
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -192,7 +193,7 @@ public final class FuzzySuggester extends AnalyzingSuggester {
 
     Automaton levA = convertAutomaton(toLevenshteinAutomata(lookupAutomaton));
     /*
-      Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"), "UTF-8");
+      Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"), StandardCharsets.UTF_8);
       w.write(levA.toDot());
       w.close();
       System.out.println("Wrote LevA to out.dot");

@@ -25,7 +25,9 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.document.Document;
@@ -154,8 +156,8 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     }
     
     // Maps position to the start/end offset:
-    final Map<Integer,Integer> posToStartOffset = new HashMap<Integer,Integer>();
-    final Map<Integer,Integer> posToEndOffset = new HashMap<Integer,Integer>();
+    final Map<Integer,Integer> posToStartOffset = new HashMap<>();
+    final Map<Integer,Integer> posToEndOffset = new HashMap<>();
 
     ts.reset();
     int pos = -1;
@@ -450,13 +452,14 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     final boolean simple;
     final boolean offsetsAreCorrect;
     final RandomIndexWriter iw;
+    final CountDownLatch latch;
 
     // NOTE: not volatile because we don't want the tests to
     // add memory barriers (ie alter how threads
     // interact)... so this is just "best effort":
     public boolean failed;
     
-    AnalysisThread(long seed, Analyzer a, int iterations, int maxWordLength, boolean useCharFilter, boolean simple, boolean offsetsAreCorrect, RandomIndexWriter iw) {
+    AnalysisThread(long seed, CountDownLatch latch, Analyzer a, int iterations, int maxWordLength, boolean useCharFilter, boolean simple, boolean offsetsAreCorrect, RandomIndexWriter iw) {
       this.seed = seed;
       this.a = a;
       this.iterations = iterations;
@@ -465,17 +468,19 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       this.simple = simple;
       this.offsetsAreCorrect = offsetsAreCorrect;
       this.iw = iw;
+      this.latch = latch;
     }
     
     @Override
     public void run() {
       boolean success = false;
       try {
+        latch.await();
         // see the part in checkRandomData where it replays the same text again
         // to verify reproducability/reuse: hopefully this would catch thread hazards.
         checkRandomData(new Random(seed), a, iterations, maxWordLength, useCharFilter, simple, offsetsAreCorrect, iw);
         success = true;
-      } catch (IOException e) {
+      } catch (Exception e) {
         Rethrow.rethrow(e);
       } finally {
         failed = !success;
@@ -507,13 +512,15 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       // now test with multiple threads: note we do the EXACT same thing we did before in each thread,
       // so this should only really fail from another thread if its an actual thread problem
       int numThreads = TestUtil.nextInt(random, 2, 4);
+      final CountDownLatch startingGun = new CountDownLatch(1);
       AnalysisThread threads[] = new AnalysisThread[numThreads];
       for (int i = 0; i < threads.length; i++) {
-        threads[i] = new AnalysisThread(seed, a, iterations, maxWordLength, useCharFilter, simple, offsetsAreCorrect, iw);
+        threads[i] = new AnalysisThread(seed, startingGun, a, iterations, maxWordLength, useCharFilter, simple, offsetsAreCorrect, iw);
       }
       for (int i = 0; i < threads.length; i++) {
         threads[i].start();
       }
+      startingGun.countDown();
       for (int i = 0; i < threads.length; i++) {
         try {
           threads[i].join();
@@ -682,12 +689,12 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     PositionIncrementAttribute posIncAtt = ts.hasAttribute(PositionIncrementAttribute.class) ? ts.getAttribute(PositionIncrementAttribute.class) : null;
     PositionLengthAttribute posLengthAtt = ts.hasAttribute(PositionLengthAttribute.class) ? ts.getAttribute(PositionLengthAttribute.class) : null;
     TypeAttribute typeAtt = ts.hasAttribute(TypeAttribute.class) ? ts.getAttribute(TypeAttribute.class) : null;
-    List<String> tokens = new ArrayList<String>();
-    List<String> types = new ArrayList<String>();
-    List<Integer> positions = new ArrayList<Integer>();
-    List<Integer> positionLengths = new ArrayList<Integer>();
-    List<Integer> startOffsets = new ArrayList<Integer>();
-    List<Integer> endOffsets = new ArrayList<Integer>();
+    List<String> tokens = new ArrayList<>();
+    List<String> types = new ArrayList<>();
+    List<Integer> positions = new ArrayList<>();
+    List<Integer> positionLengths = new ArrayList<>();
+    List<Integer> startOffsets = new ArrayList<>();
+    List<Integer> endOffsets = new ArrayList<>();
     ts.reset();
 
     // First pass: save away "correct" tokens
@@ -886,7 +893,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   }
 
   protected void toDotFile(Analyzer a, String inputText, String localFileName) throws IOException {
-    Writer w = new OutputStreamWriter(new FileOutputStream(localFileName), "UTF-8");
+    Writer w = new OutputStreamWriter(new FileOutputStream(localFileName), StandardCharsets.UTF_8);
     final TokenStream ts = a.tokenStream("field", inputText);
     ts.reset();
     new TokenStreamToDot(inputText, ts, new PrintWriter(w)).toDot();

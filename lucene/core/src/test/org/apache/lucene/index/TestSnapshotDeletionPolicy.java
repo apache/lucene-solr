@@ -51,7 +51,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
 
   protected void checkSnapshotExists(Directory dir, IndexCommit c) throws Exception {
     String segFileName = c.getSegmentsFileName();
-    assertTrue("segments file not found in directory: " + segFileName, dir.fileExists(segFileName));
+    assertTrue("segments file not found in directory: " + segFileName, slowFileExists(dir, segFileName));
   }
 
   protected void checkMaxDoc(IndexCommit commit, int expectedMaxDoc) throws Exception {
@@ -63,7 +63,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     }
   }
 
-  protected List<IndexCommit> snapshots = new ArrayList<IndexCommit>();
+  protected List<IndexCommit> snapshots = new ArrayList<>();
 
   protected void prepareIndexAndSnapshots(SnapshotDeletionPolicy sdp,
       IndexWriter writer, int numSnapshots)
@@ -338,7 +338,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
 
     // but 'snapshot1' files will still exist (need to release snapshot before they can be deleted).
     String segFileName = snapshots.get(1).getSegmentsFileName();
-    assertTrue("snapshot files should exist in the directory: " + segFileName, dir.fileExists(segFileName));
+    assertTrue("snapshot files should exist in the directory: " + segFileName, slowFileExists(dir, segFileName));
 
     dir.close();
   }
@@ -360,7 +360,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     sdp.release(snapshots.get(0));
     writer.deleteUnusedFiles();
     writer.close();
-    assertFalse("segments file should not be found in dirctory: " + segFileName, dir.fileExists(segFileName));
+    assertFalse("segments file should not be found in dirctory: " + segFileName, slowFileExists(dir, segFileName));
     dir.close();
   }
 
@@ -409,7 +409,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     // commit.
     new IndexWriter(dir, getConfig(random(), null)).close();
     
-    assertFalse("snapshotted commit should not exist", dir.fileExists(s1.getSegmentsFileName()));
+    assertFalse("snapshotted commit should not exist", slowFileExists(dir, s1.getSegmentsFileName()));
     dir.close();
   }
 }

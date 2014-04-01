@@ -120,25 +120,25 @@ public class IndexSchema {
   protected float version;
   protected final SolrResourceLoader loader;
 
-  protected Map<String,SchemaField> fields = new HashMap<String,SchemaField>();
-  protected Map<String,FieldType> fieldTypes = new HashMap<String,FieldType>();
+  protected Map<String,SchemaField> fields = new HashMap<>();
+  protected Map<String,FieldType> fieldTypes = new HashMap<>();
 
-  protected List<SchemaField> fieldsWithDefaultValue = new ArrayList<SchemaField>();
-  protected Collection<SchemaField> requiredFields = new HashSet<SchemaField>();
+  protected List<SchemaField> fieldsWithDefaultValue = new ArrayList<>();
+  protected Collection<SchemaField> requiredFields = new HashSet<>();
   protected volatile DynamicField[] dynamicFields;
   public DynamicField[] getDynamicFields() { return dynamicFields; }
 
   private Analyzer analyzer;
   private Analyzer queryAnalyzer;
 
-  protected List<SchemaAware> schemaAware = new ArrayList<SchemaAware>();
+  protected List<SchemaAware> schemaAware = new ArrayList<>();
 
   protected String defaultSearchFieldName=null;
   protected String queryParserDefaultOperator = "OR";
   protected boolean isExplicitQueryParserDefaultOperator = false;
 
 
-  protected Map<String, List<CopyField>> copyFieldsMap = new HashMap<String, List<CopyField>>();
+  protected Map<String, List<CopyField>> copyFieldsMap = new HashMap<>();
   public Map<String,List<CopyField>> getCopyFieldsMap() { return Collections.unmodifiableMap(copyFieldsMap); }
   
   protected DynamicCopy[] dynamicCopyFields;
@@ -148,7 +148,7 @@ public class IndexSchema {
    * keys are all fields copied to, count is num of copyField
    * directives that target them.
    */
-  protected Map<SchemaField, Integer> copyFieldTargetCounts = new HashMap<SchemaField, Integer>();
+  protected Map<SchemaField, Integer> copyFieldTargetCounts = new HashMap<>();
 
     /**
    * Constructs a schema using the specified resource name and stream.
@@ -386,7 +386,7 @@ public class IndexSchema {
     }
 
     protected HashMap<String, Analyzer> analyzerCache() {
-      HashMap<String, Analyzer> cache = new HashMap<String, Analyzer>();
+      HashMap<String, Analyzer> cache = new HashMap<>();
       for (SchemaField f : getFields().values()) {
         Analyzer analyzer = f.getType().getAnalyzer();
         cache.put(f.getName(), analyzer);
@@ -407,7 +407,7 @@ public class IndexSchema {
 
     @Override
     protected HashMap<String, Analyzer> analyzerCache() {
-      HashMap<String, Analyzer> cache = new HashMap<String, Analyzer>();
+      HashMap<String, Analyzer> cache = new HashMap<>();
        for (SchemaField f : getFields().values()) {
         Analyzer analyzer = f.getType().getQueryAnalyzer();
         cache.put(f.getName(), analyzer);
@@ -463,8 +463,10 @@ public class IndexSchema {
 
       final FieldTypePluginLoader typeLoader = new FieldTypePluginLoader(this, fieldTypes, schemaAware);
 
-      //               /schema/types/fieldtype | /schema/types/fieldType 
-      expression =     stepsToPath(SCHEMA, TYPES, FIELD_TYPE.toLowerCase(Locale.ROOT)) // backcompat(?) 
+      //               /schema/fieldtype | /schema/fieldType | /schema/types/fieldtype | /schema/types/fieldType
+      expression = stepsToPath(SCHEMA, FIELD_TYPE.toLowerCase(Locale.ROOT)) // backcompat(?)
+          + XPATH_OR + stepsToPath(SCHEMA, FIELD_TYPE)
+          + XPATH_OR + stepsToPath(SCHEMA, TYPES, FIELD_TYPE.toLowerCase(Locale.ROOT))
           + XPATH_OR + stepsToPath(SCHEMA, TYPES, FIELD_TYPE);
       NodeList nodes = (NodeList) xpath.evaluate(expression, document, XPathConstants.NODESET);
       typeLoader.load(loader, nodes);
@@ -633,13 +635,16 @@ public class IndexSchema {
    */ 
   protected synchronized Map<String,Boolean> loadFields(Document document, XPath xpath) throws XPathExpressionException {
     // Hang on to the fields that say if they are required -- this lets us set a reasonable default for the unique key
-    Map<String,Boolean> explicitRequiredProp = new HashMap<String,Boolean>();
+    Map<String,Boolean> explicitRequiredProp = new HashMap<>();
     
-    ArrayList<DynamicField> dFields = new ArrayList<DynamicField>();
+    ArrayList<DynamicField> dFields = new ArrayList<>();
 
-    //                  /schema/fields/field | /schema/fields/dynamicField
-    String expression = stepsToPath(SCHEMA, FIELDS, FIELD)
-           + XPATH_OR + stepsToPath(SCHEMA, FIELDS, DYNAMIC_FIELD);
+    //                  /schema/field | /schema/dynamicField | /schema/fields/field | /schema/fields/dynamicField
+    String expression = stepsToPath(SCHEMA, FIELD)
+        + XPATH_OR + stepsToPath(SCHEMA, DYNAMIC_FIELD)
+        + XPATH_OR + stepsToPath(SCHEMA, FIELDS, FIELD)
+        + XPATH_OR + stepsToPath(SCHEMA, FIELDS, DYNAMIC_FIELD);
+
     NodeList nodes = (NodeList)xpath.evaluate(expression, document, XPathConstants.NODESET);
 
     for (int i=0; i<nodes.getLength(); i++) {
@@ -756,7 +761,7 @@ public class IndexSchema {
    * @param fields The sequence of {@link org.apache.solr.schema.SchemaField}
    */
   public void registerDynamicFields(SchemaField... fields) {
-    List<DynamicField> dynFields = new ArrayList<DynamicField>(Arrays.asList(dynamicFields));
+    List<DynamicField> dynFields = new ArrayList<>(Arrays.asList(dynamicFields));
     for (SchemaField field : fields) {
       if (isDuplicateDynField(dynFields, field)) {
         log.debug("dynamic field already exists: dynamic field: [" + field.getName() + "]");
@@ -889,7 +894,7 @@ public class IndexSchema {
       } else {                        // source & dest: explicit fields 
         List<CopyField> copyFieldList = copyFieldsMap.get(source);
         if (copyFieldList == null) {
-          copyFieldList = new ArrayList<CopyField>();
+          copyFieldList = new ArrayList<>();
           copyFieldsMap.put(source, copyFieldList);
         }
         copyFieldList.add(new CopyField(sourceSchemaField, destSchemaField, maxChars));
@@ -1261,7 +1266,7 @@ public class IndexSchema {
     if (!isCopyFieldTarget(f)) {
       return Collections.emptyList();
     }
-    List<String> fieldNames = new ArrayList<String>();
+    List<String> fieldNames = new ArrayList<>();
     for (Map.Entry<String, List<CopyField>> cfs : copyFieldsMap.entrySet()) {
       for (CopyField copyField : cfs.getValue()) {
         if (copyField.getDestination().getName().equals(destField)) {
@@ -1285,7 +1290,7 @@ public class IndexSchema {
    */
   // This is useful when we need the maxSize param of each CopyField
   public List<CopyField> getCopyFieldsList(final String sourceField){
-    final List<CopyField> result = new ArrayList<CopyField>();
+    final List<CopyField> result = new ArrayList<>();
     for (DynamicCopy dynamicCopy : dynamicCopyFields) {
       if (dynamicCopy.matches(sourceField)) {
         result.add(new CopyField(getField(sourceField), dynamicCopy.getTargetField(sourceField), dynamicCopy.maxChars));
@@ -1312,7 +1317,7 @@ public class IndexSchema {
    * Get a map of property name -> value for the whole schema.
    */
   public SimpleOrderedMap<Object> getNamedPropertyValues() {
-    SimpleOrderedMap<Object> topLevel = new SimpleOrderedMap<Object>();
+    SimpleOrderedMap<Object> topLevel = new SimpleOrderedMap<>();
     topLevel.add(NAME, getSchemaName());
     topLevel.add(VERSION, getVersion());
     if (null != uniqueKeyFieldName) {
@@ -1322,26 +1327,26 @@ public class IndexSchema {
       topLevel.add(DEFAULT_SEARCH_FIELD, defaultSearchFieldName);
     }
     if (isExplicitQueryParserDefaultOperator) {
-      SimpleOrderedMap<Object> solrQueryParserProperties = new SimpleOrderedMap<Object>();
+      SimpleOrderedMap<Object> solrQueryParserProperties = new SimpleOrderedMap<>();
       solrQueryParserProperties.add(DEFAULT_OPERATOR, queryParserDefaultOperator);
       topLevel.add(SOLR_QUERY_PARSER, solrQueryParserProperties);
     }
     if (isExplicitSimilarity) {
       topLevel.add(SIMILARITY, similarityFactory.getNamedPropertyValues());
     }
-    List<SimpleOrderedMap<Object>> fieldTypeProperties = new ArrayList<SimpleOrderedMap<Object>>();
-    SortedMap<String,FieldType> sortedFieldTypes = new TreeMap<String,FieldType>(fieldTypes);
+    List<SimpleOrderedMap<Object>> fieldTypeProperties = new ArrayList<>();
+    SortedMap<String,FieldType> sortedFieldTypes = new TreeMap<>(fieldTypes);
     for (FieldType fieldType : sortedFieldTypes.values()) {
       fieldTypeProperties.add(fieldType.getNamedPropertyValues(false));
     }
     topLevel.add(FIELD_TYPES, fieldTypeProperties);  
-    List<SimpleOrderedMap<Object>> fieldProperties = new ArrayList<SimpleOrderedMap<Object>>();
-    SortedSet<String> fieldNames = new TreeSet<String>(fields.keySet());
+    List<SimpleOrderedMap<Object>> fieldProperties = new ArrayList<>();
+    SortedSet<String> fieldNames = new TreeSet<>(fields.keySet());
     for (String fieldName : fieldNames) {
       fieldProperties.add(fields.get(fieldName).getNamedPropertyValues(false));
     }
     topLevel.add(FIELDS, fieldProperties);
-    List<SimpleOrderedMap<Object>> dynamicFieldProperties = new ArrayList<SimpleOrderedMap<Object>>();
+    List<SimpleOrderedMap<Object>> dynamicFieldProperties = new ArrayList<>();
     for (IndexSchema.DynamicField dynamicField : dynamicFields) {
       if ( ! dynamicField.getRegex().startsWith(INTERNAL_POLY_FIELD_PREFIX)) { // omit internal polyfields
         dynamicFieldProperties.add(dynamicField.getPrototype().getNamedPropertyValues(false));
@@ -1366,8 +1371,8 @@ public class IndexSchema {
    */
   public List<SimpleOrderedMap<Object>> getCopyFieldProperties
       (boolean showDetails, Set<String> requestedSourceFields, Set<String> requestedDestinationFields) {
-    List<SimpleOrderedMap<Object>> copyFieldProperties = new ArrayList<SimpleOrderedMap<Object>>();
-    SortedMap<String,List<CopyField>> sortedCopyFields = new TreeMap<String,List<CopyField>>(copyFieldsMap);
+    List<SimpleOrderedMap<Object>> copyFieldProperties = new ArrayList<>();
+    SortedMap<String,List<CopyField>> sortedCopyFields = new TreeMap<>(copyFieldsMap);
     for (List<CopyField> copyFields : sortedCopyFields.values()) {
       Collections.sort(copyFields, new Comparator<CopyField>() {
         @Override
@@ -1381,7 +1386,7 @@ public class IndexSchema {
         final String destination = copyField.getDestination().getName();
         if (   (null == requestedSourceFields      || requestedSourceFields.contains(source))
             && (null == requestedDestinationFields || requestedDestinationFields.contains(destination))) {
-          SimpleOrderedMap<Object> props = new SimpleOrderedMap<Object>();
+          SimpleOrderedMap<Object> props = new SimpleOrderedMap<>();
           props.add(SOURCE, source);
           props.add(DESTINATION, destination);
             if (0 != copyField.getMaxChars()) {
@@ -1396,7 +1401,7 @@ public class IndexSchema {
       final String destination = dynamicCopy.getDestFieldName();
       if (   (null == requestedSourceFields      || requestedSourceFields.contains(source))
           && (null == requestedDestinationFields || requestedDestinationFields.contains(destination))) {
-        SimpleOrderedMap<Object> dynamicCopyProps = new SimpleOrderedMap<Object>();
+        SimpleOrderedMap<Object> dynamicCopyProps = new SimpleOrderedMap<>();
 
         dynamicCopyProps.add(SOURCE, dynamicCopy.getRegex());
         if (showDetails) {
@@ -1404,7 +1409,7 @@ public class IndexSchema {
           if (null != sourceDynamicBase) {
             dynamicCopyProps.add(SOURCE_DYNAMIC_BASE, sourceDynamicBase.getRegex());
           } else if (source.contains("*")) {
-            List<String> sourceExplicitFields = new ArrayList<String>();
+            List<String> sourceExplicitFields = new ArrayList<>();
             Pattern pattern = Pattern.compile(source.replace("*", ".*"));   // glob->regex
             for (String field : fields.keySet()) {
               if (pattern.matcher(field).matches()) {

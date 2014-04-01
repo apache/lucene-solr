@@ -28,16 +28,16 @@ import org.apache.solr.spelling.SpellCheckCollation;
 
 public class SpellCheckMergeData {
   //original token -> corresponding Suggestion object (keep track of start,end)
-  public Map<String, SpellCheckResponse.Suggestion> origVsSuggestion = new HashMap<String, SpellCheckResponse.Suggestion>();
+  public Map<String, SpellCheckResponse.Suggestion> origVsSuggestion = new HashMap<>();
   // original token string -> summed up frequency
-  public Map<String, Integer> origVsFreq = new HashMap<String, Integer>();
+  public Map<String, Integer> origVsFreq = new HashMap<>();
   // original token string -> # of shards reporting it as misspelled
-  public Map<String, Integer> origVsShards = new HashMap<String, Integer>();
+  public Map<String, Integer> origVsShards = new HashMap<>();
   // original token string -> set of alternatives
   // must preserve order because collation algorithm can only work in-order
-  public Map<String, HashSet<String>> origVsSuggested = new LinkedHashMap<String, HashSet<String>>();
+  public Map<String, HashSet<String>> origVsSuggested = new LinkedHashMap<>();
   // alternative string -> corresponding SuggestWord object
-  public Map<String, SuggestWord> suggestedVsWord = new HashMap<String, SuggestWord>();
-  public Map<String, SpellCheckCollation> collations = new HashMap<String, SpellCheckCollation>();
+  public Map<String, SuggestWord> suggestedVsWord = new HashMap<>();
+  public Map<String, SpellCheckCollation> collations = new HashMap<>();
   public int totalNumberShardResponses = 0;
 }

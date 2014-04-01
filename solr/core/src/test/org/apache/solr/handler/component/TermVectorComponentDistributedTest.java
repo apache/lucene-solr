@@ -17,10 +17,18 @@
 
 package org.apache.solr.handler.component;
 
+import org.apache.lucene.util.Constants;
+
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.common.params.TermVectorParams;
+import org.junit.BeforeClass;
 
 public class TermVectorComponentDistributedTest extends BaseDistributedSearchTestCase {
+  @BeforeClass
+  public static void betterNotBeJ9() {
+    assumeFalse("FIXME: SOLR-5792: This test fails under IBM J9", 
+                Constants.JAVA_VENDOR.startsWith("IBM"));
+  }
 
   @Override
   public void doTest() throws Exception {

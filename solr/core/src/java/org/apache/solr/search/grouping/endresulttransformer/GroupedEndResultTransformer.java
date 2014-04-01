@@ -50,24 +50,24 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
    */
   @Override
   public void transform(Map<String, ?> result, ResponseBuilder rb, SolrDocumentSource solrDocumentSource) {
-    NamedList<Object> commands = new SimpleOrderedMap<Object>();
+    NamedList<Object> commands = new SimpleOrderedMap<>();
     for (Map.Entry<String, ?> entry : result.entrySet()) {
       Object value = entry.getValue();
       if (TopGroups.class.isInstance(value)) {
         @SuppressWarnings("unchecked")
         TopGroups<BytesRef> topGroups = (TopGroups<BytesRef>) value;
-        NamedList<Object> command = new SimpleOrderedMap<Object>();
+        NamedList<Object> command = new SimpleOrderedMap<>();
         command.add("matches", rb.totalHitCount);
         Integer totalGroupCount = rb.mergedGroupCounts.get(entry.getKey());
         if (totalGroupCount != null) {
           command.add("ngroups", totalGroupCount);
         }
 
-        List<NamedList> groups = new ArrayList<NamedList>();
+        List<NamedList> groups = new ArrayList<>();
         SchemaField groupField = searcher.getSchema().getField(entry.getKey());
         FieldType groupFieldType = groupField.getType();
         for (GroupDocs<BytesRef> group : topGroups.groups) {
-          SimpleOrderedMap<Object> groupResult = new SimpleOrderedMap<Object>();
+          SimpleOrderedMap<Object> groupResult = new SimpleOrderedMap<>();
           if (group.groupValue != null) {
             groupResult.add(
                 "groupValue", groupFieldType.toObject(groupField.createField(group.groupValue.utf8ToString(), 1.0f))
@@ -91,7 +91,7 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
         commands.add(entry.getKey(), command);
       } else if (QueryCommandResult.class.isInstance(value)) {
         QueryCommandResult queryCommandResult = (QueryCommandResult) value;
-        NamedList<Object> command = new SimpleOrderedMap<Object>();
+        NamedList<Object> command = new SimpleOrderedMap<>();
         command.add("matches", queryCommandResult.getMatches());
         SolrDocumentList docList = new SolrDocumentList();
         docList.setNumFound(queryCommandResult.getTopDocs().totalHits);

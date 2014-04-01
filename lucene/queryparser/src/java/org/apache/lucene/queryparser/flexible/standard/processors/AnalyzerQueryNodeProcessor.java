@@ -193,7 +193,7 @@ public class AnalyzerQueryNodeProcessor extends QueryNodeProcessorImpl {
             
             if (positionCount == 1) {
               // simple case: only one position, with synonyms
-              LinkedList<QueryNode> children = new LinkedList<QueryNode>();
+              LinkedList<QueryNode> children = new LinkedList<>();
               
               for (int i = 0; i < numTokens; i++) {
                 String term = null;
@@ -257,7 +257,7 @@ public class AnalyzerQueryNodeProcessor extends QueryNodeProcessorImpl {
             // phrase query:
             MultiPhraseQueryNode mpq = new MultiPhraseQueryNode();
   
-            List<FieldQueryNode> multiTerms = new ArrayList<FieldQueryNode>();
+            List<FieldQueryNode> multiTerms = new ArrayList<>();
             int position = -1;
             int i = 0;
             int termGroupCount = 0;

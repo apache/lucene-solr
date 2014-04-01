@@ -194,7 +194,7 @@ public abstract class SorterTestBase extends LuceneTestCase {
 
   /** Creates an index for sorting. */
   public static void createIndex(Directory dir, int numDocs, Random random) throws IOException {
-    List<Integer> ids = new ArrayList<Integer>();
+    List<Integer> ids = new ArrayList<>();
     for (int i = 0; i < numDocs; i++) {
       ids.add(Integer.valueOf(i * 10));
     }

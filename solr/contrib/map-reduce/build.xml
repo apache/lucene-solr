@@ -27,9 +27,7 @@
 
   <import file="../contrib-build.xml"/>
   
-  <property name="main.class" value="org.apache.solr.hadoop.MapReduceIndexerTool" />
-  
-  <solr-contrib-uptodate name="extraction" 
+  <solr-contrib-uptodate name="extraction"
                          property="solr-extraction.uptodate" 
                          classpath.property="solr-cell.jar"/>
   
@@ -93,6 +91,7 @@
     <path refid="solr.test.base.classpath"/>
     <path refid="classpath.additions"/>
     <pathelement location="${common-solr.dir}/build/contrib/solr-morphlines-core/classes/test"/>
+    <pathelement location="${common-solr.dir}/contrib/morphlines-core/src/test-files"/>
     <fileset dir="${common-solr.dir}/contrib/morphlines-core/test-lib" excludes="${common.classpath.excludes}"/>
   </path>
 
@@ -143,6 +142,16 @@
   </target>
   
   <target name="compile-core" depends="resolve-extraction-libs, resolve-morphlines-core-libs, resolve-morphlines-cell-libs, compile-solr-extraction, compile-morphlines-core, compile-morphlines-cell, solr-contrib-build.compile-core"/>
+
+  <property name="main.class" value="org.apache.solr.hadoop.MapReduceIndexerTool" />
+  <target name="jar-core" depends="compile-core">
+    <solr-jarify>
+      <solr-jarify-additional-manifest-attributes>
+        <attribute name="Main-Class" value="${main.class}"/>
+      </solr-jarify-additional-manifest-attributes>
+    </solr-jarify>
+  </target>
+
   <target name="dist" depends="common-solr.dist"/>
 
 </project>

@@ -17,6 +17,12 @@ package org.apache.lucene.search.join;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Locale;
+import java.util.Set;
+
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -34,12 +40,6 @@ import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
-
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Locale;
-import java.util.Set;
 
 /**
  * This query requires that you index
@@ -158,12 +158,9 @@ public class ToParentBlockJoinQuery extends Query {
     // NOTE: acceptDocs applies (and is checked) only in the
     // parent document space
     @Override
-    public Scorer scorer(AtomicReaderContext readerContext, boolean scoreDocsInOrder,
-        boolean topScorer, Bits acceptDocs) throws IOException {
+    public Scorer scorer(AtomicReaderContext readerContext, Bits acceptDocs) throws IOException {
 
-      // Pass scoreDocsInOrder true, topScorer false to our sub and the live docs:
-      final Scorer childScorer = childWeight.scorer(readerContext, true, false, readerContext.reader().getLiveDocs());
-
+      final Scorer childScorer = childWeight.scorer(readerContext, readerContext.reader().getLiveDocs());
       if (childScorer == null) {
         // No matches
         return null;
@@ -195,7 +192,7 @@ public class ToParentBlockJoinQuery extends Query {
 
     @Override
     public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-      BlockJoinScorer scorer = (BlockJoinScorer) scorer(context, true, false, context.reader().getLiveDocs());
+      BlockJoinScorer scorer = (BlockJoinScorer) scorer(context, context.reader().getLiveDocs());
       if (scorer != null && scorer.advance(doc) == doc) {
         return scorer.explain(context.docBase);
       }

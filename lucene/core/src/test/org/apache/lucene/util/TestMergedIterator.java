@@ -30,17 +30,17 @@ public class TestMergedIterator extends LuceneTestCase {
 
   @SuppressWarnings({"rawtypes", "unchecked"})
   public void testMergeEmpty() {
-    Iterator<Integer> merged = new MergedIterator<Integer>();
+    Iterator<Integer> merged = new MergedIterator<>();
     assertFalse(merged.hasNext());
 
-    merged = new MergedIterator<Integer>(new ArrayList<Integer>().iterator());
+    merged = new MergedIterator<>(new ArrayList<Integer>().iterator());
     assertFalse(merged.hasNext());
 
     Iterator<Integer>[] itrs = new Iterator[random().nextInt(100)];
     for (int i = 0; i < itrs.length; i++) {
       itrs[i] = new ArrayList<Integer>().iterator();
     }
-    merged = new MergedIterator<Integer>( itrs );
+    merged = new MergedIterator<>( itrs );
     assertFalse(merged.hasNext());
   }
 
@@ -106,13 +106,13 @@ public class TestMergedIterator extends LuceneTestCase {
 
   private void testCase(int itrsWithVal, int specifiedValsOnItr, boolean removeDups) {
     // Build a random number of lists
-    List<Integer> expected = new ArrayList<Integer>();
+    List<Integer> expected = new ArrayList<>();
     Random random = new Random(random().nextLong());
     int numLists = itrsWithVal + random.nextInt(1000 - itrsWithVal);
     @SuppressWarnings({"rawtypes", "unchecked"})
     List<Integer>[] lists = new List[numLists];
     for (int i = 0; i < numLists; i++) {
-      lists[i] = new ArrayList<Integer>();
+      lists[i] = new ArrayList<>();
     }
     int start = random.nextInt(1000000);
     int end = start + VALS_TO_MERGE / itrsWithVal / Math.abs(specifiedValsOnItr);
@@ -143,7 +143,7 @@ public class TestMergedIterator extends LuceneTestCase {
       itrs[i] = lists[i].iterator();
     }
     
-    MergedIterator<Integer> mergedItr = new MergedIterator<Integer>(removeDups, itrs);
+    MergedIterator<Integer> mergedItr = new MergedIterator<>(removeDups, itrs);
     Iterator<Integer> expectedItr = expected.iterator();
     while (expectedItr.hasNext()) {
       assertTrue(mergedItr.hasNext());

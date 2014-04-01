@@ -17,17 +17,6 @@ package org.apache.lucene.util.fst;
  * limitations under the License.
  */
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.StringWriter;
-import java.io.Writer;
-import java.util.*;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -51,9 +40,9 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LineFileDocs;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
@@ -62,7 +51,32 @@ import org.apache.lucene.util.fst.BytesRefFSTEnum.InputOutput;
 import org.apache.lucene.util.fst.FST.Arc;
 import org.apache.lucene.util.fst.FST.BytesReader;
 import org.apache.lucene.util.fst.PairOutputs.Pair;
+import org.apache.lucene.util.fst.Util.Result;
 import org.apache.lucene.util.packed.PackedInts;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.lucene.util.fst.FSTTester.getRandomString;
 import static org.apache.lucene.util.fst.FSTTester.simpleRandomString;
@@ -114,11 +128,11 @@ public class TestFSTs extends LuceneTestCase {
       {
         final Outputs<Object> outputs = NoOutputs.getSingleton();
         final Object NO_OUTPUT = outputs.getNoOutput();      
-        final List<FSTTester.InputOutput<Object>> pairs = new ArrayList<FSTTester.InputOutput<Object>>(terms2.length);
+        final List<FSTTester.InputOutput<Object>> pairs = new ArrayList<>(terms2.length);
         for(IntsRef term : terms2) {
-          pairs.add(new FSTTester.InputOutput<Object>(term, NO_OUTPUT));
+          pairs.add(new FSTTester.InputOutput<>(term, NO_OUTPUT));
         }
-        FST<Object> fst = new FSTTester<Object>(random(), dir, inputMode, pairs, outputs, false).doTest(0, 0, false);
+        FST<Object> fst = new FSTTester<>(random(), dir, inputMode, pairs, outputs, false).doTest(0, 0, false);
         assertNotNull(fst);
         assertEquals(22, fst.getNodeCount());
         assertEquals(27, fst.getArcCount());
@@ -127,11 +141,11 @@ public class TestFSTs extends LuceneTestCase {
       // FST ord pos int
       {
         final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
-        final List<FSTTester.InputOutput<Long>> pairs = new ArrayList<FSTTester.InputOutput<Long>>(terms2.length);
+        final List<FSTTester.InputOutput<Long>> pairs = new ArrayList<>(terms2.length);
         for(int idx=0;idx<terms2.length;idx++) {
-          pairs.add(new FSTTester.InputOutput<Long>(terms2[idx], (long) idx));
+          pairs.add(new FSTTester.InputOutput<>(terms2[idx], (long) idx));
         }
-        final FST<Long> fst = new FSTTester<Long>(random(), dir, inputMode, pairs, outputs, true).doTest(0, 0, false);
+        final FST<Long> fst = new FSTTester<>(random(), dir, inputMode, pairs, outputs, true).doTest(0, 0, false);
         assertNotNull(fst);
         assertEquals(22, fst.getNodeCount());
         assertEquals(27, fst.getArcCount());
@@ -141,12 +155,12 @@ public class TestFSTs extends LuceneTestCase {
       {
         final ByteSequenceOutputs outputs = ByteSequenceOutputs.getSingleton();
         final BytesRef NO_OUTPUT = outputs.getNoOutput();      
-        final List<FSTTester.InputOutput<BytesRef>> pairs = new ArrayList<FSTTester.InputOutput<BytesRef>>(terms2.length);
+        final List<FSTTester.InputOutput<BytesRef>> pairs = new ArrayList<>(terms2.length);
         for(int idx=0;idx<terms2.length;idx++) {
           final BytesRef output = random().nextInt(30) == 17 ? NO_OUTPUT : new BytesRef(Integer.toString(idx));
-          pairs.add(new FSTTester.InputOutput<BytesRef>(terms2[idx], output));
+          pairs.add(new FSTTester.InputOutput<>(terms2[idx], output));
         }
-        final FST<BytesRef> fst = new FSTTester<BytesRef>(random(), dir, inputMode, pairs, outputs, false).doTest(0, 0, false);
+        final FST<BytesRef> fst = new FSTTester<>(random(), dir, inputMode, pairs, outputs, false).doTest(0, 0, false);
         assertNotNull(fst);
         assertEquals(24, fst.getNodeCount());
         assertEquals(30, fst.getArcCount());
@@ -162,78 +176,78 @@ public class TestFSTs extends LuceneTestCase {
     {
       final Outputs<Object> outputs = NoOutputs.getSingleton();
       final Object NO_OUTPUT = outputs.getNoOutput();      
-      final List<FSTTester.InputOutput<Object>> pairs = new ArrayList<FSTTester.InputOutput<Object>>(terms.length);
+      final List<FSTTester.InputOutput<Object>> pairs = new ArrayList<>(terms.length);
       for(IntsRef term : terms) {
-        pairs.add(new FSTTester.InputOutput<Object>(term, NO_OUTPUT));
+        pairs.add(new FSTTester.InputOutput<>(term, NO_OUTPUT));
       }
-      new FSTTester<Object>(random(), dir, inputMode, pairs, outputs, false).doTest(true);
+      new FSTTester<>(random(), dir, inputMode, pairs, outputs, false).doTest(true);
     }
 
     // PositiveIntOutput (ord)
     {
       final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
-      final List<FSTTester.InputOutput<Long>> pairs = new ArrayList<FSTTester.InputOutput<Long>>(terms.length);
+      final List<FSTTester.InputOutput<Long>> pairs = new ArrayList<>(terms.length);
       for(int idx=0;idx<terms.length;idx++) {
-        pairs.add(new FSTTester.InputOutput<Long>(terms[idx], (long) idx));
+        pairs.add(new FSTTester.InputOutput<>(terms[idx], (long) idx));
       }
-      new FSTTester<Long>(random(), dir, inputMode, pairs, outputs, true).doTest(true);
+      new FSTTester<>(random(), dir, inputMode, pairs, outputs, true).doTest(true);
     }
 
     // PositiveIntOutput (random monotonically increasing positive number)
     {
       final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
-      final List<FSTTester.InputOutput<Long>> pairs = new ArrayList<FSTTester.InputOutput<Long>>(terms.length);
+      final List<FSTTester.InputOutput<Long>> pairs = new ArrayList<>(terms.length);
       long lastOutput = 0;
       for(int idx=0;idx<terms.length;idx++) {
         final long value = lastOutput + TestUtil.nextInt(random(), 1, 1000);
         lastOutput = value;
-        pairs.add(new FSTTester.InputOutput<Long>(terms[idx], value));
+        pairs.add(new FSTTester.InputOutput<>(terms[idx], value));
       }
-      new FSTTester<Long>(random(), dir, inputMode, pairs, outputs, true).doTest(true);
+      new FSTTester<>(random(), dir, inputMode, pairs, outputs, true).doTest(true);
     }
 
     // PositiveIntOutput (random positive number)
     {
       final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
-      final List<FSTTester.InputOutput<Long>> pairs = new ArrayList<FSTTester.InputOutput<Long>>(terms.length);
+      final List<FSTTester.InputOutput<Long>> pairs = new ArrayList<>(terms.length);
       for(int idx=0;idx<terms.length;idx++) {
-        pairs.add(new FSTTester.InputOutput<Long>(terms[idx], TestUtil.nextLong(random(), 0, Long.MAX_VALUE)));
+        pairs.add(new FSTTester.InputOutput<>(terms[idx], TestUtil.nextLong(random(), 0, Long.MAX_VALUE)));
       }
-      new FSTTester<Long>(random(), dir, inputMode, pairs, outputs, false).doTest(true);
+      new FSTTester<>(random(), dir, inputMode, pairs, outputs, false).doTest(true);
     }
 
     // Pair<ord, (random monotonically increasing positive number>
     {
       final PositiveIntOutputs o1 = PositiveIntOutputs.getSingleton();
       final PositiveIntOutputs o2 = PositiveIntOutputs.getSingleton();
-      final PairOutputs<Long,Long> outputs = new PairOutputs<Long,Long>(o1, o2);
-      final List<FSTTester.InputOutput<PairOutputs.Pair<Long,Long>>> pairs = new ArrayList<FSTTester.InputOutput<PairOutputs.Pair<Long,Long>>>(terms.length);
+      final PairOutputs<Long,Long> outputs = new PairOutputs<>(o1, o2);
+      final List<FSTTester.InputOutput<PairOutputs.Pair<Long,Long>>> pairs = new ArrayList<>(terms.length);
       long lastOutput = 0;
       for(int idx=0;idx<terms.length;idx++) {
         final long value = lastOutput + TestUtil.nextInt(random(), 1, 1000);
         lastOutput = value;
-        pairs.add(new FSTTester.InputOutput<PairOutputs.Pair<Long,Long>>(terms[idx],
+        pairs.add(new FSTTester.InputOutput<>(terms[idx],
                                                                          outputs.newPair((long) idx, value)));
       }
-      new FSTTester<PairOutputs.Pair<Long,Long>>(random(), dir, inputMode, pairs, outputs, false).doTest(true);
+      new FSTTester<>(random(), dir, inputMode, pairs, outputs, false).doTest(true);
     }
 
     // Sequence-of-bytes
     {
       final ByteSequenceOutputs outputs = ByteSequenceOutputs.getSingleton();
       final BytesRef NO_OUTPUT = outputs.getNoOutput();      
-      final List<FSTTester.InputOutput<BytesRef>> pairs = new ArrayList<FSTTester.InputOutput<BytesRef>>(terms.length);
+      final List<FSTTester.InputOutput<BytesRef>> pairs = new ArrayList<>(terms.length);
       for(int idx=0;idx<terms.length;idx++) {
         final BytesRef output = random().nextInt(30) == 17 ? NO_OUTPUT : new BytesRef(Integer.toString(idx));
-        pairs.add(new FSTTester.InputOutput<BytesRef>(terms[idx], output));
+        pairs.add(new FSTTester.InputOutput<>(terms[idx], output));
       }
-      new FSTTester<BytesRef>(random(), dir, inputMode, pairs, outputs, false).doTest(true);
+      new FSTTester<>(random(), dir, inputMode, pairs, outputs, false).doTest(true);
     }
 
     // Sequence-of-ints
     {
       final IntSequenceOutputs outputs = IntSequenceOutputs.getSingleton();
-      final List<FSTTester.InputOutput<IntsRef>> pairs = new ArrayList<FSTTester.InputOutput<IntsRef>>(terms.length);
+      final List<FSTTester.InputOutput<IntsRef>> pairs = new ArrayList<>(terms.length);
       for(int idx=0;idx<terms.length;idx++) {
         final String s = Integer.toString(idx);
         final IntsRef output = new IntsRef(s.length());
@@ -241,9 +255,9 @@ public class TestFSTs extends LuceneTestCase {
         for(int idx2=0;idx2<output.length;idx2++) {
           output.ints[idx2] = s.charAt(idx2);
         }
-        pairs.add(new FSTTester.InputOutput<IntsRef>(terms[idx], output));
+        pairs.add(new FSTTester.InputOutput<>(terms[idx], output));
       }
-      new FSTTester<IntsRef>(random(), dir, inputMode, pairs, outputs, false).doTest(true);
+      new FSTTester<>(random(), dir, inputMode, pairs, outputs, false).doTest(true);
     }
 
   }
@@ -270,7 +284,7 @@ public class TestFSTs extends LuceneTestCase {
       }
       for(int inputMode=0;inputMode<2;inputMode++) {
         final int numWords = random.nextInt(maxNumWords+1);
-        Set<IntsRef> termsSet = new HashSet<IntsRef>();
+        Set<IntsRef> termsSet = new HashSet<>();
         IntsRef[] terms = new IntsRef[numWords];
         while(termsSet.size() < numWords) {
           final String term = getRandomString(random);
@@ -292,7 +306,10 @@ public class TestFSTs extends LuceneTestCase {
 
     final LineFileDocs docs = new LineFileDocs(random(), true);
     final int RUN_TIME_MSEC = atLeast(500);
-    final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(-1).setRAMBufferSizeMB(64);
+    MockAnalyzer analyzer = new MockAnalyzer(random());
+    analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
+
+    final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(-1).setRAMBufferSizeMB(64);
     final File tempDir = TestUtil.getTempDir("fstlines");
     final Directory dir = newFSDirectory(tempDir);
     final IndexWriter writer = new IndexWriter(dir, conf);
@@ -309,7 +326,7 @@ public class TestFSTs extends LuceneTestCase {
 
     final boolean doRewrite = random().nextBoolean();
 
-    Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, null, doRewrite, PackedInts.DEFAULT, true, 15);
+    Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, null, doRewrite, PackedInts.DEFAULT, true, 15);
 
     boolean storeOrd = random().nextBoolean();
     if (VERBOSE) {
@@ -370,7 +387,7 @@ public class TestFSTs extends LuceneTestCase {
         final Random random = new Random(random().nextLong());
         // Now confirm BytesRefFSTEnum and TermsEnum act the
         // same:
-        final BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<Long>(fst);
+        final BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<>(fst);
         int num = atLeast(1000);
         for(int iter=0;iter<num;iter++) {
           final BytesRef randomTerm = new BytesRef(getRandomString(random));
@@ -452,13 +469,13 @@ public class TestFSTs extends LuceneTestCase {
       this.outputs = outputs;
       this.doPack = doPack;
 
-      builder = new Builder<T>(inputMode == 0 ? FST.INPUT_TYPE.BYTE1 : FST.INPUT_TYPE.BYTE4, 0, prune, prune == 0, true, Integer.MAX_VALUE, outputs, null, doPack, PackedInts.DEFAULT, !noArcArrays, 15);
+      builder = new Builder<>(inputMode == 0 ? FST.INPUT_TYPE.BYTE1 : FST.INPUT_TYPE.BYTE4, 0, prune, prune == 0, true, Integer.MAX_VALUE, outputs, null, doPack, PackedInts.DEFAULT, !noArcArrays, 15);
     }
 
     protected abstract T getOutput(IntsRef input, int ord) throws IOException;
 
     public void run(int limit, boolean verify, boolean verifyByOutput) throws IOException {
-      BufferedReader is = new BufferedReader(new InputStreamReader(new FileInputStream(wordsFileIn), "UTF-8"), 65536);
+      BufferedReader is = new BufferedReader(new InputStreamReader(new FileInputStream(wordsFileIn), StandardCharsets.UTF_8), 65536);
       try {
         final IntsRef intsRef = new IntsRef(10);
         long tStart = System.currentTimeMillis();
@@ -475,7 +492,7 @@ public class TestFSTs extends LuceneTestCase {
           ord++;
           if (ord % 500000 == 0) {
             System.out.println(
-                String.format(Locale.ROOT, 
+                String.format(Locale.ROOT,
                     "%6.2fs: %9d...", ((System.currentTimeMillis() - tStart) / 1000.0), ord));
           }
           if (ord >= limit) {
@@ -501,7 +518,7 @@ public class TestFSTs extends LuceneTestCase {
 
         System.out.println(ord + " terms; " + fst.getNodeCount() + " nodes; " + fst.getArcCount() + " arcs; " + fst.getArcWithOutputCount() + " arcs w/ output; tot size " + fst.sizeInBytes());
         if (fst.getNodeCount() < 100) {
-          Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"), "UTF-8");
+          Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"), StandardCharsets.UTF_8);
           Util.toDot(fst, w, false, false);
           w.close();
           System.out.println("Wrote FST to out.dot");
@@ -528,7 +545,7 @@ public class TestFSTs extends LuceneTestCase {
         while(true) {
           for(int iter=0;iter<2;iter++) {
             is.close();
-            is = new BufferedReader(new InputStreamReader(new FileInputStream(wordsFileIn), "UTF-8"), 65536);
+            is = new BufferedReader(new InputStreamReader(new FileInputStream(wordsFileIn), StandardCharsets.UTF_8), 65536);
 
             ord = 0;
             tStart = System.currentTimeMillis();
@@ -642,7 +659,7 @@ public class TestFSTs extends LuceneTestCase {
       }
       idx++;
     }
-    
+
     if (wordsFileIn == null) {
       System.err.println("No input file.");
       System.exit(-1);
@@ -654,7 +671,7 @@ public class TestFSTs extends LuceneTestCase {
       // Store both ord & docFreq:
       final PositiveIntOutputs o1 = PositiveIntOutputs.getSingleton();
       final PositiveIntOutputs o2 = PositiveIntOutputs.getSingleton();
-      final PairOutputs<Long,Long> outputs = new PairOutputs<Long,Long>(o1, o2);
+      final PairOutputs<Long,Long> outputs = new PairOutputs<>(o1, o2);
       new VisitTerms<PairOutputs.Pair<Long,Long>>(dirOut, wordsFileIn, inputMode, prune, outputs, doPack, noArcArrays) {
         Random rand;
         @Override
@@ -703,32 +720,32 @@ public class TestFSTs extends LuceneTestCase {
 
   public void testSingleString() throws Exception {
     final Outputs<Object> outputs = NoOutputs.getSingleton();
-    final Builder<Object> b = new Builder<Object>(FST.INPUT_TYPE.BYTE1, outputs);
+    final Builder<Object> b = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
     b.add(Util.toIntsRef(new BytesRef("foobar"), new IntsRef()), outputs.getNoOutput());
-    final BytesRefFSTEnum<Object> fstEnum = new BytesRefFSTEnum<Object>(b.finish());
+    final BytesRefFSTEnum<Object> fstEnum = new BytesRefFSTEnum<>(b.finish());
     assertNull(fstEnum.seekFloor(new BytesRef("foo")));
     assertNull(fstEnum.seekCeil(new BytesRef("foobaz")));
   }
-  
+
 
   public void testDuplicateFSAString() throws Exception {
     String str = "foobar";
     final Outputs<Object> outputs = NoOutputs.getSingleton();
-    final Builder<Object> b = new Builder<Object>(FST.INPUT_TYPE.BYTE1, outputs);
+    final Builder<Object> b = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
     IntsRef ints = new IntsRef();
     for(int i=0; i<10; i++) {
       b.add(Util.toIntsRef(new BytesRef(str), ints), outputs.getNoOutput());
     }
     FST<Object> fst = b.finish();
-    
+
     // count the input paths
-    int count = 0; 
-    final BytesRefFSTEnum<Object> fstEnum = new BytesRefFSTEnum<Object>(fst);
+    int count = 0;
+    final BytesRefFSTEnum<Object> fstEnum = new BytesRefFSTEnum<>(fst);
     while(fstEnum.next()!=null) {
-      count++;  
+      count++;
     }
     assertEquals(1, count);
-    
+
     assertNotNull(Util.get(fst, new BytesRef(str)));
     assertNull(Util.get(fst, new BytesRef("foobaz")));
   }
@@ -783,7 +800,7 @@ public class TestFSTs extends LuceneTestCase {
     final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
 
     // Build an FST mapping BytesRef -> Long
-    final Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, outputs);
+    final Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
 
     final BytesRef a = new BytesRef("a");
     final BytesRef b = new BytesRef("b");
@@ -799,7 +816,7 @@ public class TestFSTs extends LuceneTestCase {
     assertEquals(42, (long) Util.get(fst, b));
     assertEquals(17, (long) Util.get(fst, a));
 
-    BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<Long>(fst);
+    BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<>(fst);
     BytesRefFSTEnum.InputOutput<Long> seekResult;
     seekResult = fstEnum.seekFloor(a);
     assertNotNull(seekResult);
@@ -837,13 +854,13 @@ public class TestFSTs extends LuceneTestCase {
       Document doc = new Document();
       Field idField = newStringField("id", "", Field.Store.NO);
       doc.add(idField);
-      
+
       final int NUM_IDS = atLeast(200);
       //final int NUM_IDS = (int) (377 * (1.0+random.nextDouble()));
       if (VERBOSE) {
         System.out.println("TEST: NUM_IDS=" + NUM_IDS);
       }
-      final Set<String> allIDs = new HashSet<String>();
+      final Set<String> allIDs = new HashSet<>();
       for(int id=0;id<NUM_IDS;id++) {
         String idString;
         if (cycle == 0) {
@@ -870,12 +887,12 @@ public class TestFSTs extends LuceneTestCase {
       final IndexSearcher s = newSearcher(r);
       w.close();
 
-      final List<String> allIDsList = new ArrayList<String>(allIDs);
-      final List<String> sortedAllIDsList = new ArrayList<String>(allIDsList);
+      final List<String> allIDsList = new ArrayList<>(allIDs);
+      final List<String> sortedAllIDsList = new ArrayList<>(allIDsList);
       Collections.sort(sortedAllIDsList);
 
       // Sprinkle in some non-existent PKs:
-      Set<String> outOfBounds = new HashSet<String>();
+      Set<String> outOfBounds = new HashSet<>();
       for(int idx=0;idx<NUM_IDS/10;idx++) {
         String idString;
         if (cycle == 0) {
@@ -967,13 +984,13 @@ public class TestFSTs extends LuceneTestCase {
     Document doc = new Document();
     Field f = newStringField("field", "", Field.Store.NO);
     doc.add(f);
-      
+
     final int NUM_TERMS = (int) (1000*RANDOM_MULTIPLIER * (1+random().nextDouble()));
     if (VERBOSE) {
       System.out.println("TEST: NUM_TERMS=" + NUM_TERMS);
     }
 
-    final Set<String> allTerms = new HashSet<String>();
+    final Set<String> allTerms = new HashSet<>();
     while(allTerms.size() < NUM_TERMS) {
       allTerms.add(simpleRandomString(random()));
     }
@@ -994,7 +1011,7 @@ public class TestFSTs extends LuceneTestCase {
     IndexSearcher s = newSearcher(r);
     w.close();
 
-    final List<String> allTermsList = new ArrayList<String>(allTerms);
+    final List<String> allTermsList = new ArrayList<>(allTerms);
     Collections.shuffle(allTermsList, random());
 
     // verify exact lookup
@@ -1013,15 +1030,15 @@ public class TestFSTs extends LuceneTestCase {
   /**
    * Test state expansion (array format) on close-to-root states. Creates
    * synthetic input that has one expanded state on each level.
-   * 
-   * @see "https://issues.apache.org/jira/browse/LUCENE-2933" 
+   *
+   * @see "https://issues.apache.org/jira/browse/LUCENE-2933"
    */
   public void testExpandedCloseToRoot() throws Exception {
     class SyntheticData {
       FST<Object> compile(String[] lines) throws IOException {
         final NoOutputs outputs = NoOutputs.getSingleton();
         final Object nothing = outputs.getNoOutput();
-        final Builder<Object> b = new Builder<Object>(FST.INPUT_TYPE.BYTE1, outputs);
+        final Builder<Object> b = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
 
         int line = 0;
         final BytesRef term = new BytesRef();
@@ -1034,10 +1051,10 @@ public class TestFSTs extends LuceneTestCase {
           term.copyChars(w);
           b.add(Util.toIntsRef(term, scratchIntsRef), nothing);
         }
-        
+
         return b.finish();
       }
-      
+
       void generate(ArrayList<String> out, StringBuilder b, char from, char to,
           int depth) {
         if (depth == 0 || from == to) {
@@ -1052,20 +1069,20 @@ public class TestFSTs extends LuceneTestCase {
         }
       }
 
-      public int verifyStateAndBelow(FST<Object> fst, Arc<Object> arc, int depth) 
+      public int verifyStateAndBelow(FST<Object> fst, Arc<Object> arc, int depth)
         throws IOException {
         if (FST.targetHasArcs(arc)) {
           int childCount = 0;
           BytesReader fstReader = fst.getBytesReader();
-          for (arc = fst.readFirstTargetArc(arc, arc, fstReader);; 
+          for (arc = fst.readFirstTargetArc(arc, arc, fstReader);;
                arc = fst.readNextArc(arc, fstReader), childCount++)
           {
             boolean expanded = fst.isExpandedTarget(arc, fstReader);
-            int children = verifyStateAndBelow(fst, new FST.Arc<Object>().copyFrom(arc), depth + 1);
+            int children = verifyStateAndBelow(fst, new FST.Arc<>().copyFrom(arc), depth + 1);
 
             assertEquals(
                 expanded,
-                (depth <= FST.FIXED_ARRAY_SHALLOW_DISTANCE && 
+                (depth <= FST.FIXED_ARRAY_SHALLOW_DISTANCE &&
                     children >= FST.FIXED_ARRAY_NUM_ARCS_SHALLOW) ||
                  children >= FST.FIXED_ARRAY_NUM_ARCS_DEEP);
             if (arc.isLast()) break;
@@ -1083,20 +1100,20 @@ public class TestFSTs extends LuceneTestCase {
 
     SyntheticData s = new SyntheticData();
 
-    ArrayList<String> out = new ArrayList<String>();
+    ArrayList<String> out = new ArrayList<>();
     StringBuilder b = new StringBuilder();
     s.generate(out, b, 'a', 'i', 10);
     String[] input = out.toArray(new String[out.size()]);
     Arrays.sort(input);
     FST<Object> fst = s.compile(input);
-    FST.Arc<Object> arc = fst.getFirstArc(new FST.Arc<Object>());
+    FST.Arc<Object> arc = fst.getFirstArc(new FST.Arc<>());
     s.verifyStateAndBelow(fst, arc, 1);
   }
 
   public void testFinalOutputOnEndState() throws Exception {
     final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
 
-    final Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE4, 2, 0, true, true, Integer.MAX_VALUE, outputs, null, random().nextBoolean(), PackedInts.DEFAULT, true, 15);
+    final Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE4, 2, 0, true, true, Integer.MAX_VALUE, outputs, null, random().nextBoolean(), PackedInts.DEFAULT, true, 15);
     builder.add(Util.toUTF32("stat", new IntsRef()), 17L);
     builder.add(Util.toUTF32("station", new IntsRef()), 10L);
     final FST<Long> fst = builder.finish();
@@ -1111,7 +1128,7 @@ public class TestFSTs extends LuceneTestCase {
   public void testInternalFinalState() throws Exception {
     final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
     final boolean willRewrite = random().nextBoolean();
-    final Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, null, willRewrite, PackedInts.DEFAULT, true, 15);
+    final Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, null, willRewrite, PackedInts.DEFAULT, true, 15);
     builder.add(Util.toIntsRef(new BytesRef("stat"), new IntsRef()), outputs.getNoOutput());
     builder.add(Util.toIntsRef(new BytesRef("station"), new IntsRef()), outputs.getNoOutput());
     final FST<Long> fst = builder.finish();
@@ -1120,7 +1137,7 @@ public class TestFSTs extends LuceneTestCase {
     Util.toDot(fst, w, false, false);
     w.close();
     //System.out.println(w.toString());
-    
+
     // check for accept state at label t
     assertTrue(w.toString().indexOf("[label=\"t\" style=\"bold\"") != -1);
     // check for accept state at label n
@@ -1132,15 +1149,15 @@ public class TestFSTs extends LuceneTestCase {
   public void testNonFinalStopNode() throws Exception {
     final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
     final Long nothing = outputs.getNoOutput();
-    final Builder<Long> b = new Builder<Long>(FST.INPUT_TYPE.BYTE1, outputs);
+    final Builder<Long> b = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
 
-    final FST<Long> fst = new FST<Long>(FST.INPUT_TYPE.BYTE1, outputs, false, PackedInts.COMPACT, true, 15);
+    final FST<Long> fst = new FST<>(FST.INPUT_TYPE.BYTE1, outputs, false, PackedInts.COMPACT, true, 15);
 
-    final Builder.UnCompiledNode<Long> rootNode = new Builder.UnCompiledNode<Long>(b, 0);
+    final Builder.UnCompiledNode<Long> rootNode = new Builder.UnCompiledNode<>(b, 0);
 
     // Add final stop node
     {
-      final Builder.UnCompiledNode<Long> node = new Builder.UnCompiledNode<Long>(b, 0);
+      final Builder.UnCompiledNode<Long> node = new Builder.UnCompiledNode<>(b, 0);
       node.isFinal = true;
       rootNode.addArc('a', node);
       final Builder.CompiledNode frozen = new Builder.CompiledNode();
@@ -1153,7 +1170,7 @@ public class TestFSTs extends LuceneTestCase {
 
     // Add non-final stop node
     {
-      final Builder.UnCompiledNode<Long> node = new Builder.UnCompiledNode<Long>(b, 0);
+      final Builder.UnCompiledNode<Long> node = new Builder.UnCompiledNode<>(b, 0);
       rootNode.addArc('b', node);
       final Builder.CompiledNode frozen = new Builder.CompiledNode();
       frozen.node = fst.addNode(node);
@@ -1168,7 +1185,7 @@ public class TestFSTs extends LuceneTestCase {
     //Writer w = new OutputStreamWriter(new FileOutputStream("/x/tmp3/out.dot"));
     Util.toDot(fst, w, false, false);
     w.close();
-    
+
     checkStopNodes(fst, outputs);
 
     // Make sure it still works after save/load:
@@ -1178,7 +1195,7 @@ public class TestFSTs extends LuceneTestCase {
     out.close();
 
     IndexInput in = dir.openInput("fst", IOContext.DEFAULT);
-    final FST<Long> fst2 = new FST<Long>(in, outputs);
+    final FST<Long> fst2 = new FST<>(in, outputs);
     checkStopNodes(fst2, outputs);
     in.close();
     dir.close();
@@ -1201,17 +1218,17 @@ public class TestFSTs extends LuceneTestCase {
     assertFalse(arc.isFinal());
     assertEquals(42, arc.output.longValue());
   }
-  
+
   static final Comparator<Long> minLongComparator = new Comparator<Long> () {
     @Override
     public int compare(Long left, Long right) {
       return left.compareTo(right);
-    }  
+    }
   };
 
   public void testShortestPaths() throws Exception {
     final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
-    final Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, outputs);
+    final Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
 
     final IntsRef scratch = new IntsRef();
     builder.add(Util.toIntsRef(new BytesRef("aab"), scratch), 22L);
@@ -1222,41 +1239,91 @@ public class TestFSTs extends LuceneTestCase {
     //Util.toDot(fst, w, false, false);
     //w.close();
 
-    Util.MinResult<Long>[] r = Util.shortestPaths(fst,
+    Util.TopResults<Long> res = Util.shortestPaths(fst,
                                                   fst.getFirstArc(new FST.Arc<Long>()),
                                                   outputs.getNoOutput(),
                                                   minLongComparator,
                                                   3,
                                                   true);
-    assertEquals(3, r.length);
+    assertTrue(res.isComplete);
+    assertEquals(3, res.topN.size());
+    assertEquals(Util.toIntsRef(new BytesRef("aac"), scratch), res.topN.get(0).input);
+    assertEquals(7L, res.topN.get(0).output.longValue());
 
-    assertEquals(Util.toIntsRef(new BytesRef("aac"), scratch), r[0].input);
-    assertEquals(7L, r[0].output.longValue());
+    assertEquals(Util.toIntsRef(new BytesRef("ax"), scratch), res.topN.get(1).input);
+    assertEquals(17L,res.topN.get(1).output.longValue());
 
-    assertEquals(Util.toIntsRef(new BytesRef("ax"), scratch), r[1].input);
-    assertEquals(17L, r[1].output.longValue());
-
-    assertEquals(Util.toIntsRef(new BytesRef("aab"), scratch), r[2].input);
-    assertEquals(22L, r[2].output.longValue());
+    assertEquals(Util.toIntsRef(new BytesRef("aab"), scratch), res.topN.get(2).input);
+    assertEquals(22L, res.topN.get(2).output.longValue());
   }
-  
+
+  public void testRejectNoLimits() throws IOException {
+    final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
+    final Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, outputs);
+
+    final IntsRef scratch = new IntsRef();
+    builder.add(Util.toIntsRef(new BytesRef("aab"), scratch), 22L);
+    builder.add(Util.toIntsRef(new BytesRef("aac"), scratch), 7L);
+    builder.add(Util.toIntsRef(new BytesRef("adcd"), scratch), 17L);
+    builder.add(Util.toIntsRef(new BytesRef("adcde"), scratch), 17L);
+
+    builder.add(Util.toIntsRef(new BytesRef("ax"), scratch), 17L);
+    final FST<Long> fst = builder.finish();
+    final AtomicInteger rejectCount = new AtomicInteger();
+    Util.TopNSearcher<Long> searcher = new Util.TopNSearcher<Long>(fst, 2, 6, minLongComparator) {
+      @Override
+      protected boolean acceptResult(IntsRef input, Long output) {
+        boolean accept = output.intValue() == 7;
+        if (!accept) {
+          rejectCount.incrementAndGet();
+        }
+        return accept;
+      }
+    };
+
+    searcher.addStartPaths(fst.getFirstArc(new FST.Arc<Long>()),  outputs.getNoOutput(), true, new IntsRef());
+    Util.TopResults<Long> res = searcher.search();
+    assertEquals(rejectCount.get(), 4);
+    assertTrue(res.isComplete); // rejected(4) + topN(2) <= maxQueueSize(6)
+
+    assertEquals(1, res.topN.size());
+    assertEquals(Util.toIntsRef(new BytesRef("aac"), scratch), res.topN.get(0).input);
+    assertEquals(7L, res.topN.get(0).output.longValue());
+    rejectCount.set(0);
+    searcher = new Util.TopNSearcher<Long>(fst, 2, 5, minLongComparator) {
+      @Override
+      protected boolean acceptResult(IntsRef input, Long output) {
+        boolean accept = output.intValue() == 7;
+        if (!accept) {
+          rejectCount.incrementAndGet();
+        }
+        return accept;
+      }
+    };
+
+    searcher.addStartPaths(fst.getFirstArc(new FST.Arc<Long>()),  outputs.getNoOutput(), true, new IntsRef());
+    res = searcher.search();
+    assertEquals(rejectCount.get(), 4);
+    assertFalse(res.isComplete); // rejected(4) + topN(2) > maxQueueSize(5)
+  }
+
   // compares just the weight side of the pair
   static final Comparator<Pair<Long,Long>> minPairWeightComparator = new Comparator<Pair<Long,Long>> () {
     @Override
     public int compare(Pair<Long,Long> left, Pair<Long,Long> right) {
       return left.output1.compareTo(right.output1);
-    }  
+    }
   };
-  
+
   /** like testShortestPaths, but uses pairoutputs so we have both a weight and an output */
   public void testShortestPathsWFST() throws Exception {
 
-    PairOutputs<Long,Long> outputs = new PairOutputs<Long,Long>(
+    PairOutputs<Long,Long> outputs = new PairOutputs<>(
         PositiveIntOutputs.getSingleton(), // weight
         PositiveIntOutputs.getSingleton()  // output
     );
-    
-    final Builder<Pair<Long,Long>> builder = new Builder<Pair<Long,Long>>(FST.INPUT_TYPE.BYTE1, outputs);
+
+    final Builder<Pair<Long,Long>> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
 
     final IntsRef scratch = new IntsRef();
     builder.add(Util.toIntsRef(new BytesRef("aab"), scratch), outputs.newPair(22L, 57L));
@@ -1267,38 +1334,39 @@ public class TestFSTs extends LuceneTestCase {
     //Util.toDot(fst, w, false, false);
     //w.close();
 
-    Util.MinResult<Pair<Long,Long>>[] r = Util.shortestPaths(fst,
+    Util.TopResults<Pair<Long,Long>> res = Util.shortestPaths(fst,
                                                              fst.getFirstArc(new FST.Arc<Pair<Long,Long>>()),
                                                              outputs.getNoOutput(),
                                                              minPairWeightComparator,
                                                              3,
                                                              true);
-    assertEquals(3, r.length);
+    assertTrue(res.isComplete);
+    assertEquals(3, res.topN.size());
 
-    assertEquals(Util.toIntsRef(new BytesRef("aac"), scratch), r[0].input);
-    assertEquals(7L, r[0].output.output1.longValue()); // weight
-    assertEquals(36L, r[0].output.output2.longValue()); // output
+    assertEquals(Util.toIntsRef(new BytesRef("aac"), scratch), res.topN.get(0).input);
+    assertEquals(7L, res.topN.get(0).output.output1.longValue()); // weight
+    assertEquals(36L, res.topN.get(0).output.output2.longValue()); // output
 
-    assertEquals(Util.toIntsRef(new BytesRef("ax"), scratch), r[1].input);
-    assertEquals(17L, r[1].output.output1.longValue()); // weight
-    assertEquals(85L, r[1].output.output2.longValue()); // output
+    assertEquals(Util.toIntsRef(new BytesRef("ax"), scratch), res.topN.get(1).input);
+    assertEquals(17L, res.topN.get(1).output.output1.longValue()); // weight
+    assertEquals(85L, res.topN.get(1).output.output2.longValue()); // output
 
-    assertEquals(Util.toIntsRef(new BytesRef("aab"), scratch), r[2].input);
-    assertEquals(22L, r[2].output.output1.longValue()); // weight
-    assertEquals(57L, r[2].output.output2.longValue()); // output
+    assertEquals(Util.toIntsRef(new BytesRef("aab"), scratch), res.topN.get(2).input);
+    assertEquals(22L, res.topN.get(2).output.output1.longValue()); // weight
+    assertEquals(57L, res.topN.get(2).output.output2.longValue()); // output
   }
-  
+
   public void testShortestPathsRandom() throws Exception {
     final Random random = random();
     int numWords = atLeast(1000);
-    
-    final TreeMap<String,Long> slowCompletor = new TreeMap<String,Long>();
-    final TreeSet<String> allPrefixes = new TreeSet<String>();
-    
+
+    final TreeMap<String,Long> slowCompletor = new TreeMap<>();
+    final TreeSet<String> allPrefixes = new TreeSet<>();
+
     final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
-    final Builder<Long> builder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, outputs);
+    final Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
     final IntsRef scratch = new IntsRef();
-    
+
     for (int i = 0; i < numWords; i++) {
       String s;
       while (true) {
@@ -1307,32 +1375,32 @@ public class TestFSTs extends LuceneTestCase {
           break;
         }
       }
-      
+
       for (int j = 1; j < s.length(); j++) {
         allPrefixes.add(s.substring(0, j));
       }
       int weight = TestUtil.nextInt(random, 1, 100); // weights 1..100
       slowCompletor.put(s, (long)weight);
     }
-    
+
     for (Map.Entry<String,Long> e : slowCompletor.entrySet()) {
       //System.out.println("add: " + e);
       builder.add(Util.toIntsRef(new BytesRef(e.getKey()), scratch), e.getValue());
     }
-    
+
     final FST<Long> fst = builder.finish();
     //System.out.println("SAVE out.dot");
     //Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"));
     //Util.toDot(fst, w, false, false);
     //w.close();
-    
+
     BytesReader reader = fst.getBytesReader();
-    
+
     //System.out.println("testing: " + allPrefixes.size() + " prefixes");
     for (String prefix : allPrefixes) {
       // 1. run prefix against fst, then complete by value
       //System.out.println("TEST: " + prefix);
-    
+
       long prefixOutput = 0;
       FST.Arc<Long> arc = fst.getFirstArc(new FST.Arc<Long>());
       for(int idx=0;idx<prefix.length();idx++) {
@@ -1344,44 +1412,45 @@ public class TestFSTs extends LuceneTestCase {
 
       final int topN = TestUtil.nextInt(random, 1, 10);
 
-      Util.MinResult<Long>[] r = Util.shortestPaths(fst, arc, fst.outputs.getNoOutput(), minLongComparator, topN, true);
+      Util.TopResults<Long> r = Util.shortestPaths(fst, arc, fst.outputs.getNoOutput(), minLongComparator, topN, true);
+      assertTrue(r.isComplete);
 
       // 2. go thru whole treemap (slowCompletor) and check its actually the best suggestion
-      final List<Util.MinResult<Long>> matches = new ArrayList<Util.MinResult<Long>>();
+      final List<Result<Long>> matches = new ArrayList<>();
 
       // TODO: could be faster... but its slowCompletor for a reason
       for (Map.Entry<String,Long> e : slowCompletor.entrySet()) {
         if (e.getKey().startsWith(prefix)) {
           //System.out.println("  consider " + e.getKey());
-          matches.add(new Util.MinResult<Long>(Util.toIntsRef(new BytesRef(e.getKey().substring(prefix.length())), new IntsRef()),
+          matches.add(new Result<>(Util.toIntsRef(new BytesRef(e.getKey().substring(prefix.length())), new IntsRef()),
                                          e.getValue() - prefixOutput));
         }
       }
 
       assertTrue(matches.size() > 0);
-      Collections.sort(matches, new TieBreakByInputComparator<Long>(minLongComparator));
+      Collections.sort(matches, new TieBreakByInputComparator<>(minLongComparator));
       if (matches.size() > topN) {
         matches.subList(topN, matches.size()).clear();
       }
 
-      assertEquals(matches.size(), r.length);
+      assertEquals(matches.size(), r.topN.size());
 
-      for(int hit=0;hit<r.length;hit++) {
+      for(int hit=0;hit<r.topN.size();hit++) {
         //System.out.println("  check hit " + hit);
-        assertEquals(matches.get(hit).input, r[hit].input);
-        assertEquals(matches.get(hit).output, r[hit].output);
+        assertEquals(matches.get(hit).input, r.topN.get(hit).input);
+        assertEquals(matches.get(hit).output, r.topN.get(hit).output);
       }
     }
   }
 
-  private static class TieBreakByInputComparator<T> implements Comparator<Util.MinResult<T>> {
+  private static class TieBreakByInputComparator<T> implements Comparator<Result<T>> {
     private final Comparator<T> comparator;
     public TieBreakByInputComparator(Comparator<T> comparator) {
       this.comparator = comparator;
     }
 
     @Override
-    public int compare(Util.MinResult<T> a, Util.MinResult<T> b) {
+    public int compare(Result<T> a, Result<T> b) {
       int cmp = comparator.compare(a.output, b.output);
       if (cmp == 0) {
         return a.input.compareTo(b.input);
@@ -1401,21 +1470,21 @@ public class TestFSTs extends LuceneTestCase {
       this.b = b;
     }
   }
-  
+
   /** like testShortestPathsRandom, but uses pairoutputs so we have both a weight and an output */
   public void testShortestPathsWFSTRandom() throws Exception {
     int numWords = atLeast(1000);
-    
-    final TreeMap<String,TwoLongs> slowCompletor = new TreeMap<String,TwoLongs>();
-    final TreeSet<String> allPrefixes = new TreeSet<String>();
-    
-    PairOutputs<Long,Long> outputs = new PairOutputs<Long,Long>(
+
+    final TreeMap<String,TwoLongs> slowCompletor = new TreeMap<>();
+    final TreeSet<String> allPrefixes = new TreeSet<>();
+
+    PairOutputs<Long,Long> outputs = new PairOutputs<>(
         PositiveIntOutputs.getSingleton(), // weight
         PositiveIntOutputs.getSingleton()  // output
     );
-    final Builder<Pair<Long,Long>> builder = new Builder<Pair<Long,Long>>(FST.INPUT_TYPE.BYTE1, outputs);
+    final Builder<Pair<Long,Long>> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
     final IntsRef scratch = new IntsRef();
-    
+
     Random random = random();
     for (int i = 0; i < numWords; i++) {
       String s;
@@ -1425,7 +1494,7 @@ public class TestFSTs extends LuceneTestCase {
           break;
         }
       }
-      
+
       for (int j = 1; j < s.length(); j++) {
         allPrefixes.add(s.substring(0, j));
       }
@@ -1433,27 +1502,27 @@ public class TestFSTs extends LuceneTestCase {
       int output = TestUtil.nextInt(random, 0, 500); // outputs 0..500
       slowCompletor.put(s, new TwoLongs(weight, output));
     }
-    
+
     for (Map.Entry<String,TwoLongs> e : slowCompletor.entrySet()) {
       //System.out.println("add: " + e);
       long weight = e.getValue().a;
       long output = e.getValue().b;
       builder.add(Util.toIntsRef(new BytesRef(e.getKey()), scratch), outputs.newPair(weight, output));
     }
-    
+
     final FST<Pair<Long,Long>> fst = builder.finish();
     //System.out.println("SAVE out.dot");
     //Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"));
     //Util.toDot(fst, w, false, false);
     //w.close();
-    
+
     BytesReader reader = fst.getBytesReader();
-    
+
     //System.out.println("testing: " + allPrefixes.size() + " prefixes");
     for (String prefix : allPrefixes) {
       // 1. run prefix against fst, then complete by value
       //System.out.println("TEST: " + prefix);
-    
+
       Pair<Long,Long> prefixOutput = outputs.getNoOutput();
       FST.Arc<Pair<Long,Long>> arc = fst.getFirstArc(new FST.Arc<Pair<Long,Long>>());
       for(int idx=0;idx<prefix.length();idx++) {
@@ -1465,39 +1534,39 @@ public class TestFSTs extends LuceneTestCase {
 
       final int topN = TestUtil.nextInt(random, 1, 10);
 
-      Util.MinResult<Pair<Long,Long>>[] r = Util.shortestPaths(fst, arc, fst.outputs.getNoOutput(), minPairWeightComparator, topN, true);
-
+      Util.TopResults<Pair<Long,Long>> r = Util.shortestPaths(fst, arc, fst.outputs.getNoOutput(), minPairWeightComparator, topN, true);
+      assertTrue(r.isComplete);
       // 2. go thru whole treemap (slowCompletor) and check its actually the best suggestion
-      final List<Util.MinResult<Pair<Long,Long>>> matches = new ArrayList<Util.MinResult<Pair<Long,Long>>>();
+      final List<Result<Pair<Long,Long>>> matches = new ArrayList<>();
 
       // TODO: could be faster... but its slowCompletor for a reason
       for (Map.Entry<String,TwoLongs> e : slowCompletor.entrySet()) {
         if (e.getKey().startsWith(prefix)) {
           //System.out.println("  consider " + e.getKey());
-          matches.add(new Util.MinResult<Pair<Long,Long>>(Util.toIntsRef(new BytesRef(e.getKey().substring(prefix.length())), new IntsRef()),
-                                                          outputs.newPair(e.getValue().a - prefixOutput.output1, e.getValue().b - prefixOutput.output2)));
+          matches.add(new Result<>(Util.toIntsRef(new BytesRef(e.getKey().substring(prefix.length())), new IntsRef()),
+                                                  outputs.newPair(e.getValue().a - prefixOutput.output1, e.getValue().b - prefixOutput.output2)));
         }
       }
 
       assertTrue(matches.size() > 0);
-      Collections.sort(matches, new TieBreakByInputComparator<Pair<Long,Long>>(minPairWeightComparator));
+      Collections.sort(matches, new TieBreakByInputComparator<>(minPairWeightComparator));
       if (matches.size() > topN) {
         matches.subList(topN, matches.size()).clear();
       }
 
-      assertEquals(matches.size(), r.length);
+      assertEquals(matches.size(), r.topN.size());
 
-      for(int hit=0;hit<r.length;hit++) {
+      for(int hit=0;hit<r.topN.size();hit++) {
         //System.out.println("  check hit " + hit);
-        assertEquals(matches.get(hit).input, r[hit].input);
-        assertEquals(matches.get(hit).output, r[hit].output);
+        assertEquals(matches.get(hit).input, r.topN.get(hit).input);
+        assertEquals(matches.get(hit).output, r.topN.get(hit).output);
       }
     }
   }
 
   public void testLargeOutputsOnArrayArcs() throws Exception {
     final ByteSequenceOutputs outputs = ByteSequenceOutputs.getSingleton();
-    final Builder<BytesRef> builder = new Builder<BytesRef>(FST.INPUT_TYPE.BYTE1, outputs);
+    final Builder<BytesRef> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
 
     final byte[] bytes = new byte[300];
     final IntsRef input = new IntsRef();
@@ -1522,4 +1591,5 @@ public class TestFSTs extends LuceneTestCase {
       }
     }
   }
+
 }

@@ -202,8 +202,8 @@ public class Sort {
     return 0x45aaf665 + Arrays.hashCode(fields);
   }
 
-  /** Whether the relevance score is needed to sort documents. */
-  boolean needsScores() {
+  /** Returns true if the relevance score is needed to sort documents. */
+  public boolean needsScores() {
     for (SortField sortField : fields) {
       if (sortField.needsScores()) {
         return true;

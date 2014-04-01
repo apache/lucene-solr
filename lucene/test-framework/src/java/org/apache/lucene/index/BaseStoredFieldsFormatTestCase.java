@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -99,7 +100,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
     final int docCount = atLeast(200);
     final int fieldCount = TestUtil.nextInt(rand, 1, 5);
 
-    final List<Integer> fieldIDs = new ArrayList<Integer>();
+    final List<Integer> fieldIDs = new ArrayList<>();
 
     FieldType customType = new FieldType(TextField.TYPE_STORED);
     customType.setTokenized(false);
@@ -109,7 +110,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
       fieldIDs.add(i);
     }
 
-    final Map<String,Document> docs = new HashMap<String,Document>();
+    final Map<String,Document> docs = new HashMap<>();
 
     if (VERBOSE) {
       System.out.println("TEST: build index docCount=" + docCount);
@@ -351,7 +352,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
     ft.freeze();
 
     final String string = TestUtil.randomSimpleString(random(), 50);
-    final byte[] bytes = string.getBytes("UTF-8");
+    final byte[] bytes = string.getBytes(StandardCharsets.UTF_8);
     final long l = random().nextBoolean() ? random().nextInt(42) : random().nextLong();
     final int i = random().nextBoolean() ? random().nextInt(42) : random().nextInt();
     final float f = random().nextFloat();
@@ -439,8 +440,8 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
     final IndexSearcher searcher = new IndexSearcher(rd);
     final int concurrentReads = atLeast(5);
     final int readsPerThread = atLeast(50);
-    final List<Thread> readThreads = new ArrayList<Thread>();
-    final AtomicReference<Exception> ex = new AtomicReference<Exception>();
+    final List<Thread> readThreads = new ArrayList<>();
+    final AtomicReference<Exception> ex = new AtomicReference<>();
     for (int i = 0; i < concurrentReads; ++i) {
       readThreads.add(new Thread() {
 

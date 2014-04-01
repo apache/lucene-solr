@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -62,7 +63,7 @@ public class LegacyHTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   //Some sanity checks, but not a full-fledged check
   public void testHTML() throws Exception {
     InputStream stream = getClass().getResourceAsStream("htmlStripReaderTest.html");
-    LegacyHTMLStripCharFilter reader = new LegacyHTMLStripCharFilter(new InputStreamReader(stream, "UTF-8"));
+    LegacyHTMLStripCharFilter reader = new LegacyHTMLStripCharFilter(new InputStreamReader(stream, StandardCharsets.UTF_8));
     StringBuilder builder = new StringBuilder();
     int ch = -1;
     while ((ch = reader.read()) != -1){
@@ -80,7 +81,7 @@ public class LegacyHTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   public void testGamma() throws Exception {
     String test = "&Gamma;";
     String gold = "\u0393";
-    Set<String> set = new HashSet<String>();
+    Set<String> set = new HashSet<>();
     set.add("reserved");
     Reader reader = new LegacyHTMLStripCharFilter(new StringReader(test), set);
     StringBuilder builder = new StringBuilder();
@@ -97,7 +98,7 @@ public class LegacyHTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   public void testEntities() throws Exception {
     String test = "&nbsp; &lt;foo&gt; &Uuml;bermensch &#61; &Gamma; bar &#x393;";
     String gold = "  <foo> \u00DCbermensch = \u0393 bar \u0393";
-    Set<String> set = new HashSet<String>();
+    Set<String> set = new HashSet<>();
     set.add("reserved");
     Reader reader = new LegacyHTMLStripCharFilter(new StringReader(test), set);
     StringBuilder builder = new StringBuilder();
@@ -114,7 +115,7 @@ public class LegacyHTMLStripCharFilterTest extends BaseTokenStreamTestCase {
   public void testMoreEntities() throws Exception {
     String test = "&nbsp; &lt;junk/&gt; &nbsp; &#33; &#64; and &#8217;";
     String gold = "  <junk/>   ! @ and ’";
-    Set<String> set = new HashSet<String>();
+    Set<String> set = new HashSet<>();
     set.add("reserved");
     Reader reader = new LegacyHTMLStripCharFilter(new StringReader(test), set);
     StringBuilder builder = new StringBuilder();
@@ -130,7 +131,7 @@ public class LegacyHTMLStripCharFilterTest extends BaseTokenStreamTestCase {
 
   public void testReserved() throws Exception {
     String test = "aaa bbb <reserved ccc=\"ddddd\"> eeee </reserved> ffff <reserved ggg=\"hhhh\"/> <other/>";
-    Set<String> set = new HashSet<String>();
+    Set<String> set = new HashSet<>();
     set.add("reserved");
     Reader reader = new LegacyHTMLStripCharFilter(new StringReader(test), set);
     StringBuilder builder = new StringBuilder();

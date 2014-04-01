@@ -111,11 +111,11 @@ public class TestDocumentObjectBinder extends LuceneTestCase {
     item.features = Arrays.asList(item.categories);
     List<String> supA = Arrays.asList("supA1", "supA2", "supA3");
     List<String> supB = Arrays.asList("supB1", "supB2", "supB3");
-    item.supplier = new HashMap<String, List<String>>();
+    item.supplier = new HashMap<>();
     item.supplier.put("supplier_supA", supA);
     item.supplier.put("supplier_supB", supB);
     
-    item.supplier_simple = new HashMap<String, String>();
+    item.supplier_simple = new HashMap<>();
     item.supplier_simple.put("sup_simple_supA", "supA_val");
     item.supplier_simple.put("sup_simple_supB", "supB_val");
     

@@ -182,7 +182,7 @@ public class JmxMonitoredMap<K, V> extends
 
   private ObjectName getObjectName(String key, SolrInfoMBean infoBean)
           throws MalformedObjectNameException {
-    Hashtable<String, String> map = new Hashtable<String, String>();
+    Hashtable<String, String> map = new Hashtable<>();
     map.put("type", key);
     if (infoBean.getName() != null && !"".equals(infoBean.getName())) {
       map.put("id", infoBean.getName());
@@ -208,7 +208,7 @@ public class JmxMonitoredMap<K, V> extends
 
     public SolrDynamicMBean(String coreHashCode, SolrInfoMBean managedResource) {
       this.infoBean = managedResource;
-      staticStats = new HashSet<String>();
+      staticStats = new HashSet<>();
 
       // For which getters are already available in SolrInfoMBean
       staticStats.add("name");
@@ -221,7 +221,7 @@ public class JmxMonitoredMap<K, V> extends
 
     @Override
     public MBeanInfo getMBeanInfo() {
-      ArrayList<MBeanAttributeInfo> attrInfoList = new ArrayList<MBeanAttributeInfo>();
+      ArrayList<MBeanAttributeInfo> attrInfoList = new ArrayList<>();
 
       for (String stat : staticStats) {
         attrInfoList.add(new MBeanAttributeInfo(stat, String.class.getName(),

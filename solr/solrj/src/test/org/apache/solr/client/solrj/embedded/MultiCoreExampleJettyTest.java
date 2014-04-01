@@ -22,9 +22,9 @@ import org.apache.solr.client.solrj.MultiCoreExampleTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
@@ -42,7 +42,6 @@ import org.junit.Test;
 public class MultiCoreExampleJettyTest extends MultiCoreExampleTestBase {
 
   JettySolrRunner jetty;
-
   int port = 0;
   static final String context = "/example";
   
@@ -64,32 +63,7 @@ public class MultiCoreExampleJettyTest extends MultiCoreExampleTestBase {
     jetty.stop();  // stop the server
   }
   
-
-  @Override
-  protected SolrServer getSolrCore(String name)
-  {
-    return createServer(name);
-  }
-
-  @Override
-  protected SolrServer getSolrCore0()
-  {
-    return createServer( "core0" );
-  }
-
-  @Override
-  protected SolrServer getSolrCore1()
-  {
-    return createServer( "core1" );
-  }
-
-  @Override
-  protected SolrServer getSolrAdmin()
-  {
-    return createServer( "" );
-  } 
-  
-  private SolrServer createServer( String name )
+  protected SolrServer createServer( String name )
   {
     try {
       // setup the server...

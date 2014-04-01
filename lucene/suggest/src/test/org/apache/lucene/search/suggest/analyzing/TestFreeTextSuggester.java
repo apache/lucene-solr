@@ -53,7 +53,7 @@ import org.junit.Ignore;
 public class TestFreeTextSuggester extends LuceneTestCase {
 
   public void testBasic() throws Exception {
-    Iterable<Input> keys = shuffle(
+    Iterable<Input> keys = AnalyzingSuggesterTest.shuffle(
         new Input("foo bar baz blah", 50),
         new Input("boo foo bar foo bee", 20)
     );
@@ -102,7 +102,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
   public void testIllegalByteDuringBuild() throws Exception {
     // Default separator is INFORMATION SEPARATOR TWO
     // (0x1e), so no input token is allowed to contain it
-    Iterable<Input> keys = shuffle(
+    Iterable<Input> keys = AnalyzingSuggesterTest.shuffle(
         new Input("foo\u001ebar baz", 50)
     );
     FreeTextSuggester sug = new FreeTextSuggester(new MockAnalyzer(random()));
@@ -117,7 +117,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
   public void testIllegalByteDuringQuery() throws Exception {
     // Default separator is INFORMATION SEPARATOR TWO
     // (0x1e), so no input token is allowed to contain it
-    Iterable<Input> keys = shuffle(
+    Iterable<Input> keys = AnalyzingSuggesterTest.shuffle(
         new Input("foo bar baz", 50)
     );
     FreeTextSuggester sug = new FreeTextSuggester(new MockAnalyzer(random()));
@@ -173,6 +173,15 @@ public class TestFreeTextSuggester extends LuceneTestCase {
           return false;
         }
 
+        @Override
+        public Set<BytesRef> contexts() {
+          return null;
+        }
+
+        @Override
+        public boolean hasContexts() {
+          return false;
+        }
       });
     if (VERBOSE) {
       System.out.println(sug.sizeInBytes() + " bytes");
@@ -187,7 +196,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
 
   // Make sure you can suggest based only on unigram model:
   public void testUnigrams() throws Exception {
-    Iterable<Input> keys = shuffle(
+    Iterable<Input> keys = AnalyzingSuggesterTest.shuffle(
         new Input("foo bar baz blah boo foo bar foo bee", 50)
     );
 
@@ -201,7 +210,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
 
   // Make sure the last token is not duplicated
   public void testNoDupsAcrossGrams() throws Exception {
-    Iterable<Input> keys = shuffle(
+    Iterable<Input> keys = AnalyzingSuggesterTest.shuffle(
         new Input("foo bar bar bar bar", 50)
     );
     Analyzer a = new MockAnalyzer(random());
@@ -213,7 +222,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
 
   // Lookup of just empty string produces unicode only matches:
   public void testEmptyString() throws Exception {
-    Iterable<Input> keys = shuffle(
+    Iterable<Input> keys = AnalyzingSuggesterTest.shuffle(
         new Input("foo bar bar bar bar", 50)
     );
     Analyzer a = new MockAnalyzer(random());
@@ -240,7 +249,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
         }
       };
 
-    Iterable<Input> keys = shuffle(
+    Iterable<Input> keys = AnalyzingSuggesterTest.shuffle(
         new Input("wizard of oz", 50)
     );
     FreeTextSuggester sug = new FreeTextSuggester(a, a, 3, (byte) 0x20);
@@ -268,7 +277,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
         }
       };
 
-    Iterable<Input> keys = shuffle(
+    Iterable<Input> keys = AnalyzingSuggesterTest.shuffle(
         new Input("wizard of of oz", 50)
     );
     FreeTextSuggester sug = new FreeTextSuggester(a, a, 3, (byte) 0x20);
@@ -293,7 +302,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
 
   public void testRandom() throws IOException {
     String[] terms = new String[TestUtil.nextInt(random(), 2, 10)];
-    Set<String> seen = new HashSet<String>();
+    Set<String> seen = new HashSet<>();
     while (seen.size() < terms.length) {
       String token = TestUtil.randomSimpleString(random(), 1, 5);
       if (!seen.contains(token)) {
@@ -364,15 +373,25 @@ public class TestFreeTextSuggester extends LuceneTestCase {
         public boolean hasPayloads() {
           return false;
         }
+
+        @Override
+        public Set<BytesRef> contexts() {
+          return null;
+        }
+
+        @Override
+        public boolean hasContexts() {
+          return false;
+        }
       });
 
     // Build inefficient but hopefully correct model:
-    List<Map<String,Integer>> gramCounts = new ArrayList<Map<String,Integer>>(grams);
+    List<Map<String,Integer>> gramCounts = new ArrayList<>(grams);
     for(int gram=0;gram<grams;gram++) {
       if (VERBOSE) {
         System.out.println("TEST: build model for gram=" + gram);
       }
-      Map<String,Integer> model = new HashMap<String,Integer>();
+      Map<String,Integer> model = new HashMap<>();
       gramCounts.add(model);
       for(String[] doc : docs) {
         for(int i=0;i<doc.length-gram;i++) {
@@ -429,9 +448,9 @@ public class TestFreeTextSuggester extends LuceneTestCase {
       }
 
       // Expected:
-      List<LookupResult> expected = new ArrayList<LookupResult>();
+      List<LookupResult> expected = new ArrayList<>();
       double backoff = 1.0;
-      seen = new HashSet<String>();
+      seen = new HashSet<>();
 
       if (VERBOSE) {
         System.out.println("  compute expected");
@@ -494,7 +513,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("      find terms w/ prefix=" + tokens[tokens.length-1]);
         }
-        List<LookupResult> tmp = new ArrayList<LookupResult>();
+        List<LookupResult> tmp = new ArrayList<>();
         for(String term : terms) {
           if (term.startsWith(tokens[tokens.length-1])) {
             if (VERBOSE) {
@@ -583,16 +602,6 @@ public class TestFreeTextSuggester extends LuceneTestCase {
       b.append(String.format(Locale.ROOT, "%.2f", ((double) result.value)/Long.MAX_VALUE));
     }
     return b.toString().trim();
-  }
-
-  @SafeVarargs
-  private final <T> Iterable<T> shuffle(T...values) {
-    final List<T> asList = new ArrayList<T>(values.length);
-    for (T value : values) {
-      asList.add(value);
-    }
-    Collections.shuffle(asList, random());
-    return asList;
   }
 }
 

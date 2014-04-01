@@ -130,7 +130,7 @@ public class WikipediaTokenizerTest extends BaseTokenStreamTestCase {
   }
 
   public void testLucene1133() throws Exception {
-    Set<String> untoks = new HashSet<String>();
+    Set<String> untoks = new HashSet<>();
     untoks.add(WikipediaTokenizer.CATEGORY);
     untoks.add(WikipediaTokenizer.ITALICS);
     //should be exactly the same, regardless of untoks
@@ -150,7 +150,7 @@ public class WikipediaTokenizerTest extends BaseTokenStreamTestCase {
   }
 
   public void testBoth() throws Exception {
-    Set<String> untoks = new HashSet<String>();
+    Set<String> untoks = new HashSet<>();
     untoks.add(WikipediaTokenizer.CATEGORY);
     untoks.add(WikipediaTokenizer.ITALICS);
     String test = "[[Category:a b c d]] [[Category:e f g]] [[link here]] [[link there]] ''italics here'' something ''more italics'' [[Category:h   i   j]]";

@@ -33,7 +33,6 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
@@ -357,7 +356,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     SortedSetDocValues ssdv = r.getSortedSetDocValues("ssdv");
     BytesRef scratch = new BytesRef();
     for (int i = 0; i < r.maxDoc(); i++) {
-      assertEquals(17, ndv.get(0));
+      assertEquals(17, ndv.get(i));
       bdv.get(i, scratch);
       assertEquals(new BytesRef(Integer.toString(i)), scratch);
       sdv.get(i, scratch);
@@ -1202,7 +1201,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     
     final int numDocs = atLeast(50);
     final int numTerms = TestUtil.nextInt(random(), 1, numDocs / 5);
-    Set<String> randomTerms = new HashSet<String>();
+    Set<String> randomTerms = new HashSet<>();
     while (randomTerms.size() < numTerms) {
       randomTerms.add(TestUtil.randomSimpleString(random()));
     }
@@ -1300,7 +1299,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     final int numDocs = atLeast(20000);
     final int numNumericFields = atLeast(5);
     final int numTerms = TestUtil.nextInt(random, 10, 100); // terms should affect many docs
-    Set<String> updateTerms = new HashSet<String>();
+    Set<String> updateTerms = new HashSet<>();
     while (updateTerms.size() < numTerms) {
       updateTerms.add(TestUtil.randomSimpleString(random));
     }

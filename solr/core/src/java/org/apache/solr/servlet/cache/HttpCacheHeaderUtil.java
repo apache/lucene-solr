@@ -56,7 +56,7 @@ public final class HttpCacheHeaderUtil {
    * @see #calcEtag
    */
   private static Map<SolrCore, EtagCacheVal> etagCoreCache
-    = new WeakHashMap<SolrCore, EtagCacheVal>();
+    = new WeakHashMap<>();
 
   /** @see #etagCoreCache */
   private static class EtagCacheVal {

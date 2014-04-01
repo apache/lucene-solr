@@ -40,7 +40,7 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
    * Test if writing doc stores to disk and everything else to ram works.
    */
   public void testBasic() throws IOException {
-    Set<String> fileExtensions = new HashSet<String>();
+    Set<String> fileExtensions = new HashSet<>();
     fileExtensions.add(Lucene40StoredFieldsWriter.FIELDS_EXTENSION);
     fileExtensions.add(Lucene40StoredFieldsWriter.FIELDS_INDEX_EXTENSION);
     
@@ -122,7 +122,7 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
     String name = "file";
     try {
       dir.createOutput(name, newIOContext(random())).close();
-      assertTrue(dir.fileExists(name));
+      assertTrue(slowFileExists(dir, name));
       assertTrue(Arrays.asList(dir.listAll()).contains(name));
     } finally {
       dir.close();
@@ -136,12 +136,6 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
     createSequenceFile(newDir, "d1", (byte) 0, 15);
     IndexOutput out = csw.createOutput("d.xyz", newIOContext(random()));
     out.writeInt(0);
-    try {
-      newDir.copy(csw, "d1", "d1", newIOContext(random()));
-      fail("file does already exist");
-    } catch (IllegalArgumentException e) {
-      //
-    }
     out.close();
     assertEquals(1, csw.listAll().length);
     assertEquals("d.xyz", csw.listAll()[0]);

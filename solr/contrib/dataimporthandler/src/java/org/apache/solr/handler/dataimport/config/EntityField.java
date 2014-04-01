@@ -46,7 +46,7 @@ public class EntityField {
     this.multiValued = b.multiValued;
     this.dynamicName = b.dynamicName;
     this.entity = b.entity;
-    this.allAttributes = Collections.unmodifiableMap(new HashMap<String,String>(b.allAttributes));
+    this.allAttributes = Collections.unmodifiableMap(new HashMap<>(b.allAttributes));
   }
 
   public String getName() {
@@ -89,7 +89,7 @@ public class EntityField {
     public boolean multiValued = false;
     public boolean dynamicName = false;
     public Entity entity;
-    public Map<String, String> allAttributes = new HashMap<String,String>();
+    public Map<String, String> allAttributes = new HashMap<>();
     
     public Builder(Element e) {
       this.name = ConfigParseUtil.getStringAttribute(e, DataImporter.NAME, null);
@@ -98,7 +98,7 @@ public class EntityField {
         throw new DataImportHandlerException(SEVERE, "Field must have a column attribute");
       }
       this.boost = Float.parseFloat(ConfigParseUtil.getStringAttribute(e, "boost", "1.0f"));
-      this.allAttributes = new HashMap<String, String>(ConfigParseUtil.getAllAttributes(e));
+      this.allAttributes = new HashMap<>(ConfigParseUtil.getAllAttributes(e));
     }
     
     public String getNameOrColumn() {

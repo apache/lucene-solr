@@ -58,7 +58,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
   public void testCreateWithSysVars() throws Exception {
     useFactory(null); // I require FS-based indexes for this test.
 
-    final File workDir = new File(TEMP_DIR, getCoreName());
+    final File workDir = new File(dataDir, getCoreName());
 
     if (workDir.exists()) {
       FileUtils.deleteDirectory(workDir);
@@ -133,7 +133,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCoreAdminHandler() throws Exception {
-    final File workDir = new File(TEMP_DIR, this.getClass().getName());
+    final File workDir = new File(dataDir, this.getClass().getName());
 
     if (workDir.exists()) {
       FileUtils.deleteDirectory(workDir);
@@ -144,15 +144,10 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
 
     final CoreAdminHandler admin = new CoreAdminHandler(cores);
 
-    String instDir = null;
-    {
-      SolrCore template = null;
-      try {
-        template = cores.getCore("collection1");
-        instDir = template.getCoreDescriptor().getInstanceDir();
-      } finally {
-        if (null != template) template.close();
-      }
+    String instDir;
+    try (SolrCore template = cores.getCore("collection1")) {
+      assertNotNull(template);
+      instDir = template.getCoreDescriptor().getInstanceDir();
     }
     
     final File instDirFile = new File(instDir);
@@ -229,7 +224,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testDeleteInstanceDir() throws Exception  {
-    File solrHomeDirectory = new File(TEMP_DIR, getClass().getName() + "-corex-"
+    File solrHomeDirectory = new File(dataDir, getClass().getName() + "-corex-"
         + System.currentTimeMillis());
     solrHomeDirectory.mkdirs();
     copySolrHomeToTemp(solrHomeDirectory, "corex", true);
@@ -270,7 +265,6 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
       if (!runner.isStopped())  {
         runner.stop();
       }
-      recurseDelete(solrHomeDirectory);
     }
   }
 

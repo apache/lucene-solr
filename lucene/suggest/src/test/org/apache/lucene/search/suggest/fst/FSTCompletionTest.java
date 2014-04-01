@@ -17,6 +17,7 @@ package org.apache.lucene.search.suggest.fst;
  * limitations under the License.
  */
 
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
@@ -144,7 +145,7 @@ public class FSTCompletionTest extends LuceneTestCase {
 
   public void testThreeByte() throws Exception {
     String key = new String(new byte[] {
-        (byte) 0xF0, (byte) 0xA4, (byte) 0xAD, (byte) 0xA2}, "UTF-8");
+        (byte) 0xF0, (byte) 0xA4, (byte) 0xAD, (byte) 0xA2}, StandardCharsets.UTF_8);
     FSTCompletionBuilder builder = new FSTCompletionBuilder();
     builder.add(new BytesRef(key), 0);
 
@@ -157,7 +158,7 @@ public class FSTCompletionTest extends LuceneTestCase {
     FSTCompletionLookup lookup = new FSTCompletionLookup(10, true);
     
     Random r = random();
-    List<Input> keys = new ArrayList<Input>();
+    List<Input> keys = new ArrayList<>();
     for (int i = 0; i < 5000; i++) {
       keys.add(new Input(TestUtil.randomSimpleString(r), -1));
     }
@@ -199,7 +200,7 @@ public class FSTCompletionTest extends LuceneTestCase {
   }
 
   public void testRandom() throws Exception {
-    List<Input> freqs = new ArrayList<Input>();
+    List<Input> freqs = new ArrayList<>();
     Random rnd = random();
     for (int i = 0; i < 2500 + rnd.nextInt(2500); i++) {
       int weight = rnd.nextInt(100); 

@@ -24,6 +24,7 @@ import java.io.PrintWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.helper.ASCIITextWidthCounter;
@@ -42,7 +43,7 @@ class ToolRunnerHelpFormatter {
     String msg;
     try {
       ToolRunner.printGenericCommandUsage(new PrintStream(bout, true, "UTF-8"));
-      msg = new String(bout.toByteArray(), "UTF-8");
+      msg = new String(bout.toByteArray(), StandardCharsets.UTF_8);
     } catch (UnsupportedEncodingException e) {
       throw new RuntimeException(e); // unreachable
     }

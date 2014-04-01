@@ -17,18 +17,12 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-
+import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrServer.HttpUriRequestResponse;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -64,6 +58,14 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+
 public class RecoveryStrategy extends Thread implements ClosableThread {
   private static final int MAX_RETRIES = 500;
   private static final int INTERRUPTED = MAX_RETRIES + 1;
@@ -89,6 +91,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
   private int retries;
   private boolean recoveringAfterStartup;
   private CoreContainer cc;
+  private volatile HttpUriRequest prevSendPreRecoveryHttpUriRequest;
   
   public RecoveryStrategy(CoreContainer cc, CoreDescriptor cd, RecoveryListener recoveryListener) {
     this.cc = cc;
@@ -109,7 +112,12 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
   @Override
   public void close() {
     close = true;
-    log.warn("Stopping recovery for zkNodeName=" + coreZkNodeName + "core=" + coreName );
+    try {
+      prevSendPreRecoveryHttpUriRequest.abort();
+    } catch (NullPointerException e) {
+      // okay
+    }
+    log.warn("Stopping recovery for zkNodeName=" + coreZkNodeName + "core=" + coreName);
   }
 
   
@@ -206,37 +214,17 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
     }
   }
 
-  private void sendPrepRecoveryCmd(String leaderBaseUrl, String leaderCoreName, Slice slice)
-      throws SolrServerException, IOException {
-    HttpSolrServer server = new HttpSolrServer(leaderBaseUrl);
-    try {
-      server.setConnectionTimeout(30000);
-      WaitForState prepCmd = new WaitForState();
-      prepCmd.setCoreName(leaderCoreName);
-      prepCmd.setNodeName(zkController.getNodeName());
-      prepCmd.setCoreNodeName(coreZkNodeName);
-      prepCmd.setState(ZkStateReader.RECOVERING);
-      prepCmd.setCheckLive(true);
-      prepCmd.setOnlyIfLeader(true);
-      if (!Slice.CONSTRUCTION.equals(slice.getState())) {
-        prepCmd.setOnlyIfLeaderActive(true);
-      }
-      server.request(prepCmd);
-    } finally {
-      server.shutdown();
-    }
-  }
-
   @Override
   public void run() {
-    SolrCore core = cc.getCore(coreName);
-    if (core == null) {
-      SolrException.log(log, "SolrCore not found - cannot recover:" + coreName);
-      return;
-    }
 
     // set request info for logging
-    try {
+    try (SolrCore core = cc.getCore(coreName)) {
+
+      if (core == null) {
+        SolrException.log(log, "SolrCore not found - cannot recover:" + coreName);
+        return;
+      }
+
       SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
       SolrQueryResponse rsp = new SolrQueryResponse();
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
@@ -256,7 +244,6 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
             "", e);
       }
     } finally {
-      if (core != null) core.close();
       SolrRequestInfo.clearRequestInfo();
     }
   }
@@ -284,7 +271,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
       recentVersions = recentUpdates.getVersions(ulog.numRecordsToKeep);
     } catch (Exception e) {
       SolrException.log(log, "Corrupt tlog - ignoring. core=" + coreName, e);
-      recentVersions = new ArrayList<Long>(0);
+      recentVersions = new ArrayList<>(0);
     } finally {
       if (recentUpdates != null) {
         recentUpdates.close();
@@ -313,7 +300,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         log.info("###### startupVersions=" + startingVersions);
       } catch (Exception e) {
         SolrException.log(log, "Error getting recent versions. core=" + coreName, e);
-        recentVersions = new ArrayList<Long>(0);
+        recentVersions = new ArrayList<>(0);
       }
     }
 
@@ -345,8 +332,8 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         ZkNodeProps leaderprops = zkStateReader.getLeaderRetry(
             cloudDesc.getCollectionName(), cloudDesc.getShardId());
       
-        String leaderBaseUrl = leaderprops.getStr(ZkStateReader.BASE_URL_PROP);
-        String leaderCoreName = leaderprops.getStr(ZkStateReader.CORE_NAME_PROP);
+        final String leaderBaseUrl = leaderprops.getStr(ZkStateReader.BASE_URL_PROP);
+        final String leaderCoreName = leaderprops.getStr(ZkStateReader.CORE_NAME_PROP);
 
         String leaderUrl = ZkCoreNodeProps.getCoreUrl(leaderBaseUrl, leaderCoreName);
 
@@ -367,8 +354,25 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         zkController.publish(core.getCoreDescriptor(), ZkStateReader.RECOVERING);
         
         
-        Slice slice = zkStateReader.getClusterState().getSlice(cloudDesc.getCollectionName(), cloudDesc.getShardId());
+        final Slice slice = zkStateReader.getClusterState().getSlice(cloudDesc.getCollectionName(), cloudDesc.getShardId());
+
+        try {
+          prevSendPreRecoveryHttpUriRequest.abort();
+        } catch (NullPointerException e) {
+          // okay
+        }
+        
+        if (isClosed()) {
+          log.info("Recovery was cancelled");
+          break;
+        }
+
         sendPrepRecoveryCmd(leaderBaseUrl, leaderCoreName, slice);
+        
+        if (isClosed()) {
+          log.info("Recovery was cancelled");
+          break;
+        }
         
         // we wait a bit so that any updates on the leader
         // that started before they saw recovering state 
@@ -426,6 +430,11 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
           log.info("PeerSync Recovery was not successful - trying replication. core=" + coreName);
         }
 
+        if (isClosed()) {
+          log.info("Recovery was cancelled");
+          break;
+        }
+        
         log.info("Starting Replication Recovery. core=" + coreName);
         
         log.info("Begin buffering updates. core=" + coreName);
@@ -436,8 +445,18 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
 
           replicate(zkController.getNodeName(), core, leaderprops);
 
+          if (isClosed()) {
+            log.info("Recovery was cancelled");
+            break;
+          }
+          
           replay(core);
           replayed = true;
+          
+          if (isClosed()) {
+            log.info("Recovery was cancelled");
+            break;
+          }
 
           log.info("Replication Recovery was successful - registering as Active. core=" + coreName);
           // if there are pending recovery requests, don't advert as active
@@ -570,6 +589,29 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
   @Override
   public boolean isClosed() {
     return close;
+  }
+  
+  private void sendPrepRecoveryCmd(String leaderBaseUrl, String leaderCoreName, Slice slice)
+      throws SolrServerException, IOException, InterruptedException, ExecutionException {
+    HttpSolrServer server = new HttpSolrServer(leaderBaseUrl);
+    try {
+      server.setConnectionTimeout(30000);
+      WaitForState prepCmd = new WaitForState();
+      prepCmd.setCoreName(leaderCoreName);
+      prepCmd.setNodeName(zkController.getNodeName());
+      prepCmd.setCoreNodeName(coreZkNodeName);
+      prepCmd.setState(ZkStateReader.RECOVERING);
+      prepCmd.setCheckLive(true);
+      prepCmd.setOnlyIfLeader(true);
+      if (!Slice.CONSTRUCTION.equals(slice.getState()) && !Slice.RECOVERY.equals(slice.getState())) {
+        prepCmd.setOnlyIfLeaderActive(true);
+      }
+      HttpUriRequestResponse mrr = server.httpUriRequest(prepCmd);
+      prevSendPreRecoveryHttpUriRequest = mrr.httpUriRequest;
+      mrr.future.get();
+    } finally {
+      server.shutdown();
+    }
   }
 
 }

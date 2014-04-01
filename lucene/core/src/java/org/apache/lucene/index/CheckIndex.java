@@ -92,13 +92,13 @@ public class CheckIndex {
 
     /** Empty unless you passed specific segments list to check as optional 3rd argument.
      *  @see CheckIndex#checkIndex(List) */
-    public List<String> segmentsChecked = new ArrayList<String>();
+    public List<String> segmentsChecked = new ArrayList<>();
   
     /** True if the index was created with a newer version of Lucene than the CheckIndex tool. */
     public boolean toolOutOfDate;
 
     /** List of {@link SegmentInfoStatus} instances, detailing status of each segment. */
-    public List<SegmentInfoStatus> segmentInfos = new ArrayList<SegmentInfoStatus>();
+    public List<SegmentInfoStatus> segmentInfos = new ArrayList<>();
   
     /** Directory index is in. */
     public Directory dir;
@@ -1069,7 +1069,7 @@ public class CheckIndex {
           final BlockTreeTermsReader.Stats stats = ((BlockTreeTermsReader.FieldReader) fieldTerms).computeStats();
           assert stats != null;
           if (status.blockTreeStats == null) {
-            status.blockTreeStats = new HashMap<String,BlockTreeTermsReader.Stats>();
+            status.blockTreeStats = new HashMap<>();
           }
           status.blockTreeStats.put(field, stats);
         }
@@ -1401,24 +1401,42 @@ public class CheckIndex {
       if (docsWithField.get(i)) {
         int ordCount = 0;
         while ((ord = dv.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
-          ordCount++;
           if (ord <= lastOrd) {
             throw new RuntimeException("ords out of order: " + ord + " <= " + lastOrd + " for doc: " + i);
           }
           if (ord < 0 || ord > maxOrd) {
             throw new RuntimeException("ord out of bounds: " + ord);
           }
+          if (dv instanceof RandomAccessOrds) {
+            long ord2 = ((RandomAccessOrds)dv).ordAt(ordCount);
+            if (ord != ord2) {
+              throw new RuntimeException("ordAt(" + ordCount + ") inconsistent, expected=" + ord + ",got=" + ord2 + " for doc: " + i);
+            }
+          }
           lastOrd = ord;
           maxOrd2 = Math.max(maxOrd2, ord);
           seenOrds.set(ord);
+          ordCount++;
         }
         if (ordCount == 0) {
           throw new RuntimeException("dv for field: " + fieldName + " has no ordinals but is not marked missing for doc: " + i);
+        }
+        if (dv instanceof RandomAccessOrds) {
+          long ordCount2 = ((RandomAccessOrds)dv).cardinality();
+          if (ordCount != ordCount2) {
+            throw new RuntimeException("cardinality inconsistent, expected=" + ordCount + ",got=" + ordCount2 + " for doc: " + i);
+          }
         }
       } else {
         long o = dv.nextOrd();
         if (o != SortedSetDocValues.NO_MORE_ORDS) {
           throw new RuntimeException("dv for field: " + fieldName + " is marked missing but has ord=" + o + " for doc: " + i);
+        }
+        if (dv instanceof RandomAccessOrds) {
+          long ordCount2 = ((RandomAccessOrds)dv).cardinality();
+          if (ordCount2 != 0) {
+            throw new RuntimeException("dv for field: " + fieldName + " is marked missing but has cardinality " + ordCount2 + " for doc: " + i);
+          }
         }
       }
     }
@@ -1813,7 +1831,7 @@ public class CheckIndex {
     boolean doFix = false;
     boolean doCrossCheckTermVectors = false;
     boolean verbose = false;
-    List<String> onlySegments = new ArrayList<String>();
+    List<String> onlySegments = new ArrayList<>();
     String indexPath = null;
     String dirImpl = null;
     int i = 0;

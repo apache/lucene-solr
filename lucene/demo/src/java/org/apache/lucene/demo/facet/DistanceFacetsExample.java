@@ -51,6 +51,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.SloppyMath;
 
 
 
@@ -146,7 +147,7 @@ public class DistanceFacetsExample implements Closeable {
     double originLatRadians = Math.toRadians(originLat);
     double originLngRadians = Math.toRadians(originLng);
 
-    double angle = maxDistanceKM / EARTH_RADIUS_KM;
+    double angle = maxDistanceKM / (SloppyMath.earthDiameter(originLat) / 2.0);
 
     double minLat = originLatRadians - angle;
     double maxLat = originLatRadians + angle;

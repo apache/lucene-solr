@@ -339,31 +339,8 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
     // todo - target diff servers and use cloud clients as well as non-cloud clients
   }
 
-  // TODO: refactor some of this stuff up into a base class for use by other tests
-  void doQuery(String expectedDocs, String... queryParams) throws Exception {
-    Set<String> expectedIds = new HashSet<String>( StrUtils.splitSmart(expectedDocs, ",", true) );
-
-    QueryResponse rsp = cloudClient.query(params(queryParams));
-    Set<String> obtainedIds = new HashSet<String>();
-    for (SolrDocument doc : rsp.getResults()) {
-      obtainedIds.add((String) doc.get("id"));
-    }
-
-    assertEquals(expectedIds, obtainedIds);
-  }
-
   void doRTG(String ids) throws Exception {
-    cloudClient.query(params("qt","/get", "ids",ids));
-
-    Set<String> expectedIds = new HashSet<String>( StrUtils.splitSmart(ids, ",", true) );
-
-    QueryResponse rsp = cloudClient.query(params("qt","/get", "ids",ids));
-    Set<String> obtainedIds = new HashSet<String>();
-    for (SolrDocument doc : rsp.getResults()) {
-      obtainedIds.add((String) doc.get("id"));
-    }
-
-    assertEquals(expectedIds, obtainedIds);
+    doQuery(ids, "qt", "/get", "ids", ids);
   }
 
   // TODO: refactor some of this stuff into the SolrJ client... it should be easier to use

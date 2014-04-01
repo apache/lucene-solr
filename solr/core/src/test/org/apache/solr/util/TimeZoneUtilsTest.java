@@ -46,7 +46,7 @@ public class TimeZoneUtilsTest extends LuceneTestCase {
 
   public void testValidIds() throws Exception {
 
-    final Set<String> idsTested = new HashSet<String>();
+    final Set<String> idsTested = new HashSet<>();
 
     // brain dead: anything the JVM supports, should work
     for (String validId : TimeZone.getAvailableIDs()) {

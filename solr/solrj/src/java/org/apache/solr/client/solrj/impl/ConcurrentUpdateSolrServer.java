@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
 import java.util.Locale;
 import java.util.Queue;
@@ -121,9 +122,9 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
       HttpClient client, int queueSize, int threadCount, ExecutorService es, boolean streamDeletes) {
     this.server = new HttpSolrServer(solrServerUrl, client);
     this.server.setFollowRedirects(false);
-    queue = new LinkedBlockingQueue<UpdateRequest>(queueSize);
+    queue = new LinkedBlockingQueue<>(queueSize);
     this.threadCount = threadCount;
-    runners = new LinkedList<Runner>();
+    runners = new LinkedList<>();
     scheduler = es;
     this.streamDeletes = streamDeletes;
   }
@@ -172,7 +173,7 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
               public void writeTo(OutputStream out) throws IOException {
                 try {
                   if (isXml) {
-                    out.write("<stream>".getBytes("UTF-8")); // can be anything
+                    out.write("<stream>".getBytes(StandardCharsets.UTF_8)); // can be anything
                   }
                   UpdateRequest req = updateRequest;
                   while (req != null) {
@@ -197,7 +198,7 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
                           byte[] content = String.format(Locale.ROOT,
                               fmt,
                               params.getBool(UpdateParams.WAIT_SEARCHER, false)
-                                  + "").getBytes("UTF-8");
+                                  + "").getBytes(StandardCharsets.UTF_8);
                           out.write(content);
                         }
                       }
@@ -206,7 +207,7 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
                     req = queue.poll(pollQueueTime, TimeUnit.MILLISECONDS);
                   }
                   if (isXml) {
-                    out.write("</stream>".getBytes("UTF-8"));
+                    out.write("</stream>".getBytes(StandardCharsets.UTF_8));
                   }
 
                 } catch (InterruptedException e) {
@@ -283,8 +284,8 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
       if ((req.getDocuments() == null || req.getDocuments().isEmpty())
           && (req.getDeleteById() == null || req.getDeleteById().isEmpty())
           && (req.getDeleteByIdMap() == null || req.getDeleteByIdMap().isEmpty())) {
-        blockUntilFinished();
         if (req.getDeleteQuery() == null) {
+          blockUntilFinished();
           return server.request(request);
         }
       }
@@ -364,7 +365,7 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
     }
 
     // RETURN A DUMMY result
-    NamedList<Object> dummy = new NamedList<Object>();
+    NamedList<Object> dummy = new NamedList<>();
     dummy.add("NOTE", "the request is processed in a background stream");
     return dummy;
   }

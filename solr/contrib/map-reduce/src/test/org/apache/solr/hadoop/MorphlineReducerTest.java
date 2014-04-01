@@ -106,7 +106,7 @@ public class MorphlineReducerTest extends MRUnitBase {
       Configuration config = reduceDriver.getConfiguration();
       setupHadoopConfig(config);
       
-      List<SolrInputDocumentWritable> values = new ArrayList<SolrInputDocumentWritable>();
+      List<SolrInputDocumentWritable> values = new ArrayList<>();
       SolrInputDocument sid = new SolrInputDocument();
       String id = "myid1";
       sid.addField("id", id);

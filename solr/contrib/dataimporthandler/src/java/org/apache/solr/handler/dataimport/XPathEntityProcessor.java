@@ -57,7 +57,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
   private static final Logger LOG = LoggerFactory.getLogger(XPathEntityProcessor.class);
   private static final XMLErrorLogger xmllog = new XMLErrorLogger(LOG);
 
-  private static final Map<String, Object> END_MARKER = new HashMap<String, Object>();
+  private static final Map<String, Object> END_MARKER = new HashMap<>();
   
   protected List<String> placeHolderVariables;
 
@@ -179,14 +179,14 @@ public class XPathEntityProcessor extends EntityProcessorBase {
     for (String s : l) {
       if (s.startsWith(entityName + ".")) {
         if (placeHolderVariables == null)
-          placeHolderVariables = new ArrayList<String>();
+          placeHolderVariables = new ArrayList<>();
         placeHolderVariables.add(s.substring(entityName.length() + 1));
       }
     }
     for (Map<String, String> fld : context.getAllEntityFields()) {
       if (fld.get(COMMON_FIELD) != null && "true".equals(fld.get(COMMON_FIELD))) {
         if (commonFields == null)
-          commonFields = new ArrayList<String>();
+          commonFields = new ArrayList<>();
         commonFields.add(fld.get(DataImporter.COLUMN));
       }
     }
@@ -249,8 +249,8 @@ public class XPathEntityProcessor extends EntityProcessorBase {
   }
 
   private void addNamespace() {
-    Map<String, Object> namespace = new HashMap<String, Object>();
-    Set<String> allNames = new HashSet<String>();
+    Map<String, Object> namespace = new HashMap<>();
+    Set<String> allNames = new HashSet<>();
     if (commonFields != null) allNames.addAll(commonFields);
     if (placeHolderVariables != null) allNames.addAll(placeHolderVariables);
     if(allNames.isEmpty()) return;
@@ -278,7 +278,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
   private void initQuery(String s) {
     Reader data = null;
     try {
-      final List<Map<String, Object>> rows = new ArrayList<Map<String, Object>>();
+      final List<Map<String, Object>> rows = new ArrayList<>();
       try {
         data = dataSource.getData(s);
       } catch (Exception e) {
@@ -329,7 +329,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
             wrapAndThrow(SEVERE, e, msg);
           } else if (SKIP.equals(onError)) {
             LOG.warn(msg, e);
-            Map<String, Object> map = new HashMap<String, Object>();
+            Map<String, Object> map = new HashMap<>();
             map.put(DocBuilder.SKIP_DOC, Boolean.TRUE);
             rows.add(map);
           } else if (CONTINUE.equals(onError)) {
@@ -357,7 +357,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
     if (useSolrAddXml) {
       List<String> names = (List<String>) record.get("name");
       List<String> values = (List<String>) record.get("value");
-      Map<String, Object> row = new HashMap<String, Object>();
+      Map<String, Object> row = new HashMap<>();
       for (int i = 0; i < names.size() && i < values.size(); i++) {
         if (row.containsKey(names.get(i))) {
           Object existing = row.get(names.get(i));
@@ -417,8 +417,8 @@ public class XPathEntityProcessor extends EntityProcessorBase {
 
   private Iterator<Map<String, Object>> getRowIterator(final Reader data, final String s) {
     //nothing atomic about it. I just needed a StongReference
-    final AtomicReference<Exception> exp = new AtomicReference<Exception>();
-    final BlockingQueue<Map<String, Object>> blockingQueue = new ArrayBlockingQueue<Map<String, Object>>(blockingQueueSize);
+    final AtomicReference<Exception> exp = new AtomicReference<>();
+    final BlockingQueue<Map<String, Object>> blockingQueue = new ArrayBlockingQueue<>(blockingQueueSize);
     final AtomicBoolean isEnd = new AtomicBoolean(false);
     final AtomicBoolean throwExp = new AtomicBoolean(true);
     publisherThread = new Thread() {

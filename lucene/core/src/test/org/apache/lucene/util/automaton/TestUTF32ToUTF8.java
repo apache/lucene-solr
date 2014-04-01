@@ -22,6 +22,7 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Random;
 
 public class TestUTF32ToUTF8 extends LuceneTestCase {
@@ -184,7 +185,7 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
 
     assertTrue(cra.run(input));
     
-    byte[] bytes = input.getBytes("UTF-8");
+    byte[] bytes = input.getBytes(StandardCharsets.UTF_8);
     assertTrue(bra.run(bytes, 0, bytes.length)); // this one fails!
   }
   
@@ -197,7 +198,7 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
 
     assertTrue(cra.run(input));
     
-    byte[] bytes = input.getBytes("UTF-8");
+    byte[] bytes = input.getBytes(StandardCharsets.UTF_8);
     assertTrue(bra.run(bytes, 0, bytes.length));
   }
   
@@ -232,7 +233,7 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
           throw e;
         }
       }
-      byte bytes[] = string.getBytes("UTF-8");
+      byte bytes[] = string.getBytes(StandardCharsets.UTF_8);
       assertEquals(cra.run(string), bra.run(bytes, 0, bytes.length));
     }
   }

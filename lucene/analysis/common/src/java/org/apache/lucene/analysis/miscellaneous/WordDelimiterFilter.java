@@ -27,9 +27,13 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.Version;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * Splits words into subwords and performs optional transformations on subword
@@ -202,8 +206,11 @@ public final class WordDelimiterFilter extends TokenFilter {
    * @param configurationFlags Flags configuring the filter
    * @param protWords If not null is the set of tokens to protect from being delimited
    */
-  public WordDelimiterFilter(TokenStream in, byte[] charTypeTable, int configurationFlags, CharArraySet protWords) {
+  public WordDelimiterFilter(Version matchVersion, TokenStream in, byte[] charTypeTable, int configurationFlags, CharArraySet protWords) {
     super(in);
+    if (!matchVersion.onOrAfter(Version.LUCENE_48)) {
+      throw new IllegalArgumentException("This class only works with Lucene 4.8+. To emulate the old (broken) behavior of WordDelimiterFilter, use Lucene47WordDelimiterFilter");
+    }
     this.flags = configurationFlags;
     this.protWords = protWords;
     this.iterator = new WordDelimiterIterator(
@@ -218,8 +225,8 @@ public final class WordDelimiterFilter extends TokenFilter {
    * @param configurationFlags Flags configuring the filter
    * @param protWords If not null is the set of tokens to protect from being delimited
    */
-  public WordDelimiterFilter(TokenStream in, int configurationFlags, CharArraySet protWords) {
-    this(in, WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, configurationFlags, protWords);
+  public WordDelimiterFilter(Version matchVersion, TokenStream in, int configurationFlags, CharArraySet protWords) {
+    this(matchVersion, in, WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, configurationFlags, protWords);
   }
 
   @Override
@@ -244,13 +251,15 @@ public final class WordDelimiterFilter extends TokenFilter {
             (protWords != null && protWords.contains(termBuffer, 0, termLength))) {
           posIncAttribute.setPositionIncrement(accumPosInc);
           accumPosInc = 0;
+          first = false;
           return true;
         }
         
         // word of simply delimiters
         if (iterator.end == WordDelimiterIterator.DONE && !has(PRESERVE_ORIGINAL)) {
           // if the posInc is 1, simply ignore it in the accumulation
-          if (posIncAttribute.getPositionIncrement() == 1) {
+          // TODO: proper hole adjustment (FilteringTokenFilter-like) instead of this previous logic!
+          if (posIncAttribute.getPositionIncrement() == 1 && !first) {
             accumPosInc--;
           }
           continue;
@@ -265,6 +274,7 @@ public final class WordDelimiterFilter extends TokenFilter {
         if (has(PRESERVE_ORIGINAL)) {
           posIncAttribute.setPositionIncrement(accumPosInc);
           accumPosInc = 0;
+          first = false;
           return true;
         }
       }
@@ -273,7 +283,8 @@ public final class WordDelimiterFilter extends TokenFilter {
       if (iterator.end == WordDelimiterIterator.DONE) {
         if (!concat.isEmpty()) {
           if (flushConcatenation(concat)) {
-            return true;
+            buffer();
+            continue;
           }
         }
         
@@ -281,12 +292,28 @@ public final class WordDelimiterFilter extends TokenFilter {
           // only if we haven't output this same combo above!
           if (concatAll.subwordCount > lastConcatCount) {
             concatAll.writeAndClear();
-            return true;
+            buffer();
+            continue;
           }
           concatAll.clear();
         }
         
+        if (bufferedPos < bufferedLen) {
+          if (bufferedPos == 0) {
+            sorter.sort(0, bufferedLen);
+          }
+          clearAttributes();
+          restoreState(buffered[bufferedPos++]);
+          if (first && posIncAttribute.getPositionIncrement() == 0) {
+            // can easily happen with strange combinations (e.g. not outputting numbers, but concat-all)
+            posIncAttribute.setPositionIncrement(1);
+          }
+          first = false;
+          return true;
+        }
+        
         // no saved concatenations, on to the next input word
+        bufferedPos = bufferedLen = 0;
         hasSavedState = false;
         continue;
       }
@@ -295,6 +322,7 @@ public final class WordDelimiterFilter extends TokenFilter {
       if (iterator.isSingleWord()) {
         generatePart(true);
         iterator.next();
+        first = false;
         return true;
       }
       
@@ -304,7 +332,8 @@ public final class WordDelimiterFilter extends TokenFilter {
       if (!concat.isEmpty() && (concat.type & wordType) == 0) {
         if (flushConcatenation(concat)) {
           hasOutputToken = false;
-          return true;
+          buffer();
+          continue;
         }
         hasOutputToken = false;
       }
@@ -325,28 +354,74 @@ public final class WordDelimiterFilter extends TokenFilter {
       // if we should output the word or number part
       if (shouldGenerateParts(wordType)) {
         generatePart(false);
-        iterator.next();
-        return true;
+        buffer();
       }
         
       iterator.next();
     }
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void reset() throws IOException {
     super.reset();
     hasSavedState = false;
     concat.clear();
     concatAll.clear();
-    accumPosInc = 0;
+    accumPosInc = bufferedPos = bufferedLen = 0;
+    first = true;
   }
 
   // ================================================= Helper Methods ================================================
 
+  
+  private AttributeSource.State buffered[] = new AttributeSource.State[8];
+  private int startOff[] = new int[8];
+  private int posInc[] = new int[8];
+  private int bufferedLen = 0;
+  private int bufferedPos = 0;
+  private boolean first;
+  
+  private class OffsetSorter extends InPlaceMergeSorter {
+    @Override
+    protected int compare(int i, int j) {
+      int cmp = Integer.compare(startOff[i], startOff[j]);
+      if (cmp == 0) {
+        cmp = Integer.compare(posInc[j], posInc[i]);
+      }
+      return cmp;
+    }
+
+    @Override
+    protected void swap(int i, int j) {
+      AttributeSource.State tmp = buffered[i];
+      buffered[i] = buffered[j];
+      buffered[j] = tmp;
+      
+      int tmp2 = startOff[i];
+      startOff[i] = startOff[j];
+      startOff[j] = tmp2;
+      
+      tmp2 = posInc[i];
+      posInc[i] = posInc[j];
+      posInc[j] = tmp2;
+    }
+  }
+  
+  final OffsetSorter sorter = new OffsetSorter();
+  
+  private void buffer() {
+    if (bufferedLen == buffered.length) {
+      int newSize = ArrayUtil.oversize(bufferedLen+1, 8);
+      buffered = Arrays.copyOf(buffered, newSize);
+      startOff = Arrays.copyOf(startOff, newSize);
+      posInc = Arrays.copyOf(posInc, newSize);
+    }
+    startOff[bufferedLen] = offsetAttribute.startOffset();
+    posInc[bufferedLen] = posIncAttribute.getPositionIncrement();
+    buffered[bufferedLen] = captureState();
+    bufferedLen++;
+  }
+  
   /**
    * Saves the existing attribute states
    */

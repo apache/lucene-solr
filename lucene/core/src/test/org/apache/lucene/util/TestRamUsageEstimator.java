@@ -21,6 +21,8 @@ import static org.apache.lucene.util.RamUsageEstimator.*;
 
 import java.util.Random;
 
+import com.carrotsearch.randomizedtesting.generators.RandomStrings;
+
 public class TestRamUsageEstimator extends LuceneTestCase {
   public void testSanity() {
     assertTrue(sizeOf(new String("test string")) > shallowSizeOfInstance(String.class));

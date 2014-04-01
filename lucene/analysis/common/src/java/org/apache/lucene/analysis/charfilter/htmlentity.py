@@ -51,7 +51,7 @@ def main():
 
   print '%{'
   print '  private static final Map<String,String> upperCaseVariantsAccepted'
-  print '      = new HashMap<String,String>();'
+  print '      = new HashMap<>();'
   print '  static {'
   print '    upperCaseVariantsAccepted.put("quot", "QUOT");'
   print '    upperCaseVariantsAccepted.put("copy", "COPY");'
@@ -61,7 +61,7 @@ def main():
   print '    upperCaseVariantsAccepted.put("amp", "AMP");'
   print '  }'
   print '  private static final CharArrayMap<Character> entityValues'
-  print '      = new CharArrayMap<Character>(Version.LUCENE_CURRENT, %i, false);' % len(keys)
+  print '      = new CharArrayMap<>(Version.LUCENE_CURRENT, %i, false);' % len(keys)
   print '  static {'
   print '    String[] entities = {'
   output_line = '     '

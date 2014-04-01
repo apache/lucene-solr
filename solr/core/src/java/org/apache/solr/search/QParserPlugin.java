@@ -59,7 +59,8 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
     BlockJoinParentQParserPlugin.NAME, BlockJoinParentQParserPlugin.class,
     BlockJoinChildQParserPlugin.NAME, BlockJoinChildQParserPlugin.class,
     CollapsingQParserPlugin.NAME, CollapsingQParserPlugin.class,
-    SimpleQParserPlugin.NAME, SimpleQParserPlugin.class
+    SimpleQParserPlugin.NAME, SimpleQParserPlugin.class,
+    ComplexPhraseQParserPlugin.NAME, ComplexPhraseQParserPlugin.class
   };
 
   /** return a {@link QParser} */

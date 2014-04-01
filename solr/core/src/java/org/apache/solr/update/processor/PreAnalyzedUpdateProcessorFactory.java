@@ -121,7 +121,7 @@ public class PreAnalyzedUpdateProcessorFactory extends FieldMutatingUpdateProces
   public void inform(SolrCore core) {
     super.inform(core);
     parser = new PreAnalyzedField();
-    Map<String,String> args = new HashMap<String,String>();
+    Map<String,String> args = new HashMap<>();
     if (parserImpl != null) {
       args.put(PreAnalyzedField.PARSER_IMPL, parserImpl);
     }

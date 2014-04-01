@@ -121,7 +121,7 @@ public class TestSimilarityBase extends LuceneTestCase {
     searcher = newSearcher(reader);
     writer.close();
     
-    sims = new ArrayList<SimilarityBase>();
+    sims = new ArrayList<>();
     for (BasicModel basicModel : BASIC_MODELS) {
       for (AfterEffect afterEffect : AFTER_EFFECTS) {
         for (Normalization normalization : NORMALIZATIONS) {

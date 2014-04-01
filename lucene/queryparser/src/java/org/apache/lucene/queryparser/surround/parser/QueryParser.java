@@ -188,7 +188,7 @@ public class QueryParser implements QueryParserConstants {
           fieldName = jj_consume_token(TERM);
       jj_consume_token(COLON);
       if (fieldNames == null) {
-        fieldNames = new ArrayList<String>();
+        fieldNames = new ArrayList<>();
       }
       fieldNames.add(fieldName.image);
     }
@@ -214,7 +214,7 @@ public class QueryParser implements QueryParserConstants {
       oprt = jj_consume_token(OR);
                   /* keep only last used operator */
       if (queries == null) {
-        queries = new ArrayList<SrndQuery>();
+        queries = new ArrayList<>();
         queries.add(q);
       }
       q = AndQuery();
@@ -242,7 +242,7 @@ public class QueryParser implements QueryParserConstants {
       oprt = jj_consume_token(AND);
                    /* keep only last used operator */
       if (queries == null) {
-        queries = new ArrayList<SrndQuery>();
+        queries = new ArrayList<>();
         queries.add(q);
       }
       q = NotQuery();
@@ -270,7 +270,7 @@ public class QueryParser implements QueryParserConstants {
       oprt = jj_consume_token(NOT);
                     /* keep only last used operator */
       if (queries == null) {
-        queries = new ArrayList<SrndQuery>();
+        queries = new ArrayList<>();
         queries.add(q);
       }
       q = NQuery();
@@ -296,7 +296,7 @@ public class QueryParser implements QueryParserConstants {
         break label_5;
       }
       dt = jj_consume_token(N);
-      queries = new ArrayList<SrndQuery>();
+      queries = new ArrayList<>();
       queries.add(q); /* left associative */
 
       q = WQuery();
@@ -323,7 +323,7 @@ public class QueryParser implements QueryParserConstants {
         break label_6;
       }
       wt = jj_consume_token(W);
-      queries = new ArrayList<SrndQuery>();
+      queries = new ArrayList<>();
       queries.add(q); /* left associative */
 
       q = PrimaryQuery();
@@ -404,7 +404,7 @@ public class QueryParser implements QueryParserConstants {
 
   final public List<SrndQuery> FieldsQueryList() throws ParseException {
   SrndQuery q;
-  ArrayList<SrndQuery> queries = new ArrayList<SrndQuery>();
+  ArrayList<SrndQuery> queries = new ArrayList<>();
     jj_consume_token(LPAREN);
     q = FieldsQuery();
                      queries.add(q);
@@ -647,7 +647,7 @@ public class QueryParser implements QueryParserConstants {
       return (jj_ntk = jj_nt.kind);
   }
 
-  private java.util.List<int[]> jj_expentries = new java.util.ArrayList<int[]>();
+  private java.util.List<int[]> jj_expentries = new java.util.ArrayList<>();
   private int[] jj_expentry;
   private int jj_kind = -1;
   private int[] jj_lasttokens = new int[100];

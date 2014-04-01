@@ -30,6 +30,7 @@ import org.apache.lucene.analysis.Tokenizer;
  * Tests for {@link SmartChineseSentenceTokenizerFactory} and 
  * {@link SmartChineseWordTokenFilterFactory}
  */
+@Deprecated
 public class TestSmartChineseFactories extends BaseTokenStreamTestCase {
   /** Test showing the behavior with whitespace */
   public void testSimple() throws Exception {

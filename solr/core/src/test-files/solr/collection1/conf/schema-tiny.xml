@@ -16,15 +16,14 @@
  limitations under the License.
 -->
 <schema name="tiny" version="1.1">
-  <types>
-    <fieldType name="string" class="solr.StrField"/>
-  </types>
-  <fields>
-    <field name="id" type="string" indexed="true" stored="true" required="true"/>
-    <field name="text" type="text" indexed="true" stored="true"/>
-    <dynamicField name="*_t" type="text" indexed="true" stored="true"/>
-    <dynamicField name="*" type="string" indexed="true" stored="true"/>
-  </fields>
+  <fieldType name="string" class="solr.StrField"/>
+
+
+  <field name="id" type="string" indexed="true" stored="true" required="true"/>
+  <field name="text" type="text" indexed="true" stored="true"/>
+  <dynamicField name="*_t" type="text" indexed="true" stored="true"/>
+  <dynamicField name="*" type="string" indexed="true" stored="true"/>
+
   <uniqueKey>id</uniqueKey>
 
   <types>

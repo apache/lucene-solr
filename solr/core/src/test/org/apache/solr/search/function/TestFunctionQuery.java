@@ -28,9 +28,11 @@ import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.Ignore;
+
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -49,11 +51,12 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   
   String base = "external_foo_extf";
   static long start = System.currentTimeMillis();
-  void makeExternalFile(String field, String contents, String charset) {
+  
+  void makeExternalFile(String field, String contents) {
     String dir = h.getCore().getDataDir();
     String filename = dir + "/external_" + field + "." + (start++);
     try {
-      Writer out = new OutputStreamWriter(new FileOutputStream(filename), charset);
+      Writer out = new OutputStreamWriter(new FileOutputStream(filename), StandardCharsets.UTF_8);
       out.write(contents);
       out.close();
     } catch (Exception e) {
@@ -103,7 +106,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   void singleTest(String field, String funcTemplate, List<String> args, float... results) {
     String parseableQuery = func(field, funcTemplate);
 
-    List<String> nargs = new ArrayList<String>(Arrays.asList("q", parseableQuery
+    List<String> nargs = new ArrayList<>(Arrays.asList("q", parseableQuery
             ,"fl", "*,score"
             ,"indent","on"
             ,"rows","100"));
@@ -114,7 +117,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
       }
     }
 
-    List<String> tests = new ArrayList<String>();
+    List<String> tests = new ArrayList<>();
 
     // Construct xpaths like the following:
     // "//doc[./float[@name='foo_pf']='10.0' and ./float[@name='score']='10.0']"
@@ -219,7 +222,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     createIndex(null,ids);
 
     // Unsorted field, largest first
-    makeExternalFile(field, "54321=543210\n0=-999\n25=250","UTF-8");
+    makeExternalFile(field, "54321=543210\n0=-999\n25=250");
     // test identity (straight field value)
     singleTest(field, "\0", 54321, 543210, 0,-999, 25,250, 100, 1);
     Object orig = FileFloatSource.onlyForTesting;
@@ -229,7 +232,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     singleTest(field, "sqrt(\0)");
     assertTrue(orig == FileFloatSource.onlyForTesting);
 
-    makeExternalFile(field, "0=1","UTF-8");
+    makeExternalFile(field, "0=1");
     assertU(h.query("/reloadCache",lrf.makeRequest("","")));
     singleTest(field, "sqrt(\0)");
     assertTrue(orig != FileFloatSource.onlyForTesting);
@@ -263,7 +266,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
       for (int j=0; j<len; j++) {
         sb.append("" + ids[j] + "=" + vals[j]+"\n");        
       }
-      makeExternalFile(field, sb.toString(),"UTF-8");
+      makeExternalFile(field, sb.toString());
 
       // make it visible
       assertU(h.query("/reloadCache",lrf.makeRequest("","")));
@@ -294,7 +297,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertU(adoc("id", "992", keyField, "BBB"));
     assertU(adoc("id", "993", keyField, "CCC=CCC"));
     assertU(commit());
-    makeExternalFile(extField, "AAA=AAA=543210\nBBB=-8\nCCC=CCC=250","UTF-8");
+    makeExternalFile(extField, "AAA=AAA=543210\nBBB=-8\nCCC=CCC=250");
     singleTest(extField,"\0",991,543210,992,-8,993,250);
   }
 
@@ -306,7 +309,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertU(adoc("id", "992", keyField, "92"));
     assertU(adoc("id", "993", keyField, "93"));
     assertU(commit());
-    makeExternalFile(extField, "91=543210\n92=-8\n93=250\n=67","UTF-8");
+    makeExternalFile(extField, "91=543210\n92=-8\n93=250\n=67");
     singleTest(extField,"\0",991,543210,992,-8,993,250);
   }
 
@@ -624,7 +627,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     createIndex(null,ids);
 
     // Unsorted field, largest first
-    makeExternalFile(field, "54321=543210\n0=-999\n25=250","UTF-8");
+    makeExternalFile(field, "54321=543210\n0=-999\n25=250");
     // test identity (straight field value)
     singleTest(fieldAsFunc, "\0", 54321, 543210, 0,-999, 25,250, 100, 1);
     Object orig = FileFloatSource.onlyForTesting;
@@ -634,7 +637,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     singleTest(fieldAsFunc, "sqrt(\0)");
     assertTrue(orig == FileFloatSource.onlyForTesting);
 
-    makeExternalFile(field, "0=1","UTF-8");
+    makeExternalFile(field, "0=1");
     assertU(adoc("id", "10000")); // will get same reader if no index change
     assertU(commit());   
     singleTest(fieldAsFunc, "sqrt(\0)");

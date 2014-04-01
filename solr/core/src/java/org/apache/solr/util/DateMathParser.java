@@ -128,7 +128,7 @@ public class DateMathParser  {
     // we probably need to change "Locale loc" to default to something 
     // from a param via SolrRequestInfo as well.
     
-    Map<String,Integer> units = new HashMap<String,Integer>(13);
+    Map<String,Integer> units = new HashMap<>(13);
     units.put("YEAR",        Calendar.YEAR);
     units.put("YEARS",       Calendar.YEAR);
     units.put("MONTH",       Calendar.MONTH);

@@ -22,6 +22,7 @@ import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 
 public class UnbufferedDataInputInputStream extends org.apache.solr.common.util.DataInputInputStream {
   private final DataInputStream in;
@@ -97,7 +98,7 @@ public class UnbufferedDataInputInputStream extends org.apache.solr.common.util.
 
   @Override
   public String readLine() throws IOException {
-    BufferedReader reader = new BufferedReader(new InputStreamReader(in, "UTF-8"));
+    BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
     return reader.readLine();
   }
 

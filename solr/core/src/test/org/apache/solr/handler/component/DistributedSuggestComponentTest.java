@@ -126,7 +126,7 @@ public class DistributedSuggestComponentTest extends BaseDistributedSearchTestCa
     
   }
   private Object[] buildRequest(String q, boolean useSuggestQ, String handlerName, String... addlParams) {
-    List<Object> params = new ArrayList<Object>();
+    List<Object> params = new ArrayList<>();
 
     if(useSuggestQ) {
       params.add("suggest.q");

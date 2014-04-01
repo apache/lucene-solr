@@ -161,7 +161,7 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testModifyRequestTrack() {
     DebugComponent component = new DebugComponent();
-    List<SearchComponent> components = new ArrayList<SearchComponent>(1);
+    List<SearchComponent> components = new ArrayList<>(1);
     components.add(component);
     for(int i = 0; i < 10; i++) {
       SolrQueryRequest req = req("q", "test query", "distrib", "true", CommonParams.REQUEST_ID, "123456-my_rid");
@@ -196,7 +196,7 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testPrepare() throws IOException {
     DebugComponent component = new DebugComponent();
-    List<SearchComponent> components = new ArrayList<SearchComponent>(1);
+    List<SearchComponent> components = new ArrayList<>(1);
     components.add(component);
     SolrQueryRequest req;
     ResponseBuilder rb;

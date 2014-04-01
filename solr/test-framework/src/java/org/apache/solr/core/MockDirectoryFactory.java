@@ -31,6 +31,9 @@ import org.apache.lucene.util.LuceneTestCase;
  * Opens a directory with {@link LuceneTestCase#newDirectory()}
  */
 public class MockDirectoryFactory extends EphemeralDirectoryFactory {
+  
+  public static final String SOLR_TESTS_ALLOW_READING_FILES_STILL_OPEN_FOR_WRITE = "solr.tests.allow_reading_files_still_open_for_write";
+  private boolean allowReadingFilesStillOpenForWrite = Boolean.getBoolean(SOLR_TESTS_ALLOW_READING_FILES_STILL_OPEN_FOR_WRITE);
 
   @Override
   protected Directory create(String path, DirContext dirContext) throws IOException {
@@ -59,6 +62,10 @@ public class MockDirectoryFactory extends EphemeralDirectoryFactory {
       // tries to write to index.properties after the file has
       // already been created.
       mockDirWrapper.setPreventDoubleWrite(false);
+      
+      if (allowReadingFilesStillOpenForWrite) {
+        mockDirWrapper.setAllowReadingFilesStillOpenForWrite(true);
+      }
     }
     
     return dir;

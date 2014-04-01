@@ -22,6 +22,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Locale;
@@ -158,7 +159,7 @@ public class SolrOutputFormat<K, V> extends FileOutputFormat<K, V> {
     Utils.getLogConfigFile(context.getConfiguration());
     Path workDir = getDefaultWorkFile(context, "");
     int batchSize = getBatchSize(context.getConfiguration());
-    return new SolrRecordWriter<K, V>(context, workDir, batchSize);
+    return new SolrRecordWriter<>(context, workDir, batchSize);
   }
 
   public static void setupSolrHomeCache(File solrHomeDir, Job job) throws IOException{
@@ -202,7 +203,7 @@ public class SolrOutputFormat<K, V> extends FileOutputFormat<K, V> {
   }
 
   private static void createZip(File dir, File out) throws IOException {
-    HashSet<File> files = new HashSet<File>();
+    HashSet<File> files = new HashSet<>();
     // take only conf/ and lib/
     for (String allowedDirectory : SolrRecordWriter
         .getAllowedConfigDirectories()) {
@@ -242,7 +243,7 @@ public class SolrOutputFormat<K, V> extends FileOutputFormat<K, V> {
     
     ZipEntry ze = new ZipEntry("solr.xml");
     zos.putNextEntry(ze);
-    zos.write("<cores><core name=\"collection1\" instanceDir=\".\"/></cores>".getBytes("UTF-8"));
+    zos.write("<cores><core name=\"collection1\" instanceDir=\".\"/></cores>".getBytes(StandardCharsets.UTF_8));
     zos.flush();
     zos.closeEntry();
     zos.close();

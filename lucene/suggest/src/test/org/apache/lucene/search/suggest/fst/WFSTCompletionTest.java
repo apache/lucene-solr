@@ -128,8 +128,8 @@ public class WFSTCompletionTest extends LuceneTestCase {
   public void testRandom() throws Exception {
     int numWords = atLeast(1000);
     
-    final TreeMap<String,Long> slowCompletor = new TreeMap<String,Long>();
-    final TreeSet<String> allPrefixes = new TreeSet<String>();
+    final TreeMap<String,Long> slowCompletor = new TreeMap<>();
+    final TreeSet<String> allPrefixes = new TreeSet<>();
     
     Input[] keys = new Input[numWords];
     
@@ -163,7 +163,7 @@ public class WFSTCompletionTest extends LuceneTestCase {
       List<LookupResult> r = suggester.lookup(TestUtil.stringToCharSequence(prefix, random), false, topN);
 
       // 2. go thru whole treemap (slowCompletor) and check its actually the best suggestion
-      final List<LookupResult> matches = new ArrayList<LookupResult>();
+      final List<LookupResult> matches = new ArrayList<>();
 
       // TODO: could be faster... but its slowCompletor for a reason
       for (Map.Entry<String,Long> e : slowCompletor.entrySet()) {

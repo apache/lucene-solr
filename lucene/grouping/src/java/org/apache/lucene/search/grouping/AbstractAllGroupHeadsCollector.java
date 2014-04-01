@@ -128,7 +128,7 @@ public abstract class AbstractAllGroupHeadsCollector<GH extends AbstractAllGroup
 
   @Override
   public boolean acceptsDocsOutOfOrder() {
-    return true;
+    return false;
   }
 
   /**

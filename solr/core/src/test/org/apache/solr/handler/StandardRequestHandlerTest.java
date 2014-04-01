@@ -52,7 +52,7 @@ public class StandardRequestHandlerTest extends AbstractSolrTestCase {
     assertU(adoc("id", "12", "title", "test", "val_s1", "ccc"));
     assertU(commit());
     
-    Map<String,String> args = new HashMap<String, String>();
+    Map<String,String> args = new HashMap<>();
     args.put( CommonParams.Q, "title:test" );
     args.put( "indent", "true" );
     SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );

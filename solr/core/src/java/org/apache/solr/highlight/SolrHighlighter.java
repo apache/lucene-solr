@@ -77,7 +77,7 @@ public abstract class SolrHighlighter
         // create a Java regular expression from the wildcard string
         String fieldRegex = fields[0].replaceAll("\\*", ".*");
         Collection<String> storedHighlightFieldNames = request.getSearcher().getStoredHighlightFieldNames();
-        List<String> storedFieldsToHighlight = new ArrayList<String>();
+        List<String> storedFieldsToHighlight = new ArrayList<>();
         for (String storedFieldName: storedHighlightFieldNames) {
             if (storedFieldName.matches(fieldRegex)) {
               storedFieldsToHighlight.add(storedFieldName);

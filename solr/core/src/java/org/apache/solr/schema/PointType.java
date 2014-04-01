@@ -70,7 +70,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
     String[] point = parseCommaSeparatedList(externalVal, dimension);
 
     // TODO: this doesn't currently support polyFields as sub-field types
-    List<StorableField> f = new ArrayList<StorableField>(dimension+1);
+    List<StorableField> f = new ArrayList<>(dimension+1);
 
     if (field.indexed()) {
       for (int i=0; i<dimension; i++) {
@@ -91,7 +91,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
 
   @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
-    ArrayList<ValueSource> vs = new ArrayList<ValueSource>(dimension);
+    ArrayList<ValueSource> vs = new ArrayList<>(dimension);
     for (int i=0; i<dimension; i++) {
       SchemaField sub = subField(field, i, schema);
       vs.add(sub.getType().getValueSource(sub, parser));

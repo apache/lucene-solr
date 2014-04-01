@@ -38,6 +38,9 @@ public class TestTurkishAnalyzer extends BaseTokenStreamTestCase {
     checkOneTerm(a, "ağaç", "ağaç");
     // stopword
     assertAnalyzesTo(a, "dolayı", new String[] {});
+    // apostrophes
+    checkOneTerm(a, "Kıbrıs'ta", "kıbrıs");
+    assertAnalyzesTo(a, "Van Gölü'ne", new String[]{"van", "göl"});
   }
   
   /** test use of exclusion set */

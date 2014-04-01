@@ -121,7 +121,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
   }
 
   private static final class DirectFields extends FieldsProducer {
-    private final Map<String,DirectField> fields = new TreeMap<String,DirectField>();
+    private final Map<String,DirectField> fields = new TreeMap<>();
 
     public DirectFields(SegmentReadState state, Fields fields, int minSkipCount, int lowFreqCutoff) throws IOException {
       for (String field : fields) {

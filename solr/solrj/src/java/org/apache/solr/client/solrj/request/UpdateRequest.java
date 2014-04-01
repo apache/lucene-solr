@@ -86,7 +86,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
   
   public UpdateRequest add(final SolrInputDocument doc) {
     if (documents == null) {
-      documents = new LinkedHashMap<SolrInputDocument,Map<String,Object>>();
+      documents = new LinkedHashMap<>();
     }
     documents.put(doc, null);
     return this;
@@ -103,9 +103,9 @@ public class UpdateRequest extends AbstractUpdateRequest {
   public UpdateRequest add(final SolrInputDocument doc, Integer commitWithin,
       Boolean overwrite) {
     if (documents == null) {
-      documents = new LinkedHashMap<SolrInputDocument,Map<String,Object>>();
+      documents = new LinkedHashMap<>();
     }
-    Map<String,Object> params = new HashMap<String,Object>(2);
+    Map<String,Object> params = new HashMap<>(2);
     if (commitWithin != null) params.put(COMMIT_WITHIN, commitWithin);
     if (overwrite != null) params.put(OVERWRITE, overwrite);
     
@@ -116,7 +116,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
   
   public UpdateRequest add(final Collection<SolrInputDocument> docs) {
     if (documents == null) {
-      documents = new LinkedHashMap<SolrInputDocument,Map<String,Object>>();
+      documents = new LinkedHashMap<>();
     }
     for (SolrInputDocument doc : docs) {
       documents.put(doc, null);
@@ -126,7 +126,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
   
   public UpdateRequest deleteById(String id) {
     if (deleteById == null) {
-      deleteById = new LinkedHashMap<String,Map<String,Object>>();
+      deleteById = new LinkedHashMap<>();
     }
     deleteById.put(id, null);
     return this;
@@ -134,7 +134,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
   
   public UpdateRequest deleteById(List<String> ids) {
     if (deleteById == null) {
-      deleteById = new LinkedHashMap<String,Map<String,Object>>();
+      deleteById = new LinkedHashMap<>();
     }
     
     for (String id : ids) {
@@ -146,9 +146,9 @@ public class UpdateRequest extends AbstractUpdateRequest {
   
   public UpdateRequest deleteById(String id, Long version) {
     if (deleteById == null) {
-      deleteById = new LinkedHashMap<String,Map<String,Object>>();
+      deleteById = new LinkedHashMap<>();
     }
-    Map<String,Object> params = new HashMap<String,Object>(1);
+    Map<String,Object> params = new HashMap<>(1);
     params.put(VER, version);
     deleteById.put(id, params);
     return this;
@@ -156,7 +156,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
   
   public UpdateRequest deleteByQuery(String q) {
     if (deleteQuery == null) {
-      deleteQuery = new ArrayList<String>();
+      deleteQuery = new ArrayList<>();
     }
     deleteQuery.add(q);
     return this;
@@ -179,7 +179,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
       return null;
     }
     
-    Map<String,LBHttpSolrServer.Req> routes = new HashMap<String,LBHttpSolrServer.Req>();
+    Map<String,LBHttpSolrServer.Req> routes = new HashMap<>();
     if (documents != null) {
       Set<Entry<SolrInputDocument,Map<String,Object>>> entries = documents.entrySet();
       for (Entry<SolrInputDocument,Map<String,Object>> entry : entries) {
@@ -278,7 +278,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
   }
   
   private List<Map<SolrInputDocument,Map<String,Object>>> getDocLists(Map<SolrInputDocument,Map<String,Object>> documents) {
-    List<Map<SolrInputDocument,Map<String,Object>>> docLists = new ArrayList<Map<SolrInputDocument,Map<String,Object>>>();
+    List<Map<SolrInputDocument,Map<String,Object>>> docLists = new ArrayList<>();
     Map<SolrInputDocument,Map<String,Object>> docList = null;
     if (this.documents != null) {
       
@@ -297,7 +297,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
         }
         if (overwrite != lastOverwrite || commitWithin != lastCommitWithin
             || docLists.size() == 0) {
-          docList = new LinkedHashMap<SolrInputDocument,Map<String,Object>>();
+          docList = new LinkedHashMap<>();
           docLists.add(docList);
         }
         docList.put(entry.getKey(), entry.getValue());
@@ -307,7 +307,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
     }
     
     if (docIterator != null) {
-      docList = new LinkedHashMap<SolrInputDocument,Map<String,Object>>();
+      docList = new LinkedHashMap<>();
       docLists.add(docList);
       while (docIterator.hasNext()) {
         SolrInputDocument doc = docIterator.next();
@@ -404,7 +404,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
   
   public List<SolrInputDocument> getDocuments() {
     if (documents == null) return null;
-    List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>(documents.size());
+    List<SolrInputDocument> docs = new ArrayList<>(documents.size());
     docs.addAll(documents.keySet());
     return docs;
   }
@@ -419,7 +419,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
   
   public List<String> getDeleteById() {
     if (deleteById == null) return null;
-    List<String> deletes = new ArrayList<String>(deleteById.keySet());
+    List<String> deletes = new ArrayList<>(deleteById.keySet());
     return deletes;
   }
   

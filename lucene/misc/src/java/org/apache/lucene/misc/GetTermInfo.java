@@ -18,6 +18,7 @@ package org.apache.lucene.misc;
  */
 
 import java.io.File;
+import java.util.Locale;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.index.DirectoryReader;
@@ -49,7 +50,7 @@ public class GetTermInfo {
   
   public static void getTermInfo(Directory dir, Term term) throws Exception {
     IndexReader reader = DirectoryReader.open(dir);
-    System.out.printf("%s:%s \t totalTF = %,d \t doc freq = %,d \n",
+    System.out.printf(Locale.ROOT, "%s:%s \t totalTF = %,d \t doc freq = %,d \n",
          term.field(), term.text(), reader.totalTermFreq(term), reader.docFreq(term)); 
   }
    

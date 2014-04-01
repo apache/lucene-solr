@@ -51,7 +51,7 @@ public abstract class ComposedQuery extends SrndQuery {
   public boolean isOperatorInfix() { return operatorInfix; } /* else prefix operator */
   
   public List<Query> makeLuceneSubQueriesField(String fn, BasicQueryFactory qf) {
-    List<Query> luceneSubQueries = new ArrayList<Query>();
+    List<Query> luceneSubQueries = new ArrayList<>();
     Iterator<SrndQuery> sqi = getSubQueriesIterator();
     while (sqi.hasNext()) {
       luceneSubQueries.add( (sqi.next()).makeLuceneQueryField(fn, qf));

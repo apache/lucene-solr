@@ -38,7 +38,7 @@ public class HdfsCollectionsAPIDistributedZkTest extends CollectionsAPIDistribut
   
   @BeforeClass
   public static void setupClass() throws Exception {
-    dfsCluster = HdfsTestUtil.setupClass(new File(TEMP_DIR,
+    dfsCluster = HdfsTestUtil.setupClass(new File(dataDir,
         HdfsCollectionsAPIDistributedZkTest.class.getName() + "_"
             + System.currentTimeMillis()).getAbsolutePath());
     

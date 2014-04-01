@@ -18,11 +18,14 @@ package org.apache.solr.util;
 
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
+import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
@@ -104,9 +107,21 @@ public class RestTestHarness extends BaseTestHarness {
   public String put(String request, String content) throws IOException {
     HttpPut httpPut = new HttpPut(getBaseURL() + request);
     httpPut.setEntity(new StringEntity(content, ContentType.create(
-        "application/json", "utf-8")));
+        "application/json", StandardCharsets.UTF_8)));
     
     return getResponse(httpPut);
+  }
+
+  /**
+   * Processes a DELETE request using a URL path (with no context path) + optional query params,
+   * e.g. "/schema/analysis/protwords/english", and returns the response content.
+   *
+   * @param request the URL path and optional query params
+   * @return The response to the DELETE request
+   */
+  public String delete(String request) throws IOException {
+    HttpDelete httpDelete = new HttpDelete(getBaseURL() + request);
+    return getResponse(httpDelete);
   }
 
   /**
@@ -120,7 +135,7 @@ public class RestTestHarness extends BaseTestHarness {
   public String post(String request, String content) throws IOException {
     HttpPost httpPost = new HttpPost(getBaseURL() + request);
     httpPost.setEntity(new StringEntity(content, ContentType.create(
-        "application/json", "utf-8")));
+        "application/json", StandardCharsets.UTF_8)));
     
     return getResponse(httpPost);
   }
@@ -136,15 +151,22 @@ public class RestTestHarness extends BaseTestHarness {
     }
   }
 
-  
+
+  /**
+   * Reloads the first core listed in the response to the core admin handler STATUS command
+   */
   @Override
   public void reload() throws Exception {
-    String xml = checkResponseStatus("/admin/cores?action=RELOAD", "0");
+    String coreName = (String)evaluateXPath
+        (query("/admin/cores?action=STATUS"),
+         "//lst[@name='status']/lst[1]/str[@name='name']",
+         XPathConstants.STRING);
+    String xml = checkResponseStatus("/admin/cores?action=RELOAD&core=" + coreName, "0");
     if (null != xml) {
       throw new RuntimeException("RELOAD failed:\n" + xml);
     }
   }
-  
+
   /**
    * Processes an "update" (add, commit or optimize) and
    * returns the response as a String.
@@ -160,12 +182,15 @@ public class RestTestHarness extends BaseTestHarness {
       throw new RuntimeException(e);
     }
   }
-  
+
+  /**
+   * Executes the given request and returns the response.
+   */
   private String getResponse(HttpUriRequest request) throws IOException {
     HttpEntity entity = null;
     try {
       entity = httpClient.execute(request).getEntity();
-      return EntityUtils.toString(entity, "UTF-8");
+      return EntityUtils.toString(entity, StandardCharsets.UTF_8);
     } finally {
       EntityUtils.consumeQuietly(entity);
     }

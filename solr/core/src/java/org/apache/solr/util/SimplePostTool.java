@@ -18,37 +18,37 @@ package org.apache.solr.util;
  */
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ByteArrayInputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.ProtocolException;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.HashSet;
 import java.util.TimeZone;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.ProtocolException;
-import java.net.URL;
-import java.net.URLEncoder;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -108,10 +108,10 @@ public class SimplePostTool {
   static HashMap<String,String> mimeMap;
   GlobFileFilter globFileFilter;
   // Backlog for crawling
-  List<LinkedHashSet<URL>> backlog = new ArrayList<LinkedHashSet<URL>>();
-  Set<URL> visited = new HashSet<URL>();
+  List<LinkedHashSet<URL>> backlog = new ArrayList<>();
+  Set<URL> visited = new HashSet<>();
   
-  static final Set<String> DATA_MODES = new HashSet<String>();
+  static final Set<String> DATA_MODES = new HashSet<>();
   static final String USAGE_STRING_SHORT =
       "Usage: java [SystemProperties] -jar post.jar [-h|-] [<file|folder|url|arg> [<file|folder|url|arg>...]]";
 
@@ -125,7 +125,7 @@ public class SimplePostTool {
     DATA_MODES.add(DATA_MODE_STDIN);
     DATA_MODES.add(DATA_MODE_WEB);
     
-    mimeMap = new HashMap<String,String>();
+    mimeMap = new HashMap<>();
     mimeMap.put("xml", "text/xml");
     mimeMap.put("csv", "text/csv");
     mimeMap.put("json", "application/json");
@@ -344,8 +344,8 @@ public class SimplePostTool {
   private void reset() {
     fileTypes = DEFAULT_FILE_TYPES;
     globFileFilter = this.getFileFilterFromFileTypes(fileTypes);
-    backlog = new ArrayList<LinkedHashSet<URL>>();
-    visited = new HashSet<URL>();
+    backlog = new ArrayList<>();
+    visited = new HashSet<>();
   }
 
 
@@ -512,7 +512,7 @@ public class SimplePostTool {
    */
   public int postWebPages(String[] args, int startIndexInArgs, OutputStream out) {
     reset();
-    LinkedHashSet<URL> s = new LinkedHashSet<URL>();
+    LinkedHashSet<URL> s = new LinkedHashSet<>();
     for (int j = startIndexInArgs; j < args.length; j++) {
       try {
         URL u = new URL(normalizeUrlEnding(args[j]));
@@ -558,7 +558,7 @@ public class SimplePostTool {
     int rawStackSize = stack.size();
     stack.removeAll(visited);
     int stackSize = stack.size();
-    LinkedHashSet<URL> subStack = new LinkedHashSet<URL>();
+    LinkedHashSet<URL> subStack = new LinkedHashSet<>();
     info("Entering crawl at level "+level+" ("+rawStackSize+" links total, "+stackSize+" new)");
     for(URL u : stack) {
       try {
@@ -893,13 +893,7 @@ public class SimplePostTool {
    * @return the input stream
    */
   public static InputStream stringToStream(String s) {
-    InputStream is = null;
-    try {
-      is = new ByteArrayInputStream(s.getBytes("UTF-8"));
-    } catch (UnsupportedEncodingException e) {
-      fatal("Shouldn't happen: UTF-8 not supported?!?!?!");
-    }
-    return is;
+    return new ByteArrayInputStream(s.getBytes(StandardCharsets.UTF_8));
   }
 
   /**
@@ -961,10 +955,9 @@ public class SimplePostTool {
   /**
    * Takes a string as input and returns a DOM 
    */
-  public static Document makeDom(String in, String inputEncoding) throws SAXException, IOException,
+  public static Document makeDom(byte[] in) throws SAXException, IOException,
   ParserConfigurationException {
-    InputStream is = new ByteArrayInputStream(in
-        .getBytes(inputEncoding));
+    InputStream is = new ByteArrayInputStream(in);
     Document dom = DocumentBuilderFactory.newInstance()
         .newDocumentBuilder().parse(is);
     return dom;
@@ -1016,7 +1009,7 @@ public class SimplePostTool {
     final String DISALLOW = "Disallow:";
     
     public PageFetcher() {
-      robotsCache = new HashMap<String,List<String>>();
+      robotsCache = new HashMap<>();
     }
     
     public PageFetcherResult readPageFromUrl(URL u) {
@@ -1074,7 +1067,7 @@ public class SimplePostTool {
       String strRobot = url.getProtocol() + "://" + host + "/robots.txt";
       List<String> disallows = robotsCache.get(host);
       if(disallows == null) {
-        disallows = new ArrayList<String>();
+        disallows = new ArrayList<>();
         URL urlRobot;
         try { 
           urlRobot = new URL(strRobot);
@@ -1104,8 +1097,8 @@ public class SimplePostTool {
      * @throws IOException if problems reading the stream
      */
     protected List<String> parseRobotsTxt(InputStream is) throws IOException {
-      List<String> disallows = new ArrayList<String>();
-      BufferedReader r = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+      List<String> disallows = new ArrayList<>();
+      BufferedReader r = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
       String l;
       while((l = r.readLine()) != null) {
         String[] arr = l.split("#");
@@ -1130,17 +1123,16 @@ public class SimplePostTool {
      * @return a set of URLs parsed from the page
      */
     protected Set<URL> getLinksFromWebPage(URL u, InputStream is, String type, URL postUrl) {
-      Set<URL> l = new HashSet<URL>();
+      Set<URL> l = new HashSet<>();
       URL url = null;
       try {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         URL extractUrl = new URL(appendParam(postUrl.toString(), "extractOnly=true"));
         boolean success = postData(is, null, os, type, extractUrl);
         if(success) {
-          String rawXml = os.toString("UTF-8");
-          Document d = makeDom(rawXml, "UTF-8");
+          Document d = makeDom(os.toByteArray());
           String innerXml = getXP(d, "/response/str/text()[1]", false);
-          d = makeDom(innerXml, "UTF-8");
+          d = makeDom(innerXml.getBytes(StandardCharsets.UTF_8));
           NodeList links = getNodesFromXP(d, "/html/body//a/@href");
           for(int i = 0; i < links.getLength(); i++) {
             String link = links.item(i).getTextContent();

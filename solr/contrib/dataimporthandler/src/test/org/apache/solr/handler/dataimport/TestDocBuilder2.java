@@ -19,13 +19,13 @@ package org.apache.solr.handler.dataimport;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-
 import org.apache.solr.request.LocalSolrQueryRequest;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 
 /**
  * <p>
@@ -240,21 +240,21 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   @Test
   @Ignore("Fix Me. See SOLR-4103.")
   public void testFileListEntityProcessor_lastIndexTime() throws Exception  {
-    File tmpdir = File.createTempFile("test", "tmp", TEMP_DIR);
+    File tmpdir = File.createTempFile("test", "tmp", dataDir);
     tmpdir.delete();
     tmpdir.mkdir();
     tmpdir.deleteOnExit();
 
     Map<String, String> params = createMap("baseDir", tmpdir.getAbsolutePath());
 
-    createFile(tmpdir, "a.xml", "a.xml".getBytes("UTF-8"), true);
-    createFile(tmpdir, "b.xml", "b.xml".getBytes("UTF-8"), true);
-    createFile(tmpdir, "c.props", "c.props".getBytes("UTF-8"), true);
+    createFile(tmpdir, "a.xml", "a.xml".getBytes(StandardCharsets.UTF_8), true);
+    createFile(tmpdir, "b.xml", "b.xml".getBytes(StandardCharsets.UTF_8), true);
+    createFile(tmpdir, "c.props", "c.props".getBytes(StandardCharsets.UTF_8), true);
     runFullImport(dataConfigFileList, params);
     assertQ(req("*:*"), "//*[@numFound='3']");
 
     // Add a new file after a full index is done
-    createFile(tmpdir, "t.xml", "t.xml".getBytes("UTF-8"), false);
+    createFile(tmpdir, "t.xml", "t.xml".getBytes(StandardCharsets.UTF_8), false);
     runFullImport(dataConfigFileList, params);
     // we should find only 1 because by default clean=true is passed
     // and this particular import should find only one file t.xml

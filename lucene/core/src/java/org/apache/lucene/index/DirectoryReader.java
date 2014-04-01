@@ -224,7 +224,7 @@ public abstract class DirectoryReader extends BaseCompositeReader<AtomicReader> 
   public static List<IndexCommit> listCommits(Directory dir) throws IOException {
     final String[] files = dir.listAll();
 
-    List<IndexCommit> commits = new ArrayList<IndexCommit>();
+    List<IndexCommit> commits = new ArrayList<>();
 
     SegmentInfos latest = new SegmentInfos();
     latest.read(dir);

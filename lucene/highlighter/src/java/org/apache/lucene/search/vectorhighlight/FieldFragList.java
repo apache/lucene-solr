@@ -29,7 +29,7 @@ import java.util.List;
  */
 public abstract class FieldFragList {
 
-  private List<WeightedFragInfo> fragInfos = new ArrayList<WeightedFragInfo>();
+  private List<WeightedFragInfo> fragInfos = new ArrayList<>();
 
   /**
    * a constructor.

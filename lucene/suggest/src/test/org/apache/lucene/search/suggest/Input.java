@@ -17,6 +17,8 @@ package org.apache.lucene.search.suggest;
  * limitations under the License.
  */
 
+import java.util.Set;
+
 import org.apache.lucene.util.BytesRef;
 
 /** corresponds to {@link InputIterator}'s entries */
@@ -25,28 +27,55 @@ public final class Input {
   public final long v;
   public final BytesRef payload;
   public final boolean hasPayloads;
+  public final Set<BytesRef> contexts;
+  public final boolean hasContexts;
 
   public Input(BytesRef term, long v, BytesRef payload) {
-    this(term, v, payload, true);
+    this(term, v, payload, true, null, false);
   }
   
   public Input(String term, long v, BytesRef payload) {
-    this(new BytesRef(term), v, payload, true);
+    this(new BytesRef(term), v, payload);
+  }
+  
+  public Input(BytesRef term, long v, Set<BytesRef> contexts) {
+    this(term, v, null, false, contexts, true);
+  }
+  
+  public Input(String term, long v, Set<BytesRef> contexts) {
+    this(new BytesRef(term), v, null, false, contexts, true);
   }
   
   public Input(BytesRef term, long v) {
-    this(term, v, null, false);
+    this(term, v, null, false, null, false);
   }
   
   public Input(String term, long v) {
-    this(new BytesRef(term), v, null, false);
+    this(new BytesRef(term), v, null, false, null, false);
   }
   
-  public Input(BytesRef term, long v, BytesRef payload, boolean hasPayloads) {
+  public Input(String term, int v, BytesRef payload, Set<BytesRef> contexts) {
+    this(new BytesRef(term), v, payload, true, contexts, true);
+  }
+
+  public Input(BytesRef term, long v, BytesRef payload, Set<BytesRef> contexts) {
+    this(term, v, payload, true, contexts, true);
+  }
+  
+
+  
+  public Input(BytesRef term, long v, BytesRef payload, boolean hasPayloads, Set<BytesRef> contexts, 
+      boolean hasContexts) {
     this.term = term;
     this.v = v;
     this.payload = payload;
     this.hasPayloads = hasPayloads;
+    this.contexts = contexts;
+    this.hasContexts = hasContexts;
+  }
+  
+  public boolean hasContexts() {
+    return hasContexts;
   }
   
   public boolean hasPayloads() {

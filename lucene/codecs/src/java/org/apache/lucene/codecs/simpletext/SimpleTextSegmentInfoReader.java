@@ -27,6 +27,7 @@ import static org.apache.lucene.codecs.simpletext.SimpleTextSegmentInfoWriter.SI
 import static org.apache.lucene.codecs.simpletext.SimpleTextSegmentInfoWriter.SI_VERSION;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -72,7 +73,7 @@ public class SimpleTextSegmentInfoReader extends SegmentInfoReader {
       SimpleTextUtil.readLine(input, scratch);
       assert StringHelper.startsWith(scratch, SI_NUM_DIAG);
       int numDiag = Integer.parseInt(readString(SI_NUM_DIAG.length, scratch));
-      Map<String,String> diagnostics = new HashMap<String,String>();
+      Map<String,String> diagnostics = new HashMap<>();
 
       for (int i = 0; i < numDiag; i++) {
         SimpleTextUtil.readLine(input, scratch);
@@ -88,7 +89,7 @@ public class SimpleTextSegmentInfoReader extends SegmentInfoReader {
       SimpleTextUtil.readLine(input, scratch);
       assert StringHelper.startsWith(scratch, SI_NUM_FILES);
       int numFiles = Integer.parseInt(readString(SI_NUM_FILES.length, scratch));
-      Set<String> files = new HashSet<String>();
+      Set<String> files = new HashSet<>();
 
       for (int i = 0; i < numFiles; i++) {
         SimpleTextUtil.readLine(input, scratch);
@@ -112,6 +113,6 @@ public class SimpleTextSegmentInfoReader extends SegmentInfoReader {
   }
 
   private String readString(int offset, BytesRef scratch) {
-    return new String(scratch.bytes, scratch.offset+offset, scratch.length-offset, IOUtils.CHARSET_UTF_8);
+    return new String(scratch.bytes, scratch.offset+offset, scratch.length-offset, StandardCharsets.UTF_8);
   }
 }

@@ -83,7 +83,7 @@ public class Grouping {
   private final SolrIndexSearcher searcher;
   private final SolrIndexSearcher.QueryResult qr;
   private final SolrIndexSearcher.QueryCommand cmd;
-  private final List<Command> commands = new ArrayList<Command>();
+  private final List<Command> commands = new ArrayList<>();
   private final boolean main;
   private final boolean cacheSecondPassSearch;
   private final int maxDocsPercentageToCache;
@@ -105,7 +105,7 @@ public class Grouping {
   private DocSet filter;
   private Filter luceneFilter;
   private NamedList grouped = new SimpleOrderedMap();
-  private Set<Integer> idSet = new LinkedHashSet<Integer>();  // used for tracking unique docs when we need a doclist
+  private Set<Integer> idSet = new LinkedHashSet<>();  // used for tracking unique docs when we need a doclist
   private int maxMatches;  // max number of matches from any grouping command
   private float maxScore = Float.NEGATIVE_INFINITY;  // max score seen in any doclist
   private boolean signalCacheWarning = false;
@@ -331,7 +331,7 @@ public class Grouping {
     }
 
     AbstractAllGroupHeadsCollector<?> allGroupHeadsCollector = null;
-    List<Collector> collectors = new ArrayList<Collector>(commands.size());
+    List<Collector> collectors = new ArrayList<>(commands.size());
     for (Command cmd : commands) {
       Collector collector = cmd.createFirstPassCollector();
       if (collector != null) {
@@ -649,8 +649,8 @@ public class Grouping {
     protected DocList createSimpleResponse() {
       GroupDocs[] groups = result != null ? result.groups : new GroupDocs[0];
 
-      List<Integer> ids = new ArrayList<Integer>();
-      List<Float> scores = new ArrayList<Float>();
+      List<Integer> ids = new ArrayList<>();
+      List<Float> scores = new ArrayList<>();
       int docsToGather = getMax(offset, numGroups, maxDoc);
       int docsGathered = 0;
       float maxScore = Float.NEGATIVE_INFINITY;
@@ -888,7 +888,7 @@ public class Grouping {
     protected void finish() throws IOException {
       TopDocsCollector topDocsCollector = (TopDocsCollector) collector.getDelegate();
       TopDocs topDocs = topDocsCollector.topDocs();
-      GroupDocs<String> groupDocs = new GroupDocs<String>(Float.NaN, topDocs.getMaxScore(), topDocs.totalHits, topDocs.scoreDocs, query.toString(), null);
+      GroupDocs<String> groupDocs = new GroupDocs<>(Float.NaN, topDocs.getMaxScore(), topDocs.totalHits, topDocs.scoreDocs, query.toString(), null);
       if (main) {
         mainResult = getDocList(groupDocs);
       } else {

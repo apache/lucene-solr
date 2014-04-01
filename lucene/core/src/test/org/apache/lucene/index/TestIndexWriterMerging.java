@@ -311,8 +311,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
   // merging a segment with >= 20 (maxMergeDocs) docs
   private class MyMergeScheduler extends MergeScheduler {
     @Override
-    synchronized public void merge(IndexWriter writer)
-      throws IOException {
+    synchronized public void merge(IndexWriter writer, MergeTrigger trigger, boolean newMergesFound) throws IOException {
 
       while(true) {
         MergePolicy.OneMerge merge = writer.getNextMerge();
@@ -399,7 +398,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
         ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
 
         final IndexWriter finalWriter = writer;
-        final ArrayList<Throwable> failure = new ArrayList<Throwable>();
+        final ArrayList<Throwable> failure = new ArrayList<>();
         Thread t1 = new Thread() {
             @Override
             public void run() {

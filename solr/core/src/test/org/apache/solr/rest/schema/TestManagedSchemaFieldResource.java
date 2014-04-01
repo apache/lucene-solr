@@ -40,15 +40,14 @@ public class TestManagedSchemaFieldResource extends RestTestBase {
 
   @Before
   public void before() throws Exception {
-    createTempDir();
-    tmpSolrHome = new File( TEMP_DIR + File.separator + TestManagedSchemaFieldResource.class.getSimpleName() 
+    tmpSolrHome = new File( dataDir + File.separator + TestManagedSchemaFieldResource.class.getSimpleName() 
                           + System.currentTimeMillis());
     tmpConfDir = new File(tmpSolrHome, confDir);
     FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
     
-    final SortedMap<ServletHolder,String> extraServlets = new TreeMap<ServletHolder,String>();
-    final ServletHolder solrRestApi = new ServletHolder("SolrRestApi", ServerServlet.class);
-    solrRestApi.setInitParameter("org.restlet.application", "org.apache.solr.rest.SolrRestApi");
+    final SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
+    final ServletHolder solrRestApi = new ServletHolder("SolrSchemaRestApi", ServerServlet.class);
+    solrRestApi.setInitParameter("org.restlet.application", "org.apache.solr.rest.SolrSchemaRestApi");
     extraServlets.put(solrRestApi, "/schema/*");  // '/schema/*' matches '/schema', '/schema/', and '/schema/whatever...'
 
     System.setProperty("managed.schema.mutable", "true");

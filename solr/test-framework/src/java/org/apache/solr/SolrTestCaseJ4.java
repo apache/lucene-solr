@@ -24,11 +24,19 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -114,9 +122,33 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   private static String coreName = ConfigSolrXmlOld.DEFAULT_DEFAULT_CORE_NAME;
   public static int DEFAULT_CONNECTION_TIMEOUT = 60000;  // default socket connection timeout in ms
 
+  /**
+   * Annotation for test classes that want to disable SSL
+   */
+  @Documented
+  @Inherited
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.TYPE)
+  public @interface SuppressSSL {
+    /** Point to JIRA entry. */
+    public String bugUrl() default "None";
+  }
+  
+
+  /**
+   * Annotation for test classes to prevent TEMP_DIR cleanup.
+   */
+  @Documented
+  @Inherited
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.TYPE)
+  public @interface SuppressTempDirCleanUp {
+    /** Point to JIRA entry. */
+    public String bugUrl() default "None";
+  }
+  
   // these are meant to be accessed sequentially, but are volatile just to ensure any test
   // thread will read the latest value
-  protected static volatile boolean ALLOW_SSL = true;
   protected static volatile SSLTestConfig sslConfig;
 
   @ClassRule
@@ -131,6 +163,12 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   @BeforeClass 
   @SuppressWarnings("unused")
   private static void beforeClass() {
+    String cname = getSimpleClassName();
+    dataDir = new File(TEMP_DIR,
+            "solrtest-" + cname + "-" + System.currentTimeMillis());
+    dataDir.mkdirs();
+    System.err.println("Creating dataDir: " + dataDir.getAbsolutePath());
+    
     System.setProperty("jetty.testMode", "true");
     System.setProperty("enable.update.log", usually() ? "true" : "false");
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
@@ -153,26 +191,48 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   @AfterClass
   @SuppressWarnings("unused")
   private static void afterClass() throws Exception {
-    deleteCore();
-    resetExceptionIgnores();
-    endTrackingSearchers();
-    endTrackingZkClients();
-    resetFactory();
-    coreName = ConfigSolrXmlOld.DEFAULT_DEFAULT_CORE_NAME;
-    System.clearProperty("jetty.testMode");
-    System.clearProperty("tests.shardhandler.randomSeed");
-    System.clearProperty("enable.update.log");
-    System.clearProperty("useCompoundFile");
-    System.clearProperty("urlScheme");
-    
-    if(isSSLMode()) {
-      HttpClientUtil.setConfigurer(new HttpClientConfigurer());
+    try {
+      deleteCore();
+      resetExceptionIgnores();
+      endTrackingSearchers();
+      endTrackingZkClients();
+      resetFactory();
+      coreName = ConfigSolrXmlOld.DEFAULT_DEFAULT_CORE_NAME;
+    } finally {
+      try {
+        boolean skip = Boolean.getBoolean("solr.test.leavedatadir");
+        if (skip) {
+          System.err
+              .println("NOTE: per solr.test.leavedatadir, dataDir will not be removed: "
+                  + dataDir.getAbsolutePath());
+        } else {
+          
+          if (dataDir != null && dataDir.exists() && !recurseDelete(dataDir)) {
+            String msg = "!!!! WARNING: best effort to remove "
+                + dataDir.getAbsolutePath() + " FAILED !!!!!";
+            if (RandomizedContext.current().getTargetClass()
+                .isAnnotationPresent(SuppressTempDirCleanUp.class)) {
+              System.err.println(msg);
+            } else {
+              fail(msg);
+            }
+          }
+        }
+      } finally {
+        dataDir = null;
+        System.clearProperty("jetty.testMode");
+        System.clearProperty("tests.shardhandler.randomSeed");
+        System.clearProperty("enable.update.log");
+        System.clearProperty("useCompoundFile");
+        System.clearProperty("urlScheme");
+        
+        if (isSSLMode()) {
+          HttpClientUtil.setConfigurer(new HttpClientConfigurer());
+        }
+        // clean up static
+        sslConfig = null;
+      }
     }
-    // clean up static
-    sslConfig = null;
-    
-    // reset SSL
-    ALLOW_SSL = true;
     
     IpTables.unblockAllPorts();
   }
@@ -209,7 +269,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   private static SSLTestConfig buildSSLConfig() {
     // test has been disabled
-    if (!ALLOW_SSL) {
+    if (RandomizedContext.current().getTargetClass().isAnnotationPresent(SuppressSSL.class)) {
       return new SSLTestConfig();
     }
     
@@ -254,7 +314,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     if (xmlStr == null) {
       xmlStr = "<solr></solr>";
     }
-    FileUtils.write(tmpFile, xmlStr, IOUtils.CHARSET_UTF_8.toString());
+    FileUtils.write(tmpFile, xmlStr, IOUtils.UTF_8);
 
     SolrResourceLoader loader = new SolrResourceLoader(solrHome.getAbsolutePath());
     h = new TestHarness(loader, ConfigSolr.fromFile(loader, new File(solrHome, "solr.xml")));
@@ -281,6 +341,13 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       ? TestUtil.nextInt(random(), 5, 20) // crazy value
       : TestUtil.nextInt(random(), 1, 4); // reasonable value
     System.setProperty("solr.tests.maxIndexingThreads", String.valueOf(maxIndexingThreads));
+  }
+
+  public static Throwable getWrappedException(Throwable e) {
+    while (e != null && e.getCause() != e && e.getCause() != null) {
+      e = e.getCause();
+    }
+    return e;
   }
 
   @Override
@@ -421,7 +488,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   /** Causes an exception matching the regex pattern to not be logged. */
   public static void ignoreException(String pattern) {
     if (SolrException.ignorePatterns == null)
-      SolrException.ignorePatterns = new HashSet<String>();
+      SolrException.ignorePatterns = new HashSet<>();
     SolrException.ignorePatterns.add(pattern);
   }
 
@@ -489,7 +556,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   /**
    * The directory used to story the index managed by the TestHarness h
    */
-  protected static File dataDir;
+  protected static volatile File dataDir;
   
   // hack due to File dataDir
   protected static String hdfsDataDir;
@@ -509,13 +576,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   private static String factoryProp;
 
-  public static void createTempDir() {
-    String cname = getSimpleClassName();
-    dataDir = new File(TEMP_DIR,
-            "solrtest-" + cname + "-" + System.currentTimeMillis());
-    dataDir.mkdirs();
-    System.err.println("Creating dataDir: " + dataDir.getAbsolutePath());
-  }
 
   public static void initCore() throws Exception {
     log.info("####initCore");
@@ -524,9 +584,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     factoryProp = System.getProperty("solr.directoryFactory");
     if (factoryProp == null) {
       System.setProperty("solr.directoryFactory","solr.RAMDirectoryFactory");
-    }
-    if (dataDir == null) {
-      createTempDir();
     }
 
     // other  methods like starting a jetty instance need these too
@@ -552,8 +609,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   public static CoreContainer createCoreContainer(String solrHome, String solrXML) {
     testSolrHome = checkNotNull(solrHome);
-    if (dataDir == null)
-      createTempDir();
     h = new TestHarness(solrHome, solrXML);
     lrf = h.getRequestFactory("standard", 0, 20, CommonParams.VERSION, "2.2");
     return h.getCoreContainer();
@@ -561,8 +616,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   public static CoreContainer createDefaultCoreContainer(String solrHome) {
     testSolrHome = checkNotNull(solrHome);
-    if (dataDir == null)
-      createTempDir();
     h = new TestHarness("collection1", dataDir.getAbsolutePath(), "solrconfig.xml", "schema.xml");
     lrf = h.getRequestFactory("standard", 0, 20, CommonParams.VERSION, "2.2");
     return h.getCoreContainer();
@@ -609,22 +662,11 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static void deleteCore() {
     log.info("###deleteCore" );
     if (h != null) { h.close(); }
-    if (dataDir != null) {
-      String skip = System.getProperty("solr.test.leavedatadir");
-      if (null != skip && 0 != skip.trim().length()) {
-        System.err.println("NOTE: per solr.test.leavedatadir, dataDir will not be removed: " + dataDir.getAbsolutePath());
-      } else {
-        if (!recurseDelete(dataDir)) {
-          System.err.println("!!!! WARNING: best effort to remove " + dataDir.getAbsolutePath() + " FAILED !!!!!");
-        }
-      }
-    }
 
     if (factoryProp == null) {
       System.clearProperty("solr.directoryFactory");
     }
     
-    dataDir = null;
     solrConfig = null;
     h = null;
     lrf = null;
@@ -1358,7 +1400,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
 
     public Map<String,Object> toObject(IndexSchema schema) {
-      Map<String,Object> result = new HashMap<String,Object>();
+      Map<String,Object> result = new HashMap<>();
       for (Fld fld : fields) {
         SchemaField sf = schema.getField(fld.ftype.fname);
         if (!sf.multiValued()) {
@@ -1403,7 +1445,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     public List<Comparable> createValues() {
       int nVals = numValues.getInt();
       if (nVals <= 0) return null;
-      List<Comparable> vals = new ArrayList<Comparable>(nVals);
+      List<Comparable> vals = new ArrayList<>(nVals);
       for (int i=0; i<nVals; i++)
         vals.add(createValue());
       return vals;
@@ -1424,7 +1466,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   public Map<Comparable,Doc> indexDocs(List<FldType> descriptor, Map<Comparable,Doc> model, int nDocs) throws Exception {
     if (model == null) {
-      model = new LinkedHashMap<Comparable,Doc>();
+      model = new LinkedHashMap<>();
     }
 
     // commit an average of 10 times for large sets, or 10% of the time for small sets
@@ -1483,7 +1525,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   public static Doc createDoc(List<FldType> descriptor) {
     Doc doc = new Doc();
-    doc.fields = new ArrayList<Fld>();
+    doc.fields = new ArrayList<>();
     for (FldType ftype : descriptor) {
       Fld fld = ftype.createField();
       if (fld != null) {
@@ -1498,7 +1540,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static Comparator<Doc> createSort(IndexSchema schema, List<FldType> fieldTypes, String[] out) {
     StringBuilder sortSpec = new StringBuilder();
     int nSorts = random().nextInt(4);
-    List<Comparator<Doc>> comparators = new ArrayList<Comparator<Doc>>();
+    List<Comparator<Doc>> comparators = new ArrayList<>();
     for (int i=0; i<nSorts; i++) {
       if (i>0) sortSpec.append(',');
 
@@ -1637,7 +1679,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   /** Return a Map from field value to a list of document ids */
   public Map<Comparable, List<Comparable>> invertField(Map<Comparable, Doc> model, String field) {
-    Map<Comparable, List<Comparable>> value_to_id = new HashMap<Comparable, List<Comparable>>();
+    Map<Comparable, List<Comparable>> value_to_id = new HashMap<>();
 
     // invert field
     for (Comparable key : model.keySet()) {
@@ -1647,7 +1689,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       for (Comparable val : vals) {
         List<Comparable> ids = value_to_id.get(val);
         if (ids == null) {
-          ids = new ArrayList<Comparable>(2);
+          ids = new ArrayList<>(2);
           value_to_id.put(val, ids);
         }
         ids.add(key);
@@ -1663,16 +1705,20 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * {@link Class#getResourceAsStream} using {@code this.getClass()}.
    */
   public static File getFile(String name) {
-    try {
-      File file = new File(name);
-      if (!file.exists()) {
-        file = new File(Thread.currentThread().getContextClassLoader().getResource(name).toURI());
+    final URL url = Thread.currentThread().getContextClassLoader().getResource(name.replace(File.separatorChar, '/'));
+    if (url != null) {
+      try {
+        return new File(url.toURI());
+      } catch (Exception e) {
+        throw new RuntimeException("Resource was found on classpath, but cannot be resolved to a " + 
+            "normal file (maybe it is part of a JAR file): " + name);
       }
-      return file;
-    } catch (Exception e) {
-      /* more friendly than NPE */
-      throw new RuntimeException("Cannot find resource: " + new File(name).getAbsolutePath());
     }
+    final File file = new File(name);
+    if (file.exists()) {
+      return file;
+    }
+    throw new RuntimeException("Cannot find resource in classpath or in file-system (relative to CWD): " + name);
   }
   
   public static String TEST_HOME() {
@@ -1835,6 +1881,145 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       properties.setProperty(CoreDescriptor.CORE_LOADONSTARTUP, Boolean.toString(loadOnStartup));
       return this;
     }
+  }
+
+  public boolean assertSolrDocumentEquals(Object expected, Object actual) {
+
+    if (!(expected instanceof SolrDocument)  || !(actual instanceof SolrDocument)) {
+      return false;
+    }
+
+    if (expected == actual) {
+      return true;
+    }
+
+    SolrDocument solrDocument1 = (SolrDocument) expected;
+    SolrDocument solrDocument2 = (SolrDocument) actual;
+
+    if(solrDocument1.getFieldNames().size() != solrDocument1.getFieldNames().size()) {
+      return false;
+    }
+
+    Iterator<String> iter1 = solrDocument1.getFieldNames().iterator();
+    Iterator<String> iter2 = solrDocument2.getFieldNames().iterator();
+
+    if(iter1.hasNext()) {
+      String key1 = iter1.next();
+      String key2 = iter2.next();
+
+      Object val1 = solrDocument1.getFieldValues(key1);
+      Object val2 = solrDocument2.getFieldValues(key2);
+
+      if(!key1.equals(key2) || !val1.equals(val2)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  public boolean assertSolrDocumentList(Object expected, Object actual) {
+    if (!(expected instanceof SolrDocumentList)  || !(actual instanceof SolrDocumentList)) {
+      return false;
+    }
+
+    if (expected == actual) {
+      return true;
+    }
+
+    SolrDocumentList list1 = (SolrDocumentList) expected;
+    SolrDocumentList list2 = (SolrDocumentList) actual;
+
+    if(Float.compare(list1.getMaxScore(), list2.getMaxScore()) != 0 || list1.getNumFound() != list2.getNumFound() ||
+        list1.getStart() != list2.getStart()) {
+      return false;
+    }
+    for(int i=0; i<list1.getNumFound(); i++) {
+      if(!assertSolrDocumentEquals(list1.get(i), list2.get(i))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  public boolean assertSolrInputDocumentEquals(Object expected, Object actual) {
+
+    if (!(expected instanceof SolrInputDocument) || !(actual instanceof SolrInputDocument)) {
+      return false;
+    }
+
+    if (expected == actual) {
+      return true;
+    }
+
+    SolrInputDocument sdoc1 = (SolrInputDocument) expected;
+    SolrInputDocument sdoc2 = (SolrInputDocument) actual;
+    if (Float.compare(sdoc1.getDocumentBoost(), sdoc2.getDocumentBoost()) != 0) {
+      return false;
+    }
+
+    if(sdoc1.getFieldNames().size() != sdoc2.getFieldNames().size()) {
+      return false;
+    }
+
+    Iterator<String> iter1 = sdoc1.getFieldNames().iterator();
+    Iterator<String> iter2 = sdoc2.getFieldNames().iterator();
+
+    if(iter1.hasNext()) {
+      String key1 = iter1.next();
+      String key2 = iter2.next();
+
+      Object val1 = sdoc1.getFieldValues(key1);
+      Object val2 = sdoc2.getFieldValues(key2);
+
+      if(!key1.equals(key2) || !val1.equals(val2)) {
+        return false;
+      }
+    }
+    if(sdoc1.getChildDocuments() == null && sdoc2.getChildDocuments() == null) {
+      return true;
+    }
+    if(sdoc1.getChildDocuments() == null || sdoc2.getChildDocuments() == null) {
+      return false;
+    } else if(sdoc1.getChildDocuments().size() != sdoc2.getChildDocuments().size()) {
+      return false;
+    } else {
+      Iterator<SolrInputDocument> childDocsIter1 = sdoc1.getChildDocuments().iterator();
+      Iterator<SolrInputDocument> childDocsIter2 = sdoc2.getChildDocuments().iterator();
+      while(childDocsIter1.hasNext()) {
+        if(!assertSolrInputDocumentEquals(childDocsIter1.next(), childDocsIter2.next())) {
+          return false;
+        }
+      }
+      return true;
+    }
+  }
+
+  public boolean assertSolrInputFieldEquals(Object expected, Object actual) {
+    if (!(expected instanceof SolrInputField) || !(actual instanceof  SolrInputField)) {
+      return false;
+    }
+
+    if (expected == actual) {
+      return true;
+    }
+
+    SolrInputField sif1 = (SolrInputField) expected;
+    SolrInputField sif2 = (SolrInputField) actual;
+
+    if (!sif1.getName().equals(sif2.getName())) {
+      return false;
+    }
+
+    if (!sif1.getValue().equals(sif2.getValue())) {
+      return false;
+    }
+
+    if (Float.compare(sif1.getBoost(), sif2.getBoost()) != 0) {
+      return false;
+    }
+
+    return true;
   }
 
 

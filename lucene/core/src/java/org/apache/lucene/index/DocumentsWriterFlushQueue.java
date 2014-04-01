@@ -28,7 +28,7 @@ import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
  * @lucene.internal 
  */
 class DocumentsWriterFlushQueue {
-  private final Queue<FlushTicket> queue = new LinkedList<FlushTicket>();
+  private final Queue<FlushTicket> queue = new LinkedList<>();
   // we track tickets separately since count must be present even before the ticket is
   // constructed ie. queue.size would not reflect it.
   private final AtomicInteger ticketCount = new AtomicInteger();

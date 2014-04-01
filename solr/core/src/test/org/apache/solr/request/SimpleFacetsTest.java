@@ -48,7 +48,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
       assertU(commit());
   }
 
-  static ArrayList<String[]> pendingDocs = new ArrayList<String[]>();
+  static ArrayList<String[]> pendingDocs = new ArrayList<>();
 
   // committing randomly gives different looking segments each time
   static void add_doc(String... fieldsAndValues) {

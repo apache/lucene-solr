@@ -55,7 +55,7 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
   final static int VERSION_APPEND_ONLY = 1;
   final static int VERSION_CURRENT = VERSION_APPEND_ONLY;
 
-  private final List<FSTFieldWriter> fields = new ArrayList<FSTFieldWriter>();
+  private final List<FSTFieldWriter> fields = new ArrayList<>();
   
   @SuppressWarnings("unused") private final FieldInfos fieldInfos; // unread
   private final IndexTermSelector policy;
@@ -236,7 +236,7 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
     public FSTFieldWriter(FieldInfo fieldInfo, long termsFilePointer) throws IOException {
       this.fieldInfo = fieldInfo;
       fstOutputs = PositiveIntOutputs.getSingleton();
-      fstBuilder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, fstOutputs);
+      fstBuilder = new Builder<>(FST.INPUT_TYPE.BYTE1, fstOutputs);
       indexStart = out.getFilePointer();
       ////System.out.println("VGW: field=" + fieldInfo.name);
 

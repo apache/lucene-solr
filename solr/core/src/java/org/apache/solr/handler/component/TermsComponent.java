@@ -89,7 +89,7 @@ public class TermsComponent extends SearchComponent {
 
     String[] fields = params.getParams(TermsParams.TERMS_FIELD);
 
-    NamedList<Object> termsResult = new SimpleOrderedMap<Object>();
+    NamedList<Object> termsResult = new SimpleOrderedMap<>();
     rb.rsp.add("terms", termsResult);
 
     if (fields == null || fields.length==0) return;
@@ -121,7 +121,7 @@ public class TermsComponent extends SearchComponent {
     Fields lfields = indexReader.fields();
 
     for (String field : fields) {
-      NamedList<Integer> fieldTerms = new NamedList<Integer>();
+      NamedList<Integer> fieldTerms = new NamedList<>();
       termsResult.add(field, fieldTerms);
 
       Terms terms = lfields == null ? null : lfields.terms(field);
@@ -208,7 +208,7 @@ public class TermsComponent extends SearchComponent {
         if (docFreq >= freqmin && docFreq <= freqmax) {
           // add the term to the list
           if (sort) {
-            queue.add(new CountPair<BytesRef, Integer>(BytesRef.deepCopyOf(term), docFreq));
+            queue.add(new CountPair<>(BytesRef.deepCopyOf(term), docFreq));
           } else {
 
             // TODO: handle raw somehow
@@ -326,7 +326,7 @@ public class TermsComponent extends SearchComponent {
     private SolrParams params;
 
     public TermsHelper() {
-      fieldmap = new HashMap<String, HashMap<String, TermsResponse.Term>>(5);
+      fieldmap = new HashMap<>(5);
     }
 
     public void init(SolrParams params) {
@@ -374,7 +374,7 @@ public class TermsComponent extends SearchComponent {
     }
 
     public NamedList buildResponse() {
-      NamedList<Object> response = new SimpleOrderedMap<Object>();
+      NamedList<Object> response = new SimpleOrderedMap<>();
 
       // determine if we are going index or count sort
       boolean sort = !TermsParams.TERMS_SORT_INDEX.equals(params.get(
@@ -403,7 +403,7 @@ public class TermsComponent extends SearchComponent {
 
       // loop though each field we want terms from
       for (String key : fieldmap.keySet()) {
-        NamedList<Number> fieldterms = new SimpleOrderedMap<Number>();
+        NamedList<Number> fieldterms = new SimpleOrderedMap<>();
         TermsResponse.Term[] data = null;
         if (sort) {
           data = getCountSorted(fieldmap.get(key));

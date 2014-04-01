@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -47,11 +48,11 @@ public final class SPIClassIterator<S> implements Iterator<Class<? extends S>> {
   private Iterator<String> linesIterator;
   
   public static <S> SPIClassIterator<S> get(Class<S> clazz) {
-    return new SPIClassIterator<S>(clazz, Thread.currentThread().getContextClassLoader());
+    return new SPIClassIterator<>(clazz, Thread.currentThread().getContextClassLoader());
   }
   
   public static <S> SPIClassIterator<S> get(Class<S> clazz, ClassLoader loader) {
-    return new SPIClassIterator<S>(clazz, loader);
+    return new SPIClassIterator<>(clazz, loader);
   }
   
   /** Utility method to check if some class loader is a (grand-)parent of or the same as another one.
@@ -84,14 +85,14 @@ public final class SPIClassIterator<S> implements Iterator<Class<? extends S>> {
       if (lines != null) {
         lines.clear();
       } else {
-        lines = new ArrayList<String>();
+        lines = new ArrayList<>();
       }
       final URL url = profilesEnum.nextElement();
       try {
         final InputStream in = url.openStream();
         IOException priorE = null;
         try {
-          final BufferedReader reader = new BufferedReader(new InputStreamReader(in, IOUtils.CHARSET_UTF_8));
+          final BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
           String line;
           while ((line = reader.readLine()) != null) {
             final int pos = line.indexOf('#');

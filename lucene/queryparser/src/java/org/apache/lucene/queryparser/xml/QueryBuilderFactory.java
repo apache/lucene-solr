@@ -29,7 +29,7 @@ import java.util.HashMap;
  */
 public class QueryBuilderFactory implements QueryBuilder {
 
-  HashMap<String, QueryBuilder> builders = new HashMap<String, QueryBuilder>();
+  HashMap<String, QueryBuilder> builders = new HashMap<>();
 
   @Override
   public Query getQuery(Element n) throws ParserException {

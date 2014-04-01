@@ -18,22 +18,30 @@
 package org.apache.solr.client.solrj.request;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.embedded.AbstractEmbeddedSolrServerTestCase;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.junit.After;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.core.Is.is;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {SolrIgnoredThreadsFilter.class})
 public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
@@ -42,6 +50,9 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
   private static final String SOLR_XML = "solr.xml";
 
   private static String tempDirProp;
+
+  @Rule
+  public TestRule testRule = RuleChain.outerRule(new SystemPropertiesRestoreRule());
   
   @Override
   protected File getSolrXml() throws Exception {
@@ -57,15 +68,41 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
   protected SolrServer getSolrAdmin() {
     return new EmbeddedSolrServer(cores, "core0");
   }
+
+  @Test
+  public void testConfigSet() throws Exception {
+
+    SolrServer server = getSolrAdmin();
+    File testDir = createTestDirectory();
+
+    File newCoreInstanceDir = new File(testDir, "newcore");
+
+    CoreAdminRequest.Create req = new CoreAdminRequest.Create();
+    req.setCoreName("corewithconfigset");
+    req.setInstanceDir(newCoreInstanceDir.getAbsolutePath());
+    req.setConfigSet("configset-2");
+
+    CoreAdminResponse response = req.process(server);
+    assertThat((String) response.getResponse().get("core"), is("corewithconfigset"));
+
+    try (SolrCore core = cores.getCore("corewithconfigset")) {
+      assertThat(core, is(notNullValue()));
+    }
+
+  }
+
+  private File createTestDirectory() {
+    File tmp = new File(dataDir, "solrtest-" + getTestClass().getSimpleName() + "-" + System.currentTimeMillis());
+    assertTrue("Couldn't create temporary directory " + tmp.getAbsolutePath(), tmp.mkdirs());
+    return tmp;
+  }
   
   @Test
   public void testCustomUlogDir() throws Exception {
     
     SolrServer server = getSolrAdmin();
     
-    
-    File tmp = new File(TEMP_DIR, "solrtest-" + getTestClass().getSimpleName() + "-" + System.currentTimeMillis());
-    tmp.mkdirs();
+    File tmp = createTestDirectory();
 
     log.info("Creating cores underneath {}", tmp);
     
@@ -92,23 +129,19 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
 
     // Show that the newly-created core has values for load on startup and transient different than defaults due to the
     // above.
-
-    SolrCore coreProveIt = cores.getCore("collection1");
-    SolrCore core = cores.getCore("newcore");
-
-    assertTrue(core.getCoreDescriptor().isTransient());
-    assertFalse(coreProveIt.getCoreDescriptor().isTransient());
-
-    assertFalse(core.getCoreDescriptor().isLoadOnStartup());
-    assertTrue(coreProveIt.getCoreDescriptor().isLoadOnStartup());
-
     File logDir;
-    try {
+    try (SolrCore coreProveIt = cores.getCore("collection1");
+         SolrCore core = cores.getCore("newcore")) {
+
+      assertTrue(core.getCoreDescriptor().isTransient());
+      assertFalse(coreProveIt.getCoreDescriptor().isTransient());
+
+      assertFalse(core.getCoreDescriptor().isLoadOnStartup());
+      assertTrue(coreProveIt.getCoreDescriptor().isLoadOnStartup());
+
       logDir = new File(core.getUpdateHandler().getUpdateLog().getLogDir());
-    } finally {
-      coreProveIt.close();
-      core.close();
     }
+
     assertEquals(new File(dataDir, "ulog" + File.separator + "tlog").getAbsolutePath(), logDir.getAbsolutePath());
     server.shutdown();
     

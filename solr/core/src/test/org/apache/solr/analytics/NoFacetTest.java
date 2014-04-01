@@ -27,7 +27,7 @@ import org.junit.Test;
 
 @SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Appending","Asserting"})
 public class NoFacetTest extends AbstractAnalyticsStatsTest {
-  static String fileName = "core/src/test-files/analytics/requestFiles/noFacets.txt";
+  static String fileName = "/analytics/requestFiles/noFacets.txt";
 
   static public final int INT = 71;
   static public final int LONG = 36;
@@ -72,12 +72,12 @@ public class NoFacetTest extends AbstractAnalyticsStatsTest {
     defaults.put("date_dtd", "1800-12-31T23:59:59Z");
     defaults.put("string_sd", "str0");
     
-    intTestStart = new ArrayList<Integer>(); 
-    longTestStart = new ArrayList<Long>(); 
-    floatTestStart = new ArrayList<Float>(); 
-    doubleTestStart = new ArrayList<Double>(); 
-    dateTestStart = new ArrayList<String>(); 
-    stringTestStart = new ArrayList<String>(); 
+    intTestStart = new ArrayList<>();
+    longTestStart = new ArrayList<>();
+    floatTestStart = new ArrayList<>();
+    doubleTestStart = new ArrayList<>();
+    dateTestStart = new ArrayList<>();
+    stringTestStart = new ArrayList<>();
     
     for (int j = 0; j < NUM_LOOPS; ++j) {
       int i = j%INT;
@@ -86,7 +86,7 @@ public class NoFacetTest extends AbstractAnalyticsStatsTest {
       double d = j%DOUBLE;
       String dt = (1800+j%DATE) + "-12-31T23:59:59Z";
       String s = "str" + (j%STRING);
-      List<String> fields = new ArrayList<String>();
+      List<String> fields = new ArrayList<>();
       fields.add("id"); fields.add("1000"+j);
       
       if( i != 0 ){
@@ -135,7 +135,7 @@ public class NoFacetTest extends AbstractAnalyticsStatsTest {
     assertU(commit()); 
     
     //Sort ascending tests
-    setResponse(h.query(request(fileToStringArr(fileName))));
+    setResponse(h.query(request(fileToStringArr(NoFacetTest.class, fileName))));
   }
       
   @Test

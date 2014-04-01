@@ -23,6 +23,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
@@ -53,7 +54,7 @@ public class LineDocSourceTest extends BenchmarkTestCase {
   private void createBZ2LineFile(File file, boolean addHeader) throws Exception {
     OutputStream out = new FileOutputStream(file);
     out = csFactory.createCompressorOutputStream("bzip2", out);
-    BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out, "utf-8"));
+    BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8));
     writeDocsToFile(writer, addHeader, null);
     writer.close();
   }
@@ -90,14 +91,14 @@ public class LineDocSourceTest extends BenchmarkTestCase {
 
   private void createRegularLineFile(File file, boolean addHeader) throws Exception {
     OutputStream out = new FileOutputStream(file);
-    BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out, "utf-8"));
+    BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8));
     writeDocsToFile(writer, addHeader, null);
     writer.close();
   }
 
   private void createRegularLineFileWithMoreFields(File file, String...extraFields) throws Exception {
     OutputStream out = new FileOutputStream(file);
-    BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out, "utf-8"));
+    BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8));
     Properties p = new Properties();
     for (String f : extraFields) {
       p.setProperty(f, f);
@@ -209,7 +210,7 @@ public class LineDocSourceTest extends BenchmarkTestCase {
     
     for (int i = 0; i < testCases.length; i++) {
       File file = new File(getWorkDir(), "one-line");
-      BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), "utf-8"));
+      BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8));
       writer.write(testCases[i]);
       writer.newLine();
       writer.close();

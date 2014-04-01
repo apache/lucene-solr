@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -72,7 +73,7 @@ public class TestPayloads extends LuceneTestCase {
         // enabled in only some documents
         d.add(newTextField("f3", "This field has payloads in some docs", Field.Store.NO));
         // only add payload data for field f2
-        analyzer.setPayloadData("f2", "somedata".getBytes("UTF-8"), 0, 1);
+        analyzer.setPayloadData("f2", "somedata".getBytes(StandardCharsets.UTF_8), 0, 1);
         writer.addDocument(d);
         // flush
         writer.close();
@@ -95,8 +96,8 @@ public class TestPayloads extends LuceneTestCase {
         d.add(newTextField("f2", "This field has payloads in all docs", Field.Store.NO));
         d.add(newTextField("f3", "This field has payloads in some docs", Field.Store.NO));
         // add payload data for field f2 and f3
-        analyzer.setPayloadData("f2", "somedata".getBytes("UTF-8"), 0, 1);
-        analyzer.setPayloadData("f3", "somedata".getBytes("UTF-8"), 0, 3);
+        analyzer.setPayloadData("f2", "somedata".getBytes(StandardCharsets.UTF_8), 0, 1);
+        analyzer.setPayloadData("f3", "somedata".getBytes(StandardCharsets.UTF_8), 0, 3);
         writer.addDocument(d);
 
         // force merge
@@ -297,7 +298,8 @@ public class TestPayloads extends LuceneTestCase {
         
     }
     
-    static final Charset utf8 = Charset.forName("UTF-8");
+    static final Charset utf8 = StandardCharsets.UTF_8;
+    
     private void generateRandomData(byte[] data) {
       // this test needs the random data to be valid unicode
       String s = TestUtil.randomFixedByteLengthUnicodeString(random(), data.length);
@@ -359,7 +361,7 @@ public class TestPayloads extends LuceneTestCase {
      * This Analyzer uses an WhitespaceTokenizer and PayloadFilter.
      */
     private static class PayloadAnalyzer extends Analyzer {
-        Map<String,PayloadData> fieldToData = new HashMap<String,PayloadData>();
+        Map<String,PayloadData> fieldToData = new HashMap<>();
 
         public PayloadAnalyzer() {
           super(PER_FIELD_REUSE_STRATEGY);
@@ -539,7 +541,7 @@ public class TestPayloads extends LuceneTestCase {
         private List<byte[]> pool;
         
         ByteArrayPool(int capacity, int size) {
-            pool = new ArrayList<byte[]>();
+            pool = new ArrayList<>();
             for (int i = 0; i < capacity; i++) {
                 pool.add(new byte[size]);
             }

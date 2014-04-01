@@ -343,7 +343,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
   // since custom scoring modifies the order of docs, map results 
   // by doc ids so that we can later compare/verify them 
   private Map<Integer,Float> topDocsToMap(TopDocs td) {
-    Map<Integer,Float> h = new HashMap<Integer,Float>();
+    Map<Integer,Float> h = new HashMap<>();
     for (int i=0; i<td.totalHits; i++) {
       h.put(td.scoreDocs[i].doc, td.scoreDocs[i].score);
     }

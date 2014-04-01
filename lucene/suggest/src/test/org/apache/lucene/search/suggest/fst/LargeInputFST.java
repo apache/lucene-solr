@@ -17,10 +17,16 @@ package org.apache.lucene.search.suggest.fst;
  * limitations under the License.
  */
 
-import java.io.*;
 
-import org.apache.lucene.search.suggest.Sort;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.OfflineSorter;
 
 /**
  * Try to build a suggester from a large data set. The input is a simple text
@@ -33,12 +39,12 @@ public class LargeInputFST {
     int buckets = 20;
     int shareMaxTail = 10;
 
-    ExternalRefSorter sorter = new ExternalRefSorter(new Sort());
+    ExternalRefSorter sorter = new ExternalRefSorter(new OfflineSorter());
     FSTCompletionBuilder builder = new FSTCompletionBuilder(buckets, sorter, shareMaxTail);
 
     BufferedReader reader = new BufferedReader(
         new InputStreamReader(
-            new FileInputStream(input), "UTF-8"));
+            new FileInputStream(input), StandardCharsets.UTF_8));
     
     BytesRef scratch = new BytesRef();
     String line;

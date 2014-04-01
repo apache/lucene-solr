@@ -108,7 +108,7 @@ public class CircularList<T> implements Iterable<T>
 
   public List<T> toList()
   {
-    ArrayList<T> list = new ArrayList<T>( size );
+    ArrayList<T> list = new ArrayList<>( size );
     for( int i=0; i<size; i++ ) {
       list.add( data[convert(i)] );
     }

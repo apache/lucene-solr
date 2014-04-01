@@ -24,6 +24,7 @@ import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.lang.reflect.Array;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -45,6 +46,7 @@ import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.client.solrj.SolrServer;
@@ -68,7 +70,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.hadoop.hack.MiniMRClientCluster;
 import org.apache.solr.hadoop.hack.MiniMRClientClusterFactory;
 import org.apache.solr.morphlines.solr.AbstractSolrMorphlineTestBase;
-import org.apache.solr.util.ExternalPaths;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -88,15 +89,12 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies.Conseque
 @ThreadLeakZombies(Consequence.CONTINUE)
 @ThreadLeakScope(Scope.NONE)
 @SuppressCodecs({"Lucene3x", "Lucene40"})
+@SuppressSSL // SSL does not work with this test for currently unknown reasons
 @Slow
 public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
   
-  static {
-    ALLOW_SSL = false;
-  }
-  
   private static final int RECORD_COUNT = 2104;
-  private static final String RESOURCES_DIR = ExternalPaths.SOURCE_HOME + "/contrib/map-reduce/src/test-files";  
+  private static final String RESOURCES_DIR = getFile("morphlines-core.marker").getParent();  
   private static final String DOCUMENTS_DIR = RESOURCES_DIR + "/test-documents";
   private static final File MINIMR_INSTANCE_DIR = new File(RESOURCES_DIR + "/solr/minimr");
   private static final File MINIMR_CONF_DIR = new File(RESOURCES_DIR + "/solr/minimr");
@@ -111,7 +109,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
   private final String inputAvroFile2;
   private final String inputAvroFile3;
 
-  private static final File solrHomeDirectory = new File(TEMP_DIR, MorphlineGoLiveMiniMRTest.class.getName());
+  private static final File solrHomeDirectory = new File(dataDir, MorphlineGoLiveMiniMRTest.class.getName());
   
   @Override
   public String getSolrHome() {
@@ -137,13 +135,14 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     assumeFalse("HDFS tests were disabled by -Dtests.disableHdfs",
         Boolean.parseBoolean(System.getProperty("tests.disableHdfs", "false")));
     
+    assumeFalse("FIXME: This test does not work with Windows because of native library requirements", Constants.WINDOWS);
     assumeFalse("FIXME: This test fails under Java 8 due to the Saxon dependency - see SOLR-1301", Constants.JRE_IS_MINIMUM_JAVA8);
     assumeFalse("FIXME: This test fails under J9 due to the Saxon dependency - see SOLR-1301", System.getProperty("java.vm.info", "<?>").contains("IBM J9"));
     
     AbstractZkTestCase.SOLRHOME = solrHomeDirectory;
     FileUtils.copyDirectory(MINIMR_INSTANCE_DIR, solrHomeDirectory);
 
-    tempDir = TEMP_DIR + "/test-morphlines-" + System.currentTimeMillis();
+    tempDir = dataDir + "/test-morphlines-" + System.currentTimeMillis();
     new File(tempDir).mkdirs();
     FileUtils.copyFile(new File(RESOURCES_DIR + "/custom-mimetypes.xml"), new File(tempDir + "/custom-mimetypes.xml"));
     
@@ -166,7 +165,6 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     conf.set(YarnConfiguration.DEFAULT_NM_LOG_DIRS, dataDir + File.separator +  "nm-logs");
 
     
-    createTempDir();
     new File(dataDir + File.separator +  "nm-local-dirs").mkdirs();
     
     System.setProperty("test.build.dir", dataDir + File.separator + "hdfs" + File.separator + "test-build-dir");
@@ -247,7 +245,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
   public void testBuildShardUrls() throws Exception {
     // 2x3
     Integer numShards = 2;
-    List<Object> urls = new ArrayList<Object>();
+    List<Object> urls = new ArrayList<>();
     urls.add("shard1");
     urls.add("shard2");
     urls.add("shard3");
@@ -305,7 +303,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     // null shards 3x1
     numShards = null;
     
-    urls = new ArrayList<Object>();
+    urls = new ArrayList<>();
     urls.add("shard1");
     urls.add("shard2");
     urls.add("shard3");
@@ -320,7 +318,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     
     // 2x(2,3) off balance
     numShards = 2;
-    urls = new ArrayList<Object>();
+    urls = new ArrayList<>();
     urls.add("shard1");
     urls.add("shard2");
     urls.add("shard3");
@@ -330,7 +328,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
 
     assertEquals(shardUrls.toString(), 2, shardUrls.size());
     
-    Set<Integer> counts = new HashSet<Integer>();
+    Set<Integer> counts = new HashSet<>();
     counts.add(shardUrls.get(0).size());
     counts.add(shardUrls.get(1).size());
     
@@ -382,7 +380,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     args = new String[] {
         "--solr-home-dir=" + MINIMR_CONF_DIR.getAbsolutePath(),
         "--output-dir=" + outDir.toString(),
-        "--log4j=" + ExternalPaths.SOURCE_HOME + "/core/src/test-files/log4j.properties",
+        "--log4j=" + getFile("log4j.properties").getAbsolutePath(),
         "--mappers=3",
         random().nextBoolean() ? "--input-list=" + INPATH.toString() : dataDir.toString(),  
         "--go-live-threads", Integer.toString(random().nextInt(15) + 1),
@@ -390,7 +388,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
         "--go-live"
     };
     args = prependInitialArgs(args);
-    List<String> argList = new ArrayList<String>();
+    List<String> argList = new ArrayList<>();
     getShardUrlArgs(argList);
     args = concat(args, argList.toArray(new String[0]));
     
@@ -420,7 +418,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
         "--go-live-threads", Integer.toString(random().nextInt(15) + 1)
     };
     args = prependInitialArgs(args);
-    argList = new ArrayList<String>();
+    argList = new ArrayList<>();
     getShardUrlArgs(argList);
     args = concat(args, argList.toArray(new String[0]));
     
@@ -610,7 +608,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     };
     args = prependInitialArgs(args);
 
-    argList = new ArrayList<String>();
+    argList = new ArrayList<>();
     getShardUrlArgs(argList, replicatedCollection);
     args = concat(args, argList.toArray(new String[0]));
     
@@ -660,6 +658,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
               + new ZkCoreNodeProps(replica).getCoreUrl(), found, count);
         }
         found = count;
+        client.shutdown();
       }
     }
   }
@@ -679,7 +678,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
       Path dataDir, String localFile) throws IOException, UnsupportedEncodingException {
     Path INPATH = new Path(inDir, "input.txt");
     OutputStream os = fs.create(INPATH);
-    Writer wr = new OutputStreamWriter(os, "UTF-8");
+    Writer wr = new OutputStreamWriter(os, StandardCharsets.UTF_8);
     wr.write(DATADIR + File.separator + localFile);
     wr.close();
     

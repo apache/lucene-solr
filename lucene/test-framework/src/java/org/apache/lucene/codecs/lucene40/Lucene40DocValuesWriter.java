@@ -155,7 +155,7 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
   @Override
   public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
     // examine the values to determine best type to use
-    HashSet<BytesRef> uniqueValues = new HashSet<BytesRef>();
+    HashSet<BytesRef> uniqueValues = new HashSet<>();
     int minLength = Integer.MAX_VALUE;
     int maxLength = Integer.MIN_VALUE;
     for (BytesRef b : values) {
@@ -314,7 +314,7 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
                           Lucene40DocValuesFormat.BYTES_FIXED_DEREF_VERSION_CURRENT);
     
     // deduplicate
-    TreeSet<BytesRef> dictionary = new TreeSet<BytesRef>();
+    TreeSet<BytesRef> dictionary = new TreeSet<>();
     for (BytesRef v : values) {
       dictionary.add(v == null ? new BytesRef() : BytesRef.deepCopyOf(v));
     }
@@ -354,7 +354,7 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
                           Lucene40DocValuesFormat.BYTES_VAR_DEREF_VERSION_CURRENT);
     
     // deduplicate
-    TreeSet<BytesRef> dictionary = new TreeSet<BytesRef>();
+    TreeSet<BytesRef> dictionary = new TreeSet<>();
     for (BytesRef v : values) {
       dictionary.add(v == null ? new BytesRef() : BytesRef.deepCopyOf(v));
     }
@@ -362,7 +362,7 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
     /* values */
     long startPosition = data.getFilePointer();
     long currentAddress = 0;
-    HashMap<BytesRef,Long> valueToAddress = new HashMap<BytesRef,Long>();
+    HashMap<BytesRef,Long> valueToAddress = new HashMap<>();
     for (BytesRef v : dictionary) {
       currentAddress = data.getFilePointer() - startPosition;
       valueToAddress.put(v, currentAddress);

@@ -51,14 +51,14 @@ public class AnalyticsRequestFactory implements AnalyticsParams {
   public static final Pattern queryFacetParamPattern = Pattern.compile("^o(?:lap)?\\.([^\\.]+)\\.(?:"+QUERY_FACET+")\\.([^\\.]+)\\.("+QUERY+"|"+DEPENDENCY+")$", Pattern.CASE_INSENSITIVE);
   
   public static List<AnalyticsRequest> parse(IndexSchema schema, SolrParams params) {
-    Map<String, AnalyticsRequest> requestMap = new HashMap<String, AnalyticsRequest>();
-    Map<String, Map<String,FieldFacetRequest>> fieldFacetMap = new HashMap<String, Map<String,FieldFacetRequest>>();
-    Map<String, Set<String>> fieldFacetSet = new HashMap<String,Set<String>>();
-    Map<String, Map<String,RangeFacetRequest>> rangeFacetMap = new HashMap<String, Map<String,RangeFacetRequest>>();
-    Map<String, Set<String>> rangeFacetSet = new HashMap<String,Set<String>>();
-    Map<String, Map<String,QueryFacetRequest>> queryFacetMap = new HashMap<String, Map<String,QueryFacetRequest>>();
-    Map<String, Set<String>> queryFacetSet = new HashMap<String,Set<String>>();
-    List<AnalyticsRequest> requestList = new ArrayList<AnalyticsRequest>();
+    Map<String, AnalyticsRequest> requestMap = new HashMap<>();
+    Map<String, Map<String,FieldFacetRequest>> fieldFacetMap = new HashMap<>();
+    Map<String, Set<String>> fieldFacetSet = new HashMap<>();
+    Map<String, Map<String,RangeFacetRequest>> rangeFacetMap = new HashMap<>();
+    Map<String, Set<String>> rangeFacetSet = new HashMap<>();
+    Map<String, Map<String,QueryFacetRequest>> queryFacetMap = new HashMap<>();
+    Map<String, Set<String>> queryFacetSet = new HashMap<>();
+    List<AnalyticsRequest> requestList = new ArrayList<>();
     
     Iterator<String> paramsIterator = params.getParameterNamesIterator();
     while (paramsIterator.hasNext()) {
@@ -115,7 +115,7 @@ public class AnalyticsRequestFactory implements AnalyticsParams {
     }
     for (String reqName : requestMap.keySet()) {
       AnalyticsRequest ar = requestMap.get(reqName);
-      List<FieldFacetRequest> ffrs = new ArrayList<FieldFacetRequest>();
+      List<FieldFacetRequest> ffrs = new ArrayList<>();
       if (fieldFacetSet.get(reqName)!=null) {
         for (String field : fieldFacetSet.get(reqName)) {
           ffrs.add(fieldFacetMap.get(reqName).get(field));
@@ -123,7 +123,7 @@ public class AnalyticsRequestFactory implements AnalyticsParams {
       }
       ar.setFieldFacets(ffrs);
       
-      List<RangeFacetRequest> rfrs = new ArrayList<RangeFacetRequest>();
+      List<RangeFacetRequest> rfrs = new ArrayList<>();
       if (rangeFacetSet.get(reqName)!=null) {
         for (String field : rangeFacetSet.get(reqName)) {
           RangeFacetRequest rfr = rangeFacetMap.get(reqName).get(field);
@@ -134,7 +134,7 @@ public class AnalyticsRequestFactory implements AnalyticsParams {
       }
       ar.setRangeFacets(rfrs);
       
-      List<QueryFacetRequest> qfrs = new ArrayList<QueryFacetRequest>();
+      List<QueryFacetRequest> qfrs = new ArrayList<>();
       if (queryFacetSet.get(reqName)!=null) {
         for (String name : queryFacetSet.get(reqName)) {
           QueryFacetRequest qfr = queryFacetMap.get(reqName).get(name);
@@ -157,12 +157,12 @@ public class AnalyticsRequestFactory implements AnalyticsParams {
   private static void makeFieldFacet(IndexSchema schema, Map<String, Map<String, FieldFacetRequest>> fieldFacetMap, Map<String, Set<String>> fieldFacetSet, String requestName, String[] fields) {
     Map<String, FieldFacetRequest> facetMap = fieldFacetMap.get(requestName);
     if (facetMap == null) {
-      facetMap = new HashMap<String, FieldFacetRequest>();
+      facetMap = new HashMap<>();
       fieldFacetMap.put(requestName, facetMap);
     }
     Set<String> set = fieldFacetSet.get(requestName);
     if (set == null) {
-      set = new HashSet<String>();
+      set = new HashSet<>();
       fieldFacetSet.put(requestName, set);
     }
     for (String field : fields) {
@@ -176,7 +176,7 @@ public class AnalyticsRequestFactory implements AnalyticsParams {
   private static void setFieldFacetParam(IndexSchema schema, Map<String, Map<String, FieldFacetRequest>> fieldFacetMap, String requestName, String field, String paramType, String[] params) {
     Map<String, FieldFacetRequest> facetMap = fieldFacetMap.get(requestName);
     if (facetMap == null) {
-      facetMap = new HashMap<String, FieldFacetRequest>();
+      facetMap = new HashMap<>();
       fieldFacetMap.put(requestName, facetMap);
     }
     FieldFacetRequest fr = facetMap.get(field);
@@ -202,7 +202,7 @@ public class AnalyticsRequestFactory implements AnalyticsParams {
   private static void makeRangeFacet(IndexSchema schema, Map<String, Set<String>> rangeFacetSet, String requestName, String[] fields) {
     Set<String> set = rangeFacetSet.get(requestName);
     if (set == null) {
-      set = new HashSet<String>();
+      set = new HashSet<>();
       rangeFacetSet.put(requestName, set);
     }
     for (String field : fields) {
@@ -213,7 +213,7 @@ public class AnalyticsRequestFactory implements AnalyticsParams {
   private static void setRangeFacetParam(IndexSchema schema, Map<String, Map<String, RangeFacetRequest>> rangeFacetMap, String requestName, String field, String paramType, String[] params) {
     Map<String, RangeFacetRequest> facetMap = rangeFacetMap.get(requestName);
     if (facetMap == null) {
-      facetMap = new HashMap<String, RangeFacetRequest>();
+      facetMap = new HashMap<>();
       rangeFacetMap.put(requestName, facetMap);
     }
     RangeFacetRequest rr = facetMap.get(field);
@@ -243,7 +243,7 @@ public class AnalyticsRequestFactory implements AnalyticsParams {
   private static void makeQueryFacet(IndexSchema schema,Map<String, Set<String>> queryFacetSet, String requestName, String[] names) {
     Set<String> set = queryFacetSet.get(requestName);
     if (set == null) {
-      set = new HashSet<String>();
+      set = new HashSet<>();
       queryFacetSet.put(requestName, set);
     }
     for (String name : names) {
@@ -254,7 +254,7 @@ public class AnalyticsRequestFactory implements AnalyticsParams {
   private static void setQueryFacetParam(IndexSchema schema, Map<String, Map<String, QueryFacetRequest>> queryFacetMap, String requestName, String name, String paramType, String[] params) {
     Map<String, QueryFacetRequest> facetMap = queryFacetMap.get(requestName);
     if (facetMap == null) {
-      facetMap = new HashMap<String, QueryFacetRequest>();
+      facetMap = new HashMap<>();
       queryFacetMap.put(requestName, facetMap);
     }
     QueryFacetRequest qr = facetMap.get(name);

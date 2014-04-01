@@ -46,7 +46,7 @@ public class BinaryRequestWriter extends RequestWriter {
               && (updateRequest.getDocIterator() == null) ) {
         return null;
       }
-      List<ContentStream> l = new ArrayList<ContentStream>();
+      List<ContentStream> l = new ArrayList<>();
       l.add(new LazyContentStream(updateRequest));
       return l;
     } else {

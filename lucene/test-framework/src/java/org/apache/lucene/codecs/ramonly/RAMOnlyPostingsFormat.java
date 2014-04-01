@@ -65,7 +65,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     
   // Postings state:
   static class RAMPostings extends FieldsProducer {
-    final Map<String,RAMField> fieldToTerms = new TreeMap<String,RAMField>();
+    final Map<String,RAMField> fieldToTerms = new TreeMap<>();
 
     @Override
     public Terms terms(String field) {
@@ -98,7 +98,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
 
   static class RAMField extends Terms {
     final String field;
-    final SortedMap<String,RAMTerm> termToDocs = new TreeMap<String,RAMTerm>();
+    final SortedMap<String,RAMTerm> termToDocs = new TreeMap<>();
     long sumTotalTermFreq;
     long sumDocFreq;
     int docCount;
@@ -167,7 +167,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
   static class RAMTerm {
     final String term;
     long totalTermFreq;
-    final List<RAMDoc> docs = new ArrayList<RAMDoc>();
+    final List<RAMDoc> docs = new ArrayList<>();
     public RAMTerm(String term) {
       this.term = term;
     }
@@ -599,7 +599,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
   }
 
   // Holds all indexes created, keyed by the ID assigned in fieldsConsumer
-  private final Map<Integer,RAMPostings> state = new HashMap<Integer,RAMPostings>();
+  private final Map<Integer,RAMPostings> state = new HashMap<>();
 
   private final AtomicInteger nextID = new AtomicInteger();
 

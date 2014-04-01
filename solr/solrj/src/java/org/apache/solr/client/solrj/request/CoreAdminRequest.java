@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class is experimental and subject to change.
@@ -52,6 +53,7 @@ public class CoreAdminRequest extends SolrRequest
     protected String schemaName = null;
     protected String dataDir = null;
     protected String ulogDir = null;
+    protected String configSet = null;
     protected String collection;
     private Integer numShards;
     private String shardId;
@@ -70,6 +72,9 @@ public class CoreAdminRequest extends SolrRequest
     public void setConfigName(String config) { this.configName = config; }
     public void setDataDir(String dataDir) { this.dataDir = dataDir; }
     public void setUlogDir(String ulogDir) { this.ulogDir = ulogDir; }
+    public void setConfigSet(String configSet) {
+      this.configSet = configSet;
+    }
     public void setCollection(String collection) { this.collection = collection; }
     public void setNumShards(int numShards) {this.numShards = numShards;}
     public void setShardId(String shardId) {this.shardId = shardId;}
@@ -84,6 +89,9 @@ public class CoreAdminRequest extends SolrRequest
     public String getConfigName()  { return configName; }
     public String getDataDir() { return dataDir; }
     public String getUlogDir() { return ulogDir; }
+    public String getConfigSet() {
+      return configSet;
+    }
     public String getCollection() { return collection; }
     public String getShardId() { return shardId; }
     public String getRoles() { return roles; }
@@ -116,6 +124,9 @@ public class CoreAdminRequest extends SolrRequest
       }
       if (ulogDir != null) {
         params.set( CoreAdminParams.ULOG_DIR, ulogDir);
+      }
+      if (configSet != null) {
+        params.set( CoreAdminParams.CONFIGSET, configSet);
       }
       if (collection != null) {
         params.set( CoreAdminParams.COLLECTION, collection);
@@ -487,10 +498,11 @@ public class CoreAdminRequest extends SolrRequest
   @Override
   public CoreAdminResponse process(SolrServer server) throws SolrServerException, IOException 
   {
-    long startTime = System.currentTimeMillis();
+    long startTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
     CoreAdminResponse res = new CoreAdminResponse();
     res.setResponse( server.request( this ) );
-    res.setElapsedTime( System.currentTimeMillis()-startTime );
+    long endTime = TimeUnit.MILLISECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
+    res.setElapsedTime(endTime - startTime);
     return res;
   }
 

@@ -38,13 +38,13 @@ public class ThreadDumpHandler extends RequestHandlerBase
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException 
   {    
-    SimpleOrderedMap<Object> system = new SimpleOrderedMap<Object>();
+    SimpleOrderedMap<Object> system = new SimpleOrderedMap<>();
     rsp.add( "system", system );
 
     ThreadMXBean tmbean = ManagementFactory.getThreadMXBean();
     
     // Thread Count
-    SimpleOrderedMap<Object> nl = new SimpleOrderedMap<Object>();
+    SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>();
     nl.add( "current",tmbean.getThreadCount() );
     nl.add( "peak", tmbean.getPeakThreadCount() );
     nl.add( "daemon", tmbean.getDaemonThreadCount() );
@@ -55,7 +55,7 @@ public class ThreadDumpHandler extends RequestHandlerBase
     long[] tids = tmbean.findMonitorDeadlockedThreads();
     if (tids != null) {
       tinfos = tmbean.getThreadInfo(tids, Integer.MAX_VALUE);
-      NamedList<SimpleOrderedMap<Object>> lst = new NamedList<SimpleOrderedMap<Object>>();
+      NamedList<SimpleOrderedMap<Object>> lst = new NamedList<>();
       for (ThreadInfo ti : tinfos) {
         if (ti != null) {
           lst.add( "thread", getThreadInfo( ti, tmbean ) );
@@ -67,7 +67,7 @@ public class ThreadDumpHandler extends RequestHandlerBase
     // Now show all the threads....
     tids = tmbean.getAllThreadIds();
     tinfos = tmbean.getThreadInfo(tids, Integer.MAX_VALUE);
-    NamedList<SimpleOrderedMap<Object>> lst = new NamedList<SimpleOrderedMap<Object>>();
+    NamedList<SimpleOrderedMap<Object>> lst = new NamedList<>();
     for (ThreadInfo ti : tinfos) {
       if (ti != null) {
         lst.add( "thread", getThreadInfo( ti, tmbean ) );
@@ -81,7 +81,7 @@ public class ThreadDumpHandler extends RequestHandlerBase
   //--------------------------------------------------------------------------------
   
   private static SimpleOrderedMap<Object> getThreadInfo( ThreadInfo ti, ThreadMXBean tmbean ) {
-    SimpleOrderedMap<Object> info = new SimpleOrderedMap<Object>();
+    SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
     long tid = ti.getThreadId();
 
     info.add( "id", tid );
@@ -104,7 +104,7 @@ public class ThreadDumpHandler extends RequestHandlerBase
     }
 
     if (ti.getLockOwnerName() != null) {
-      SimpleOrderedMap<Object> owner = new SimpleOrderedMap<Object>();
+      SimpleOrderedMap<Object> owner = new SimpleOrderedMap<>();
       owner.add( "name", ti.getLockOwnerName() );
       owner.add( "id", ti.getLockOwnerId() );
     }

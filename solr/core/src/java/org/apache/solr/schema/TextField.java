@@ -23,9 +23,7 @@ import org.apache.lucene.index.StorableField;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.QueryBuilder;
-import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
@@ -170,22 +168,11 @@ public class TextField extends FieldType {
 
   @Override
   public Object marshalSortValue(Object value) {
-    if (null == value) {
-      return null;
-    }
-    CharsRef spare = new CharsRef();
-    UnicodeUtil.UTF8toUTF16((BytesRef)value, spare);
-    return spare.toString();
+    return marshalStringSortValue(value);
   }
 
   @Override
   public Object unmarshalSortValue(Object value) {
-    if (null == value) {
-      return null;
-    }
-    BytesRef spare = new BytesRef();
-    String stringVal = (String)value;
-    UnicodeUtil.UTF16toUTF8(stringVal, 0, stringVal.length(), spare);
-    return spare;
+    return unmarshalStringSortValue(value);
   }
 }

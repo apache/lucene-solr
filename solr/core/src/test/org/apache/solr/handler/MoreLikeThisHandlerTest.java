@@ -59,7 +59,7 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
 
     // requires 'q' or single content stream
     try {
-      ArrayList<ContentStream> streams = new ArrayList<ContentStream>( 2 );
+      ArrayList<ContentStream> streams = new ArrayList<>( 2 );
       streams.add( new ContentStreamBase.StringStream( "hello" ) );
       streams.add( new ContentStreamBase.StringStream( "there" ) );
       req.setContentStreams( streams );

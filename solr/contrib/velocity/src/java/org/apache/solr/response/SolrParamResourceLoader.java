@@ -25,13 +25,13 @@ import org.apache.commons.collections.ExtendedProperties;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
 public class SolrParamResourceLoader extends ResourceLoader {
-  private Map<String,String> templates = new HashMap<String,String>();
+  private Map<String,String> templates = new HashMap<>();
   public SolrParamResourceLoader(SolrQueryRequest request) {
     super();
 
@@ -57,11 +57,7 @@ public class SolrParamResourceLoader extends ResourceLoader {
   @Override
   public InputStream getResourceStream(String s) throws ResourceNotFoundException {
     String template = templates.get(s);
-    try {
-      return template == null ? null : new ByteArrayInputStream(template.getBytes("UTF-8"));
-    } catch (UnsupportedEncodingException e) {
-      throw new RuntimeException(e); // may not happen
-    }
+    return template == null ? null : new ByteArrayInputStream(template.getBytes(StandardCharsets.UTF_8));
   }
 
   @Override

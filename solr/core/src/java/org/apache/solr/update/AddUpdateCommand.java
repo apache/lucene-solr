@@ -193,7 +193,7 @@ public class AddUpdateCommand extends UpdateCommand implements Iterable<IndexDoc
   }
 
   private List<SolrInputDocument> flatten(SolrInputDocument root) {
-    List<SolrInputDocument> unwrappedDocs = new ArrayList<SolrInputDocument>();
+    List<SolrInputDocument> unwrappedDocs = new ArrayList<>();
     recUnwrapp(unwrappedDocs, root);
     return unwrappedDocs;
   }

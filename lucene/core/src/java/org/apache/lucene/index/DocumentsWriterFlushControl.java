@@ -51,10 +51,10 @@ final class DocumentsWriterFlushControl  {
   private int numDocsSinceStalled = 0; // only with assert
   final AtomicBoolean flushDeletes = new AtomicBoolean(false);
   private boolean fullFlush = false;
-  private final Queue<DocumentsWriterPerThread> flushQueue = new LinkedList<DocumentsWriterPerThread>();
+  private final Queue<DocumentsWriterPerThread> flushQueue = new LinkedList<>();
   // only for safety reasons if a DWPT is close to the RAM limit
-  private final Queue<BlockedFlush> blockedFlushes = new LinkedList<BlockedFlush>();
-  private final IdentityHashMap<DocumentsWriterPerThread, Long> flushingWriters = new IdentityHashMap<DocumentsWriterPerThread, Long>();
+  private final Queue<BlockedFlush> blockedFlushes = new LinkedList<>();
+  private final IdentityHashMap<DocumentsWriterPerThread, Long> flushingWriters = new IdentityHashMap<>();
 
 
   double maxConfiguredRamBuffer = 0;
@@ -531,7 +531,7 @@ final class DocumentsWriterFlushControl  {
     return true;
   }
 
-  private final List<DocumentsWriterPerThread> fullFlushBuffer = new ArrayList<DocumentsWriterPerThread>();
+  private final List<DocumentsWriterPerThread> fullFlushBuffer = new ArrayList<>();
 
   void addFlushableState(ThreadState perThread) {
     if (infoStream.isEnabled("DWFC")) {

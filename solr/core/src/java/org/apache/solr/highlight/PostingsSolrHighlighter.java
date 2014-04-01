@@ -209,9 +209,9 @@ public class PostingsSolrHighlighter extends SolrHighlighter implements PluginIn
    * @return encoded namedlist of summaries
    */
   protected NamedList<Object> encodeSnippets(String[] keys, String[] fieldNames, Map<String,String[]> snippets) {
-    NamedList<Object> list = new SimpleOrderedMap<Object>();
+    NamedList<Object> list = new SimpleOrderedMap<>();
     for (int i = 0; i < keys.length; i++) {
-      NamedList<Object> summary = new SimpleOrderedMap<Object>();
+      NamedList<Object> summary = new SimpleOrderedMap<>();
       for (String field : fieldNames) {
         String snippet = snippets.get(field)[i];
         // box in an array to match the format of existing highlighters, 

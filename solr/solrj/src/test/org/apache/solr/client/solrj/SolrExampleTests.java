@@ -32,6 +32,8 @@ import com.google.common.collect.Maps;
 import junit.framework.Assert;
 
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
@@ -68,6 +70,7 @@ import org.slf4j.LoggerFactory;
  *
  * @since solr 1.3
  */
+@SuppressSSL
 abstract public class SolrExampleTests extends SolrExampleTestsBase
 {
   private static Logger log = LoggerFactory.getLogger(SolrExampleTests.class);
@@ -114,7 +117,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     Assert.assertEquals(docID, response.getResults().get(0).getFieldValue("id") );
     
     // Now add a few docs for facet testing...
-    List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
+    List<SolrInputDocument> docs = new ArrayList<>();
     SolrInputDocument doc2 = new SolrInputDocument();
     doc2.addField( "id", "2", 1.0f );
     doc2.addField( "inStock", true, 1.0f );
@@ -215,6 +218,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       QueryResponse rsp = client.query(q);
       assertNotNull(rsp.getResponse().get("mode"));
       assertNotNull(rsp.getResponse().get("lucene"));
+      client.shutdown();
     }
   }
 
@@ -241,7 +245,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     doc2.addField( "name", "h\uD866\uDF05llo", 1.0f );
     doc2.addField( "price", 20 );
     
-    Collection<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
+    Collection<SolrInputDocument> docs = new ArrayList<>();
     docs.add( doc1 );
     docs.add( doc2 );
     
@@ -358,7 +362,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
         // Empty the database...
         server.deleteByQuery("*:*");// delete everything!
         
-        List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
+        List<SolrInputDocument> docs = new ArrayList<>();
         for (int i = 0; i < numDocs; i++) {
           // Now add something...
           SolrInputDocument doc = new SolrInputDocument();
@@ -539,6 +543,11 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     
     SolrDocumentList out = rsp.getResults();
     assertEquals(2, out.getNumFound());
+    if (!(server1 instanceof EmbeddedSolrServer)) {
+      /* Do not shutdown in case of using EmbeddedSolrServer, 
+       * as that would shutdown the CoreContainer */
+      server1.shutdown();
+    }
   }
   
  @Test
@@ -739,7 +748,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     server.commit();
     assertNumFound( "*:*", 0 ); // make sure it got in
     
-    ArrayList<SolrInputDocument> docs = new ArrayList<SolrInputDocument>(10);
+    ArrayList<SolrInputDocument> docs = new ArrayList<>(10);
     for( int i=1; i<=10; i++ ) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.setField( "id", i+"", 1.0f );
@@ -816,7 +825,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     assertNumFound( "*:*", 0 ); // make sure it got in
     
     int id = 1;
-    ArrayList<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
+    ArrayList<SolrInputDocument> docs = new ArrayList<>();
     docs.add( makeTestDoc( "id", id++, "features", "aaa",  "cat", "a", "inStock", true  ) );
     docs.add( makeTestDoc( "id", id++, "features", "aaa",  "cat", "a", "inStock", false ) );
     docs.add( makeTestDoc( "id", id++, "features", "aaa",  "cat", "a", "inStock", true ) );
@@ -1120,7 +1129,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     assertEquals(1.0f, resp.getResults().get(0).getFirstValue("price_f"));
 
     //update "price" with incorrect version (optimistic locking)
-    HashMap<String, Object> oper = new HashMap<String, Object>();  //need better api for this???
+    HashMap<String, Object> oper = new HashMap<>();  //need better api for this???
     oper.put("set",100);
 
     doc = new SolrInputDocument();
@@ -1174,7 +1183,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     QueryResponse response = solrServer.query(new SolrQuery("id:123"));
     assertEquals("Failed to add doc to cloud server", 1, response.getResults().getNumFound());
 
-    Map<String, List<String>> operation = new HashMap<String, List<String>>();
+    Map<String, List<String>> operation = new HashMap<>();
     operation.put("set", Arrays.asList("first", "second", "third"));
     doc.addField("multi_ss", operation);
     solrServer.add(doc);

@@ -42,7 +42,7 @@ import java.util.ArrayList;
 import static org.junit.internal.matchers.StringContains.containsString;
 
 public class ModifyConfFileTest extends SolrTestCaseJ4 {
-  private File solrHomeDirectory = new File(TEMP_DIR, this.getClass().getName());
+  private File solrHomeDirectory = new File(dataDir, this.getClass().getName());
 
   @Rule
   public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
@@ -67,10 +67,9 @@ public class ModifyConfFileTest extends SolrTestCaseJ4 {
   public void testConfigWrite() throws Exception {
 
     final CoreContainer cc = init();
-    try {
+    try (SolrCore core = cc.getCore("core1")) {
       //final CoreAdminHandler admin = new CoreAdminHandler(cc);
 
-      SolrCore core = cc.getCore("core1");
       SolrQueryResponse rsp = new SolrQueryResponse();
       SolrRequestHandler handler = core.getRequestHandler("/admin/fileedit");
 
@@ -82,7 +81,7 @@ public class ModifyConfFileTest extends SolrTestCaseJ4 {
       core.execute(handler, new LocalSolrQueryRequest(core, params), rsp);
       assertEquals(rsp.getException().getMessage(), "No file name specified for write operation.");
 
-      ArrayList<ContentStream> streams = new ArrayList<ContentStream>( 2 );
+      ArrayList<ContentStream> streams = new ArrayList<>( 2 );
       streams.add(new ContentStreamBase.StringStream("Testing rewrite of schema.xml file." ) );
 
       params = params("op", "write", "file", "bogus.txt");
@@ -147,7 +146,6 @@ public class ModifyConfFileTest extends SolrTestCaseJ4 {
 
       assertTrue("Velocity should be a directory", (boolean)velocity.get("directory"));
 
-      core.close();
     } finally {
       cc.shutdown();
       if (solrHomeDirectory.exists()) {

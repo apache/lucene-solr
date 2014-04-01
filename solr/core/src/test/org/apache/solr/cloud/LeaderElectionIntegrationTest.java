@@ -57,9 +57,9 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
   
   protected String zkDir;
   
-  private Map<Integer,CoreContainer> containerMap = new HashMap<Integer,CoreContainer>();
+  private Map<Integer,CoreContainer> containerMap = new HashMap<>();
   
-  private Map<String,Set<Integer>> shardPorts = new HashMap<String,Set<Integer>>();
+  private Map<String,Set<Integer>> shardPorts = new HashMap<>();
   
   private SolrZkClient zkClient;
 
@@ -73,7 +73,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    createTempDir();
+
     ignoreException("No UpdateLog found - cannot sync");
     ignoreException("No UpdateLog found - cannot recover");
     
@@ -142,7 +142,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
     System.setProperty("solr.solr.home", TEST_HOME());
     Set<Integer> ports = shardPorts.get(shard);
     if (ports == null) {
-      ports = new HashSet<Integer>();
+      ports = new HashSet<>();
       shardPorts.put(shard, ports);
     }
     ports.add(port);

@@ -55,7 +55,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() {
-    createTempDir();
+
   }
   
   @AfterClass
@@ -228,7 +228,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
   @Test
   public void testElection() throws Exception {
     
-    List<ClientThread> threads = new ArrayList<ClientThread>();
+    List<ClientThread> threads = new ArrayList<>();
     
     for (int i = 0; i < 15; i++) {
       ClientThread thread = new ClientThread(i);

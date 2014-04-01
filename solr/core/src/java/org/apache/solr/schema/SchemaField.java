@@ -201,7 +201,7 @@ public final class SchemaField extends FieldProperties {
       defaultValue = (String)props.get(DEFAULT_VALUE);
     }
     SchemaField field = new SchemaField(name, ft, calcProps(name, ft, props), defaultValue);
-    field.args = new HashMap<String,Object>(props);
+    field.args = new HashMap<>(props);
     return field;
   }
 
@@ -313,7 +313,7 @@ public final class SchemaField extends FieldProperties {
    * not overridden in the field declaration).
    */
   public SimpleOrderedMap<Object> getNamedPropertyValues(boolean showDefaults) {
-    SimpleOrderedMap<Object> properties = new SimpleOrderedMap<Object>();
+    SimpleOrderedMap<Object> properties = new SimpleOrderedMap<>();
     properties.add(FIELD_NAME, getName());
     properties.add(TYPE_NAME, getType().getTypeName());
     if (showDefaults) {

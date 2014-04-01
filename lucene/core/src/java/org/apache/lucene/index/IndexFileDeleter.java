@@ -81,21 +81,21 @@ final class IndexFileDeleter implements Closeable {
   /* Reference count for all files in the index.
    * Counts how many existing commits reference a file.
    **/
-  private Map<String, RefCount> refCounts = new HashMap<String, RefCount>();
+  private Map<String, RefCount> refCounts = new HashMap<>();
 
   /* Holds all commits (segments_N) currently in the index.
    * This will have just 1 commit if you are using the
    * default delete policy (KeepOnlyLastCommitDeletionPolicy).
    * Other policies may leave commit points live for longer
    * in which case this list would be longer than 1: */
-  private List<CommitPoint> commits = new ArrayList<CommitPoint>();
+  private List<CommitPoint> commits = new ArrayList<>();
 
   /* Holds files we had incref'd from the previous
    * non-commit checkpoint: */
-  private final List<String> lastFiles = new ArrayList<String>();
+  private final List<String> lastFiles = new ArrayList<>();
 
   /* Commits that the IndexDeletionPolicy have decided to delete: */
-  private List<CommitPoint> commitsToDelete = new ArrayList<CommitPoint>();
+  private List<CommitPoint> commitsToDelete = new ArrayList<>();
 
   private final InfoStream infoStream;
   private Directory directory;
@@ -584,23 +584,20 @@ final class IndexFileDeleter implements Closeable {
       }
       directory.deleteFile(fileName);
     } catch (IOException e) {  // if delete fails
-      if (directory.fileExists(fileName)) {
+      // Some operating systems (e.g. Windows) don't
+      // permit a file to be deleted while it is opened
+      // for read (e.g. by another process or thread). So
+      // we assume that when a delete fails it is because
+      // the file is open in another process, and queue
+      // the file for subsequent deletion.
 
-        // Some operating systems (e.g. Windows) don't
-        // permit a file to be deleted while it is opened
-        // for read (e.g. by another process or thread). So
-        // we assume that when a delete fails it is because
-        // the file is open in another process, and queue
-        // the file for subsequent deletion.
-
-        if (infoStream.isEnabled("IFD")) {
-          infoStream.message("IFD", "unable to remove file \"" + fileName + "\": " + e.toString() + "; Will re-try later.");
-        }
-        if (deletable == null) {
-          deletable = new ArrayList<String>();
-        }
-        deletable.add(fileName);                  // add to deletable
+      if (infoStream.isEnabled("IFD")) {
+        infoStream.message("IFD", "unable to remove file \"" + fileName + "\": " + e.toString() + "; Will re-try later.");
       }
+      if (deletable == null) {
+        deletable = new ArrayList<>();
+      }
+      deletable.add(fileName);                  // add to deletable
     }
   }
 

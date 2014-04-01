@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.util;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.util.IOUtils;
@@ -97,7 +98,7 @@ public abstract class StopwordAnalyzerBase extends Analyzer {
       final String comment) throws IOException {
     Reader reader = null;
     try {
-      reader = IOUtils.getDecodingReader(aClass.getResourceAsStream(resource), IOUtils.CHARSET_UTF_8);
+      reader = IOUtils.getDecodingReader(aClass.getResourceAsStream(resource), StandardCharsets.UTF_8);
       return WordlistLoader.getWordSet(reader, comment, new CharArraySet(Version.LUCENE_CURRENT, 16, ignoreCase));
     } finally {
       IOUtils.close(reader);
@@ -122,7 +123,7 @@ public abstract class StopwordAnalyzerBase extends Analyzer {
       Version matchVersion) throws IOException {
     Reader reader = null;
     try {
-      reader = IOUtils.getDecodingReader(stopwords, IOUtils.CHARSET_UTF_8);
+      reader = IOUtils.getDecodingReader(stopwords, StandardCharsets.UTF_8);
       return WordlistLoader.getWordSet(reader, matchVersion);
     } finally {
       IOUtils.close(reader);

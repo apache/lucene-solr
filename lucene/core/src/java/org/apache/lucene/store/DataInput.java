@@ -18,12 +18,11 @@ package org.apache.lucene.store;
  */
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
-import org.apache.lucene.util.IOUtils;
 
 /**
  * Abstract base class for performing read operations of Lucene's low-level
@@ -188,7 +187,7 @@ public abstract class DataInput implements Cloneable {
     int length = readVInt();
     final byte[] bytes = new byte[length];
     readBytes(bytes, 0, length);
-    return new String(bytes, 0, length, IOUtils.CHARSET_UTF_8);
+    return new String(bytes, 0, length, StandardCharsets.UTF_8);
   }
 
   /** Returns a clone of this stream.
@@ -212,7 +211,7 @@ public abstract class DataInput implements Cloneable {
   /** Reads a Map&lt;String,String&gt; previously written
    *  with {@link DataOutput#writeStringStringMap(Map)}. */
   public Map<String,String> readStringStringMap() throws IOException {
-    final Map<String,String> map = new HashMap<String,String>();
+    final Map<String,String> map = new HashMap<>();
     final int count = readInt();
     for(int i=0;i<count;i++) {
       final String key = readString();
@@ -226,7 +225,7 @@ public abstract class DataInput implements Cloneable {
   /** Reads a Set&lt;String&gt; previously written
    *  with {@link DataOutput#writeStringSet(Set)}. */
   public Set<String> readStringSet() throws IOException {
-    final Set<String> set = new HashSet<String>();
+    final Set<String> set = new HashSet<>();
     final int count = readInt();
     for(int i=0;i<count;i++) {
       set.add(readString());

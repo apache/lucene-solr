@@ -19,7 +19,6 @@ package org.apache.solr.handler.component;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.GroupParams;
@@ -38,6 +37,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -57,7 +57,6 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
   private void init(String config, String schema) throws Exception {
     //write out elevate-data.xml to the Data dir first by copying it from conf, which we know exists, this way we can test both conf and data configurations
-    createTempDir();
     File parent = new File(TEST_HOME() + "/collection1", "conf");
     File elevateFile = new File(parent, "elevate.xml");
     File elevateDataFile = new File(dataDir, "elevate-data.xml");
@@ -348,7 +347,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       init("schema12.xml");
       SolrCore core = h.getCore();
 
-      NamedList<String> args = new NamedList<String>();
+      NamedList<String> args = new NamedList<>();
       args.add(QueryElevationComponent.FIELD_TYPE, "string");
       args.add(QueryElevationComponent.CONFIG_FILE, "elevate.xml");
 
@@ -371,7 +370,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       assertEquals(null, map.get("zzzz"));
 
       // Now test the same thing with a lowercase filter: 'lowerfilt'
-      args = new NamedList<String>();
+      args = new NamedList<>();
       args.add(QueryElevationComponent.FIELD_TYPE, "lowerfilt");
       args.add(QueryElevationComponent.CONFIG_FILE, "elevate.xml");
 
@@ -535,7 +534,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
       String query = "title:ipod";
 
-      Map<String, String> args = new HashMap<String, String>();
+      Map<String, String> args = new HashMap<>();
       args.put(CommonParams.Q, query);
       args.put(CommonParams.QT, "/elevate");
       args.put(CommonParams.FL, "id,score");
@@ -675,7 +674,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
   // write a test file to boost some docs
   private void writeFile(File file, String query, String... ids) throws Exception {
-    PrintWriter out = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), IOUtils.CHARSET_UTF_8));
+    PrintWriter out = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8));
     out.println("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>");
     out.println("<elevate>");
     out.println("<query text=\"" + query + "\">");
@@ -699,7 +698,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       writeFile(f, "aaa", "A");
 
       QueryElevationComponent comp = (QueryElevationComponent) h.getCore().getSearchComponent("elevate");
-      NamedList<String> args = new NamedList<String>();
+      NamedList<String> args = new NamedList<>();
       args.add(QueryElevationComponent.CONFIG_FILE, testfile);
       comp.init(args);
       comp.inform(h.getCore());

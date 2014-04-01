@@ -154,7 +154,7 @@ public class FSTOrdTermsWriter extends FieldsConsumer {
   final PostingsWriterBase postingsWriter;
   final FieldInfos fieldInfos;
   final int maxDoc;
-  final List<FieldMetaData> fields = new ArrayList<FieldMetaData>();
+  final List<FieldMetaData> fields = new ArrayList<>();
   IndexOutput blockOut = null;
   IndexOutput indexOut = null;
 
@@ -305,7 +305,7 @@ public class FSTOrdTermsWriter extends FieldsConsumer {
       this.fieldInfo = fieldInfo;
       this.longsSize = postingsWriter.setField(fieldInfo);
       this.outputs = PositiveIntOutputs.getSingleton();
-      this.builder = new Builder<Long>(FST.INPUT_TYPE.BYTE1, outputs);
+      this.builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
 
       this.lastBlockStatsFP = 0;
       this.lastBlockMetaLongsFP = 0;

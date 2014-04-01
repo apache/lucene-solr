@@ -45,11 +45,11 @@ public class DocCollection extends ZkNodeProps {
    * @param props  The properties of the slice.  This is used directly and a copy is not made.
    */
   public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
-    super( props==null ? props = new HashMap<String,Object>() : props);
+    super( props==null ? props = new HashMap<>() : props);
     this.name = name;
 
     this.slices = slices;
-    this.activeSlices = new HashMap<String, Slice>();
+    this.activeSlices = new HashMap<>();
 
     Iterator<Map.Entry<String, Slice>> iter = slices.entrySet().iterator();
 
@@ -115,7 +115,7 @@ public class DocCollection extends ZkNodeProps {
 
   @Override
   public void write(JSONWriter jsonWriter) {
-    LinkedHashMap<String, Object> all = new LinkedHashMap<String, Object>(slices.size() + 1);
+    LinkedHashMap<String, Object> all = new LinkedHashMap<>(slices.size() + 1);
     all.putAll(propMap);
     all.put(SHARDS, slices);
     jsonWriter.write(all);

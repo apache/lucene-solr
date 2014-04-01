@@ -22,6 +22,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.lang.reflect.Array;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import org.apache.commons.io.FileUtils;
@@ -43,7 +44,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.hadoop.hack.MiniMRCluster;
 import org.apache.solr.morphlines.solr.AbstractSolrMorphlineTestBase;
-import org.apache.solr.util.ExternalPaths;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -65,7 +65,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies.Conseque
 public class MorphlineBasicMiniMRTest extends SolrTestCaseJ4 {
   
   private static final boolean ENABLE_LOCAL_JOB_RUNNER = false; // for debugging only
-  private static final String RESOURCES_DIR = ExternalPaths.SOURCE_HOME + "/contrib/map-reduce/src/test-files";  
+  private static final String RESOURCES_DIR = getFile("morphlines-core.marker").getParent();  
   private static final String DOCUMENTS_DIR = RESOURCES_DIR + "/test-documents";
   private static final File MINIMR_CONF_DIR = new File(RESOURCES_DIR + "/solr/minimr");
   
@@ -80,7 +80,7 @@ public class MorphlineBasicMiniMRTest extends SolrTestCaseJ4 {
   
   private static String tempDir;
   
-  private static final File solrHomeDirectory = new File(TEMP_DIR, MorphlineBasicMiniMRTest.class.getName());
+  private static final File solrHomeDirectory = new File(dataDir, MorphlineBasicMiniMRTest.class.getName());
   
   protected MapReduceIndexerTool createTool() {
     return new MapReduceIndexerTool();
@@ -116,13 +116,14 @@ public class MorphlineBasicMiniMRTest extends SolrTestCaseJ4 {
     assumeFalse("HDFS tests were disabled by -Dtests.disableHdfs",
         Boolean.parseBoolean(System.getProperty("tests.disableHdfs", "false")));
     
+    assumeFalse("FIXME: This test does not work with Windows because of native library requirements", Constants.WINDOWS);
     assumeFalse("FIXME: This test fails under Java 8 due to the Saxon dependency - see SOLR-1301", Constants.JRE_IS_MINIMUM_JAVA8);
     assumeFalse("FIXME: This test fails under J9 due to the Saxon dependency - see SOLR-1301", System.getProperty("java.vm.info", "<?>").contains("IBM J9"));
     
     AbstractZkTestCase.SOLRHOME = solrHomeDirectory;
     FileUtils.copyDirectory(MINIMR_CONF_DIR, solrHomeDirectory);
     
-    tempDir = TEMP_DIR + "/test-morphlines-" + System.currentTimeMillis();
+    tempDir = dataDir + "/test-morphlines-" + System.currentTimeMillis();
     new File(tempDir).mkdirs();
     FileUtils.copyFile(new File(RESOURCES_DIR + "/custom-mimetypes.xml"), new File(tempDir + "/custom-mimetypes.xml"));
     
@@ -140,7 +141,6 @@ public class MorphlineBasicMiniMRTest extends SolrTestCaseJ4 {
 //      sb.append(",").append(i.getCanonicalHostName());
 //    }
     
-    createTempDir();
     new File(dataDir, "nm-local-dirs").mkdirs();
     
     System.setProperty("solr.hdfs.blockcache.enabled", "false");
@@ -308,7 +308,7 @@ public class MorphlineBasicMiniMRTest extends SolrTestCaseJ4 {
     assertTrue(fs.mkdirs(inDir));
     Path INPATH = new Path(inDir, "input.txt");
     OutputStream os = fs.create(INPATH);
-    Writer wr = new OutputStreamWriter(os, "UTF-8");
+    Writer wr = new OutputStreamWriter(os, StandardCharsets.UTF_8);
     wr.write(DATADIR + "/" + inputAvroFile);
     wr.close();
 

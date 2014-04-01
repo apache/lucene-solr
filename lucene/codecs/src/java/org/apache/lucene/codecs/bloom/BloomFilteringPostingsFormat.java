@@ -150,7 +150,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
   
   public class BloomFilteredFieldsProducer extends FieldsProducer {
     private FieldsProducer delegateFieldsProducer;
-    HashMap<String,FuzzySet> bloomsByFieldName = new HashMap<String,FuzzySet>();
+    HashMap<String,FuzzySet> bloomsByFieldName = new HashMap<>();
     
     public BloomFilteredFieldsProducer(SegmentReadState state)
         throws IOException {
@@ -394,7 +394,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
   
   class BloomFilteredFieldsConsumer extends FieldsConsumer {
     private FieldsConsumer delegateFieldsConsumer;
-    private Map<FieldInfo,FuzzySet> bloomFilters = new HashMap<FieldInfo,FuzzySet>();
+    private Map<FieldInfo,FuzzySet> bloomFilters = new HashMap<>();
     private SegmentWriteState state;
     
     public BloomFilteredFieldsConsumer(FieldsConsumer fieldsConsumer,
@@ -454,7 +454,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
 
     public void close() throws IOException {
       // Now we are done accumulating values for these fields
-      List<Entry<FieldInfo,FuzzySet>> nonSaturatedBlooms = new ArrayList<Map.Entry<FieldInfo,FuzzySet>>();
+      List<Entry<FieldInfo,FuzzySet>> nonSaturatedBlooms = new ArrayList<>();
       
       for (Entry<FieldInfo,FuzzySet> entry : bloomFilters.entrySet()) {
         FuzzySet bloomFilter = entry.getValue();

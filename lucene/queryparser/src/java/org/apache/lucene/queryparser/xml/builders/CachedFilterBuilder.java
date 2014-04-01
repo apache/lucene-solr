@@ -65,7 +65,7 @@ public class CachedFilterBuilder implements FilterBuilder {
     Element childElement = DOMUtils.getFirstChildOrFail(e);
 
     if (filterCache == null) {
-      filterCache = new LRUCache<Object, Filter>(cacheSize);
+      filterCache = new LRUCache<>(cacheSize);
     }
 
     // Test to see if child Element is a query or filter that needs to be

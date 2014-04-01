@@ -124,7 +124,7 @@ class JSONWriter extends TextResponseWriter {
     // Disad: this is ambiguous with a real single value that happens to be an array
     //
     // Both of these mappings have ambiguities.
-    HashMap<String,Integer> repeats = new HashMap<String,Integer>(4);
+    HashMap<String,Integer> repeats = new HashMap<>(4);
 
     boolean first=true;
     for (int i=0; i<sz; i++) {
@@ -314,7 +314,7 @@ class JSONWriter extends TextResponseWriter {
     final ArrayList<IndexableField> fields;
     MultiValueField(SchemaField sfield, IndexableField firstVal) {
       this.sfield = sfield;
-      this.fields = new ArrayList<IndexableField>(4);
+      this.fields = new ArrayList<>(4);
       this.fields.add(firstVal);
     }
   }

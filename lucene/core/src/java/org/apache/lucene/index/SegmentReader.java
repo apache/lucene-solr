@@ -17,13 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.DocValuesProducer;
@@ -36,6 +29,14 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.CloseableThreadLocal;
+import org.apache.lucene.util.IOUtils;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * IndexReader implementation over a single segment. 
@@ -60,22 +61,22 @@ public final class SegmentReader extends AtomicReader {
   final CloseableThreadLocal<Map<String,Object>> docValuesLocal = new CloseableThreadLocal<Map<String,Object>>() {
     @Override
     protected Map<String,Object> initialValue() {
-      return new HashMap<String,Object>();
+      return new HashMap<>();
     }
   };
 
   final CloseableThreadLocal<Map<String,Bits>> docsWithFieldLocal = new CloseableThreadLocal<Map<String,Bits>>() {
     @Override
     protected Map<String,Bits> initialValue() {
-      return new HashMap<String,Bits>();
+      return new HashMap<>();
     }
   };
 
-  final Map<String,DocValuesProducer> dvProducers = new HashMap<String,DocValuesProducer>();
+  final Map<String,DocValuesProducer> dvProducers = new HashMap<>();
   
   final FieldInfos fieldInfos;
 
-  private final List<Long> dvGens = new ArrayList<Long>();
+  private final List<Long> dvGens = new ArrayList<>();
   
   /**
    * Constructs a new SegmentReader with a new core.
@@ -221,7 +222,7 @@ public final class SegmentReader extends AtomicReader {
   
   // returns a gen->List<FieldInfo> mapping. Fields without DV updates have gen=-1
   private Map<Long,List<FieldInfo>> getGenInfos() {
-    final Map<Long,List<FieldInfo>> genInfos = new HashMap<Long,List<FieldInfo>>();
+    final Map<Long,List<FieldInfo>> genInfos = new HashMap<>();
     for (FieldInfo fi : fieldInfos) {
       if (fi.getDocValuesType() == null) {
         continue;
@@ -229,7 +230,7 @@ public final class SegmentReader extends AtomicReader {
       long gen = fi.getDocValuesGen();
       List<FieldInfo> infos = genInfos.get(gen);
       if (infos == null) {
-        infos = new ArrayList<FieldInfo>();
+        infos = new ArrayList<>();
         genInfos.put(gen, infos);
       }
       infos.add(fi);
@@ -250,9 +251,11 @@ public final class SegmentReader extends AtomicReader {
       core.decRef();
     } finally {
       dvProducers.clear();
-      docValuesLocal.close();
-      docsWithFieldLocal.close();
-      segDocValues.decRef(dvGens);
+      try {
+        IOUtils.close(docValuesLocal, docsWithFieldLocal);
+      } finally {
+        segDocValues.decRef(dvGens);
+      }
     }
   }
 

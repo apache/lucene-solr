@@ -44,7 +44,7 @@ import org.apache.lucene.util.FilterIterator;
 
 public final class Document implements IndexDocument {
 
-  private final List<Field> fields = new ArrayList<Field>();
+  private final List<Field> fields = new ArrayList<>();
 
   /** Constructs a new document with no fields. */
   public Document() {}
@@ -140,7 +140,7 @@ public final class Document implements IndexDocument {
   * @return a <code>BytesRef[]</code> of binary field values
   */
   public final BytesRef[] getBinaryValues(String name) {
-    final List<BytesRef> result = new ArrayList<BytesRef>();
+    final List<BytesRef> result = new ArrayList<>();
 
     for (Iterator<StorableField> it = storedFieldsIterator(); it.hasNext(); ) {
       StorableField field = it.next();
@@ -199,7 +199,7 @@ public final class Document implements IndexDocument {
    * @return a <code>Field[]</code> array
    */
   public Field[] getFields(String name) {
-    List<Field> result = new ArrayList<Field>();
+    List<Field> result = new ArrayList<>();
     for (Field field : fields) {
       if (field.name().equals(name)) {
         result.add(field);
@@ -234,7 +234,7 @@ public final class Document implements IndexDocument {
    * @return a <code>String[]</code> of field values
    */
   public final String[] getValues(String name) {
-    List<String> result = new ArrayList<String>();
+    List<String> result = new ArrayList<>();
 
     for (Iterator<StorableField> it = storedFieldsIterator(); it.hasNext(); ) {
       StorableField field = it.next();

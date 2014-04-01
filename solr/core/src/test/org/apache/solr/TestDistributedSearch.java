@@ -345,10 +345,10 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     // test shards.tolerant=true
     for(int numDownServers = 0; numDownServers < jettys.size()-1; numDownServers++)
     {
-      List<JettySolrRunner> upJettys = new ArrayList<JettySolrRunner>(jettys);
-      List<SolrServer> upClients = new ArrayList<SolrServer>(clients);
-      List<JettySolrRunner> downJettys = new ArrayList<JettySolrRunner>();
-      List<String> upShards = new ArrayList<String>(Arrays.asList(shardsArr));
+      List<JettySolrRunner> upJettys = new ArrayList<>(jettys);
+      List<SolrServer> upClients = new ArrayList<>(clients);
+      List<JettySolrRunner> downJettys = new ArrayList<>();
+      List<String> upShards = new ArrayList<>(Arrays.asList(shardsArr));
       for(int i=0; i<numDownServers; i++)
       {
         // shut down some of the jettys

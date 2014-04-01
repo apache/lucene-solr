@@ -51,7 +51,9 @@ public class TestIndexWriterOutOfFileDescriptors extends LuceneTestCase {
         System.out.println("TEST: iter=" + iter);
       }
       try {
-        IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+        MockAnalyzer analyzer = new MockAnalyzer(random());
+        analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
+        IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
 
         if (VERBOSE) {
           // Do this ourselves instead of relying on LTC so
@@ -81,6 +83,7 @@ public class TestIndexWriterOutOfFileDescriptors extends LuceneTestCase {
           }
           w.addDocument(docs.nextDoc());
         }
+        dir.setRandomIOExceptionRateOnOpen(0.0);
         w.close();
         w = null;
 
@@ -130,7 +133,7 @@ public class TestIndexWriterOutOfFileDescriptors extends LuceneTestCase {
         dir.setRandomIOExceptionRateOnOpen(0.0);
         r = DirectoryReader.open(dir);
         dirCopy = newMockFSDirectory(TestUtil.getTempDir("TestIndexWriterOutOfFileDescriptors.copy"));
-        Set<String> files = new HashSet<String>();
+        Set<String> files = new HashSet<>();
         for (String file : dir.listAll()) {
           dir.copy(dirCopy, file, file, IOContext.DEFAULT);
           files.add(file);

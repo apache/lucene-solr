@@ -67,6 +67,7 @@ public class ConfigSolrXml extends ConfigSolr {
     failIfFound("solr/cores/@hostContext");
     failIfFound("solr/cores/@hostPort");
     failIfFound("solr/cores/@leaderVoteWait");
+    failIfFound("solr/cores/@leaderConflictResolveWait");
     failIfFound("solr/cores/@genericCoreNodeNames");
     failIfFound("solr/cores/@managementPath");
     failIfFound("solr/cores/@shareSchema");
@@ -113,6 +114,7 @@ public class ConfigSolrXml extends ConfigSolr {
     propMap.put(CfgProp.SOLR_HOSTCONTEXT, doSub("solr/solrcloud/str[@name='hostContext']"));
     propMap.put(CfgProp.SOLR_HOSTPORT, doSub("solr/solrcloud/int[@name='hostPort']"));
     propMap.put(CfgProp.SOLR_LEADERVOTEWAIT, doSub("solr/solrcloud/int[@name='leaderVoteWait']"));
+    propMap.put(CfgProp.SOLR_LEADERCONFLICTRESOLVEWAIT, doSub("solr/solrcloud/int[@name='leaderConflictResolveWait']"));
     propMap.put(CfgProp.SOLR_GENERICCORENODENAMES, doSub("solr/solrcloud/bool[@name='genericCoreNodeNames']"));
     propMap.put(CfgProp.SOLR_MANAGEMENTPATH, doSub("solr/str[@name='managementPath']"));
     propMap.put(CfgProp.SOLR_SHAREDLIB, doSub("solr/str[@name='sharedLib']"));
@@ -120,6 +122,7 @@ public class ConfigSolrXml extends ConfigSolr {
     propMap.put(CfgProp.SOLR_TRANSIENTCACHESIZE, doSub("solr/int[@name='transientCacheSize']"));
     propMap.put(CfgProp.SOLR_ZKCLIENTTIMEOUT, doSub("solr/solrcloud/int[@name='zkClientTimeout']"));
     propMap.put(CfgProp.SOLR_ZKHOST, doSub("solr/solrcloud/str[@name='zkHost']"));
+    propMap.put(CfgProp.SOLR_CONFIGSETBASEDIR, doSub("solr/str[@name='configSetBaseDir']"));
 
     propMap.put(CfgProp.SOLR_LOGGING_CLASS, doSub("solr/logging/str[@name='class']"));
     propMap.put(CfgProp.SOLR_LOGGING_ENABLED, doSub("solr/logging/str[@name='enabled']"));

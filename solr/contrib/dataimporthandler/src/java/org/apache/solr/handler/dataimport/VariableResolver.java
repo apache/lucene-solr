@@ -54,30 +54,30 @@ public class VariableResolver {
       .compile("^(\\w*?)\\((.*?)\\)$");
   private Map<String,Object> rootNamespace;
   private Map<String,Evaluator> evaluators;
-  private Map<String,Resolved> cache = new WeakHashMap<String,Resolved>();
+  private Map<String,Resolved> cache = new WeakHashMap<>();
   
   class Resolved {
-    List<Integer> startIndexes = new ArrayList<Integer>(2);
-    List<Integer> endOffsets = new ArrayList<Integer>(2);
-    List<String> variables = new ArrayList<String>(2);
+    List<Integer> startIndexes = new ArrayList<>(2);
+    List<Integer> endOffsets = new ArrayList<>(2);
+    List<String> variables = new ArrayList<>(2);
   }
   
   public static final String FUNCTIONS_NAMESPACE = "dataimporter.functions.";
   public static final String FUNCTIONS_NAMESPACE_SHORT = "dih.functions.";
   
   public VariableResolver() {
-    rootNamespace = new HashMap<String,Object>();
+    rootNamespace = new HashMap<>();
   }
   
   public VariableResolver(Properties defaults) {
-    rootNamespace = new HashMap<String,Object>();
+    rootNamespace = new HashMap<>();
     for (Map.Entry<Object,Object> entry : defaults.entrySet()) {
       rootNamespace.put(entry.getKey().toString(), entry.getValue());
     }
   }
   
   public VariableResolver(Map<String,Object> defaults) {
-    rootNamespace = new HashMap<String,Object>(defaults);
+    rootNamespace = new HashMap<>(defaults);
   }
   
   /**
@@ -184,7 +184,7 @@ public class VariableResolver {
     if (r == null) {
       return Collections.emptyList();
     }
-    return new ArrayList<String>(r.variables);
+    return new ArrayList<>(r.variables);
   }
   
   public void addNamespace(String name, Map<String,Object> newMap) {
@@ -221,7 +221,7 @@ public class VariableResolver {
       Object o = currentLevel.get(keyParts[i]);
       if (o == null) {
         if(i == j-1) {
-          Map<String,Object> nextLevel = new HashMap<String,Object>();
+          Map<String,Object> nextLevel = new HashMap<>();
           currentLevel.put(keyParts[i], nextLevel);
           currentLevel = nextLevel;
         } else {

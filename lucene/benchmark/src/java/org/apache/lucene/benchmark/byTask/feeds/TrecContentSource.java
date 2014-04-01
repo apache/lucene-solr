@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
@@ -79,10 +80,10 @@ public class TrecContentSource extends ContentSource {
        "hhmm z.z.z. MMM dd, yyyy",       // 0901 u.t.c. April 28, 1994
   };
 
-  private ThreadLocal<DateFormatInfo> dateFormats = new ThreadLocal<DateFormatInfo>();
-  private ThreadLocal<StringBuilder> trecDocBuffer = new ThreadLocal<StringBuilder>();
+  private ThreadLocal<DateFormatInfo> dateFormats = new ThreadLocal<>();
+  private ThreadLocal<StringBuilder> trecDocBuffer = new ThreadLocal<>();
   private File dataDir = null;
-  private ArrayList<File> inputFiles = new ArrayList<File>();
+  private ArrayList<File> inputFiles = new ArrayList<>();
   private int nextFile = 0;
   // Use to synchronize threads on reading from the TREC documents.
   private Object lock = new Object();
@@ -320,7 +321,7 @@ public class TrecContentSource extends ContentSource {
     }
     // encoding
     if (encoding == null) {
-      encoding = "ISO-8859-1";
+      encoding = StandardCharsets.ISO_8859_1.name();
     }
     // iteration exclusion in doc name 
     excludeDocnameIteration = config.get("content.source.excludeIteration", false);

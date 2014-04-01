@@ -118,7 +118,7 @@
       <exclude name="randomizedtesting-runner-*.jar" />
       <exclude name="ant*.jar" />
     </fileset>
-  	<pathelement path="${build.dir}/test-files"/>
+  	<pathelement path="src/test-files"/>
   	<path refid="test.base.classpath"/>
   </path>
  
@@ -202,7 +202,8 @@
     <attribute name="implementation.title" default="org.apache.solr"/>
     <attribute name="spec.version" default="${spec.version}"/>
     <attribute name="manifest.file" default="${manifest.file}"/>
-    <element name="nested" optional="true" implicit="true"/>
+    <element name="solr-jarify-filesets" optional="true"/>
+    <element name="solr-jarify-additional-manifest-attributes" optional="true"/>
     <sequential>
       <jarify basedir="@{basedir}" destfile="@{destfile}"
               title="@{title}" excludes="@{excludes}"
@@ -210,7 +211,12 @@
               implementation.title="@{implementation.title}"
               spec.version="@{spec.version}"
               manifest.file="@{manifest.file}">
-        <nested/>
+        <filesets>
+          <solr-jarify-filesets />
+        </filesets>
+        <jarify-additional-manifest-attributes>
+          <solr-jarify-additional-manifest-attributes />
+        </jarify-additional-manifest-attributes>
       </jarify>
     </sequential>
   </macrodef>
@@ -220,7 +226,7 @@
   </target>
 
   <target name="compile-core" depends="prep-lucene-jars,resolve-example,common.compile-core"/>
-  <target name="compile-test" depends="sync-resources,compile-solr-test-framework,common.compile-test"/>
+  <target name="compile-test" depends="compile-solr-test-framework,common.compile-test"/>
 
   <target name="dist" depends="jar-core">
     <copy file="${build.dir}/${fullnamever}.jar" todir="${dist}"/>
@@ -331,7 +337,9 @@
     <sequential>
       <mkdir dir="${build.dir}"/>
       <solr-jarify basedir="${src.dir}" destfile="${build.dir}/${final.name}-src.jar">
-        <fileset dir="${resources.dir}" erroronmissingdir="no"/>
+        <solr-jarify-filesets>
+          <fileset dir="${resources.dir}" erroronmissingdir="no"/>
+        </solr-jarify-filesets>
       </solr-jarify>
     </sequential>
   </target>
@@ -399,15 +407,6 @@
     </ant>
   </target>
 
-  <!-- TODO: really a copy should work: but sync is currently safer
-       since some buggy tests don't create their own tempdir but
-       modify this target directory directly... -->
-  <target name="sync-resources">
-    <sync todir="${build.dir}/test-files">
-      <fileset dir="${tests.userdir}"/>
-    </sync>
-  </target>
-
   <!-- Solr test-framework targets -->
   <target name="compile-solr-test-framework" description="Compile the Solr test-framework" unless="solr.test.framework.compiled">
     <ant dir="${common-solr.dir}/test-framework" target="compile-core" inheritAll="false">
@@ -446,6 +445,12 @@
   </macrodef>
 
   <!-- Solr contrib targets -->
+  <target name="-compile-analysis-extras">
+    <ant dir="${common-solr.dir}/contrib/analysis-extras" target="compile" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+
   <target name="compile-contrib" description="Compile contrib modules">
   	<contrib-crawl target="compile-core"/>
   </target>
@@ -469,7 +474,7 @@
   </target>
   
   <!-- Forbidden API Task, customizations for Solr -->
-  <target name="-check-forbidden-base" depends="-init-forbidden-apis,compile-core,compile-test">
+  <target name="-check-forbidden-all" depends="-init-forbidden-apis,compile-core,compile-test">
     <property file="${common.dir}/ivy-versions.properties"/> <!-- for commons-io version -->
     <forbidden-apis internalRuntimeForbidden="true" classpathref="forbidden-apis.allclasses.classpath">
       <bundledSignatures name="jdk-unsafe-${javac.target}"/>

@@ -68,7 +68,7 @@ public class BooleanQuery2ModifierNodeProcessor implements QueryNodeProcessor {
   
   QueryConfigHandler queryConfigHandler;
   
-  private final ArrayList<QueryNode> childrenBuffer = new ArrayList<QueryNode>();
+  private final ArrayList<QueryNode> childrenBuffer = new ArrayList<>();
   
   private Boolean usingAnd = false;
   

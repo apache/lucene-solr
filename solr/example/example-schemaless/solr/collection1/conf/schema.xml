@@ -63,7 +63,6 @@
             (int, float, boolean, string...)
      -->
 
-  <fields>
     <!-- Valid attributes for fields:
      name: mandatory - the name for the field
      type: mandatory - the name of a field type from the 
@@ -168,7 +167,6 @@
         unknown fields to the schema. --> 
     <!--dynamicField name="*" type="ignored" multiValued="true" /-->
    
-  </fields>
 
 
   <!-- Field to use to determine and enforce document uniqueness. 
@@ -232,7 +230,7 @@
   <!-- copy name to alphaNameSort, a field designed for sorting by name -->
   <!-- <copyField source="name" dest="alphaNameSort"/> -->
  
-  <types>
+
     <!-- field type definitions. The "name" attribute is
        just a label to be used by field definitions.  The "class"
        attribute and any other attributes determine the real
@@ -1056,7 +1054,6 @@
       </analyzer>
     </fieldType>
 
-  </types>
   
   <!-- Similarity is the scoring routine for each document vs. a query.
        A custom Similarity or SimilarityFactory may be specified here, but 

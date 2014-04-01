@@ -81,7 +81,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
 
   private static int id=0;
   private static List<List<String[]>> createBlocks() {
-    List<List<String[]>> blocks = new ArrayList<List<String[]>>();
+    List<List<String[]>> blocks = new ArrayList<>();
     for (String parent : abcdef) {
       List<String[]> block = createChildrenBlock(parent);
       block.add(new String[] {"parent_s", parent});
@@ -92,7 +92,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
   }
 
   private static List<String[]> createChildrenBlock(String parent) {
-    List<String[]> block = new ArrayList<String[]>();
+    List<String[]> block = new ArrayList<>();
     for (String child : klm) {
       block
           .add(new String[] {"child_s", child, "parentchild_s", parent + child});
@@ -103,7 +103,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
   }
   
   private static void addGrandChildren(List<String[]> block) {
-    List<String> grandChildren = new ArrayList<String>(xyz);
+    List<String> grandChildren = new ArrayList<>(xyz);
     // add grandchildren after children
     for (ListIterator<String[]> iter = block.listIterator(); iter.hasNext();) {
       String[] child = iter.next();

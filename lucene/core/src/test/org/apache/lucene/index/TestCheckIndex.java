@@ -20,9 +20,11 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.ArrayList;
 
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.CannedTokenStream;
@@ -32,7 +34,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.util.Constants;
 
 public class TestCheckIndex extends LuceneTestCase {
 
@@ -55,12 +56,12 @@ public class TestCheckIndex extends LuceneTestCase {
 
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
     CheckIndex checker = new CheckIndex(dir);
-    checker.setInfoStream(new PrintStream(bos, false, "UTF-8"));
+    checker.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8));
     if (VERBOSE) checker.setInfoStream(System.out);
     CheckIndex.Status indexStatus = checker.checkIndex();
     if (indexStatus.clean == false) {
       System.out.println("CheckIndex failed");
-      System.out.println(bos.toString("UTF-8"));
+      System.out.println(bos.toString(IOUtils.UTF_8));
       fail();
     }
     
@@ -90,7 +91,7 @@ public class TestCheckIndex extends LuceneTestCase {
     assertEquals(18, seg.termVectorStatus.totVectors);
 
     assertTrue(seg.diagnostics.size() > 0);
-    final List<String> onlySegments = new ArrayList<String>();
+    final List<String> onlySegments = new ArrayList<>();
     onlySegments.add("_0");
     
     assertTrue(checker.checkIndex(onlySegments).clean == true);
@@ -113,27 +114,5 @@ public class TestCheckIndex extends LuceneTestCase {
     iw.addDocument(doc);
     iw.close();
     dir.close(); // checkindex
-  }
-
-  public void testLuceneConstantVersion() throws IOException {
-    // common-build.xml sets lucene.version
-    String version = System.getProperty("lucene.version");
-    assertNotNull( "null version", version);
-    // remove anything after a "-" from the version string:
-    version = version.replaceAll("-.*$", "");
-    final String constantVersion;
-    String parts[] = Constants.LUCENE_MAIN_VERSION.split("\\.");
-    if (parts.length == 4) {
-      // alpha/beta version: pull the real portion
-      assert parts[2].equals("0");
-      constantVersion = parts[0] + "." + parts[1];
-    } else {
-      // normal version
-      constantVersion = Constants.LUCENE_MAIN_VERSION;
-    }
-    assertTrue("Invalid version: "+version,
-               version.equals(constantVersion));
-    assertTrue(Constants.LUCENE_VERSION + " should start with: "+version,
-               Constants.LUCENE_VERSION.startsWith(version));
   }
 }

@@ -44,8 +44,7 @@ public class TestMultiCoreConfBootstrap extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     
-    createTempDir();
-    dataDir2 = new File(TEMP_DIR, getSimpleClassName() + "-core1-"
+    dataDir2 = new File(dataDir, getSimpleClassName() + "-core1-"
         + System.currentTimeMillis());
     dataDir2.mkdirs();
 
@@ -77,18 +76,6 @@ public class TestMultiCoreConfBootstrap extends SolrTestCaseJ4 {
       cores.shutdown();
     
     zkServer.shutdown();
-    
-    String skip = System.getProperty("solr.test.leavedatadir");
-    if (null != skip && 0 != skip.trim().length()) {
-      log.info("NOTE: per solr.test.leavedatadir, dataDir will not be removed: " + dataDir.getAbsolutePath());
-    } else {
-      if (!AbstractSolrTestCase.recurseDelete(dataDir)) {
-        log.warn("!!!! WARNING: best effort to remove " + dataDir.getAbsolutePath() + " FAILED !!!!!");
-      }
-      if (!AbstractSolrTestCase.recurseDelete(dataDir2)) {
-        log.warn("!!!! WARNING: best effort to remove " + dataDir.getAbsolutePath() + " FAILED !!!!!");
-      }
-    }
 
     zkServer = null;
     zkDir = null;

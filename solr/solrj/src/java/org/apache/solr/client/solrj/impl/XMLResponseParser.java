@@ -135,7 +135,7 @@ public class XMLResponseParser extends ResponseParser
               response = readNamedList( parser );
             }
             else if( name.equals( "solr" ) ) {
-              return new SimpleOrderedMap<Object>();
+              return new SimpleOrderedMap<>();
             }
             else {
               throw new Exception( "really needs to be response or result.  " +
@@ -212,7 +212,7 @@ public class XMLResponseParser extends ResponseParser
     }
 
     StringBuilder builder = new StringBuilder();
-    NamedList<Object> nl = new SimpleOrderedMap<Object>();
+    NamedList<Object> nl = new SimpleOrderedMap<>();
     KnownType type = null;
     String name = null;
     
@@ -284,7 +284,7 @@ public class XMLResponseParser extends ResponseParser
     StringBuilder builder = new StringBuilder();
     KnownType type = null;
 
-    List<Object> vals = new ArrayList<Object>();
+    List<Object> vals = new ArrayList<>();
 
     int depth = 0;
     while( true ) 

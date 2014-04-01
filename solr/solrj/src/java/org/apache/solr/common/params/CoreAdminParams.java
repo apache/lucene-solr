@@ -37,9 +37,10 @@ public abstract class CoreAdminParams
   /** If you rename something, what is the new name **/
   public final static String NAME = "name";
 
-  /** If you rename something, what is the new name **/
+  /** Core data directory **/
   public final static String DATA_DIR = "dataDir";
-  
+
+  /** Core updatelog directory **/
   public final static String ULOG_DIR = "ulogDir";
 
   /** Name of the other core in actions involving 2 cores **/
@@ -50,6 +51,9 @@ public abstract class CoreAdminParams
   
   /** If you specify a schema, what is its name **/
   public final static String SCHEMA = "schema";
+
+  /** If you specify a configset, what is its name **/
+  public final static String CONFIGSET = "configSet";
   
   /** If you specify a config, what is its name **/
   public final static String CONFIG = "config";
@@ -91,7 +95,9 @@ public abstract class CoreAdminParams
   public final static String RANGES = "ranges";
   
   public static final String ROLES = "roles";
-  
+
+  public static final String REQUESTID = "requestid";
+
   public static final String CORE_NODE_NAME = "coreNodeName";
   
   /** Prefix for core property name=value pair **/
@@ -128,7 +134,8 @@ public abstract class CoreAdminParams
     REQUESTAPPLYUPDATES,
     LOAD_ON_STARTUP,
     TRANSIENT,
-    OVERSEEROP;
+    OVERSEEROP,
+    REQUESTSTATUS;
     
     public static CoreAdminAction get( String p )
     {

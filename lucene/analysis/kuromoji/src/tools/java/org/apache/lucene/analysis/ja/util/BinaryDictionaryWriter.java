@@ -40,7 +40,7 @@ public abstract class BinaryDictionaryWriter {
   private int targetMapEndOffset = 0, lastWordId = -1, lastSourceId = -1;
   private int[] targetMap = new int[8192];
   private int[] targetMapOffsets = new int[8192];
-  private final ArrayList<String> posDict = new ArrayList<String>();
+  private final ArrayList<String> posDict = new ArrayList<>();
 
   public BinaryDictionaryWriter(Class<? extends BinaryDictionary> implClazz, int size) {
     this.implClazz = implClazz;
