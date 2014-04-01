@@ -202,6 +202,8 @@ Other Changes
 * SOLR-5934: LBHttpSolrServer exception handling improvement and small test
   improvements. (Gregory Chanan via Mark Miller)
 
+* SOLR-5937: Modernize the DIH example config sets. (Steve Rowe)
+
 ==================  4.7.1  ==================
 
 Versions of Major Components

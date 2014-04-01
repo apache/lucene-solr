@@ -19,8 +19,10 @@
 <!-- If this file is found in the config directory, it will only be
      loaded once at startup.  If it is found in Solr's data
      directory, it will be re-loaded every commit.
--->
 
+   See http://wiki.apache.org/solr/QueryElevationComponent for more info
+
+-->
 <elevate>
  <query text="foo bar">
   <doc id="1" />

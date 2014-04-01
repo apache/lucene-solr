@@ -43,5 +43,5 @@ To copy data from db Solr core, connect to
  http://localhost:8983/solr/solr/dataimport?command=full-import
 
 See also README.txt in the solr subdirectory, and check
-http://wiki.apache.org/solr/DataImportHandler for detailed
-usage guide and tutorial.
+https://cwiki.apache.org/confluence/display/solr/Uploading+Structured+Data+Store+Data+with+the+Data+Import+Handler
+for detailed usage guide and tutorial.
