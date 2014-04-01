@@ -38,6 +38,7 @@ import org.apache.lucene.document.DateTools;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.apache.lucene.queryparser.flexible.standard.CommonQueryParserConfiguration;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
@@ -309,6 +310,11 @@ public abstract class QueryParserTestCase extends LuceneTestCase {
     Query q = getQuery(query, cqpC);
     assertEquals(result, q.toString(field));
   }
+
+  public void assertQueryEquals(Query expected, Query test) {
+    assertEquals(expected.toString(), test.toString());
+  }
+
   
   public void assertEscapedQueryEquals(String query, Analyzer a, String result) throws Exception {
     assertEquals(result, QueryParserBase.escape(query));
@@ -331,6 +337,27 @@ public abstract class QueryParserTestCase extends LuceneTestCase {
     assertEquals(result, q.toString("field"));
   }
 
+  public void assertFuzzyQueryEquals(String field, String term, int maxEdits, int prefixLen, Query query) {
+    assert(query instanceof FuzzyQuery);
+    FuzzyQuery fq = (FuzzyQuery)query;
+    assertEquals(field, fq.getField());
+    assertEquals(term, fq.getTerm().text());
+    assertEquals(maxEdits, fq.getMaxEdits());
+    assertEquals(prefixLen, fq.getPrefixLength());
+  }
+  
+  @SuppressWarnings("rawtypes")
+  public void assertInstanceOf(Query q, Class other) {
+    assertTrue(q.getClass().isAssignableFrom(other));
+  }
+  
+  public void assertEmpty(Query q) {
+    boolean e = false;
+    if (q instanceof BooleanQuery && ((BooleanQuery)q).getClauses().length == 0) {
+      e = true;
+    }
+    assertTrue("Empty: "+q.toString(), e);
+  }
   public Query getQueryDOA(String query, Analyzer a) throws Exception {
     if (a == null) {
       a = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);

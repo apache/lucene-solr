@@ -129,7 +129,7 @@ public class TestSpanOnlyQueryParser extends LuceneTestCase {
         "\u666E \u6797 \u65AF \u987F \u5927 \u5B66",
         "reg/exp",
         "/regex/",
-        "fuzzy~0.6",
+        "fuzzy~2",
         "wil*card",
         "wil?card",
         "prefi*",
@@ -341,27 +341,13 @@ public class TestSpanOnlyQueryParser extends LuceneTestCase {
     countSpansDocs(p, "crown~3,1", 0, 0);
     countSpansDocs(p, "brwn~1,1", 3, 2);
 
-    p.setFuzzyMinSim(0.6f);
-    countSpansDocs(p, "brwon~0.80", 3, 2);
-
-    p.setFuzzyMinSim(0.85f);
-    countSpansDocs(p, "brwon~0.80", 0, 0);
-
-    p.setFuzzyMinSim(0.80f);
+    p.setFuzzyMinSim(0.79f);
 
     countSpansDocs(p, "brwon~2", 3, 2);
 
-    p.setFuzzyMinSim(0.60f);
-    //this requires edit = 3
-    testOffsetForSingleSpanMatch(p, "abcdefgh~0.60", 3, 0, 1);
-
-    p.setFuzzyMinSim(0.65f);
-    //this requires edit = 3, 63%
-    countSpansDocs(p, "abcdefgh~0.60", 0, 0);
-
     //fuzzy val of 0 should yield straight SpanTermQuery
-    Query q = p.parse("brown~0.0");
-    assertTrue("fuzzy val = 0.0", q instanceof SpanTermQuery);
+    Query q = p.parse("brown~0");
+    assertTrue("fuzzy val = 0", q instanceof SpanTermQuery);
     q = p.parse("brown~0");
     assertTrue("fuzzy val = 0", q instanceof SpanTermQuery);
   }
@@ -495,15 +481,16 @@ public class TestSpanOnlyQueryParser extends LuceneTestCase {
     assertEquals(true, exc);
   }
 
-  public void testQuotedSingleTerm() throws Exception{
+  public void testQuotedSingleTerm() throws Exception {
     SpanOnlyParser p = new SpanOnlyParser(TEST_VERSION_CURRENT, FIELD, noStopAnalyzer);
 
-    String[] quoteds = new String[]{
+    String[] quoteds = new String[] {
         "/regex/",
-        "fuzzy~0.6",
+        "fuzzy~2",
         "wil*card",
         "wil?card",
-    "prefi*"};
+        "prefi*"
+    };
 
     for (String q : quoteds) {
       countSpansDocs(p, "\""+q+"\"", 1, 1);

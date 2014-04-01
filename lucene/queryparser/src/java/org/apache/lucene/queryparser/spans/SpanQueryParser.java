@@ -392,7 +392,12 @@ public class SpanQueryParser extends AbstractSpanQueryParser {
     if (tmpField.equals("*") && 
         tmpTerm instanceof SQPTerm && 
         ((SQPTerm)tmpTerm).getString().equals("*")) {
-      return new MatchAllDocsQuery();
+      Query q = new MatchAllDocsQuery();
+      float boost = ((SQPBoostableToken)tmpTerm).getBoost();
+      if (boost != SpanQueryParserBase.UNSPECIFIED_BOOST){
+        q.setBoost(((SQPBoostableToken)tmpTerm).getBoost());
+      }
+      return q;
     }
     return null;
   }

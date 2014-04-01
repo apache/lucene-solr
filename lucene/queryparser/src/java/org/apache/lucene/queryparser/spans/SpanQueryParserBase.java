@@ -99,7 +99,6 @@ abstract class SpanQueryParserBase extends AnalyzingQueryParserBase {
   //if a full term is analyzed and the analyzer returns nothing, 
   //should a ParseException be thrown or should I just ignore the full token.
   private boolean throwExceptionForEmptyTerm = false;
-  private boolean lowercaseRegex = false;
 
   ////////
   //Unsupported operations
@@ -173,7 +172,7 @@ abstract class SpanQueryParserBase extends AnalyzingQueryParserBase {
 
   @Override
   protected Query getRegexpQuery(String field, String termStr) throws ParseException {
-    if (getLowercaseRegex()) {
+    if (getLowercaseExpandedTerms()) {
       termStr = termStr.toLowerCase(getLocale());
     }
     Term t = new Term(field, termStr);
@@ -229,8 +228,6 @@ abstract class SpanQueryParserBase extends AnalyzingQueryParserBase {
 
   /**
    * Creates a new fuzzy term. 
-   * If minimumSimilarity is >= 1.0f, this rounds to avoid
-   * exception for numEdits != whole number.
    * 
    * @return fuzzy query
    */
@@ -412,28 +409,27 @@ abstract class SpanQueryParserBase extends AnalyzingQueryParserBase {
       }
       //if there was an exception during analysis, swallow it and
       //try for lowercase
-      if ((start == null && getAnalyzeRangeTerms()) ||
+      if ((start == null && getAnalyzeRangeTerms()) &&
           getNormMultiTerms() == NORM_MULTI_TERMS.LOWERCASE) {
         start = part1.toLowerCase(getLocale());
-      } else {
+      } else if (start == null){
         start = part1;
       }
     }
-
     if (part2 == null) {
       end = null;
     } else {
       if (getAnalyzeRangeTerms()) {
         try { 
-          end = analyzeMultitermTermParseEx(field, part1).utf8ToString();
+          end = analyzeMultitermTermParseEx(field, part2).utf8ToString();
         } catch (ParseException e) {
           //swallow..doh!
         }
       }
-      if ((end == null && getAnalyzeRangeTerms()) ||
+      if ((end == null && getAnalyzeRangeTerms()) &&
           getNormMultiTerms() == NORM_MULTI_TERMS.LOWERCASE) {
         end = part2.toLowerCase(getLocale());
-      } else {
+      } else if (end == null) {
         end = part2;
       }
     }
@@ -491,11 +487,9 @@ abstract class SpanQueryParserBase extends AnalyzingQueryParserBase {
         }
       }
 
-      // if the user enters 2.4 for example, round it so that there won't be
-      // an
-      // illegalparameter exception
-      if (minSimilarity >= 1.0f) {
-        minSimilarity = (float) Math.round(minSimilarity);
+      // if the user enters 2.4 for example, throw parse exception
+      if (minSimilarity >= 1.0f && minSimilarity != (int) minSimilarity) {
+        throw new ParseException("Fractional edit distances are not allowed!");
       }
 
       int prefixLen = getFuzzyPrefixLength();
@@ -699,6 +693,7 @@ abstract class SpanQueryParserBase extends AnalyzingQueryParserBase {
       if (nonEmpties.size() == 1) {
         return nonEmpties.get(0);
       }
+      
       SpanQuery[] ret = nonEmpties
           .toArray(new SpanQuery[nonEmpties.size()]);
       if (quoted || getAutoGeneratePhraseQueries() == true) {
@@ -755,10 +750,7 @@ abstract class SpanQueryParserBase extends AnalyzingQueryParserBase {
       termAtt.fillBytesRef();
       //if start is the same, treat it as a synonym...ignore end because
       //of potential for shingles
-      if (lastStart > -1 && offAtt.startOffset() == lastStart)
-        //&& offAttr.endOffset() == lastEnd)
-      {
-
+      if (lastStart > -1 && offAtt.startOffset() == lastStart) {
         handleSyn(queries, (SpanTermQuery)newTermQuery(new Term(fieldName, BytesRef.deepCopyOf(bytes))));
       } else {
         queries.add((SpanTermQuery)newTermQuery(new Term(fieldName, BytesRef.deepCopyOf(bytes))));
@@ -1053,16 +1045,10 @@ abstract class SpanQueryParserBase extends AnalyzingQueryParserBase {
   }
   
   /**
-   * Copied nearly exactly from FuzzyQuery's floatToEdits.
-   * <p>
-   * There are two differences:
-   * <p>
-   * <ol>
-   * <li>FuzzyQuery's floatToEdits requires that the return value 
-   * be <= LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE<li>
-   * <li>This adds a small amount so that nearly exact 
-   * hits don't get floored: 0.80 for termLen 5 should = 1</li>
-   * <ol>
+   * Copied nearly exactly from FuzzyQuery's floatToEdits because
+   * FuzzyQuery's floatToEdits requires that the return value 
+   * be <= LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE
+   * 
    * @return edits
    */
   public static int unboundedFloatToEdits(float minimumSimilarity, int termLen) {
@@ -1071,15 +1057,8 @@ abstract class SpanQueryParserBase extends AnalyzingQueryParserBase {
     } else if (minimumSimilarity == 0.0f) {
       return 0; // 0 means exact, not infinite # of edits!
     } else {
-      return (int)(0.00001f+(1f-minimumSimilarity) * termLen);
+      return (int)((1f-minimumSimilarity) * termLen);
     }
   }
   
-  public boolean getLowercaseRegex() {
-    return lowercaseRegex;
-  }
-  
-  public void setLowercaseRegex(boolean lowercaseRegex) {
-    this.lowercaseRegex = lowercaseRegex;
-  }
 }

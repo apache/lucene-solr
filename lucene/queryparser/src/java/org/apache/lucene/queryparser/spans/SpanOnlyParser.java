@@ -38,11 +38,10 @@ import org.apache.lucene.util.Version;
 
  * @see SpanQueryParser
  */
-public class SpanOnlyParser extends AbstractSpanQueryParser{
+public class SpanOnlyParser extends AbstractSpanQueryParser {
 
   /**
    * Initializes the SpanOnlyParser.
-   * @param matchVersion
    * @param f default field
    * @param a analyzer to use
    */
@@ -52,7 +51,6 @@ public class SpanOnlyParser extends AbstractSpanQueryParser{
 
   /**
    * Initializes SpanOnlyParser.
-   * @param matchVersion
    * @param f default field
    * @param a analyzer to use for full terms
    * @param multitermAnalyzer analyzer to use for multiterm analysis
@@ -62,7 +60,7 @@ public class SpanOnlyParser extends AbstractSpanQueryParser{
   }
 
   @Override
-  public Query parse(String s) throws ParseException{
+  public Query parse(String s) throws ParseException {
     Query q = _parsePureSpan(getField(), s);
     assert(q == null || q instanceof SpanQuery);
     return q;
@@ -94,7 +92,7 @@ public class SpanOnlyParser extends AbstractSpanQueryParser{
   }
 
 
-  protected Query _parsePureSpan(String field, String queryString) throws ParseException{
+  protected Query _parsePureSpan(String field, String queryString) throws ParseException {
     SpanQueryLexer lexer = new SpanQueryLexer();
     List<SQPToken> tokens = lexer.getTokens(queryString);
     SQPClause overallClause = new SQPOrClause(0, tokens.size());

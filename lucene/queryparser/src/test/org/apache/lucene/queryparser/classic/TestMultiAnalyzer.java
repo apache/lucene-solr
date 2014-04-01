@@ -113,7 +113,7 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
   }
     
   public void testPosIncrementAnalyzer() throws ParseException {
-    QueryParser qp = new QueryParser(Version.LUCENE_40, "", new PosIncrementAnalyzer());
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "", new PosIncrementAnalyzer());
     assertEquals("quick brown", qp.parse("the quick brown").toString());
     assertEquals("quick brown fox", qp.parse("the quick brown fox").toString());
   }
@@ -122,7 +122,10 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
    * Expands "multi" to "multi" and "multi2", both at the same position,
    * and expands "triplemulti" to "triplemulti", "multi3", and "multi2".  
    */
-  private class MultiAnalyzer extends Analyzer {
+  protected class MultiAnalyzer extends Analyzer {
+
+    public MultiAnalyzer() {
+    }
 
     @Override
     public TokenStreamComponents createComponents(String fieldName) {
@@ -193,7 +196,11 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
    * Analyzes "the quick brown" as: quick(incr=2) brown(incr=1).
    * Does not work correctly for input other than "the quick brown ...".
    */
-  private class PosIncrementAnalyzer extends Analyzer {
+  protected class PosIncrementAnalyzer extends Analyzer {
+
+    public PosIncrementAnalyzer() {
+      // TODO Auto-generated constructor stub
+    }
 
     @Override
     public TokenStreamComponents createComponents(String fieldName) {

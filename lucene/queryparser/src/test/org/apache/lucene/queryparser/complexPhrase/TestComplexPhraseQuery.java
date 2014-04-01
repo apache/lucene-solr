@@ -37,7 +37,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestComplexPhraseQuery extends LuceneTestCase {
   Directory rd;
-  Analyzer analyzer;
+  protected Analyzer analyzer;
   
   DocData docsContent[] = { new DocData("john smith", "1"),
       new DocData("johathon smith", "2"),
@@ -47,36 +47,45 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
   private IndexSearcher searcher;
   private IndexReader reader;
 
-  String defaultFieldName = "name";
+  protected String defaultFieldName = "name";
 
   public void testComplexPhrases() throws Exception {
     checkMatches("\"john smith\"", "1"); // Simple multi-term still works
     checkMatches("\"j*   smyth~\"", "1,2"); // wildcards and fuzzies are OK in
     // phrases
-    checkMatches("\"(jo* -john)  smith\"", "2"); // boolean logic works
     checkMatches("\"jo*  smith\"~2", "1,2,3"); // position logic works.
     checkMatches("\"jo* [sma TO smZ]\" ", "1,2"); // range queries supported
     checkMatches("\"john\"", "1,3"); // Simple single-term still works
-    checkMatches("\"(john OR johathon)  smith\"", "1,2"); // boolean logic with
-    // brackets works.
-    checkMatches("\"(jo* -john) smyth~\"", "2"); // boolean logic with
-    // brackets works.
-
-    // checkMatches("\"john -percival\"", "1"); // not logic doesn't work
-    // currently :(.
 
     checkMatches("\"john  nosuchword*\"", ""); // phrases with clauses producing
     // empty sets
 
     checkBadQuery("\"jo*  id:1 smith\""); // mixing fields in a phrase is bad
-    checkBadQuery("\"jo* \"smith\" \""); // phrases inside phrases is bad
   }
 
-  private void checkBadQuery(String qString) {
+  public void testParserSpecificSyntax() throws Exception {
+    checkMatches("\"(jo* -john)  smith\"", "2"); // boolean logic works
+    checkMatches("\"(jo* -john) smyth~\"", "2"); // boolean logic with
+    // brackets works.
+
+    // checkMatches("\"john -percival\"", "1"); // not logic doesn't work
+    // currently :(.
+    checkMatches("\"(john OR johathon)  smith\"", "1,2"); // boolean logic with
+    // brackets works.
+    checkBadQuery("\"jo* \"smith\" \""); // phrases inside phrases is bad
+
+
+  }
+
+  public Query getQuery(String qString) throws Exception {
     QueryParser qp = new ComplexPhraseQueryParser(TEST_VERSION_CURRENT, defaultFieldName, analyzer);
+    return qp.parse(qString);
+    
+  }
+  protected void checkBadQuery(String qString) {
     Throwable expected = null;
     try {
-      qp.parse(qString);
+      getQuery(qString);
     } catch (Throwable e) {
       expected = e;
     }
@@ -84,12 +93,9 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
 
   }
 
-  private void checkMatches(String qString, String expectedVals)
+  protected void checkMatches(String qString, String expectedVals)
       throws Exception {
-    QueryParser qp = new ComplexPhraseQueryParser(TEST_VERSION_CURRENT, defaultFieldName, analyzer);
-    qp.setFuzzyPrefixLength(1); // usually a good idea
-
-    Query q = qp.parse(qString);
+    Query q = getQuery(qString);
 
     HashSet<String> expecteds = new HashSet<String>();
     String[] vals = expectedVals.split(",");

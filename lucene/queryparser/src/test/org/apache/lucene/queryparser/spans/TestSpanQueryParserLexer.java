@@ -755,7 +755,7 @@ public class TestSpanQueryParserLexer extends LuceneTestCase {
         new SQPTerm(s, false)
         );
   }
-  
+
   private void executeSingleTokenTest(String q, int targetOffset, SQPToken truth) 
       throws ParseException {
     List<SQPToken> tokens = lexer.getTokens(q);
