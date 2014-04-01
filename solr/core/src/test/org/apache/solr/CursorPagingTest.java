@@ -563,7 +563,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     final Collection<String> allFieldNames = getAllSortFieldNames();
 
     final int initialDocs = _TestUtil.nextInt(random(),100,200);
-    final int totalDocs = atLeast(5000);
+    final int totalDocs = atLeast(500);
 
     // start with a smallish number of documents, and test that we can do a full walk using a 
     // sort on *every* field in the schema...
@@ -994,7 +994,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     Collections.shuffle(shuffledNames, random());
 
     final StringBuilder result = new StringBuilder();
-    final int numClauses = atLeast(2);
+    final int numClauses = _TestUtil.nextInt(random(), 2, 5);
 
     for (int i = 0; i < numClauses; i++) {
       String field = shuffledNames.get(i);

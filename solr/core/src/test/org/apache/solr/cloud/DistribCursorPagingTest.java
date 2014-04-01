@@ -521,7 +521,7 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
     final Collection<String> allFieldNames = getAllSortFieldNames();
 
     final int numInitialDocs = _TestUtil.nextInt(random(),100,200);
-    final int totalDocs = atLeast(5000);
+    final int totalDocs = atLeast(500);
 
     // start with a smallish number of documents, and test that we can do a full walk using a 
     // sort on *every* field in the schema...
@@ -578,7 +578,7 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
     }
     commit();
 
-    final int numRandomSorts = atLeast(5);
+    final int numRandomSorts = atLeast(3);
     for (int i = 0; i < numRandomSorts; i++) {
       final String sort = CursorPagingTest.buildRandomSort(allFieldNames);
       final String rows = "" + _TestUtil.nextInt(random(),63,113);
