@@ -24,6 +24,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -65,14 +66,19 @@ public class UpdateProcessorTestBase extends SolrTestCaseJ4 {
 
     SolrQueryRequest req = new LocalSolrQueryRequest(core, requestParams);
     try {
+      SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
       AddUpdateCommand cmd = new AddUpdateCommand(req);
       cmd.solrDoc = docIn;
 
       UpdateRequestProcessor processor = pc.createProcessor(req, rsp);
-      processor.processAdd(cmd);
+      if (null != processor) {
+        // test chain might be empty or short circuted.
+        processor.processAdd(cmd);
+      }
 
       return cmd.solrDoc;
     } finally {
+      SolrRequestInfo.clearRequestInfo();
       req.close();
     }
   }

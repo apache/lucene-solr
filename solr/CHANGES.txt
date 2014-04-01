@@ -163,6 +163,10 @@ New Features
   to read collection and shard information instead of reading data directly from ZooKeeper.
   (Dave Seltzer, Varun Thacker, Vitaliy Zhovtyuk, Erick Erickson, shalin)
 
+* SOLR-5795: New DocExpirationUpdateProcessorFactory supports computing an expiration 
+  date for documents from the "TTL" expression, as well as automatically deleting expired 
+  documents on a periodic basis. (hossman)
+
 Bug Fixes
 ----------------------
 
