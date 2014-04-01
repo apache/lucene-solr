@@ -66,5 +66,9 @@ public class NullIndexOutput extends IndexOutput {
       length = pos;
     }
   }
-  
+
+  @Override
+  public long getChecksum() throws IOException {
+    return 0; // we don't write anything.
+  }
 }

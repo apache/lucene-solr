@@ -109,6 +109,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
     if (state.context.context != IOContext.Context.MERGE) {
       FieldsProducer loadedPostings;
       try {
+        postings.checkIntegrity();
         loadedPostings = new DirectFields(state, postings, minSkipCount, lowFreqCutoff);
       } finally {
         postings.close();
@@ -156,6 +157,12 @@ public final class DirectPostingsFormat extends PostingsFormat {
         sizeInBytes += entry.getValue().ramBytesUsed();
       }
       return sizeInBytes;
+    }
+
+    @Override
+    public void checkIntegrity() throws IOException {
+      // if we read entirely into ram, we already validated.
+      // otherwise returned the raw postings reader
     }
   }
 

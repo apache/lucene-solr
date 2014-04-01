@@ -536,6 +536,10 @@ public class CheckIndex {
         reader = new SegmentReader(info, IOContext.DEFAULT);
 
         segInfoStat.openReaderPassed = true;
+        
+        if (infoStream != null)
+          infoStream.print("    test: check integrity.........");
+        reader.checkIntegrity();
 
         final int numDocs = reader.numDocs();
         toLoseDocCount = numDocs;

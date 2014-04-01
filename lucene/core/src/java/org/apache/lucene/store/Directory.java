@@ -100,7 +100,12 @@ public abstract class Directory implements Closeable {
    * <p>Throws {@link FileNotFoundException} or {@link NoSuchFileException}
    * if the file does not exist.
    */
-  public abstract IndexInput openInput(String name, IOContext context) throws IOException; 
+  public abstract IndexInput openInput(String name, IOContext context) throws IOException;
+  
+  /** Returns a stream reading an existing file, computing checksum as it reads */
+  public ChecksumIndexInput openChecksumInput(String name, IOContext context) throws IOException {
+    return new BufferedChecksumIndexInput(openInput(name, context));
+  }
   
   /** Construct a {@link Lock}.
    * @param name the name of the lock file

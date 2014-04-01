@@ -18,6 +18,8 @@ package org.apache.lucene.store;
  */
 
 import java.io.IOException;
+import java.util.zip.CRC32;
+import java.util.zip.Checksum;
 
 /**
  * A memory-resident {@link IndexOutput} implementation.
@@ -35,6 +37,8 @@ public class RAMOutputStream extends IndexOutput {
   private int bufferPosition;
   private long bufferStart;
   private int bufferLength;
+  
+  private Checksum crc = new BufferedChecksum(new CRC32());
 
   /** Construct an empty output buffer. */
   public RAMOutputStream() {
@@ -95,6 +99,7 @@ public class RAMOutputStream extends IndexOutput {
     bufferStart = 0;
     bufferLength = 0;
     file.setLength(0);
+    crc.reset();
   }
 
   @Override
@@ -113,12 +118,14 @@ public class RAMOutputStream extends IndexOutput {
       currentBufferIndex++;
       switchCurrentBuffer();
     }
+    crc.update(b);
     currentBuffer[bufferPosition++] = b;
   }
 
   @Override
   public void writeBytes(byte[] b, int offset, int len) throws IOException {
     assert b != null;
+    crc.update(b, offset, len);
     while (len > 0) {
       if (bufferPosition ==  bufferLength) {
         currentBufferIndex++;
@@ -165,5 +172,10 @@ public class RAMOutputStream extends IndexOutput {
   /** Returns byte usage of all buffers. */
   public long sizeInBytes() {
     return (long) file.numBuffers() * (long) BUFFER_SIZE;
-  }  
+  }
+
+  @Override
+  public long getChecksum() throws IOException {
+    return crc.getValue();
+  }
 }

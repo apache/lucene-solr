@@ -43,6 +43,8 @@ public abstract class IndexOutput extends DataOutput implements Closeable {
    */
   public abstract long getFilePointer();
 
+  /** Returns the current checksum of bytes written so far */
+  public abstract long getChecksum() throws IOException;
 
   /** The number of bytes in the file. */
   public abstract long length() throws IOException;

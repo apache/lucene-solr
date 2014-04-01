@@ -66,6 +66,8 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
   // start of the field info data
   private long dirOffset;
   
+  private int version;
+  
   public FixedGapTermsIndexReader(Directory dir, FieldInfos fieldInfos, String segment, Comparator<BytesRef> termComp, String segmentSuffix, IOContext context)
     throws IOException {
 
@@ -78,6 +80,11 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
     try {
       
       readHeader(in);
+      
+      if (version >= FixedGapTermsIndexWriter.VERSION_CHECKSUM) {
+        CodecUtil.checksumEntireFile(in);
+      }
+      
       indexInterval = in.readVInt();
       if (indexInterval < 1) {
         throw new CorruptIndexException("invalid indexInterval: " + indexInterval + " (resource=" + in + ")");
@@ -124,7 +131,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
   }
 
   private void readHeader(IndexInput input) throws IOException {
-    CodecUtil.checkHeader(input, FixedGapTermsIndexWriter.CODEC_NAME,
+    version = CodecUtil.checkHeader(input, FixedGapTermsIndexWriter.CODEC_NAME,
       FixedGapTermsIndexWriter.VERSION_CURRENT, FixedGapTermsIndexWriter.VERSION_CURRENT);
   }
 
@@ -273,7 +280,11 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
   public void close() throws IOException {}
 
   private void seekDir(IndexInput input, long dirOffset) throws IOException {
-    input.seek(input.length() - 8);
+    if (version >= FixedGapTermsIndexWriter.VERSION_CHECKSUM) {
+      input.seek(input.length() - CodecUtil.footerLength() - 8);
+    } else {
+      input.seek(input.length() - 8);
+    }
     dirOffset = input.readLong();
     input.seek(dirOffset);
   }

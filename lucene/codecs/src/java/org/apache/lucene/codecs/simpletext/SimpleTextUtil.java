@@ -17,11 +17,16 @@ package org.apache.lucene.codecs.simpletext;
  * limitations under the License.
  */
 
+import static org.apache.lucene.codecs.simpletext.SimpleTextStoredFieldsWriter.CHECKSUM;
+
 import java.io.IOException;
 
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
 
 class SimpleTextUtil {
@@ -66,5 +71,19 @@ class SimpleTextUtil {
     }
     scratch.offset = 0;
     scratch.length = upto;
+  }
+  
+  public static void checkFooter(ChecksumIndexInput input, BytesRef prefix) throws IOException {
+    BytesRef scratch = new BytesRef();
+    String expectedChecksum = Long.toString(input.getChecksum());
+    SimpleTextUtil.readLine(input, scratch);
+    assert StringHelper.startsWith(scratch, prefix);
+    String actualChecksum = new BytesRef(scratch.bytes, prefix.length, scratch.length - prefix.length).utf8ToString();
+    if (!expectedChecksum.equals(actualChecksum)) {
+      throw new CorruptIndexException("SimpleText checksum failure: " + actualChecksum + " != " + expectedChecksum + " (resource=" + input + ")");
+    }
+    if (input.length() != input.getFilePointer()) {
+      throw new CorruptIndexException("Unexpected stuff at the end of file, please be careful with your text editor! (resource=" + input + ")");
+    }
   }
 }

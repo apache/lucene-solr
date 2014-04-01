@@ -37,6 +37,7 @@ import org.apache.lucene.util.IOUtils;
  */
 public class SimpleTextTermVectorsWriter extends TermVectorsWriter {
   
+  static final BytesRef CHECKSUM           = new BytesRef("checksum ");
   static final BytesRef END                = new BytesRef("END");
   static final BytesRef DOC                = new BytesRef("doc ");
   static final BytesRef NUMFIELDS          = new BytesRef("  numfields ");
@@ -176,6 +177,10 @@ public class SimpleTextTermVectorsWriter extends TermVectorsWriter {
       throw new RuntimeException("mergeVectors produced an invalid result: mergedDocs is " + numDocs + " but vec numDocs is " + numDocsWritten + " file=" + out.toString() + "; now aborting this merge to prevent index corruption");
     }
     write(END);
+    newLine();
+    String checksum = Long.toString(out.getChecksum());
+    write(CHECKSUM);
+    write(checksum);
     newLine();
   }
   

@@ -23,8 +23,12 @@ import java.io.IOException;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexFormatTooNewException;
 import org.apache.lucene.index.IndexFormatTooOldException;
+import org.apache.lucene.store.BufferedChecksumIndexInput;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -43,6 +47,10 @@ public final class CodecUtil {
    * Constant to identify the start of a codec header.
    */
   public final static int CODEC_MAGIC = 0x3fd76c17;
+  /**
+   * Constant to identify the start of a codec footer.
+   */
+  public final static int FOOTER_MAGIC = ~CODEC_MAGIC;
 
   /**
    * Writes a codec header, which records both a string to
@@ -149,5 +157,120 @@ public final class CodecUtil {
     }
 
     return actualVersion;
+  }
+  
+  /**
+   * Writes a codec footer, which records both a checksum
+   * algorithm ID and a checksum. This footer can
+   * be parsed and validated with 
+   * {@link #checkFooter(ChecksumIndexInput) checkFooter()}.
+   * <p>
+   * CodecFooter --&gt; Magic,AlgorithmID,Checksum
+   * <ul>
+   *    <li>Magic --&gt; {@link DataOutput#writeInt Uint32}. This
+   *        identifies the start of the footer. It is always {@value #FOOTER_MAGIC}.
+   *    <li>AlgorithmID --&gt; {@link DataOutput#writeInt Uint32}. This
+   *        indicates the checksum algorithm used. Currently this is always 0,
+   *        for zlib-crc32.
+   *    <li>Checksum --&gt; {@link DataOutput#writeLong Uint32}. The
+   *        actual checksum value for all previous bytes in the stream, including
+   *        the bytes from Magic and AlgorithmID.
+   * </ul>
+   * 
+   * @param out Output stream
+   * @throws IOException If there is an I/O error writing to the underlying medium.
+   */
+  public static void writeFooter(IndexOutput out) throws IOException {
+    out.writeInt(FOOTER_MAGIC);
+    out.writeInt(0);
+    out.writeLong(out.getChecksum());
+  }
+  
+  /**
+   * Computes the length of a codec footer.
+   * 
+   * @return length of the entire codec footer.
+   * @see #writeFooter(IndexOutput)
+   */
+  public static int footerLength() {
+    return 16;
+  }
+  
+  /** 
+   * Validates the codec footer previously written by {@link #writeFooter}. 
+   * @return actual checksum value
+   * @throws IOException if the footer is invalid, if the checksum does not match, 
+   *                     or if {@code in} is not properly positioned before the footer
+   *                     at the end of the stream.
+   */
+  public static long checkFooter(ChecksumIndexInput in) throws IOException {
+    validateFooter(in);
+    long actualChecksum = in.getChecksum();
+    long expectedChecksum = in.readLong();
+    if (expectedChecksum != actualChecksum) {
+      throw new CorruptIndexException("checksum failed (hardware problem?) : expected=" + Long.toHexString(expectedChecksum) +  
+                                                       " actual=" + Long.toHexString(actualChecksum) +
+                                                       " (resource=" + in + ")");
+    }
+    if (in.getFilePointer() != in.length()) {
+      throw new CorruptIndexException("did not read all bytes from file: read " + in.getFilePointer() + " vs size " + in.length() + " (resource: " + in + ")");
+    }
+    return actualChecksum;
+  }
+  
+  /** 
+   * Returns (but does not validate) the checksum previously written by {@link #checkFooter}.
+   * @return actual checksum value
+   * @throws IOException if the footer is invalid
+   */
+  public static long retrieveChecksum(IndexInput in) throws IOException {
+    in.seek(in.length() - footerLength());
+    validateFooter(in);
+    return in.readLong();
+  }
+  
+  private static void validateFooter(IndexInput in) throws IOException {
+    final int magic = in.readInt();
+    if (magic != FOOTER_MAGIC) {
+      throw new CorruptIndexException("codec footer mismatch: actual footer=" + magic + " vs expected footer=" + FOOTER_MAGIC + " (resource: " + in + ")");
+    }
+    
+    final int algorithmID = in.readInt();
+    if (algorithmID != 0) {
+      throw new CorruptIndexException("codec footer mismatch: unknown algorithmID: " + algorithmID);
+    }
+  }
+  
+  /**
+   * Checks that the stream is positioned at the end, and throws exception
+   * if it is not. 
+   * @deprecated Use {@link #checkFooter} instead, this should only used for files without checksums 
+   */
+  @Deprecated
+  public static void checkEOF(IndexInput in) throws IOException {
+    if (in.getFilePointer() != in.length()) {
+      throw new CorruptIndexException("did not read all bytes from file: read " + in.getFilePointer() + " vs size " + in.length() + " (resource: " + in + ")");
+    }
+  }
+  
+  /** 
+   * Clones the provided input, reads all bytes from the file, and calls {@link #checkFooter} 
+   * <p>
+   * Note that this method may be slow, as it must process the entire file.
+   * If you just need to extract the checksum value, call {@link #retrieveChecksum}.
+   */
+  public static long checksumEntireFile(IndexInput input) throws IOException {
+    IndexInput clone = input.clone();
+    clone.seek(0);
+    ChecksumIndexInput in = new BufferedChecksumIndexInput(clone);
+    assert in.getFilePointer() == 0;
+    final byte[] buffer = new byte[1024];
+    long bytesToRead = in.length() - footerLength();
+    for (long skipped = 0; skipped < bytesToRead; ) {
+      final int toRead = (int) Math.min(bytesToRead - skipped, buffer.length);
+      in.readBytes(buffer, 0, toRead);
+      skipped += toRead;
+    }
+    return checkFooter(in);
   }
 }

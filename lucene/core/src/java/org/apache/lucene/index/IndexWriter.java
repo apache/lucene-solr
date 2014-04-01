@@ -2651,7 +2651,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
                                          false, codec, null);
 
       SegmentMerger merger = new SegmentMerger(mergeReaders, info, infoStream, trackingDir,
-                                               MergeState.CheckAbort.NONE, globalFieldNumberMap, context);
+                                               MergeState.CheckAbort.NONE, globalFieldNumberMap, 
+                                               context, config.getCheckIntegrityAtMerge());
       
       if (!merger.shouldMerge()) {
         return;
@@ -4051,7 +4052,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
       // OneMerge to return a view over the actual segments to merge
       final SegmentMerger merger = new SegmentMerger(merge.getMergeReaders(),
           merge.info.info, infoStream, dirWrapper,
-          checkAbort, globalFieldNumberMap, context);
+          checkAbort, globalFieldNumberMap, 
+          context, config.getCheckIntegrityAtMerge());
 
       merge.checkAborted(directory);
 

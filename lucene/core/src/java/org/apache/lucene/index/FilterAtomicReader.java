@@ -423,4 +423,9 @@ public class FilterAtomicReader extends AtomicReader {
     return in.getDocsWithField(field);
   }
 
+  @Override
+  public void checkIntegrity() throws IOException {
+    ensureOpen();
+    in.checkIntegrity();
+  }
 }

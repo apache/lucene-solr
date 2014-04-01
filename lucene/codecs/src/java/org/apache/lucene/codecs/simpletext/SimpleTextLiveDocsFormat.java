@@ -24,9 +24,9 @@ import java.util.Collection;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentCommitInfo;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
@@ -50,6 +50,7 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
   final static BytesRef SIZE             = new BytesRef("size ");
   final static BytesRef DOC              = new BytesRef("  doc ");
   final static BytesRef END              = new BytesRef("END");
+  final static BytesRef CHECKSUM         = new BytesRef("checksum ");
   
   @Override
   public MutableBits newLiveDocs(int size) throws IOException {
@@ -69,10 +70,10 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
     CharsRef scratchUTF16 = new CharsRef();
     
     String fileName = IndexFileNames.fileNameFromGeneration(info.info.name, LIVEDOCS_EXTENSION, info.getDelGen());
-    IndexInput in = null;
+    ChecksumIndexInput in = null;
     boolean success = false;
     try {
-      in = dir.openInput(fileName, context);
+      in = dir.openChecksumInput(fileName, context);
       
       SimpleTextUtil.readLine(in, scratch);
       assert StringHelper.startsWith(scratch, SIZE);
@@ -87,6 +88,8 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
         bits.set(docid);
         SimpleTextUtil.readLine(in, scratch);
       }
+      
+      SimpleTextUtil.checkFooter(in, CHECKSUM);
       
       success = true;
       return new SimpleTextBits(bits, size);
@@ -126,6 +129,10 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
       }
       
       SimpleTextUtil.write(out, END);
+      SimpleTextUtil.writeNewline(out);
+      String checksum = Long.toString(out.getChecksum());
+      SimpleTextUtil.write(out, CHECKSUM);
+      SimpleTextUtil.write(out, checksum, scratch);
       SimpleTextUtil.writeNewline(out);
       success = true;
     } finally {

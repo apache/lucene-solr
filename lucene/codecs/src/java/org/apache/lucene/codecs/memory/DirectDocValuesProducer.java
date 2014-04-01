@@ -33,6 +33,7 @@ import org.apache.lucene.index.RandomAccessOrds;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -65,6 +66,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
   
   private final int maxDoc;
   private final AtomicLong ramBytesUsed;
+  private final int version;
   
   static final byte NUMBER = 0;
   static final byte BYTES = 1;
@@ -72,22 +74,27 @@ class DirectDocValuesProducer extends DocValuesProducer {
   static final byte SORTED_SET = 3;
 
   static final int VERSION_START = 0;
-  static final int VERSION_CURRENT = VERSION_START;
+  static final int VERSION_CHECKSUM = 1;
+  static final int VERSION_CURRENT = VERSION_CHECKSUM;
     
   DirectDocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     maxDoc = state.segmentInfo.getDocCount();
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
     // read in the entries from the metadata file.
-    IndexInput in = state.directory.openInput(metaName, state.context);
+    ChecksumIndexInput in = state.directory.openChecksumInput(metaName, state.context);
     ramBytesUsed = new AtomicLong(RamUsageEstimator.shallowSizeOfInstance(getClass()));
     boolean success = false;
-    final int version;
     try {
       version = CodecUtil.checkHeader(in, metaCodec, 
                                       VERSION_START,
                                       VERSION_CURRENT);
       readFields(in);
 
+      if (version >= VERSION_CHECKSUM) {
+        CodecUtil.checkFooter(in);
+      } else {
+        CodecUtil.checkEOF(in);
+      }
       success = true;
     } finally {
       if (success) {
@@ -185,6 +192,13 @@ class DirectDocValuesProducer extends DocValuesProducer {
     return ramBytesUsed.get();
   }
   
+  @Override
+  public void checkIntegrity() throws IOException {
+    if (version >= VERSION_CHECKSUM) {
+      CodecUtil.checksumEntireFile(data);
+    }
+  }
+
   @Override
   public synchronized NumericDocValues getNumeric(FieldInfo field) throws IOException {
     NumericDocValues instance = numericInstances.get(field.number);

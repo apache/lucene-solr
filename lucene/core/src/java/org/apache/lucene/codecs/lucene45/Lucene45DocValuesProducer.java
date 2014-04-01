@@ -50,6 +50,7 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -80,7 +81,7 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
   protected Lucene45DocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
     // read in the entries from the metadata file.
-    IndexInput in = state.directory.openInput(metaName, state.context);
+    ChecksumIndexInput in = state.directory.openChecksumInput(metaName, state.context);
     this.maxDoc = state.segmentInfo.getDocCount();
     boolean success = false;
     try {
@@ -94,8 +95,10 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
       sortedSets = new HashMap<>();
       readFields(in, state.fieldInfos);
 
-      if (in.getFilePointer() != in.length()) {
-        throw new CorruptIndexException("did not read all bytes from file \"" + metaName + "\": read " + in.getFilePointer() + " vs size " + in.length() + " (resource: " + in + ")");
+      if (version >= Lucene45DocValuesFormat.VERSION_CHECKSUM) {
+        CodecUtil.checkFooter(in);
+      } else {
+        CodecUtil.checkEOF(in);
       }
 
       success = true;
@@ -299,6 +302,13 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
     return ramBytesUsed.get();
   }
   
+  @Override
+  public void checkIntegrity() throws IOException {
+    if (version >= Lucene45DocValuesFormat.VERSION_CHECKSUM) {
+      CodecUtil.checksumEntireFile(data);
+    }
+  }
+
   LongValues getNumeric(NumericEntry entry) throws IOException {
     final IndexInput data = this.data.clone();
     data.seek(entry.offset);

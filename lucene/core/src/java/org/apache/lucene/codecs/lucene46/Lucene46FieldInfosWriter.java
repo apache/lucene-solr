@@ -26,9 +26,9 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -81,6 +81,7 @@ final class Lucene46FieldInfosWriter extends FieldInfosWriter {
         output.writeLong(fi.getDocValuesGen());
         output.writeStringStringMap(fi.attributes());
       }
+      CodecUtil.writeFooter(output);
       success = true;
     } finally {
       if (success) {

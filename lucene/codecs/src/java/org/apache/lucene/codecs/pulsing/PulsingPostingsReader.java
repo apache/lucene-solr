@@ -653,4 +653,9 @@ public class PulsingPostingsReader extends PostingsReaderBase {
   public long ramBytesUsed() {
     return ((wrappedPostingsReader!=null) ? wrappedPostingsReader.ramBytesUsed(): 0);
   }
+
+  @Override
+  public void checkIntegrity() throws IOException {
+    wrappedPostingsReader.checkIntegrity();
+  }
 }

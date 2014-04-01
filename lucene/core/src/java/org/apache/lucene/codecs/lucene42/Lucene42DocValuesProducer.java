@@ -37,6 +37,7 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ByteArrayDataInput;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -64,6 +65,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
   private final Map<Integer,BinaryEntry> binaries;
   private final Map<Integer,FSTEntry> fsts;
   private final IndexInput data;
+  private final int version;
   
   // ram instances we have already loaded
   private final Map<Integer,NumericDocValues> numericInstances = 
@@ -89,16 +91,16 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
   
   static final int VERSION_START = 0;
   static final int VERSION_GCD_COMPRESSION = 1;
-  static final int VERSION_CURRENT = VERSION_GCD_COMPRESSION;
+  static final int VERSION_CHECKSUM = 2;
+  static final int VERSION_CURRENT = VERSION_CHECKSUM;
     
   Lucene42DocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     maxDoc = state.segmentInfo.getDocCount();
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
     // read in the entries from the metadata file.
-    IndexInput in = state.directory.openInput(metaName, state.context);
+    ChecksumIndexInput in = state.directory.openChecksumInput(metaName, state.context);
     boolean success = false;
     ramBytesUsed = new AtomicLong(RamUsageEstimator.shallowSizeOfInstance(getClass()));
-    final int version;
     try {
       version = CodecUtil.checkHeader(in, metaCodec, 
                                       VERSION_START,
@@ -108,8 +110,10 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       fsts = new HashMap<>();
       readFields(in, state.fieldInfos);
 
-      if (in.getFilePointer() != in.length()) {
-        throw new CorruptIndexException("did not read all bytes from file \"" + metaName + "\": read " + in.getFilePointer() + " vs size " + in.length() + " (resource: " + in + ")");
+      if (version >= VERSION_CHECKSUM) {
+        CodecUtil.checkFooter(in);
+      } else {
+        CodecUtil.checkEOF(in);
       }
       
       success = true;
@@ -199,6 +203,13 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
     return ramBytesUsed.get();
   }
   
+  @Override
+  public void checkIntegrity() throws IOException {
+    if (version >= VERSION_CHECKSUM) {
+      CodecUtil.checksumEntireFile(data);
+    }
+  }
+
   private NumericDocValues loadNumeric(FieldInfo field) throws IOException {
     NumericEntry entry = numerics.get(field.number);
     data.seek(entry.offset);

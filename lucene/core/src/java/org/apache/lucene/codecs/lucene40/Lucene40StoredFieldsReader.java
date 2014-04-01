@@ -250,4 +250,7 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
   public long ramBytesUsed() {
     return 0;
   }
+
+  @Override
+  public void checkIntegrity() throws IOException {}
 }

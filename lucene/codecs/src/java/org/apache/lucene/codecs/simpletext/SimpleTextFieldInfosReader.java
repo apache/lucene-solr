@@ -24,15 +24,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.codecs.FieldInfosReader;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
@@ -50,7 +49,7 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
   @Override
   public FieldInfos read(Directory directory, String segmentName, String segmentSuffix, IOContext iocontext) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(segmentName, segmentSuffix, FIELD_INFOS_EXTENSION);
-    IndexInput input = directory.openInput(fileName, iocontext);
+    ChecksumIndexInput input = directory.openChecksumInput(fileName, iocontext);
     BytesRef scratch = new BytesRef();
     
     boolean success = false;
@@ -130,9 +129,7 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
         infos[i].setDocValuesGen(dvGen);
       }
 
-      if (input.getFilePointer() != input.length()) {
-        throw new CorruptIndexException("did not read all bytes from file \"" + fileName + "\": read " + input.getFilePointer() + " vs size " + input.length() + " (resource: " + input + ")");
-      }
+      SimpleTextUtil.checkFooter(input, CHECKSUM);
       
       FieldInfos fieldInfos = new FieldInfos(infos);
       success = true;

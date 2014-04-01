@@ -59,7 +59,7 @@ import org.apache.lucene.codecs.CodecUtil;
  * FST-based terms dictionary reader.
  *
  * The FST directly maps each term and its metadata, 
- * it is memeory resident.
+ * it is memory resident.
  *
  * @lucene.experimental
  */
@@ -67,18 +67,21 @@ import org.apache.lucene.codecs.CodecUtil;
 public class FSTTermsReader extends FieldsProducer {
   final TreeMap<String, TermsReader> fields = new TreeMap<>();
   final PostingsReaderBase postingsReader;
-  final IndexInput in;
   //static boolean TEST = false;
+  final int version;
 
   public FSTTermsReader(SegmentReadState state, PostingsReaderBase postingsReader) throws IOException {
     final String termsFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, FSTTermsWriter.TERMS_EXTENSION);
 
     this.postingsReader = postingsReader;
-    this.in = state.directory.openInput(termsFileName, state.context);
+    final IndexInput in = state.directory.openInput(termsFileName, state.context);
 
     boolean success = false;
     try {
-      readHeader(in);
+      version = readHeader(in);
+      if (version >= FSTTermsWriter.TERMS_VERSION_CHECKSUM) {
+        CodecUtil.checksumEntireFile(in);
+      }
       this.postingsReader.init(in);
       seekDir(in);
 
@@ -92,13 +95,15 @@ public class FSTTermsReader extends FieldsProducer {
         long sumDocFreq = in.readVLong();
         int docCount = in.readVInt();
         int longsSize = in.readVInt();
-        TermsReader current = new TermsReader(fieldInfo, numTerms, sumTotalTermFreq, sumDocFreq, docCount, longsSize);
+        TermsReader current = new TermsReader(fieldInfo, in, numTerms, sumTotalTermFreq, sumDocFreq, docCount, longsSize);
         TermsReader previous = fields.put(fieldInfo.name, current);
-        checkFieldSummary(state.segmentInfo, current, previous);
+        checkFieldSummary(state.segmentInfo, in, current, previous);
       }
       success = true;
     } finally {
-      if (!success) {
+      if (success) {
+        IOUtils.close(in);
+      } else {
         IOUtils.closeWhileHandlingException(in);
       }
     }
@@ -110,10 +115,14 @@ public class FSTTermsReader extends FieldsProducer {
                                      FSTTermsWriter.TERMS_VERSION_CURRENT);
   }
   private void seekDir(IndexInput in) throws IOException {
-    in.seek(in.length() - 8);
+    if (version >= FSTTermsWriter.TERMS_VERSION_CHECKSUM) {
+      in.seek(in.length() - CodecUtil.footerLength() - 8);
+    } else {
+      in.seek(in.length() - 8);
+    }
     in.seek(in.readLong());
   }
-  private void checkFieldSummary(SegmentInfo info, TermsReader field, TermsReader previous) throws IOException {
+  private void checkFieldSummary(SegmentInfo info, IndexInput in, TermsReader field, TermsReader previous) throws IOException {
     // #docs with field must be <= #docs
     if (field.docCount < 0 || field.docCount > info.getDocCount()) {
       throw new CorruptIndexException("invalid docCount: " + field.docCount + " maxDoc: " + info.getDocCount() + " (resource=" + in + ")");
@@ -150,7 +159,7 @@ public class FSTTermsReader extends FieldsProducer {
   @Override
   public void close() throws IOException {
     try {
-      IOUtils.close(in, postingsReader);
+      IOUtils.close(postingsReader);
     } finally {
       fields.clear();
     }
@@ -165,7 +174,7 @@ public class FSTTermsReader extends FieldsProducer {
     final int longsSize;
     final FST<FSTTermOutputs.TermData> dict;
 
-    TermsReader(FieldInfo fieldInfo, long numTerms, long sumTotalTermFreq, long sumDocFreq, int docCount, int longsSize) throws IOException {
+    TermsReader(FieldInfo fieldInfo, IndexInput in, long numTerms, long sumTotalTermFreq, long sumDocFreq, int docCount, int longsSize) throws IOException {
       this.fieldInfo = fieldInfo;
       this.numTerms = numTerms;
       this.sumTotalTermFreq = sumTotalTermFreq;
@@ -728,5 +737,10 @@ public class FSTTermsReader extends FieldsProducer {
       ramBytesUsed += r.dict == null ? 0 : r.dict.sizeInBytes();
     }
     return ramBytesUsed;
+  }
+  
+  @Override
+  public void checkIntegrity() throws IOException {
+    postingsReader.checkIntegrity();
   }
 }

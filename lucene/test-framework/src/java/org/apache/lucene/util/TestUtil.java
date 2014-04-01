@@ -243,6 +243,7 @@ public final class TestUtil {
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
     PrintStream infoStream = new PrintStream(bos, false, IOUtils.UTF_8);
 
+    reader.checkIntegrity();
     FieldNormStatus fieldNormStatus = CheckIndex.testFieldNorms(reader, infoStream);
     TermIndexStatus termIndexStatus = CheckIndex.testPostings(reader, infoStream);
     StoredFieldStatus storedFieldStatus = CheckIndex.testStoredFields(reader, infoStream);

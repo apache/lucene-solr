@@ -17,6 +17,7 @@ package org.apache.lucene.codecs.simpletext;
  * limitations under the License.
  */
 
+import static org.apache.lucene.codecs.simpletext.SimpleTextSegmentInfoWriter.SI_CHECKSUM;
 import static org.apache.lucene.codecs.simpletext.SimpleTextSegmentInfoWriter.SI_DIAG_KEY;
 import static org.apache.lucene.codecs.simpletext.SimpleTextSegmentInfoWriter.SI_DIAG_VALUE;
 import static org.apache.lucene.codecs.simpletext.SimpleTextSegmentInfoWriter.SI_DOCCOUNT;
@@ -36,9 +37,9 @@ import java.util.Set;
 import org.apache.lucene.codecs.SegmentInfoReader;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
@@ -55,7 +56,7 @@ public class SimpleTextSegmentInfoReader extends SegmentInfoReader {
   public SegmentInfo read(Directory directory, String segmentName, IOContext context) throws IOException {
     BytesRef scratch = new BytesRef();
     String segFileName = IndexFileNames.segmentFileName(segmentName, "", SimpleTextSegmentInfoFormat.SI_EXTENSION);
-    IndexInput input = directory.openInput(segFileName, context);
+    ChecksumIndexInput input = directory.openChecksumInput(segFileName, context);
     boolean success = false;
     try {
       SimpleTextUtil.readLine(input, scratch);
@@ -97,6 +98,8 @@ public class SimpleTextSegmentInfoReader extends SegmentInfoReader {
         String fileName = readString(SI_FILE.length, scratch);
         files.add(fileName);
       }
+      
+      SimpleTextUtil.checkFooter(input, SI_CHECKSUM);
 
       SegmentInfo info = new SegmentInfo(directory, version, segmentName, docCount, 
                                          isCompoundFile, null, diagnostics);

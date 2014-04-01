@@ -75,6 +75,11 @@ public class AssertingTermVectorsFormat extends TermVectorsFormat {
     public long ramBytesUsed() {
       return in.ramBytesUsed();
     }
+
+    @Override
+    public void checkIntegrity() throws IOException {
+      in.checkIntegrity();
+    }
   }
 
   enum Status {

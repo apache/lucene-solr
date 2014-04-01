@@ -310,6 +310,13 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
       }
       return size;
     }
+
+    @Override
+    public void checkIntegrity() throws IOException {
+      for (DocValuesProducer format : formats.values()) {
+        format.checkIntegrity();
+      }
+    }
   }
 
   @Override

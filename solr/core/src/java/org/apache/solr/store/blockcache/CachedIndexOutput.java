@@ -88,5 +88,10 @@ public class CachedIndexOutput extends ReusedBufferedIndexOutput {
       offset += len;
     }
   }
-  
+
+  @Override
+  public long getChecksum() throws IOException {
+    flush();
+    return dest.getChecksum();
+  }
 }

@@ -33,6 +33,8 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.store.BufferedChecksumIndexInput;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -82,15 +84,17 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
   // vectors file in entirety up-front and save the offsets 
   // so we can seek to the data later.
   private void readIndex(int maxDoc) throws IOException {
+    ChecksumIndexInput input = new BufferedChecksumIndexInput(in);
     offsets = new long[maxDoc];
     int upto = 0;
     while (!scratch.equals(END)) {
-      readLine();
+      SimpleTextUtil.readLine(input, scratch);
       if (StringHelper.startsWith(scratch, DOC)) {
-        offsets[upto] = in.getFilePointer();
+        offsets[upto] = input.getFilePointer();
         upto++;
       }
     }
+    SimpleTextUtil.checkFooter(input, CHECKSUM);
     assert upto == offsets.length;
   }
   
@@ -537,4 +541,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
   public long ramBytesUsed() {
     return 0;
   }
+
+  @Override
+  public void checkIntegrity() throws IOException {}
 }

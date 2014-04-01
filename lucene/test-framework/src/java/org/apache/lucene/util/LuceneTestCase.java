@@ -810,6 +810,7 @@ public abstract class LuceneTestCase extends Assert {
     }
     c.setUseCompoundFile(r.nextBoolean());
     c.setReaderPooling(r.nextBoolean());
+    c.setCheckIntegrityAtMerge(r.nextBoolean());
     return c;
   }
 

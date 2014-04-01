@@ -177,7 +177,10 @@ public class BlockTermsReader extends FieldsProducer {
   }
   
   private void seekDir(IndexInput input, long dirOffset) throws IOException {
-    if (version >= BlockTermsWriter.VERSION_APPEND_ONLY) {
+    if (version >= BlockTermsWriter.VERSION_CHECKSUM) {
+      input.seek(input.length() - CodecUtil.footerLength() - 8);
+      dirOffset = input.readLong();
+    } else if (version >= BlockTermsWriter.VERSION_APPEND_ONLY) {
       input.seek(input.length() - 8);
       dirOffset = input.readLong();
     }
@@ -862,5 +865,15 @@ public class BlockTermsReader extends FieldsProducer {
     long sizeInBytes = (postingsReader!=null) ? postingsReader.ramBytesUsed() : 0;
     sizeInBytes += (indexReader!=null) ? indexReader.ramBytesUsed() : 0;
     return sizeInBytes;
+  }
+
+  @Override
+  public void checkIntegrity() throws IOException {   
+    // verify terms
+    if (version >= BlockTermsWriter.VERSION_CHECKSUM) {
+      CodecUtil.checksumEntireFile(in);
+    }
+    // verify postings
+    postingsReader.checkIntegrity();
   }
 }

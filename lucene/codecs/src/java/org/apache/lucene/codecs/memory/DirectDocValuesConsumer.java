@@ -40,7 +40,7 @@ import static org.apache.lucene.codecs.memory.DirectDocValuesProducer.NUMBER;
  */
 
 class DirectDocValuesConsumer extends DocValuesConsumer {
-  final IndexOutput data, meta;
+  IndexOutput data, meta;
   final int maxDoc;
 
   DirectDocValuesConsumer(SegmentWriteState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
@@ -142,6 +142,10 @@ class DirectDocValuesConsumer extends DocValuesConsumer {
     try {
       if (meta != null) {
         meta.writeVInt(-1); // write EOF marker
+        CodecUtil.writeFooter(meta); // write checksum
+      }
+      if (data != null) {
+        CodecUtil.writeFooter(data);
       }
       success = true;
     } finally {
@@ -150,6 +154,7 @@ class DirectDocValuesConsumer extends DocValuesConsumer {
       } else {
         IOUtils.closeWhileHandlingException(data, meta);
       }
+      data = meta = null;
     }
   }
 
