@@ -284,7 +284,15 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     private MemoryFieldsConsumer(SegmentWriteState state) throws IOException {
       final String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, EXTENSION);
       out = state.directory.createOutput(fileName, state.context);
-      CodecUtil.writeHeader(out, CODEC_NAME, VERSION_CURRENT);
+      boolean success = false;
+      try {
+        CodecUtil.writeHeader(out, CODEC_NAME, VERSION_CURRENT);
+        success = true;
+      } finally {
+        if (!success) {
+          IOUtils.closeWhileHandlingException(out);
+        }
+      }
       this.state = state;
     }
 
