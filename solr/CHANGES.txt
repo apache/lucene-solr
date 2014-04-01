@@ -167,6 +167,11 @@ New Features
   date for documents from the "TTL" expression, as well as automatically deleting expired 
   documents on a periodic basis. (hossman)
 
+* SOLR-5829: Allow ExpandComponent to accept query and filter query parameters
+  (Joel Bernstein)
+
+
+
 Bug Fixes
 ----------------------
 
