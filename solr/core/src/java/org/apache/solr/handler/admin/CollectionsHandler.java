@@ -265,11 +265,43 @@ public class CollectionsHandler extends RequestHandlerBase {
   private void handleRequestStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
     log.debug("REQUESTSTATUS action invoked: " + req.getParamString());
     req.getParams().required().check(REQUESTID);
-    Map<String, Object> props = new HashMap<String, Object>();
-    props.put(Overseer.QUEUE_OPERATION, OverseerCollectionProcessor.REQUESTSTATUS);
-    props.put(REQUESTID, req.getParams().get(REQUESTID));
-    ZkNodeProps m = new ZkNodeProps(props);
-    handleResponse(OverseerCollectionProcessor.REQUESTSTATUS, m, rsp);
+
+    String requestId = req.getParams().get(REQUESTID);
+
+    if (requestId.equals("-1")) {
+      // Special taskId (-1), clears up the request state maps.
+      if(requestId.equals("-1")) {
+        coreContainer.getZkController().getOverseerCompletedMap().clear();
+        coreContainer.getZkController().getOverseerFailureMap().clear();
+        return;
+      }
+    } else {
+      NamedList<Object> results = new NamedList<>();
+      if (coreContainer.getZkController().getOverseerCompletedMap().contains(requestId)) {
+        SimpleOrderedMap success = new SimpleOrderedMap();
+        success.add("state", "completed");
+        success.add("msg", "found " + requestId + " in completed tasks");
+        results.add("status", success);
+      } else if (coreContainer.getZkController().getOverseerRunningMap().contains(requestId)) {
+        SimpleOrderedMap success = new SimpleOrderedMap();
+        success.add("state", "running");
+        success.add("msg", "found " + requestId + " in submitted tasks");
+        results.add("status", success);
+      } else if (coreContainer.getZkController().getOverseerFailureMap().contains(requestId)) {
+        SimpleOrderedMap success = new SimpleOrderedMap();
+        success.add("state", "failed");
+        success.add("msg", "found " + requestId + " in failed tasks");
+        results.add("status", success);
+      } else {
+        SimpleOrderedMap failure = new SimpleOrderedMap();
+        failure.add("state", "notfound");
+        failure.add("msg", "Did not find taskid [" + requestId + "] in any tasks queue");
+        results.add("status", failure);
+      }
+      SolrResponse response = new OverseerSolrResponse(results);
+
+      rsp.getValues().addAll(response.getResponse());
+    }
   }
 
   private void handleResponse(String operation, ZkNodeProps m,
