@@ -16,26 +16,30 @@ package org.apache.lucene.analysis.miscellaneous;
  * limitations under the License.
  */
 
-import java.io.Reader;
-import java.io.StringReader;
-
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
+import java.io.Reader;
+import java.io.StringReader;
+
 public class TestLimitTokenPositionFilterFactory extends BaseTokenStreamFactoryTestCase {
 
   public void testMaxPosition1() throws Exception {
-    Reader reader = new StringReader("A1 B2 C3 D4 E5 F6");
-    MockTokenizer tokenizer = whitespaceMockTokenizer(reader);
-    // LimitTokenPositionFilter doesn't consume the entire stream that it wraps
-    tokenizer.setEnableChecks(false);
-    TokenStream stream = tokenizer;
-    stream = tokenFilterFactory("LimitTokenPosition",
-        "maxTokenPosition", "1").create(stream);
-    assertTokenStreamContents(stream, new String[] { "A1" });
+    for (final boolean consumeAll : new boolean[]{true, false}) {
+      Reader reader = new StringReader("A1 B2 C3 D4 E5 F6");
+      MockTokenizer tokenizer = whitespaceMockTokenizer(reader);
+      // if we are consuming all tokens, we can use the checks, otherwise we can't
+      tokenizer.setEnableChecks(consumeAll);
+      TokenStream stream = tokenizer;
+      stream = tokenFilterFactory("LimitTokenPosition",
+          LimitTokenPositionFilterFactory.MAX_TOKEN_POSITION_KEY, "1",
+          LimitTokenPositionFilterFactory.CONSUME_ALL_TOKENS_KEY, Boolean.toString(consumeAll)
+      ).create(stream);
+      assertTokenStreamContents(stream, new String[]{"A1"});
+    }
   }
-  
+
   public void testMissingParam() throws Exception {
     try {
       tokenFilterFactory("LimitTokenPosition");
@@ -47,34 +51,31 @@ public class TestLimitTokenPositionFilterFactory extends BaseTokenStreamFactoryT
   }
 
   public void testMaxPosition1WithShingles() throws Exception {
-    Reader reader = new StringReader("one two three four five");
-    MockTokenizer tokenizer = whitespaceMockTokenizer(reader);
-    // LimitTokenPositionFilter doesn't consume the entire stream that it wraps
-    tokenizer.setEnableChecks(false);
-    TokenStream stream = tokenizer;
-    stream = tokenFilterFactory("Shingle",
-        "minShingleSize", "2",
-        "maxShingleSize", "3",
-        "outputUnigrams", "true").create(stream);
-    stream = tokenFilterFactory("LimitTokenPosition",
-        "maxTokenPosition", "1").create(stream);
-    assertTokenStreamContents(stream, new String[] { "one", "one two", "one two three" });
+    for (final boolean consumeAll : new boolean[]{true, false}) {
+      Reader reader = new StringReader("one two three four five");
+      MockTokenizer tokenizer = whitespaceMockTokenizer(reader);
+      // if we are consuming all tokens, we can use the checks, otherwise we can't
+      tokenizer.setEnableChecks(consumeAll);
+      TokenStream stream = tokenizer;
+      stream = tokenFilterFactory("Shingle",
+          "minShingleSize", "2",
+          "maxShingleSize", "3",
+          "outputUnigrams", "true").create(stream);
+      stream = tokenFilterFactory("LimitTokenPosition",
+          LimitTokenPositionFilterFactory.MAX_TOKEN_POSITION_KEY, "1",
+          LimitTokenPositionFilterFactory.CONSUME_ALL_TOKENS_KEY, Boolean.toString(consumeAll)
+      ).create(stream);
+      assertTokenStreamContents(stream, new String[]{"one", "one two", "one two three"});
+    }
   }
-  
-  public void testConsumeAllTokens() throws Exception {
-    Reader reader = new StringReader("A1 B2 C3 D4 E5 F6");
-    TokenStream stream = whitespaceMockTokenizer(reader);
-    stream = tokenFilterFactory("LimitTokenPosition",
-        "maxTokenPosition", "3",
-        "consumeAllTokens", "true").create(stream);
-    assertTokenStreamContents(stream, new String[] { "A1", "B2", "C3" });
-  }
-  
-  /** Test that bogus arguments result in exception */
+
+  /**
+   * Test that bogus arguments result in exception
+   */
   public void testBogusArguments() throws Exception {
     try {
-      tokenFilterFactory("LimitTokenPosition", 
-          "maxTokenPosition", "3", 
+      tokenFilterFactory("LimitTokenPosition",
+          "maxTokenPosition", "3",
           "bogusArg", "bogusValue");
       fail();
     } catch (IllegalArgumentException expected) {

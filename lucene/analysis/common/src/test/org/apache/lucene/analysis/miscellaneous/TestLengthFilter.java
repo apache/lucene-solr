@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
+import org.junit.Test;
 
 public class TestLengthFilter extends BaseTokenStreamTestCase {
 
@@ -50,4 +51,11 @@ public class TestLengthFilter extends BaseTokenStreamTestCase {
     checkOneTerm(a, "", "");
   }
 
+  /**
+   * checking the validity of constructor arguments
+   */
+  @Test(expected = IllegalArgumentException.class)
+  public void testIllegalArguments() throws Exception {
+    new LengthFilter(TEST_VERSION_CURRENT, whitespaceMockTokenizer("accept only valid arguments"), -4, -1);
+  }
 }

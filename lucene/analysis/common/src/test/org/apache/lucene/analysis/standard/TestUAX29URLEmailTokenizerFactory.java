@@ -172,4 +172,13 @@ public class TestUAX29URLEmailTokenizerFactory extends BaseTokenStreamFactoryTes
       assertTrue(expected.getMessage().contains("Unknown parameters"));
     }
   }
+
+ public void testIllegalArguments() throws Exception {
+    try {
+      tokenizerFactory("UAX29URLEmail", "maxTokenLength", "-1").create();
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("maxTokenLength must be greater than zero"));
+    }
+  }
 }

@@ -32,7 +32,7 @@ public final class LengthFilter extends FilteringTokenFilter {
 
   private final int min;
   private final int max;
-  
+
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
   /**
@@ -46,6 +46,12 @@ public final class LengthFilter extends FilteringTokenFilter {
    */
   public LengthFilter(Version version, TokenStream in, int min, int max) {
     super(version, in);
+    if (min < 0) {
+      throw new IllegalArgumentException("minimum length must be greater than or equal to zero");
+    }
+    if (min > max) {
+      throw new IllegalArgumentException("maximum length must not be greater than minimum length");
+    }
     this.min = min;
     this.max = max;
   }

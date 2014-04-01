@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis.sinks;
+package org.apache.lucene.analysis.miscellaneous;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,39 +17,24 @@ package org.apache.lucene.analysis.sinks;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.io.StringReader;
-
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenStream;
 import org.junit.Test;
 
-public class TokenRangeSinkTokenizerTest extends BaseTokenStreamTestCase {
+public class TestLimitTokenCountFilter extends BaseTokenStreamTestCase {
 
-  public void test() throws IOException {
-    TokenRangeSinkFilter sinkFilter = new TokenRangeSinkFilter(2, 4);
-    String test = "The quick red fox jumped over the lazy brown dogs";
-    TeeSinkTokenFilter tee = new TeeSinkTokenFilter(whitespaceMockTokenizer(test));
-    TeeSinkTokenFilter.SinkTokenStream rangeToks = tee.newSinkTokenStream(sinkFilter);
-
-    int count = 0;
-    tee.reset();
-    while(tee.incrementToken()) {
-      count++;
+  public void test() throws Exception {
+    for (final boolean consumeAll : new boolean[]{true, false}) {
+      MockTokenizer tokenizer = whitespaceMockTokenizer("A1 B2 C3 D4 E5 F6");
+      tokenizer.setEnableChecks(consumeAll);
+      TokenStream stream = new LimitTokenCountFilter(tokenizer, 3, consumeAll);
+      assertTokenStreamContents(stream, new String[]{"A1", "B2", "C3"});
     }
-
-    int sinkCount = 0;
-    rangeToks.reset();
-    while (rangeToks.incrementToken()) {
-      sinkCount++;
-    }
-
-    assertTrue(count + " does not equal: " + 10, count == 10);
-    assertTrue("rangeToks Size: " + sinkCount + " is not: " + 2, sinkCount == 2);
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void testIllegalArguments() throws Exception {
-    new TokenRangeSinkFilter(4, 2);
+    new LimitTokenCountFilter(whitespaceMockTokenizer("A1 B2 C3 D4 E5 F6"), -1);
   }
 }
