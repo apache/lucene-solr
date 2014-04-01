@@ -135,6 +135,9 @@ New Features
   resort the hits from a first pass search using a Sort or an
   Expression. (Simon Willnauer, Robert Muir, Mike McCandless)
 
+* LUCENE-5558: Add TruncateTokenFilter which truncates terms to
+  the specified length.  (Ahmet Arslan via Robert Muir)
+
 API Changes
 
 * LUCENE-5454: Add RandomAccessOrds, an optional extension of SortedSetDocValues
