@@ -130,6 +130,9 @@ Bug Fixes
 * SOLR-5915: Attempts to specify the parserImpl for
   solr.PreAnalyzedField fieldtype failed.  (Mike McCandless)
 
+* SOLR-5943: SolrCmdDistributor does not distribute the openSearcher parameter.
+  (ludovic Boutros via shalin)
+
 Optimizations
 ----------------------
 * SOLR-1880: Distributed Search skips GET_FIELDS stage if EXECUTE_QUERY
