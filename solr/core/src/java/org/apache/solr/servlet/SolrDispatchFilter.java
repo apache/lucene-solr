@@ -72,7 +72,6 @@ import org.apache.solr.util.FastWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
@@ -105,13 +104,12 @@ import java.util.Set;
  *
  * @since solr 1.2
  */
-public class SolrDispatchFilter implements Filter
-{
+public class SolrDispatchFilter extends BaseSolrFilter {
   private static final String CONNECTION_HEADER = "Connection";
   private static final String TRANSFER_ENCODING_HEADER = "Transfer-Encoding";
   private static final String CONTENT_LENGTH_HEADER = "Content-Length";
 
-  final Logger log;
+  static final Logger log = LoggerFactory.getLogger(SolrDispatchFilter.class);
 
   protected volatile CoreContainer cores;
 
@@ -122,16 +120,6 @@ public class SolrDispatchFilter implements Filter
   private static final Charset UTF8 = Charset.forName("UTF-8");
 
   public SolrDispatchFilter() {
-    try {
-      log = LoggerFactory.getLogger(SolrDispatchFilter.class);
-    } catch (NoClassDefFoundError e) {
-      throw new SolrException(
-          ErrorCode.SERVER_ERROR,
-          "Could not find necessary SLF4j logging jars. If using Jetty, the SLF4j logging jars need to go in "
-          +"the jetty lib/ext directory. For other containers, the corresponding directory should be used. "
-          +"For more information, see: http://wiki.apache.org/solr/SolrLogging",
-          e);
-    }
   }
   
   @Override

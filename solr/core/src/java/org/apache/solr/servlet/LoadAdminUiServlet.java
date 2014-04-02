@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -37,7 +36,7 @@ import org.apache.solr.core.SolrCore;
  * 
  * @since solr 4.0
  */
-public final class LoadAdminUiServlet extends HttpServlet {
+public final class LoadAdminUiServlet extends BaseSolrServlet {
 
   @Override
   public void doGet(HttpServletRequest request,
