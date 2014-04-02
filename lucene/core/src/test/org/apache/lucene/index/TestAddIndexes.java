@@ -1064,14 +1064,14 @@ public class TestAddIndexes extends LuceneTestCase {
   private static final class CustomPerFieldCodec extends Lucene46Codec {
     private final PostingsFormat simpleTextFormat = PostingsFormat.forName("SimpleText");
     private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene41");
-    private final PostingsFormat mockSepFormat = PostingsFormat.forName("MockSep");
+    private final PostingsFormat memoryFormat = PostingsFormat.forName("Memory");
 
     @Override
     public PostingsFormat getPostingsFormatForField(String field) {
       if (field.equals("id")) {
         return simpleTextFormat;
       } else if (field.equals("content")) {
-        return mockSepFormat;
+        return memoryFormat;
       } else {
         return defaultFormat;
       }

@@ -23,7 +23,7 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
 import org.apache.lucene.codecs.lucene46.Lucene46Codec;
-import org.apache.lucene.codecs.mocksep.MockSepPostingsFormat;
+import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
 import org.apache.lucene.codecs.pulsing.Pulsing41PostingsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextPostingsFormat;
 import org.apache.lucene.document.Document;
@@ -43,7 +43,6 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
 
@@ -204,14 +203,14 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
   public static class MockCodec extends Lucene46Codec {
     final PostingsFormat lucene40 = new Lucene41PostingsFormat();
     final PostingsFormat simpleText = new SimpleTextPostingsFormat();
-    final PostingsFormat mockSep = new MockSepPostingsFormat();
+    final PostingsFormat memory = new MemoryPostingsFormat();
     
     @Override
     public PostingsFormat getPostingsFormatForField(String field) {
       if (field.equals("id")) {
         return simpleText;
       } else if (field.equals("content")) {
-        return mockSep;
+        return memory;
       } else {
         return lucene40;
       }

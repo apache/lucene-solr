@@ -24,7 +24,6 @@ import org.apache.solr.schema.IndexSchema;
 import org.junit.BeforeClass;
 
 /** simple tests for PostingsSolrHighlighter */
-@SuppressCodecs({"MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom"})
 public class TestPostingsSolrHighlighter extends SolrTestCaseJ4 {
   
   @BeforeClass

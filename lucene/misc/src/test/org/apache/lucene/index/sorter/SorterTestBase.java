@@ -172,12 +172,7 @@ public abstract class SorterTestBase extends LuceneTestCase {
     doc.add(new StringField(ID_FIELD, Integer.toString(id), Store.YES));
     doc.add(new StringField(DOCS_ENUM_FIELD, DOCS_ENUM_TERM, Store.NO));
     positions.setId(id);
-    if (doesntSupportOffsets.contains(TestUtil.getPostingsFormat(DOC_POSITIONS_FIELD))) {
-      // codec doesnt support offsets: just index positions for the field
-      doc.add(new Field(DOC_POSITIONS_FIELD, positions, TextField.TYPE_NOT_STORED));
-    } else {
-      doc.add(new Field(DOC_POSITIONS_FIELD, positions, POSITIONS_TYPE));
-    }
+    doc.add(new Field(DOC_POSITIONS_FIELD, positions, POSITIONS_TYPE));
     doc.add(new NumericDocValuesField(NUMERIC_DV_FIELD, id));
     TextField norms = new TextField(NORMS_FIELD, Integer.toString(id), Store.NO);
     norms.setBoost(Float.intBitsToFloat(id));
@@ -264,10 +259,8 @@ public abstract class SorterTestBase extends LuceneTestCase {
       assertEquals("incorrect freq for doc=" + doc, sortedValues[doc].intValue() / 10 + 1, freq);
       for (int i = 0; i < freq; i++) {
         assertEquals("incorrect position for doc=" + doc, i, sortedPositions.nextPosition());
-        if (!doesntSupportOffsets.contains(TestUtil.getPostingsFormat(DOC_POSITIONS_FIELD))) {
-          assertEquals("incorrect startOffset for doc=" + doc, i, sortedPositions.startOffset());
-          assertEquals("incorrect endOffset for doc=" + doc, i, sortedPositions.endOffset());
-        }
+        assertEquals("incorrect startOffset for doc=" + doc, i, sortedPositions.startOffset());
+        assertEquals("incorrect endOffset for doc=" + doc, i, sortedPositions.endOffset());
         assertEquals("incorrect payload for doc=" + doc, freq - i, Integer.parseInt(sortedPositions.getPayload().utf8ToString()));
       }
     }
@@ -284,10 +277,8 @@ public abstract class SorterTestBase extends LuceneTestCase {
       assertEquals("incorrect freq for doc=" + doc, sortedValues[doc].intValue() / 10 + 1, freq);
       for (int i = 0; i < freq; i++) {
         assertEquals("incorrect position for doc=" + doc, i, sortedPositions.nextPosition());
-        if (!doesntSupportOffsets.contains(TestUtil.getPostingsFormat(DOC_POSITIONS_FIELD))) {
-          assertEquals("incorrect startOffset for doc=" + doc, i, sortedPositions.startOffset());
-          assertEquals("incorrect endOffset for doc=" + doc, i, sortedPositions.endOffset());
-        }
+        assertEquals("incorrect startOffset for doc=" + doc, i, sortedPositions.startOffset());
+        assertEquals("incorrect endOffset for doc=" + doc, i, sortedPositions.endOffset());
         assertEquals("incorrect payload for doc=" + doc, freq - i, Integer.parseInt(sortedPositions.getPayload().utf8ToString()));
       }
     }

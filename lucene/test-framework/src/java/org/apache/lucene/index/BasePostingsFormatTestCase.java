@@ -667,18 +667,10 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
     FieldInfo[] newFieldInfoArray = new FieldInfo[fields.size()];
     for(int fieldUpto=0;fieldUpto<fields.size();fieldUpto++) {
       FieldInfo oldFieldInfo = fieldInfos.fieldInfo(fieldUpto);
-
-      String pf = TestUtil.getPostingsFormat(codec, oldFieldInfo.name);
-      int fieldMaxIndexOption;
-      if (doesntSupportOffsets.contains(pf)) {
-        fieldMaxIndexOption = Math.min(maxIndexOptionNoOffsets, maxIndexOption);
-      } else {
-        fieldMaxIndexOption = maxIndexOption;
-      }
     
       // Randomly picked the IndexOptions to index this
       // field with:
-      IndexOptions indexOptions = IndexOptions.values()[alwaysTestMax ? fieldMaxIndexOption : random().nextInt(1+fieldMaxIndexOption)];
+      IndexOptions indexOptions = IndexOptions.values()[alwaysTestMax ? maxIndexOption : random().nextInt(1+maxIndexOption)];
       boolean doPayloads = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 && allowPayloads;
 
       newFieldInfoArray[fieldUpto] = new FieldInfo(oldFieldInfo.name,

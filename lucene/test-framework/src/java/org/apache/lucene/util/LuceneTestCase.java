@@ -324,14 +324,6 @@ public abstract class LuceneTestCase extends Assert {
     CORE_DIRECTORIES.add("RAMDirectory");
   };
   
-  protected static final Set<String> doesntSupportOffsets = new HashSet<>(Arrays.asList(
-    "Lucene3x",
-    "MockFixedIntBlock",
-    "MockVariableIntBlock",
-    "MockSep",
-    "MockRandom"
-  ));
-  
   // -----------------------------------------------------------------
   // Fields initialized in class or instance rules.
   // -----------------------------------------------------------------

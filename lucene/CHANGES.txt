@@ -55,6 +55,10 @@ Documentation
 * LUCENE-5392: Add/improve analysis package documentation to reflect
   analysis API changes.  (Benson Margulies via Robert Muir - pull request #17)
 
+Other
+
+* LUCENE-5563: Removed sep layout: which has fallen behind on features and doesn't
+  perform as well as other options.  (Robert Muir)
 
 ======================= Lucene 4.8.0 =======================
 
