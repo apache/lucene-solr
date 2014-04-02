@@ -471,8 +471,6 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         processRoleCommand(message, operation);
       } else if (ADDREPLICA.isEqual(operation))  {
         addReplica(zkStateReader.getClusterState(), message, results);
-      } else if (REQUESTSTATUS.equals(operation)) {
-        requestStatus(message, results);
       } else if (OVERSEERSTATUS.isEqual(operation)) {
         getOverseerStatus(message, results);
       } else if(LIST.isEqual(operation)) {
@@ -1498,40 +1496,6 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         }
       }
     } while (srsp != null);
-  }
-
-  private void requestStatus(ZkNodeProps message, NamedList results) throws KeeperException, InterruptedException {
-    log.info("Request status invoked");
-    String requestId = message.getStr(REQUESTID);
-
-    // Special taskId (-1), clears up the request state maps.
-    if(requestId.equals("-1")) {
-      completedMap.clear();
-      failureMap.clear();
-      return;
-    }
-
-    if(completedMap.contains(requestId)) {
-      SimpleOrderedMap success = new SimpleOrderedMap();
-      success.add("state", "completed");
-      success.add("msg", "found " + requestId + " in completed tasks");
-      results.add("status", success);
-    } else if (runningMap.contains(requestId)) {
-      SimpleOrderedMap success = new SimpleOrderedMap();
-      success.add("state", "running");
-      success.add("msg", "found " + requestId + " in submitted tasks");
-      results.add("status", success);
-    } else if (failureMap.contains(requestId)) {
-      SimpleOrderedMap success = new SimpleOrderedMap();
-      success.add("state", "failed");
-      success.add("msg", "found " + requestId + " in failed tasks");
-      results.add("status", success);
-    } else {
-      SimpleOrderedMap failure = new SimpleOrderedMap();
-      failure.add("state", "notfound");
-      failure.add("msg", "Did not find taskid [" + requestId + "] in any tasks queue");
-      results.add("status", failure);
-    }
   }
 
   private void deleteShard(ClusterState clusterState, ZkNodeProps message, NamedList results) {
