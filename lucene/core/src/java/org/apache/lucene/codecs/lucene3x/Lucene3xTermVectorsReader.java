@@ -743,5 +743,8 @@ class Lucene3xTermVectorsReader extends TermVectorsReader {
     // everything is disk-based
     return 0;
   }
+  
+  @Override
+  public void checkIntegrity() throws IOException {}
 }
 

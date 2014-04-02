@@ -58,6 +58,7 @@ public class SimpleTextFieldInfosWriter extends FieldInfosWriter {
   static final BytesRef NUM_ATTS        =  new BytesRef("  attributes ");
   final static BytesRef ATT_KEY         =  new BytesRef("    key ");
   final static BytesRef ATT_VALUE       =  new BytesRef("    value ");
+  final static BytesRef CHECKSUM        =  new BytesRef("checksum ");
   
   @Override
   public void write(Directory directory, String segmentName, String segmentSuffix, FieldInfos infos, IOContext context) throws IOException {
@@ -132,6 +133,10 @@ public class SimpleTextFieldInfosWriter extends FieldInfosWriter {
           }
         }
       }
+      String checksum = Long.toString(out.getChecksum());
+      SimpleTextUtil.write(out, CHECKSUM);
+      SimpleTextUtil.write(out, checksum, scratch);
+      SimpleTextUtil.writeNewline(out);
       success = true;
     } finally {
       if (success) {

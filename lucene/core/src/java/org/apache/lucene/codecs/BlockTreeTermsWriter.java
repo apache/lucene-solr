@@ -105,7 +105,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *
  * <ul>
  *    <li>TermsDict (.tim) --&gt; Header, <i>PostingsHeader</i>, NodeBlock<sup>NumBlocks</sup>,
- *                               FieldSummary, DirOffset</li>
+ *                               FieldSummary, DirOffset, Footer</li>
  *    <li>NodeBlock --&gt; (OuterNode | InnerNode)</li>
  *    <li>OuterNode --&gt; EntryCount, SuffixLength, Byte<sup>SuffixLength</sup>, StatsLength, &lt; TermStats &gt;<sup>EntryCount</sup>, MetaLength, &lt;<i>TermMetadata</i>&gt;<sup>EntryCount</sup></li>
  *    <li>InnerNode --&gt; EntryCount, SuffixLength[,Sub?], Byte<sup>SuffixLength</sup>, StatsLength, &lt; TermStats ? &gt;<sup>EntryCount</sup>, MetaLength, &lt;<i>TermMetadata ? </i>&gt;<sup>EntryCount</sup></li>
@@ -118,6 +118,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *        FieldNumber,RootCodeLength,DocCount --&gt; {@link DataOutput#writeVInt VInt}</li>
  *    <li>TotalTermFreq,NumTerms,SumTotalTermFreq,SumDocFreq --&gt; 
  *        {@link DataOutput#writeVLong VLong}</li>
+ *    <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  * </ul>
  * <p>Notes:</p>
  * <ul>
@@ -146,12 +147,13 @@ import org.apache.lucene.util.packed.PackedInts;
  * when a given term cannot exist on disk (in the .tim file), saving a disk seek.</p>
  * <ul>
  *   <li>TermsIndex (.tip) --&gt; Header, FSTIndex<sup>NumFields</sup>
- *                                &lt;IndexStartFP&gt;<sup>NumFields</sup>, DirOffset</li>
+ *                                &lt;IndexStartFP&gt;<sup>NumFields</sup>, DirOffset, Footer</li>
  *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  *   <li>DirOffset --&gt; {@link DataOutput#writeLong Uint64}</li>
  *   <li>IndexStartFP --&gt; {@link DataOutput#writeVLong VLong}</li>
  *   <!-- TODO: better describe FST output here -->
  *   <li>FSTIndex --&gt; {@link FST FST&lt;byte[]&gt;}</li>
+ *   <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  * </ul>
  * <p>Notes:</p>
  * <ul>
@@ -174,7 +176,6 @@ import org.apache.lucene.util.packed.PackedInts;
  * @see BlockTreeTermsReader
  * @lucene.experimental
  */
-
 public class BlockTreeTermsWriter extends FieldsConsumer {
 
   /** Suggested default value for the {@code
@@ -200,32 +201,23 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
   final static String TERMS_CODEC_NAME = "BLOCK_TREE_TERMS_DICT";
 
   /** Initial terms format. */
-  public static final int TERMS_VERSION_START = 0;
+  public static final int VERSION_START = 0;
   
   /** Append-only */
-  public static final int TERMS_VERSION_APPEND_ONLY = 1;
+  public static final int VERSION_APPEND_ONLY = 1;
 
   /** Meta data as array */
-  public static final int TERMS_VERSION_META_ARRAY = 2;
+  public static final int VERSION_META_ARRAY = 2;
+  
+  /** checksums */
+  public static final int VERSION_CHECKSUM = 3;
 
   /** Current terms format. */
-  public static final int TERMS_VERSION_CURRENT = TERMS_VERSION_META_ARRAY;
+  public static final int VERSION_CURRENT = VERSION_CHECKSUM;
 
   /** Extension of terms index file */
   static final String TERMS_INDEX_EXTENSION = "tip";
   final static String TERMS_INDEX_CODEC_NAME = "BLOCK_TREE_TERMS_INDEX";
-
-  /** Initial index format. */
-  public static final int TERMS_INDEX_VERSION_START = 0;
-  
-  /** Append-only */
-  public static final int TERMS_INDEX_VERSION_APPEND_ONLY = 1;
-
-  /** Meta data as array */
-  public static final int TERMS_INDEX_VERSION_META_ARRAY = 2;
-
-  /** Current index format. */
-  public static final int TERMS_INDEX_VERSION_CURRENT = TERMS_INDEX_VERSION_META_ARRAY;
 
   private final IndexOutput out;
   private final IndexOutput indexOut;
@@ -321,12 +313,12 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
 
   /** Writes the terms file header. */
   protected void writeHeader(IndexOutput out) throws IOException {
-    CodecUtil.writeHeader(out, TERMS_CODEC_NAME, TERMS_VERSION_CURRENT);   
+    CodecUtil.writeHeader(out, TERMS_CODEC_NAME, VERSION_CURRENT);   
   }
 
   /** Writes the index file header. */
   protected void writeIndexHeader(IndexOutput out) throws IOException {
-    CodecUtil.writeHeader(out, TERMS_INDEX_CODEC_NAME, TERMS_INDEX_VERSION_CURRENT); 
+    CodecUtil.writeHeader(out, TERMS_INDEX_CODEC_NAME, VERSION_CURRENT); 
   }
 
   /** Writes the terms file trailer. */
@@ -1127,13 +1119,13 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
         }
         out.writeVLong(field.sumDocFreq);
         out.writeVInt(field.docCount);
-        if (TERMS_VERSION_CURRENT >= TERMS_VERSION_META_ARRAY) {
-          out.writeVInt(field.longsSize);
-        }
+        out.writeVInt(field.longsSize);
         indexOut.writeVLong(field.indexStartFP);
       }
       writeTrailer(out, dirStart);
+      CodecUtil.writeFooter(out);
       writeIndexTrailer(indexOut, indexDirStart);
+      CodecUtil.writeFooter(indexOut);
     } catch (IOException ioe2) {
       ioe = ioe2;
     } finally {

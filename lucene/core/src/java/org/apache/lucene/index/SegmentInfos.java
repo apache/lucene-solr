@@ -39,7 +39,6 @@ import org.apache.lucene.codecs.lucene3x.Lucene3xCodec;
 import org.apache.lucene.codecs.lucene3x.Lucene3xSegmentInfoFormat;
 import org.apache.lucene.codecs.lucene3x.Lucene3xSegmentInfoReader;
 import org.apache.lucene.store.ChecksumIndexInput;
-import org.apache.lucene.store.ChecksumIndexOutput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -73,10 +72,10 @@ import org.apache.lucene.util.StringHelper;
  * <p>
  * Files:
  * <ul>
- *   <li><tt>segments.gen</tt>: GenHeader, Generation, Generation
+ *   <li><tt>segments.gen</tt>: GenHeader, Generation, Generation, Footer
  *   <li><tt>segments_N</tt>: Header, Version, NameCounter, SegCount,
  *    &lt;SegName, SegCodec, DelGen, DeletionCount, FieldInfosGen, UpdatesFiles&gt;<sup>SegCount</sup>, 
- *    CommitUserData, Checksum
+ *    CommitUserData, Footer
  * </ul>
  * </p>
  * Data types:
@@ -88,6 +87,7 @@ import org.apache.lucene.util.StringHelper;
  *   <li>SegName, SegCodec --&gt; {@link DataOutput#writeString String}</li>
  *   <li>CommitUserData --&gt; {@link DataOutput#writeStringStringMap Map&lt;String,String&gt;}</li>
  *   <li>UpdatesFiles --&gt; {@link DataOutput#writeStringSet(Set) Set&lt;String&gt;}</li>
+ *   <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  * </ul>
  * </p>
  * Field Descriptions:
@@ -102,9 +102,6 @@ import org.apache.lucene.util.StringHelper;
  *       there are no deletes. Anything above zero means there are deletes 
  *       stored by {@link LiveDocsFormat}.</li>
  *   <li>DeletionCount records the number of deleted documents in this segment.</li>
- *   <li>Checksum contains the CRC32 checksum of all bytes in the segments_N file up
- *       until the checksum. This is used to verify integrity of the file on opening the
- *       index.</li>
  *   <li>SegCodec is the {@link Codec#getName() name} of the Codec that encoded
  *       this segment.</li>
  *   <li>CommitUserData stores an optional user-supplied opaque
@@ -126,10 +123,17 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
 
   /** The file format version for the segments_N codec header, since 4.6+. */
   public static final int VERSION_46 = 1;
+  
+  /** The file format version for the segments_N codec header, since 4.8+ */
+  public static final int VERSION_48 = 2;
 
-  /** Used for the segments.gen file only!
-   * Whenever you add a new format, make it 1 smaller (negative version logic)! */
-  public static final int FORMAT_SEGMENTS_GEN_CURRENT = -2;
+  // Used for the segments.gen file only!
+  // Whenever you add a new format, make it 1 smaller (negative version logic)!
+  private static final int FORMAT_SEGMENTS_GEN_47 = -2;
+  private static final int FORMAT_SEGMENTS_GEN_CHECKSUM = -3;
+  private static final int FORMAT_SEGMENTS_GEN_START = FORMAT_SEGMENTS_GEN_47;
+  /** Current format of segments.gen */
+  public static final int FORMAT_SEGMENTS_GEN_CURRENT = FORMAT_SEGMENTS_GEN_CHECKSUM;
 
   /** Used to name new segments. */
   public int counter;
@@ -270,6 +274,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         genOutput.writeInt(FORMAT_SEGMENTS_GEN_CURRENT);
         genOutput.writeLong(generation);
         genOutput.writeLong(generation);
+        CodecUtil.writeFooter(genOutput);
       } finally {
         genOutput.close();
         dir.sync(Collections.singleton(IndexFileNames.SEGMENTS_GEN));
@@ -321,12 +326,13 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
 
     lastGeneration = generation;
 
-    ChecksumIndexInput input = new ChecksumIndexInput(directory.openInput(segmentFileName, IOContext.READ));
+    ChecksumIndexInput input = directory.openChecksumInput(segmentFileName, IOContext.READ);
     try {
       final int format = input.readInt();
+      final int actualFormat;
       if (format == CodecUtil.CODEC_MAGIC) {
         // 4.0+
-        int actualFormat = CodecUtil.checkHeaderNoMagic(input, "segments", VERSION_40, VERSION_46);
+        actualFormat = CodecUtil.checkHeaderNoMagic(input, "segments", VERSION_40, VERSION_48);
         version = input.readLong();
         counter = input.readInt();
         int numSegments = input.readInt();
@@ -366,6 +372,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         }
         userData = input.readStringStringMap();
       } else {
+        actualFormat = -1;
         Lucene3xSegmentInfoReader.readLegacyInfos(this, directory, input, format);
         Codec codec = Codec.forName("Lucene3x");
         for (SegmentCommitInfo info : this) {
@@ -373,10 +380,15 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         }
       }
 
-      final long checksumNow = input.getChecksum();
-      final long checksumThen = input.readLong();
-      if (checksumNow != checksumThen) {
-        throw new CorruptIndexException("checksum mismatch in segments file (resource: " + input + ")");
+      if (actualFormat >= VERSION_48) {
+        CodecUtil.checkFooter(input);
+      } else {
+        final long checksumNow = input.getChecksum();
+        final long checksumThen = input.readLong();
+        if (checksumNow != checksumThen) {
+          throw new CorruptIndexException("checksum mismatch in segments file (resource: " + input + ")");
+        }
+        CodecUtil.checkEOF(input);
       }
 
       success = true;
@@ -409,7 +421,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
 
   // Only non-null after prepareCommit has been called and
   // before finishCommit is called
-  ChecksumIndexOutput pendingSegnOutput;
+  IndexOutput pendingSegnOutput;
 
   private static final String SEGMENT_INFO_UPGRADE_CODEC = "SegmentInfo3xUpgrade";
   private static final int SEGMENT_INFO_UPGRADE_VERSION = 0;
@@ -425,14 +437,14 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       generation++;
     }
     
-    ChecksumIndexOutput segnOutput = null;
+    IndexOutput segnOutput = null;
     boolean success = false;
 
     final Set<String> upgradedSIFiles = new HashSet<>();
 
     try {
-      segnOutput = new ChecksumIndexOutput(directory.createOutput(segmentsFileName, IOContext.DEFAULT));
-      CodecUtil.writeHeader(segnOutput, "segments", VERSION_46);
+      segnOutput = directory.createOutput(segmentsFileName, IOContext.DEFAULT);
+      CodecUtil.writeHeader(segnOutput, "segments", VERSION_48);
       segnOutput.writeLong(version); 
       segnOutput.writeInt(counter); // write counter
       segnOutput.writeInt(size()); // write infos
@@ -756,9 +768,9 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
           // a stale cache (NFS) we have a better chance of
           // getting the right generation.
           long genB = -1;
-          IndexInput genInput = null;
+          ChecksumIndexInput genInput = null;
           try {
-            genInput = directory.openInput(IndexFileNames.SEGMENTS_GEN, IOContext.READONCE);
+            genInput = directory.openChecksumInput(IndexFileNames.SEGMENTS_GEN, IOContext.READONCE);
           } catch (IOException e) {
             if (infoStream != null) {
               message("segments.gen open: IOException " + e);
@@ -768,18 +780,23 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
           if (genInput != null) {
             try {
               int version = genInput.readInt();
-              if (version == FORMAT_SEGMENTS_GEN_CURRENT) {
+              if (version == FORMAT_SEGMENTS_GEN_47 || version == FORMAT_SEGMENTS_GEN_CHECKSUM) {
                 long gen0 = genInput.readLong();
                 long gen1 = genInput.readLong();
                 if (infoStream != null) {
                   message("fallback check: " + gen0 + "; " + gen1);
+                }
+                if (version == FORMAT_SEGMENTS_GEN_CHECKSUM) {
+                  CodecUtil.checkFooter(genInput);
+                } else {
+                  CodecUtil.checkEOF(genInput);
                 }
                 if (gen0 == gen1) {
                   // The file is consistent.
                   genB = gen0;
                 }
               } else {
-                throw new IndexFormatTooNewException(genInput, version, FORMAT_SEGMENTS_GEN_CURRENT, FORMAT_SEGMENTS_GEN_CURRENT);
+                throw new IndexFormatTooNewException(genInput, version, FORMAT_SEGMENTS_GEN_START, FORMAT_SEGMENTS_GEN_CURRENT);
               }
             } catch (IOException err2) {
               // rethrow any format exception
@@ -978,7 +995,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     }
     boolean success = false;
     try {
-      pendingSegnOutput.finishCommit();
+      CodecUtil.writeFooter(pendingSegnOutput);
       success = true;
     } finally {
       if (!success) {

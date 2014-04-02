@@ -1084,4 +1084,7 @@ class Lucene3xFields extends FieldsProducer {
       return 0L;
     }
   }
+
+  @Override
+  public void checkIntegrity() throws IOException {}
 }

@@ -21,39 +21,38 @@ import java.io.IOException;
 import java.util.zip.CRC32;
 import java.util.zip.Checksum;
 
-/** Writes bytes through to a primary IndexOutput, computing
- *  checksum.  Note that you cannot use seek().
- *
- * @lucene.internal
+/** 
+ * Simple implementation of {@link ChecksumIndexInput} that wraps
+ * another input and delegates calls.
  */
-public class ChecksumIndexOutput extends IndexOutput {
-  IndexOutput main;
-  Checksum digest;
+public class BufferedChecksumIndexInput extends ChecksumIndexInput {
+  final IndexInput main;
+  final Checksum digest;
 
-  public ChecksumIndexOutput(IndexOutput main) {
+  /** Creates a new BufferedChecksumIndexInput */
+  public BufferedChecksumIndexInput(IndexInput main) {
+    super("BufferedChecksumIndexInput(" + main + ")");
     this.main = main;
-    digest = new CRC32();
+    this.digest = new BufferedChecksum(new CRC32());
   }
 
   @Override
-  public void writeByte(byte b) throws IOException {
+  public byte readByte() throws IOException {
+    final byte b = main.readByte();
     digest.update(b);
-    main.writeByte(b);
+    return b;
   }
 
   @Override
-  public void writeBytes(byte[] b, int offset, int length) throws IOException {
-    digest.update(b, offset, length);
-    main.writeBytes(b, offset, length);
+  public void readBytes(byte[] b, int offset, int len)
+    throws IOException {
+    main.readBytes(b, offset, len);
+    digest.update(b, offset, len);
   }
 
+  @Override
   public long getChecksum() {
     return digest.getValue();
-  }
-
-  @Override
-  public void flush() throws IOException {
-    main.flush();
   }
 
   @Override
@@ -67,17 +66,7 @@ public class ChecksumIndexOutput extends IndexOutput {
   }
 
   @Override
-  public void seek(long pos) {
-    throw new UnsupportedOperationException();    
-  }
-
-  /** writes the checksum */
-  public void finishCommit() throws IOException {
-    main.writeLong(getChecksum());
-  }
-
-  @Override
-  public long length() throws IOException {
+  public long length() {
     return main.length();
   }
 }

@@ -130,6 +130,9 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
       }
       return sizeInBytes;
     }
+
+    @Override
+    public void checkIntegrity() throws IOException {}
   } 
 
   static class RAMField extends Terms {

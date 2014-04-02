@@ -44,6 +44,7 @@ import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ByteArrayDataInput;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
@@ -64,7 +65,7 @@ import org.apache.lucene.util.fst.Util;
  *
  * The FST index maps each term and its ord, and during seek 
  * the ord is used fetch metadata from a single block.
- * The term dictionary is fully memeory resident.
+ * The term dictionary is fully memory resident.
  *
  * @lucene.experimental
  */
@@ -72,8 +73,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
   static final int INTERVAL = FSTOrdTermsWriter.SKIP_INTERVAL;
   final TreeMap<String, TermsReader> fields = new TreeMap<>();
   final PostingsReaderBase postingsReader;
-  IndexInput indexIn = null;
-  IndexInput blockIn = null;
+  int version;
   //static final boolean TEST = false;
 
   public FSTOrdTermsReader(SegmentReadState state, PostingsReaderBase postingsReader) throws IOException {
@@ -81,11 +81,18 @@ public class FSTOrdTermsReader extends FieldsProducer {
     final String termsBlockFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, FSTOrdTermsWriter.TERMS_BLOCK_EXTENSION);
 
     this.postingsReader = postingsReader;
+    ChecksumIndexInput indexIn = null;
+    IndexInput blockIn = null;
+    boolean success = false;
     try {
-      this.indexIn = state.directory.openInput(termsIndexFileName, state.context);
-      this.blockIn = state.directory.openInput(termsBlockFileName, state.context);
-      readHeader(indexIn);
+      indexIn = state.directory.openChecksumInput(termsIndexFileName, state.context);
+      blockIn = state.directory.openInput(termsBlockFileName, state.context);
+      version = readHeader(indexIn);
       readHeader(blockIn);
+      if (version >= FSTOrdTermsWriter.TERMS_VERSION_CHECKSUM) {
+        CodecUtil.checksumEntireFile(blockIn);
+      }
+      
       this.postingsReader.init(blockIn);
       seekDir(blockIn);
 
@@ -101,12 +108,22 @@ public class FSTOrdTermsReader extends FieldsProducer {
         int longsSize = blockIn.readVInt();
         FST<Long> index = new FST<>(indexIn, PositiveIntOutputs.getSingleton());
 
-        TermsReader current = new TermsReader(fieldInfo, numTerms, sumTotalTermFreq, sumDocFreq, docCount, longsSize, index);
+        TermsReader current = new TermsReader(fieldInfo, blockIn, numTerms, sumTotalTermFreq, sumDocFreq, docCount, longsSize, index);
         TermsReader previous = fields.put(fieldInfo.name, current);
-        checkFieldSummary(state.segmentInfo, current, previous);
+        checkFieldSummary(state.segmentInfo, indexIn, blockIn, current, previous);
       }
+      if (version >= FSTOrdTermsWriter.TERMS_VERSION_CHECKSUM) {
+        CodecUtil.checkFooter(indexIn);
+      } else {
+        CodecUtil.checkEOF(indexIn);
+      }
+      success = true;
     } finally {
-      IOUtils.closeWhileHandlingException(indexIn, blockIn);
+      if (success) {
+        IOUtils.close(indexIn, blockIn);
+      } else {
+        IOUtils.closeWhileHandlingException(indexIn, blockIn);
+      }
     }
   }
 
@@ -116,10 +133,14 @@ public class FSTOrdTermsReader extends FieldsProducer {
                                      FSTOrdTermsWriter.TERMS_VERSION_CURRENT);
   }
   private void seekDir(IndexInput in) throws IOException {
-    in.seek(in.length() - 8);
+    if (version >= FSTOrdTermsWriter.TERMS_VERSION_CHECKSUM) {
+      in.seek(in.length() - CodecUtil.footerLength() - 8);
+    } else {
+      in.seek(in.length() - 8);
+    }
     in.seek(in.readLong());
   }
-  private void checkFieldSummary(SegmentInfo info, TermsReader field, TermsReader previous) throws IOException {
+  private void checkFieldSummary(SegmentInfo info, IndexInput indexIn, IndexInput blockIn, TermsReader field, TermsReader previous) throws IOException {
     // #docs with field must be <= #docs
     if (field.docCount < 0 || field.docCount > info.getDocCount()) {
       throw new CorruptIndexException("invalid docCount: " + field.docCount + " maxDoc: " + info.getDocCount() + " (resource=" + indexIn + ", " + blockIn + ")");
@@ -177,7 +198,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
     final byte[] metaLongsBlock;
     final byte[] metaBytesBlock;
 
-    TermsReader(FieldInfo fieldInfo, long numTerms, long sumTotalTermFreq, long sumDocFreq, int docCount, int longsSize, FST<Long> index) throws IOException {
+    TermsReader(FieldInfo fieldInfo, IndexInput blockIn, long numTerms, long sumTotalTermFreq, long sumDocFreq, int docCount, int longsSize, FST<Long> index) throws IOException {
       this.fieldInfo = fieldInfo;
       this.numTerms = numTerms;
       this.sumTotalTermFreq = sumTotalTermFreq;
@@ -830,5 +851,10 @@ public class FSTOrdTermsReader extends FieldsProducer {
       }
     }
     return ramBytesUsed;
+  }
+  
+  @Override
+  public void checkIntegrity() throws IOException {
+    postingsReader.checkIntegrity();
   }
 }

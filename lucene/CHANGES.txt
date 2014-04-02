@@ -85,6 +85,13 @@ New Features
 * LUCENE-5558: Add TruncateTokenFilter which truncates terms to
   the specified length.  (Ahmet Arslan via Robert Muir)
 
+* LUCENE-2446: Added checksums to lucene index files. As of 4.8, the last 8 
+  bytes of each file contain a zlib-crc32 checksum. Small metadata files are
+  verified on load. Larger files can be checked on demand via 
+  AtomicReader.checkIntegrity. You can configure this to happen automatically
+  before merges by enabling IndexWriterConfig.setCheckIntegrityAtMerge.
+  (Robert Muir)
+
 API Changes
 
 * LUCENE-5454: Add RandomAccessOrds, an optional extension of SortedSetDocValues

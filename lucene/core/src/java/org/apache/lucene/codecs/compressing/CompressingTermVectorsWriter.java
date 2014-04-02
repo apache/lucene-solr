@@ -67,7 +67,8 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
   static final String CODEC_SFX_DAT = "Data";
 
   static final int VERSION_START = 0;
-  static final int VERSION_CURRENT = VERSION_START;
+  static final int VERSION_CHECKSUM = 1;
+  static final int VERSION_CURRENT = VERSION_CHECKSUM;
 
   static final int BLOCK_SIZE = 64;
 
@@ -221,9 +222,11 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
     lastTerm = new BytesRef(ArrayUtil.oversize(30, 1));
 
     boolean success = false;
-    IndexOutput indexStream = directory.createOutput(IndexFileNames.segmentFileName(segment, segmentSuffix, VECTORS_INDEX_EXTENSION), context);
+    IndexOutput indexStream = directory.createOutput(IndexFileNames.segmentFileName(segment, segmentSuffix, VECTORS_INDEX_EXTENSION), 
+                                                                     context);
     try {
-      vectorsStream = directory.createOutput(IndexFileNames.segmentFileName(segment, segmentSuffix, VECTORS_EXTENSION), context);
+      vectorsStream = directory.createOutput(IndexFileNames.segmentFileName(segment, segmentSuffix, VECTORS_EXTENSION),
+                                                     context);
 
       final String codecNameIdx = formatName + CODEC_SFX_IDX;
       final String codecNameDat = formatName + CODEC_SFX_DAT;
@@ -660,6 +663,7 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
       throw new RuntimeException("Wrote " + this.numDocs + " docs, finish called with numDocs=" + numDocs);
     }
     indexWriter.finish(numDocs);
+    CodecUtil.writeFooter(vectorsStream);
   }
 
   @Override

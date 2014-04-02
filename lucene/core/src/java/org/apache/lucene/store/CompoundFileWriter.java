@@ -60,7 +60,8 @@ final class CompoundFileWriter implements Closeable{
   // versioning for the .cfs file
   static final String DATA_CODEC = "CompoundFileWriterData";
   static final int VERSION_START = 0;
-  static final int VERSION_CURRENT = VERSION_START;
+  static final int VERSION_CHECKSUM = 1;
+  static final int VERSION_CURRENT = VERSION_CHECKSUM;
 
   // versioning for the .cfe file
   static final String ENTRY_CODEC = "CompoundFileWriterEntries";
@@ -146,6 +147,7 @@ final class CompoundFileWriter implements Closeable{
       // open the compound stream
       getOutput();
       assert dataOut != null;
+      CodecUtil.writeFooter(dataOut);
     } catch (IOException e) {
       priorException = e;
     } finally {
@@ -208,6 +210,7 @@ final class CompoundFileWriter implements Closeable{
       entryOut.writeLong(fe.offset);
       entryOut.writeLong(fe.length);
     }
+    CodecUtil.writeFooter(entryOut);
   }
 
   IndexOutput createOutput(String name, IOContext context) throws IOException {
@@ -353,6 +356,11 @@ final class CompoundFileWriter implements Closeable{
       assert !closed;
       writtenBytes += length;
       delegate.writeBytes(b, offset, length);
+    }
+
+    @Override
+    public long getChecksum() throws IOException {
+      return delegate.getChecksum();
     }
   }
 

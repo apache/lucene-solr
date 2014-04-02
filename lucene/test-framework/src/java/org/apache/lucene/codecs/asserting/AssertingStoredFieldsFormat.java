@@ -76,6 +76,11 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
     public long ramBytesUsed() {
       return in.ramBytesUsed();
     }
+
+    @Override
+    public void checkIntegrity() throws IOException {
+      in.checkIntegrity();
+    }
   }
 
   enum Status {

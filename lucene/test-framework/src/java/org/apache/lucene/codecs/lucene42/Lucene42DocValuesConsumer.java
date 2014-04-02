@@ -46,7 +46,7 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
 import org.apache.lucene.util.packed.PackedInts.FormatAndBits;
 import org.apache.lucene.util.packed.PackedInts;
 
-import static org.apache.lucene.codecs.lucene42.Lucene42DocValuesProducer.VERSION_CURRENT;
+import static org.apache.lucene.codecs.lucene42.Lucene42DocValuesProducer.VERSION_GCD_COMPRESSION;
 import static org.apache.lucene.codecs.lucene42.Lucene42DocValuesProducer.BLOCK_SIZE;
 import static org.apache.lucene.codecs.lucene42.Lucene42DocValuesProducer.BYTES;
 import static org.apache.lucene.codecs.lucene42.Lucene42DocValuesProducer.NUMBER;
@@ -71,10 +71,11 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
     try {
       String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);
       data = state.directory.createOutput(dataName, state.context);
-      CodecUtil.writeHeader(data, dataCodec, VERSION_CURRENT);
+      // this writer writes the format 4.2 did!
+      CodecUtil.writeHeader(data, dataCodec, VERSION_GCD_COMPRESSION);
       String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
       meta = state.directory.createOutput(metaName, state.context);
-      CodecUtil.writeHeader(meta, metaCodec, VERSION_CURRENT);
+      CodecUtil.writeHeader(meta, metaCodec, VERSION_GCD_COMPRESSION);
       success = true;
     } finally {
       if (!success) {

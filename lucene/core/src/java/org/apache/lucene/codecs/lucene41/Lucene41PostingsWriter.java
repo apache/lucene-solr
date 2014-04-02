@@ -68,11 +68,12 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
   // Increment version to change it
   final static int VERSION_START = 0;
   final static int VERSION_META_ARRAY = 1;
-  final static int VERSION_CURRENT = VERSION_META_ARRAY;
+  final static int VERSION_CHECKSUM = 2;
+  final static int VERSION_CURRENT = VERSION_CHECKSUM;
 
-  final IndexOutput docOut;
-  final IndexOutput posOut;
-  final IndexOutput payOut;
+  IndexOutput docOut;
+  IndexOutput posOut;
+  IndexOutput payOut;
 
   final static IntBlockTermState emptyState = new IntBlockTermState();
   IntBlockTermState lastState;
@@ -123,7 +124,7 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
     super();
 
     docOut = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Lucene41PostingsFormat.DOC_EXTENSION),
-                                          state.context);
+                                                  state.context);
     IndexOutput posOut = null;
     IndexOutput payOut = null;
     boolean success = false;
@@ -133,7 +134,7 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
       if (state.fieldInfos.hasProx()) {
         posDeltaBuffer = new int[MAX_DATA_SIZE];
         posOut = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Lucene41PostingsFormat.POS_EXTENSION),
-                                              state.context);
+                                                      state.context);
         CodecUtil.writeHeader(posOut, POS_CODEC, VERSION_CURRENT);
 
         if (state.fieldInfos.hasPayloads()) {
@@ -154,7 +155,7 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
 
         if (state.fieldInfos.hasPayloads() || state.fieldInfos.hasOffsets()) {
           payOut = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Lucene41PostingsFormat.PAY_EXTENSION),
-                                                state.context);
+                                                        state.context);
           CodecUtil.writeHeader(payOut, PAY_CODEC, VERSION_CURRENT);
         }
       } else {
@@ -584,6 +585,26 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
 
   @Override
   public void close() throws IOException {
-    IOUtils.close(docOut, posOut, payOut);
+    // TODO: add a finish() at least to PushBase? DV too...?
+    boolean success = false;
+    try {
+      if (docOut != null) {
+        CodecUtil.writeFooter(docOut);
+      }
+      if (posOut != null) {
+        CodecUtil.writeFooter(posOut);
+      }
+      if (payOut != null) {
+        CodecUtil.writeFooter(payOut);
+      }
+      success = true;
+    } finally {
+      if (success) {
+        IOUtils.close(docOut, posOut, payOut);
+      } else {
+        IOUtils.closeWhileHandlingException(docOut, posOut, payOut);
+      }
+      docOut = posOut = payOut = null;
+    }
   }
 }

@@ -236,6 +236,13 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       }
       return sizeInBytes;
     }
+
+    @Override
+    public void checkIntegrity() throws IOException {
+      for (FieldsProducer producer : formats.values()) {
+        producer.checkIntegrity();
+      }
+    }
   }
 
   @Override

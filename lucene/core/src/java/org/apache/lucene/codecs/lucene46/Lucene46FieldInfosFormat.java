@@ -32,7 +32,7 @@ import org.apache.lucene.store.DataOutput;
  * <p>
  * <p>Field names are stored in the field info file, with suffix <tt>.fnm</tt>.</p>
  * <p>FieldInfos (.fnm) --&gt; Header,FieldsCount, &lt;FieldName,FieldNumber,
- * FieldBits,DocValuesBits,DocValuesGen,Attributes&gt; <sup>FieldsCount</sup></p>
+ * FieldBits,DocValuesBits,DocValuesGen,Attributes&gt; <sup>FieldsCount</sup>,Footer</p>
  * <p>Data types:
  * <ul>
  *   <li>Header --&gt; {@link CodecUtil#checkHeader CodecHeader}</li>
@@ -42,6 +42,7 @@ import org.apache.lucene.store.DataOutput;
  *   <li>FieldNumber --&gt; {@link DataOutput#writeInt VInt}</li>
  *   <li>Attributes --&gt; {@link DataOutput#writeStringStringMap Map&lt;String,String&gt;}</li>
  *   <li>DocValuesGen --&gt; {@link DataOutput#writeLong(long) Int64}</li>
+ *   <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  * </ul>
  * </p>
  * Field Descriptions:
@@ -113,7 +114,8 @@ public final class Lucene46FieldInfosFormat extends FieldInfosFormat {
   // Codec header
   static final String CODEC_NAME = "Lucene46FieldInfos";
   static final int FORMAT_START = 0;
-  static final int FORMAT_CURRENT = FORMAT_START;
+  static final int FORMAT_CHECKSUM = 1;
+  static final int FORMAT_CURRENT = FORMAT_CHECKSUM;
   
   // Field flags
   static final byte IS_INDEXED = 0x1;

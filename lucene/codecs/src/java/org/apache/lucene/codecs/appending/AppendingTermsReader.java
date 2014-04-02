@@ -48,15 +48,15 @@ public class AppendingTermsReader extends BlockTreeTermsReader {
   @Override
   protected int readHeader(IndexInput input) throws IOException {
     return CodecUtil.checkHeader(input, APPENDING_TERMS_CODEC_NAME,
-                                 BlockTreeTermsWriter.TERMS_VERSION_START,
-                                 BlockTreeTermsWriter.TERMS_VERSION_CURRENT);
+                                 BlockTreeTermsWriter.VERSION_START,
+                                 BlockTreeTermsWriter.VERSION_CURRENT);
   }
 
   @Override
   protected int readIndexHeader(IndexInput input) throws IOException {
     return CodecUtil.checkHeader(input, APPENDING_TERMS_INDEX_CODEC_NAME,
-                                 BlockTreeTermsWriter.TERMS_INDEX_VERSION_START,
-                                 BlockTreeTermsWriter.TERMS_INDEX_VERSION_CURRENT);
+                                 BlockTreeTermsWriter.VERSION_START,
+                                 BlockTreeTermsWriter.VERSION_CURRENT);
   }
   
   @Override

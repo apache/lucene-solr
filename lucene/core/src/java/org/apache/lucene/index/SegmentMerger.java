@@ -54,7 +54,13 @@ final class SegmentMerger {
 
   // note, just like in codec apis Directory 'dir' is NOT the same as segmentInfo.dir!!
   SegmentMerger(List<AtomicReader> readers, SegmentInfo segmentInfo, InfoStream infoStream, Directory dir, int termIndexInterval,
-                MergeState.CheckAbort checkAbort, FieldInfos.FieldNumbers fieldNumbers, IOContext context) throws IOException {
+                MergeState.CheckAbort checkAbort, FieldInfos.FieldNumbers fieldNumbers, IOContext context, boolean validate) throws IOException {
+    // validate incoming readers
+    if (validate) {
+      for (AtomicReader reader : readers) {
+        reader.checkIntegrity();
+      }
+    }
     mergeState = new MergeState(readers, segmentInfo, infoStream, checkAbort);
     directory = dir;
     this.termIndexInterval = termIndexInterval;

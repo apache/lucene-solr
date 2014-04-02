@@ -794,6 +794,11 @@ public class MemoryIndex {
       return null;
     }
 
+    @Override
+    public void checkIntegrity() throws IOException {
+      // no-op
+    }
+
     private class MemoryFields extends Fields {
       @Override
       public Iterator<String> iterator() {

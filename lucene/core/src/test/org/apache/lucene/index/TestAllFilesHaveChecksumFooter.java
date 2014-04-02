@@ -33,9 +33,9 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 /**
- * Test that a plain default puts codec headers in all files.
+ * Test that a plain default puts CRC32 footers in all files.
  */
-public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
+public class TestAllFilesHaveChecksumFooter extends LuceneTestCase {
   public void test() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
@@ -56,10 +56,9 @@ public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
       if (random().nextInt(7) == 0) {
         riw.commit();
       }
-      // TODO: we should make a new format with a clean header...
-      // if (random().nextInt(20) == 0) {
-      //  riw.deleteDocuments(new Term("id", Integer.toString(i)));
-      // }
+      if (random().nextInt(20) == 0) {
+        riw.deleteDocuments(new Term("id", Integer.toString(i)));
+      }
     }
     riw.close();
     checkHeaders(dir);
@@ -68,9 +67,6 @@ public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
   
   private void checkHeaders(Directory dir) throws IOException {
     for (String file : dir.listAll()) {
-      if (file.equals(IndexFileNames.SEGMENTS_GEN)) {
-        continue; // segments.gen has no header, thats ok
-      }
       if (file.endsWith(IndexFileNames.COMPOUND_FILE_EXTENSION)) {
         CompoundFileDirectory cfsDir = new CompoundFileDirectory(dir, file, newIOContext(random()), false);
         checkHeaders(cfsDir); // recurse into cfs
@@ -80,8 +76,7 @@ public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
       boolean success = false;
       try {
         in = dir.openInput(file, newIOContext(random()));
-        int val = in.readInt();
-        assertEquals(file + " has no codec header, instead found: " + val, CodecUtil.CODEC_MAGIC, val);
+        CodecUtil.checksumEntireFile(in);
         success = true;
       } finally {
         if (success) {

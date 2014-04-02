@@ -17,6 +17,7 @@ package org.apache.lucene.codecs.simpletext;
  * limitations under the License.
  */
 
+import static org.apache.lucene.codecs.simpletext.SimpleTextDocValuesWriter.CHECKSUM;
 import static org.apache.lucene.codecs.simpletext.SimpleTextDocValuesWriter.END;
 import static org.apache.lucene.codecs.simpletext.SimpleTextDocValuesWriter.FIELD;
 import static org.apache.lucene.codecs.simpletext.SimpleTextDocValuesWriter.LENGTH;
@@ -48,6 +49,8 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.store.BufferedChecksumIndexInput;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -467,5 +470,20 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
   @Override
   public long ramBytesUsed() {
     return 0;
+  }
+
+  @Override
+  public void checkIntegrity() throws IOException {
+    BytesRef scratch = new BytesRef();
+    IndexInput clone = data.clone();
+    clone.seek(0);
+    ChecksumIndexInput input = new BufferedChecksumIndexInput(clone);
+    while(true) {
+      SimpleTextUtil.readLine(input, scratch);
+      if (scratch.equals(END)) {
+        SimpleTextUtil.checkFooter(input, CHECKSUM);
+        break;
+      }
+    }
   }
 }

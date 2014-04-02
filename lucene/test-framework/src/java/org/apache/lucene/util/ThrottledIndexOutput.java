@@ -151,4 +151,9 @@ public class ThrottledIndexOutput extends IndexOutput {
   public void copyBytes(DataInput input, long numBytes) throws IOException {
     delegate.copyBytes(input, numBytes);
   }
+
+  @Override
+  public long getChecksum() throws IOException {
+    return delegate.getChecksum();
+  }
 }

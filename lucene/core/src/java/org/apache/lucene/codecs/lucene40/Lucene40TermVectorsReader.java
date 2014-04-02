@@ -773,5 +773,8 @@ public class Lucene40TermVectorsReader extends TermVectorsReader implements Clos
   public long ramBytesUsed() {
     return 0;
   }
+
+  @Override
+  public void checkIntegrity() throws IOException {}
 }
 

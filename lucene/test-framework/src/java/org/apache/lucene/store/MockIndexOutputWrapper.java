@@ -171,6 +171,11 @@ public class MockIndexOutputWrapper extends IndexOutput {
   }
 
   @Override
+  public long getChecksum() throws IOException {
+    return delegate.getChecksum();
+  }
+
+  @Override
   public String toString() {
     return "MockIndexOutputWrapper(" + delegate + ")";
   }

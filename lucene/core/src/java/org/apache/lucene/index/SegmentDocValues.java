@@ -95,14 +95,4 @@ final class SegmentDocValues {
       IOUtils.reThrow(t);
     }
   }
-
-  /** Returns approximate RAM bytes used. */
-  synchronized long ramBytesUsed() {
-    long ramBytesUsed = 0;
-    for (RefCount<DocValuesProducer> dvp : genDVProducers.values()) {
-      ramBytesUsed += dvp.get().ramBytesUsed();
-    }
-    return ramBytesUsed;
-  }
-
 }

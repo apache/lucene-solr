@@ -305,4 +305,7 @@ final class Lucene3xStoredFieldsReader extends StoredFieldsReader implements Clo
     // everything is stored on disk
     return 0;
   }
+  
+  @Override
+  public void checkIntegrity() throws IOException {}
 }

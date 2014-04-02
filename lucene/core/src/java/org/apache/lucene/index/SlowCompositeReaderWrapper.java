@@ -239,4 +239,12 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
     // TODO: as this is a wrapper, should we really close the delegate?
     in.close();
   }
+
+  @Override
+  public void checkIntegrity() throws IOException {
+    ensureOpen();
+    for (AtomicReaderContext ctx : in.leaves()) {
+      ctx.reader().checkIntegrity();
+    }
+  }
 }

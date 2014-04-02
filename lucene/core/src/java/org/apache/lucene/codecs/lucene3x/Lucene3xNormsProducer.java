@@ -229,4 +229,7 @@ class Lucene3xNormsProducer extends DocValuesProducer {
   public long ramBytesUsed() {
     return ramBytesUsed.get();
   }
+  
+  @Override
+  public void checkIntegrity() throws IOException {}
 }

@@ -706,4 +706,9 @@ public class SepPostingsReader extends PostingsReaderBase {
   public long ramBytesUsed() {
     return 0;
   }
+
+  @Override
+  public void checkIntegrity() throws IOException {
+    // TODO: remove sep layout, its fallen behind on features...
+  }
 }

@@ -42,7 +42,6 @@ import java.util.TimeZone;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.appending.AppendingRWCodec;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.lucene3x.PreFlexRWCodec;
 import org.apache.lucene.codecs.cheapbastard.CheapBastardCodec;
@@ -238,9 +237,6 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
       };
     } else if ("SimpleText".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 9 && LuceneTestCase.rarely(random) && !shouldAvoidCodec("SimpleText"))) {
       codec = new SimpleTextCodec();
-    } else if ("Appending".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 8 && !shouldAvoidCodec("Appending"))) {
-      codec = new AppendingRWCodec();
-      LuceneTestCase.OLD_FORMAT_IMPERSONATION_IS_ACTIVE = true; // this is really just Lucene40 with some minor changes
     } else if ("CheapBastard".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 8 && !shouldAvoidCodec("CheapBastard") && !shouldAvoidCodec("Lucene41"))) {
       // we also avoid this codec if Lucene41 is avoided, since thats the postings format it uses.
       codec = new CheapBastardCodec();

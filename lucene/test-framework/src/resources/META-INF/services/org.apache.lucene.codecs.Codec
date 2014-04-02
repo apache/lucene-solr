@@ -14,7 +14,6 @@
 #  limitations under the License.
 
 org.apache.lucene.codecs.lucene3x.PreFlexRWCodec
-org.apache.lucene.codecs.appending.AppendingRWCodec
 org.apache.lucene.codecs.asserting.AssertingCodec
 org.apache.lucene.codecs.cheapbastard.CheapBastardCodec
 org.apache.lucene.codecs.compressing.FastCompressingCodec
