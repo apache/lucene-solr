@@ -133,6 +133,9 @@ Bug Fixes
 * SOLR-5943: SolrCmdDistributor does not distribute the openSearcher parameter.
   (ludovic Boutros via shalin)
 
+* SOLR-5951: Fixed SolrDispatchFilter to throw useful exception on startup if
+  SLF4j logging jars are missing.  (Uwe Schindler, Hossman, Shawn Heisey)
+
 Optimizations
 ----------------------
 * SOLR-1880: Distributed Search skips GET_FIELDS stage if EXECUTE_QUERY
