@@ -23,7 +23,7 @@ import org.apache.solr.common.SolrException;
 import static org.apache.solr.common.SolrException.ErrorCode.*;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 
 import org.apache.solr.core.CloseHook;
@@ -469,7 +469,17 @@ public final class DocExpirationUpdateProcessorFactory
 
     List<Slice> slices = new ArrayList<Slice>(zk.getClusterState().getActiveSlices(col));
     Collections.sort(slices, COMPARE_SLICES_BY_NAME);
-    String leaderInCharge = slices.get(0).getLeader().getName();
+    if (slices.isEmpty()) {
+      log.error("Collection {} has no active Slices?", col);
+      return false;
+    }
+    Replica firstSliceLeader = slices.get(0).getLeader();
+    if (null == firstSliceLeader) {
+      log.warn("Slice in charge of periodic deletes for {} does not currently have a leader",
+               col);
+      return false;
+    }
+    String leaderInCharge = firstSliceLeader.getName();
     String myCoreNodeName = desc.getCoreNodeName();
     
     boolean inChargeOfDeletesRightNow = leaderInCharge.equals(myCoreNodeName);
