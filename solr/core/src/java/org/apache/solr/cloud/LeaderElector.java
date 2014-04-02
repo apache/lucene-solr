@@ -67,6 +67,8 @@ public  class LeaderElector {
 
   private volatile ElectionContext context;
 
+  private ElectionWatcher watcher;
+
   public LeaderElector(SolrZkClient zkClient) {
     this.zkClient = zkClient;
     zkCmdExecutor = new ZkCmdExecutor(zkClient.getZkClientTimeout());
@@ -90,7 +92,7 @@ public  class LeaderElector {
     // get all other numbers...
     final String holdElectionPath = context.electionPath + ELECTION_NODE;
     List<String> seqs = zkClient.getChildren(holdElectionPath, null, true);
-    
+
     sortSeqs(seqs);
     List<Integer> intSeqs = getSeqs(seqs);
     if (intSeqs.size() == 0) {
@@ -122,31 +124,7 @@ public  class LeaderElector {
         return;
       }
       try {
-        zkClient.getData(holdElectionPath + "/" + seqs.get(index),
-            new Watcher() {
-              
-              @Override
-              public void process(WatchedEvent event) {
-                // session events are not change events,
-                // and do not remove the watcher
-                if (EventType.None.equals(event.getType())) {
-                  return;
-                }
-                // am I the next leader?
-                try {
-                  checkIfIamLeader(seq, context, true);
-                } catch (InterruptedException e) {
-                  // Restore the interrupted status
-                  Thread.currentThread().interrupt();
-                  log.warn("", e);
-                } catch (IOException e) {
-                  log.warn("", e);
-                } catch (Exception e) {
-                  log.warn("", e);
-                }
-              }
-              
-            }, null, true);
+        zkClient.getData(holdElectionPath + "/" + seqs.get(index), watcher = new ElectionWatcher(context.leaderSeqPath , seq, context) , null, true);
       } catch (KeeperException.SessionExpiredException e) {
         throw e;
       } catch (KeeperException e) {
@@ -290,6 +268,50 @@ public  class LeaderElector {
     
     return seq;
   }
+
+  private class ElectionWatcher implements Watcher {
+    final String leaderSeqPath;
+    final int seq;
+    final ElectionContext context;
+
+    private boolean canceled = false;
+
+    private ElectionWatcher(String leaderSeqPath, int seq, ElectionContext context) {
+      this.leaderSeqPath = leaderSeqPath;
+      this.seq = seq;
+      this.context = context;
+    }
+
+    void cancel(String leaderSeqPath){
+      canceled = true;
+
+    }
+
+    @Override
+    public void process(WatchedEvent event) {
+      // session events are not change events,
+      // and do not remove the watcher
+      if (EventType.None.equals(event.getType())) {
+        return;
+      }
+      if(canceled) {
+        log.info("This watcher is not active anymore {}", leaderSeqPath);
+        return;
+      }
+      try {
+        // am I the next leader?
+        checkIfIamLeader(seq, context, true);
+      } catch (InterruptedException e) {
+        // Restore the interrupted status
+        Thread.currentThread().interrupt();
+        log.warn("", e);
+      } catch (IOException e) {
+        log.warn("", e);
+      } catch (Exception e) {
+        log.warn("", e);
+      }
+    }
+  }
   
   /**
    * Set up any ZooKeeper nodes needed for leader election.
@@ -317,6 +339,8 @@ public  class LeaderElector {
   }
   void retryElection() throws KeeperException, InterruptedException, IOException {
     context.cancelElection();
+    ElectionWatcher watcher = this.watcher;
+    if(watcher!= null) watcher.cancel(context.leaderSeqPath);
     joinElection(context, true);
   }
 }

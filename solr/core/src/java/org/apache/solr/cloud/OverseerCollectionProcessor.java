@@ -221,6 +221,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
            }
            
            QueueEvent head = workQueue.peek(true);
+           if(isClosed) break;
            final ZkNodeProps message = ZkNodeProps.load(head.getBytes());
 
            final String asyncId = (message.containsKey(ASYNC) && message.get(ASYNC) != null) ? (String) message.get(ASYNC) : null;
@@ -307,15 +308,16 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     List<String> availableDesignates = new ArrayList<>();
 
     log.info("sorted nodes {}", nodeNames);//TODO to be removed
-    for (int i = 0; i < nodeNames.size(); i++) {
+    for (int i = 1; i < nodeNames.size(); i++) {
       String s = nodeNames.get(i);
 
       if (overseerDesignates.contains(s)) {
         availableDesignates.add(s);
 
-        for(int j=0;j<i;j++){
-          if(!overseerDesignates.contains(nodeNames.get(j))) {
-            if(!nodesTobePushedBack.contains(nodeNames.get(j))) nodesTobePushedBack.add(nodeNames.get(j));
+        for(int j=1;j<i;j++){
+          String n = nodeNames.get(j);
+          if(!overseerDesignates.contains(n)) {
+            if(!nodesTobePushedBack.contains(n)) nodesTobePushedBack.add(n);
           }
         }
 
@@ -324,8 +326,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     }
 
     if(!availableDesignates.isEmpty()){
-      for (int i = nodesTobePushedBack.size() - 1; i >= 0; i--) {
-         String s = nodesTobePushedBack.get(i);
+      for (String s : nodesTobePushedBack) {
         log.info("pushing back {} ", s);
         invokeOverseerOp(s, "rejoin");
       }
@@ -368,9 +369,8 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     if(leaderNode ==null) return;
     if(!overseerDesignates.contains(leaderNode) && !availableDesignates.isEmpty()){
       //this means there are designated Overseer nodes and I am not one of them , kill myself
-      String newLeader = availableDesignates.get(0);
-      log.info("I am not an overseerdesignate , forcing a new leader {} ", newLeader);
-      invokeOverseerOp(newLeader, "leader");
+      log.info("I am not an overseer designate , forcing myself out {} ", leaderNode);
+      Overseer.getInQueue(zkStateReader.getZkClient()).offer(ZkStateReader.toJSON(new ZkNodeProps( Overseer.QUEUE_OPERATION, Overseer.QUIT)));
     }
 
   }
@@ -471,6 +471,8 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         processRoleCommand(message, operation);
       } else if (ADDREPLICA.isEqual(operation))  {
         addReplica(zkStateReader.getClusterState(), message, results);
+      } else if (REQUESTSTATUS.equals(operation)) {
+        requestStatus(message, results);
       } else if (OVERSEERSTATUS.isEqual(operation)) {
         getOverseerStatus(message, results);
       } else if(LIST.isEqual(operation)) {
@@ -655,6 +657,12 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   /**
    * Get collection status from cluster state.
    * Can return collection status by given shard name.
+   *
+   *
+   * @param clusterState
+   * @param name  collection name
+   * @param shardStr comma separated shard names
+   * @return map of collection properties
    */
   private Map<String, Object> getCollectionStatus(Map<String, Object> clusterState, String name, String shardStr) {
     Map<String, Object> docCollection = (Map<String, Object>) clusterState.get(name);
@@ -1490,6 +1498,40 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         }
       }
     } while (srsp != null);
+  }
+
+  private void requestStatus(ZkNodeProps message, NamedList results) throws KeeperException, InterruptedException {
+    log.info("Request status invoked");
+    String requestId = message.getStr(REQUESTID);
+
+    // Special taskId (-1), clears up the request state maps.
+    if(requestId.equals("-1")) {
+      completedMap.clear();
+      failureMap.clear();
+      return;
+    }
+
+    if(completedMap.contains(requestId)) {
+      SimpleOrderedMap success = new SimpleOrderedMap();
+      success.add("state", "completed");
+      success.add("msg", "found " + requestId + " in completed tasks");
+      results.add("status", success);
+    } else if (runningMap.contains(requestId)) {
+      SimpleOrderedMap success = new SimpleOrderedMap();
+      success.add("state", "running");
+      success.add("msg", "found " + requestId + " in submitted tasks");
+      results.add("status", success);
+    } else if (failureMap.contains(requestId)) {
+      SimpleOrderedMap success = new SimpleOrderedMap();
+      success.add("state", "failed");
+      success.add("msg", "found " + requestId + " in failed tasks");
+      results.add("status", success);
+    } else {
+      SimpleOrderedMap failure = new SimpleOrderedMap();
+      failure.add("state", "notfound");
+      failure.add("msg", "Did not find taskid [" + requestId + "] in any tasks queue");
+      results.add("status", failure);
+    }
   }
 
   private void deleteShard(ClusterState clusterState, ZkNodeProps message, NamedList results) {
@@ -2363,5 +2405,9 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       } while (srsp != null);
     } while(true);
   }
+  String getId(){
+    return myId;
+  }
+
 
 }

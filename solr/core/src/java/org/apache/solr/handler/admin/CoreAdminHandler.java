@@ -273,10 +273,8 @@ public class CoreAdminHandler extends RequestHandlerBase {
         case OVERSEEROP:{
           ZkController zkController = coreContainer.getZkController();
           if(zkController != null){
-            String op = req.getParams().get("op");
-            if("leader".equals(op)){
-              zkController.forceOverSeer();
-            } else if ("rejoin".equals(op)) zkController.rejoinOverseerElection();
+           String op = req.getParams().get("op");
+           if ("rejoin".equals(op)) zkController.rejoinOverseerElection();
           }
           break;
         }
