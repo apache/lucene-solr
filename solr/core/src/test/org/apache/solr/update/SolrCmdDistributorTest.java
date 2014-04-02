@@ -25,11 +25,13 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.LukeRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.ConfigSolr;
 import org.apache.solr.core.CoreContainer;
@@ -321,6 +323,8 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     testOneRetry();
     testRetryNodeAgainstBadAddress();
     testRetryNodeWontRetrySocketError();
+    
+    testDistribOpenSearcher();
   }
 
   private void testMaxRetries() throws IOException {
@@ -510,5 +514,24 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   public void tearDown() throws Exception {
     updateShardHandler.close();
     super.tearDown();
+  }
+
+  private void testDistribOpenSearcher() {
+    SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(updateShardHandler);
+    UpdateRequest updateRequest = new UpdateRequest();
+
+    CommitUpdateCommand ccmd = new CommitUpdateCommand(null, false);
+
+    //test default value (should be true)
+    cmdDistrib.addCommit(updateRequest, ccmd);
+    boolean openSearcher = updateRequest.getParams().getBool(UpdateParams.OPEN_SEARCHER,false);
+    assertTrue(openSearcher);
+
+    //test openSearcher = false
+    ccmd.openSearcher = false;
+    
+    cmdDistrib.addCommit(updateRequest, ccmd);
+    openSearcher = updateRequest.getParams().getBool(UpdateParams.OPEN_SEARCHER,true);
+    assertFalse(openSearcher);
   }
 }
