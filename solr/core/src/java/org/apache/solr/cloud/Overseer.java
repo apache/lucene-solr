@@ -70,6 +70,7 @@ public class Overseer {
   public static final String ADD_ROUTING_RULE = "addroutingrule";
   public static final String REMOVE_ROUTING_RULE = "removeroutingrule";
   public static final String STATE = "state";
+  public static final String QUIT = "quit";
 
   public static final int STATE_UPDATE_DELAY = 1500;  // delay between cloud state updates
   public static final String CREATESHARD = "createshard";
@@ -200,85 +201,131 @@ public class Overseer {
       }
       
       log.info("Starting to work on the main queue");
-      while (!this.isClosed) {
-        isLeader = amILeader();
-        if (LeaderStatus.NO == isLeader) {
-          break;
-        }
-        else if (LeaderStatus.YES != isLeader) {
-          log.debug("am_i_leader unclear {}", isLeader);
-          continue; // not a no, not a yes, try ask again
-        }
-        DistributedQueue.QueueEvent head = null;
-        try {
-          head = stateUpdateQueue.peek(true);
-        } catch (KeeperException e) {
-          if (e.code() == KeeperException.Code.SESSIONEXPIRED) {
-            log.warn(
-                "Solr cannot talk to ZK, exiting Overseer main queue loop", e);
-            return;
+      try {
+        while (!this.isClosed) {
+          isLeader = amILeader();
+          if (LeaderStatus.NO == isLeader) {
+            break;
           }
-          log.error("Exception in Overseer main queue loop", e);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          return;
-          
-        } catch (Exception e) {
-          log.error("Exception in Overseer main queue loop", e);
-        }
-        synchronized (reader.getUpdateLock()) {
+          else if (LeaderStatus.YES != isLeader) {
+            log.debug("am_i_leader unclear {}", isLeader);
+            continue; // not a no, not a yes, try ask again
+          }
+          DistributedQueue.QueueEvent head = null;
           try {
-            reader.updateClusterState(true);
-            ClusterState clusterState = reader.getClusterState();
-
-            while (head != null) {
-              final ZkNodeProps message = ZkNodeProps.load(head.getBytes());
-              final String operation = message.getStr(QUEUE_OPERATION);
-              final TimerContext timerContext = stats.time(operation);
-              try {
-                clusterState = processMessage(clusterState, message, operation);
-                stats.success(operation);
-              } catch (Exception e) {
-                // generally there is nothing we can do - in most cases, we have
-                // an issue that will fail again on retry or we cannot communicate with
-                // ZooKeeper in which case another Overseer should take over
-                // TODO: if ordering for the message is not important, we could
-                // track retries and put it back on the end of the queue
-                log.error("Overseer could not process the current clusterstate state update message, skipping the message.", e);
-                stats.error(operation);
-              } finally {
-                timerContext.stop();
-              }
-              workQueue.offer(head.getBytes());
-
-              stateUpdateQueue.poll();
-
-              if (System.nanoTime() - lastUpdatedTime > TimeUnit.NANOSECONDS.convert(STATE_UPDATE_DELAY, TimeUnit.MILLISECONDS)) break;
-              
-              // if an event comes in the next 100ms batch it together
-              head = stateUpdateQueue.peek(100); 
-            }
-            lastUpdatedTime = System.nanoTime();
-            zkClient.setData(ZkStateReader.CLUSTER_STATE,
-                ZkStateReader.toJSON(clusterState), true);
-            // clean work queue
-            while (workQueue.poll() != null) ;
-
+            head = stateUpdateQueue.peek(true);
           } catch (KeeperException e) {
             if (e.code() == KeeperException.Code.SESSIONEXPIRED) {
-              log.warn("Solr cannot talk to ZK, exiting Overseer main queue loop", e);
+              log.warn(
+                  "Solr cannot talk to ZK, exiting Overseer main queue loop", e);
               return;
             }
             log.error("Exception in Overseer main queue loop", e);
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return;
-            
+
           } catch (Exception e) {
             log.error("Exception in Overseer main queue loop", e);
           }
+          synchronized (reader.getUpdateLock()) {
+            try {
+              reader.updateClusterState(true);
+              ClusterState clusterState = reader.getClusterState();
+
+              while (head != null) {
+                final ZkNodeProps message = ZkNodeProps.load(head.getBytes());
+                final String operation = message.getStr(QUEUE_OPERATION);
+                final TimerContext timerContext = stats.time(operation);
+                try {
+                  clusterState = processMessage(clusterState, message, operation);
+                  stats.success(operation);
+                } catch (Exception e) {
+                  // generally there is nothing we can do - in most cases, we have
+                  // an issue that will fail again on retry or we cannot communicate with
+                  // ZooKeeper in which case another Overseer should take over
+                  // TODO: if ordering for the message is not important, we could
+                  // track retries and put it back on the end of the queue
+                  log.error("Overseer could not process the current clusterstate state update message, skipping the message.", e);
+                  stats.error(operation);
+                } finally {
+                  timerContext.stop();
+                }
+                workQueue.offer(head.getBytes());
+
+                stateUpdateQueue.poll();
+
+                if (isClosed || System.nanoTime() - lastUpdatedTime > TimeUnit.NANOSECONDS.convert(STATE_UPDATE_DELAY, TimeUnit.MILLISECONDS)) break;
+
+                // if an event comes in the next 100ms batch it together
+                head = stateUpdateQueue.peek(100);
+              }
+              lastUpdatedTime = System.nanoTime();
+              zkClient.setData(ZkStateReader.CLUSTER_STATE,
+                  ZkStateReader.toJSON(clusterState), true);
+              // clean work queue
+              while (workQueue.poll() != null) ;
+
+            } catch (KeeperException e) {
+              if (e.code() == KeeperException.Code.SESSIONEXPIRED) {
+                log.warn("Solr cannot talk to ZK, exiting Overseer main queue loop", e);
+                return;
+              }
+              log.error("Exception in Overseer main queue loop", e);
+            } catch (InterruptedException e) {
+              Thread.currentThread().interrupt();
+              return;
+
+            } catch (Exception e) {
+              log.error("Exception in Overseer main queue loop", e);
+            }
+          }
+
         }
-        
+      } finally {
+        new Thread("OverseerExitThread"){
+          //do this in a separate thread because any wait is interrupted in this main thread
+          @Override
+          public void run() {
+            checkIfIamStillLeader();
+          }
+        }.start();
+      }
+    }
+
+    private void checkIfIamStillLeader() {
+      org.apache.zookeeper.data.Stat stat = new org.apache.zookeeper.data.Stat();
+      String path = "/overseer_elect/leader";
+      byte[] data = null;
+      try {
+        data = zkClient.getData(path, null, stat, true);
+      } catch (Exception e) {
+        log.error("could not read the data" ,e);
+        return;
+      }
+      Map m = (Map) ZkStateReader.fromJSON(data);
+      String id = (String) m.get("id");
+      if(overseerCollectionProcessor.getId().equals(id)){
+        try {
+          log.info("I'm exiting , but I'm still the leader");
+          zkClient.delete(path,stat.getVersion(),true);
+        } catch (KeeperException.BadVersionException e) {
+          //no problem ignore it some other Overseer has already taken over
+        } catch (Exception e) {
+          log.error("Could not delete my leader node ", e);
+        } finally {
+          try {
+            if(zkController !=null && !zkController.getCoreContainer().isShutDown()){
+              zkController.rejoinOverseerElection();
+            }
+
+          } catch (Exception e) {
+            log.error("error canceling overseer election election  ",e);
+          }
+        }
+
+      } else{
+        log.info("somebody else has already taken up the overseer position");
       }
     }
 
@@ -324,7 +371,11 @@ public class Overseer {
         clusterState = removeRoutingRule(clusterState, message);
       } else if(CLUSTERPROP.isEqual(operation)){
            handleProp(message);
-      } else {
+      } else if( QUIT.equals(operation)){
+        log.info("################Quit command receive");
+        overseerCollectionProcessor.close();
+        close();
+      } else{
         throw new RuntimeException("unknown operation:" + operation
             + " contents:" + message.getProperties());
       }
@@ -1107,15 +1158,18 @@ public class Overseer {
 
   private String adminPath;
 
-  private OverseerCollectionProcessor ocp;
+  private OverseerCollectionProcessor overseerCollectionProcessor;
+
+  private ZkController zkController;
 
   private Stats stats;
 
   // overseer not responsible for closing reader
-  public Overseer(ShardHandler shardHandler, String adminPath, final ZkStateReader reader) throws KeeperException, InterruptedException {
+  public Overseer(ShardHandler shardHandler, String adminPath, final ZkStateReader reader, ZkController zkController) throws KeeperException, InterruptedException {
     this.reader = reader;
     this.shardHandler = shardHandler;
     this.adminPath = adminPath;
+    this.zkController = zkController;
     this.stats = new Stats();
   }
   
@@ -1130,8 +1184,8 @@ public class Overseer {
 
     ThreadGroup ccTg = new ThreadGroup("Overseer collection creation process.");
 
-    ocp = new OverseerCollectionProcessor(reader, id, shardHandler, adminPath, stats);
-    ccThread = new OverseerThread(ccTg, ocp, "Overseer-" + id);
+    overseerCollectionProcessor = new OverseerCollectionProcessor(reader, id, shardHandler, adminPath, stats);
+    ccThread = new OverseerThread(ccTg, overseerCollectionProcessor, "Overseer-" + id);
     ccThread.setDaemon(true);
     
     updaterThread.start();

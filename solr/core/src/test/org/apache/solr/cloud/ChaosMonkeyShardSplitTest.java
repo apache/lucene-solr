@@ -256,7 +256,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
 
     // TODO: close Overseer
     Overseer overseer = new Overseer(
-        new HttpShardHandlerFactory().getShardHandler(), "/admin/cores", reader);
+        new HttpShardHandlerFactory().getShardHandler(), "/admin/cores", reader,null);
     overseer.close();
     ElectionContext ec = new OverseerElectionContext(zkClient, overseer,
         address.replaceAll("/", "_"));

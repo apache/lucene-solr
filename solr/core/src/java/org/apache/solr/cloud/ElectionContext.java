@@ -71,7 +71,7 @@ public abstract class ElectionContext {
       zkClient.delete(leaderSeqPath, -1, true);
     } catch (NoNodeException e) {
       // fine
-      log.warn("cancelElection did not find election node to remove");
+      log.warn("cancelElection did not find election node to remove",e);
     }
   }
 

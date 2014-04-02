@@ -304,18 +304,6 @@ public final class ZkController {
     return leaderConflictResolveWait;
   }
 
-  public void forceOverSeer(){
-    try {
-      zkClient.delete("/overseer_elect/leader",-1, true);
-      log.info("Forcing me to be leader  {} ", getBaseUrl());
-      overseerElector.getContext().runLeaderProcess(true, Overseer.STATE_UPDATE_DELAY + 100);
-    } catch (Exception e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, " Error becoming overseer ",e);
-
-    }
-
-  }
-
   private void registerAllCoresAsDown(
       final CurrentCoreDescriptorProvider registerOnReconnect, boolean updateLastPublished) {
     List<CoreDescriptor> descriptors = registerOnReconnect
@@ -558,7 +546,7 @@ public final class ZkController {
       adminPath = cc.getAdminPath();
       
       overseerElector = new LeaderElector(zkClient);
-      this.overseer = new Overseer(shardHandler, adminPath, zkStateReader);
+      this.overseer = new Overseer(shardHandler, adminPath, zkStateReader,this);
       ElectionContext context = new OverseerElectionContext(zkClient, overseer, getNodeName());
       overseerElector.setup(context);
       overseerElector.joinElection(context, false);
@@ -1677,6 +1665,10 @@ public final class ZkController {
     } catch (Exception e) {
       log.warn("could not readd the overseer designate ",e);
     }
+  }
+
+  CoreContainer getCoreContainer(){
+    return cc;
   }
 
 }
