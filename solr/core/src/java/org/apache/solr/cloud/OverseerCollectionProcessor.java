@@ -659,7 +659,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
    * Can return collection status by given shard name.
    *
    *
-   * @param clusterState
+   * @param clusterState cloud state map parsed from JSON-serialized {@link ClusterState}
    * @param name  collection name
    * @param shardStr comma separated shard names
    * @return map of collection properties
