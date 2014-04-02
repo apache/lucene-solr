@@ -158,7 +158,7 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
   /**
    * Load synonyms with the given {@link SynonymMap.Parser} class.
    */
-  private SynonymMap loadSynonyms(ResourceLoader loader, String cname, boolean dedup, Analyzer analyzer) throws IOException, ParseException {
+  protected SynonymMap loadSynonyms(ResourceLoader loader, String cname, boolean dedup, Analyzer analyzer) throws IOException, ParseException {
     CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder()
         .onMalformedInput(CodingErrorAction.REPORT)
         .onUnmappableCharacter(CodingErrorAction.REPORT);

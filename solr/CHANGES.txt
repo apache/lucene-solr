@@ -170,7 +170,9 @@ New Features
 * SOLR-5829: Allow ExpandComponent to accept query and filter query parameters
   (Joel Bernstein)
 
-
+* SOLR-5654: Create a synonym filter factory that is (re)configurable, and
+  capable of reporting its configuration, via REST API.
+  (Tim Potter via Steve Rowe)
 
 Bug Fixes
 ----------------------
