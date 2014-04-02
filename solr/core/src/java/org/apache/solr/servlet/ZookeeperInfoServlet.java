@@ -26,7 +26,6 @@ import java.util.Date;
 import java.util.List;
 
 import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -50,7 +49,7 @@ import org.slf4j.LoggerFactory;
  *
  * @since solr 4.0
  */
-public final class ZookeeperInfoServlet extends HttpServlet {
+public final class ZookeeperInfoServlet extends BaseSolrServlet {
   static final Logger log = LoggerFactory.getLogger(ZookeeperInfoServlet.class);
   
   @Override
