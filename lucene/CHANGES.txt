@@ -172,6 +172,8 @@ Bug fixes
 * LUCENE-5559: Add missing argument checks to tokenfilters taking
   numeric arguments.  (Ahmet Arslan via Robert Muir)
 
+* LUCENE-5568: Benchmark module's "default.codec" option didn't work. (David Smiley)
+
 Test Framework
 
 * LUCENE-5449: Rename _TestUtil and _TestHelper to remove the leading _.
