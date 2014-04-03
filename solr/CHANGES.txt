@@ -146,9 +146,6 @@ New Features
   improve logging and force refresh cluster state every 15 seconds.
   (Timothy Potter via shalin)
   
- * SOLR-5228: Don't require <field> or <dynamicField> be inside of <fields> -- or 
-   that <fieldType> be inside of <types>. (Erick Erickson)
-
 * SOLR-5749: A new Overseer status collection API exposes overseer queue sizes, timing
   statistics, success and error counts and last N failures per operation. (shalin)
 
