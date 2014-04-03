@@ -283,6 +283,7 @@ public class Overseer {
 
         }
       } finally {
+        log.info("Overseer Loop exiting : {}", LeaderElector.getNodeName(myId));
         new Thread("OverseerExitThread"){
           //do this in a separate thread because any wait is interrupted in this main thread
           @Override
@@ -372,7 +373,7 @@ public class Overseer {
       } else if(CLUSTERPROP.isEqual(operation)){
            handleProp(message);
       } else if( QUIT.equals(operation)){
-        log.info("################Quit command receive");
+        log.info("Quit command received {}", LeaderElector.getNodeName(myId));
         overseerCollectionProcessor.close();
         close();
       } else{
