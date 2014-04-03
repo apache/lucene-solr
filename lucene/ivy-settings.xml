@@ -33,17 +33,15 @@
   <resolvers>
     <ibiblio name="sonatype-releases" root="http://oss.sonatype.org/content/repositories/releases" m2compatible="true" />
     <ibiblio name="maven.restlet.org" root="http://maven.restlet.org" m2compatible="true" />
+    <ibiblio name="cloudera" root="http://repository.cloudera.com/artifactory/repo" m2compatible="true" />
+    <ibiblio name="releases.cloudera.com" root="http://repository.cloudera.com/content/repositories/releases" m2compatible="true" />
     
     <!-- needed only for newer svnkit releases, e.g. 1.8.x -->
     <ibiblio name="svnkit-releases" root="http://maven.tmatesoft.com/content/repositories/releases" m2compatible="true" />
 
-    <ibiblio name="cloudera" root="https://repository.cloudera.com/artifactory/repo" m2compatible="true" />
-    <ibiblio name="releases.cloudera.com" root="https://repository.cloudera.com/content/repositories/releases" m2compatible="true" />
-
-
     <!-- you might need to tweak this from china so it works -->
     <ibiblio name="working-chinese-mirror" root="http://uk.maven.org/maven2" m2compatible="true" />
-
+    
     <!--
     <filesystem name="local-maven-2" m2compatible="true" local="true">
       <artifact
