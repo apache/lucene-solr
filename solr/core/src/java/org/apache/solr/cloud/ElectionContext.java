@@ -68,6 +68,7 @@ public abstract class ElectionContext {
   
   public void cancelElection() throws InterruptedException, KeeperException {
     try {
+      log.info("canceling election {}",leaderSeqPath );
       zkClient.delete(leaderSeqPath, -1, true);
     } catch (NoNodeException e) {
       // fine

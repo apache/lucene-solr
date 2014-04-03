@@ -289,7 +289,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   }
 
   private void prioritizeOverseerNodes() throws KeeperException, InterruptedException {
-    log.info("prioritizing overseer nodes");
+    log.info("prioritizing overseer nodes at {}", LeaderElector.getNodeName(myId));
     SolrZkClient zk = zkStateReader.getZkClient();
     if(!zk.exists(ZkStateReader.ROLES,true))return;
     Map m = (Map) ZkStateReader.fromJSON(zk.getData(ZkStateReader.ROLES, null, new Stat(), true));
@@ -301,6 +301,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
     List<String> nodeNames = getSortedOverseerNodeNames(zk);
     if(nodeNames.size()<2) return;
+    boolean designateIsInFront = overseerDesignates.contains( nodeNames.get(0));
 
 //
     ArrayList<String> nodesTobePushedBack =  new ArrayList<>();
@@ -322,7 +323,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         }
 
       }
-      if(availableDesignates.size()>1) break;
+      if(availableDesignates.size()>1) break;//we don't need to line up more than 2 designates
     }
 
     if(!availableDesignates.isEmpty()){
@@ -360,17 +361,22 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         log.warn("available designates and current state {} {} ", availableDesignates, getSortedOverseerNodeNames(zk));
       }
 
-    } else {
+    } else if(!designateIsInFront) {
       log.warn("No overseer designates are available, overseerDesignates: {}, live nodes : {}",overseerDesignates,nodeNames);
       return;
     }
 
     String leaderNode = getLeaderNode(zkStateReader.getZkClient());
     if(leaderNode ==null) return;
-    if(!overseerDesignates.contains(leaderNode) && !availableDesignates.isEmpty()){
-      //this means there are designated Overseer nodes and I am not one of them , kill myself
-      log.info("I am not an overseer designate , forcing myself out {} ", leaderNode);
-      Overseer.getInQueue(zkStateReader.getZkClient()).offer(ZkStateReader.toJSON(new ZkNodeProps( Overseer.QUEUE_OPERATION, Overseer.QUIT)));
+    if(!overseerDesignates.contains(leaderNode) ){
+      List<String> sortedNodes = getSortedOverseerNodeNames(zk);
+
+      if(leaderNode.equals(sortedNodes.get(0))  ||         // I am leader and I am in front of the queue
+          overseerDesignates.contains(sortedNodes.get(0))) {// I am leader but somebody else is in the front , Screwed up leader election
+        //this means there are I am not a designate and the next guy is lined up to become the leader, kill myself
+        log.info("I am not an overseer designate , forcing myself out {} ", leaderNode);
+        Overseer.getInQueue(zkStateReader.getZkClient()).offer(ZkStateReader.toJSON(new ZkNodeProps(Overseer.QUEUE_OPERATION, Overseer.QUIT)));
+      }
     }
 
   }
