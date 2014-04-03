@@ -152,7 +152,7 @@ public class GetMavenDependenciesTask extends Task {
   }
 
   public void setVerbose(boolean verbose) {
-    verboseLevel = (verbose ? Project.MSG_INFO : Project.MSG_VERBOSE);
+    verboseLevel = (verbose ? Project.MSG_VERBOSE : Project.MSG_INFO);
   }
 
   public void setCentralizedVersionsFile(File file) {
@@ -614,7 +614,7 @@ public class GetMavenDependenciesTask extends Task {
       // Pattern.compile("(lucene|solr)/build/(.*)/classes/java");
       String artifact = matcher.group(2);
       artifact = artifact.replace('/', '-');
-      artifact = artifact.replace("analysis-", "analyzers-");
+      artifact = artifact.replace("(?<!solr-)analysis-", "analyzers-");
       if ("lucene".equals(matcher.group(1))) {
         artifactId.append("lucene-");
       }
