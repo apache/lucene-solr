@@ -83,7 +83,7 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
       super(context, acceptDocs);
     }
 
-    BytesRef termBytes = new BytesRef();
+    BytesRef termBytes = new BytesRef();//no leaf
     Cell nextCell;//see getLeafDocs
 
     /** This is the primary algorithm; recursive.  Returns null if finds none. */
@@ -130,16 +130,15 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
     }
 
     private boolean seekExact(Cell cell) throws IOException {
-      assert new BytesRef(cell.getTokenBytes()).compareTo(termBytes) > 0;
-      termBytes.bytes = cell.getTokenBytes();
-      termBytes.length = termBytes.bytes.length;
+      assert cell.getTokenBytesNoLeaf(null).compareTo(termBytes) > 0;
+      cell.getTokenBytesNoLeaf(termBytes);
       if (termsEnum == null)
         return false;
       return termsEnum.seekExact(termBytes);
     }
 
     private SmallDocSet getDocs(Cell cell, Bits acceptContains) throws IOException {
-      assert new BytesRef(cell.getTokenBytes()).equals(termBytes);
+      assert cell.getTokenBytesNoLeaf(null).equals(termBytes);
 
       return collectDocs(acceptContains);
     }
@@ -147,7 +146,7 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
     private Cell lastLeaf = null;//just for assertion
 
     private SmallDocSet getLeafDocs(Cell leafCell, Bits acceptContains) throws IOException {
-      assert new BytesRef(leafCell.getTokenBytes()).equals(termBytes);
+      assert leafCell.getTokenBytesNoLeaf(null).equals(termBytes);
       assert ! leafCell.equals(lastLeaf);//don't call for same leaf again
       lastLeaf = leafCell;
 

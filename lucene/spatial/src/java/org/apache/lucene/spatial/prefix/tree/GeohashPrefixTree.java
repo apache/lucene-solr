@@ -84,18 +84,29 @@ public class GeohashPrefixTree extends SpatialPrefixTree {
   }
 
   @Override
-  public Cell getCell(String token) {
-    return new GhCell(token);
-  }
-
-  @Override
   public Cell getCell(byte[] bytes, int offset, int len) {
     return new GhCell(bytes, offset, len);
   }
 
+  private static byte[] stringToBytesPlus1(String token) {
+    //copy ASCII token to byte array with one extra spot for eventual LEAF_BYTE if needed
+    byte[] bytes = new byte[token.length() + 1];
+    for (int i = 0; i < token.length(); i++) {
+      bytes[i] = (byte) token.charAt(i);
+    }
+    return bytes;
+  }
+
   class GhCell extends Cell {
-    GhCell(String token) {
-      super(token);
+
+    private Shape shape;//cache
+    private String geohash;//cache; never has leaf byte, simply a geohash
+
+    GhCell(String geohash) {
+      super(stringToBytesPlus1(geohash), 0, geohash.length());
+      this.geohash = geohash;
+      if (isLeaf())
+        this.geohash = geohash.substring(0, geohash.length() - 1);
     }
 
     GhCell(byte[] bytes, int off, int len) {
@@ -103,8 +114,12 @@ public class GeohashPrefixTree extends SpatialPrefixTree {
     }
 
     @Override
+    protected SpatialPrefixTree getGrid() { return GeohashPrefixTree.this; }
+
+    @Override
     public void reset(byte[] bytes, int off, int len) {
       super.reset(bytes, off, len);
+      geohash = null;
       shape = null;
     }
 
@@ -125,26 +140,26 @@ public class GeohashPrefixTree extends SpatialPrefixTree {
 
     @Override
     public Cell getSubCell(Point p) {
-      return GeohashPrefixTree.this.getCell(p, getLevel() + 1);//not performant!
+      return getGrid().getCell(p, getLevel() + 1);//not performant!
     }
-
-    private Shape shape;//cache
 
     @Override
     public Shape getShape() {
       if (shape == null) {
-        shape = GeohashUtils.decodeBoundary(getGeohash(), ctx);
+        shape = GeohashUtils.decodeBoundary(getGeohash(), getGrid().getSpatialContext());
       }
       return shape;
     }
 
     @Override
     public Point getCenter() {
-      return GeohashUtils.decode(getGeohash(), ctx);
+      return GeohashUtils.decode(getGeohash(), getGrid().getSpatialContext());
     }
 
     private String getGeohash() {
-      return getTokenString();
+      if (geohash == null)
+        geohash = getTokenBytesNoLeaf(null).utf8ToString();
+      return geohash;
     }
 
   }//class GhCell
