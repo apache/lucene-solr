@@ -4644,8 +4644,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     deleter.revisitPolicy();
   }
 
-  // Called by DirectoryReader.doClose
-  synchronized void deletePendingFiles() throws IOException {
+  private synchronized void deletePendingFiles() throws IOException {
     deleter.deletePendingFiles();
   }
   
@@ -4744,10 +4743,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
   }
   
   synchronized void incRefDeleter(SegmentInfos segmentInfos) throws IOException {
+    ensureOpen();
     deleter.incRef(segmentInfos, false);
   }
   
   synchronized void decRefDeleter(SegmentInfos segmentInfos) throws IOException {
+    ensureOpen();
     deleter.decRef(segmentInfos);
   }
   

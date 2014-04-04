@@ -3,6 +3,17 @@ Lucene Change Log
 For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
+======================= Lucene 4.7.2 =======================
+
+Bug Fixes
+
+* LUCENE-5574: Closing a near-real-time reader no longer attempts to
+  delete unreferenced files if the original writer has been closed;
+  this could cause index corruption in certain cases where index files
+  were directly changed (deleted, overwritten, etc.) in the index
+  directory outside of Lucene.  (Simon Willnauer, Shai Erera, Robert
+  Muir, Mike McCandless)
+
 ======================= Lucene 4.7.1 =======================
 
 Changes in Runtime Behavior
