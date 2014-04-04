@@ -61,7 +61,7 @@ public class TermQueryPrefixTreeStrategy extends PrefixTreeStrategy {
     BytesRef[] terms = new BytesRef[cells.size()];
     int i = 0;
     for (Cell cell : cells) {
-      terms[i++] = new BytesRef(cell.getTokenString());//TODO use cell.getTokenBytes()
+      terms[i++] = cell.getTokenBytesNoLeaf(null);
     }
     return new TermsFilter(getFieldName(), terms);
   }
