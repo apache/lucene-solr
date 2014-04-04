@@ -138,7 +138,8 @@ public class TestBooleanScorer extends LuceneTestCase {
     w.addDocument(doc);
     final IndexReader r = w.getReader();
     w.close();
-    final IndexSearcher s = newSearcher(r);
+    // we don't wrap with AssertingIndexSearcher in order to have the original scorer in setScorer.
+    final IndexSearcher s = newSearcher(r, true, false);
 
     final BooleanQuery q = new BooleanQuery();
     for(int term=0;term<33;term++) {
@@ -154,7 +155,7 @@ public class TestBooleanScorer extends LuceneTestCase {
       @Override
       public void setScorer(Scorer scorer) {
         // Make sure we got BooleanScorer:
-        final Class<?> clazz = scorer instanceof AssertingScorer ? ((AssertingScorer) scorer).getIn().getClass() : scorer.getClass();
+        final Class<?> clazz = scorer.getClass();
         assertEquals("Scorer is implemented by wrong class", FakeScorer.class.getName(), clazz.getName());
       }
       

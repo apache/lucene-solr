@@ -79,22 +79,20 @@ class AssertingWeight extends Weight {
     if (AssertingBulkScorer.shouldWrap(inScorer)) {
       // The incoming scorer already has a specialized
       // implementation for BulkScorer, so we should use it:
-      return AssertingBulkScorer.wrap(new Random(random.nextLong()), inScorer);
-    } else if (scoreDocsInOrder == false && random.nextBoolean()) {
+      inScorer = AssertingBulkScorer.wrap(new Random(random.nextLong()), inScorer);
+    } else if (random.nextBoolean()) {
+      // Let super wrap this.scorer instead, so we use
+      // AssertingScorer:
+      inScorer = super.bulkScorer(context, scoreDocsInOrder, acceptDocs);
+    }
+
+    if (scoreDocsInOrder == false && random.nextBoolean()) {
       // The caller claims it can handle out-of-order
       // docs; let's confirm that by pulling docs and
       // randomly shuffling them before collection:
-      //Scorer scorer = in.scorer(context, acceptDocs);
-      Scorer scorer = scorer(context, acceptDocs);
-
-      // Scorer should not be null if bulkScorer wasn't:
-      assert scorer != null;
-      return new AssertingBulkOutOfOrderScorer(new Random(random.nextLong()), scorer);
-    } else {
-      // Let super wrap this.scorer instead, so we use
-      // AssertingScorer:
-      return super.bulkScorer(context, scoreDocsInOrder, acceptDocs);
+      inScorer = new AssertingBulkOutOfOrderScorer(new Random(random.nextLong()), inScorer);
     }
+    return inScorer;
   }
 
   @Override
