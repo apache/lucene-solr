@@ -1241,9 +1241,11 @@ ant -Dtests.timestamps=on ...
 # Override forked JVM file.encoding
 ant -Dtests.file.encoding=XXX ...
 
-# Don't remove temporary files under slave directories, even if
-# the test passes.
+# Don't remove any temporary files under slave directories, even if
+# the test passes (any of the following props):
 ant -Dtests.leaveTemporary=true
+ant -Dtests.leavetmpdir=true
+ant -Dsolr.test.leavetmpdir=true
 
 # Do *not* filter stack traces emitted to the console.
 ant -Dtests.filterstacks=false
