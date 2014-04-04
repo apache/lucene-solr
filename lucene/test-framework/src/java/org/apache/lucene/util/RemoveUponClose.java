@@ -24,12 +24,12 @@ import java.io.IOException;
 /**
  * A {@link Closeable} that attempts to remove a given file/folder.
  */
-final class CloseableFile implements Closeable {
+final class RemoveUponClose implements Closeable {
   private final File file;
   private final TestRuleMarkFailure failureMarker;
   private final String creationStack;
 
-  public CloseableFile(File file, TestRuleMarkFailure failureMarker) {
+  public RemoveUponClose(File file, TestRuleMarkFailure failureMarker) {
     this.file = file;
     this.failureMarker = failureMarker;
 
@@ -45,20 +45,12 @@ final class CloseableFile implements Closeable {
     // only if there were no other test failures.
     if (failureMarker.wasSuccessful()) {
       if (file.exists()) {
-        if (file.listFiles().length > 0) {
-          // throw new IOException("Temporary folder not clean: " + file.getAbsolutePath() + ". Created at stack trace:\n" + creationStack); 
-        }
-
         try {
-          TestUtil.rmDir(file);
+          TestUtil.rm(file);
         } catch (IOException e) {
-          // Ignore the exception from rmDir.
-        }
-
-        // Re-check.
-        if (file.exists()) {
           throw new IOException(
-            "Could not remove temporary folder: " + file.getAbsolutePath() + ". Created at stack trace:\n" + creationStack);
+              "Could not remove temporary location '" 
+                  + file.getAbsolutePath() + "', created at stack trace:\n" + creationStack, e);
         }
       }
     }

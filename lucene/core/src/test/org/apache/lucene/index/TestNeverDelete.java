@@ -108,6 +108,6 @@ public class TestNeverDelete extends LuceneTestCase {
     w.close();
     d.close();
 
-    TestUtil.rmDir(tmpDir);
+    TestUtil.rm(tmpDir);
   }
 }

@@ -76,7 +76,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4
       }
       loader.close();
     } finally {
-      TestUtil.rmDir(temp);
+      TestUtil.rm(temp);
     }
   }
 

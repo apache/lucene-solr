@@ -228,6 +228,23 @@ public abstract class LuceneTestCase extends Assert {
     String[] value();
   }
   
+  /**
+   * Marks any suites which are known not to close all the temporary
+   * files. This may prevent temp. files and folders from being cleaned
+   * up after the suite is completed.
+   * 
+   * @see TestUtil#createTempDir()
+   * @see TestUtil#createTempFile(String, String)
+   */
+  @Documented
+  @Inherited
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.TYPE)
+  public @interface SuppressTempFileChecks {
+    /** Point to JIRA entry. */
+    public String bugUrl() default "None";
+  }
+
   // -----------------------------------------------------------------
   // Truly immutable fields and constants, initialized once and valid 
   // for all suites ever since.
@@ -290,6 +307,20 @@ public abstract class LuceneTestCase extends Assert {
 
   /** Throttling, see {@link MockDirectoryWrapper#setThrottling(Throttling)}. */
   public static final Throttling TEST_THROTTLING = TEST_NIGHTLY ? Throttling.SOMETIMES : Throttling.NEVER;
+
+  /** Leave temporary files on disk, even on successful runs. */
+  public static final boolean LEAVE_TEMPORARY;
+  static {
+    boolean defaultValue = false;
+    for (String property : Arrays.asList(
+        "tests.leaveTemporary" /* ANT tasks's (junit4) flag. */,
+        "tests.leavetemporary" /* lowercase */,
+        "tests.leavetmpdir" /* default */,
+        "solr.test.leavetmpdir" /* Solr's legacy */)) {
+      defaultValue |= systemPropertyAsBoolean(property, false);
+    }
+    LEAVE_TEMPORARY = defaultValue;
+  }
 
   /**
    * These property keys will be ignored in verification of altered properties.
@@ -1147,7 +1178,7 @@ public abstract class LuceneTestCase extends Assert {
       final Class<? extends Directory> clazz = CommandLineUtil.loadDirectoryClass(clazzName);
       // If it is a FSDirectory type, try its ctor(File)
       if (FSDirectory.class.isAssignableFrom(clazz)) {
-        final File dir = TestUtil.createTempDir("index");
+        final File dir = new File(TestUtil.createTempDir(), "index");
         dir.mkdirs(); // ensure it's created so we 'have' it.
         return newFSDirectoryImpl(clazz.asSubclass(FSDirectory.class), dir);
       }

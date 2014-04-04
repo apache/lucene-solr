@@ -446,7 +446,7 @@ public void testFilesOpenClose() throws IOException {
       dir.close();
 
       // Try to erase the data - this ensures that the writer closed all files
-      TestUtil.rmDir(dirFile);
+      TestUtil.rm(dirFile);
       dir = newFSDirectory(dirFile);
 
       // Now create the data set again, just as before
@@ -463,7 +463,7 @@ public void testFilesOpenClose() throws IOException {
 
       // The following will fail if reader did not close
       // all files
-      TestUtil.rmDir(dirFile);
+      TestUtil.rm(dirFile);
   }
 
   public void testOpenReaderAfterDelete() throws IOException {
@@ -716,7 +716,7 @@ public void testFilesOpenClose() throws IOException {
   // good exception
   public void testNoDir() throws Throwable {
     File tempDir = TestUtil.createTempDir("doesnotexist");
-    TestUtil.rmDir(tempDir);
+    TestUtil.rm(tempDir);
     Directory dir = newFSDirectory(tempDir);
     try {
       DirectoryReader.open(dir);

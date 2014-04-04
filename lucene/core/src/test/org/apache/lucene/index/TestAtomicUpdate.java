@@ -179,6 +179,6 @@ public class TestAtomicUpdate extends LuceneTestCase {
     directory = newFSDirectory(dirPath);
     runTest(directory);
     directory.close();
-    TestUtil.rmDir(dirPath);
+    TestUtil.rm(dirPath);
   }
 }

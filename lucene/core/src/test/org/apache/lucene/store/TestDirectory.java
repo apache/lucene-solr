@@ -218,7 +218,7 @@ public class TestDirectory extends LuceneTestCase {
       assertFalse(dir.isOpen);
     }
     
-    TestUtil.rmDir(path);
+    TestUtil.rm(path);
   }
 
   // LUCENE-1464
@@ -230,7 +230,7 @@ public class TestDirectory extends LuceneTestCase {
       assertTrue(!path.exists());
       dir.close();
     } finally {
-      TestUtil.rmDir(path);
+      TestUtil.rm(path);
     }
   }
 
@@ -265,7 +265,7 @@ public class TestDirectory extends LuceneTestCase {
       Directory fsDir = new SimpleFSDirectory(path, null);
       assertEquals(0, new RAMDirectory(fsDir, newIOContext(random())).listAll().length);
     } finally {
-      TestUtil.rmDir(path);
+      TestUtil.rm(path);
     }
   }
 
@@ -285,7 +285,7 @@ public class TestDirectory extends LuceneTestCase {
       }
     } finally {
       fsDir.close();
-      TestUtil.rmDir(path);
+      TestUtil.rm(path);
     }
   }
 }

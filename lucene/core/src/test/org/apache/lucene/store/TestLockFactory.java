@@ -171,7 +171,7 @@ public class TestLockFactory extends LuceneTestCase {
 
         dir.close();
         // Cleanup
-        TestUtil.rmDir(indexDir);
+        TestUtil.rm(indexDir);
     }
 
     // Verify: NativeFSLockFactory works correctly
@@ -250,8 +250,8 @@ public class TestLockFactory extends LuceneTestCase {
 
       dir1.close();
       dir2.close();
-      TestUtil.rmDir(fdir1);
-      TestUtil.rmDir(fdir2);
+      TestUtil.rm(fdir1);
+      TestUtil.rm(fdir2);
     }
 
     // Verify: default LockFactory has no prefix (ie
@@ -273,7 +273,7 @@ public class TestLockFactory extends LuceneTestCase {
       assertNull("Default lock prefix should be null", dir.getLockFactory().getLockPrefix());
       dir.close();
  
-      TestUtil.rmDir(dirName);
+      TestUtil.rm(dirName);
     }
 
     private class WriterThread extends Thread { 

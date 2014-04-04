@@ -223,7 +223,7 @@ public class TestFieldsReader extends LuceneTestCase {
       reader.close();
       dir.close();
     } finally {
-      TestUtil.rmDir(indexDir);
+      TestUtil.rm(indexDir);
     }
 
   }

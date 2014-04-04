@@ -274,7 +274,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         writer.close();
         reader.close();
       } finally {
-        TestUtil.rmDir(indexDir);
+        TestUtil.rm(indexDir);
       }
     }
 

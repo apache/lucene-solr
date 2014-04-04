@@ -990,6 +990,9 @@
                 <propertyref prefix="tests.jettyConnector" />
                 <propertyref prefix="tests.disableHdfs" />
                 <propertyref prefix="tests.filter" />
+                <propertyref prefix="tests.leavetmpdir" />
+                <propertyref prefix="tests.leaveTemporary" />
+                <propertyref prefix="solr.test.leavetmpdir" />
             </syspropertyset>
 
             <!-- Pass randomized settings to the forked JVM. -->

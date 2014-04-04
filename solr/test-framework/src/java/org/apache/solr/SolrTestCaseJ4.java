@@ -134,25 +134,9 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     public String bugUrl() default "None";
   }
   
-
-  /**
-   * Annotation for test classes to prevent TEMP_DIR cleanup.
-   */
-  @Documented
-  @Inherited
-  @Retention(RetentionPolicy.RUNTIME)
-  @Target(ElementType.TYPE)
-  public @interface SuppressTempDirCleanUp {
-    /** Point to JIRA entry. */
-    public String bugUrl() default "None";
-  }
-  
   // these are meant to be accessed sequentially, but are volatile just to ensure any test
   // thread will read the latest value
   protected static volatile SSLTestConfig sslConfig;
-  
-  private static boolean LEAVE_TEST_TMP_DIR = Boolean.getBoolean("solr.test.leavetmpdir");
-  private static boolean LEAVE_TEST_TMP_DIR_ANNOTATION;
 
   @ClassRule
   public static TestRule solrClassRules = 
@@ -166,14 +150,10 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   @BeforeClass 
   @SuppressWarnings("unused")
   private static void beforeClass() {
-    String cname = getSimpleClassName();
-    
-    LEAVE_TEST_TMP_DIR_ANNOTATION = RandomizedContext.current().getTargetClass()
-        .isAnnotationPresent(SuppressTempDirCleanUp.class);
-    
-    boolean ensureClosed = !(LEAVE_TEST_TMP_DIR || LEAVE_TEST_TMP_DIR_ANNOTATION);
-    rootTmpDir = TestUtil.createTempDir("solrtest-" + cname, null, ensureClosed);
-    initCoreDataDir = TestUtil.createTempDir("solrtest-" + cname, rootTmpDir, ensureClosed);
+    // Create the root parent folder for all other temporary solr files. 
+    rootTmpDir = TestUtil.createTempDir();
+
+    initCoreDataDir = TestUtil.createTempDir("init-core-data", rootTmpDir);
 
     System.err.println("Creating dataDir: " + initCoreDataDir.getAbsolutePath());
     
@@ -207,42 +187,19 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       resetFactory();
       coreName = ConfigSolrXmlOld.DEFAULT_DEFAULT_CORE_NAME;
     } finally {
-      try {
-
-        if (LEAVE_TEST_TMP_DIR) {
-          System.err
-              .println("NOTE: per solr.test.leavetmpdir, the test tmp directory will not be removed: "
-                  + rootTmpDir.getAbsolutePath());
-        } else {
-          // TODO: tmp files should already get cleaned up by the test framework, but
-          // we still do it here as well, so that we clean up as much as we can, even
-          // when a test is the SuppressTempDirCleanUp annotation
-          if (rootTmpDir != null && rootTmpDir.exists() && !recurseDelete(rootTmpDir)) {
-            String msg = "!!!! WARNING: best effort to remove "
-                + rootTmpDir.getAbsolutePath() + " FAILED !!!!!";
-            if (LEAVE_TEST_TMP_DIR_ANNOTATION) {
-              System.err.println(msg);
-            } else {
-              // TODO: do we want to fail here with this message? Is the test framework
-              // fail that should happen better?
-              fail(msg);
-            }
-          }
-        }
-      } finally {
-        initCoreDataDir = null;
-        System.clearProperty("jetty.testMode");
-        System.clearProperty("tests.shardhandler.randomSeed");
-        System.clearProperty("enable.update.log");
-        System.clearProperty("useCompoundFile");
-        System.clearProperty("urlScheme");
-        
-        if (isSSLMode()) {
-          HttpClientUtil.setConfigurer(new HttpClientConfigurer());
-        }
-        // clean up static
-        sslConfig = null;
+      initCoreDataDir = null;
+      System.clearProperty("jetty.testMode");
+      System.clearProperty("tests.shardhandler.randomSeed");
+      System.clearProperty("enable.update.log");
+      System.clearProperty("useCompoundFile");
+      System.clearProperty("urlScheme");
+      
+      if (isSSLMode()) {
+        HttpClientUtil.setConfigurer(new HttpClientConfigurer());
       }
+
+      // clean up static
+      sslConfig = null;
     }
     
     IpTables.unblockAllPorts();
@@ -511,9 +468,9 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static File createTempDir() {
     return createTempDir(null);
   }
-  
-  public static File createTempDir(String tag) {
-    return TestUtil.createTempDir(getClassName() + (tag == null ? "" : "-" + tag), rootTmpDir, !(LEAVE_TEST_TMP_DIR || LEAVE_TEST_TMP_DIR_ANNOTATION));
+
+  public static File createTempDir(String prefix) {
+    return TestUtil.createTempDir(prefix == null ? "temp" : prefix, rootTmpDir);
   }
   
   public static void resetExceptionIgnores() {

@@ -104,8 +104,8 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
   public void testNoDir() throws Throwable {
     File primDir = TestUtil.createTempDir("foo");
     File secondDir = TestUtil.createTempDir("bar");
-    TestUtil.rmDir(primDir);
-    TestUtil.rmDir(secondDir);
+    TestUtil.rm(primDir);
+    TestUtil.rm(secondDir);
     Directory dir = newFSSwitchDirectory(primDir, secondDir, Collections.<String>emptySet());
     try {
       DirectoryReader.open(dir);
