@@ -2196,8 +2196,11 @@ public abstract class LuceneTestCase extends Assert {
   private static final int TEMP_NAME_RETRY_THRESHOLD = 9999;
 
   /**
+   * This method is deprecated for a reason. Do not use it. Call {@link #createTempDir()}
+   * or {@link #createTempDir(String)} or {@link #createTempFile(String, String)}.
    */
-  private static File getTempDirBase() {
+  @Deprecated
+  public static File getTempDirBase() {
     synchronized (LuceneTestCase.class) {
       if (tempDirBase == null) {
         File directory = new File(System.getProperty("tempDir", System.getProperty("java.io.tmpdir")));
@@ -2208,8 +2211,8 @@ public abstract class LuceneTestCase extends Assert {
         RandomizedContext ctx = RandomizedContext.current();
         Class<?> clazz = ctx.getTargetClass();
         String prefix = clazz.getName();
-        prefix = prefix.replaceFirst("^org.apache.lucene.", "oa.lucene.");
-        prefix = prefix.replaceFirst("^org.apache.solr.", "oa.solr.");
+        prefix = prefix.replaceFirst("^org.apache.lucene.", "lucene.");
+        prefix = prefix.replaceFirst("^org.apache.solr.", "solr.");
 
         int attempt = 0;
         File f;
@@ -2220,7 +2223,7 @@ public abstract class LuceneTestCase extends Assert {
                   + directory.getAbsolutePath());            
           }
           f = new File(directory, prefix + "-" + ctx.getRunnerSeedAsString() 
-                + "-" + String.format(Locale.ENGLISH, "%3d", attempt));
+                + "-" + String.format(Locale.ENGLISH, "%03d", attempt));
         } while (!f.mkdirs());
 
         tempDirBase = f;
@@ -2243,7 +2246,7 @@ public abstract class LuceneTestCase extends Assert {
             "Failed to get a temporary name too many times, check your temp directory and consider manually cleaning it: "
               + base.getAbsolutePath());            
       }
-      f = new File(base, prefix + "-" + String.format(Locale.ENGLISH, "%3d", attempt));
+      f = new File(base, prefix + "-" + String.format(Locale.ENGLISH, "%03d", attempt));
     } while (!f.mkdirs());
 
     registerToRemoveAfterSuite(f);
@@ -2263,7 +2266,7 @@ public abstract class LuceneTestCase extends Assert {
             "Failed to get a temporary name too many times, check your temp directory and consider manually cleaning it: "
               + base.getAbsolutePath());            
       }
-      f = new File(base, prefix + "-" + String.format(Locale.ENGLISH, "%3d", attempt) + suffix);
+      f = new File(base, prefix + "-" + String.format(Locale.ENGLISH, "%03d", attempt) + suffix);
     } while (!f.createNewFile());
 
     registerToRemoveAfterSuite(f);
@@ -2300,14 +2303,6 @@ public abstract class LuceneTestCase extends Assert {
       return;
     }
 
-    Class<?> suiteClass = RandomizedContext.current().getTargetClass();
-    if (suiteClass.isAnnotationPresent(SuppressTempFileChecks.class)) {
-      System.err.println("WARNING: Will leave temporary files (bugUrl: "
-          + suiteClass.getAnnotation(SuppressTempFileChecks.class).bugUrl() + "): "
-          + f.getAbsolutePath());
-      return;
-    }
-
     synchronized (cleanupQueue) {
       cleanupQueue.addLast(f);
     }
@@ -2315,15 +2310,28 @@ public abstract class LuceneTestCase extends Assert {
 
   private static class TemporaryFilesCleanupRule extends TestRuleAdapter {
     @Override
-    protected void afterIfSuccessful() throws Throwable {
-      synchronized (cleanupQueue) {
-        File [] everything = new File [cleanupQueue.size()];
-        for (int i = 0; !cleanupQueue.isEmpty(); i++) {
-          everything[i] = cleanupQueue.removeFirst();
-        }
+    protected void afterAlways(List<Throwable> errors) throws Throwable {
+      if (LuceneTestCase.suiteFailureMarker.wasSuccessful()) {
+        synchronized (cleanupQueue) {
+          File [] everything = new File [cleanupQueue.size()];
+          for (int i = 0; !cleanupQueue.isEmpty(); i++) {
+            everything[i] = cleanupQueue.removeLast();
+          }
 
-        // Will throw an IOException on un-removable files.
-        TestUtil.rm(everything);
+          // Will throw an IOException on un-removable files.
+          try {
+            TestUtil.rm(everything);
+          } catch (IOException e) {
+            Class<?> suiteClass = RandomizedContext.current().getTargetClass();
+            if (suiteClass.isAnnotationPresent(SuppressTempFileChecks.class)) {
+              System.err.println("WARNING: Leftover undeleted temporary files (bugUrl: "
+                  + suiteClass.getAnnotation(SuppressTempFileChecks.class).bugUrl() + "): "
+                  + e.getMessage());
+              return;
+            }
+            throw e;
+          }
+        }
       }
     }
   }

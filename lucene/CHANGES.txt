@@ -233,6 +233,9 @@ Bug fixes
 
 Test Framework
 
+* LUCENE-5577: Temporary folder and file management (and cleanup facilities)
+  (Mark Miller, Uwe Schindler, Dawid Weiss)
+
 * LUCENE-5567: When a suite fails with zombie threads failure marker and count 
   is not propagated properly. (Dawid Weiss)
 

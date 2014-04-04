@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -106,7 +107,7 @@ public final class TestUtil {
    * of directories) cannot be removed.
    */
   public static void rm(File... locations) throws IOException {
-    ArrayList<File> unremoved = rm(new ArrayList<File>(), locations);
+    LinkedHashSet<File> unremoved = rm(new LinkedHashSet<File>(), locations);
     if (!unremoved.isEmpty()) {
       StringBuilder b = new StringBuilder("Could not remove the following files (in the order of attempts):\n");
       for (File f : unremoved) {
@@ -118,7 +119,7 @@ public final class TestUtil {
     }
   }
 
-  private static ArrayList<File> rm(ArrayList<File> unremoved, File... locations) {
+  private static LinkedHashSet<File> rm(LinkedHashSet<File> unremoved, File... locations) {
     for (File location : locations) {
       if (location.exists()) {
         if (location.isDirectory()) {
