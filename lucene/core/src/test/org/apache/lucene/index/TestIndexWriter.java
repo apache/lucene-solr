@@ -68,6 +68,7 @@ import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SetOnce;
@@ -2414,6 +2415,11 @@ public class TestIndexWriter extends LuceneTestCase {
 
   // LUCENE-5574
   public void testClosingNRTReaderDoesNotCorruptYourIndex() throws IOException {
+
+    // Windows disallows deleting & overwriting files still
+    // open for reading:
+    assumeFalse("this test can't run on Windows", Constants.WINDOWS);
+
     MockDirectoryWrapper dir = newMockDirectory();
 
     // Allow deletion of still open files:
