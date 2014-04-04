@@ -27,6 +27,7 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -244,7 +245,7 @@ public class SolrRequestParsers
             }
           }
         };
-        parseFormDataContent(in, Long.MAX_VALUE, IOUtils.CHARSET_UTF_8, map, true);
+        parseFormDataContent(in, Long.MAX_VALUE, StandardCharsets.UTF_8, map, true);
       } catch (IOException ioe) {
         throw new SolrException(ErrorCode.BAD_REQUEST, ioe);
       }
@@ -598,7 +599,7 @@ public class SolrRequestParsers
 
       // get query String from request body, using the charset given in content-type:
       final String cs = ContentStreamBase.getCharsetFromContentType(req.getContentType());
-      final Charset charset = (cs == null) ? IOUtils.CHARSET_UTF_8 : Charset.forName(cs);
+      final Charset charset = (cs == null) ? StandardCharsets.UTF_8 : Charset.forName(cs);
       InputStream in = null;
       try {
         in = req.getInputStream();

@@ -66,6 +66,16 @@ public class BCDIntField extends PrimitiveFieldType {
   public void write(TextResponseWriter writer, String name, StorableField f) throws IOException {
     writer.writeInt(name,toExternal(f));
   }
+
+  @Override
+  public Object marshalSortValue(Object value) {
+    return marshalStringSortValue(value);
+  }
+
+  @Override
+  public Object unmarshalSortValue(Object value) {
+    return unmarshalStringSortValue(value);
+  }
 }
 
 

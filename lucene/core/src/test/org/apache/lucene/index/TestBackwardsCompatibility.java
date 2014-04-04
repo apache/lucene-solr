@@ -60,6 +60,7 @@ import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.StringHelper;
@@ -76,7 +77,7 @@ import org.junit.BeforeClass;
 // we won't even be running the actual code, only the impostor
 // @SuppressCodecs("Lucene4x")
 // Sep codec cannot yet handle the offsets in our 4.x index!
-@SuppressCodecs({"MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom", "Lucene40", "Lucene41", "Lucene42", "Lucene45"})
+@SuppressCodecs({"Lucene40", "Lucene41", "Lucene42", "Lucene45"})
 public class TestBackwardsCompatibility extends LuceneTestCase {
 
   // Uncomment these cases & run them on an older Lucene version,
@@ -292,13 +293,13 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       
       ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
       CheckIndex checker = new CheckIndex(dir);
-      checker.setInfoStream(new PrintStream(bos, false, "UTF-8"));
+      checker.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8));
       CheckIndex.Status indexStatus = checker.checkIndex();
       assertFalse(indexStatus.clean);
-      assertTrue(bos.toString("UTF-8").contains(IndexFormatTooOldException.class.getName()));
+      assertTrue(bos.toString(IOUtils.UTF_8).contains(IndexFormatTooOldException.class.getName()));
 
       dir.close();
-      TestUtil.rmDir(oldIndxeDir);
+      TestUtil.rm(oldIndxeDir);
     }
   }
   
@@ -597,7 +598,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   public File createIndex(String dirName, boolean doCFS, boolean fullyMerged) throws IOException {
     // we use a real directory name that is not cleaned up, because this method is only used to create backwards indexes:
     File indexDir = new File("/tmp/idx", dirName);
-    TestUtil.rmDir(indexDir);
+    TestUtil.rm(indexDir);
     Directory dir = newFSDirectory(indexDir);
     LogByteSizeMergePolicy mp = new LogByteSizeMergePolicy();
     mp.setNoCFSRatio(doCFS ? 1.0 : 0.0);
@@ -646,7 +647,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
     String outputDirName = "lucene.backwardscompat0.index";
     File outputDir = TestUtil.createTempDir(outputDirName);
-    TestUtil.rmDir(outputDir);
+    TestUtil.rm(outputDir);
 
     try {
       Directory dir = newFSDirectory(outputDir);
@@ -704,7 +705,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       }
       dir.close();
     } finally {
-      TestUtil.rmDir(outputDir);
+      TestUtil.rm(outputDir);
     }
   }
 

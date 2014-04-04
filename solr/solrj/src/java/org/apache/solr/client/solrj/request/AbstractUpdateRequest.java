@@ -83,6 +83,12 @@ public abstract class AbstractUpdateRequest extends SolrRequest implements IsUpd
     return setAction(action, waitFlush, waitSearcher,maxSegments,false,expungeDeletes);
   }
 
+  public AbstractUpdateRequest setAction(ACTION action, boolean waitFlush, boolean waitSearcher, int maxSegments, boolean softCommit, boolean expungeDeletes, boolean openSearcher) {
+    setAction(action, waitFlush, waitSearcher, maxSegments, softCommit, expungeDeletes);
+    params.set(UpdateParams.OPEN_SEARCHER, String.valueOf(openSearcher));
+    return this;
+  }
+
   /**
    * @since Solr 1.4
    */

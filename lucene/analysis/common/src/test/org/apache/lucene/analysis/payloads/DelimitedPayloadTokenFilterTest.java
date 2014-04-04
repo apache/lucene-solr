@@ -25,6 +25,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 
 public class DelimitedPayloadTokenFilterTest extends BaseTokenStreamTestCase {
 
@@ -37,15 +38,15 @@ public class DelimitedPayloadTokenFilterTest extends BaseTokenStreamTestCase {
     PayloadAttribute payAtt = filter.getAttribute(PayloadAttribute.class);
     filter.reset();
     assertTermEquals("The", filter, termAtt, payAtt, null);
-    assertTermEquals("quick", filter, termAtt, payAtt, "JJ".getBytes("UTF-8"));
-    assertTermEquals("red", filter, termAtt, payAtt, "JJ".getBytes("UTF-8"));
-    assertTermEquals("fox", filter, termAtt, payAtt, "NN".getBytes("UTF-8"));
-    assertTermEquals("jumped", filter, termAtt, payAtt, "VB".getBytes("UTF-8"));
+    assertTermEquals("quick", filter, termAtt, payAtt, "JJ".getBytes(StandardCharsets.UTF_8));
+    assertTermEquals("red", filter, termAtt, payAtt, "JJ".getBytes(StandardCharsets.UTF_8));
+    assertTermEquals("fox", filter, termAtt, payAtt, "NN".getBytes(StandardCharsets.UTF_8));
+    assertTermEquals("jumped", filter, termAtt, payAtt, "VB".getBytes(StandardCharsets.UTF_8));
     assertTermEquals("over", filter, termAtt, payAtt, null);
     assertTermEquals("the", filter, termAtt, payAtt, null);
-    assertTermEquals("lazy", filter, termAtt, payAtt, "JJ".getBytes("UTF-8"));
-    assertTermEquals("brown", filter, termAtt, payAtt, "JJ".getBytes("UTF-8"));
-    assertTermEquals("dogs", filter, termAtt, payAtt, "NN".getBytes("UTF-8"));
+    assertTermEquals("lazy", filter, termAtt, payAtt, "JJ".getBytes(StandardCharsets.UTF_8));
+    assertTermEquals("brown", filter, termAtt, payAtt, "JJ".getBytes(StandardCharsets.UTF_8));
+    assertTermEquals("dogs", filter, termAtt, payAtt, "NN".getBytes(StandardCharsets.UTF_8));
     assertFalse(filter.incrementToken());
     filter.end();
     filter.close();
@@ -59,15 +60,15 @@ public class DelimitedPayloadTokenFilterTest extends BaseTokenStreamTestCase {
        DelimitedPayloadTokenFilter.DEFAULT_DELIMITER, new IdentityEncoder());
     filter.reset();
     assertTermEquals("The", filter, null);
-    assertTermEquals("quick", filter, "JJ".getBytes("UTF-8"));
-    assertTermEquals("red", filter, "JJ".getBytes("UTF-8"));
-    assertTermEquals("fox", filter, "NN".getBytes("UTF-8"));
-    assertTermEquals("jumped", filter, "VB".getBytes("UTF-8"));
+    assertTermEquals("quick", filter, "JJ".getBytes(StandardCharsets.UTF_8));
+    assertTermEquals("red", filter, "JJ".getBytes(StandardCharsets.UTF_8));
+    assertTermEquals("fox", filter, "NN".getBytes(StandardCharsets.UTF_8));
+    assertTermEquals("jumped", filter, "VB".getBytes(StandardCharsets.UTF_8));
     assertTermEquals("over", filter, null);
     assertTermEquals("the", filter, null);
-    assertTermEquals("lazy", filter, "JJ".getBytes("UTF-8"));
-    assertTermEquals("brown", filter, "JJ".getBytes("UTF-8"));
-    assertTermEquals("dogs", filter, "NN".getBytes("UTF-8"));
+    assertTermEquals("lazy", filter, "JJ".getBytes(StandardCharsets.UTF_8));
+    assertTermEquals("brown", filter, "JJ".getBytes(StandardCharsets.UTF_8));
+    assertTermEquals("dogs", filter, "NN".getBytes(StandardCharsets.UTF_8));
     assertFalse(filter.incrementToken());
     filter.end();
     filter.close();

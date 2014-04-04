@@ -18,6 +18,7 @@ package org.apache.lucene.store;
  */
 
 import java.io.IOException;
+import java.util.zip.CRC32;
 
 /** Base implementation class for buffered {@link IndexOutput}. */
 public abstract class BufferedIndexOutput extends IndexOutput {
@@ -28,6 +29,7 @@ public abstract class BufferedIndexOutput extends IndexOutput {
   private final byte[] buffer;
   private long bufferStart = 0;           // position in file of buffer
   private int bufferPosition = 0;         // position in buffer
+  private final CRC32 crc = new CRC32();
 
   /**
    * Creates a new {@link BufferedIndexOutput} with the default buffer size
@@ -75,6 +77,7 @@ public abstract class BufferedIndexOutput extends IndexOutput {
         if (bufferPosition > 0)
           flush();
         // and write data at once
+        crc.update(b, offset, length);
         flushBuffer(b, offset, length);
         bufferStart += length;
       } else {
@@ -99,6 +102,7 @@ public abstract class BufferedIndexOutput extends IndexOutput {
 
   @Override
   public void flush() throws IOException {
+    crc.update(buffer, 0, bufferPosition);
     flushBuffer(buffer, bufferPosition);
     bufferStart += bufferPosition;
     bufferPosition = 0;
@@ -141,4 +145,9 @@ public abstract class BufferedIndexOutput extends IndexOutput {
     return bufferSize;
   }
 
+  @Override
+  public long getChecksum() throws IOException {
+    flush();
+    return crc.getValue();
+  }
 }

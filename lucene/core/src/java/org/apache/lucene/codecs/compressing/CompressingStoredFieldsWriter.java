@@ -71,7 +71,8 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   static final String CODEC_SFX_DAT = "Data";
   static final int VERSION_START = 0;
   static final int VERSION_BIG_CHUNKS = 1;
-  static final int VERSION_CURRENT = VERSION_BIG_CHUNKS;
+  static final int VERSION_CHECKSUM = 2;
+  static final int VERSION_CURRENT = VERSION_CHECKSUM;
 
   private final Directory directory;
   private final String segment;
@@ -106,9 +107,11 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     this.numBufferedDocs = 0;
 
     boolean success = false;
-    IndexOutput indexStream = directory.createOutput(IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_INDEX_EXTENSION), context);
+    IndexOutput indexStream = directory.createOutput(IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_INDEX_EXTENSION), 
+                                                                     context);
     try {
-      fieldsStream = directory.createOutput(IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_EXTENSION), context);
+      fieldsStream = directory.createOutput(IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_EXTENSION),
+                                                    context);
 
       final String codecNameIdx = formatName + CODEC_SFX_IDX;
       final String codecNameDat = formatName + CODEC_SFX_DAT;
@@ -314,6 +317,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
       throw new RuntimeException("Wrote " + docBase + " docs, finish called with numDocs=" + numDocs);
     }
     indexWriter.finish(numDocs);
+    CodecUtil.writeFooter(fieldsStream);
     assert bufferedDocs.length == 0;
   }
 

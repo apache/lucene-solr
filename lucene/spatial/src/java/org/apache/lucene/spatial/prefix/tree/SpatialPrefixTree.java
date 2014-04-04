@@ -23,6 +23,7 @@ import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
 
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -41,7 +42,7 @@ import java.util.List;
  */
 public abstract class SpatialPrefixTree {
 
-  protected static final Charset UTF8 = Charset.forName("UTF-8");
+  protected static final Charset UTF8 = StandardCharsets.UTF_8;
 
   protected final int maxLevels;
 

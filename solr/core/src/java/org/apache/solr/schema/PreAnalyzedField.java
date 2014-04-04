@@ -78,6 +78,7 @@ public class PreAnalyzedField extends FieldType {
           parser = new JsonPreAnalyzedParser();
         }
       }
+      args.remove(PARSER_IMPL);
     }
   }
 

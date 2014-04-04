@@ -26,6 +26,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 
 public class TestModifyConfFiles extends AbstractFullDistribZkTestBase {
 
@@ -93,7 +94,7 @@ public class TestModifyConfFiles extends AbstractFullDistribZkTestBase {
     client.request(request);
 
     SolrZkClient zkClient = cloudClient.getZkStateReader().getZkClient();
-    String contents = new String(zkClient.getData("/configs/conf1/schema.xml", null, null, true), "UTF-8");
+    String contents = new String(zkClient.getData("/configs/conf1/schema.xml", null, null, true), StandardCharsets.UTF_8);
 
     assertTrue("Schema contents should have changed!", contents.contains("<schema name=\"tiny\" version=\"1.1\">"));
 
@@ -107,7 +108,7 @@ public class TestModifyConfFiles extends AbstractFullDistribZkTestBase {
 
     client.request(request);
 
-    contents = new String(zkClient.getData("/configs/conf1/velocity/test.vm", null, null, true), "UTF-8");
+    contents = new String(zkClient.getData("/configs/conf1/velocity/test.vm", null, null, true), StandardCharsets.UTF_8);
     assertTrue("Should have found new content in a velocity/test.vm.",
         contents.indexOf("Some bogus stuff for a test.") != -1);
 

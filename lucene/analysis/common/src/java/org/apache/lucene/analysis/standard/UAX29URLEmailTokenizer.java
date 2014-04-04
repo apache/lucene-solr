@@ -84,6 +84,9 @@ public final class UAX29URLEmailTokenizer extends Tokenizer {
   /** Set the max allowed token length.  Any token longer
    *  than this is skipped. */
   public void setMaxTokenLength(int length) {
+    if (length < 1) {
+      throw new IllegalArgumentException("maxTokenLength must be greater than zero");
+    }
     this.maxTokenLength = length;
   }
 

@@ -35,7 +35,10 @@ public class BaseExpression extends Expression {
   }
   
   public Comparable getValue() {
-    return statsCollector.getStat(stat);
+    if(statsCollector.getStatsList().contains(stat)) {
+      return statsCollector.getStat(stat);
+    }
+    return null;
   }
 }
 /**

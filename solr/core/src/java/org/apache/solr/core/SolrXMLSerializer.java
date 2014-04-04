@@ -28,6 +28,7 @@ import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
@@ -37,6 +38,7 @@ import java.io.OutputStreamWriter;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -169,7 +171,7 @@ public class SolrXMLSerializer {
       tmpFile = File.createTempFile("solr", ".xml", file.getParentFile());
       
       java.io.FileOutputStream out = new java.io.FileOutputStream(tmpFile);
-      Writer writer = new BufferedWriter(new OutputStreamWriter(out, "UTF-8"));
+      Writer writer = new BufferedWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8));
       try {
         persist(writer, solrXMLDef);
       } finally {

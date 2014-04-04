@@ -110,6 +110,12 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
    *  (set to <code>true</code>). For batch indexing with very large 
    *  ram buffers use <code>false</code> */
   public final static boolean DEFAULT_USE_COMPOUND_FILE_SYSTEM = true;
+  
+  /** Default value for calling {@link AtomicReader#checkIntegrity()} before
+   *  merging segments (set to <code>false</code>). You can set this
+   *  to <code>true</code> for additional safety. */
+  public final static boolean DEFAULT_CHECK_INTEGRITY_AT_MERGE = false;
+  
   /**
    * Sets the default (for any instance) maximum time to wait for a write lock
    * (in milliseconds).

@@ -39,6 +39,7 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.search.CollapsingQParserPlugin;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
+import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.common.params.SolrParams;
@@ -51,11 +52,9 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
-
 import com.carrotsearch.hppc.IntObjectOpenHashMap;
 import com.carrotsearch.hppc.IntOpenHashSet;
 import com.carrotsearch.hppc.cursors.IntObjectCursor;
-
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -64,7 +63,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Vector;
 
 /**
   * The ExpandComponent is designed to work with the CollapsingPostFilter.
@@ -75,9 +73,11 @@ import java.util.Vector;
   * http parameters:
   * <p/>
   * expand=true <br/>
-  * expand.rows=5 </br>
-  * expand.sort=field asc|desc
-  *
+  * expand.rows=5 <br/>
+  * expand.sort=field asc|desc<br/>
+  * expand.q=*:* (optional, overrides the main query)<br/>
+  * expand.fq=type:child (optional, overrides the main filter queries)<br/>
+  * expand.field=field (mandatory if the not used with the CollapsingQParserPlugin)<br/>
   **/
     
 public class ExpandComponent extends SearchComponent implements PluginInfoInitialized, SolrCoreAware {
@@ -117,8 +117,26 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       return;
     }
 
-    String field = null;
+    String field = params.get(ExpandParams.EXPAND_FIELD);
+    if(field == null) {
+      List<Query> filters = rb.getFilters();
+      if(filters != null) {
+        for(Query q : filters) {
+          if(q instanceof CollapsingQParserPlugin.CollapsingPostFilter) {
+              CollapsingQParserPlugin.CollapsingPostFilter cp = (CollapsingQParserPlugin.CollapsingPostFilter)q;
+              field = cp.getField();
+          }
+        }
+      }
+    }
+
+    if(field == null) {
+      throw new IOException("Expand field is null.");
+    }
+
     String sortParam = params.get(ExpandParams.EXPAND_SORT);
+    String[] fqs = params.getParams(ExpandParams.EXPAND_FQ);
+    String qs = params.get(ExpandParams.EXPAND_Q);
     int limit = params.getInt(ExpandParams.EXPAND_ROWS, 5);
 
     Sort sort = null;
@@ -127,20 +145,40 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       sort = QueryParsing.parseSortSpec(sortParam, rb.req).getSort();
     }
 
-    Query query = rb.getQuery();
-    List<Query> filters = rb.getFilters();
-    List<Query> newFilters = new ArrayList();
-    for(Query q : filters) {
-      if(!(q instanceof CollapsingQParserPlugin.CollapsingPostFilter)) {
-        newFilters.add(q);
-      } else {
-        CollapsingQParserPlugin.CollapsingPostFilter cp = (CollapsingQParserPlugin.CollapsingPostFilter)q;
-        field = cp.getField();
+    Query query = null;
+    if(qs == null) {
+      query = rb.getQuery();
+    } else {
+      try {
+        QParser parser = QParser.getParser(qs, null, req);
+        query = parser.getQuery();
+      } catch(Exception e) {
+        throw new IOException(e);
       }
     }
 
-    if(field == null) {
-      throw new IOException("Expand field is null.");
+    List<Query> newFilters = new ArrayList();
+
+    if(fqs == null) {
+      List<Query> filters = rb.getFilters();
+      if(filters != null) {
+        for(Query q : filters) {
+          if(!(q instanceof CollapsingQParserPlugin.CollapsingPostFilter)) {
+            newFilters.add(q);
+          }
+        }
+      }
+    } else {
+      try {
+        for (String fq : fqs) {
+          if (fq != null && fq.trim().length()!=0 && !fq.equals("*:*")) {
+            QParser fqp = QParser.getParser(fq, null, req);
+            newFilters.add(fqp.getQuery());
+          }
+        }
+      } catch(Exception e) {
+        throw new IOException(e);
+      }
     }
 
     SolrIndexSearcher searcher = req.getSearcher();

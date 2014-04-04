@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 
 import org.apache.lucene.analysis.*;
@@ -249,7 +250,7 @@ public class TestPositionIncrement extends LuceneTestCase {
       for (byte[] bytes : payloads) {
         count++;
         if (VERBOSE) {
-          System.out.println("  payload: " + new String(bytes, "UTF-8"));
+          System.out.println("  payload: " + new String(bytes, StandardCharsets.UTF_8));
         }
       }
     }
@@ -276,7 +277,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     Collection<byte[]> pls = psu.getPayloadsForQuery(snq);
     count = pls.size();
     for (byte[] bytes : pls) {
-      String s = new String(bytes, "UTF-8");
+      String s = new String(bytes, StandardCharsets.UTF_8);
       //System.out.println(s);
       sawZero |= s.equals("pos: 0");
     }

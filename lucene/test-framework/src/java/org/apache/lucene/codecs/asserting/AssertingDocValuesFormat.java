@@ -306,5 +306,10 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
     public long ramBytesUsed() {
       return in.ramBytesUsed();
     }
+
+    @Override
+    public void checkIntegrity() throws IOException {
+      in.checkIntegrity();
+    }
   }
 }

@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

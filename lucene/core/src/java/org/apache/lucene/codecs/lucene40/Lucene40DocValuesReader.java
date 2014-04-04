@@ -105,9 +105,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
           default:
             throw new AssertionError();
         }
-        if (input.getFilePointer() != input.length()) {
-          throw new CorruptIndexException("did not read all bytes from file \"" + fileName + "\": read " + input.getFilePointer() + " vs size " + input.length() + " (resource: " + input + ")");
-        }
+        CodecUtil.checkEOF(input);
         success = true;
       } finally {
         if (success) {
@@ -327,9 +325,7 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       PagedBytes bytes = new PagedBytes(16);
       bytes.copy(input, fixedLength * (long)state.segmentInfo.getDocCount());
       final PagedBytes.Reader bytesReader = bytes.freeze(true);
-      if (input.getFilePointer() != input.length()) {
-        throw new CorruptIndexException("did not read all bytes from file \"" + fileName + "\": read " + input.getFilePointer() + " vs size " + input.length() + " (resource: " + input + ")");
-      }
+      CodecUtil.checkEOF(input);
       success = true;
       ramBytesUsed.addAndGet(bytes.ramBytesUsed());
       return new BinaryDocValues() {
@@ -367,12 +363,8 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       bytes.copy(data, totalBytes);
       final PagedBytes.Reader bytesReader = bytes.freeze(true);
       final PackedInts.Reader reader = PackedInts.getReader(index);
-      if (data.getFilePointer() != data.length()) {
-        throw new CorruptIndexException("did not read all bytes from file \"" + dataName + "\": read " + data.getFilePointer() + " vs size " + data.length() + " (resource: " + data + ")");
-      }
-      if (index.getFilePointer() != index.length()) {
-        throw new CorruptIndexException("did not read all bytes from file \"" + indexName + "\": read " + index.getFilePointer() + " vs size " + index.length() + " (resource: " + index + ")");
-      }
+      CodecUtil.checkEOF(data);
+      CodecUtil.checkEOF(index);
       success = true;
       ramBytesUsed.addAndGet(bytes.ramBytesUsed() + reader.ramBytesUsed());
       return new BinaryDocValues() {
@@ -414,12 +406,8 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       bytes.copy(data, fixedLength * (long) valueCount);
       final PagedBytes.Reader bytesReader = bytes.freeze(true);
       final PackedInts.Reader reader = PackedInts.getReader(index);
-      if (data.getFilePointer() != data.length()) {
-        throw new CorruptIndexException("did not read all bytes from file \"" + dataName + "\": read " + data.getFilePointer() + " vs size " + data.length() + " (resource: " + data + ")");
-      }
-      if (index.getFilePointer() != index.length()) {
-        throw new CorruptIndexException("did not read all bytes from file \"" + indexName + "\": read " + index.getFilePointer() + " vs size " + index.length() + " (resource: " + index + ")");
-      }
+      CodecUtil.checkEOF(data);
+      CodecUtil.checkEOF(index);
       ramBytesUsed.addAndGet(bytes.ramBytesUsed() + reader.ramBytesUsed());
       success = true;
       return new BinaryDocValues() {
@@ -459,12 +447,8 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
       bytes.copy(data, totalBytes);
       final PagedBytes.Reader bytesReader = bytes.freeze(true);
       final PackedInts.Reader reader = PackedInts.getReader(index);
-      if (data.getFilePointer() != data.length()) {
-        throw new CorruptIndexException("did not read all bytes from file \"" + dataName + "\": read " + data.getFilePointer() + " vs size " + data.length() + " (resource: " + data + ")");
-      }
-      if (index.getFilePointer() != index.length()) {
-        throw new CorruptIndexException("did not read all bytes from file \"" + indexName + "\": read " + index.getFilePointer() + " vs size " + index.length() + " (resource: " + index + ")");
-      }
+      CodecUtil.checkEOF(data);
+      CodecUtil.checkEOF(index);
       ramBytesUsed.addAndGet(bytes.ramBytesUsed() + reader.ramBytesUsed());
       success = true;
       return new BinaryDocValues() {
@@ -515,12 +499,8 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
           default:
             throw new AssertionError();
         }
-        if (data.getFilePointer() != data.length()) {
-          throw new CorruptIndexException("did not read all bytes from file \"" + dataName + "\": read " + data.getFilePointer() + " vs size " + data.length() + " (resource: " + data + ")");
-        }
-        if (index.getFilePointer() != index.length()) {
-          throw new CorruptIndexException("did not read all bytes from file \"" + indexName + "\": read " + index.getFilePointer() + " vs size " + index.length() + " (resource: " + index + ")");
-        }
+        CodecUtil.checkEOF(data);
+        CodecUtil.checkEOF(index);
         success = true;
       } finally {
         if (success) {
@@ -653,5 +633,9 @@ final class Lucene40DocValuesReader extends DocValuesProducer {
   @Override
   public long ramBytesUsed() {
     return ramBytesUsed.get();
+  }
+
+  @Override
+  public void checkIntegrity() throws IOException {
   }
 }

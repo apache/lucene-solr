@@ -28,6 +28,7 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -1473,8 +1474,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
    * character copy of file using UTF-8. If port is non-null, will be substituted any time "TEST_PORT" is found.
    */
   private static void copyFile(File src, File dst, Integer port, boolean internalCompression) throws IOException {
-    BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(src), "UTF-8"));
-    Writer out = new OutputStreamWriter(new FileOutputStream(dst), "UTF-8");
+    BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(src), StandardCharsets.UTF_8));
+    Writer out = new OutputStreamWriter(new FileOutputStream(dst), StandardCharsets.UTF_8);
 
     for (String line = in.readLine(); null != line; line = in.readLine()) {
 

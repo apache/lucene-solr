@@ -27,7 +27,6 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.*;
 import org.apache.solr.util.plugin.SolrCoreAware;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -41,6 +40,7 @@ import javax.script.ScriptException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.LinkedHashSet;
 import java.util.ArrayList;
@@ -494,7 +494,7 @@ public class StatelessScriptUpdateProcessorFactory extends UpdateRequestProcesso
     public Reader openReader(SolrResourceLoader resourceLoader) throws IOException {
       InputStream input = resourceLoader.openResource(fileName);
       return org.apache.lucene.util.IOUtils.getDecodingReader
-        (input, org.apache.lucene.util.IOUtils.CHARSET_UTF_8);
+        (input, StandardCharsets.UTF_8);
     }
   }
 }

@@ -1,11 +1,12 @@
 package org.apache.lucene.analysis.miscellaneous;
 
-/**
- * Copyright 2004 The Apache Software Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -16,25 +17,28 @@ package org.apache.lucene.analysis.miscellaneous;
  * limitations under the License.
  */
 
-import java.io.Reader;
-import java.io.StringReader;
-
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
+import java.io.Reader;
+import java.io.StringReader;
+
 public class TestLimitTokenCountFilterFactory extends BaseTokenStreamFactoryTestCase {
 
   public void test() throws Exception {
-    Reader reader = new StringReader("A1 B2 C3 D4 E5 F6");
-    MockTokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-    tokenizer.setReader(reader);
-    // LimitTokenCountFilter doesn't consume the entire stream that it wraps
-    tokenizer.setEnableChecks(false);
-    TokenStream stream = tokenizer;
-    stream = tokenFilterFactory("LimitTokenCount",
-        "maxTokenCount", "3").create(stream);
-    assertTokenStreamContents(stream, new String[] { "A1", "B2", "C3" });
+    for (final boolean consumeAll : new boolean[]{true, false}) {
+      Reader reader = new StringReader("A1 B2 C3 D4 E5 F6");
+      MockTokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+      tokenizer.setReader(reader);
+      tokenizer.setEnableChecks(consumeAll);
+      TokenStream stream = tokenizer;
+      stream = tokenFilterFactory("LimitTokenCount",
+          LimitTokenCountFilterFactory.MAX_TOKEN_COUNT_KEY, "3",
+          LimitTokenCountFilterFactory.CONSUME_ALL_TOKENS_KEY, Boolean.toString(consumeAll)
+      ).create(stream);
+      assertTokenStreamContents(stream, new String[]{"A1", "B2", "C3"});
+    }
   }
 
   public void testRequired() throws Exception {
@@ -44,15 +48,17 @@ public class TestLimitTokenCountFilterFactory extends BaseTokenStreamFactoryTest
       fail();
     } catch (IllegalArgumentException e) {
       assertTrue("exception doesn't mention param: " + e.getMessage(),
-                 0 < e.getMessage().indexOf(LimitTokenCountFilterFactory.MAX_TOKEN_COUNT_KEY));
+          0 < e.getMessage().indexOf(LimitTokenCountFilterFactory.MAX_TOKEN_COUNT_KEY));
     }
   }
-  
-  /** Test that bogus arguments result in exception */
+
+  /**
+   * Test that bogus arguments result in exception
+   */
   public void testBogusArguments() throws Exception {
     try {
-      tokenFilterFactory("LimitTokenCount", 
-          "maxTokenCount", "3", 
+      tokenFilterFactory("LimitTokenCount",
+          LimitTokenCountFilterFactory.MAX_TOKEN_COUNT_KEY, "3",
           "bogusArg", "bogusValue");
       fail();
     } catch (IllegalArgumentException expected) {

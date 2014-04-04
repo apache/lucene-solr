@@ -62,6 +62,10 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
     try {
       
       version = readHeader(in);
+      
+      if (version >= VariableGapTermsIndexWriter.VERSION_CHECKSUM) {
+        CodecUtil.checksumEntireFile(in);
+      }
 
       seekDir(in, dirOffset);
 
@@ -190,7 +194,10 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
   public void close() throws IOException {}
 
   private void seekDir(IndexInput input, long dirOffset) throws IOException {
-    if (version >= VariableGapTermsIndexWriter.VERSION_APPEND_ONLY) {
+    if (version >= VariableGapTermsIndexWriter.VERSION_CHECKSUM) {
+      input.seek(input.length() - CodecUtil.footerLength() - 8);
+      dirOffset = input.readLong();
+    } else if (version >= VariableGapTermsIndexWriter.VERSION_APPEND_ONLY) {
       input.seek(input.length() - 8);
       dirOffset = input.readLong();
     }

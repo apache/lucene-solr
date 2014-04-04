@@ -44,6 +44,7 @@ import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 /**
  * See SOLR-2854.
@@ -99,7 +100,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
       InputStream inputStream = (InputStream) obj;
       try {
         StringWriter strWriter = new StringWriter();
-        IOUtils.copy(new InputStreamReader(inputStream, "UTF-8"),strWriter);
+        IOUtils.copy(new InputStreamReader(inputStream, StandardCharsets.UTF_8),strWriter);
         return strWriter.toString();
       } finally {
         IOUtils.closeQuietly(inputStream);

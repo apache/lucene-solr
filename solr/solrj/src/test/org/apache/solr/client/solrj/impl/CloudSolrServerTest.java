@@ -238,9 +238,9 @@ public class CloudSolrServerTest extends AbstractFullDistribZkTestBase {
     // Calculate a number of shard keys that route to the same shard.
     int n;
     if (TEST_NIGHTLY) {
-      n = random().nextInt(999) + 1;
+      n = random().nextInt(999) + 2;
     } else {
-      n = random().nextInt(9) + 1;
+      n = random().nextInt(9) + 2;
     }
     
     List<String> sameShardRoutes = Lists.newArrayList();

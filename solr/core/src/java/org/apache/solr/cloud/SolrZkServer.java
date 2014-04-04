@@ -25,11 +25,11 @@ import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Map.Entry;
 
-import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.zookeeper.server.ServerConfig;
 import org.apache.zookeeper.server.ZooKeeperServerMain;
@@ -179,7 +179,7 @@ class SolrZkServerProps extends QuorumPeerConfig {
       Properties cfg = new Properties();
       FileInputStream in = new FileInputStream(configFile);
       try {
-        cfg.load(new InputStreamReader(in, IOUtils.CHARSET_UTF_8));
+        cfg.load(new InputStreamReader(in, StandardCharsets.UTF_8));
       } finally {
         in.close();
       }
@@ -461,7 +461,7 @@ class SolrZkServerProps extends QuorumPeerConfig {
             + " file is missing");
       }
 
-      BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(myIdFile), IOUtils.CHARSET_UTF_8));
+      BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(myIdFile), StandardCharsets.UTF_8));
       String myIdString;
       try {
         myIdString = br.readLine();

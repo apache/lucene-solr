@@ -70,7 +70,7 @@ public class FloatField extends PrimitiveFieldType implements FloatValueFieldTyp
   @Override
   public SortField getSortField(SchemaField field,boolean reverse) {
     field.checkSortability();
-    return new SortField(field.name,SortField.Type.FLOAT, reverse);
+    return new SortField(field.name, PARSER, reverse);
   }
 
   @Override

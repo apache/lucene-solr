@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -247,7 +248,7 @@ public abstract class RSLPStemmerBase {
     // TODO: this parser is ugly, but works. use a jflex grammar instead.
     try {
       InputStream is = clazz.getResourceAsStream(resource);
-      LineNumberReader r = new LineNumberReader(new InputStreamReader(is, "UTF-8"));
+      LineNumberReader r = new LineNumberReader(new InputStreamReader(is, StandardCharsets.UTF_8));
       Map<String,Step> steps = new HashMap<>();
       String step;
       while ((step = readLine(r)) != null) {

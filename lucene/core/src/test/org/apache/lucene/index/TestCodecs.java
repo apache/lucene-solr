@@ -29,7 +29,6 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.lucene40.Lucene40RWCodec;
 import org.apache.lucene.codecs.lucene41.Lucene41RWCodec;
 import org.apache.lucene.codecs.lucene42.Lucene42RWCodec;
-import org.apache.lucene.codecs.mocksep.MockSepPostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FieldType;
@@ -334,54 +333,6 @@ public class TestCodecs extends LuceneTestCase {
 
     terms.close();
     dir.close();
-  }
-
-  public void testSepPositionAfterMerge() throws IOException {
-    final Directory dir = newDirectory();
-    final IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT,
-      new MockAnalyzer(random()));
-    config.setMergePolicy(newLogMergePolicy());
-    config.setCodec(TestUtil.alwaysPostingsFormat(new MockSepPostingsFormat()));
-    final IndexWriter writer = new IndexWriter(dir, config);
-
-    try {
-      final PhraseQuery pq = new PhraseQuery();
-      pq.add(new Term("content", "bbb"));
-      pq.add(new Term("content", "ccc"));
-
-      final Document doc = new Document();
-      FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-      customType.setOmitNorms(true);
-      doc.add(newField("content", "aaa bbb ccc ddd", customType));
-
-      // add document and force commit for creating a first segment
-      writer.addDocument(doc);
-      writer.commit();
-
-      ScoreDoc[] results = this.search(writer, pq, 5);
-      assertEquals(1, results.length);
-      assertEquals(0, results[0].doc);
-
-      // add document and force commit for creating a second segment
-      writer.addDocument(doc);
-      writer.commit();
-
-      // at this point, there should be at least two segments
-      results = this.search(writer, pq, 5);
-      assertEquals(2, results.length);
-      assertEquals(0, results[0].doc);
-
-      writer.forceMerge(1);
-
-      // optimise to merge the segments.
-      results = this.search(writer, pq, 5);
-      assertEquals(2, results.length);
-      assertEquals(0, results[0].doc);
-    }
-    finally {
-      writer.close();
-      dir.close();
-    }
   }
 
   private ScoreDoc[] search(final IndexWriter writer, final Query q, final int n) throws IOException {

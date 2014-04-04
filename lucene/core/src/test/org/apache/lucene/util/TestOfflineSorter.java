@@ -21,6 +21,7 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -43,14 +44,14 @@ public class TestOfflineSorter extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     tempDir = TestUtil.createTempDir("mergesort");
-    TestUtil.rmDir(tempDir);
+    TestUtil.rm(tempDir);
     tempDir.mkdirs();
   }
   
   @Override
   public void tearDown() throws Exception {
     if (tempDir != null)
-      TestUtil.rmDir(tempDir);
+      TestUtil.rm(tempDir);
     super.tearDown();
   }
 
@@ -60,7 +61,7 @@ public class TestOfflineSorter extends LuceneTestCase {
 
   public void testSingleLine() throws Exception {
     checkSort(new OfflineSorter(), new byte [][] {
-        "Single line only.".getBytes("UTF-8")
+        "Single line only.".getBytes(StandardCharsets.UTF_8)
     });
   }
 

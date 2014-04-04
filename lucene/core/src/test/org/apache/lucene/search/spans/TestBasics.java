@@ -18,6 +18,7 @@ package org.apache.lucene.search.spans;
  */
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -80,7 +81,7 @@ public class TestBasics extends LuceneTestCase {
     @Override
     public boolean incrementToken() throws IOException {
       if (input.incrementToken()) {
-        payloadAttr.setPayload(new BytesRef(("pos: " + pos).getBytes("UTF-8")));
+        payloadAttr.setPayload(new BytesRef(("pos: " + pos).getBytes(StandardCharsets.UTF_8)));
         pos++;
         return true;
       } else {
@@ -482,7 +483,7 @@ public class TestBasics extends LuceneTestCase {
   @Test
   public void testSpanPayloadCheck() throws Exception {
     SpanTermQuery term1 = new SpanTermQuery(new Term("field", "five"));
-    BytesRef pay = new BytesRef(("pos: " + 5).getBytes("UTF-8"));
+    BytesRef pay = new BytesRef(("pos: " + 5).getBytes(StandardCharsets.UTF_8));
     SpanQuery query = new SpanPayloadCheckQuery(term1, Collections.singletonList(pay.bytes));
     checkHits(query, new int[]
       {1125, 1135, 1145, 1155, 1165, 1175, 1185, 1195, 1225, 1235, 1245, 1255, 1265, 1275, 1285, 1295, 1325, 1335, 1345, 1355, 1365, 1375, 1385, 1395, 1425, 1435, 1445, 1455, 1465, 1475, 1485, 1495, 1525, 1535, 1545, 1555, 1565, 1575, 1585, 1595, 1625, 1635, 1645, 1655, 1665, 1675, 1685, 1695, 1725, 1735, 1745, 1755, 1765, 1775, 1785, 1795, 1825, 1835, 1845, 1855, 1865, 1875, 1885, 1895, 1925, 1935, 1945, 1955, 1965, 1975, 1985, 1995});
@@ -497,8 +498,8 @@ public class TestBasics extends LuceneTestCase {
     clauses[0] = term1;
     clauses[1] = term2;
     snq = new SpanNearQuery(clauses, 0, true);
-    pay = new BytesRef(("pos: " + 0).getBytes("UTF-8"));
-    pay2 = new BytesRef(("pos: " + 1).getBytes("UTF-8"));
+    pay = new BytesRef(("pos: " + 0).getBytes(StandardCharsets.UTF_8));
+    pay2 = new BytesRef(("pos: " + 1).getBytes(StandardCharsets.UTF_8));
     list = new ArrayList<>();
     list.add(pay.bytes);
     list.add(pay2.bytes);
@@ -510,9 +511,9 @@ public class TestBasics extends LuceneTestCase {
     clauses[1] = term2;
     clauses[2] = new SpanTermQuery(new Term("field", "five"));
     snq = new SpanNearQuery(clauses, 0, true);
-    pay = new BytesRef(("pos: " + 0).getBytes("UTF-8"));
-    pay2 = new BytesRef(("pos: " + 1).getBytes("UTF-8"));
-    BytesRef pay3 = new BytesRef(("pos: " + 2).getBytes("UTF-8"));
+    pay = new BytesRef(("pos: " + 0).getBytes(StandardCharsets.UTF_8));
+    pay2 = new BytesRef(("pos: " + 1).getBytes(StandardCharsets.UTF_8));
+    BytesRef pay3 = new BytesRef(("pos: " + 2).getBytes(StandardCharsets.UTF_8));
     list = new ArrayList<>();
     list.add(pay.bytes);
     list.add(pay2.bytes);
@@ -541,10 +542,10 @@ public class TestBasics extends LuceneTestCase {
     checkHits(query, new int[]{1103, 1203,1303,1403,1503,1603,1703,1803,1903});
 
     Collection<byte[]> payloads = new ArrayList<>();
-    BytesRef pay = new BytesRef(("pos: " + 0).getBytes("UTF-8"));
-    BytesRef pay2 = new BytesRef(("pos: " + 1).getBytes("UTF-8"));
-    BytesRef pay3 = new BytesRef(("pos: " + 3).getBytes("UTF-8"));
-    BytesRef pay4 = new BytesRef(("pos: " + 4).getBytes("UTF-8"));
+    BytesRef pay = new BytesRef(("pos: " + 0).getBytes(StandardCharsets.UTF_8));
+    BytesRef pay2 = new BytesRef(("pos: " + 1).getBytes(StandardCharsets.UTF_8));
+    BytesRef pay3 = new BytesRef(("pos: " + 3).getBytes(StandardCharsets.UTF_8));
+    BytesRef pay4 = new BytesRef(("pos: " + 4).getBytes(StandardCharsets.UTF_8));
     payloads.add(pay.bytes);
     payloads.add(pay2.bytes);
     payloads.add(pay3.bytes);

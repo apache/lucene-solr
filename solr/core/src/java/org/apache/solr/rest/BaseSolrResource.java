@@ -45,13 +45,14 @@ import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 
 /**
  * Base class of all Solr Restlet server resource classes.
  */
 public abstract class BaseSolrResource extends ServerResource {
-  protected static final Charset UTF8 = Charset.forName("UTF-8");
+  protected static final Charset UTF8 = StandardCharsets.UTF_8;
   protected static final String SHOW_DEFAULTS = "showDefaults";
 
   private SolrCore solrCore;
@@ -161,7 +162,7 @@ public abstract class BaseSolrResource extends ServerResource {
           binWriter.write(outputStream, solrRequest, solrResponse);
         } else {
           String charset = ContentStreamBase.getCharsetFromContentType(contentType);
-          Writer out = (charset == null || charset.equalsIgnoreCase("UTF-8"))
+          Writer out = (charset == null)
               ? new OutputStreamWriter(outputStream, UTF8)
               : new OutputStreamWriter(outputStream, charset);
           out = new FastWriter(out);

@@ -20,6 +20,7 @@ package org.apache.lucene.benchmark.byTask.feeds;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -318,7 +319,7 @@ public class DocMaker implements Closeable {
       
       if (storeBytes) {
         Field bytesField = ds.getField(BYTES_FIELD, StringField.TYPE_STORED);
-        bytesField.setBytesValue(bdy.getBytes("UTF-8"));
+        bytesField.setBytesValue(bdy.getBytes(StandardCharsets.UTF_8));
         doc.add(bytesField);
       }
     }

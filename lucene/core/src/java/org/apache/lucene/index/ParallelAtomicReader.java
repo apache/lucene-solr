@@ -299,4 +299,12 @@ public class ParallelAtomicReader extends AtomicReader {
     NumericDocValues values = reader == null ? null : reader.getNormValues(field);
     return values;
   }
+
+  @Override
+  public void checkIntegrity() throws IOException {
+    ensureOpen();
+    for (AtomicReader reader : completeReaderSet) {
+      reader.checkIntegrity();
+    }
+  }
 }

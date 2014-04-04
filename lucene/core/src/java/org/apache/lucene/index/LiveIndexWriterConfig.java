@@ -97,6 +97,9 @@ public class LiveIndexWriterConfig {
 
   /** True if segment flushes should use compound file format */
   protected volatile boolean useCompoundFile = IndexWriterConfig.DEFAULT_USE_COMPOUND_FILE_SYSTEM;
+  
+  /** True if merging should check integrity of segments before merge */
+  protected volatile boolean checkIntegrityAtMerge = IndexWriterConfig.DEFAULT_CHECK_INTEGRITY_AT_MERGE;
 
   // used by IndexWriterConfig
   LiveIndexWriterConfig(Analyzer analyzer, Version matchVersion) {
@@ -152,6 +155,7 @@ public class LiveIndexWriterConfig {
     flushPolicy = config.getFlushPolicy();
     perThreadHardLimitMB = config.getRAMPerThreadHardLimitMB();
     useCompoundFile = config.getUseCompoundFile();
+    checkIntegrityAtMerge = config.getCheckIntegrityAtMerge();
   }
 
   /** Returns the default analyzer to use for indexing documents. */
@@ -475,6 +479,26 @@ public class LiveIndexWriterConfig {
     return useCompoundFile ;
   }
   
+  /**
+   * Sets if {@link IndexWriter} should call {@link AtomicReader#checkIntegrity()}
+   * on existing segments before merging them into a new one.
+   * <p>
+   * Use <code>true</code> to enable this safety check, which can help
+   * reduce the risk of propagating index corruption from older segments 
+   * into new ones, at the expense of slower merging.
+   * </p>
+   */
+  public LiveIndexWriterConfig setCheckIntegrityAtMerge(boolean checkIntegrityAtMerge) {
+    this.checkIntegrityAtMerge = checkIntegrityAtMerge;
+    return this;
+  }
+  
+  /** Returns true if {@link AtomicReader#checkIntegrity()} is called before 
+   *  merging segments. */
+  public boolean getCheckIntegrityAtMerge() {
+    return checkIntegrityAtMerge;
+  }
+  
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
@@ -499,6 +523,7 @@ public class LiveIndexWriterConfig {
     sb.append("readerPooling=").append(getReaderPooling()).append("\n");
     sb.append("perThreadHardLimitMB=").append(getRAMPerThreadHardLimitMB()).append("\n");
     sb.append("useCompoundFile=").append(getUseCompoundFile()).append("\n");
+    sb.append("checkIntegrityAtMerge=").append(getCheckIntegrityAtMerge()).append("\n");
     return sb.toString();
   }
 

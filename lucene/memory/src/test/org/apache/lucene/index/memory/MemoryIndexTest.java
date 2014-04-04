@@ -21,6 +21,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -100,7 +101,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
   private Set<String> readQueries(String resource) throws IOException {
     Set<String> queries = new HashSet<>();
     InputStream stream = getClass().getResourceAsStream(resource);
-    BufferedReader reader = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
+    BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8));
     String line = null;
     while ((line = reader.readLine()) != null) {
       line = line.trim();

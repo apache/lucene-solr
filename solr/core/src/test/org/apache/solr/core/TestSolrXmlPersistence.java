@@ -31,6 +31,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.IOUtils;
@@ -52,8 +53,8 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import com.google.common.base.Charsets;
+import java.nio.charset.StandardCharsets;
 
 public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
 
@@ -75,7 +76,7 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
     }
 
     File solrXml = new File(solrHomeDirectory, "solr.xml");
-    FileUtils.write(solrXml, solrXmlString, IOUtils.CHARSET_UTF_8.toString());
+    FileUtils.write(solrXml, solrXmlString, IOUtils.UTF_8);
 
     final CoreContainer cores = createCoreContainer(solrHomeDirectory.getAbsolutePath(), solrXmlString);
     return cores;
@@ -401,7 +402,7 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
 
     String defXml = FileUtils.readFileToString(
         new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"),
-        Charsets.UTF_8.toString());
+        StandardCharsets.UTF_8.name());
     final CoreContainer cores = init(defXml, "collection1");
     SolrXMLCoresLocator.NonPersistingLocator locator
         = (SolrXMLCoresLocator.NonPersistingLocator) cores.getCoresLocator();
@@ -504,7 +505,7 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
   }
 
   private String[] getAllNodes(String xmlString) throws ParserConfigurationException, IOException, SAXException {
-    return getAllNodes(new ByteArrayInputStream(xmlString.getBytes(Charsets.UTF_8)));
+    return getAllNodes(new ByteArrayInputStream(xmlString.getBytes(StandardCharsets.UTF_8)));
   }
 
   /*

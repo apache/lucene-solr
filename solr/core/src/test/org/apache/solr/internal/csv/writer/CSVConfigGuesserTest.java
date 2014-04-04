@@ -19,6 +19,7 @@
 package org.apache.solr.internal.csv.writer;
 
 import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 
 import junit.framework.TestCase;
 
@@ -57,7 +58,7 @@ public class CSVConfigGuesserTest extends TestCase {
         StringBuilder sb = new StringBuilder();
         sb.append("1234;abcd;1234\n");
         sb.append("abcd;1234;abcd");
-        ByteArrayInputStream in = new ByteArrayInputStream(sb.toString().getBytes("UTF-8"));
+        ByteArrayInputStream in = new ByteArrayInputStream(sb.toString().getBytes(StandardCharsets.UTF_8));
         CSVConfigGuesser guesser = new CSVConfigGuesser(in);
         CSVConfig guessed = guesser.guess();
         assertEquals(expected.isFixedWidth(), guessed.isFixedWidth());
@@ -80,7 +81,7 @@ public class CSVConfigGuesserTest extends TestCase {
         StringBuilder sb = new StringBuilder();
         sb.append("1,2,3,4\n");
         sb.append("abcd,1234,abcd,1234");
-        ByteArrayInputStream in = new ByteArrayInputStream(sb.toString().getBytes("UTF-8"));
+        ByteArrayInputStream in = new ByteArrayInputStream(sb.toString().getBytes(StandardCharsets.UTF_8));
         CSVConfigGuesser guesser = new CSVConfigGuesser(in);
         CSVConfig guessed = guesser.guess();
         assertEquals(expected.isFixedWidth(), guessed.isFixedWidth());

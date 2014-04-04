@@ -25,6 +25,7 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 
@@ -562,14 +563,12 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       if (random.nextBoolean()) {
         ft.setOmitNorms(true);
       }
-      String pf = TestUtil.getPostingsFormat("dummy");
-      boolean supportsOffsets = !doesntSupportOffsets.contains(pf);
       switch(random.nextInt(4)) {
         case 0: ft.setIndexOptions(IndexOptions.DOCS_ONLY); break;
         case 1: ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS); break;
         case 2: ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS); break;
         default:
-                if (supportsOffsets && offsetsAreCorrect) {
+                if (offsetsAreCorrect) {
                   ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
                 } else {
                   ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
@@ -892,7 +891,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   }
 
   protected void toDotFile(Analyzer a, String inputText, String localFileName) throws IOException {
-    Writer w = new OutputStreamWriter(new FileOutputStream(localFileName), "UTF-8");
+    Writer w = new OutputStreamWriter(new FileOutputStream(localFileName), StandardCharsets.UTF_8);
     final TokenStream ts = a.tokenStream("field", inputText);
     ts.reset();
     new TokenStreamToDot(inputText, ts, new PrintWriter(w)).toDot();

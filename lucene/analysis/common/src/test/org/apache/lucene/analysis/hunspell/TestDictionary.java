@@ -21,6 +21,7 @@ import java.io.ByteArrayInputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 
 import org.apache.lucene.util.BytesRef;
@@ -232,10 +233,10 @@ public class TestDictionary extends LuceneTestCase {
   }
   
   public void testSetWithCrazyWhitespaceAndBOMs() throws Exception {
-    assertEquals("UTF-8", Dictionary.getDictionaryEncoding(new ByteArrayInputStream("SET\tUTF-8\n".getBytes(IOUtils.CHARSET_UTF_8))));
-    assertEquals("UTF-8", Dictionary.getDictionaryEncoding(new ByteArrayInputStream("SET\t UTF-8\n".getBytes(IOUtils.CHARSET_UTF_8))));
-    assertEquals("UTF-8", Dictionary.getDictionaryEncoding(new ByteArrayInputStream("\uFEFFSET\tUTF-8\n".getBytes(IOUtils.CHARSET_UTF_8))));
-    assertEquals("UTF-8", Dictionary.getDictionaryEncoding(new ByteArrayInputStream("\uFEFFSET\tUTF-8\r\n".getBytes(IOUtils.CHARSET_UTF_8))));
+    assertEquals("UTF-8", Dictionary.getDictionaryEncoding(new ByteArrayInputStream("SET\tUTF-8\n".getBytes(StandardCharsets.UTF_8))));
+    assertEquals("UTF-8", Dictionary.getDictionaryEncoding(new ByteArrayInputStream("SET\t UTF-8\n".getBytes(StandardCharsets.UTF_8))));
+    assertEquals("UTF-8", Dictionary.getDictionaryEncoding(new ByteArrayInputStream("\uFEFFSET\tUTF-8\n".getBytes(StandardCharsets.UTF_8))));
+    assertEquals("UTF-8", Dictionary.getDictionaryEncoding(new ByteArrayInputStream("\uFEFFSET\tUTF-8\r\n".getBytes(StandardCharsets.UTF_8))));
   }
   
   public void testFlagWithCrazyWhitespace() throws Exception {

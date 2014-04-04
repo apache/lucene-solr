@@ -35,7 +35,6 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -1547,4 +1546,18 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
     return 0;
   }
 
+  @Override
+  public void checkIntegrity() throws IOException {
+    if (version >= Lucene41PostingsWriter.VERSION_CHECKSUM) {
+      if (docIn != null) {
+        CodecUtil.checksumEntireFile(docIn);
+      }
+      if (posIn != null) {
+        CodecUtil.checksumEntireFile(posIn);
+      }
+      if (payIn != null) {
+        CodecUtil.checksumEntireFile(payIn);
+      }
+    }
+  }
 }

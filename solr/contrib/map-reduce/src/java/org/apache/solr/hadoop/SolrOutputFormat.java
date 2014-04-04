@@ -22,6 +22,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Locale;
@@ -242,7 +243,7 @@ public class SolrOutputFormat<K, V> extends FileOutputFormat<K, V> {
     
     ZipEntry ze = new ZipEntry("solr.xml");
     zos.putNextEntry(ze);
-    zos.write("<cores><core name=\"collection1\" instanceDir=\".\"/></cores>".getBytes("UTF-8"));
+    zos.write("<cores><core name=\"collection1\" instanceDir=\".\"/></cores>".getBytes(StandardCharsets.UTF_8));
     zos.flush();
     zos.closeEntry();
     zos.close();

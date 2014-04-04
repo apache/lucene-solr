@@ -21,18 +21,18 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
-import org.apache.commons.io.IOUtils;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -121,7 +121,7 @@ public class RegexpBoostProcessor extends UpdateRequestProcessor {
   private List<BoostEntry> initBoostEntries(InputStream is) throws IOException {
     List<BoostEntry> newBoostEntries = new ArrayList<>();
     
-    BufferedReader reader = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
+    BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
     try {
       String line = null;
       while ((line = reader.readLine()) != null) {

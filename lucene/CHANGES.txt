@@ -55,6 +55,10 @@ Documentation
 * LUCENE-5392: Add/improve analysis package documentation to reflect
   analysis API changes.  (Benson Margulies via Robert Muir - pull request #17)
 
+Other
+
+* LUCENE-5563: Removed sep layout: which has fallen behind on features and doesn't
+  perform as well as other options.  (Robert Muir)
 
 ======================= Lucene 4.8.0 =======================
 
@@ -135,6 +139,16 @@ New Features
   resort the hits from a first pass search using a Sort or an
   Expression. (Simon Willnauer, Robert Muir, Mike McCandless)
 
+* LUCENE-5558: Add TruncateTokenFilter which truncates terms to
+  the specified length.  (Ahmet Arslan via Robert Muir)
+
+* LUCENE-2446: Added checksums to lucene index files. As of 4.8, the last 8 
+  bytes of each file contain a zlib-crc32 checksum. Small metadata files are
+  verified on load. Larger files can be checked on demand via 
+  AtomicReader.checkIntegrity. You can configure this to happen automatically
+  before merges by enabling IndexWriterConfig.setCheckIntegrityAtMerge.
+  (Robert Muir)
+
 API Changes
 
 * LUCENE-5454: Add RandomAccessOrds, an optional extension of SortedSetDocValues
@@ -210,7 +224,17 @@ Bug fixes
 
 * LUCENE-5111: Fix WordDelimiterFilter to return offsets in correct order.  (Robert Muir)
 
+* LUCENE-5555: Fix SortedInputIterator to correctly encode/decode contexts in presence of payload (Areek Zillur)
+
+* LUCENE-5559: Add missing argument checks to tokenfilters taking
+  numeric arguments.  (Ahmet Arslan via Robert Muir)
+
+* LUCENE-5568: Benchmark module's "default.codec" option didn't work. (David Smiley)
+
 Test Framework
+
+* LUCENE-5567: When a suite fails with zombie threads failure marker and count 
+  is not propagated properly. (Dawid Weiss)
 
 * LUCENE-5449: Rename _TestUtil and _TestHelper to remove the leading _.
 

@@ -26,6 +26,7 @@ import java.io.OutputStream;
 import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -80,8 +81,6 @@ import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.lucene.util.IOUtils.CHARSET_UTF_8;
 
 /**
  * <p> A Handler which provides a REST API for replication and serves replication requests from Slaves. <p/> </p>
@@ -823,7 +822,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         try {
           final InputStream is = new PropertiesInputStream(input);
           Properties props = new Properties();
-          props.load(new InputStreamReader(is, CHARSET_UTF_8));
+          props.load(new InputStreamReader(is, StandardCharsets.UTF_8));
           return props;
         } finally {
           input.close();

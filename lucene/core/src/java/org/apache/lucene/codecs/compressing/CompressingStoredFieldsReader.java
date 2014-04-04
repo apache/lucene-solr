@@ -28,6 +28,7 @@ import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.TYPE_BITS;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.TYPE_MASK;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_BIG_CHUNKS;
+import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_CHECKSUM;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_CURRENT;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_START;
 import static org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsWriter.FIELDS_EXTENSION;
@@ -35,6 +36,7 @@ import static org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsWriter.FIELD
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import org.apache.lucene.codecs.CodecUtil;
@@ -47,6 +49,7 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.ByteArrayDataInput;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
@@ -113,17 +116,20 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     boolean success = false;
     fieldInfos = fn;
     numDocs = si.getDocCount();
-    IndexInput indexStream = null;
+    ChecksumIndexInput indexStream = null;
     try {
       // Load the index into memory
       final String indexStreamFN = IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_INDEX_EXTENSION);
-      indexStream = d.openInput(indexStreamFN, context);
+      indexStream = d.openChecksumInput(indexStreamFN, context);
       final String codecNameIdx = formatName + CODEC_SFX_IDX;
       version = CodecUtil.checkHeader(indexStream, codecNameIdx, VERSION_START, VERSION_CURRENT);
       assert CodecUtil.headerLength(codecNameIdx) == indexStream.getFilePointer();
       indexReader = new CompressingStoredFieldsIndexReader(indexStream, si);
-      if (indexStream.getFilePointer() != indexStream.length()) {
-        throw new CorruptIndexException("did not read all bytes from file \"" + indexStreamFN + "\": read " + indexStream.getFilePointer() + " vs size " + indexStream.length() + " (resource: " + indexStream + ")");
+      
+      if (version >= VERSION_CHECKSUM) {
+        CodecUtil.checkFooter(indexStream);
+      } else {
+        CodecUtil.checkEOF(indexStream);
       }
       indexStream.close();
       indexStream = null;
@@ -187,7 +193,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
         length = in.readVInt();
         data = new byte[length];
         in.readBytes(data, 0, length);
-        visitor.stringField(info, new String(data, IOUtils.CHARSET_UTF_8));
+        visitor.stringField(info, new String(data, StandardCharsets.UTF_8));
         break;
       case NUMERIC_INT:
         visitor.intField(info, in.readInt());
@@ -507,6 +513,13 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
   @Override
   public long ramBytesUsed() {
     return indexReader.ramBytesUsed();
+  }
+
+  @Override
+  public void checkIntegrity() throws IOException {
+    if (version >= VERSION_CHECKSUM) {
+      CodecUtil.checksumEntireFile(fieldsStream);
+    }
   }
 
 }

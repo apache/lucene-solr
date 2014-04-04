@@ -22,6 +22,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.lang.reflect.Array;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import org.apache.commons.io.FileUtils;
@@ -308,7 +309,7 @@ public class MorphlineBasicMiniMRTest extends SolrTestCaseJ4 {
     assertTrue(fs.mkdirs(inDir));
     Path INPATH = new Path(inDir, "input.txt");
     OutputStream os = fs.create(INPATH);
-    Writer wr = new OutputStreamWriter(os, "UTF-8");
+    Writer wr = new OutputStreamWriter(os, StandardCharsets.UTF_8);
     wr.write(DATADIR + "/" + inputAvroFile);
     wr.close();
 

@@ -20,6 +20,7 @@ package org.apache.lucene.sandbox.queries;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -83,7 +84,7 @@ public class TestSlowFuzzyQuery2 extends LuceneTestCase {
       System.out.println("TEST: codePointTable=" + codePointTable);
     }
     InputStream stream = getClass().getResourceAsStream("fuzzyTestData.txt");
-    BufferedReader reader = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
+    BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8));
     
     int bits = Integer.parseInt(reader.readLine());
     int terms = (int) Math.pow(2, bits);

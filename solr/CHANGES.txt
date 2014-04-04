@@ -146,9 +146,6 @@ New Features
   improve logging and force refresh cluster state every 15 seconds.
   (Timothy Potter via shalin)
   
- * SOLR-5228: Don't require <field> or <dynamicField> be inside of <fields> -- or 
-   that <fieldType> be inside of <types>. (Erick Erickson)
-
 * SOLR-5749: A new Overseer status collection API exposes overseer queue sizes, timing
   statistics, success and error counts and last N failures per operation. (shalin)
 
@@ -159,6 +156,21 @@ New Features
 * SOLR-4478: Allow cores to use configuration from a configsets directory
   outside their instance directory. (Alan Woodward, Erick Erickson)
 
+* SOLR-5466: A new List collections and cluster status API which clients can use
+  to read collection and shard information instead of reading data directly from ZooKeeper.
+  (Dave Seltzer, Varun Thacker, Vitaliy Zhovtyuk, Erick Erickson, shalin)
+
+* SOLR-5795: New DocExpirationUpdateProcessorFactory supports computing an expiration 
+  date for documents from the "TTL" expression, as well as automatically deleting expired 
+  documents on a periodic basis. (hossman)
+
+* SOLR-5829: Allow ExpandComponent to accept query and filter query parameters
+  (Joel Bernstein)
+
+* SOLR-5654: Create a synonym filter factory that is (re)configurable, and
+  capable of reporting its configuration, via REST API.
+  (Tim Potter via Steve Rowe)
+
 Bug Fixes
 ----------------------
 
@@ -166,6 +178,20 @@ Bug Fixes
   highlight queries. (Alan Woodward, Tien Nguyen Manh)
 
 * SOLR-5893: On restarting overseer designate , move itself to front of the queue (Noble Paul)
+
+* SOLR-5915: Attempts to specify the parserImpl for
+  solr.PreAnalyzedField fieldtype failed.  (Mike McCandless)
+
+* SOLR-5943: SolrCmdDistributor does not distribute the openSearcher parameter.
+  (ludovic Boutros via shalin)
+
+* SOLR-5951: Fixed SolrDispatchFilter to throw useful exception on startup if
+  SLF4j logging jars are missing.  (Uwe Schindler, Hossman, Shawn Heisey)
+
+* SOLR-5950: Maven config: make the org.slf4j:slf4j-api dependency transitive
+  (i.e., not optional) in all modules in which it's a dependency, including
+  solrj, except for the WAR, where it will remain optional.
+  (Uwe Schindler, Steve Rowe)
 
 Optimizations
 ----------------------
@@ -242,6 +268,12 @@ Other Changes
 
 * SOLR-5914: Cleanup and fix Solr's test cleanup code. 
  (Mark Miller, Uwe Schindler)
+
+* SOLR-5934: LBHttpSolrServer exception handling improvement and small test
+  improvements. (Gregory Chanan via Mark Miller)
+
+* SOLR-5773: CollapsingQParserPlugin should make elevated documents the 
+  group head. (David Boychuck, Joel Bernstein)
 
 ==================  4.7.1  ==================
 
@@ -343,6 +375,9 @@ Bug Fixes
 
 * SOLR-5906: Collection create API ignores property.instanceDir parameter.
   (Varun Thacker, shalin)
+
+* SOLR-5920: Distributed sort on DateField, BoolField and BCD{Int,Long,Str}Field
+  returns string cast exception (Eric Bus, AJ Lemke, hossman, Steve Rowe)
 
 Other Changes
 ---------------------

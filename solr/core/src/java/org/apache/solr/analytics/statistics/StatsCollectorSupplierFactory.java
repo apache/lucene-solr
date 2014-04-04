@@ -21,9 +21,11 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
@@ -33,7 +35,6 @@ import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.lucene.search.FieldCache;
 import org.apache.solr.analytics.expression.ExpressionFactory;
-import org.apache.solr.analytics.request.AnalyticsRequest;
 import org.apache.solr.analytics.request.ExpressionRequest;
 import org.apache.solr.analytics.util.AnalyticsParams;
 import org.apache.solr.analytics.util.AnalyticsParsers;
@@ -67,10 +68,13 @@ import org.apache.solr.schema.TrieDoubleField;
 import org.apache.solr.schema.TrieFloatField;
 import org.apache.solr.schema.TrieIntField;
 import org.apache.solr.schema.TrieLongField;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Supplier;
 
 public class StatsCollectorSupplierFactory {
+  private static final Logger log = LoggerFactory.getLogger(StatsCollectorSupplierFactory.class);
   
   // FunctionTypes
   final static int NUMBER_TYPE = 0;
@@ -83,18 +87,18 @@ public class StatsCollectorSupplierFactory {
    * Builds a Supplier that will generate identical arrays of new StatsCollectors.
    * 
    * @param schema The Schema being used.
-   * @param request The AnalyticsRequest to generate a StatsCollector[] from.
+   * @param exRequests The expression requests to generate a StatsCollector[] from.
    * @return A Supplier that will return an array of new StatsCollector.
    */
   @SuppressWarnings("unchecked")
-  public static Supplier<StatsCollector[]> create(IndexSchema schema, AnalyticsRequest request) {
-    final Map<String, Set<String>> collectorStats =  new HashMap<>();
-    final Map<String, Set<Integer>> collectorPercs =  new HashMap<>();
-    final Map<String, ValueSource> collectorSources =  new HashMap<>();
+  public static Supplier<StatsCollector[]> create(IndexSchema schema, List<ExpressionRequest> exRequests ) {
+    final Map<String, Set<String>> collectorStats =  new TreeMap<>();
+    final Map<String, Set<Integer>> collectorPercs =  new TreeMap<>();
+    final Map<String, ValueSource> collectorSources =  new TreeMap<>();
     
     // Iterate through all expression request to make a list of ValueSource strings
     // and statistics that need to be calculated on those ValueSources.
-    for (ExpressionRequest expRequest : request.getExpressions()) {
+    for (ExpressionRequest expRequest : exRequests) {
       String statExpression = expRequest.getExpressionString();
       Set<String> statistics = getStatistics(statExpression);
       if (statistics == null) {
@@ -146,7 +150,11 @@ public class StatsCollectorSupplierFactory {
           stats = new HashSet<>();
           collectorStats.put(source, stats);
         }
-        stats.add(stat);
+        if(AnalyticsParams.STAT_PERCENTILE.equals(stat)) {
+          stats.add(stat + "_"+ arguments[0]);
+        } else {
+          stats.add(stat);
+        }
       }
     }
     String[] keys = collectorStats.keySet().toArray(new String[0]);
@@ -168,7 +176,7 @@ public class StatsCollectorSupplierFactory {
         if (percs!=null) {
           collectorPercs.put(builtString, percs);
         }
-        for (ExpressionRequest er : request.getExpressions()) {
+        for (ExpressionRequest er : exRequests) {
           er.setExpressionString(er.getExpressionString().replace(sourceStr, builtString));
         }
       }
@@ -181,6 +189,8 @@ public class StatsCollectorSupplierFactory {
         }
       };
     }
+    
+    log.info("Stats objects: "+collectorStats.size()+" sr="+collectorSources.size()+" pr="+collectorPercs.size() );
     
     // All information is stored in final arrays so that nothing 
     // has to be computed when the Supplier's get() method is called.

@@ -17,6 +17,7 @@ package org.apache.lucene.util.automaton;
  * limitations under the License.
  */
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -56,7 +57,7 @@ public class TestDeterminizeLexicon extends LuceneTestCase {
     }
     final ByteRunAutomaton lexByte = new ByteRunAutomaton(lex);
     for (String s : terms) {
-      byte bytes[] = s.getBytes("UTF-8");
+      byte bytes[] = s.getBytes(StandardCharsets.UTF_8);
       assertTrue(lexByte.run(bytes, 0, bytes.length));
     }
   }

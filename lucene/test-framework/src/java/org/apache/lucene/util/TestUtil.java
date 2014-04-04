@@ -103,41 +103,37 @@ public final class TestUtil {
   private static final int GET_TEMP_DIR_RETRY_THRESHOLD = 1000;
   
   /**
-   * Deletes a directory and everything underneath it.
+   * Deletes a file or a directory (and everything underneath it).
    */
-  public static void rmDir(File dir) throws IOException {
-    if (dir.exists()) {
-      if (dir.isFile() && !dir.delete()) {
-        throw new IOException("could not delete " + dir);
+  public static void rm(File location) throws IOException {
+    if (!location.exists()) {
+      return;
+    }
+
+    if (location.isDirectory()) {
+      for (File f : location.listFiles()) {
+        rm(f);
       }
-      for (File f : dir.listFiles()) {
-        if (f.isDirectory()) {
-          rmDir(f);
-        } else {
-          if (!f.delete()) {
-            throw new IOException("could not delete " + f);
-          }
-        }
-      }
-      if (!dir.delete()) {
-        throw new IOException("could not delete " + dir);
+    } else {
+      if (!location.delete()) {
+        throw new IOException("Could not delete: " + location.getAbsolutePath());
       }
     }
+
+    assert !location.exists();
   }
 
   /** 
-   * Convenience method: Unzip zipName + ".zip" under destDir, removing destDir first 
+   * Convenience method: Unzip zipName + ".zip" into destDir, cleaning up 
+   * destDir first. 
    */
   public static void unzip(File zipName, File destDir) throws IOException {
-    
-    ZipFile zipFile = new ZipFile(zipName);
-    
-    Enumeration<? extends ZipEntry> entries = zipFile.entries();
-    
-    rmDir(destDir);
-
+    rm(destDir);
     destDir.mkdir();
     LuceneTestCase.closeAfterSuite(new CloseableFile(destDir, LuceneTestCase.suiteFailureMarker));
+
+    ZipFile zipFile = new ZipFile(zipName);
+    Enumeration<? extends ZipEntry> entries = zipFile.entries();
 
     while (entries.hasMoreElements()) {
       ZipEntry entry = entries.nextElement();
@@ -189,15 +185,15 @@ public final class TestUtil {
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
     CheckIndex checker = new CheckIndex(dir);
     checker.setCrossCheckTermVectors(crossCheckTermVectors);
-    checker.setInfoStream(new PrintStream(bos, false, "UTF-8"), false);
+    checker.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8), false);
     CheckIndex.Status indexStatus = checker.checkIndex(null);
     if (indexStatus == null || indexStatus.clean == false) {
       System.out.println("CheckIndex failed");
-      System.out.println(bos.toString("UTF-8"));
+      System.out.println(bos.toString(IOUtils.UTF_8));
       throw new RuntimeException("CheckIndex failed");
     } else {
       if (LuceneTestCase.INFOSTREAM) {
-        System.out.println(bos.toString("UTF-8"));
+        System.out.println(bos.toString(IOUtils.UTF_8));
       }
       return indexStatus;
     }
@@ -213,8 +209,9 @@ public final class TestUtil {
   
   public static void checkReader(AtomicReader reader, boolean crossCheckTermVectors) throws IOException {
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
-    PrintStream infoStream = new PrintStream(bos, false, "UTF-8");
+    PrintStream infoStream = new PrintStream(bos, false, IOUtils.UTF_8);
 
+    reader.checkIntegrity();
     FieldNormStatus fieldNormStatus = CheckIndex.testFieldNorms(reader, infoStream);
     TermIndexStatus termIndexStatus = CheckIndex.testPostings(reader, infoStream);
     StoredFieldStatus storedFieldStatus = CheckIndex.testStoredFields(reader, infoStream);
@@ -227,11 +224,11 @@ public final class TestUtil {
       termVectorStatus.error != null ||
       docValuesStatus.error != null) {
       System.out.println("CheckReader failed");
-      System.out.println(bos.toString("UTF-8"));
+      System.out.println(bos.toString(IOUtils.UTF_8));
       throw new RuntimeException("CheckReader failed");
     } else {
       if (LuceneTestCase.INFOSTREAM) {
-        System.out.println(bos.toString("UTF-8"));
+        System.out.println(bos.toString(IOUtils.UTF_8));
       }
     }
   }

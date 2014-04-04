@@ -24,6 +24,7 @@ import java.io.LineNumberReader;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 
 public class ConnectionCostsBuilder {
   
@@ -32,7 +33,7 @@ public class ConnectionCostsBuilder {
   
   public static ConnectionCostsWriter build(String filename) throws IOException {
     FileInputStream inputStream = new FileInputStream(filename);
-    Charset cs = Charset.forName("US-ASCII");
+    Charset cs = StandardCharsets.US_ASCII;
     CharsetDecoder decoder = cs.newDecoder()
         .onMalformedInput(CodingErrorAction.REPORT)
         .onUnmappableCharacter(CodingErrorAction.REPORT);

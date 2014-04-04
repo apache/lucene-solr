@@ -29,6 +29,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -41,7 +42,6 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
   }
 
   String filename;
-  String def_charset = "UTF-8";
   File file;
 
   @Override
@@ -66,12 +66,8 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
   }
 
   void makeFile(String contents) {
-    makeFile(contents,def_charset);
-  }
-
-  void makeFile(String contents, String charset) {
     try {
-      Writer out = new OutputStreamWriter(new FileOutputStream(filename), charset);
+      Writer out = new OutputStreamWriter(new FileOutputStream(filename), StandardCharsets.UTF_8);
       out.write(contents);
       out.close();
     } catch (Exception e) {

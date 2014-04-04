@@ -21,8 +21,7 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CoderResult;
-
-import org.apache.lucene.util.IOUtils;
+import java.nio.charset.StandardCharsets;
 
 // many hunspell dictionaries use this encoding, yet java does not have it?!?!
 final class ISO8859_14Decoder extends CharsetDecoder {
@@ -43,7 +42,7 @@ final class ISO8859_14Decoder extends CharsetDecoder {
   };
 
   ISO8859_14Decoder() {
-    super(IOUtils.CHARSET_UTF_8, 1f, 1f);
+    super(StandardCharsets.ISO_8859_1 /* fake with similar properties */, 1f, 1f);
   }
 
   @Override

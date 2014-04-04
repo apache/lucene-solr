@@ -63,12 +63,13 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
   public static final int VERSION_START = 0;
   public static final int VERSION_APPEND_ONLY = 1;
   public static final int VERSION_META_ARRAY = 2;
-  public static final int VERSION_CURRENT = VERSION_META_ARRAY;
+  public static final int VERSION_CHECKSUM = 3;
+  public static final int VERSION_CURRENT = VERSION_CHECKSUM;
 
   /** Extension of terms file */
   static final String TERMS_EXTENSION = "tib";
 
-  protected final IndexOutput out;
+  protected IndexOutput out;
   final PostingsWriterBase postingsWriter;
   final FieldInfos fieldInfos;
   FieldInfo currentField;
@@ -176,26 +177,30 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
   }
 
   public void close() throws IOException {
-    try {
-      final long dirStart = out.getFilePointer();
-
-      out.writeVInt(fields.size());
-      for(FieldMetaData field : fields) {
-        out.writeVInt(field.fieldInfo.number);
-        out.writeVLong(field.numTerms);
-        out.writeVLong(field.termsStartPointer);
-        if (field.fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
-          out.writeVLong(field.sumTotalTermFreq);
+    if (out != null) {
+      try {
+        final long dirStart = out.getFilePointer();
+        
+        out.writeVInt(fields.size());
+        for(FieldMetaData field : fields) {
+          out.writeVInt(field.fieldInfo.number);
+          out.writeVLong(field.numTerms);
+          out.writeVLong(field.termsStartPointer);
+          if (field.fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
+            out.writeVLong(field.sumTotalTermFreq);
+          }
+          out.writeVLong(field.sumDocFreq);
+          out.writeVInt(field.docCount);
+          if (VERSION_CURRENT >= VERSION_META_ARRAY) {
+            out.writeVInt(field.longsSize);
+          }
         }
-        out.writeVLong(field.sumDocFreq);
-        out.writeVInt(field.docCount);
-        if (VERSION_CURRENT >= VERSION_META_ARRAY) {
-          out.writeVInt(field.longsSize);
-        }
+        writeTrailer(dirStart);
+        CodecUtil.writeFooter(out);
+      } finally {
+        IOUtils.close(out, postingsWriter, termsIndexWriter);
+        out = null;
       }
-      writeTrailer(dirStart);
-    } finally {
-      IOUtils.close(out, postingsWriter, termsIndexWriter);
     }
   }
 

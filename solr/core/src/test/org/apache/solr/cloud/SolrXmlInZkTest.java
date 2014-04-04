@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -35,7 +36,6 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
-import com.google.common.base.Charsets;
 
 public class SolrXmlInZkTest extends SolrTestCaseJ4 {
 
@@ -84,7 +84,7 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
     zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
 
     if (toZk) {
-      zkClient.makePath("solr.xml", XML_FOR_ZK.getBytes(Charsets.UTF_8), true);
+      zkClient.makePath("solr.xml", XML_FOR_ZK.getBytes(StandardCharsets.UTF_8), true);
     }
 
     zkClient.close();

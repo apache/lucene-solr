@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import org.apache.lucene.analysis.MockTokenizer;
@@ -53,8 +54,8 @@ public class TestDocument extends LuceneTestCase {
     FieldType ft = new FieldType();
     ft.setStored(true);
     Field stringFld = new Field("string", binaryVal, ft);
-    StoredField binaryFld = new StoredField("binary", binaryVal.getBytes("UTF-8"));
-    StoredField binaryFld2 = new StoredField("binary", binaryVal2.getBytes("UTF-8"));
+    StoredField binaryFld = new StoredField("binary", binaryVal.getBytes(StandardCharsets.UTF_8));
+    StoredField binaryFld2 = new StoredField("binary", binaryVal2.getBytes(StandardCharsets.UTF_8));
     
     doc.add(stringFld);
     doc.add(binaryFld);

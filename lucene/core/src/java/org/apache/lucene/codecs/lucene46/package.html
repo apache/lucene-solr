@@ -383,6 +383,9 @@ on multi-valued fields.</li>
 <li>In version 4.5, DocValues were extended to explicitly represent missing values.</li>
 <li>In version 4.6, FieldInfos were extended to support per-field DocValues generation, to 
 allow updating NumericDocValues fields.</li>
+<li>In version 4.8, checksum footers were added to the end of each index file 
+for improved data integrity. Specifically, the last 8 bytes of every index file
+contain the zlib-crc32 checksum of the file.</li>
 </ul>
 <a name="Limitations" id="Limitations"></a>
 <h2>Limitations</h2>

@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -58,13 +59,15 @@ public class ContentStreamTest extends SolrTestCaseJ4
     InputStream s = stream.getStream();
     FileInputStream fis = new FileInputStream(file);
     InputStreamReader isr = new InputStreamReader(
-        new FileInputStream(file), "UTF-8");
+        new FileInputStream(file), StandardCharsets.UTF_8);
+    Reader r = stream.getReader();
     try {
       assertEquals(file.length(), stream.getSize().intValue());
       assertTrue(IOUtils.contentEquals(fis, s));
-      assertTrue(IOUtils.contentEquals(isr, stream.getReader()));
+      assertTrue(IOUtils.contentEquals(isr, r));
     } finally {
       s.close();
+      r.close();
       isr.close();
       fis.close();
     }
@@ -86,7 +89,7 @@ public class ContentStreamTest extends SolrTestCaseJ4
     InputStream s = stream.getStream();
     FileInputStream fis = new FileInputStream(file);
     FileInputStream fis2 = new FileInputStream(file);
-    InputStreamReader isr = new InputStreamReader(fis, "UTF-8");
+    InputStreamReader isr = new InputStreamReader(fis, StandardCharsets.UTF_8);
     Reader r = stream.getReader();
     try {
       assertTrue(IOUtils.contentEquals(fis2, s));

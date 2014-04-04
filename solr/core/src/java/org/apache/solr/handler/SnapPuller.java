@@ -26,6 +26,7 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -90,7 +91,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.lucene.util.IOUtils.CHARSET_UTF_8;
 import static org.apache.solr.handler.ReplicationHandler.ALIAS;
 import static org.apache.solr.handler.ReplicationHandler.CHECKSUM;
 import static org.apache.solr.handler.ReplicationHandler.CMD_DETAILS;
@@ -604,7 +604,7 @@ public class SnapPuller {
       }
 
       final IndexOutput out = dir.createOutput(REPLICATION_PROPERTIES, DirectoryFactory.IOCONTEXT_NO_CACHE);
-      Writer outFile = new OutputStreamWriter(new PropertiesOutputStream(out), CHARSET_UTF_8);
+      Writer outFile = new OutputStreamWriter(new PropertiesOutputStream(out), StandardCharsets.UTF_8);
       try {
         props.store(outFile, "Replication details");
         dir.sync(Collections.singleton(REPLICATION_PROPERTIES));
@@ -945,7 +945,7 @@ public class SnapPuller {
   
         final InputStream is = new PropertiesInputStream(input);
         try {
-          p.load(new InputStreamReader(is, CHARSET_UTF_8));
+          p.load(new InputStreamReader(is, StandardCharsets.UTF_8));
         } catch (Exception e) {
           LOG.error("Unable to load " + SnapPuller.INDEX_PROPERTIES, e);
         } finally {
@@ -961,7 +961,7 @@ public class SnapPuller {
       p.put("index", tmpIdxDirName);
       Writer os = null;
       try {
-        os = new OutputStreamWriter(new PropertiesOutputStream(out), CHARSET_UTF_8);
+        os = new OutputStreamWriter(new PropertiesOutputStream(out), StandardCharsets.UTF_8);
         p.store(os, SnapPuller.INDEX_PROPERTIES);
         dir.sync(Collections.singleton(INDEX_PROPERTIES));
       } catch (Exception e) {

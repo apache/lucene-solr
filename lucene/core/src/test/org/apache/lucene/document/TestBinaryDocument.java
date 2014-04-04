@@ -1,5 +1,7 @@
 package org.apache.lucene.document;
 
+import java.nio.charset.StandardCharsets;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -38,7 +40,7 @@ public class TestBinaryDocument extends LuceneTestCase {
   {
     FieldType ft = new FieldType();
     ft.setStored(true);
-    StoredField binaryFldStored = new StoredField("binaryStored", binaryValStored.getBytes("UTF-8"));
+    StoredField binaryFldStored = new StoredField("binaryStored", binaryValStored.getBytes(StandardCharsets.UTF_8));
     Field stringFldStored = new Field("stringStored", binaryValStored, ft);
 
     Document doc = new Document();
@@ -63,7 +65,7 @@ public class TestBinaryDocument extends LuceneTestCase {
     /** fetch the binary stored field and compare it's content with the original one */
     BytesRef bytes = docFromReader.getBinaryValue("binaryStored");
     assertNotNull(bytes);
-    String binaryFldStoredTest = new String(bytes.bytes, bytes.offset, bytes.length, "UTF-8");
+    String binaryFldStoredTest = new String(bytes.bytes, bytes.offset, bytes.length, StandardCharsets.UTF_8);
     assertTrue(binaryFldStoredTest.equals(binaryValStored));
     
     /** fetch the string field and compare it's content with the original one */
@@ -76,7 +78,7 @@ public class TestBinaryDocument extends LuceneTestCase {
   }
   
   public void testCompressionTools() throws Exception {
-    StoredField binaryFldCompressed = new StoredField("binaryCompressed", CompressionTools.compress(binaryValCompressed.getBytes("UTF-8")));
+    StoredField binaryFldCompressed = new StoredField("binaryCompressed", CompressionTools.compress(binaryValCompressed.getBytes(StandardCharsets.UTF_8)));
     StoredField stringFldCompressed = new StoredField("stringCompressed", CompressionTools.compressString(binaryValCompressed));
     
     Document doc = new Document();
@@ -95,7 +97,7 @@ public class TestBinaryDocument extends LuceneTestCase {
     assertTrue(docFromReader != null);
     
     /** fetch the binary compressed field and compare it's content with the original one */
-    String binaryFldCompressedTest = new String(CompressionTools.decompress(docFromReader.getBinaryValue("binaryCompressed")), "UTF-8");
+    String binaryFldCompressedTest = new String(CompressionTools.decompress(docFromReader.getBinaryValue("binaryCompressed")), StandardCharsets.UTF_8);
     assertTrue(binaryFldCompressedTest.equals(binaryValCompressed));
     assertTrue(CompressionTools.decompressString(docFromReader.getBinaryValue("stringCompressed")).equals(binaryValCompressed));
 

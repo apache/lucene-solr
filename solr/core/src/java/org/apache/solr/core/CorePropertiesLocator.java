@@ -17,7 +17,6 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.IOUtils;
@@ -31,6 +30,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Properties;
 
@@ -79,7 +79,7 @@ public class CorePropertiesLocator implements CoresLocator {
     Writer os = null;
     try {
       propfile.getParentFile().mkdirs();
-      os = new OutputStreamWriter(new FileOutputStream(propfile), Charsets.UTF_8);
+      os = new OutputStreamWriter(new FileOutputStream(propfile), StandardCharsets.UTF_8);
       p.store(os, "Written by CorePropertiesLocator");
     }
     catch (IOException e) {
@@ -147,7 +147,7 @@ public class CorePropertiesLocator implements CoresLocator {
       File instanceDir = propertiesFile.getParentFile();
       Properties coreProperties = new Properties();
       fis = new FileInputStream(propertiesFile);
-      coreProperties.load(new InputStreamReader(fis, Charsets.UTF_8));
+      coreProperties.load(new InputStreamReader(fis, StandardCharsets.UTF_8));
       String name = createName(coreProperties, instanceDir);
       return new CoreDescriptor(cc, name, instanceDir.getAbsolutePath(), coreProperties);
     }

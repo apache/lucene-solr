@@ -17,6 +17,7 @@ package org.apache.lucene.search.suggest.fst;
  * limitations under the License.
  */
 
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
@@ -144,7 +145,7 @@ public class FSTCompletionTest extends LuceneTestCase {
 
   public void testThreeByte() throws Exception {
     String key = new String(new byte[] {
-        (byte) 0xF0, (byte) 0xA4, (byte) 0xAD, (byte) 0xA2}, "UTF-8");
+        (byte) 0xF0, (byte) 0xA4, (byte) 0xAD, (byte) 0xA2}, StandardCharsets.UTF_8);
     FSTCompletionBuilder builder = new FSTCompletionBuilder();
     builder.add(new BytesRef(key), 0);
 

@@ -1,5 +1,7 @@
 package org.apache.lucene.store;
 
+import java.io.IOException;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,61 +19,24 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.zip.CRC32;
-import java.util.zip.Checksum;
-
-/** Reads bytes through to a primary IndexInput, computing
- *  checksum as it goes. Note that you cannot use seek().
- *
- * @lucene.internal
+/** 
+ * Extension of IndexInput, computing checksum as it goes. 
+ * Callers can retrieve the checksum via {@link #getChecksum()}.
  */
-public class ChecksumIndexInput extends IndexInput {
-  IndexInput main;
-  Checksum digest;
-
-  public ChecksumIndexInput(IndexInput main) {
-    super("ChecksumIndexInput(" + main + ")");
-    this.main = main;
-    digest = new CRC32();
-  }
-
-  @Override
-  public byte readByte() throws IOException {
-    final byte b = main.readByte();
-    digest.update(b);
-    return b;
-  }
-
-  @Override
-  public void readBytes(byte[] b, int offset, int len)
-    throws IOException {
-    main.readBytes(b, offset, len);
-    digest.update(b, offset, len);
-  }
-
+public abstract class ChecksumIndexInput extends IndexInput {
   
-  public long getChecksum() {
-    return digest.getValue();
+  /** resourceDescription should be a non-null, opaque string
+   *  describing this resource; it's returned from
+   *  {@link #toString}. */
+  protected ChecksumIndexInput(String resourceDescription) {
+    super(resourceDescription);
   }
 
-  @Override
-  public void close() throws IOException {
-    main.close();
-  }
-
-  @Override
-  public long getFilePointer() {
-    return main.getFilePointer();
-  }
+  /** Returns the current checksum value */
+  public abstract long getChecksum() throws IOException;
 
   @Override
   public void seek(long pos) {
     throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public long length() {
-    return main.length();
   }
 }

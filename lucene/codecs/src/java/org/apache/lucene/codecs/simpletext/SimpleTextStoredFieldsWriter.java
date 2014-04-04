@@ -51,13 +51,14 @@ public class SimpleTextStoredFieldsWriter extends StoredFieldsWriter {
   final static BytesRef TYPE_FLOAT  = new BytesRef("float");
   final static BytesRef TYPE_DOUBLE = new BytesRef("double");
 
-  final static BytesRef END     = new BytesRef("END");
-  final static BytesRef DOC     = new BytesRef("doc ");
-  final static BytesRef NUM     = new BytesRef("  numfields ");
-  final static BytesRef FIELD   = new BytesRef("  field ");
-  final static BytesRef NAME    = new BytesRef("    name ");
-  final static BytesRef TYPE    = new BytesRef("    type ");
-  final static BytesRef VALUE   = new BytesRef("    value ");
+  final static BytesRef CHECKSUM = new BytesRef("checksum ");
+  final static BytesRef END      = new BytesRef("END");
+  final static BytesRef DOC      = new BytesRef("doc ");
+  final static BytesRef NUM      = new BytesRef("  numfields ");
+  final static BytesRef FIELD    = new BytesRef("  field ");
+  final static BytesRef NAME     = new BytesRef("    name ");
+  final static BytesRef TYPE     = new BytesRef("    type ");
+  final static BytesRef VALUE    = new BytesRef("    value ");
   
   private final BytesRef scratch = new BytesRef();
   
@@ -170,6 +171,10 @@ public class SimpleTextStoredFieldsWriter extends StoredFieldsWriter {
           + " but only saw " + numDocsWritten + " file=" + out.toString() + "; now aborting this merge to prevent index corruption");
     }
     write(END);
+    newLine();
+    String checksum = Long.toString(out.getChecksum());
+    write(CHECKSUM);
+    write(checksum);
     newLine();
   }
 

@@ -211,6 +211,14 @@ public class CollectionsHandler extends RequestHandlerBase {
         this.handleOverseerStatus(req, rsp);
         break;
       }
+      case LIST: {
+        this.handleListAction(req, rsp);
+        break;
+      }
+      case CLUSTERSTATUS:  {
+        this.handleClusterStatus(req, rsp);
+        break;
+      }
       default: {
           throw new RuntimeException("Unknown action: " + action);
       }
@@ -257,11 +265,43 @@ public class CollectionsHandler extends RequestHandlerBase {
   private void handleRequestStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
     log.debug("REQUESTSTATUS action invoked: " + req.getParamString());
     req.getParams().required().check(REQUESTID);
-    Map<String, Object> props = new HashMap<String, Object>();
-    props.put(Overseer.QUEUE_OPERATION, OverseerCollectionProcessor.REQUESTSTATUS);
-    props.put(REQUESTID, req.getParams().get(REQUESTID));
-    ZkNodeProps m = new ZkNodeProps(props);
-    handleResponse(OverseerCollectionProcessor.REQUESTSTATUS, m, rsp);
+
+    String requestId = req.getParams().get(REQUESTID);
+
+    if (requestId.equals("-1")) {
+      // Special taskId (-1), clears up the request state maps.
+      if(requestId.equals("-1")) {
+        coreContainer.getZkController().getOverseerCompletedMap().clear();
+        coreContainer.getZkController().getOverseerFailureMap().clear();
+        return;
+      }
+    } else {
+      NamedList<Object> results = new NamedList<>();
+      if (coreContainer.getZkController().getOverseerCompletedMap().contains(requestId)) {
+        SimpleOrderedMap success = new SimpleOrderedMap();
+        success.add("state", "completed");
+        success.add("msg", "found " + requestId + " in completed tasks");
+        results.add("status", success);
+      } else if (coreContainer.getZkController().getOverseerRunningMap().contains(requestId)) {
+        SimpleOrderedMap success = new SimpleOrderedMap();
+        success.add("state", "running");
+        success.add("msg", "found " + requestId + " in submitted tasks");
+        results.add("status", success);
+      } else if (coreContainer.getZkController().getOverseerFailureMap().contains(requestId)) {
+        SimpleOrderedMap success = new SimpleOrderedMap();
+        success.add("state", "failed");
+        success.add("msg", "found " + requestId + " in failed tasks");
+        results.add("status", success);
+      } else {
+        SimpleOrderedMap failure = new SimpleOrderedMap();
+        failure.add("state", "notfound");
+        failure.add("msg", "Did not find taskid [" + requestId + "] in any tasks queue");
+        results.add("status", failure);
+      }
+      SolrResponse response = new OverseerSolrResponse(results);
+
+      rsp.getValues().addAll(response.getResponse());
+    }
   }
 
   private void handleResponse(String operation, ZkNodeProps m,
@@ -573,6 +613,36 @@ public class CollectionsHandler extends RequestHandlerBase {
     ZkNodeProps m = new ZkNodeProps(props);
     handleResponse(CollectionAction.ADDREPLICA.toString(), m, rsp);
   }
+
+  /**
+   * Handle cluster status request.
+   * Can return status per specific collection/shard or per all collections.
+   *
+   * @param req solr request
+   * @param rsp solr response
+   */
+  private void handleClusterStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
+    Map<String,Object> props = new HashMap<>();
+    props.put(Overseer.QUEUE_OPERATION, CollectionAction.CLUSTERSTATUS.toLower());
+    copyIfNotNull(req.getParams(), props, COLLECTION_PROP, SHARD_ID_PROP, ShardParams._ROUTE_);
+    handleResponse(CollectionAction.CLUSTERSTATUS.toString(), new ZkNodeProps(props), rsp);
+  }
+
+  /**
+   * Handled list collection request.
+   * Do list collection request to zk host
+   *
+   * @param req solr request
+   * @param rsp solr response
+   * @throws KeeperException      zk connection failed
+   * @throws InterruptedException connection interrupted
+   */
+  private void handleListAction(SolrQueryRequest req, SolrQueryResponse rsp) throws KeeperException, InterruptedException {
+    Map<String, Object> props = ZkNodeProps.makeMap(
+        Overseer.QUEUE_OPERATION, CollectionAction.LIST.toString().toLowerCase(Locale.ROOT));
+    handleResponse(CollectionAction.LIST.toString(), new ZkNodeProps(props), rsp);
+  }
+
 
   public static ModifiableSolrParams params(String... params) {
     ModifiableSolrParams msp = new ModifiableSolrParams();

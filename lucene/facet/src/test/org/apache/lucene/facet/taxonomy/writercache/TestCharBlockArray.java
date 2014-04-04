@@ -8,11 +8,11 @@ import java.io.FileOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.lucene.facet.FacetTestCase;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
+
 import org.junit.Test;
 
 /*
@@ -47,7 +47,7 @@ public class TestCharBlockArray extends FacetTestCase {
       int size = 1 + random().nextInt(50);
       // This test is turning random bytes into a string,
       // this is asking for trouble.
-      CharsetDecoder decoder = IOUtils.CHARSET_UTF_8.newDecoder()
+      CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder()
           .onUnmappableCharacter(CodingErrorAction.REPLACE)
           .onMalformedInput(CodingErrorAction.REPLACE);
       String s = decoder.decode(ByteBuffer.wrap(buffer, 0, size)).toString();
@@ -60,7 +60,7 @@ public class TestCharBlockArray extends FacetTestCase {
       int size = 1 + random().nextInt(50);
       // This test is turning random bytes into a string,
       // this is asking for trouble.
-      CharsetDecoder decoder = IOUtils.CHARSET_UTF_8.newDecoder()
+      CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder()
           .onUnmappableCharacter(CodingErrorAction.REPLACE)
           .onMalformedInput(CodingErrorAction.REPLACE);
       String s = decoder.decode(ByteBuffer.wrap(buffer, 0, size)).toString();
@@ -73,7 +73,7 @@ public class TestCharBlockArray extends FacetTestCase {
       int size = 1 + random().nextInt(50);
       // This test is turning random bytes into a string,
       // this is asking for trouble.
-      CharsetDecoder decoder = IOUtils.CHARSET_UTF_8.newDecoder()
+      CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder()
           .onUnmappableCharacter(CodingErrorAction.REPLACE)
           .onMalformedInput(CodingErrorAction.REPLACE);
       String s = decoder.decode(ByteBuffer.wrap(buffer, 0, size)).toString();

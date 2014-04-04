@@ -58,7 +58,7 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
 
     // solr.xml
     File solrXml = new File(solrHome, "solr.xml");
-    FileUtils.write(solrXml, EMPTY_SOLR_XML, IOUtils.CHARSET_UTF_8.toString());
+    FileUtils.write(solrXml, EMPTY_SOLR_XML, IOUtils.UTF_8);
 
     // ----
     // init the CoreContainer
@@ -133,7 +133,7 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
 
     // start with two collections: one valid, and one broken
     File solrXml = new File(solrHome, "solr.xml");
-    FileUtils.write(solrXml, BAD_SOLR_XML, IOUtils.CHARSET_UTF_8.toString());
+    FileUtils.write(solrXml, BAD_SOLR_XML, IOUtils.UTF_8);
 
     // our "ok" collection
     FileUtils.copyFile(getFile("solr/collection1/conf/solrconfig-defaults.xml"),
@@ -272,7 +272,7 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
     FileUtils.write
       (FileUtils.getFile(solrHome, "col_bad", "conf", "solrconfig.xml"),
        "This is giberish, not valid XML <", 
-       IOUtils.CHARSET_UTF_8.toString());
+       IOUtils.UTF_8);
 
     try {
       ignoreException(Pattern.quote("SAX"));

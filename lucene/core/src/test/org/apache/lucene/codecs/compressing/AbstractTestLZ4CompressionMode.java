@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.compressing;
  */
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 
@@ -81,7 +82,7 @@ public abstract class AbstractTestLZ4CompressionMode extends AbstractTestCompres
 
   public void testShortLiteralsAndMatchs() throws IOException {
     // literals and matchs lengths <= 15
-    final byte[] decompressed = "1234562345673456745678910123".getBytes("UTF-8");
+    final byte[] decompressed = "1234562345673456745678910123".getBytes(StandardCharsets.UTF_8);
     test(decompressed);
   }
 

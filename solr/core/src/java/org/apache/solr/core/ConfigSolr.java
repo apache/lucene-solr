@@ -17,7 +17,6 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import com.google.common.base.Charsets;
 import com.google.common.io.ByteStreams;
 
 import org.apache.commons.io.IOUtils;
@@ -42,6 +41,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -77,19 +77,17 @@ public abstract class ConfigSolr {
   }
 
   public static ConfigSolr fromString(SolrResourceLoader loader, String xml) {
-    return fromInputStream(loader, new ByteArrayInputStream(xml.getBytes(Charsets.UTF_8)));
+    return fromInputStream(loader, new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
   }
 
   public static ConfigSolr fromInputStream(SolrResourceLoader loader, InputStream is) {
     try {
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      ByteStreams.copy(is, baos);
-      String originalXml = IOUtils.toString(new ByteArrayInputStream(baos.toByteArray()), "UTF-8");
-      ByteArrayInputStream dup = new ByteArrayInputStream(baos.toByteArray());
+      byte[] buf = IOUtils.toByteArray(is);
+      String originalXml = new String(buf, StandardCharsets.UTF_8);
+      ByteArrayInputStream dup = new ByteArrayInputStream(buf);
       Config config = new Config(loader, null, new InputSource(dup), null, false);
       return fromConfig(config, originalXml);
-    }
-    catch (Exception e) {
+    } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
@@ -241,7 +239,7 @@ public abstract class ConfigSolr {
   }
 
   public ConfigSetService createCoreConfigService(SolrResourceLoader loader, ZkController zkController) {
-    if (getZkHost() != null)
+    if (getZkHost() != null || System.getProperty("zkRun") != null)
       return new CloudConfigSetService(loader, zkController);
     if (hasSchemaCache())
       return new ConfigSetService.SchemaCaching(loader, getConfigSetBaseDirectory());

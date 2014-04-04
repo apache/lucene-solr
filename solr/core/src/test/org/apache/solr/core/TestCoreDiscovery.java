@@ -31,6 +31,8 @@ import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.nio.charset.StandardCharsets;
+
 public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
   @BeforeClass
@@ -47,7 +49,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       xmlStr = xmlStr.replace("<solr>", "<solr> <str name=\"coreRootDirectory\">" + alternateCoreDir + "</str> ");
     }
     File tmpFile = new File(solrHomeDirectory, ConfigSolr.SOLR_XML_FILE);
-    FileUtils.write(tmpFile, xmlStr, IOUtils.CHARSET_UTF_8.toString());
+    FileUtils.write(tmpFile, xmlStr, IOUtils.UTF_8);
 
   }
 
@@ -75,7 +77,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
   private void addCoreWithProps(Properties stockProps, File propFile) throws Exception {
     if (!propFile.getParentFile().exists()) propFile.getParentFile().mkdirs();
-    Writer out = new OutputStreamWriter(new FileOutputStream(propFile), IOUtils.CHARSET_UTF_8);
+    Writer out = new OutputStreamWriter(new FileOutputStream(propFile), StandardCharsets.UTF_8);
     try {
       stockProps.store(out, null);
     } finally {

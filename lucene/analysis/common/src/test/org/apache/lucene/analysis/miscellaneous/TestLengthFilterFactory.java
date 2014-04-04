@@ -1,11 +1,12 @@
 package org.apache.lucene.analysis.miscellaneous;
 
-/**
- * Copyright 2004 The Apache Software Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -31,21 +32,36 @@ public class TestLengthFilterFactory extends BaseTokenStreamFactoryTestCase {
     TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
     ((Tokenizer)stream).setReader(reader);
     stream = tokenFilterFactory("Length",
-        "min", "4",
-        "max", "10").create(stream);
+        LengthFilterFactory.MIN_KEY, "4",
+        LengthFilterFactory.MAX_KEY, "10").create(stream);
     assertTokenStreamContents(stream, new String[] { "foobar" }, new int[] { 2 });
   }
-  
+
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
     try {
-      tokenFilterFactory("Length", 
-          "min", "4", 
-          "max", "5", 
+      tokenFilterFactory("Length",
+          LengthFilterFactory.MIN_KEY, "4",
+          LengthFilterFactory.MAX_KEY, "5",
           "bogusArg", "bogusValue");
       fail();
     } catch (IllegalArgumentException expected) {
       assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
+  }
+
+  /** Test that invalid arguments result in exception */
+  public void testInvalidArguments() throws Exception {
+    try {
+      Reader reader = new StringReader("foo foobar super-duper-trooper");
+      TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+      ((Tokenizer)stream).setReader(reader);
+      tokenFilterFactory("Length",
+          LengthFilterFactory.MIN_KEY, "5",
+          LengthFilterFactory.MAX_KEY, "4").create(stream);
+      fail();
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("maximum length must not be greater than minimum length"));
     }
   }
 }

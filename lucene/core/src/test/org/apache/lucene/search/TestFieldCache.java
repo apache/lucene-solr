@@ -60,6 +60,7 @@ import org.apache.lucene.search.FieldCache.Longs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
@@ -139,7 +140,7 @@ public class TestFieldCache extends LuceneTestCase {
     try {
       FieldCache cache = FieldCache.DEFAULT;
       ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
-      cache.setInfoStream(new PrintStream(bos, false, "UTF-8"));
+      cache.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8));
       cache.getDoubles(reader, "theDouble", false);
       cache.getFloats(reader, "theDouble", new FieldCache.FloatParser() {
         @Override
@@ -151,7 +152,7 @@ public class TestFieldCache extends LuceneTestCase {
           return NumericUtils.sortableIntToFloat((int) NumericUtils.prefixCodedToLong(term));
         }
       }, false);
-      assertTrue(bos.toString("UTF-8").indexOf("WARNING") != -1);
+      assertTrue(bos.toString(IOUtils.UTF_8).indexOf("WARNING") != -1);
     } finally {
       FieldCache.DEFAULT.purgeAllCaches();
     }

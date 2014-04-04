@@ -18,6 +18,8 @@ package org.apache.lucene.document;
  */
 
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
+
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.util.BytesRef;
@@ -184,7 +186,7 @@ public class TestField extends LuceneTestCase {
 
     trySetBoost(field);
     trySetByteValue(field);
-    field.setBytesValue("fubar".getBytes("UTF-8"));
+    field.setBytesValue("fubar".getBytes(StandardCharsets.UTF_8));
     field.setBytesValue(new BytesRef("baz"));
     trySetDoubleValue(field);
     trySetIntValue(field);
@@ -203,7 +205,7 @@ public class TestField extends LuceneTestCase {
 
     trySetBoost(field);
     trySetByteValue(field);
-    field.setBytesValue("fubar".getBytes("UTF-8"));
+    field.setBytesValue("fubar".getBytes(StandardCharsets.UTF_8));
     field.setBytesValue(new BytesRef("baz"));
     trySetDoubleValue(field);
     trySetIntValue(field);
@@ -294,15 +296,15 @@ public class TestField extends LuceneTestCase {
   
   public void testStoredFieldBytes() throws Exception {
     Field fields[] = new Field[] {
-        new StoredField("foo", "bar".getBytes("UTF-8")),
-        new StoredField("foo", "bar".getBytes("UTF-8"), 0, 3),
+        new StoredField("foo", "bar".getBytes(StandardCharsets.UTF_8)),
+        new StoredField("foo", "bar".getBytes(StandardCharsets.UTF_8), 0, 3),
         new StoredField("foo", new BytesRef("bar")),
     };
     
     for (Field field : fields) {
       trySetBoost(field);
       trySetByteValue(field);
-      field.setBytesValue("baz".getBytes("UTF-8"));
+      field.setBytesValue("baz".getBytes(StandardCharsets.UTF_8));
       field.setBytesValue(new BytesRef("baz"));
       trySetDoubleValue(field);
       trySetIntValue(field);

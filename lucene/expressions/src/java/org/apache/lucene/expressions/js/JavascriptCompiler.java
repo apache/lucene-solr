@@ -22,6 +22,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -503,7 +504,7 @@ public class JavascriptCompiler {
     try {
       final Properties props = new Properties();
       try (Reader in = IOUtils.getDecodingReader(JavascriptCompiler.class,
-        JavascriptCompiler.class.getSimpleName() + ".properties", IOUtils.CHARSET_UTF_8)) {
+        JavascriptCompiler.class.getSimpleName() + ".properties", StandardCharsets.UTF_8)) {
         props.load(in);
       }
       for (final String call : props.stringPropertyNames()) {

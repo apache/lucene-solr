@@ -22,6 +22,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
 import org.apache.lucene.benchmark.byTask.feeds.ContentSource;
@@ -30,7 +31,6 @@ import org.apache.lucene.benchmark.byTask.feeds.EnwikiContentSource;
 import org.apache.lucene.benchmark.byTask.feeds.NoMoreDataException;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.util.IOUtils;
 
 /**
  * Extract the downloaded Wikipedia dump into separate files for indexing.
@@ -86,7 +86,7 @@ public class ExtractWikipedia {
     contents.append("\n");
 
     try {
-      Writer writer = new OutputStreamWriter(new FileOutputStream(f), IOUtils.CHARSET_UTF_8);
+      Writer writer = new OutputStreamWriter(new FileOutputStream(f), StandardCharsets.UTF_8);
       writer.write(contents.toString());
       writer.close();
     } catch (IOException ioe) {

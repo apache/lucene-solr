@@ -44,7 +44,9 @@ public interface CollectionParams
     CLUSTERPROP,
     REQUESTSTATUS,
     ADDREPLICA,
-    OVERSEERSTATUS;
+    OVERSEERSTATUS,
+    LIST,
+    CLUSTERSTATUS;
     
     public static CollectionAction get( String p )
     {

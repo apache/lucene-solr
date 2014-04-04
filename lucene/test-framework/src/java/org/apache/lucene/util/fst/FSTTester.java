@@ -21,6 +21,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -328,7 +329,7 @@ public class FSTTester<T> {
     }
 
     if (LuceneTestCase.VERBOSE && pairs.size() <= 20 && fst != null) {
-      Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"), "UTF-8");
+      Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"), StandardCharsets.UTF_8);
       Util.toDot(fst, w, false, false);
       w.close();
       System.out.println("SAVED out.dot");

@@ -46,10 +46,7 @@ import org.apache.lucene.codecs.memory.FSTPostingsFormat;
 import org.apache.lucene.codecs.memory.FSTPulsing41PostingsFormat;
 import org.apache.lucene.codecs.memory.MemoryDocValuesFormat;
 import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
-import org.apache.lucene.codecs.mockintblock.MockFixedIntBlockPostingsFormat;
-import org.apache.lucene.codecs.mockintblock.MockVariableIntBlockPostingsFormat;
 import org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat;
-import org.apache.lucene.codecs.mocksep.MockSepPostingsFormat;
 import org.apache.lucene.codecs.nestedpulsing.NestedPulsingPostingsFormat;
 import org.apache.lucene.codecs.pulsing.Pulsing41PostingsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextDocValuesFormat;
@@ -142,9 +139,6 @@ public class RandomCodec extends Lucene46Codec {
         //with a choice of concrete PostingsFormats. Maybe useful to have a generic means of marking and dealing 
         //with such "wrapper" classes?
         new TestBloomFilteredLucene41Postings(),                
-        new MockSepPostingsFormat(),
-        new MockFixedIntBlockPostingsFormat(TestUtil.nextInt(random, 1, 2000)),
-        new MockVariableIntBlockPostingsFormat( TestUtil.nextInt(random, 1, 127)),
         new MockRandomPostingsFormat(random),
         new NestedPulsingPostingsFormat(),
         new Lucene41WithOrds(TestUtil.nextInt(random, 1, 1000)),

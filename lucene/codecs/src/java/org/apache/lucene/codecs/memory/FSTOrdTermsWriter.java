@@ -73,9 +73,10 @@ import org.apache.lucene.util.fst.Util;
  * </p>
  * 
  * <ul>
- *  <li>TermIndex(.tix) --&gt; Header, TermFST<sup>NumFields</sup></li>
+ *  <li>TermIndex(.tix) --&gt; Header, TermFST<sup>NumFields</sup>, Footer</li>
  *  <li>TermFST --&gt; {@link FST FST&lt;long&gt;}</li>
  *  <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
+ *  <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  * </ul>
  *
  * <p>Notes:</p>
@@ -103,7 +104,7 @@ import org.apache.lucene.util.fst.Util;
  * <ul>
  *  <li>TermBlock(.tbk) --&gt; Header, <i>PostingsHeader</i>, FieldSummary, DirOffset</li>
  *  <li>FieldSummary --&gt; NumFields, &lt;FieldNumber, NumTerms, SumTotalTermFreq?, SumDocFreq,
- *                                         DocCount, LongsSize, DataBlock &gt; <sup>NumFields</sup></li>
+ *                                         DocCount, LongsSize, DataBlock &gt; <sup>NumFields</sup>, Footer</li>
  *
  *  <li>DataBlock --&gt; StatsBlockLength, MetaLongsBlockLength, MetaBytesBlockLength, 
  *                       SkipBlock, StatsBlock, MetaLongsBlock, MetaBytesBlock </li>
@@ -119,6 +120,7 @@ import org.apache.lucene.util.fst.Util;
  *  <li>NumTerms, SumTotalTermFreq, SumDocFreq, StatsBlockLength, MetaLongsBlockLength, MetaBytesBlockLength,
  *        StatsFPDelta, MetaLongsSkipFPDelta, MetaBytesSkipFPDelta, MetaLongsSkipStart, TotalTermFreq, 
  *        LongDelta,--&gt; {@link DataOutput#writeVLong VLong}</li>
+ *  <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  * </ul>
  * <p>Notes: </p>
  * <ul>
@@ -148,7 +150,8 @@ public class FSTOrdTermsWriter extends FieldsConsumer {
   static final String TERMS_BLOCK_EXTENSION = "tbk";
   static final String TERMS_CODEC_NAME = "FST_ORD_TERMS_DICT";
   public static final int TERMS_VERSION_START = 0;
-  public static final int TERMS_VERSION_CURRENT = TERMS_VERSION_START;
+  public static final int TERMS_VERSION_CHECKSUM = 1;
+  public static final int TERMS_VERSION_CURRENT = TERMS_VERSION_CHECKSUM;
   public static final int SKIP_INTERVAL = 8;
   
   final PostingsWriterBase postingsWriter;
@@ -218,36 +221,41 @@ public class FSTOrdTermsWriter extends FieldsConsumer {
   }
 
   public void close() throws IOException {
-    IOException ioe = null;
-    try {
-      final long blockDirStart = blockOut.getFilePointer();
-
-      // write field summary
-      blockOut.writeVInt(fields.size());
-      for (FieldMetaData field : fields) {
-        blockOut.writeVInt(field.fieldInfo.number);
-        blockOut.writeVLong(field.numTerms);
-        if (field.fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
-          blockOut.writeVLong(field.sumTotalTermFreq);
+    if (blockOut != null) {
+      IOException ioe = null;
+      try {
+        final long blockDirStart = blockOut.getFilePointer();
+        
+        // write field summary
+        blockOut.writeVInt(fields.size());
+        for (FieldMetaData field : fields) {
+          blockOut.writeVInt(field.fieldInfo.number);
+          blockOut.writeVLong(field.numTerms);
+          if (field.fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
+            blockOut.writeVLong(field.sumTotalTermFreq);
+          }
+          blockOut.writeVLong(field.sumDocFreq);
+          blockOut.writeVInt(field.docCount);
+          blockOut.writeVInt(field.longsSize);
+          blockOut.writeVLong(field.statsOut.getFilePointer());
+          blockOut.writeVLong(field.metaLongsOut.getFilePointer());
+          blockOut.writeVLong(field.metaBytesOut.getFilePointer());
+          
+          field.skipOut.writeTo(blockOut);
+          field.statsOut.writeTo(blockOut);
+          field.metaLongsOut.writeTo(blockOut);
+          field.metaBytesOut.writeTo(blockOut);
+          field.dict.save(indexOut);
         }
-        blockOut.writeVLong(field.sumDocFreq);
-        blockOut.writeVInt(field.docCount);
-        blockOut.writeVInt(field.longsSize);
-        blockOut.writeVLong(field.statsOut.getFilePointer());
-        blockOut.writeVLong(field.metaLongsOut.getFilePointer());
-        blockOut.writeVLong(field.metaBytesOut.getFilePointer());
-
-        field.skipOut.writeTo(blockOut);
-        field.statsOut.writeTo(blockOut);
-        field.metaLongsOut.writeTo(blockOut);
-        field.metaBytesOut.writeTo(blockOut);
-        field.dict.save(indexOut);
+        writeTrailer(blockOut, blockDirStart);
+        CodecUtil.writeFooter(indexOut);
+        CodecUtil.writeFooter(blockOut);
+      } catch (IOException ioe2) {
+        ioe = ioe2;
+      } finally {
+        IOUtils.closeWhileHandlingException(ioe, blockOut, indexOut, postingsWriter);
+        blockOut = null;
       }
-      writeTrailer(blockOut, blockDirStart);
-    } catch (IOException ioe2) {
-      ioe = ioe2;
-    } finally {
-      IOUtils.closeWhileHandlingException(ioe, blockOut, indexOut, postingsWriter);
     }
   }
 

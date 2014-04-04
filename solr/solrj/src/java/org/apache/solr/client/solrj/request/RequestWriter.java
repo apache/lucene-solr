@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 /**
  * A RequestWriter is used to write requests to Solr.
@@ -38,7 +39,7 @@ import java.nio.charset.Charset;
  * @since solr 1.4
  */
 public class RequestWriter {
-  public static final Charset UTF_8 = Charset.forName("UTF-8");
+  public static final Charset UTF_8 = StandardCharsets.UTF_8;
 
   public Collection<ContentStream> getContentStreams(SolrRequest req) throws IOException {
     if (req instanceof UpdateRequest) {

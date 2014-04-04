@@ -66,7 +66,7 @@ public class Lucene45DocValuesConsumer extends DocValuesConsumer implements Clos
    *  of indirection: docId -> ord. */
   public static final int SORTED_SET_SINGLE_VALUED_SORTED = 1;
 
-  final IndexOutput data, meta;
+  IndexOutput data, meta;
   final int maxDoc;
   
   /** expert: Creates a new writer */
@@ -438,6 +438,10 @@ public class Lucene45DocValuesConsumer extends DocValuesConsumer implements Clos
     try {
       if (meta != null) {
         meta.writeVInt(-1); // write EOF marker
+        CodecUtil.writeFooter(meta); // write checksum
+      }
+      if (data != null) {
+        CodecUtil.writeFooter(data); // write checksum
       }
       success = true;
     } finally {
@@ -446,6 +450,7 @@ public class Lucene45DocValuesConsumer extends DocValuesConsumer implements Clos
       } else {
         IOUtils.closeWhileHandlingException(data, meta);
       }
+      meta = data = null;
     }
   }
 }

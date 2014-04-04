@@ -209,7 +209,7 @@ public class SortedInputIterator implements InputIterator {
     }
   }
   
-  /** encodes an entry (bytes+(payload)+(contexts)+weight) to the provided writer */
+  /** encodes an entry (bytes+(contexts)+(payload)+weight) to the provided writer */
   protected void encode(ByteSequencesWriter writer, ByteArrayDataOutput output, byte[] buffer, BytesRef spare, BytesRef payload, Set<BytesRef> contexts, long weight) throws IOException {
     int requiredLength = spare.length + 8 + ((hasPayloads) ? 2 + payload.length : 0);
     if (hasContexts) {
@@ -223,16 +223,16 @@ public class SortedInputIterator implements InputIterator {
     }
     output.reset(buffer);
     output.writeBytes(spare.bytes, spare.offset, spare.length);
-    if (hasPayloads) {
-      output.writeBytes(payload.bytes, payload.offset, payload.length);
-      output.writeShort((short) payload.length);
-    }
     if (hasContexts) {
       for (BytesRef ctx : contexts) {
         output.writeBytes(ctx.bytes, ctx.offset, ctx.length);
         output.writeShort((short) ctx.length);
       }
       output.writeShort((short) contexts.size());
+    }
+    if (hasPayloads) {
+      output.writeBytes(payload.bytes, payload.offset, payload.length);
+      output.writeShort((short) payload.length);
     }
     output.writeLong(weight);
     writer.write(buffer, 0, output.getPosition());

@@ -64,9 +64,7 @@ public class Lucene40SegmentInfoReader extends SegmentInfoReader {
       input.readStringStringMap(); // read deprecated attributes
       final Set<String> files = input.readStringSet();
       
-      if (input.getFilePointer() != input.length()) {
-        throw new CorruptIndexException("did not read all bytes from file \"" + fileName + "\": read " + input.getFilePointer() + " vs size " + input.length() + " (resource: " + input + ")");
-      }
+      CodecUtil.checkEOF(input);
 
       final SegmentInfo si = new SegmentInfo(dir, version, segment, docCount, isCompoundFile, null, diagnostics);
       si.setFiles(files);

@@ -1168,4 +1168,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     return 0;
   }
 
+  @Override
+  public void checkIntegrity() throws IOException {}
+
 }

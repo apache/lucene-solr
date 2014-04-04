@@ -20,12 +20,14 @@ package org.apache.lucene.search.highlight;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -1512,7 +1514,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     // now an ugly built of XML parsing to test the snippet is encoded OK
     DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
     DocumentBuilder db = dbf.newDocumentBuilder();
-    org.w3c.dom.Document doc = db.parse(new ByteArrayInputStream(xhtml.getBytes("UTF-8")));
+    org.w3c.dom.Document doc = db.parse(new ByteArrayInputStream(xhtml.getBytes(StandardCharsets.UTF_8)));
     Element root = doc.getDocumentElement();
     NodeList nodes = root.getElementsByTagName("body");
     Element body = (Element) nodes.item(0);

@@ -29,6 +29,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -419,7 +420,7 @@ public abstract class ManagedResourceStorage {
   
   public static final Logger log = LoggerFactory.getLogger(ManagedResourceStorage.class);
   
-  public static final Charset UTF_8 = Charset.forName("UTF-8");
+  public static final Charset UTF_8 = StandardCharsets.UTF_8;
   
   protected StorageIO storageIO;
   protected SolrResourceLoader loader;

@@ -21,6 +21,7 @@ import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -65,7 +66,7 @@ public class AbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
     DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
     factory.setNamespaceAware(true); // never forget this!
     DocumentBuilder builder = factory.newDocumentBuilder();
-    doc = builder.parse(new InputSource(new ByteArrayInputStream(response.getBytes("UTF-8"))));
+    doc = builder.parse(new InputSource(new ByteArrayInputStream(response.getBytes(StandardCharsets.UTF_8))));
     xPathFact = XPathFactory.newInstance();
     rawResponse = response;
   }

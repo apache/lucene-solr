@@ -21,6 +21,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -101,7 +102,7 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
     p.put("index", newDir.getName());
     Writer os = null;
     try {
-      os = new OutputStreamWriter(new FileOutputStream(idxprops), IOUtils.CHARSET_UTF_8);
+      os = new OutputStreamWriter(new FileOutputStream(idxprops), StandardCharsets.UTF_8);
       p.store(os, "index properties");
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,

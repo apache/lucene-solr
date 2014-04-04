@@ -31,7 +31,7 @@ import org.apache.lucene.store.DataOutput; // javadocs
  * <p>
  * Files:
  * <ul>
- *   <li><tt>.si</tt>: Header, SegVersion, SegSize, IsCompoundFile, Diagnostics, Files
+ *   <li><tt>.si</tt>: Header, SegVersion, SegSize, IsCompoundFile, Diagnostics, Files, Footer
  * </ul>
  * </p>
  * Data types:
@@ -43,6 +43,7 @@ import org.apache.lucene.store.DataOutput; // javadocs
  *   <li>Files --&gt; {@link DataOutput#writeStringSet Set&lt;String&gt;}</li>
  *   <li>Diagnostics --&gt; {@link DataOutput#writeStringStringMap Map&lt;String,String&gt;}</li>
  *   <li>IsCompoundFile --&gt; {@link DataOutput#writeByte Int8}</li>
+ *   <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  * </ul>
  * </p>
  * Field Descriptions:
@@ -53,9 +54,6 @@ import org.apache.lucene.store.DataOutput; // javadocs
  *   <li>IsCompoundFile records whether the segment is written as a compound file or
  *       not. If this is -1, the segment is not a compound file. If it is 1, the segment
  *       is a compound file.</li>
- *   <li>Checksum contains the CRC32 checksum of all bytes in the segments_N file up
- *       until the checksum. This is used to verify integrity of the file on opening the
- *       index.</li>
  *   <li>The Diagnostics Map is privately written by {@link IndexWriter}, as a debugging aid,
  *       for each segment it creates. It includes metadata like the current Lucene
  *       version, OS, Java version, why the segment was created (merge, flush,
@@ -89,5 +87,6 @@ public class Lucene46SegmentInfoFormat extends SegmentInfoFormat {
   public final static String SI_EXTENSION = "si";
   static final String CODEC_NAME = "Lucene46SegmentInfo";
   static final int VERSION_START = 0;
-  static final int VERSION_CURRENT = VERSION_START;
+  static final int VERSION_CHECKSUM = 1;
+  static final int VERSION_CURRENT = VERSION_CHECKSUM;
 }

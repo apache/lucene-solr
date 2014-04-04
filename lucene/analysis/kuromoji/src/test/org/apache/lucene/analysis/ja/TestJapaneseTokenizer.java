@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -34,7 +35,6 @@ import org.apache.lucene.analysis.ja.dict.ConnectionCosts;
 import org.apache.lucene.analysis.ja.dict.UserDictionary;
 import org.apache.lucene.analysis.ja.tokenattributes.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -49,7 +49,7 @@ public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
     }
     try {
       try {
-        Reader reader = new InputStreamReader(is, IOUtils.CHARSET_UTF_8);
+        Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8);
         return new UserDictionary(reader);
       } finally {
         is.close();
@@ -571,7 +571,7 @@ public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
   /*
   public void testWikipedia() throws Exception {
     final FileInputStream fis = new FileInputStream("/q/lucene/jawiki-20120220-pages-articles.xml");
-    final Reader r = new BufferedReader(new InputStreamReader(fis, "UTF-8"));
+    final Reader r = new BufferedReader(new InputStreamReader(fis, StandardCharsets.UTF_8));
 
     final long startTimeNS = System.nanoTime();
     boolean done = false;
@@ -618,7 +618,7 @@ public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
   
   private void doTestBocchan(int numIterations) throws Exception {
     LineNumberReader reader = new LineNumberReader(new InputStreamReader(
-        this.getClass().getResourceAsStream("bocchan.utf-8"), "UTF-8"));
+        this.getClass().getResourceAsStream("bocchan.utf-8"), StandardCharsets.UTF_8));
     String line = reader.readLine();
     reader.close();
     

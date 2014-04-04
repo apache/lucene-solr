@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.simpletext;
  */
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -33,6 +34,8 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.store.BufferedChecksumIndexInput;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
@@ -50,21 +53,22 @@ import org.apache.lucene.util.fst.PairOutputs;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
 
+import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.CHECKSUM;
+import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.END;
+import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.FIELD;
+import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.TERM;
+import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.DOC;
+import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.FREQ;
+import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.POS;
+import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.START_OFFSET;
+import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.END_OFFSET;
+import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.PAYLOAD;
+
 class SimpleTextFieldsReader extends FieldsProducer {
   private final TreeMap<String,Long> fields;
   private final IndexInput in;
   private final FieldInfos fieldInfos;
   private final int maxDoc;
-
-  final static BytesRef END          = SimpleTextFieldsWriter.END;
-  final static BytesRef FIELD        = SimpleTextFieldsWriter.FIELD;
-  final static BytesRef TERM         = SimpleTextFieldsWriter.TERM;
-  final static BytesRef DOC          = SimpleTextFieldsWriter.DOC;
-  final static BytesRef FREQ         = SimpleTextFieldsWriter.FREQ;
-  final static BytesRef POS          = SimpleTextFieldsWriter.POS;
-  final static BytesRef START_OFFSET = SimpleTextFieldsWriter.START_OFFSET;
-  final static BytesRef END_OFFSET   = SimpleTextFieldsWriter.END_OFFSET;
-  final static BytesRef PAYLOAD      = SimpleTextFieldsWriter.PAYLOAD;
 
   public SimpleTextFieldsReader(SegmentReadState state) throws IOException {
     this.maxDoc = state.segmentInfo.getDocCount();
@@ -82,16 +86,18 @@ class SimpleTextFieldsReader extends FieldsProducer {
   }
   
   private TreeMap<String,Long> readFields(IndexInput in) throws IOException {
+    ChecksumIndexInput input = new BufferedChecksumIndexInput(in);
     BytesRef scratch = new BytesRef(10);
     TreeMap<String,Long> fields = new TreeMap<>();
     
     while (true) {
-      SimpleTextUtil.readLine(in, scratch);
+      SimpleTextUtil.readLine(input, scratch);
       if (scratch.equals(END)) {
+        SimpleTextUtil.checkFooter(input, CHECKSUM);
         return fields;
       } else if (StringHelper.startsWith(scratch, FIELD)) {
-        String fieldName = new String(scratch.bytes, scratch.offset + FIELD.length, scratch.length - FIELD.length, "UTF-8");
-        fields.put(fieldName, in.getFilePointer());
+        String fieldName = new String(scratch.bytes, scratch.offset + FIELD.length, scratch.length - FIELD.length, StandardCharsets.UTF_8);
+        fields.put(fieldName, input.getFilePointer());
       }
     }
   }
@@ -668,4 +674,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
     return sizeInBytes;
   }
+
+  @Override
+  public void checkIntegrity() throws IOException {}
 }

@@ -29,6 +29,7 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -49,13 +50,13 @@ final class Lucene46FieldInfosReader extends FieldInfosReader {
   @Override
   public FieldInfos read(Directory directory, String segmentName, String segmentSuffix, IOContext context) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(segmentName, segmentSuffix, Lucene46FieldInfosFormat.EXTENSION);
-    IndexInput input = directory.openInput(fileName, context);
+    ChecksumIndexInput input = directory.openChecksumInput(fileName, context);
     
     boolean success = false;
     try {
-      CodecUtil.checkHeader(input, Lucene46FieldInfosFormat.CODEC_NAME, 
-                                   Lucene46FieldInfosFormat.FORMAT_START, 
-                                   Lucene46FieldInfosFormat.FORMAT_CURRENT);
+      int codecVersion = CodecUtil.checkHeader(input, Lucene46FieldInfosFormat.CODEC_NAME, 
+                                                      Lucene46FieldInfosFormat.FORMAT_START, 
+                                                      Lucene46FieldInfosFormat.FORMAT_CURRENT);
 
       final int size = input.readVInt(); //read in the size
       FieldInfo infos[] = new FieldInfo[size];
@@ -91,9 +92,11 @@ final class Lucene46FieldInfosReader extends FieldInfosReader {
           omitNorms, storePayloads, indexOptions, docValuesType, normsType, Collections.unmodifiableMap(attributes));
         infos[i].setDocValuesGen(dvGen);
       }
-
-      if (input.getFilePointer() != input.length()) {
-        throw new CorruptIndexException("did not read all bytes from file \"" + fileName + "\": read " + input.getFilePointer() + " vs size " + input.length() + " (resource: " + input + ")");
+      
+      if (codecVersion >= Lucene46FieldInfosFormat.FORMAT_CHECKSUM) {
+        CodecUtil.checkFooter(input);
+      } else {
+        CodecUtil.checkEOF(input);
       }
       FieldInfos fieldInfos = new FieldInfos(infos);
       success = true;

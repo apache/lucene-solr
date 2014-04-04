@@ -17,6 +17,7 @@ package org.apache.solr.update.processor;
  */
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -44,13 +45,7 @@ public class MD5Signature extends Signature {
 
   @Override
   public void add(String content) {
-    try {
-      digester.update(content.getBytes("UTF-8"));
-    } catch (UnsupportedEncodingException e) {
-      // won't happen
-      log.error("UTF-8 not supported", e);
-      throw new RuntimeException(e);
-    }
+    digester.update(content.getBytes(StandardCharsets.UTF_8));
   }
 
   @Override

@@ -24,6 +24,7 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.lucene46.Lucene46Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
@@ -39,14 +40,15 @@ public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     conf.setCodec(new Lucene46Codec());
-    // riw should sometimes create docvalues fields, etc
     RandomIndexWriter riw = new RandomIndexWriter(random(), dir, conf);
     Document doc = new Document();
     // these fields should sometimes get term vectors, etc
     Field idField = newStringField("id", "", Field.Store.NO);
     Field bodyField = newTextField("body", "", Field.Store.NO);
+    Field dvField = new NumericDocValuesField("dv", 5);
     doc.add(idField);
     doc.add(bodyField);
+    doc.add(dvField);
     for (int i = 0; i < 100; i++) {
       idField.setStringValue(Integer.toString(i));
       bodyField.setStringValue(TestUtil.randomUnicodeString(random()));
@@ -54,6 +56,10 @@ public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
       if (random().nextInt(7) == 0) {
         riw.commit();
       }
+      // TODO: we should make a new format with a clean header...
+      // if (random().nextInt(20) == 0) {
+      //  riw.deleteDocuments(new Term("id", Integer.toString(i)));
+      // }
     }
     riw.close();
     checkHeaders(dir);

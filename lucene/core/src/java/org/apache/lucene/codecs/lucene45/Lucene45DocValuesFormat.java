@@ -89,7 +89,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *   <p>The DocValues metadata or .dvm file.</p>
  *   <p>For DocValues field, this stores metadata, such as the offset into the 
  *      DocValues data (.dvd)</p>
- *   <p>DocValues metadata (.dvm) --&gt; Header,&lt;Entry&gt;<sup>NumFields</sup></p>
+ *   <p>DocValues metadata (.dvm) --&gt; Header,&lt;Entry&gt;<sup>NumFields</sup>,Footer</p>
  *   <ul>
  *     <li>Entry --&gt; NumericEntry | BinaryEntry | SortedEntry | SortedSetEntry</li>
  *     <li>NumericEntry --&gt; GCDNumericEntry | TableNumericEntry | DeltaNumericEntry</li>
@@ -109,6 +109,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *     <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  *     <li>MinValue,GCD,MissingOffset,AddressOffset,DataOffset --&gt; {@link DataOutput#writeLong Int64}</li>
  *     <li>TableSize --&gt; {@link DataOutput#writeVInt vInt}</li>
+ *     <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  *   </ul>
  *   <p>Sorted fields have two entries: a BinaryEntry with the value metadata,
  *      and an ordinary NumericEntry for the document-to-ord metadata.</p>
@@ -138,10 +139,13 @@ import org.apache.lucene.util.packed.PackedInts;
  *      is written for the addresses.
  *   <p>MissingOffset points to a byte[] containing a bitset of all documents that had a value for the field.
  *      If its -1, then there are no missing values.
+ *   <p>Checksum contains the CRC32 checksum of all bytes in the .dvm file up
+ *      until the checksum. This is used to verify integrity of the file on opening the
+ *      index.
  *   <li><a name="dvd" id="dvd"></a>
  *   <p>The DocValues data or .dvd file.</p>
  *   <p>For DocValues field, this stores the actual per-document data (the heavy-lifting)</p>
- *   <p>DocValues data (.dvd) --&gt; Header,&lt;NumericData | BinaryData | SortedData&gt;<sup>NumFields</sup></p>
+ *   <p>DocValues data (.dvd) --&gt; Header,&lt;NumericData | BinaryData | SortedData&gt;<sup>NumFields</sup>,Footer</p>
  *   <ul>
  *     <li>NumericData --&gt; DeltaCompressedNumerics | TableCompressedNumerics | GCDCompressedNumerics</li>
  *     <li>BinaryData --&gt;  {@link DataOutput#writeByte Byte}<sup>DataLength</sup>,Addresses</li>
@@ -150,6 +154,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *     <li>TableCompressedNumerics --&gt; {@link PackedInts PackedInts}</li>
  *     <li>GCDCompressedNumerics --&gt; {@link BlockPackedWriter BlockPackedInts(blockSize=16k)}</li>
  *     <li>Addresses --&gt; {@link MonotonicBlockPackedWriter MonotonicBlockPackedInts(blockSize=16k)}</li>
+ *     <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  *   </ul>
  *   <p>SortedSet entries store the list of ordinals in their BinaryData as a
  *      sequences of increasing {@link DataOutput#writeVLong vLong}s, delta-encoded.</p>
@@ -179,7 +184,8 @@ public final class Lucene45DocValuesFormat extends DocValuesFormat {
   static final String META_EXTENSION = "dvm";
   static final int VERSION_START = 0;
   static final int VERSION_SORTED_SET_SINGLE_VALUE_OPTIMIZED = 1;
-  static final int VERSION_CURRENT = VERSION_SORTED_SET_SINGLE_VALUE_OPTIMIZED;
+  static final int VERSION_CHECKSUM = 2;
+  static final int VERSION_CURRENT = VERSION_CHECKSUM;
   static final byte NUMERIC = 0;
   static final byte BINARY = 1;
   static final byte SORTED = 2;

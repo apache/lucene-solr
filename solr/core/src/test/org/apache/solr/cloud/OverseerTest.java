@@ -983,7 +983,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       overseers.get(overseers.size() -1).getZkStateReader().getZkClient().close();
     }
     Overseer overseer = new Overseer(
-        new HttpShardHandlerFactory().getShardHandler(), "/admin/cores", reader);
+        new HttpShardHandlerFactory().getShardHandler(), "/admin/cores", reader,null);
     overseers.add(overseer);
     ElectionContext ec = new OverseerElectionContext(zkClient, overseer,
         address.replaceAll("/", "_"));

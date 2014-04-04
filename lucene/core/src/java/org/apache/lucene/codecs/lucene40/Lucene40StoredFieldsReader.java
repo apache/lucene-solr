@@ -34,6 +34,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.IOUtils;
 
 import java.io.Closeable;
+import java.nio.charset.StandardCharsets;
 
 import static org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsWriter.*;
 
@@ -193,7 +194,7 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
       if ((bits & FIELD_IS_BINARY) != 0) {
         visitor.binaryField(info, bytes);
       } else {
-        visitor.stringField(info, new String(bytes, 0, bytes.length, IOUtils.CHARSET_UTF_8));
+        visitor.stringField(info, new String(bytes, 0, bytes.length, StandardCharsets.UTF_8));
       }
     }
   }
@@ -249,4 +250,7 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
   public long ramBytesUsed() {
     return 0;
   }
+
+  @Override
+  public void checkIntegrity() throws IOException {}
 }
