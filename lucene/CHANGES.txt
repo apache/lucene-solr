@@ -176,6 +176,9 @@ Bug fixes
 
 Test Framework
 
+* LUCENE-5567: When a suite fails with zombie threads failure marker and count 
+  is not propagated properly. (Dawid Weiss)
+
 * LUCENE-5449: Rename _TestUtil and _TestHelper to remove the leading _.
 
 * LUCENE-5501: Added random out-of-order collection testing (when the collector

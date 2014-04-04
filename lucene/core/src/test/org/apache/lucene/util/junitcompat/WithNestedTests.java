@@ -23,6 +23,7 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+import org.apache.lucene.util.FailureMarker;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestRuleIgnoreAfterMaxFailures;
@@ -37,6 +38,9 @@ import org.junit.Rule;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
+import com.carrotsearch.randomizedtesting.RandomizedRunner;
+import com.carrotsearch.randomizedtesting.RandomizedTest;
+import com.carrotsearch.randomizedtesting.SysGlobals;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import com.carrotsearch.randomizedtesting.rules.TestRuleAdapter;
 
@@ -76,22 +80,36 @@ public abstract class WithNestedTests {
     private TestRuleIgnoreAfterMaxFailures prevRule;
 
     protected void before() throws Throwable {
-      String filter = System.getProperty("tests.filter");
-      if (filter != null && !filter.trim().isEmpty()) {
-        // We're running with a complex test filter. This will affect nested tests anyway
-        // so ignore them.
+      if (!isPropertyEmpty(SysGlobals.SYSPROP_TESTFILTER()) ||
+          !isPropertyEmpty(SysGlobals.SYSPROP_TESTCLASS())  ||
+          !isPropertyEmpty(SysGlobals.SYSPROP_TESTMETHOD()) ||
+          !isPropertyEmpty(SysGlobals.SYSPROP_ITERATIONS())) {
+        // We're running with a complex test filter that is properly handled by classes
+        // which are executed by RandomizedRunner. The "outer" classes testing LuceneTestCase
+        // itself are executed by the default JUnit runner and would be always executed.
+        // We thus always skip execution if any filtering is detected.
         Assume.assumeTrue(false);
       }
       
+      // Check zombie threads from previous suites. Don't run if zombies are around.
+      RandomizedTest.assumeFalse(RandomizedRunner.hasZombieThreads());
+
       TestRuleIgnoreAfterMaxFailures newRule = new TestRuleIgnoreAfterMaxFailures(Integer.MAX_VALUE);
       prevRule = LuceneTestCase.replaceMaxFailureRule(newRule);
+      RandomizedTest.assumeFalse(FailureMarker.hadFailures());
     }
 
     protected void afterAlways(List<Throwable> errors) throws Throwable {
       if (prevRule != null) {
         LuceneTestCase.replaceMaxFailureRule(prevRule);
       }
+      FailureMarker.resetFailures();
     }
+
+    private boolean isPropertyEmpty(String propertyName) {
+      String value = System.getProperty(propertyName);
+      return value == null || value.trim().isEmpty();
+    }    
   }); 
 
   /**
@@ -131,6 +149,7 @@ public abstract class WithNestedTests {
       }
     }
 
+    FailureMarker.resetFailures();
     System.setProperty(TestRuleIgnoreTestSuites.PROPERTY_RUN_NESTED, "true");
   }
 
