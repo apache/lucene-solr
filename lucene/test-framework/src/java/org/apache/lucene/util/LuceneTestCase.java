@@ -772,7 +772,7 @@ public abstract class LuceneTestCase extends Assert {
         }
       } catch (Exception e) {
         // Should not happen?
-        throw new RuntimeException(e);
+        Rethrow.rethrow(e);
       }
 
       if (setIndexerThreadPoolMethod == null) {
@@ -791,7 +791,7 @@ public abstract class LuceneTestCase extends Assert {
           c.setMaxThreadStates(maxNumThreadStates);
         }
       } catch (Exception e) {
-        throw new RuntimeException(e);
+        Rethrow.rethrow(e);
       }
     }
 
@@ -984,7 +984,8 @@ public abstract class LuceneTestCase extends Assert {
       }
       return wrapped;
     } catch (Exception e) {
-      throw new RuntimeException(e);
+      Rethrow.rethrow(e);
+      throw null; // dummy to prevent compiler failure
     }
   }
 
@@ -1165,7 +1166,8 @@ public abstract class LuceneTestCase extends Assert {
       // try empty ctor
       return clazz.newInstance();
     } catch (Exception e) {
-      throw new RuntimeException(e);
+      Rethrow.rethrow(e);
+      throw null; // dummy to prevent compiler failure
     }
   }
   
@@ -1310,7 +1312,7 @@ public abstract class LuceneTestCase extends Assert {
         try {
           r = maybeWrapReader(r);
         } catch (IOException e) {
-          throw new AssertionError(e);
+          Rethrow.rethrow(e);
         }
       }
       // TODO: this whole check is a coverage hack, we should move it to tests for various filterreaders.
@@ -1321,7 +1323,7 @@ public abstract class LuceneTestCase extends Assert {
         try {
           TestUtil.checkReader(r);
         } catch (IOException e) {
-          throw new AssertionError(e);
+          Rethrow.rethrow(e);
         }
       }
       final IndexSearcher ret;
