@@ -236,6 +236,13 @@ Bug fixes
 
 * LUCENE-5568: Benchmark module's "default.codec" option didn't work. (David Smiley)
 
+* LUCENE-5574: Closing a near-real-time reader no longer attempts to
+  delete unreferenced files if the original writer has been closed;
+  this could cause index corruption in certain cases where index files
+  were directly changed (deleted, overwritten, etc.) in the index
+  directory outside of Lucene.  (Simon Willnauer, Shai Erera, Robert
+  Muir, Mike McCandless)
+
 Test Framework
 
 * LUCENE-5567: When a suite fails with zombie threads failure marker and count 
