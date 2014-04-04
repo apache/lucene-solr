@@ -39,6 +39,11 @@ Bug Fixes
 * SOLR-5951: Fixed SolrDispatchFilter to throw useful exception on startup if
   SLF4j logging jars are missing.  (Uwe Schindler, Hossman, Shawn Heisey)
 
+* SOLR-5950: Maven config: make the org.slf4j:slf4j-api dependency transitive
+  (i.e., not optional) in all modules in which it's a dependency, including
+  solrj, except for the WAR, where it will remain optional.
+  (Uwe Schindler, Steve Rowe)
+
 ==================  4.7.1  ==================
 
 Versions of Major Components

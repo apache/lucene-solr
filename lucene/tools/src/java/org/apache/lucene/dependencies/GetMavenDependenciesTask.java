@@ -91,17 +91,23 @@ public class GetMavenDependenciesTask extends Task {
   private static final Properties allProperties = new Properties();
   private static final Set<String> modulesWithSeparateCompileAndTestPOMs = new HashSet<String>();
 
-  private static final Set<String>  optionalExternalDependencies = new HashSet<String>();
+  private static final Set<String> globalOptionalExternalDependencies = new HashSet<String>();
+  private static final Map<String,Set<String>> perModuleOptionalExternalDependencies = new HashMap<String,Set<String>>();
   static {
     // Add modules here that have split compile and test POMs
     // - they need compile-scope deps to also be test-scope deps.
     modulesWithSeparateCompileAndTestPOMs.addAll
         (Arrays.asList("lucene-core", "lucene-codecs", "solr-core", "solr-solrj"));
 
-    // Add external dependencies here that should be optional (i.e., not invoke Maven's transitive dep mechanism).
+    // Add external dependencies here that should be optional for all modules
+    // (i.e., not invoke Maven's transitive dependency mechanism).
     // Format is "groupId:artifactId"
-    optionalExternalDependencies.addAll(Arrays.asList
-        ("org.slf4j:jcl-over-slf4j", "org.slf4j:jul-to-slf4j", "org.slf4j:slf4j-api", "org.slf4j:slf4j-log4j12"));
+    globalOptionalExternalDependencies.addAll(Arrays.asList
+        ("org.slf4j:jcl-over-slf4j", "org.slf4j:jul-to-slf4j", "org.slf4j:slf4j-log4j12"));
+
+    // Add per-module optional external dependencies here.
+    Set<String> optionalDeps = new HashSet<String>(Arrays.asList("org.slf4j:slf4j-api"));
+    perModuleOptionalExternalDependencies.put("solr-webapp", optionalDeps);
   }
 
   private final XPath xpath = XPathFactory.newInstance().newXPath();
@@ -242,7 +248,7 @@ public class GetMavenDependenciesTask extends Task {
       } catch (BuildException e) {
         throw e;
       } catch (Exception e) {
-        throw new BuildException("Exception reading file " + ivyXmlFile.getPath(), e);
+        throw new BuildException("Exception reading file " + ivyXmlFile.getPath() + ": " + e, e);
       }
     }
     addSharedExternalDependencies();
@@ -258,10 +264,10 @@ public class GetMavenDependenciesTask extends Task {
     // Delay adding shared compile-scope dependencies until after all have been processed,
     // so dependency sharing is limited to a depth of one.
     Map<String,SortedSet<ExternalDependency>> sharedDependencies = new HashMap<String,SortedSet<ExternalDependency>>();
-    for (String artifactId : interModuleExternalCompileScopeDependencies.keySet()) {
+    for (String module : interModuleExternalCompileScopeDependencies.keySet()) {
       TreeSet<ExternalDependency> deps = new TreeSet<ExternalDependency>();
-      sharedDependencies.put(artifactId, deps);
-      Set<String> moduleDependencies = interModuleExternalCompileScopeDependencies.get(artifactId);
+      sharedDependencies.put(module, deps);
+      Set<String> moduleDependencies = interModuleExternalCompileScopeDependencies.get(module);
       if (null != moduleDependencies) {
         for (String otherArtifactId : moduleDependencies) {
           SortedSet<ExternalDependency> otherExtDeps = allExternalDependencies.get(otherArtifactId); 
@@ -275,13 +281,13 @@ public class GetMavenDependenciesTask extends Task {
         }
       }
     }
-    for (String artifactId : interModuleExternalTestScopeDependencies.keySet()) {
-      SortedSet<ExternalDependency> deps = sharedDependencies.get(artifactId);
+    for (String module : interModuleExternalTestScopeDependencies.keySet()) {
+      SortedSet<ExternalDependency> deps = sharedDependencies.get(module);
       if (null == deps) {
         deps = new TreeSet<ExternalDependency>();
-        sharedDependencies.put(artifactId, deps);
+        sharedDependencies.put(module, deps);
       }
-      Set<String> moduleDependencies = interModuleExternalTestScopeDependencies.get(artifactId);
+      Set<String> moduleDependencies = interModuleExternalTestScopeDependencies.get(module);
       if (null != moduleDependencies) {
         for (String otherArtifactId : moduleDependencies) {
           int testScopePos = otherArtifactId.indexOf(":test");
@@ -295,8 +301,8 @@ public class GetMavenDependenciesTask extends Task {
             for (ExternalDependency otherDep : otherExtDeps) {
               if (otherDep.isTestDependency == isTestScope) {
                 if (  ! deps.contains(otherDep)
-                   && (  null == allExternalDependencies.get(artifactId)
-                      || ! allExternalDependencies.get(artifactId).contains(otherDep))) { 
+                   && (  null == allExternalDependencies.get(module)
+                      || ! allExternalDependencies.get(module).contains(otherDep))) {
                   // Add test-scope clone only if it's not already a compile-scope dependency. 
                   ExternalDependency otherDepTestScope = new ExternalDependency
                       (otherDep.groupId, otherDep.artifactId, otherDep.classifier, true, otherDep.isOptional);
@@ -308,13 +314,21 @@ public class GetMavenDependenciesTask extends Task {
         }
       }
     }
-    for (String artifactId : sharedDependencies.keySet()) {
-      SortedSet<ExternalDependency> deps = allExternalDependencies.get(artifactId);
+    for (String module : sharedDependencies.keySet()) {
+      SortedSet<ExternalDependency> deps = allExternalDependencies.get(module);
       if (null == deps) {
         deps = new TreeSet<ExternalDependency>();
-        allExternalDependencies.put(artifactId, deps);
+        allExternalDependencies.put(module, deps);
       }
-      deps.addAll(sharedDependencies.get(artifactId));
+      for (ExternalDependency dep : sharedDependencies.get(module)) {
+        String dependencyCoordinate = dep.groupId + ":" + dep.artifactId;
+        if (globalOptionalExternalDependencies.contains(dependencyCoordinate)
+            || (perModuleOptionalExternalDependencies.containsKey(module)
+                && perModuleOptionalExternalDependencies.get(module).contains(dependencyCoordinate))) {
+          dep = new ExternalDependency(dep.groupId, dep.artifactId, dep.classifier, dep.isTestDependency, true);
+        }
+        deps.add(dep);
+      }
     }
   }
 
@@ -672,7 +686,9 @@ public class GetMavenDependenciesTask extends Task {
       }
       String conf = dependency.getAttribute("conf");
       boolean confContainsTest = conf.contains("test");
-      boolean isOptional = optionalExternalDependencies.contains(dependencyCoordinate);
+      boolean isOptional = globalOptionalExternalDependencies.contains(dependencyCoordinate)
+          || ( perModuleOptionalExternalDependencies.containsKey(module)
+              && perModuleOptionalExternalDependencies.get(module).contains(dependencyCoordinate));
       SortedSet<ExternalDependency> deps = allExternalDependencies.get(module);
       if (null == deps) {
         deps = new TreeSet<ExternalDependency>();
