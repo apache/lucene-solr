@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NoSuchDirectoryException;
 import org.apache.lucene.util.CollectionUtil;
@@ -260,6 +261,14 @@ final class IndexFileDeleter implements Closeable {
     startingCommitDeleted = currentCommitPoint == null ? false : currentCommitPoint.isDeleted();
 
     deleteCommits();
+  }
+
+  private void ensureOpen() throws AlreadyClosedException {
+    if (writer == null) {
+      throw new AlreadyClosedException("this IndexWriter is closed");
+    } else {
+      writer.ensureOpen(false);
+    }
   }
 
   public SegmentInfos getLastSegmentInfos() {
@@ -578,6 +587,7 @@ final class IndexFileDeleter implements Closeable {
   void deleteFile(String fileName)
        throws IOException {
     assert locked();
+    ensureOpen();
     try {
       if (infoStream.isEnabled("IFD")) {
         infoStream.message("IFD", "delete \"" + fileName + "\"");
