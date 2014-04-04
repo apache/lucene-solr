@@ -126,7 +126,8 @@ import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAs
   JUnit4MethodProvider.class
 })
 @Listeners({
-  RunListenerPrintReproduceInfo.class
+  RunListenerPrintReproduceInfo.class,
+  FailureMarker.class
 })
 @SeedDecorators({MixWithSuiteName.class}) // See LUCENE-3995 for rationale.
 @ThreadLeakScope(Scope.SUITE)
@@ -355,8 +356,7 @@ public abstract class LuceneTestCase extends Assert {
   /**
    * Suite failure marker (any error in the test or suite scope).
    */
-  public final static TestRuleMarkFailure suiteFailureMarker = 
-      new TestRuleMarkFailure();
+  public static TestRuleMarkFailure suiteFailureMarker;
 
   /**
    * Ignore tests after hitting a designated number of initial failures. This
@@ -421,7 +421,7 @@ public abstract class LuceneTestCase extends Assert {
   public static TestRule classRules = RuleChain
     .outerRule(new TestRuleIgnoreTestSuites())
     .around(ignoreAfterMaxFailures)
-    .around(suiteFailureMarker)
+    .around(suiteFailureMarker = new TestRuleMarkFailure())
     .around(new TestRuleAssertionsRequired())
     .around(new StaticFieldsInvariantRule(STATIC_LEAK_THRESHOLD, true) {
       @Override
