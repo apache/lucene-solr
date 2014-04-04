@@ -243,6 +243,9 @@ Bug fixes
   directory outside of Lucene.  (Simon Willnauer, Shai Erera, Robert
   Muir, Mike McCandless)
 
+* LUCENE-5570: Don't let FSDirectory.sync() create new zero-byte files, instead throw
+  exception if a file is missing.  (Uwe Schindler, Mike McCandless, Robert Muir)
+
 Test Framework
 
 * LUCENE-5567: When a suite fails with zombie threads failure marker and count 
