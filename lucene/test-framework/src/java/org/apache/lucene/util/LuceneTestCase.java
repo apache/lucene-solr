@@ -759,28 +759,13 @@ public abstract class LuceneTestCase extends Assert {
       int maxNumThreadStates = rarely(r) ? TestUtil.nextInt(r, 5, 20) // crazy value
           : TestUtil.nextInt(r, 1, 4); // reasonable value
 
-      Method setIndexerThreadPoolMethod = null;
-      try {
-        // Retrieve the package-private setIndexerThreadPool
-        // method:
-        for(Method m : IndexWriterConfig.class.getDeclaredMethods()) {
-          if (m.getName().equals("setIndexerThreadPool")) {
-            m.setAccessible(true);
-            setIndexerThreadPoolMethod = m;
-            break;
-          }
-        }
-      } catch (Exception e) {
-        // Should not happen?
-        Rethrow.rethrow(e);
-      }
-
-      if (setIndexerThreadPoolMethod == null) {
-        throw new RuntimeException("failed to lookup IndexWriterConfig.setIndexerThreadPool method");
-      }
-
       try {
         if (rarely(r)) {
+          // Retrieve the package-private setIndexerThreadPool
+          // method:
+          Method setIndexerThreadPoolMethod = IndexWriterConfig.class.getDeclaredMethod("setIndexerThreadPool",
+            Class.forName("org.apache.lucene.index.DocumentsWriterPerThreadPool"));
+          setIndexerThreadPoolMethod.setAccessible(true);
           Class<?> clazz = Class.forName("org.apache.lucene.index.RandomDocumentsWriterPerThreadPool");
           Constructor<?> ctor = clazz.getConstructor(int.class, Random.class);
           ctor.setAccessible(true);
