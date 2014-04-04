@@ -137,13 +137,12 @@ public final class TestUtil {
   }
 
   /** 
-   * Convenience method: Unzip zipName + ".zip" into destDir, cleaning up 
+   * Convenience method unzipping zipName into destDir, cleaning up 
    * destDir first. 
    */
   public static void unzip(File zipName, File destDir) throws IOException {
     rm(destDir);
     destDir.mkdir();
-    maybeRemoveAfterSuite(destDir);
 
     ZipFile zipFile = new ZipFile(zipName);
     Enumeration<? extends ZipEntry> entries = zipFile.entries();
