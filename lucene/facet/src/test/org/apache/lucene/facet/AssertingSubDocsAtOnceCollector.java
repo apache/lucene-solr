@@ -20,14 +20,13 @@ package org.apache.lucene.facet;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.Scorer.ChildScorer;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Scorer.ChildScorer;
+import org.apache.lucene.search.SimpleCollector;
 
 /** Verifies in collect() that all child subScorers are on
  *  the collected doc. */
-class AssertingSubDocsAtOnceCollector extends Collector {
+class AssertingSubDocsAtOnceCollector extends SimpleCollector {
 
   // TODO: allow wrapping another Collector
 
@@ -54,10 +53,6 @@ class AssertingSubDocsAtOnceCollector extends Collector {
         throw new IllegalStateException("subScorer=" + s + " has docID=" + s.docID() + " != collected docID=" + docID);
       }
     }
-  }
-
-  @Override
-  public void setNextReader(AtomicReaderContext context) {
   }
 
   @Override

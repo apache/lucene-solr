@@ -57,7 +57,7 @@ public abstract class Scorer extends DocsEnum {
   /** Returns the score of the current document matching the query.
    * Initially invalid, until {@link #nextDoc()} or {@link #advance(int)}
    * is called the first time, or when called from within
-   * {@link Collector#collect}.
+   * {@link LeafCollector#collect}.
    */
   public abstract float score() throws IOException;
   

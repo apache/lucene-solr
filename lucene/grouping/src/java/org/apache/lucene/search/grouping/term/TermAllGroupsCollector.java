@@ -19,6 +19,7 @@ package org.apache.lucene.search.grouping.term;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.grouping.AbstractAllGroupsCollector;
 import org.apache.lucene.util.BytesRef;
@@ -103,7 +104,7 @@ public class TermAllGroupsCollector extends AbstractAllGroupsCollector<BytesRef>
   }
 
   @Override
-  public void setNextReader(AtomicReaderContext context) throws IOException {
+  protected void doSetNextReader(AtomicReaderContext context) throws IOException {
     index = FieldCache.DEFAULT.getTermsIndex(context.reader(), groupField);
 
     // Clear ordSet and fill it with previous encountered groups that can occur in the current segment.

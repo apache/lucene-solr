@@ -17,26 +17,40 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
 
 /**
- * Just counts the total number of hits.
+ * {@link LeafCollector} delegator.
+ *
+ * @lucene.experimental
  */
+public class FilterLeafCollector implements LeafCollector {
 
-public class TotalHitCountCollector extends SimpleCollector {
-  private int totalHits;
+  protected final LeafCollector in;
 
-  /** Returns how many hits matched the search. */
-  public int getTotalHits() {
-    return totalHits;
+  /** Sole constructor. */
+  public FilterLeafCollector(LeafCollector in) {
+    this.in = in;
   }
 
   @Override
-  public void collect(int doc) {
-    totalHits++;
+  public void setScorer(Scorer scorer) throws IOException {
+    in.setScorer(scorer);
+  }
+
+  @Override
+  public void collect(int doc) throws IOException {
+    in.collect(doc);
   }
 
   @Override
   public boolean acceptsDocsOutOfOrder() {
-    return true;
+    return in.acceptsDocsOutOfOrder();
   }
+
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "(" + in + ")";
+  }
+
 }

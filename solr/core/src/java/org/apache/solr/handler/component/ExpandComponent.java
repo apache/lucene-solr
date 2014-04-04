@@ -20,9 +20,11 @@ package org.apache.solr.handler.component;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.FieldCache;
@@ -52,9 +54,12 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
+import com.carrotsearch.hppc.IntObjectMap;
 import com.carrotsearch.hppc.IntObjectOpenHashMap;
 import com.carrotsearch.hppc.IntOpenHashSet;
 import com.carrotsearch.hppc.cursors.IntObjectCursor;
+import com.carrotsearch.hppc.cursors.ObjectCursor;
+
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -210,9 +215,9 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     }
 
     searcher.search(query, pfilter.filter, collector);
-    IntObjectOpenHashMap groups = groupExpandCollector.getGroups();
+    IntObjectMap groups = groupExpandCollector.getGroups();
     Iterator<IntObjectCursor> it = groups.iterator();
-    Map<String, DocSlice> outMap = new HashMap();
+    Map<String, DocSlice> outMap = new HashMap<>();
     BytesRef bytesRef = new BytesRef();
     CharsRef charsRef = new CharsRef();
     FieldType fieldType = searcher.getSchema().getField(field).getType();
@@ -292,24 +297,21 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     rb.rsp.add("expanded", expanded);
   }
 
-  private class GroupExpandCollector extends Collector {
+  private class GroupExpandCollector implements Collector {
     private SortedDocValues docValues;
-    private IntObjectOpenHashMap groups;
+    private IntObjectMap<Collector> groups;
     private int docBase;
     private FixedBitSet groupBits;
     private IntOpenHashSet collapsedSet;
-    private List<Collector> collectors;
 
     public GroupExpandCollector(SortedDocValues docValues, FixedBitSet groupBits, IntOpenHashSet collapsedSet, int limit, Sort sort) throws IOException {
       int numGroups = collapsedSet.size();
-      groups = new IntObjectOpenHashMap(numGroups*2);
-      collectors = new ArrayList();
+      groups = new IntObjectOpenHashMap<>(numGroups*2);
       DocIdSetIterator iterator = groupBits.iterator();
       int group = -1;
       while((group = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
         Collector collector = (sort == null) ? TopScoreDocCollector.create(limit, true) : TopFieldCollector.create(sort,limit, false, false,false, true);
         groups.put(group, collector);
-        collectors.add(collector);
       }
 
       this.collapsedSet = collapsedSet;
@@ -317,35 +319,42 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       this.docValues = docValues;
     }
 
-    public IntObjectOpenHashMap getGroups() {
-      return this.groups;
-    }
-
-    public boolean acceptsDocsOutOfOrder() {
-      return false;
-    }
-
-    public void collect(int docId) throws IOException {
-      int doc = docId+docBase;
-      int ord = docValues.getOrd(doc);
-      if(ord > -1 && groupBits.get(ord) && !collapsedSet.contains(doc)) {
-        Collector c = (Collector)groups.get(ord);
-        c.collect(docId);
+    public LeafCollector getLeafCollector(AtomicReaderContext context) throws IOException {
+      final int docBase = context.docBase;
+      final IntObjectMap<LeafCollector> leafCollectors = new IntObjectOpenHashMap<>();
+      for (IntObjectCursor<Collector> entry : groups) {
+        leafCollectors.put(entry.key, entry.value.getLeafCollector(context));
       }
+      return new LeafCollector() {
+        
+        @Override
+        public void setScorer(Scorer scorer) throws IOException {
+          for (ObjectCursor<LeafCollector> c : leafCollectors.values()) {
+            c.value.setScorer(scorer);
+          }
+        }
+        
+        @Override
+        public void collect(int docId) throws IOException {
+          int doc = docId+docBase;
+          int ord = docValues.getOrd(doc);
+          if(ord > -1 && groupBits.get(ord) && !collapsedSet.contains(doc)) {
+            LeafCollector c = leafCollectors.get(ord);
+            c.collect(docId);
+          }
+        }
+        
+        @Override
+        public boolean acceptsDocsOutOfOrder() {
+          return false;
+        }
+      };
     }
 
-    public void setNextReader(AtomicReaderContext context) throws IOException {
-      this.docBase = context.docBase;
-      for(Collector c : collectors) {
-        c.setNextReader(context);
-      }
+    public IntObjectMap<Collector> getGroups() {
+      return groups;
     }
 
-    public void setScorer(Scorer scorer) throws IOException {
-      for(Collector c : collectors) {
-        c.setScorer(scorer);
-      }
-    }
   }
 
   ////////////////////////////////////////////

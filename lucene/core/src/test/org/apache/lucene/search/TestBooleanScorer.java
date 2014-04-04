@@ -84,7 +84,7 @@ public class TestBooleanScorer extends LuceneTestCase {
       private int doc = -1;
 
       @Override
-      public boolean score(Collector c, int maxDoc) throws IOException {
+      public boolean score(LeafCollector c, int maxDoc) throws IOException {
         assert doc == -1;
         doc = 3000;
         FakeScorer fs = new FakeScorer();
@@ -99,7 +99,7 @@ public class TestBooleanScorer extends LuceneTestCase {
     BooleanScorer bs = new BooleanScorer(weight, false, 1, Arrays.asList(scorers), Collections.<BulkScorer>emptyList(), scorers.length);
 
     final List<Integer> hits = new ArrayList<>();
-    bs.score(new Collector() {
+    bs.score(new SimpleCollector() {
       int docBase;
       @Override
       public void setScorer(Scorer scorer) {
@@ -111,7 +111,7 @@ public class TestBooleanScorer extends LuceneTestCase {
       }
       
       @Override
-      public void setNextReader(AtomicReaderContext context) {
+      protected void doSetNextReader(AtomicReaderContext context) throws IOException {
         docBase = context.docBase;
       }
       
@@ -149,7 +149,7 @@ public class TestBooleanScorer extends LuceneTestCase {
                             BooleanClause.Occur.SHOULD));
                             
     final int[] count = new int[1];
-    s.search(q, new Collector() {
+    s.search(q, new SimpleCollector() {
     
       @Override
       public void setScorer(Scorer scorer) {
@@ -161,10 +161,6 @@ public class TestBooleanScorer extends LuceneTestCase {
       @Override
       public void collect(int doc) {
         count[0]++;
-      }
-      
-      @Override
-      public void setNextReader(AtomicReaderContext context) {
       }
       
       @Override
@@ -219,7 +215,7 @@ public class TestBooleanScorer extends LuceneTestCase {
           return new BulkScorer() {
 
             @Override
-            public boolean score(Collector collector, int max) throws IOException {
+            public boolean score(LeafCollector collector, int max) throws IOException {
               collector.setScorer(new FakeScorer());
               collector.collect(0);
               return false;

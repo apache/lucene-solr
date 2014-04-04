@@ -17,26 +17,37 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
+import org.apache.lucene.index.AtomicReaderContext;
 
 /**
- * Just counts the total number of hits.
+ * Base {@link Collector} implementation that is used to collect all contexts.
+ *
+ * @lucene.experimental
  */
-
-public class TotalHitCountCollector extends SimpleCollector {
-  private int totalHits;
-
-  /** Returns how many hits matched the search. */
-  public int getTotalHits() {
-    return totalHits;
-  }
+public abstract class SimpleCollector implements Collector, LeafCollector {
 
   @Override
-  public void collect(int doc) {
-    totalHits++;
+  public final LeafCollector getLeafCollector(AtomicReaderContext context) throws IOException {
+    doSetNextReader(context);
+    return this;
   }
 
+  /** This method is called before collecting <code>context</code>. */
+  protected void doSetNextReader(AtomicReaderContext context) throws IOException {}
+
   @Override
-  public boolean acceptsDocsOutOfOrder() {
-    return true;
+  public void setScorer(Scorer scorer) throws IOException {
+    // no-op by default
   }
+
+  // redeclare methods so that javadocs are inherited on sub-classes
+
+  @Override
+  public abstract boolean acceptsDocsOutOfOrder();
+
+  @Override
+  public abstract void collect(int doc) throws IOException;
+
 }

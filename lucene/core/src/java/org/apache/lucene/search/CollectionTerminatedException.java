@@ -17,7 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-/** Throw this exception in {@link Collector#collect(int)} to prematurely
+/** Throw this exception in {@link LeafCollector#collect(int)} to prematurely
  *  terminate collection of the current leaf.
  *  <p>Note: IndexSearcher swallows this exception and never re-throws it.
  *  As a consequence, you should not catch it when calling

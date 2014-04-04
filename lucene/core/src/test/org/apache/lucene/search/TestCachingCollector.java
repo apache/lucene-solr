@@ -17,10 +17,9 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.util.LuceneTestCase;
-
 import java.io.IOException;
+
+import org.apache.lucene.util.LuceneTestCase;
 
 public class TestCachingCollector extends LuceneTestCase {
 
@@ -53,22 +52,16 @@ public class TestCachingCollector extends LuceneTestCase {
     } 
   }
   
-  private static class NoOpCollector extends Collector {
+  private static class NoOpCollector extends SimpleCollector {
 
     private final boolean acceptDocsOutOfOrder;
     
     public NoOpCollector(boolean acceptDocsOutOfOrder) {
       this.acceptDocsOutOfOrder = acceptDocsOutOfOrder;
     }
-    
-    @Override
-    public void setScorer(Scorer scorer) throws IOException {}
 
     @Override
     public void collect(int doc) throws IOException {}
-
-    @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {}
 
     @Override
     public boolean acceptsDocsOutOfOrder() {
@@ -80,22 +73,17 @@ public class TestCachingCollector extends LuceneTestCase {
   public void testBasic() throws Exception {
     for (boolean cacheScores : new boolean[] { false, true }) {
       CachingCollector cc = CachingCollector.create(new NoOpCollector(false), cacheScores, 1.0);
-      cc.setScorer(new MockScorer());
+      LeafCollector acc = cc.getLeafCollector(null);
+      acc.setScorer(new MockScorer());
 
       // collect 1000 docs
       for (int i = 0; i < 1000; i++) {
-        cc.collect(i);
+        acc.collect(i);
       }
 
       // now replay them
-      cc.replay(new Collector() {
+      cc.replay(new SimpleCollector() {
         int prevDocID = -1;
-
-        @Override
-        public void setScorer(Scorer scorer) {}
-
-        @Override
-        public void setNextReader(AtomicReaderContext context) {}
 
         @Override
         public void collect(int doc) {
@@ -113,11 +101,12 @@ public class TestCachingCollector extends LuceneTestCase {
   
   public void testIllegalStateOnReplay() throws Exception {
     CachingCollector cc = CachingCollector.create(new NoOpCollector(false), true, 50 * ONE_BYTE);
-    cc.setScorer(new MockScorer());
+    LeafCollector acc = cc.getLeafCollector(null);
+    acc.setScorer(new MockScorer());
     
     // collect 130 docs, this should be enough for triggering cache abort.
     for (int i = 0; i < 130; i++) {
-      cc.collect(i);
+      acc.collect(i);
     }
     
     assertFalse("CachingCollector should not be cached due to low memory limit", cc.isCached());
@@ -135,16 +124,18 @@ public class TestCachingCollector extends LuceneTestCase {
     // is valid with the Collector passed to the ctor
     
     // 'src' Collector does not support out-of-order
-    CachingCollector cc = CachingCollector.create(new NoOpCollector(false), true, 50 * ONE_BYTE);
-    cc.setScorer(new MockScorer());
-    for (int i = 0; i < 10; i++) cc.collect(i);
+    CachingCollector cc = CachingCollector.create(new NoOpCollector(false), true, 100 * ONE_BYTE);
+    LeafCollector acc = cc.getLeafCollector(null);
+    acc.setScorer(new MockScorer());
+    for (int i = 0; i < 10; i++) acc.collect(i);
     cc.replay(new NoOpCollector(true)); // this call should not fail
     cc.replay(new NoOpCollector(false)); // this call should not fail
 
     // 'src' Collector supports out-of-order
-    cc = CachingCollector.create(new NoOpCollector(true), true, 50 * ONE_BYTE);
-    cc.setScorer(new MockScorer());
-    for (int i = 0; i < 10; i++) cc.collect(i);
+    cc = CachingCollector.create(new NoOpCollector(true), true, 100 * ONE_BYTE);
+    acc = cc.getLeafCollector(null);
+    acc.setScorer(new MockScorer());
+    for (int i = 0; i < 10; i++) acc.collect(i);
     cc.replay(new NoOpCollector(true)); // this call should not fail
     try {
       cc.replay(new NoOpCollector(false)); // this call should fail
@@ -165,12 +156,13 @@ public class TestCachingCollector extends LuceneTestCase {
       int bytesPerDoc = cacheScores ? 8 : 4;
       CachingCollector cc = CachingCollector.create(new NoOpCollector(false),
           cacheScores, bytesPerDoc * ONE_BYTE * numDocs);
-      cc.setScorer(new MockScorer());
-      for (int i = 0; i < numDocs; i++) cc.collect(i);
+      LeafCollector acc = cc.getLeafCollector(null);
+      acc.setScorer(new MockScorer());
+      for (int i = 0; i < numDocs; i++) acc.collect(i);
       assertTrue(cc.isCached());
 
       // The 151's document should terminate caching
-      cc.collect(numDocs);
+      acc.collect(numDocs);
       assertFalse(cc.isCached());
     }
   }
@@ -179,9 +171,9 @@ public class TestCachingCollector extends LuceneTestCase {
     for (boolean cacheScores : new boolean[] { false, true }) {
       // create w/ null wrapped collector, and test that the methods work
       CachingCollector cc = CachingCollector.create(true, cacheScores, 50 * ONE_BYTE);
-      cc.setNextReader(null);
-      cc.setScorer(new MockScorer());
-      cc.collect(0);
+      LeafCollector acc = cc.getLeafCollector(null);
+      acc.setScorer(new MockScorer());
+      acc.collect(0);
       
       assertTrue(cc.isCached());
       cc.replay(new NoOpCollector(true));

@@ -249,7 +249,7 @@ public class QueryUtils {
         final float maxDiff = 1e-5f;
         final AtomicReader lastReader[] = {null};
 
-        s.search(q, new Collector() {
+        s.search(q, new SimpleCollector() {
           private Scorer sc;
           private Scorer scorer;
           private int leafPtr;
@@ -305,7 +305,7 @@ public class QueryUtils {
           }
 
           @Override
-          public void setNextReader(AtomicReaderContext context) throws IOException {
+          protected void doSetNextReader(AtomicReaderContext context) throws IOException {
             // confirm that skipping beyond the last doc, on the
             // previous reader, hits NO_MORE_DOCS
             if (lastReader[0] != null) {
@@ -357,7 +357,7 @@ public class QueryUtils {
     final int lastDoc[] = {-1};
     final AtomicReader lastReader[] = {null};
     final List<AtomicReaderContext> context = s.getTopReaderContext().leaves();
-    s.search(q,new Collector() {
+    s.search(q,new SimpleCollector() {
       private Scorer scorer;
       private int leafPtr;
       private Bits liveDocs;
@@ -392,7 +392,7 @@ public class QueryUtils {
       }
 
       @Override
-      public void setNextReader(AtomicReaderContext context) throws IOException {
+      protected void doSetNextReader(AtomicReaderContext context) throws IOException {
         // confirm that skipping beyond the last doc, on the
         // previous reader, hits NO_MORE_DOCS
         if (lastReader[0] != null) {

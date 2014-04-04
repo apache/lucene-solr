@@ -29,12 +29,10 @@ import org.apache.lucene.search.TimeLimitingCollector;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.search.grouping.AbstractAllGroupHeadsCollector;
 import org.apache.lucene.search.grouping.term.TermAllGroupHeadsCollector;
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.DocSetCollector;
-import org.apache.solr.search.DocSetDelegateCollector;
 import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrIndexSearcher.ProcessedFilter;
@@ -173,14 +171,11 @@ public class CommandHandler {
 
   private DocSet computeDocSet(Query query, ProcessedFilter filter, List<Collector> collectors) throws IOException {
     int maxDoc = searcher.maxDoc();
-    DocSetCollector docSetCollector;
-    if (collectors.isEmpty()) {
-      docSetCollector = new DocSetCollector(maxDoc >> 6, maxDoc);
-    } else {
-      Collector wrappedCollectors = MultiCollector.wrap(collectors.toArray(new Collector[collectors.size()]));
-      docSetCollector = new DocSetDelegateCollector(maxDoc >> 6, maxDoc, wrappedCollectors);
-    }
-    searchWithTimeLimiter(query, filter, docSetCollector);
+    final Collector collector;
+    final DocSetCollector docSetCollector = new DocSetCollector(maxDoc >> 6, maxDoc);
+    List<Collector> allCollectors = new ArrayList<>(collectors);
+    allCollectors.add(docSetCollector);
+    searchWithTimeLimiter(query, filter, MultiCollector.wrap(allCollectors));
     return docSetCollector.getDocSet();
   }
 

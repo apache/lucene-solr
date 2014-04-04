@@ -50,6 +50,9 @@ API Changes
   via setReader.  
   (Benson Margulies via Robert Muir - pull request #16)
 
+* LUCENE-5527: The Collector API has been refactored to use a dedicated Collector
+  per leaf. (Shikhar Bhushan, Adrien Grand)
+
 Documentation
 
 * LUCENE-5392: Add/improve analysis package documentation to reflect

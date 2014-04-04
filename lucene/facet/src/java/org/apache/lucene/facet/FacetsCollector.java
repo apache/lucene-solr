@@ -32,6 +32,7 @@ import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
@@ -47,7 +48,7 @@ import org.apache.lucene.util.FixedBitSet;
  *  counting.  Use the {@code search} utility methods to
  *  perform an "ordinary" search but also collect into a
  *  {@link Collector}. */
-public class FacetsCollector extends Collector {
+public class FacetsCollector extends SimpleCollector {
 
   private AtomicReaderContext context;
   private Scorer scorer;
@@ -151,7 +152,7 @@ public class FacetsCollector extends Collector {
 
     return matchingDocs;
   }
-    
+
   @Override
   public final boolean acceptsDocsOutOfOrder() {
     // If we are keeping scores then we require in-order
@@ -180,7 +181,7 @@ public class FacetsCollector extends Collector {
   }
     
   @Override
-  public final void setNextReader(AtomicReaderContext context) throws IOException {
+  protected void doSetNextReader(AtomicReaderContext context) throws IOException {
     if (docs != null) {
       matchingDocs.add(new MatchingDocs(this.context, docs.getDocIdSet(), totalHits, scores));
     }

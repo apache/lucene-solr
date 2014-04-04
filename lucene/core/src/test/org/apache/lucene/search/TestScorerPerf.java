@@ -97,13 +97,10 @@ public class TestScorerPerf extends LuceneTestCase {
     return sets;
   }
 
-  public static class CountingHitCollector extends Collector {
+  public static class CountingHitCollector extends SimpleCollector {
     int count=0;
     int sum=0;
     protected int docBase = 0;
-
-    @Override
-    public void setScorer(Scorer scorer) throws IOException {}
     
     @Override
     public void collect(int doc) {
@@ -115,7 +112,7 @@ public class TestScorerPerf extends LuceneTestCase {
     public int getSum() { return sum; }
 
     @Override
-    public void setNextReader(AtomicReaderContext context) {
+    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
       docBase = context.docBase;
     }
     @Override

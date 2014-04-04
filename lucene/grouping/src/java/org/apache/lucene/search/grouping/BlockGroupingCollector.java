@@ -55,7 +55,7 @@ import org.apache.lucene.util.PriorityQueue;
  * @lucene.experimental
  */
 
-public class BlockGroupingCollector extends Collector {
+public class BlockGroupingCollector extends SimpleCollector {
 
   private int[] pendingSubDocs;
   private float[] pendingSubScores;
@@ -350,7 +350,7 @@ public class BlockGroupingCollector extends Collector {
       }
 
       collector.setScorer(fakeScorer);
-      collector.setNextReader(og.readerContext);
+      collector.getLeafCollector(og.readerContext);
       for(int docIDX=0;docIDX<og.count;docIDX++) {
         final int doc = og.docs[docIDX];
         fakeScorer.doc = doc;
@@ -516,7 +516,7 @@ public class BlockGroupingCollector extends Collector {
   }
 
   @Override
-  public void setNextReader(AtomicReaderContext readerContext) throws IOException {
+  protected void doSetNextReader(AtomicReaderContext readerContext) throws IOException {
     if (subDocUpto != 0) {
       processGroup();
     }

@@ -60,6 +60,7 @@ import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Collector;
@@ -71,9 +72,11 @@ import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
@@ -930,17 +933,17 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
         if (idIter == null) continue;
       }
 
-      collector.setNextReader(leaf);
+      final LeafCollector leafCollector = collector.getLeafCollector(leaf);
       int max = reader.maxDoc();
 
       if (idIter == null) {
         for (int docid = 0; docid<max; docid++) {
           if (liveDocs != null && !liveDocs.get(docid)) continue;
-          collector.collect(docid);
+          leafCollector.collect(docid);
         }
       } else {
         for (int docid = -1; (docid = idIter.advance(docid+1)) < max; ) {
-          collector.collect(docid);
+          leafCollector.collect(docid);
         }
       }
     }
@@ -1526,16 +1529,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       Collector collector;
 
       if (!needScores) {
-        collector = new Collector () {
-          @Override
-          public void setScorer(Scorer scorer) {
-          }
+        collector = new SimpleCollector () {
           @Override
           public void collect(int doc) {
             numHits[0]++;
-          }
-          @Override
-          public void setNextReader(AtomicReaderContext context) {
           }
           @Override
           public boolean acceptsDocsOutOfOrder() {
@@ -1543,7 +1540,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
           }
         };
       } else {
-        collector = new Collector() {
+        collector = new SimpleCollector() {
           Scorer scorer;
           @Override
           public void setScorer(Scorer scorer) {
@@ -1554,9 +1551,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
             numHits[0]++;
             float score = scorer.score();
             if (score > topscore[0]) topscore[0]=score;            
-          }
-          @Override
-          public void setNextReader(AtomicReaderContext context) {
           }
           @Override
           public boolean acceptsDocsOutOfOrder() {
@@ -1667,30 +1661,33 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       final float[] topscore = new float[] { Float.NEGATIVE_INFINITY };
 
       Collector collector;
-      DocSetCollector setCollector;
+      final DocSetCollector setCollector = new DocSetCollector(smallSetSize, maxDoc);
 
        if (!needScores) {
-         collector = setCollector = new DocSetCollector(smallSetSize, maxDoc);
+         collector = setCollector;
        } else {
-         collector = setCollector = new DocSetDelegateCollector(smallSetSize, maxDoc, new Collector() {
+         final Collector topScoreCollector = new SimpleCollector() {
+          
            Scorer scorer;
+           
            @Override
-          public void setScorer(Scorer scorer) {
-             this.scorer = scorer;
-           }
-           @Override
+          public void setScorer(Scorer scorer) throws IOException {
+            this.scorer = scorer;
+          }
+           
+          @Override
           public void collect(int doc) throws IOException {
-             float score = scorer.score();
-             if (score > topscore[0]) topscore[0]=score;
-           }
-           @Override
-          public void setNextReader(AtomicReaderContext context) {
-           }
-           @Override
+            float score = scorer.score();
+            if (score > topscore[0]) topscore[0] = score;
+          }
+          
+          @Override
           public boolean acceptsDocsOutOfOrder() {
-             return false;
-           }
-         });
+            return true;
+          }
+        };
+        
+        collector = MultiCollector.wrap(setCollector, topScoreCollector);
        }
        if (terminateEarly) {
          collector = new EarlyTerminatingCollector(collector, cmd.len);
@@ -1726,8 +1723,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     } else {
 
       final TopDocsCollector topCollector = buildTopDocsCollector(len, cmd);
-      DocSetCollector setCollector = new DocSetDelegateCollector(maxDoc>>6, maxDoc, topCollector);
-      Collector collector = setCollector;
+      DocSetCollector setCollector = new DocSetCollector(maxDoc>>6, maxDoc);
+      Collector collector = MultiCollector.wrap(topCollector, setCollector);
       if (terminateEarly) {
         collector = new EarlyTerminatingCollector(collector, cmd.len);
       }
@@ -2031,7 +2028,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
         AtomicReaderContext leaf = leafContexts.get(readerIndex++);
         base = leaf.docBase;
         end = base + leaf.reader().maxDoc();
-        topCollector.setNextReader(leaf);
+        topCollector.getLeafCollector(leaf);
         // we should never need to set the scorer given the settings for the collector
       }
       topCollector.collect(doc-base);

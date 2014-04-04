@@ -59,7 +59,7 @@ public class AssertingBulkOutOfOrderScorer extends BulkScorer {
   }
 
   private static void flush(int[] docIDs, float[] scores, int[] freqs, int size,
-      FakeScorer scorer, Collector collector) throws IOException {
+      FakeScorer scorer, LeafCollector collector) throws IOException {
     for (int i = 0; i < size; ++i) {
       scorer.doc = docIDs[i];
       scorer.freq = freqs[i];
@@ -69,7 +69,7 @@ public class AssertingBulkOutOfOrderScorer extends BulkScorer {
   }
 
   @Override
-  public boolean score(Collector collector, int max) throws IOException {
+  public boolean score(LeafCollector collector, int max) throws IOException {
     if (scorer.docID() == -1) {
       scorer.nextDoc();
     }

@@ -121,46 +121,45 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     return collector.docCounts;
   }
   
-  static class MyCollector extends Collector {
-    
-    private TopDocsCollector<ScoreDoc> collector;
-    private int docBase;
+  static class MyCollector extends FilterCollector {
 
     public final Map<Integer,Integer> docCounts = new HashMap<>();
     private final Set<Scorer> tqsSet = new HashSet<>();
     
     MyCollector() {
-      collector = TopScoreDocCollector.create(10, true);
+      super(TopScoreDocCollector.create(10, true));
     }
 
-    @Override
-    public boolean acceptsDocsOutOfOrder() {
-      return false;
-    }
-
-    @Override
-    public void collect(int doc) throws IOException {
-      int freq = 0;
-      for(Scorer scorer : tqsSet) {
-        if (doc == scorer.docID()) {
-          freq += scorer.freq();
+    public LeafCollector getLeafCollector(AtomicReaderContext context)
+        throws IOException {
+      final int docBase = context.docBase;
+      return new FilterLeafCollector(super.getLeafCollector(context)) {
+        
+        @Override
+        public boolean acceptsDocsOutOfOrder() {
+          return false;
         }
-      }
-      docCounts.put(doc + docBase, freq);
-      collector.collect(doc);
-    }
-
-    @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
-      this.docBase = context.docBase;
-      collector.setNextReader(context);
-    }
-
-    @Override
-    public void setScorer(Scorer scorer) throws IOException {
-      collector.setScorer(scorer);
-      tqsSet.clear();
-      fillLeaves(scorer, tqsSet);
+        
+        @Override
+        public void setScorer(Scorer scorer) throws IOException {
+          super.setScorer(scorer);
+          tqsSet.clear();
+          fillLeaves(scorer, tqsSet);
+        }
+        
+        @Override
+        public void collect(int doc) throws IOException {
+          int freq = 0;
+          for(Scorer scorer : tqsSet) {
+            if (doc == scorer.docID()) {
+              freq += scorer.freq();
+            }
+          }
+          docCounts.put(doc + docBase, freq);
+          super.collect(doc);
+        }
+        
+      };
     }
     
     private void fillLeaves(Scorer scorer, Set<Scorer> set) {
@@ -174,11 +173,12 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
     }
     
     public TopDocs topDocs(){
-      return collector.topDocs();
+      return ((TopDocsCollector<?>) in).topDocs();
     }
     
     public int freq(int doc) throws IOException {
       return docCounts.get(doc);
     }
+    
   }
 }

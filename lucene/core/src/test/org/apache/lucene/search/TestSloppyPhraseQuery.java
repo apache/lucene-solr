@@ -175,7 +175,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     return query;
   }
 
-  static class MaxFreqCollector extends Collector {
+  static class MaxFreqCollector extends SimpleCollector {
     float max;
     int totalHits;
     Scorer scorer;
@@ -192,10 +192,6 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     }
 
     @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {      
-    }
-
-    @Override
     public boolean acceptsDocsOutOfOrder() {
       return false;
     }
@@ -203,7 +199,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
   
   /** checks that no scores or freqs are infinite */
   private void assertSaneScoring(PhraseQuery pq, IndexSearcher searcher) throws Exception {
-    searcher.search(pq, new Collector() {
+    searcher.search(pq, new SimpleCollector() {
       Scorer scorer;
       
       @Override
@@ -215,11 +211,6 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
       public void collect(int doc) throws IOException {
         assertFalse(Float.isInfinite(scorer.freq()));
         assertFalse(Float.isInfinite(scorer.score()));
-      }
-      
-      @Override
-      public void setNextReader(AtomicReaderContext context) {
-        // do nothing
       }
       
       @Override

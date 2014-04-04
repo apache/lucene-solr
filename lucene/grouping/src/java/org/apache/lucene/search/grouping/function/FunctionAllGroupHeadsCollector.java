@@ -20,6 +20,7 @@ package org.apache.lucene.search.grouping.function;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
@@ -101,7 +102,7 @@ public class FunctionAllGroupHeadsCollector extends AbstractAllGroupHeadsCollect
   }
 
   @Override
-  public void setNextReader(AtomicReaderContext context) throws IOException {
+  protected void doSetNextReader(AtomicReaderContext context) throws IOException {
     this.readerContext = context;
     FunctionValues values = groupBy.getValues(vsContext, context);
     filler = values.getValueFiller();

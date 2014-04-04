@@ -43,7 +43,7 @@ public class RangeFacetAccumulator extends QueryFacetAccumulator {
    * Update the readers of the rangeFacet {@link StatsCollector}s in FacetingAccumulator
    */
   @Override
-  public void setNextReader(AtomicReaderContext context) throws IOException {
+  protected void doSetNextReader(AtomicReaderContext context) throws IOException {
     parent.setRangeStatsCollectorReaders(context);
   }
 

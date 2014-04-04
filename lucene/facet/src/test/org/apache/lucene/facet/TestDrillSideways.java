@@ -43,6 +43,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
@@ -51,6 +52,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
@@ -666,12 +668,8 @@ public class TestDrillSideways extends FacetTestCase {
       // had an AssertingScorer it could catch it when
       // Weight.scoresDocsOutOfOrder lies!:
       new DrillSideways(s, config, tr).search(ddq,
-                           new Collector() {
+                           new SimpleCollector() {
                              int lastDocID;
-
-                             @Override
-                             public void setScorer(Scorer s) {
-                             }
 
                              @Override
                              public void collect(int doc) {
@@ -680,7 +678,7 @@ public class TestDrillSideways extends FacetTestCase {
                              }
 
                              @Override
-                             public void setNextReader(AtomicReaderContext context) {
+                             protected void doSetNextReader(AtomicReaderContext context) throws IOException {
                                lastDocID = -1;
                              }
 

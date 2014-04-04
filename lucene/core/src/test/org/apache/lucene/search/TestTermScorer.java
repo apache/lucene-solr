@@ -84,7 +84,7 @@ public class TestTermScorer extends LuceneTestCase {
     final List<TestHit> docs = new ArrayList<>();
     // must call next first
     
-    ts.score(new Collector() {
+    ts.score(new SimpleCollector() {
       private int base = 0;
       private Scorer scorer;
       
@@ -104,7 +104,7 @@ public class TestTermScorer extends LuceneTestCase {
       }
       
       @Override
-      public void setNextReader(AtomicReaderContext context) {
+      protected void doSetNextReader(AtomicReaderContext context) throws IOException {
         base = context.docBase;
       }
       

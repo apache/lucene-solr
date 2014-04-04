@@ -113,7 +113,7 @@ public class AnalyticsStats {
         }
 
         if (disi != null) {
-          accumulator.setNextReader(context);
+          accumulator.getLeafCollector(context);
           int doc = disi.nextDoc();
           while( doc != DocIdSetIterator.NO_MORE_DOCS){
             // Add a document to the statistics being generated

@@ -19,6 +19,7 @@ package org.apache.lucene.search.grouping.term;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.Scorer;
@@ -158,7 +159,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
     }
 
     @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
       this.readerContext = context;
       groupIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), groupField);
 
@@ -273,7 +274,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
     }
 
     @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
       this.readerContext = context;
       groupIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), groupField);
       for (int i = 0; i < fields.length; i++) {
@@ -441,7 +442,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
     }
 
     @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
       this.readerContext = context;
       groupIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), groupField);
       for (int i = 0; i < fields.length; i++) {
@@ -584,7 +585,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
     }
 
     @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
       this.readerContext = context;
       groupIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), groupField);
 

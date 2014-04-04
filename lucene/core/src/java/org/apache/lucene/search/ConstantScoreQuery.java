@@ -212,31 +212,16 @@ public class ConstantScoreQuery extends Query {
     }
 
     @Override
-    public boolean score(Collector collector, int max) throws IOException {
+    public boolean score(LeafCollector collector, int max) throws IOException {
       return bulkScorer.score(wrapCollector(collector), max);
     }
 
-    private Collector wrapCollector(final Collector collector) {
-      return new Collector() {
+    private LeafCollector wrapCollector(LeafCollector collector) {
+      return new FilterLeafCollector(collector) {
         @Override
         public void setScorer(Scorer scorer) throws IOException {
           // we must wrap again here, but using the scorer passed in as parameter:
-          collector.setScorer(new ConstantScorer(scorer, weight, theScore));
-        }
-        
-        @Override
-        public void collect(int doc) throws IOException {
-          collector.collect(doc);
-        }
-        
-        @Override
-        public void setNextReader(AtomicReaderContext context) throws IOException {
-          collector.setNextReader(context);
-        }
-        
-        @Override
-        public boolean acceptsDocsOutOfOrder() {
-          return collector.acceptsDocsOutOfOrder();
+          in.setScorer(new ConstantScorer(scorer, weight, theScore));
         }
       };
     }

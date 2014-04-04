@@ -155,8 +155,8 @@ public class FacetingAccumulator extends BasicAccumulator implements FacetValueA
    * @throws IOException if there is an error setting the next reader
    */
   @Override
-  public void setNextReader(AtomicReaderContext context) throws IOException {
-    super.setNextReader(context);
+  protected void doSetNextReader(AtomicReaderContext context) throws IOException {
+    super.doSetNextReader(context);
     for( Map<String,StatsCollector[]> valueList : fieldFacetCollectors.values() ){
       for (StatsCollector[] statsCollectorList : valueList.values()) {
         for (StatsCollector statsCollector : statsCollectorList) {
@@ -165,7 +165,7 @@ public class FacetingAccumulator extends BasicAccumulator implements FacetValueA
       }
     }
     for (FieldFacetAccumulator fa : facetAccumulators) {
-      fa.setNextReader(context);
+      fa.getLeafCollector(context);
     }
   }
   
@@ -175,7 +175,7 @@ public class FacetingAccumulator extends BasicAccumulator implements FacetValueA
    * @throws IOException if there is an error setting the next reader
    */
   public void setRangeStatsCollectorReaders(AtomicReaderContext context) throws IOException {
-    super.setNextReader(context);
+    super.getLeafCollector(context);
     for( Map<String,StatsCollector[]> rangeList : rangeFacetCollectors.values() ){
       for (StatsCollector[] statsCollectorList : rangeList.values()) {
         for (StatsCollector statsCollector : statsCollectorList) {
@@ -192,7 +192,7 @@ public class FacetingAccumulator extends BasicAccumulator implements FacetValueA
    * @throws IOException if there is an error setting the next reader
    */
   public void setQueryStatsCollectorReaders(AtomicReaderContext context) throws IOException {
-    super.setNextReader(context);
+    super.getLeafCollector(context);
     for( Map<String,StatsCollector[]> queryList : queryFacetCollectors.values() ){
       for (StatsCollector[] statsCollectorList : queryList.values()) {
         for (StatsCollector statsCollector : statsCollectorList) {

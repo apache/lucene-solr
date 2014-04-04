@@ -65,10 +65,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     dir = null;
   }
 
-  private static class CountingCollector extends Collector {
-    private final Collector other;
-    private int docBase;
-
+  private static class CountingCollector extends FilterCollector {
     public final Map<Integer, Map<Query, Float>> docCounts = new HashMap<>();
 
     private final Map<Query, Scorer> subScorers = new HashMap<>();
@@ -79,15 +76,8 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     }
 
     public CountingCollector(Collector other, Set<String> relationships) {
-      this.other = other;
+      super(other);
       this.relationships = relationships;
-    }
-
-    @Override
-    public void setScorer(Scorer scorer) throws IOException {
-      other.setScorer(scorer);
-      subScorers.clear();
-      setSubScorers(scorer, "TOP");
     }
     
     public void setSubScorers(Scorer scorer, String relationship) {
@@ -98,30 +88,34 @@ public class TestSubScorerFreqs extends LuceneTestCase {
       }
       subScorers.put(scorer.getWeight().getQuery(), scorer);
     }
-
-    @Override
-    public void collect(int doc) throws IOException {
-      final Map<Query, Float> freqs = new HashMap<>();
-      for (Map.Entry<Query, Scorer> ent : subScorers.entrySet()) {
-        Scorer value = ent.getValue();
-        int matchId = value.docID();
-        freqs.put(ent.getKey(), matchId == doc ? value.freq() : 0.0f);
-      }
-      docCounts.put(doc + docBase, freqs);
-      other.collect(doc);
-    }
-
-    @Override
-    public void setNextReader(AtomicReaderContext context)
+    
+    public LeafCollector getLeafCollector(AtomicReaderContext context)
         throws IOException {
-      docBase = context.docBase;
-      other.setNextReader(context);
+      final int docBase = context.docBase;
+      return new FilterLeafCollector(super.getLeafCollector(context)) {
+        
+        @Override
+        public void collect(int doc) throws IOException {
+          final Map<Query, Float> freqs = new HashMap<Query, Float>();
+          for (Map.Entry<Query, Scorer> ent : subScorers.entrySet()) {
+            Scorer value = ent.getValue();
+            int matchId = value.docID();
+            freqs.put(ent.getKey(), matchId == doc ? value.freq() : 0.0f);
+          }
+          docCounts.put(doc + docBase, freqs);
+          super.collect(doc);
+        }
+        
+        @Override
+        public void setScorer(Scorer scorer) throws IOException {
+          super.setScorer(scorer);
+          subScorers.clear();
+          setSubScorers(scorer, "TOP");
+        }
+        
+      };
     }
 
-    @Override
-    public boolean acceptsDocsOutOfOrder() {
-      return other.acceptsDocsOutOfOrder();
-    }
   }
 
   private static final float FLOAT_TOLERANCE = 0.00001F;

@@ -59,7 +59,7 @@ public class TestDocBoost extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(reader);
     searcher.search
       (new TermQuery(new Term("field", "word")),
-       new Collector() {
+       new SimpleCollector() {
          private int base = 0;
          private Scorer scorer;
          @Override
@@ -71,7 +71,7 @@ public class TestDocBoost extends LuceneTestCase {
            scores[doc + base] = scorer.score();
          }
          @Override
-         public void setNextReader(AtomicReaderContext context) {
+         protected void doSetNextReader(AtomicReaderContext context) throws IOException {
            base = context.docBase;
          }
          @Override

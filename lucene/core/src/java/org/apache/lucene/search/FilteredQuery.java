@@ -225,7 +225,7 @@ public class FilteredQuery extends Query {
     }
 
     @Override
-    public boolean score(Collector collector, int maxDoc) throws IOException {
+    public boolean score(LeafCollector collector, int maxDoc) throws IOException {
       // the normalization trick already applies the boost of this query,
       // so we can use the wrapped scorer directly:
       collector.setScorer(scorer);

@@ -34,6 +34,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
@@ -147,9 +148,10 @@ public class TestEarlyTermination extends LuceneTestCase {
       Sort different = new Sort(new SortField("ndv2", SortField.Type.LONG));
       searcher.search(query, new EarlyTerminatingSortingCollector(collector2, different, numHits) {
         @Override
-        public void setNextReader(AtomicReaderContext context) throws IOException {
-          super.setNextReader(context);
-          assertFalse("segment should not be recognized as sorted as different sorter was used", segmentSorted);
+        public LeafCollector getLeafCollector(AtomicReaderContext context) throws IOException {
+          final LeafCollector ret = super.getLeafCollector(context);
+          assertTrue("segment should not be recognized as sorted as different sorter was used", ret.getClass() == in.getLeafCollector(context).getClass());
+          return ret;
         }
       });
     }

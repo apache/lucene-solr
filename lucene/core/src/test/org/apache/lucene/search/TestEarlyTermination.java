@@ -58,13 +58,10 @@ public class TestEarlyTermination extends LuceneTestCase {
 
     for (int i = 0; i < iters; ++i) {
       final IndexSearcher searcher = newSearcher(reader);
-      final Collector collector = new Collector() {
+      final Collector collector = new SimpleCollector() {
 
         final boolean outOfOrder = random().nextBoolean();
         boolean collectionTerminated = true;
-
-        @Override
-        public void setScorer(Scorer scorer) throws IOException {}
 
         @Override
         public void collect(int doc) throws IOException {
@@ -76,7 +73,7 @@ public class TestEarlyTermination extends LuceneTestCase {
         }
 
         @Override
-        public void setNextReader(AtomicReaderContext context) throws IOException {
+        protected void doSetNextReader(AtomicReaderContext context) throws IOException {
           if (random().nextBoolean()) {
             collectionTerminated = true;
             throw new CollectionTerminatedException();
