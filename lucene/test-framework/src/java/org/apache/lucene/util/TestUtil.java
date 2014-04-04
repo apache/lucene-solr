@@ -37,7 +37,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.zip.ZipEntry;
@@ -87,10 +86,8 @@ import org.apache.lucene.search.FilteredQuery.FilterStrategy;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase.SuppressTempFileChecks;
 import org.junit.Assert;
 
-import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
@@ -102,14 +99,14 @@ public final class TestUtil {
     //
   }
 
-  // the max number of retries we're going to do in getTempDir
-  private static final int GET_TEMP_DIR_RETRY_THRESHOLD = 1000;
-
   /**
-   * Deletes a file or a directory (and everything underneath it).
+   * Deletes one or more files or directories (and everything underneath it).
+   * 
+   * @throws IOException if any of the given files (or their subhierarchy files in case
+   * of directories) cannot be removed.
    */
-  public static void rm(File location) throws IOException {
-    ArrayList<File> unremoved = rm(location, new ArrayList<File>());
+  public static void rm(File... locations) throws IOException {
+    ArrayList<File> unremoved = rm(new ArrayList<File>(), locations);
     if (!unremoved.isEmpty()) {
       StringBuilder b = new StringBuilder("Could not remove the following files (in the order of attempts):\n");
       for (File f : unremoved) {
@@ -121,16 +118,16 @@ public final class TestUtil {
     }
   }
 
-  private static ArrayList<File> rm(File location, ArrayList<File> unremoved) {
-    if (location.exists()) {
-      if (location.isDirectory()) {
-        for (File f : location.listFiles()) {
-          rm(f, unremoved);
+  private static ArrayList<File> rm(ArrayList<File> unremoved, File... locations) {
+    for (File location : locations) {
+      if (location.exists()) {
+        if (location.isDirectory()) {
+          rm(unremoved, location.listFiles());
         }
-      }
-      
-      if (!location.delete()) {
-        unremoved.add(location);
+
+        if (!location.delete()) {
+          unremoved.add(location);
+        }
       }
     }
     return unremoved;
@@ -788,131 +785,6 @@ public final class TestUtil {
       }
     });
     Assert.assertEquals("Reflection does not produce same map", reflectedValues, map);
-  }
-  
-  /**
-   * Returns a new, empty temporary folder, based on the current test class's name.
-   * 
-   * @see #createTempDir(String, File)
-   */
-  public static File createTempDir() {
-    Class<?> clazz = RandomizedContext.current().getTargetClass();
-    String prefix = clazz.getName();
-    prefix = prefix.replaceFirst("^org.apache.lucene.", "lucene-");
-    prefix = prefix.replaceFirst("^org.apache.solr.", "solr-");
-    return createTempDir(prefix);
-  }
-
-  /**
-   * @see #createTempDir(String, File)
-   */
-  public static File createTempDir(String prefix) {
-    return createTempDir(prefix, null);
-  }
-
-  /**
-   * Returns a new and empty temporary folder, based on the given name. The folder will be
-   * deleted at the end of the test suite. Failure to delete the temporary folder will cause
-   * an exception (typically happens on Windows on unclosed file handles).
-   */
-  public static File createTempDir(String prefix, File parent) {
-    if (prefix.length() < 3) {
-      throw new IllegalArgumentException("The prefix must be at least 3 characters: " + prefix);
-    }
-    
-    if (parent == null) {
-      parent = tempDirectory();
-    }
-
-    if (!parent.exists()) {
-      throw new RuntimeException("Parent location does not exist: " + parent.getAbsolutePath());
-    }
-
-    if (!parent.isDirectory()) {
-      throw new RuntimeException("Parent location is not a folder: " + parent.getAbsolutePath());
-    }
-
-    if (!parent.canWrite()) {
-      throw new RuntimeException("Parent folder not writeable: " + parent.getAbsolutePath());
-    }
-
-    // Always pull a long from master random. that way, the randomness of the test
-    // is not affected by whether it initialized the counter (in genTempFile) or not.
-    // note that the Random used by genTempFile is *not* the master Random, and therefore
-    // does not affect the randomness of the test.
-    int attempt = 0;
-    File f;
-    do {
-      f = genTempFile(prefix + "_", "", parent);
-    } while (!f.mkdir() && (attempt++) < GET_TEMP_DIR_RETRY_THRESHOLD);
-    
-    if (attempt > GET_TEMP_DIR_RETRY_THRESHOLD) {
-      throw new RuntimeException(
-          "Failed to get a temporary dir too many times, check your temp directory and consider manually cleaning it: "
-            + parent.getAbsolutePath());
-    }
-
-    return maybeRemoveAfterSuite(f);
-  }
-
-  private static File maybeRemoveAfterSuite(File f) {
-    if (LuceneTestCase.LEAVE_TEMPORARY) {
-      System.err.println("INFO: Will leave temporary file: " + f.getAbsolutePath());
-      return f;
-    }
-
-    Class<?> suiteClass = RandomizedContext.current().getTargetClass();
-    if (suiteClass.isAnnotationPresent(SuppressTempFileChecks.class)) {
-      System.err.println("WARNING: Will leave temporary files (bugUrl: "
-          + suiteClass.getAnnotation(SuppressTempFileChecks.class).bugUrl() + "): "
-          + f.getAbsolutePath());
-      return f;
-    }
-
-    LuceneTestCase.closeAfterSuite(new RemoveUponClose(f, LuceneTestCase.suiteFailureMarker));
-    return f;
-  }
-
-  public static File createTempFile(String prefix, String suffix) throws IOException {
-    return createTempFile(prefix, suffix, tempDirectory());
-  }
-
-  /**
-   * Do NOT expose this method public. Use {@link #createTempDir()} instead.
-   */
-  private static File tempDirectory() {
-    File directory = new File(System.getProperty("tempDir", System.getProperty("java.io.tmpdir")));
-    assert directory.exists() && 
-           directory.isDirectory() && 
-           directory.canWrite();
-    return directory;
-  }
-
-  /** 
-   * Insecure, fast version of {@link File#createTempFile(String, String)}, uses 
-   * Random instead of SecureRandom.
-   */
-  public static File createTempFile(String prefix, String suffix, File directory) throws IOException {
-    if (prefix.length() < 3) {
-      throw new IllegalArgumentException("prefix must be at least 3 characters");
-    }
-    String newSuffix = suffix == null ? ".tmp" : suffix;
-    File result;
-    do {
-      result = genTempFile(prefix, newSuffix, directory);
-    } while (!result.createNewFile());
-    return maybeRemoveAfterSuite(result);
-  }
-
-  /* Temp file counter */
-  private static final AtomicInteger counter = new AtomicInteger();
-
-  private static File genTempFile(String prefix, String suffix, File directory) {
-    return new File(directory, 
-        prefix 
-          + RandomizedContext.current().getRunnerSeedAsString() 
-          + "-" + counter.incrementAndGet() 
-          + suffix);
   }
 
   public static void assertEquals(TopDocs expected, TopDocs actual) {

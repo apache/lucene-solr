@@ -63,10 +63,10 @@ public class TestDoc extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("TEST: setUp");
         }
-        workDir = TestUtil.createTempDir("TestDoc");
+        workDir = createTempDir("TestDoc");
         workDir.mkdirs();
 
-        indexDir = TestUtil.createTempDir("testIndex");
+        indexDir = createTempDir("testIndex");
         indexDir.mkdirs();
 
         Directory directory = newFSDirectory(indexDir);

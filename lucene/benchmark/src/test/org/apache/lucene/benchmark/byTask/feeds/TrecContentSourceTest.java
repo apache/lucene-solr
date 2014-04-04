@@ -344,7 +344,7 @@ public class TrecContentSourceTest extends LuceneTestCase {
    * supported formats - bzip, gzip, txt. 
    */
   public void testTrecFeedDirAllTypes() throws Exception {
-    File dataDir =  TestUtil.createTempDir("trecFeedAllTypes");
+    File dataDir =  createTempDir("trecFeedAllTypes");
     TestUtil.unzip(getDataFile("trecdocs.zip"), dataDir);
     TrecContentSource tcs = new TrecContentSource();
     Properties props = new Properties();

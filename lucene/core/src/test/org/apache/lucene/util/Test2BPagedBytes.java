@@ -30,7 +30,7 @@ import org.junit.Ignore;
 public class Test2BPagedBytes extends LuceneTestCase {
 
   public void test() throws Exception {
-    BaseDirectoryWrapper dir = newFSDirectory(TestUtil.createTempDir("test2BPagedBytes"));
+    BaseDirectoryWrapper dir = newFSDirectory(createTempDir("test2BPagedBytes"));
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }

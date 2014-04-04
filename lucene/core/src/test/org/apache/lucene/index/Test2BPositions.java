@@ -47,7 +47,7 @@ public class Test2BPositions extends LuceneTestCase {
   // uses lots of space and takes a few minutes
   @Ignore("Very slow. Enable manually by removing @Ignore.")
   public void test() throws Exception {
-    BaseDirectoryWrapper dir = newFSDirectory(TestUtil.createTempDir("2BPositions"));
+    BaseDirectoryWrapper dir = newFSDirectory(createTempDir("2BPositions"));
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }

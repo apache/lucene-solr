@@ -32,7 +32,7 @@ public class TestFileListWithLineEntityProcessor extends AbstractDataImportHandl
   }
   
   public void test() throws Exception {
-    File tmpdir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+    File tmpdir = createTempDir(LuceneTestCase.getTestClass().getSimpleName());
     createFile(tmpdir, "a.txt", "a line one\na line two\na line three".getBytes(StandardCharsets.UTF_8), false);
     createFile(tmpdir, "b.txt", "b line one\nb line two".getBytes(StandardCharsets.UTF_8), false);
     createFile(tmpdir, "c.txt", "c line one\nc line two\nc line three\nc line four".getBytes(StandardCharsets.UTF_8), false);

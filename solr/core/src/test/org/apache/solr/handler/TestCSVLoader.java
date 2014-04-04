@@ -50,7 +50,7 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
     // if you override setUp or tearDown, you better call
     // the super classes version
     super.setUp();
-    File tempDir = TestUtil.createTempDir("TestCSVLoader");
+    File tempDir = createTempDir("TestCSVLoader");
     file = new File(tempDir, "solr_tmp.csv");
     filename = file.getPath();
     cleanup();

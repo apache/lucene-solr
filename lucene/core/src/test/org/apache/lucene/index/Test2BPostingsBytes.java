@@ -50,7 +50,7 @@ public class Test2BPostingsBytes extends LuceneTestCase {
   // with some codecs needs more heap space as well.
   @Ignore("Very slow. Enable manually by removing @Ignore.")
   public void test() throws Exception {
-    BaseDirectoryWrapper dir = newFSDirectory(TestUtil.createTempDir("2BPostingsBytes1"));
+    BaseDirectoryWrapper dir = newFSDirectory(createTempDir("2BPostingsBytes1"));
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }
@@ -93,7 +93,7 @@ public class Test2BPostingsBytes extends LuceneTestCase {
     IndexReader subReaders[] = new IndexReader[1000];
     Arrays.fill(subReaders, oneThousand);
     MultiReader mr = new MultiReader(subReaders);
-    BaseDirectoryWrapper dir2 = newFSDirectory(TestUtil.createTempDir("2BPostingsBytes2"));
+    BaseDirectoryWrapper dir2 = newFSDirectory(createTempDir("2BPostingsBytes2"));
     if (dir2 instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir2).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }
@@ -108,7 +108,7 @@ public class Test2BPostingsBytes extends LuceneTestCase {
     subReaders = new IndexReader[2000];
     Arrays.fill(subReaders, oneMillion);
     mr = new MultiReader(subReaders);
-    BaseDirectoryWrapper dir3 = newFSDirectory(TestUtil.createTempDir("2BPostingsBytes3"));
+    BaseDirectoryWrapper dir3 = newFSDirectory(createTempDir("2BPostingsBytes3"));
     if (dir3 instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir3).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }

@@ -74,7 +74,7 @@ public class TestAddTaxonomy extends FacetTestCase {
   
   private OrdinalMap randomOrdinalMap() throws IOException {
     if (random().nextBoolean()) {
-      return new DiskOrdinalMap(TestUtil.createTempFile("taxoMap", ""));
+      return new DiskOrdinalMap(createTempFile("taxoMap", ""));
     } else {
       return new MemoryOrdinalMap();
     }

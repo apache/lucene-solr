@@ -150,10 +150,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   @BeforeClass 
   @SuppressWarnings("unused")
   private static void beforeClass() {
-    // Create the root parent folder for all other temporary solr files. 
-    rootTmpDir = TestUtil.createTempDir();
-
-    initCoreDataDir = TestUtil.createTempDir("init-core-data", rootTmpDir);
+    initCoreDataDir = createTempDir("init-core-data");
 
     System.err.println("Creating dataDir: " + initCoreDataDir.getAbsolutePath());
     
@@ -465,14 +462,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       SolrException.ignorePatterns.remove(pattern);
   }
 
-  public static File createTempDir() {
-    return createTempDir(null);
-  }
-
-  public static File createTempDir(String prefix) {
-    return TestUtil.createTempDir(prefix == null ? "temp" : prefix, rootTmpDir);
-  }
-  
   public static void resetExceptionIgnores() {
     SolrException.ignorePatterns = null;
     ignoreException("ignore_exception");  // always ignore "ignore_exception"    
@@ -532,8 +521,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * The directory used to story the index managed by the TestHarness
    */
   protected static volatile File initCoreDataDir;
-  
-  protected static volatile File rootTmpDir;
   
   // hack due to File dataDir
   protected static String hdfsDataDir;

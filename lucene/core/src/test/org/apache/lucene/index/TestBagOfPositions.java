@@ -68,7 +68,7 @@ public class TestBagOfPositions extends LuceneTestCase {
 
     final ConcurrentLinkedQueue<String> postings = new ConcurrentLinkedQueue<>(postingsList);
 
-    Directory dir = newFSDirectory(TestUtil.createTempDir("bagofpositions"));
+    Directory dir = newFSDirectory(createTempDir("bagofpositions"));
 
     final RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 

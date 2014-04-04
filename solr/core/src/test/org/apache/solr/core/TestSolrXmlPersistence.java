@@ -66,7 +66,7 @@ public class TestSolrXmlPersistence extends SolrTestCaseJ4 {
 
   @Before
   public void setupTest() {
-    solrHomeDirectory = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+    solrHomeDirectory = createTempDir(LuceneTestCase.getTestClass().getSimpleName());
   }
 
   private CoreContainer init(String solrXmlString, String... subDirs) throws Exception {

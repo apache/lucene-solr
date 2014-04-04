@@ -45,7 +45,7 @@ public class Test2BPostings extends LuceneTestCase {
 
   @Nightly
   public void test() throws Exception {
-    BaseDirectoryWrapper dir = newFSDirectory(TestUtil.createTempDir("2BPostings"));
+    BaseDirectoryWrapper dir = newFSDirectory(createTempDir("2BPostings"));
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }

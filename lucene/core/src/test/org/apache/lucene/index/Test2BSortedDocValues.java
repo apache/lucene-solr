@@ -38,7 +38,7 @@ public class Test2BSortedDocValues extends LuceneTestCase {
   
   // indexes Integer.MAX_VALUE docs with a fixed binary field
   public void testFixedSorted() throws Exception {
-    BaseDirectoryWrapper dir = newFSDirectory(TestUtil.createTempDir("2BFixedSorted"));
+    BaseDirectoryWrapper dir = newFSDirectory(createTempDir("2BFixedSorted"));
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }
@@ -95,7 +95,7 @@ public class Test2BSortedDocValues extends LuceneTestCase {
   // indexes Integer.MAX_VALUE docs with a fixed binary field
   // TODO: must use random.nextBytes (like Test2BTerms) to avoid BytesRefHash probing issues
   public void test2BOrds() throws Exception {
-    BaseDirectoryWrapper dir = newFSDirectory(TestUtil.createTempDir("2BOrds"));
+    BaseDirectoryWrapper dir = newFSDirectory(createTempDir("2BOrds"));
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }

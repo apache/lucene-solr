@@ -65,7 +65,7 @@ public class TestCollationFieldDocValues extends SolrTestCaseJ4 {
    */
   public static String setupSolrHome() throws Exception {
     // make a solr home underneath the test's TEMP_DIR
-    File tmpFile = TestUtil.createTempDir("collation1");
+    File tmpFile = createTempDir("collation1");
     tmpFile.delete();
     tmpFile.mkdir();
     

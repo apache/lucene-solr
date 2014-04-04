@@ -43,7 +43,7 @@ public class TestOfflineSorter extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    tempDir = TestUtil.createTempDir("mergesort");
+    tempDir = createTempDir("mergesort");
     TestUtil.rm(tempDir);
     tempDir.mkdirs();
   }

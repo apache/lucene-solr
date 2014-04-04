@@ -2615,7 +2615,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
     // FSDirectory because SimpleText will consume gobbs of
     // space when storing big binary values:
-    Directory d = newFSDirectory(TestUtil.createTempDir("hugeBinaryValues"));
+    Directory d = newFSDirectory(createTempDir("hugeBinaryValues"));
     boolean doFixed = random().nextBoolean();
     int numDocs;
     int fixedLength = 0;
@@ -2713,7 +2713,7 @@ public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
     // FSDirectory because SimpleText will consume gobbs of
     // space when storing big binary values:
-    Directory d = newFSDirectory(TestUtil.createTempDir("hugeBinaryValues"));
+    Directory d = newFSDirectory(createTempDir("hugeBinaryValues"));
     boolean doFixed = random().nextBoolean();
     int numDocs;
     int fixedLength = 0;

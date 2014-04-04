@@ -70,7 +70,7 @@ public class PersistenceTest extends LuceneTestCase {
     lookup.build(new InputArrayIterator(keys));
 
     // Store the suggester.
-    File storeDir = TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+    File storeDir = createTempDir(LuceneTestCase.getTestClass().getSimpleName());
     lookup.store(new FileOutputStream(new File(storeDir, "lookup.dat")));
 
     // Re-read it from disk.

@@ -233,7 +233,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
   @Test
   public void testSharedLib() throws Exception {
-    File tmpRoot = TestUtil.createTempDir("testSharedLib");
+    File tmpRoot = createTempDir("testSharedLib");
 
     File lib = new File(tmpRoot, "lib");
     lib.mkdirs();

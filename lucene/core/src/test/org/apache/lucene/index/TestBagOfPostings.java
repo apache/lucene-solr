@@ -70,7 +70,7 @@ public class TestBagOfPostings extends LuceneTestCase {
 
     final ConcurrentLinkedQueue<String> postings = new ConcurrentLinkedQueue<>(postingsList);
 
-    Directory dir = newFSDirectory(TestUtil.createTempDir("bagofpostings"));
+    Directory dir = newFSDirectory(createTempDir("bagofpostings"));
     final RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 
     int threadCount = TestUtil.nextInt(random(), 1, 5);

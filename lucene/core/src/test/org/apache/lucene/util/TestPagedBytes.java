@@ -37,7 +37,7 @@ public class TestPagedBytes extends LuceneTestCase {
   public void testDataInputOutput() throws Exception {
     Random random = random();
     for(int iter=0;iter<5*RANDOM_MULTIPLIER;iter++) {
-      BaseDirectoryWrapper dir = newFSDirectory(TestUtil.createTempDir("testOverflow"));
+      BaseDirectoryWrapper dir = newFSDirectory(createTempDir("testOverflow"));
       if (dir instanceof MockDirectoryWrapper) {
         ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
       }
@@ -150,7 +150,7 @@ public class TestPagedBytes extends LuceneTestCase {
 
   @Ignore // memory hole
   public void testOverflow() throws IOException {
-    BaseDirectoryWrapper dir = newFSDirectory(TestUtil.createTempDir("testOverflow"));
+    BaseDirectoryWrapper dir = newFSDirectory(createTempDir("testOverflow"));
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }

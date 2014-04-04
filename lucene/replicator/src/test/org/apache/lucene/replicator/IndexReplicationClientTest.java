@@ -136,7 +136,7 @@ public class IndexReplicationClientTest extends ReplicatorTestCase {
     super.setUp();
     publishDir = newMockDirectory();
     handlerDir = newMockDirectory();
-    sourceDirFactory = new PerSessionDirectoryFactory(TestUtil.createTempDir("replicationClientTest"));
+    sourceDirFactory = new PerSessionDirectoryFactory(createTempDir("replicationClientTest"));
     replicator = new LocalReplicator();
     callback = new IndexReadyCallback(handlerDir);
     handler = new IndexReplicationHandler(handlerDir, callback);

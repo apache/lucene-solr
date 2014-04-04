@@ -125,13 +125,13 @@ public class TestPerfTasksParse extends LuceneTestCase {
         Config config = new Config(new InputStreamReader(new FileInputStream(algFile), StandardCharsets.UTF_8));
         String contentSource = config.get("content.source", null);
         if (contentSource != null) { Class.forName(contentSource); }
-        config.set("work.dir", TestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName()).getAbsolutePath());
+        config.set("work.dir", createTempDir(LuceneTestCase.getTestClass().getSimpleName()).getAbsolutePath());
         config.set("content.source", MockContentSource.class.getName());
         String dir = config.get("content.source", null);
         if (dir != null) { Class.forName(dir); }
         config.set("directory", RAMDirectory.class.getName());
         if (config.get("line.file.out", null) != null) {
-          config.set("line.file.out", TestUtil.createTempFile("linefile", ".txt").getAbsolutePath());
+          config.set("line.file.out", createTempFile("linefile", ".txt").getAbsolutePath());
         }
         if (config.get("query.maker", null) != null) {
           Class.forName(config.get("query.maker", null));
