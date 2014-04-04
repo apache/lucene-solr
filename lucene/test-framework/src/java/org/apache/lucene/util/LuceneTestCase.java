@@ -1287,13 +1287,23 @@ public abstract class LuceneTestCase extends Assert {
   public static IndexSearcher newSearcher(IndexReader r) {
     return newSearcher(r, true);
   }
-  
+
+  /**
+   * Create a new searcher over the reader. This searcher might randomly use
+   * threads.
+   */
+  public static IndexSearcher newSearcher(IndexReader r, boolean maybeWrap) {
+    return newSearcher(r, maybeWrap, true);
+  }
+
   /**
    * Create a new searcher over the reader. This searcher might randomly use
    * threads. if <code>maybeWrap</code> is true, this searcher might wrap the
-   * reader with one that returns null for getSequentialSubReaders.
+   * reader with one that returns null for getSequentialSubReaders. If
+   * <code>wrapWithAssertions</code> is true, this searcher might be an
+   * {@link AssertingIndexSearcher} instance.
    */
-  public static IndexSearcher newSearcher(IndexReader r, boolean maybeWrap) {
+  public static IndexSearcher newSearcher(IndexReader r, boolean maybeWrap, boolean wrapWithAssertions) {
     Random random = random();
     if (usually()) {
       if (maybeWrap) {
@@ -1314,7 +1324,12 @@ public abstract class LuceneTestCase extends Assert {
           throw new AssertionError(e);
         }
       }
-      IndexSearcher ret = random.nextBoolean() ? new AssertingIndexSearcher(random, r) : new AssertingIndexSearcher(random, r.getContext());
+      final IndexSearcher ret;
+      if (wrapWithAssertions) {
+        ret = random.nextBoolean() ? new AssertingIndexSearcher(random, r) : new AssertingIndexSearcher(random, r.getContext());
+      } else {
+        ret = random.nextBoolean() ? new IndexSearcher(r) : new IndexSearcher(r.getContext());
+      }
       ret.setSimilarity(classEnvRule.similarity);
       return ret;
     } else {
@@ -1341,9 +1356,16 @@ public abstract class LuceneTestCase extends Assert {
          }
        });
       }
-      IndexSearcher ret = random.nextBoolean() 
-          ? new AssertingIndexSearcher(random, r, ex)
-          : new AssertingIndexSearcher(random, r.getContext(), ex);
+      IndexSearcher ret;
+      if (wrapWithAssertions) {
+        ret = random.nextBoolean()
+            ? new AssertingIndexSearcher(random, r, ex)
+            : new AssertingIndexSearcher(random, r.getContext(), ex);
+      } else {
+        ret = random.nextBoolean()
+            ? new IndexSearcher(r, ex)
+            : new IndexSearcher(r.getContext(), ex);
+      }
       ret.setSimilarity(classEnvRule.similarity);
       return ret;
     }

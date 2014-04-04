@@ -91,7 +91,8 @@ public class TestConstantScoreQuery extends LuceneTestCase {
 
       reader = writer.getReader();
       writer.close();
-      searcher = newSearcher(reader);
+      // we don't wrap with AssertingIndexSearcher in order to have the original scorer in setScorer.
+      searcher = newSearcher(reader, true, false);
       
       // set a similarity that does not normalize our boost away
       searcher.setSimilarity(new DefaultSimilarity() {
