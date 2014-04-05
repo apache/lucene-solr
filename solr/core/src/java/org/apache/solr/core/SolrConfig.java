@@ -27,6 +27,7 @@ import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.transform.TransformerFactory;
+import org.apache.solr.rest.RestManager;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.search.CacheConfig;
 import org.apache.solr.search.FastLRUCache;
@@ -147,7 +148,7 @@ public class SolrConfig extends Config {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error loading solr config from " + resource, e);
     }
   }
-  
+
    /** Creates a configuration instance from a resource loader, a configuration name and a stream.
    * If the stream is null, the resource loader will open the configuration stream.
    * If the stream is not null, no attempt to load the resource will occur (the name is not used).
@@ -287,7 +288,7 @@ public class SolrConfig extends Config {
      loadPluginInfo(UpdateLog.class,"updateHandler/updateLog");
      loadPluginInfo(IndexSchemaFactory.class,"schemaFactory",
                     REQUIRE_CLASS);
-
+     loadPluginInfo(RestManager.class, "restManager");
      updateHandlerInfo = loadUpdatehandlerInfo();
      
      multipartUploadLimitKB = getInt( 

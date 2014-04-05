@@ -64,6 +64,9 @@ import org.apache.solr.response.SchemaXmlResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.XMLResponseWriter;
 import org.apache.solr.response.transform.TransformerFactory;
+import org.apache.solr.rest.ManagedResourceStorage;
+import org.apache.solr.rest.RestManager;
+import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
@@ -174,6 +177,12 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
   public long getStartTime() { return startTime; }
 
+  private RestManager restManager;
+  
+  public RestManager getRestManager() {
+    return restManager;
+  }
+  
   static int boolean_query_max_clause_count = Integer.MIN_VALUE;
   // only change the BooleanQuery maxClauseCount once for ALL cores...
   void booleanQueryMaxClauseCount()  {
@@ -187,7 +196,6 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     }
   }
 
-  
   /**
    * The SolrResourceLoader used to load all resources for this core.
    * @since solr 1.3
@@ -833,6 +841,9 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
         if (iwRef != null) iwRef.decref();
       }
       
+      // Initialize the RestManager
+      restManager = initRestManager();
+            
       // Finally tell anyone who wants to know
       resourceLoader.inform(resourceLoader);
       resourceLoader.inform(this); // last call before the latch is released.
@@ -2294,6 +2305,43 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
           "update your config to use <string name='facet.sort'>.");
     }
   } 
+  
+  /**
+   * Creates and initializes a RestManager based on configuration args in solrconfig.xml.
+   * RestManager provides basic storage support for managed resource data, such as to
+   * persist stopwords to ZooKeeper if running in SolrCloud mode.
+   */
+  @SuppressWarnings("unchecked")
+  protected RestManager initRestManager() throws SolrException {
+    
+    PluginInfo restManagerPluginInfo = 
+        getSolrConfig().getPluginInfo(RestManager.class.getName());
+        
+    NamedList<String> initArgs = null;
+    RestManager mgr = null;
+    if (restManagerPluginInfo != null) {
+      if (restManagerPluginInfo.className != null) {
+        mgr = resourceLoader.newInstance(restManagerPluginInfo.className, RestManager.class);
+      }
+      
+      if (restManagerPluginInfo.initArgs != null) {
+        initArgs = (NamedList<String>)restManagerPluginInfo.initArgs;        
+      }
+    }
+    
+    if (mgr == null) 
+      mgr = new RestManager();
+    
+    if (initArgs == null)
+      initArgs = new NamedList<>();
+                                
+    String collection = coreDescriptor.getCollectionName();
+    StorageIO storageIO = 
+        ManagedResourceStorage.newStorageIO(collection, resourceLoader, initArgs);    
+    mgr.init(resourceLoader, initArgs, storageIO);
+    
+    return mgr;
+  }
 
   public CoreDescriptor getCoreDescriptor() {
     return coreDescriptor;

@@ -17,6 +17,7 @@ package org.apache.solr.rest.schema;
  */
 
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.rest.BaseSolrResource;
 import org.apache.solr.rest.GETable;
 import org.apache.solr.schema.IndexSchema;
 import org.restlet.representation.Representation;
@@ -28,7 +29,7 @@ import org.slf4j.LoggerFactory;
 /**
  * This class responds to requests at /solr/(corename)/schema/solrqueryparser
  */
-public class SolrQueryParserResource extends BaseSchemaResource implements GETable {
+public class SolrQueryParserResource extends BaseSolrResource implements GETable {
   private static final Logger log = LoggerFactory.getLogger(SolrQueryParserResource.class);
 
   public SolrQueryParserResource() {

@@ -18,6 +18,7 @@ package org.apache.solr.rest.schema;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.rest.BaseSolrResource;
 import org.apache.solr.rest.GETable;
 import org.apache.solr.schema.IndexSchema;
 import org.restlet.representation.Representation;
@@ -29,7 +30,7 @@ import org.slf4j.LoggerFactory;
 /**
  * This class responds to requests at /solr/(corename)/schema/defaultsearchfield
  */
-public class DefaultSearchFieldResource extends BaseSchemaResource implements GETable {
+public class DefaultSearchFieldResource extends BaseSolrResource implements GETable {
   private static final Logger log = LoggerFactory.getLogger(DefaultSearchFieldResource.class);
 
   public DefaultSearchFieldResource() {

@@ -1,4 +1,4 @@
-package org.apache.solr.rest.schema;
+package org.apache.solr.rest;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -48,12 +48,11 @@ import java.nio.charset.Charset;
 
 
 /**
- * Base class of all Solr Schema Restlet resource classes.
+ * Base class of all Solr Restlet server resource classes.
  */
-abstract class BaseSchemaResource extends ServerResource {
-  private static final Charset UTF8 = Charset.forName("UTF-8");
+public abstract class BaseSolrResource extends ServerResource {
+  protected static final Charset UTF8 = Charset.forName("UTF-8");
   protected static final String SHOW_DEFAULTS = "showDefaults";
-
 
   private SolrCore solrCore;
   private IndexSchema schema;
@@ -61,18 +60,15 @@ abstract class BaseSchemaResource extends ServerResource {
   private SolrQueryResponse solrResponse;
   private QueryResponseWriter responseWriter;
   private String contentType;
-  private boolean doIndent;
 
-  protected SolrCore getSolrCore() { return solrCore; }
-  protected IndexSchema getSchema() { return schema; }
-  protected SolrQueryRequest getSolrRequest() { return solrRequest; }
-  protected SolrQueryResponse getSolrResponse() { return solrResponse; }
-  protected String getContentType() { return contentType; }
+  public SolrCore getSolrCore() { return solrCore; }
+  public IndexSchema getSchema() { return schema; }
+  public SolrQueryRequest getSolrRequest() { return solrRequest; }
+  public SolrQueryResponse getSolrResponse() { return solrResponse; }
+  public String getContentType() { return contentType; }
 
-
-  protected BaseSchemaResource() {
+  protected BaseSolrResource() {
     super();
-    doIndent = true; // default to indenting
   }
 
   /**
@@ -113,9 +109,8 @@ abstract class BaseSchemaResource extends ServerResource {
               responseWriterName = "json"; // Default to json writer
             }
             String indent = solrRequest.getParams().get("indent");
-            if (null != indent && ("".equals(indent) || "off".equals(indent))) {
-              doIndent = false;
-            } else {                       // indent by default
+            if (null == indent || ! ("off".equals(indent) || "false".equals(indent))) {
+              // indent by default
               ModifiableSolrParams newParams = new ModifiableSolrParams(solrRequest.getParams());
               newParams.remove(indent);
               newParams.add("indent", "on");
@@ -124,7 +119,8 @@ abstract class BaseSchemaResource extends ServerResource {
             responseWriter = solrCore.getQueryResponseWriter(responseWriterName);
             contentType = responseWriter.getContentType(solrRequest, solrResponse);
             final String path = getRequest().getRootRef().getPath();
-            if ( ! "/schema".equals(path)) { 
+            if ( ! RestManager.SCHEMA_BASE_PATH.equals(path)
+                && ! RestManager.CONFIG_BASE_PATH.equals(path)) {
               // don't set webapp property on the request when context and core/collection are excluded 
               final int cutoffPoint = path.indexOf("/", 1);
               final String firstPathElement = -1 == cutoffPoint ? path : path.substring(0, cutoffPoint);
@@ -148,7 +144,7 @@ abstract class BaseSchemaResource extends ServerResource {
    */
   public class SolrOutputRepresentation extends OutputRepresentation {
     
-    SolrOutputRepresentation() {
+    public SolrOutputRepresentation() {
       // No normalization, in case of a custom media type
       super(MediaType.valueOf(contentType));
       // TODO: For now, don't send the Vary: header, but revisit if/when content negotiation is added

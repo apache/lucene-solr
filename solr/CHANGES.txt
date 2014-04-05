@@ -114,6 +114,9 @@ New Features
 * SOLR-5829: Allow ExpandComponent to accept query and filter query parameters
   (Joel Bernstein)
 
+* SOLR-5653: Create a RestManager to provide REST API endpoints for
+  reconfigurable plugins. (Tim Potter, Steve Rowe)
+
 Bug Fixes
 ----------------------
 
