@@ -2338,35 +2338,45 @@ public abstract class LuceneTestCase extends Assert {
 
   private static class TemporaryFilesCleanupRule extends TestRuleAdapter {
     @Override
-    protected void afterAlways(List<Throwable> errors) throws Throwable {
-      if (LuceneTestCase.suiteFailureMarker.wasSuccessful()) {
-        synchronized (cleanupQueue) {
-          File [] everything = new File [cleanupQueue.size()];
-          for (int i = 0; !cleanupQueue.isEmpty(); i++) {
-            everything[i] = cleanupQueue.removeLast();
-          }
+    protected void before() throws Throwable {
+      super.before();
+      assert tempDirBase == null;
+    }
 
-          // Will throw an IOException on un-removable files.
-          try {
-            TestUtil.rm(everything);
-          } catch (IOException e) {
-            Class<?> suiteClass = RandomizedContext.current().getTargetClass();
-            if (suiteClass.isAnnotationPresent(SuppressTempFileChecks.class)) {
-              System.err.println("WARNING: Leftover undeleted temporary files (bugUrl: "
-                  + suiteClass.getAnnotation(SuppressTempFileChecks.class).bugUrl() + "): "
-                  + e.getMessage());
-              return;
+    @Override
+    protected void afterAlways(List<Throwable> errors) throws Throwable {
+      try {
+        if (LuceneTestCase.suiteFailureMarker.wasSuccessful()) {
+          synchronized (cleanupQueue) {
+            File [] everything = new File [cleanupQueue.size()];
+            for (int i = 0; !cleanupQueue.isEmpty(); i++) {
+              everything[i] = cleanupQueue.removeLast();
             }
-            throw e;
+  
+            // Will throw an IOException on un-removable files.
+            try {
+              TestUtil.rm(everything);
+            } catch (IOException e) {
+              Class<?> suiteClass = RandomizedContext.current().getTargetClass();
+              if (suiteClass.isAnnotationPresent(SuppressTempFileChecks.class)) {
+                System.err.println("WARNING: Leftover undeleted temporary files (bugUrl: "
+                    + suiteClass.getAnnotation(SuppressTempFileChecks.class).bugUrl() + "): "
+                    + e.getMessage());
+                return;
+              }
+              throw e;
+            }
+          }
+        } else {
+          synchronized (cleanupQueue) {
+            if (tempDirBase != null) {
+              System.err.println("NOTE: leaving temporary files on disk at: " +
+                  tempDirBase.getAbsolutePath());
+            }
           }
         }
-      } else {
-        synchronized (cleanupQueue) {
-          if (tempDirBase != null) {
-            System.err.println("NOTE: leaving temporary files on disk at: " +
-                tempDirBase.getAbsolutePath());
-          }
-        }
+      } finally {
+        tempDirBase = null;
       }
     }
   }
