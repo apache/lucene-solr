@@ -50,6 +50,7 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
+import javax.xml.bind.DatatypeConverter;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPath;
@@ -812,6 +813,10 @@ public class SimplePostTool {
     try {
       if(mockMode) return;
       HttpURLConnection urlc = (HttpURLConnection) url.openConnection();
+      if (url.getUserInfo() != null) {
+        String encoding = DatatypeConverter.printBase64Binary(url.getUserInfo().getBytes(StandardCharsets.US_ASCII));
+        urlc.setRequestProperty("Authorization", "Basic " + encoding);
+      }
       if (HttpURLConnection.HTTP_OK != urlc.getResponseCode()) {
         warn("Solr returned an error #" + urlc.getResponseCode() + 
             " " + urlc.getResponseMessage() + " for url "+url);
@@ -845,7 +850,10 @@ public class SimplePostTool {
         urlc.setUseCaches(false);
         urlc.setAllowUserInteraction(false);
         urlc.setRequestProperty("Content-type", type);
-
+        if (url.getUserInfo() != null) {
+          String encoding = DatatypeConverter.printBase64Binary(url.getUserInfo().getBytes(StandardCharsets.US_ASCII));
+          urlc.setRequestProperty("Authorization", "Basic " + encoding);
+        }
         if (null != length) urlc.setFixedLengthStreamingMode(length);
 
       } catch (IOException e) {
