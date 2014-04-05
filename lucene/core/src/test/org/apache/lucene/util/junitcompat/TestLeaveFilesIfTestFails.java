@@ -62,7 +62,7 @@ public class TestLeaveFilesIfTestFails extends WithNestedTests {
       file = new File(createTempDir("leftover"), "child.locked");
       openFile = new RandomAccessFile(file, "rw");
 
-      parent = LuceneTestCase.getTempDirBase();
+      parent = LuceneTestCase.getBaseTempDirForTestClass();
     }
   }
 

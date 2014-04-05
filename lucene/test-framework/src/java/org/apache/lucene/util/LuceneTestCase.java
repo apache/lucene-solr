@@ -2209,7 +2209,7 @@ public abstract class LuceneTestCase extends Assert {
    * or {@link #createTempDir(String)} or {@link #createTempFile(String, String)}.
    */
   @Deprecated
-  public static File getTempDirBase() {
+  public static File getBaseTempDirForTestClass() {
     synchronized (LuceneTestCase.class) {
       if (tempDirBase == null) {
         File directory = new File(System.getProperty("tempDir", System.getProperty("java.io.tmpdir")));
@@ -2244,15 +2244,24 @@ public abstract class LuceneTestCase extends Assert {
 
 
   /**
+   * Creates an empty, temporary folder (when the name of the folder is of no importance).
+   * 
+   * @see #createTempDir(String)
    */
   public static File createTempDir() {
     return createTempDir("tempDir");
   }
 
   /**
+   * Creates an empty, temporary folder with the given name prefix under the 
+   * test class's {@link #getBaseTempDirForTestClass()}.
+   *  
+   * <p>The folder will be automatically removed after the
+   * test class completes successfully. The test should close any file handles that would prevent
+   * the folder from being removed. 
    */
   public static File createTempDir(String prefix) {
-    File base = getTempDirBase();
+    File base = getBaseTempDirForTestClass();
 
     int attempt = 0;
     File f;
@@ -2270,9 +2279,15 @@ public abstract class LuceneTestCase extends Assert {
   }
   
   /**
+   * Creates an empty file with the given prefix and suffix under the 
+   * test class's {@link #getBaseTempDirForTestClass()}.
+   * 
+   * <p>The file will be automatically removed after the
+   * test class completes successfully. The test should close any file handles that would prevent
+   * the folder from being removed. 
    */
   public static File createTempFile(String prefix, String suffix) throws IOException {
-    File base = getTempDirBase();
+    File base = getBaseTempDirForTestClass();
 
     int attempt = 0;
     File f;
@@ -2290,6 +2305,9 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /**
+   * Creates an empty temporary file.
+   * 
+   * @see #createTempFile(String, String) 
    */
   public static File createTempFile() throws IOException {
     return createTempFile("tempFile", ".tmp");
