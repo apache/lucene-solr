@@ -25,8 +25,14 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 /**
- * Base class for Solr Restlet-based tests. Creates test harness,
- * including "extra" servlets for all Solr Restlet Application subclasses.
+ * Base class for Solr Restlet-based tests. Creates jetty and test harness
+ * with solrconfig.xml and schema-rest.xml, including "extra" servlets for
+ * all Solr Restlet Application subclasses.
+ *
+ * Use RestTestBase instead if you need to specialize the solrconfig,
+ * the schema, or jetty/test harness creation; otherwise you'll get
+ * imbalanced SolrIndexSearcher closes/opens and a suite-level failure
+ * for a zombie thread.
  */
 abstract public class SolrRestletTestBase extends RestTestBase {
 

@@ -117,6 +117,10 @@ New Features
 * SOLR-5653: Create a RestManager to provide REST API endpoints for
   reconfigurable plugins. (Tim Potter, Steve Rowe)
 
+* SOLR-5655: Create a stopword filter factory that is (re)configurable,
+  and capable of reporting its configuration, via REST API.
+  (Tim Potter via Steve Rowe)
+
 Bug Fixes
 ----------------------
 
