@@ -17,7 +17,6 @@ package org.apache.solr.store.hdfs;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 
@@ -43,11 +42,9 @@ public class HdfsLockFactoryTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    dfsCluster = HdfsTestUtil.setupClass(dataDir.getAbsolutePath()
-        + File.separator + HdfsLockFactoryTest.class.getName() + "_hdfsdir-"
-        + System.currentTimeMillis());
+    dfsCluster = HdfsTestUtil.setupClass(createTempDir().getAbsolutePath());
   }
-  
+
   @AfterClass
   public static void afterClass() throws Exception {
     HdfsTestUtil.teardownClass(dfsCluster);

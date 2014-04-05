@@ -191,7 +191,7 @@ public class IndexAndTaxonomyReplicationClientTest extends ReplicatorTestCase {
     publishTaxoDir = newDirectory();
     handlerIndexDir = newMockDirectory();
     handlerTaxoDir = newMockDirectory();
-    clientWorkDir = TestUtil.getTempDir("replicationClientTest");
+    clientWorkDir = createTempDir("replicationClientTest");
     sourceDirFactory = new PerSessionDirectoryFactory(clientWorkDir);
     replicator = new LocalReplicator();
     callback = new IndexAndTaxonomyReadyCallback(handlerIndexDir, handlerTaxoDir);

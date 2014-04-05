@@ -22,6 +22,8 @@ import java.io.FileOutputStream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
@@ -63,10 +65,7 @@ public class TestICUCollationFieldDocValues extends SolrTestCaseJ4 {
    * So its preferable to create this file on-the-fly.
    */
   public static String setupSolrHome() throws Exception {
-    // make a solr home underneath the test's TEMP_DIR
-    File tmpFile = File.createTempFile("test", "tmp", dataDir);
-    tmpFile.delete();
-    tmpFile.mkdir();
+    File tmpFile = createTempDir();
     
     // make data and conf dirs
     new File(tmpFile + "/collection1", "data").mkdirs();

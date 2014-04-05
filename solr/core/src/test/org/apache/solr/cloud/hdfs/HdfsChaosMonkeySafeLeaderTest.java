@@ -17,7 +17,6 @@ package org.apache.solr.cloud.hdfs;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 
 import org.apache.hadoop.hdfs.MiniDFSCluster;
@@ -39,9 +38,7 @@ public class HdfsChaosMonkeySafeLeaderTest extends ChaosMonkeySafeLeaderTest {
   
   @BeforeClass
   public static void setupClass() throws Exception {
-    dfsCluster = HdfsTestUtil.setupClass(new File(dataDir,
-        HdfsBasicDistributedZk2Test.class.getName() + "_"
-            + System.currentTimeMillis()).getAbsolutePath());
+    dfsCluster = HdfsTestUtil.setupClass(createTempDir().getAbsolutePath());
   }
   
   @AfterClass

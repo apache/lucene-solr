@@ -136,7 +136,7 @@ public class TestLockFactory extends LuceneTestCase {
     // no unexpected exceptions are raised:
     @Nightly
     public void testStressLocks() throws Exception {
-      _testStressLocks(null, TestUtil.getTempDir("index.TestLockFactory6"));
+      _testStressLocks(null, createTempDir("index.TestLockFactory6"));
     }
 
     // Verify: do stress test, by opening IndexReaders and
@@ -145,7 +145,7 @@ public class TestLockFactory extends LuceneTestCase {
     // NativeFSLockFactory:
     @Nightly
     public void testStressLocksNativeFSLockFactory() throws Exception {
-      File dir = TestUtil.getTempDir("index.TestLockFactory7");
+      File dir = createTempDir("index.TestLockFactory7");
       _testStressLocks(new NativeFSLockFactory(dir), dir);
     }
 
@@ -171,13 +171,12 @@ public class TestLockFactory extends LuceneTestCase {
 
         dir.close();
         // Cleanup
-        TestUtil.rmDir(indexDir);
+        TestUtil.rm(indexDir);
     }
 
     // Verify: NativeFSLockFactory works correctly
     public void testNativeFSLockFactory() throws IOException {
-
-      NativeFSLockFactory f = new NativeFSLockFactory(TEMP_DIR);
+      NativeFSLockFactory f = new NativeFSLockFactory(createTempDir(LuceneTestCase.getTestClass().getSimpleName()));
 
       f.setLockPrefix("test");
       Lock l = f.makeLock("commit");
@@ -202,11 +201,11 @@ public class TestLockFactory extends LuceneTestCase {
     
     // Verify: NativeFSLockFactory works correctly if the lock file exists
     public void testNativeFSLockFactoryLockExists() throws IOException {
-      
-      File lockFile = new File(TEMP_DIR, "test.lock");
+      File tempDir = createTempDir(LuceneTestCase.getTestClass().getSimpleName());
+      File lockFile = new File(tempDir, "test.lock");
       lockFile.createNewFile();
       
-      Lock l = new NativeFSLockFactory(TEMP_DIR).makeLock("test.lock");
+      Lock l = new NativeFSLockFactory(tempDir).makeLock("test.lock");
       assertTrue("failed to obtain lock", l.obtain());
       l.close();
       assertFalse("failed to release lock", l.isLocked());
@@ -216,8 +215,7 @@ public class TestLockFactory extends LuceneTestCase {
     }
 
     public void testNativeFSLockReleaseByOtherLock() throws IOException {
-
-      NativeFSLockFactory f = new NativeFSLockFactory(TEMP_DIR);
+      NativeFSLockFactory f = new NativeFSLockFactory(createTempDir(LuceneTestCase.getTestClass().getSimpleName()));
 
       f.setLockPrefix("test");
       Lock l = f.makeLock("commit");
@@ -238,8 +236,8 @@ public class TestLockFactory extends LuceneTestCase {
     // Verify: NativeFSLockFactory assigns null as lockPrefix if the lockDir is inside directory
     public void testNativeFSLockFactoryPrefix() throws IOException {
 
-      File fdir1 = TestUtil.getTempDir("TestLockFactory.8");
-      File fdir2 = TestUtil.getTempDir("TestLockFactory.8.Lockdir");
+      File fdir1 = createTempDir("TestLockFactory.8");
+      File fdir2 = createTempDir("TestLockFactory.8.Lockdir");
       Directory dir1 = newFSDirectory(fdir1, new NativeFSLockFactory(fdir1));
       // same directory, but locks are stored somewhere else. The prefix of the lock factory should != null
       Directory dir2 = newFSDirectory(fdir1, new NativeFSLockFactory(fdir2));
@@ -252,8 +250,8 @@ public class TestLockFactory extends LuceneTestCase {
 
       dir1.close();
       dir2.close();
-      TestUtil.rmDir(fdir1);
-      TestUtil.rmDir(fdir2);
+      TestUtil.rm(fdir1);
+      TestUtil.rm(fdir2);
     }
 
     // Verify: default LockFactory has no prefix (ie
@@ -261,7 +259,7 @@ public class TestLockFactory extends LuceneTestCase {
     public void testDefaultFSLockFactoryPrefix() throws IOException {
 
       // Make sure we get null prefix, which wont happen if setLockFactory is ever called.
-      File dirName = TestUtil.getTempDir("TestLockFactory.10");
+      File dirName = createTempDir("TestLockFactory.10");
 
       Directory dir = new SimpleFSDirectory(dirName);
       assertNull("Default lock prefix should be null", dir.getLockFactory().getLockPrefix());
@@ -275,7 +273,7 @@ public class TestLockFactory extends LuceneTestCase {
       assertNull("Default lock prefix should be null", dir.getLockFactory().getLockPrefix());
       dir.close();
  
-      TestUtil.rmDir(dirName);
+      TestUtil.rm(dirName);
     }
 
     private class WriterThread extends Thread { 

@@ -17,10 +17,11 @@
 
 package org.apache.solr.cloud;
 
+import java.io.File;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.After;
 import org.junit.Before;
@@ -28,13 +29,12 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-
 public class TestMultiCoreConfBootstrap extends SolrTestCaseJ4 {
   protected static Logger log = LoggerFactory.getLogger(TestMultiCoreConfBootstrap.class);
   protected CoreContainer cores = null;
   private String home;
   
+  protected File dataDir1;
   protected File dataDir2;
   protected ZkTestServer zkServer;
   protected String zkDir;
@@ -43,17 +43,15 @@ public class TestMultiCoreConfBootstrap extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    
-    dataDir2 = new File(dataDir, getSimpleClassName() + "-core1-"
-        + System.currentTimeMillis());
-    dataDir2.mkdirs();
+    dataDir1 = createTempDir();
+    dataDir2  = createTempDir();
 
     home = ExternalPaths.EXAMPLE_MULTICORE_HOME;
     System.setProperty("solr.solr.home", home);
-    System.setProperty( "solr.core0.data.dir", dataDir.getCanonicalPath() ); 
+    System.setProperty( "solr.core0.data.dir", dataDir1.getCanonicalPath() ); 
     System.setProperty( "solr.core1.data.dir", dataDir2.getCanonicalPath() ); 
     
-    zkDir = dataDir.getAbsolutePath() + File.separator
+    zkDir = dataDir1.getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();

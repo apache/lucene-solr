@@ -50,8 +50,6 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
 
   private ZkStateReader reader;
 
-  private static int PORT = 7000;
-
   private ConfigSolr cfg;
 
   @Before
@@ -60,8 +58,9 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
   }
 
   private void setUpZkAndDiskXml(boolean toZk, boolean leaveOnLocal) throws Exception {
-    recurseDelete(dataDir);
-    File solrHome = new File(dataDir, "home");
+    File tmpDir = createTempDir();
+    recurseDelete(tmpDir);
+    File solrHome = new File(tmpDir, "home");
     copyMinConf(new File(solrHome, "myCollect"));
     if (leaveOnLocal) {
       FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr-stress-new.xml"), new File(solrHome, "solr.xml"));
@@ -74,7 +73,7 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
 
     System.setProperty("zkClientTimeout", "8000");
 
-    zkDir = dataDir.getAbsolutePath() + File.separator
+    zkDir = tmpDir.getAbsolutePath() + File.separator
         + "zookeeper" + System.currentTimeMillis() + "/server1/data";
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();

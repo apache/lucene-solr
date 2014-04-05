@@ -29,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.core.SolrResourceLoader;
 
 /**
@@ -48,7 +49,7 @@ public class ContentStreamTest extends SolrTestCaseJ4
   {
     InputStream is = new SolrResourceLoader(null, null).openResource( "solrj/README" );
     assertNotNull( is );
-    File file = new File(dataDir, "README");
+    File file = new File(createTempDir(), "README");
     FileOutputStream os = new FileOutputStream(file);
     IOUtils.copy(is, os);
     os.close();
@@ -77,7 +78,7 @@ public class ContentStreamTest extends SolrTestCaseJ4
   {
     InputStream is = new SolrResourceLoader(null, null).openResource( "solrj/README" );
     assertNotNull( is );
-    File file = new File(dataDir, "README");
+    File file = new File(createTempDir(), "README");
     FileOutputStream os = new FileOutputStream(file);
     IOUtils.copy(is, os);
     os.close();

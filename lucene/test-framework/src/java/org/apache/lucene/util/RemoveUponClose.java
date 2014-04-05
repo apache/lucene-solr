@@ -1,6 +1,8 @@
 package org.apache.lucene.util;
 
-import java.io.*;
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -22,13 +24,20 @@ import java.io.*;
 /**
  * A {@link Closeable} that attempts to remove a given file/folder.
  */
-final class CloseableFile implements Closeable {
+final class RemoveUponClose implements Closeable {
   private final File file;
   private final TestRuleMarkFailure failureMarker;
+  private final String creationStack;
 
-  public CloseableFile(File file, TestRuleMarkFailure failureMarker) {
+  public RemoveUponClose(File file, TestRuleMarkFailure failureMarker) {
     this.file = file;
     this.failureMarker = failureMarker;
+
+    StringBuilder b = new StringBuilder();
+    for (StackTraceElement e : Thread.currentThread().getStackTrace()) {
+      b.append('\t').append(e.toString()).append('\n');
+    }
+    creationStack = b.toString();
   }
 
   @Override
@@ -37,17 +46,13 @@ final class CloseableFile implements Closeable {
     if (failureMarker.wasSuccessful()) {
       if (file.exists()) {
         try {
-          TestUtil.rmDir(file);
+          TestUtil.rm(file);
         } catch (IOException e) {
-          // Ignore the exception from rmDir.
-        }
-
-        // Re-check.
-        if (file.exists()) {
           throw new IOException(
-            "Could not remove: " + file.getAbsolutePath());
+              "Could not remove temporary location '" 
+                  + file.getAbsolutePath() + "', created at stack trace:\n" + creationStack, e);
         }
-    }
+      }
     }
   }
 }

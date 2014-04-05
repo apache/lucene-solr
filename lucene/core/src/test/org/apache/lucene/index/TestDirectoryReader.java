@@ -438,7 +438,7 @@ void assertTermDocsCount(String msg,
   
 public void testFilesOpenClose() throws IOException {
       // Create initial data set
-      File dirFile = TestUtil.getTempDir("TestIndexReader.testFilesOpenClose");
+      File dirFile = createTempDir("TestIndexReader.testFilesOpenClose");
       Directory dir = newFSDirectory(dirFile);
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
       addDoc(writer, "test");
@@ -446,7 +446,7 @@ public void testFilesOpenClose() throws IOException {
       dir.close();
 
       // Try to erase the data - this ensures that the writer closed all files
-      TestUtil.rmDir(dirFile);
+      TestUtil.rm(dirFile);
       dir = newFSDirectory(dirFile);
 
       // Now create the data set again, just as before
@@ -463,11 +463,11 @@ public void testFilesOpenClose() throws IOException {
 
       // The following will fail if reader did not close
       // all files
-      TestUtil.rmDir(dirFile);
+      TestUtil.rm(dirFile);
   }
 
   public void testOpenReaderAfterDelete() throws IOException {
-    File dirFile = TestUtil.getTempDir("deletetest");
+    File dirFile = createTempDir("deletetest");
     Directory dir = newFSDirectory(dirFile);
     try {
       DirectoryReader.open(dir);
@@ -715,8 +715,8 @@ public void testFilesOpenClose() throws IOException {
   // DirectoryReader on a non-existent directory, you get a
   // good exception
   public void testNoDir() throws Throwable {
-    File tempDir = TestUtil.getTempDir("doesnotexist");
-    TestUtil.rmDir(tempDir);
+    File tempDir = createTempDir("doesnotexist");
+    TestUtil.rm(tempDir);
     Directory dir = newFSDirectory(tempDir);
     try {
       DirectoryReader.open(dir);
@@ -1090,7 +1090,7 @@ public void testFilesOpenClose() throws IOException {
   }
 
   public void testIndexExistsOnNonExistentDirectory() throws Exception {
-    File tempDir = TestUtil.getTempDir("testIndexExistsOnNonExistentDirectory");
+    File tempDir = createTempDir("testIndexExistsOnNonExistentDirectory");
     tempDir.delete();
     Directory dir = newFSDirectory(tempDir);
     assertFalse(DirectoryReader.indexExists(dir));

@@ -310,7 +310,7 @@ public class TestFSTs extends LuceneTestCase {
     analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
 
     final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(-1).setRAMBufferSizeMB(64);
-    final File tempDir = TestUtil.getTempDir("fstlines");
+    final File tempDir = createTempDir("fstlines");
     final Directory dir = newFSDirectory(tempDir);
     final IndexWriter writer = new IndexWriter(dir, conf);
     final long stopTime = System.currentTimeMillis() + RUN_TIME_MSEC;

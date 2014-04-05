@@ -42,8 +42,7 @@ public class TestManagedSynonymFilterFactory extends RestTestBase {
    */
   @Before
   public void before() throws Exception {
-    tmpSolrHome = new File(dataDir + File.separator + TestManagedStopFilterFactory.class.getSimpleName()
-                          + System.currentTimeMillis());
+    tmpSolrHome = createTempDir();
     FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
 
     final SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();

@@ -42,7 +42,7 @@ public class TestCrashCausesCorruptIndex extends LuceneTestCase  {
    * LUCENE-3627: This test fails.
    */
   public void testCrashCorruptsIndexing() throws Exception {
-    path = TestUtil.getTempDir("testCrashCorruptsIndexing");
+    path = createTempDir("testCrashCorruptsIndexing");
         
     indexAndCrashOnCreateOutputSegments2();
 

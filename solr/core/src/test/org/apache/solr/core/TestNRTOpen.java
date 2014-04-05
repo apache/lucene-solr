@@ -46,10 +46,10 @@ public class TestNRTOpen extends SolrTestCaseJ4 {
     // add a doc
     assertU(adoc("foo", "bar"));
     assertU(commit());
-    File myDir = dataDir;
+    File myDir = initCoreDataDir;
     deleteCore();
     // boot up again over the same index
-    dataDir = myDir;
+    initCoreDataDir = myDir;
     initCore("solrconfig-basic.xml", "schema-minimal.xml");
     // startup
     assertNRT(1);

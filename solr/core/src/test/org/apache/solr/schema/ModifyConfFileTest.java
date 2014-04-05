@@ -17,7 +17,11 @@
 
 package org.apache.solr.schema;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import static org.junit.internal.matchers.StringContains.containsString;
+
+import java.io.File;
+import java.util.ArrayList;
+
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -36,13 +40,10 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
-import java.io.File;
-import java.util.ArrayList;
-
-import static org.junit.internal.matchers.StringContains.containsString;
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 public class ModifyConfFileTest extends SolrTestCaseJ4 {
-  private File solrHomeDirectory = new File(dataDir, this.getClass().getName());
+  private File solrHomeDirectory = createTempDir();
 
   @Rule
   public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
@@ -51,10 +52,7 @@ public class ModifyConfFileTest extends SolrTestCaseJ4 {
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
 
-    if (solrHomeDirectory.exists()) {
-      FileUtils.deleteDirectory(solrHomeDirectory);
-    }
-    assertTrue("Failed to mkdirs workDir", solrHomeDirectory.mkdirs());
+    solrHomeDirectory = createTempDir();
 
     copySolrHomeToTemp(solrHomeDirectory, "core1", true);
     FileUtils.write(new File(new File(solrHomeDirectory, "core1"), "core.properties"), "", Charsets.UTF_8.toString());
@@ -148,9 +146,6 @@ public class ModifyConfFileTest extends SolrTestCaseJ4 {
 
     } finally {
       cc.shutdown();
-      if (solrHomeDirectory.exists()) {
-        FileUtils.deleteDirectory(solrHomeDirectory);
-      }
     }
 
   }

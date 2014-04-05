@@ -6,13 +6,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.TimeZone;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -46,21 +43,10 @@ public class TestSimplePropertiesWriter extends AbstractDIHJdbcTestCase {
   
   @Before
   public void spwBefore() throws Exception {
-    File tmpdir = File.createTempFile("test", "tmp", dataDir);
-    tmpdir.delete();
-    tmpdir.mkdir();
-    fileLocation = tmpdir.getPath();
+    fileLocation = createTempDir().getAbsolutePath();
     fileName = "the.properties";
   }
-  @After
-  public void spwAfter() throws Exception {
-    //If an Assume was tripped while setting up the test, 
-    //the file might not ever have been created...
-    if(fileLocation!=null) {
-      new File(fileLocation + File.separatorChar + fileName).delete();
-      new File(fileLocation).delete();
-    }
-  }  
+ 
   @Test
   public void testSimplePropertiesWriter() throws Exception { 
     

@@ -17,7 +17,9 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import java.io.File;
+import java.io.IOException;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Rule;
@@ -25,15 +27,14 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
-import java.io.File;
-import java.io.IOException;
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 public class TestSolrXml extends SolrTestCaseJ4 {
 
   @Rule
   public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
-  private final File solrHome = new File(dataDir, TestSolrXml.getClassName() + File.separator + "solrHome");
+  private final File solrHome = createTempDir();
 
   @Test
   public void testAllInfoPresent() throws IOException {

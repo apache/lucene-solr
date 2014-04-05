@@ -17,19 +17,18 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.util.Map;
+
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.NativeFSLockFactory;
 import org.apache.lucene.store.SimpleFSLockFactory;
-import org.apache.lucene.util.Version;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.io.File;
-import java.util.Map;
 
 public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
 
@@ -41,7 +40,7 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
     System.setProperty("solr.directoryFactory", "org.apache.solr.core.SimpleFSDirectoryFactory");
 
     IndexWriterConfig indexWriterConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, null);
-    Directory directory = newFSDirectory(new File(dataDir, "index"));
+    Directory directory = newFSDirectory(createTempDir("index"));
     //creates a new index on the known location
     new IndexWriter(
         directory,
@@ -53,7 +52,7 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
   @Test
   public void testSimpleLockErrorOnStartup() throws Exception {
 
-    Directory directory = newFSDirectory(new File(dataDir, "index"), new SimpleFSLockFactory());
+    Directory directory = newFSDirectory(new File(initCoreDataDir, "index"), new SimpleFSLockFactory());
     //creates a new IndexWriter without releasing the lock yet
     IndexWriter indexWriter = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
 
@@ -77,7 +76,7 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
   @Test
   public void testNativeLockErrorOnStartup() throws Exception {
 
-    File indexDir = new File(dataDir, "index");
+    File indexDir = new File(initCoreDataDir, "index");
     log.info("Acquiring lock on {}", indexDir.getAbsolutePath());
     Directory directory = newFSDirectory(indexDir, new NativeFSLockFactory());
     //creates a new IndexWriter without releasing the lock yet

@@ -17,7 +17,6 @@
 
 package org.apache.solr.cloud.hdfs;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -62,10 +61,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
   
   @BeforeClass
   public static void setupClass() throws Exception {
-
-    dfsCluster = HdfsTestUtil.setupClass(new File(dataDir,
-        HdfsBasicDistributedZk2Test.class.getName() + "_"
-            + System.currentTimeMillis()).getAbsolutePath());
+    dfsCluster = HdfsTestUtil.setupClass(createTempDir().getAbsolutePath());
     System.setProperty("solr.hdfs.home", dfsCluster.getURI().toString() + "/solr");
   }
   
@@ -182,8 +178,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
         NamedList<Object> response = c.query(
             new SolrQuery().setRequestHandler("/admin/system")).getResponse();
         NamedList<Object> coreInfo = (NamedList<Object>) response.get("core");
-        String dataDir = (String) ((NamedList<Object>) coreInfo
-            .get("directory")).get("data");
+        String dataDir = (String) ((NamedList<Object>) coreInfo.get("directory")).get("data");
         dataDirs.add(dataDir);
       } finally {
         c.shutdown();

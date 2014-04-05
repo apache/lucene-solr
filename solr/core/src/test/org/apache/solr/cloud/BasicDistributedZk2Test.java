@@ -168,8 +168,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
       createCmd.setCoreName(ONE_NODE_COLLECTION + "core");
       createCmd.setCollection(ONE_NODE_COLLECTION);
       createCmd.setNumShards(1);
-      createCmd.setDataDir(getDataDir(dataDir.getAbsolutePath() + File.separator
-          + ONE_NODE_COLLECTION));
+      createCmd.setDataDir(getDataDir(createTempDir(ONE_NODE_COLLECTION).getAbsolutePath()));
       server.request(createCmd);
       server.shutdown();
     } catch (Exception e) {
@@ -415,15 +414,15 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("qt", "/replication");
     params.set("command", "backup");
-    File location = new File(dataDir, BasicDistributedZk2Test.class.getName() + "-backupdir-" + System.currentTimeMillis());
+    File location = createTempDir();
     params.set("location", location.getAbsolutePath());
 
     QueryRequest request = new QueryRequest(params);
     NamedList<Object> results = client.request(request );
     
     checkForBackupSuccess(client, location);
-
   }
+
   private void checkForBackupSuccess(final HttpSolrServer client, File location)
       throws InterruptedException, IOException {
     class CheckStatus extends Thread {

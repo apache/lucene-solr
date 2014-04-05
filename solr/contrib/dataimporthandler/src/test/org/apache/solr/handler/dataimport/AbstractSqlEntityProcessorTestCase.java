@@ -16,10 +16,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import junit.framework.Assert;
+
 import org.junit.After;
 import org.junit.Before;
-
-import junit.framework.Assert;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -54,12 +54,11 @@ public abstract class AbstractSqlEntityProcessorTestCase extends
   
   @Before
   public void beforeSqlEntitiyProcessorTestCase() throws Exception {
-    File tmpdir = File.createTempFile("test", "tmp", dataDir);
-    tmpdir.delete();
-    tmpdir.mkdir();
+    File tmpdir = createTempDir();
     fileLocation = tmpdir.getPath();
     fileName = "the.properties";
   } 
+  
   @After
   public void afterSqlEntitiyProcessorTestCase() {
     useSimpleCaches = false;

@@ -435,7 +435,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
 
     Random random = new Random(random().nextLong());
     final LineFileDocs docs = new LineFileDocs(random, true);
-    final File tempDir = TestUtil.getTempDir(testName);
+    final File tempDir = createTempDir(testName);
     dir = getDirectory(newMockFSDirectory(tempDir)); // some subclasses rely on this being MDW
     if (dir instanceof BaseDirectoryWrapper) {
       ((BaseDirectoryWrapper) dir).setCheckIndexOnClose(false); // don't double-checkIndex, we do it ourselves.
@@ -645,7 +645,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
 
     TestUtil.checkIndex(dir);
     dir.close();
-    TestUtil.rmDir(tempDir);
+    TestUtil.rm(tempDir);
 
     if (VERBOSE) {
       System.out.println("TEST: done [" + (System.currentTimeMillis()-t0) + " ms]");

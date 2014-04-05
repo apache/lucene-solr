@@ -84,13 +84,11 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
 
   private void testUnloadShardAndCollection() throws Exception{
     // create one leader and one replica
-    
     Create createCmd = new Create();
     createCmd.setCoreName("test_unload_shard_and_collection_1");
     String collection = "test_unload_shard_and_collection";
     createCmd.setCollection(collection);
-    String coreDataDir = dataDir.getAbsolutePath() + File.separator
-        + System.currentTimeMillis() + collection + "1";
+    String coreDataDir = createTempDir().getAbsolutePath();
     createCmd.setDataDir(getDataDir(coreDataDir));
     createCmd.setNumShards(2);
     
@@ -105,8 +103,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     createCmd.setCoreName("test_unload_shard_and_collection_2");
     collection = "test_unload_shard_and_collection";
     createCmd.setCollection(collection);
-    coreDataDir = dataDir.getAbsolutePath() + File.separator
-        + System.currentTimeMillis() + collection + "2";
+    coreDataDir = createTempDir().getAbsolutePath();
     createCmd.setDataDir(getDataDir(coreDataDir));
     
     server.request(createCmd);
@@ -157,6 +154,8 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
    * @throws Exception on any problem
    */
   private void testCoreUnloadAndLeaders() throws Exception {
+    File tmpDir = createTempDir();
+    
     // create a new collection collection
     SolrServer client = clients.get(0);
     String url1 = getBaseUrl(client);
@@ -168,7 +167,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     createCmd.setCoreName("unloadcollection1");
     createCmd.setCollection("unloadcollection");
     createCmd.setNumShards(1);
-    String core1DataDir = dataDir.getAbsolutePath() + File.separator + System.currentTimeMillis() + "unloadcollection1" + "_1n";
+    String core1DataDir = tmpDir.getAbsolutePath() + File.separator + System.currentTimeMillis() + "unloadcollection1" + "_1n";
     createCmd.setDataDir(getDataDir(core1DataDir));
     server.request(createCmd);
     server.shutdown();
@@ -188,7 +187,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     createCmd = new Create();
     createCmd.setCoreName("unloadcollection2");
     createCmd.setCollection("unloadcollection");
-    String core2dataDir = dataDir.getAbsolutePath() + File.separator + System.currentTimeMillis() + "unloadcollection1" + "_2n";
+    String core2dataDir = tmpDir.getAbsolutePath() + File.separator + System.currentTimeMillis() + "unloadcollection1" + "_2n";
     createCmd.setDataDir(getDataDir(core2dataDir));
     server.request(createCmd);
     server.shutdown();
@@ -230,7 +229,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     createCmd = new Create();
     createCmd.setCoreName("unloadcollection3");
     createCmd.setCollection("unloadcollection");
-    String core3dataDir = dataDir.getAbsolutePath() + File.separator + System.currentTimeMillis() + "unloadcollection" + "_3n";
+    String core3dataDir = tmpDir.getAbsolutePath() + File.separator + System.currentTimeMillis() + "unloadcollection" + "_3n";
     createCmd.setDataDir(getDataDir(core3dataDir));
     server.request(createCmd);
     server.shutdown();
@@ -308,7 +307,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     createCmd = new Create();
     createCmd.setCoreName("unloadcollection4");
     createCmd.setCollection("unloadcollection");
-    String core4dataDir = dataDir.getAbsolutePath() + File.separator + System.currentTimeMillis() + "unloadcollection" + "_4n";
+    String core4dataDir = tmpDir.getAbsolutePath() + File.separator + System.currentTimeMillis() + "unloadcollection" + "_4n";
     createCmd.setDataDir(getDataDir(core4dataDir));
     server.request(createCmd);
     server.shutdown();

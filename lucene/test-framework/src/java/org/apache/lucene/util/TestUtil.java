@@ -28,9 +28,11 @@ import java.io.PrintStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.CharBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -87,7 +89,6 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.junit.Assert;
 
-import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
@@ -99,73 +100,50 @@ public final class TestUtil {
     //
   }
 
-  // the max number of retries we're going to do in getTempDir
-  private static final int GET_TEMP_DIR_RETRY_THRESHOLD = 1000;
-  
   /**
-   * Returns a temp directory, based on the given description. Creates the
-   * directory.
+   * Deletes one or more files or directories (and everything underneath it).
+   * 
+   * @throws IOException if any of the given files (or their subhierarchy files in case
+   * of directories) cannot be removed.
    */
-  public static File getTempDir(String desc) {
-    if (desc.length() < 3) {
-      throw new IllegalArgumentException("description must be at least 3 characters");
+  public static void rm(File... locations) throws IOException {
+    LinkedHashSet<File> unremoved = rm(new LinkedHashSet<File>(), locations);
+    if (!unremoved.isEmpty()) {
+      StringBuilder b = new StringBuilder("Could not remove the following files (in the order of attempts):\n");
+      for (File f : unremoved) {
+        b.append("   ")
+         .append(f.getAbsolutePath())
+         .append("\n");
+      }
+      throw new IOException(b.toString());
     }
-    // always pull a long from master random. that way, the randomness of the test
-    // is not affected by whether it initialized the counter (in genTempFile) or not.
-    // note that the Random used by genTempFile is *not* the master Random, and therefore
-    // does not affect the randomness of the test.
-    final Random random = new Random(RandomizedContext.current().getRandom().nextLong());
-    int attempt = 0;
-    File f;
-    do {
-      f = genTempFile(random, desc, "tmp", LuceneTestCase.TEMP_DIR);
-    } while (!f.mkdir() && (attempt++) < GET_TEMP_DIR_RETRY_THRESHOLD);
-    
-    if (attempt > GET_TEMP_DIR_RETRY_THRESHOLD) {
-      throw new RuntimeException(
-          "failed to get a temporary dir too many times. check your temp directory and consider manually cleaning it.");
-    }
-    
-    LuceneTestCase.closeAfterSuite(new CloseableFile(f, LuceneTestCase.suiteFailureMarker));
-    return f;
   }
 
-  /**
-   * Deletes a directory and everything underneath it.
-   */
-  public static void rmDir(File dir) throws IOException {
-    if (dir.exists()) {
-      if (dir.isFile() && !dir.delete()) {
-        throw new IOException("could not delete " + dir);
-      }
-      for (File f : dir.listFiles()) {
-        if (f.isDirectory()) {
-          rmDir(f);
-        } else {
-          if (!f.delete()) {
-            throw new IOException("could not delete " + f);
-          }
+  private static LinkedHashSet<File> rm(LinkedHashSet<File> unremoved, File... locations) {
+    for (File location : locations) {
+      if (location.exists()) {
+        if (location.isDirectory()) {
+          rm(unremoved, location.listFiles());
+        }
+
+        if (!location.delete()) {
+          unremoved.add(location);
         }
       }
-      if (!dir.delete()) {
-        throw new IOException("could not delete " + dir);
-      }
     }
+    return unremoved;
   }
 
   /** 
-   * Convenience method: Unzip zipName + ".zip" under destDir, removing destDir first 
+   * Convenience method unzipping zipName into destDir, cleaning up 
+   * destDir first. 
    */
   public static void unzip(File zipName, File destDir) throws IOException {
-    
-    ZipFile zipFile = new ZipFile(zipName);
-    
-    Enumeration<? extends ZipEntry> entries = zipFile.entries();
-    
-    rmDir(destDir);
-
+    rm(destDir);
     destDir.mkdir();
-    LuceneTestCase.closeAfterSuite(new CloseableFile(destDir, LuceneTestCase.suiteFailureMarker));
+
+    ZipFile zipFile = new ZipFile(zipName);
+    Enumeration<? extends ZipEntry> entries = zipFile.entries();
 
     while (entries.hasMoreElements()) {
       ZipEntry entry = entries.nextElement();
@@ -808,52 +786,6 @@ public final class TestUtil {
       }
     });
     Assert.assertEquals("Reflection does not produce same map", reflectedValues, map);
-  }
-  
-  /** 
-   * insecure, fast version of File.createTempFile
-   * uses Random instead of SecureRandom.
-   */
-  public static File createTempFile(String prefix, String suffix, File directory)
-      throws IOException {
-    if (prefix.length() < 3) {
-      throw new IllegalArgumentException("prefix must be at least 3 characters");
-    }
-    String newSuffix = suffix == null ? ".tmp" : suffix;
-    // always pull a long from master random. that way, the randomness of the test
-    // is not affected by whether it initialized the counter (in genTempFile) or not.
-    // note that the Random used by genTempFile is *not* the master Random, and therefore
-    // does not affect the randomness of the test.
-    final Random random = new Random(RandomizedContext.current().getRandom().nextLong());
-    File result;
-    do {
-      result = genTempFile(random, prefix, newSuffix, directory);
-    } while (!result.createNewFile());
-    return result;
-  }
-
-  /* identify for differnt VM processes */
-  private static String counterBase;
-  
-  /* Temp file counter */
-  private static int counter;
-  private static final Object counterLock = new Object();
-
-  private static File genTempFile(Random random, String prefix, String suffix, File directory) {
-    final int identify;
-    synchronized (counterLock) {
-      if (counterBase == null) { // init once
-        counter = random.nextInt() & 0xFFFF; // up to five digits number
-        counterBase = Integer.toString(counter);
-      }
-      identify = counter++;
-    }
-    StringBuilder newName = new StringBuilder();
-    newName.append(prefix);
-    newName.append(counterBase);
-    newName.append(identify);
-    newName.append(suffix);
-    return new File(directory, newName.toString());
   }
 
   public static void assertEquals(TopDocs expected, TopDocs actual) {

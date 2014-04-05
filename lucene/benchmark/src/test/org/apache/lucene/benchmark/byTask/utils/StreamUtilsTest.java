@@ -136,14 +136,14 @@ public class StreamUtilsTest extends BenchmarkTestCase {
   public void setUp() throws Exception {
     super.setUp();
     testDir = new File(getWorkDir(),"ContentSourceTest");
-    TestUtil.rmDir(testDir);
+    TestUtil.rm(testDir);
     assertTrue(testDir.mkdirs());
   }
 
   @Override
   @After
   public void tearDown() throws Exception {
-    TestUtil.rmDir(testDir);
+    TestUtil.rm(testDir);
     super.tearDown();
   }
 

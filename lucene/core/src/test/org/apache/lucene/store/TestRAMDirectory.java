@@ -50,7 +50,7 @@ public class TestRAMDirectory extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    indexDir = TestUtil.getTempDir("RAMDirIndex");
+    indexDir = createTempDir("RAMDirIndex");
     
     Directory dir = newFSDirectory(indexDir);
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(

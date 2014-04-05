@@ -17,55 +17,153 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import java.io.*;
-import java.nio.file.NoSuchFileException;
-import java.lang.annotation.*;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsBoolean;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsInt;
+
+import java.io.Closeable;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.*;
-import java.util.concurrent.*;
+import java.nio.file.NoSuchFileException;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Random;
+import java.util.Set;
+import java.util.TimeZone;
+import java.util.TreeSet;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.AlcoholicMergePolicy;
+import org.apache.lucene.index.AssertingAtomicReader;
+import org.apache.lucene.index.AssertingDirectoryReader;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.CompositeReader;
+import org.apache.lucene.index.ConcurrentMergeScheduler;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.FieldFilterAtomicReader;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.ReaderClosedListener;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LogByteSizeMergePolicy;
+import org.apache.lucene.index.LogDocMergePolicy;
+import org.apache.lucene.index.LogMergePolicy;
+import org.apache.lucene.index.MergePolicy;
+import org.apache.lucene.index.MockRandomMergePolicy;
+import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.ParallelAtomicReader;
+import org.apache.lucene.index.ParallelCompositeReader;
+import org.apache.lucene.index.SegmentReader;
+import org.apache.lucene.index.SerialMergeScheduler;
+import org.apache.lucene.index.SimpleMergedSegmentWarmer;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.StoredDocument;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
-import org.apache.lucene.search.*;
+import org.apache.lucene.index.TieredMergePolicy;
+import org.apache.lucene.search.AssertingIndexSearcher;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.QueryUtils.FCInvisibleMultiReader;
-import org.apache.lucene.store.*;
+import org.apache.lucene.store.BaseDirectoryWrapper;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.FlushInfo;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IOContext.Context;
+import org.apache.lucene.store.LockFactory;
+import org.apache.lucene.store.MergeInfo;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
+import org.apache.lucene.store.NRTCachingDirectory;
+import org.apache.lucene.store.RateLimitedDirectoryWrapper;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
-import org.junit.*;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
-import com.carrotsearch.randomizedtesting.*;
-import com.carrotsearch.randomizedtesting.annotations.*;
+
+import com.carrotsearch.randomizedtesting.JUnit4MethodProvider;
+import com.carrotsearch.randomizedtesting.LifecycleScope;
+import com.carrotsearch.randomizedtesting.MixWithSuiteName;
+import com.carrotsearch.randomizedtesting.RandomizedContext;
+import com.carrotsearch.randomizedtesting.RandomizedRunner;
+import com.carrotsearch.randomizedtesting.RandomizedTest;
+import com.carrotsearch.randomizedtesting.annotations.Listeners;
+import com.carrotsearch.randomizedtesting.annotations.SeedDecorators;
+import com.carrotsearch.randomizedtesting.annotations.TestGroup;
+import com.carrotsearch.randomizedtesting.annotations.TestMethodProviders;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction.Action;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakGroup;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakGroup.Group;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies.Consequence;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import com.carrotsearch.randomizedtesting.rules.NoClassHooksShadowingRule;
 import com.carrotsearch.randomizedtesting.rules.NoInstanceHooksOverridesRule;
 import com.carrotsearch.randomizedtesting.rules.StaticFieldsInvariantRule;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesInvariantRule;
-
-import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsBoolean;
-import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsInt;
+import com.carrotsearch.randomizedtesting.rules.TestRuleAdapter;
 
 /**
  * Base class for all Lucene unit tests, Junit3 or Junit4 variant.
@@ -112,13 +210,6 @@ import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAs
  *   context ({@link RandomizedContext#current()}) and then calling
  *   {@link RandomizedContext#getRunnerSeedAsString()}.</li>
  * </ul>
- * 
- * <p>There is a number of other facilities tests can use, like:
- * <ul>
- *   <li>{@link #closeAfterTest(Closeable)} and {@link #closeAfterSuite(Closeable)} to
- *   register resources to be closed after each scope (if close fails, the scope
- *   will fail too).</li>
- * </ul> 
  */
 @RunWith(RandomizedRunner.class)
 @TestMethodProviders({
@@ -228,6 +319,23 @@ public abstract class LuceneTestCase extends Assert {
     String[] value();
   }
   
+  /**
+   * Marks any suites which are known not to close all the temporary
+   * files. This may prevent temp. files and folders from being cleaned
+   * up after the suite is completed.
+   * 
+   * @see LuceneTestCase#createTempDir()
+   * @see LuceneTestCase#createTempFile(String, String)
+   */
+  @Documented
+  @Inherited
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.TYPE)
+  public @interface SuppressTempFileChecks {
+    /** Point to JIRA entry. */
+    public String bugUrl() default "None";
+  }
+
   // -----------------------------------------------------------------
   // Truly immutable fields and constants, initialized once and valid 
   // for all suites ever since.
@@ -291,14 +399,18 @@ public abstract class LuceneTestCase extends Assert {
   /** Throttling, see {@link MockDirectoryWrapper#setThrottling(Throttling)}. */
   public static final Throttling TEST_THROTTLING = TEST_NIGHTLY ? Throttling.SOMETIMES : Throttling.NEVER;
 
-  /** Create indexes in this directory, optimally use a subdir, named after the test */
-  public static final File TEMP_DIR;
+  /** Leave temporary files on disk, even on successful runs. */
+  public static final boolean LEAVE_TEMPORARY;
   static {
-    String s = System.getProperty("tempDir", System.getProperty("java.io.tmpdir"));
-    if (s == null)
-      throw new RuntimeException("To run tests, you need to define system property 'tempDir' or 'java.io.tmpdir'.");
-    TEMP_DIR = new File(s);
-    TEMP_DIR.mkdirs();
+    boolean defaultValue = false;
+    for (String property : Arrays.asList(
+        "tests.leaveTemporary" /* ANT tasks's (junit4) flag. */,
+        "tests.leavetemporary" /* lowercase */,
+        "tests.leavetmpdir" /* default */,
+        "solr.test.leavetmpdir" /* Solr's legacy */)) {
+      defaultValue |= systemPropertyAsBoolean(property, false);
+    }
+    LEAVE_TEMPORARY = defaultValue;
   }
 
   /**
@@ -423,6 +535,7 @@ public abstract class LuceneTestCase extends Assert {
     .around(ignoreAfterMaxFailures)
     .around(suiteFailureMarker = new TestRuleMarkFailure())
     .around(new TestRuleAssertionsRequired())
+    .around(new TemporaryFilesCleanupRule())
     .around(new StaticFieldsInvariantRule(STATIC_LEAK_THRESHOLD, true) {
       @Override
       protected boolean accept(java.lang.reflect.Field field) {
@@ -1143,7 +1256,7 @@ public abstract class LuceneTestCase extends Assert {
       final Class<? extends Directory> clazz = CommandLineUtil.loadDirectoryClass(clazzName);
       // If it is a FSDirectory type, try its ctor(File)
       if (FSDirectory.class.isAssignableFrom(clazz)) {
-        final File dir = TestUtil.getTempDir("index");
+        final File dir = createTempDir("index-" + clazzName);
         dir.mkdirs(); // ensure it's created so we 'have' it.
         return newFSDirectoryImpl(clazz.asSubclass(FSDirectory.class), dir);
       }
@@ -2077,6 +2190,159 @@ public abstract class LuceneTestCase extends Assert {
       return true;
     } catch (NoSuchFileException | FileNotFoundException e) {
       return false;
+    }
+  }
+
+  /**
+   * A base location for temporary files of a given test. Helps in figuring out
+   * which tests left which files and where.
+   */
+  private static File tempDirBase;
+  
+  /**
+   * Retry to create temporary file name this many times.
+   */
+  private static final int TEMP_NAME_RETRY_THRESHOLD = 9999;
+
+  /**
+   * This method is deprecated for a reason. Do not use it. Call {@link #createTempDir()}
+   * or {@link #createTempDir(String)} or {@link #createTempFile(String, String)}.
+   */
+  @Deprecated
+  public static File getTempDirBase() {
+    synchronized (LuceneTestCase.class) {
+      if (tempDirBase == null) {
+        File directory = new File(System.getProperty("tempDir", System.getProperty("java.io.tmpdir")));
+        assert directory.exists() && 
+               directory.isDirectory() && 
+               directory.canWrite();
+
+        RandomizedContext ctx = RandomizedContext.current();
+        Class<?> clazz = ctx.getTargetClass();
+        String prefix = clazz.getName();
+        prefix = prefix.replaceFirst("^org.apache.lucene.", "lucene.");
+        prefix = prefix.replaceFirst("^org.apache.solr.", "solr.");
+
+        int attempt = 0;
+        File f;
+        do {
+          if (attempt++ >= TEMP_NAME_RETRY_THRESHOLD) {
+            throw new RuntimeException(
+                "Failed to get a temporary name too many times, check your temp directory and consider manually cleaning it: "
+                  + directory.getAbsolutePath());            
+          }
+          f = new File(directory, prefix + "-" + ctx.getRunnerSeedAsString() 
+                + "-" + String.format(Locale.ENGLISH, "%03d", attempt));
+        } while (!f.mkdirs());
+
+        tempDirBase = f;
+        registerToRemoveAfterSuite(tempDirBase);
+      }
+    }
+    return tempDirBase;
+  }
+
+
+  /**
+   */
+  public static File createTempDir() {
+    return createTempDir("tempDir");
+  }
+
+  /**
+   */
+  public static File createTempDir(String prefix) {
+    File base = getTempDirBase();
+
+    int attempt = 0;
+    File f;
+    do {
+      if (attempt++ >= TEMP_NAME_RETRY_THRESHOLD) {
+        throw new RuntimeException(
+            "Failed to get a temporary name too many times, check your temp directory and consider manually cleaning it: "
+              + base.getAbsolutePath());            
+      }
+      f = new File(base, prefix + "-" + String.format(Locale.ENGLISH, "%03d", attempt));
+    } while (!f.mkdirs());
+
+    registerToRemoveAfterSuite(f);
+    return f;
+  }
+  
+  /**
+   */
+  public static File createTempFile(String prefix, String suffix) throws IOException {
+    File base = getTempDirBase();
+
+    int attempt = 0;
+    File f;
+    do {
+      if (attempt++ >= TEMP_NAME_RETRY_THRESHOLD) {
+        throw new RuntimeException(
+            "Failed to get a temporary name too many times, check your temp directory and consider manually cleaning it: "
+              + base.getAbsolutePath());            
+      }
+      f = new File(base, prefix + "-" + String.format(Locale.ENGLISH, "%03d", attempt) + suffix);
+    } while (!f.createNewFile());
+
+    registerToRemoveAfterSuite(f);
+    return f;
+  }
+
+  /**
+   */
+  public static File createTempFile() throws IOException {
+    return createTempFile("tempFile", ".tmp");
+  }
+
+  /**
+   * A queue of temporary resources to be removed after the
+   * suite completes.
+   * @see #registerToRemoveAfterSuite(File)
+   */
+  private final static Deque<File> cleanupQueue = new ArrayDeque<File>();
+
+  /**
+   * Register temporary folder for removal after the suite completes.
+   */
+  private static void registerToRemoveAfterSuite(File f) {
+    assert f != null;
+
+    if (LuceneTestCase.LEAVE_TEMPORARY) {
+      System.err.println("INFO: Will leave temporary file: " + f.getAbsolutePath());
+      return;
+    }
+
+    synchronized (cleanupQueue) {
+      cleanupQueue.addLast(f);
+    }
+  }
+
+  private static class TemporaryFilesCleanupRule extends TestRuleAdapter {
+    @Override
+    protected void afterAlways(List<Throwable> errors) throws Throwable {
+      if (LuceneTestCase.suiteFailureMarker.wasSuccessful()) {
+        synchronized (cleanupQueue) {
+          File [] everything = new File [cleanupQueue.size()];
+          for (int i = 0; !cleanupQueue.isEmpty(); i++) {
+            everything[i] = cleanupQueue.removeLast();
+          }
+
+          // Will throw an IOException on un-removable files.
+          try {
+            TestUtil.rm(everything);
+          } catch (IOException e) {
+            Class<?> suiteClass = RandomizedContext.current().getTargetClass();
+            if (suiteClass.isAnnotationPresent(SuppressTempFileChecks.class)) {
+              System.err.println("WARNING: Leftover undeleted temporary files (bugUrl: "
+                  + suiteClass.getAnnotation(SuppressTempFileChecks.class).bugUrl() + "): "
+                  + e.getMessage());
+              return;
+            }
+            throw e;
+          }
+        }
+      }
     }
   }
 }

@@ -85,7 +85,7 @@ public class TestCharBlockArray extends FacetTestCase {
 
     assertEqualsInternal("GrowingCharArray<->StringBuilder mismatch.", builder, array);
 
-    File tempDir = TestUtil.getTempDir("growingchararray");
+    File tempDir = createTempDir("growingchararray");
     File f = new File(tempDir, "GrowingCharArrayTest.tmp");
     BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(f));
     array.flush(out);

@@ -134,19 +134,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     public String bugUrl() default "None";
   }
   
-
-  /**
-   * Annotation for test classes to prevent TEMP_DIR cleanup.
-   */
-  @Documented
-  @Inherited
-  @Retention(RetentionPolicy.RUNTIME)
-  @Target(ElementType.TYPE)
-  public @interface SuppressTempDirCleanUp {
-    /** Point to JIRA entry. */
-    public String bugUrl() default "None";
-  }
-  
   // these are meant to be accessed sequentially, but are volatile just to ensure any test
   // thread will read the latest value
   protected static volatile SSLTestConfig sslConfig;
@@ -163,11 +150,9 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   @BeforeClass 
   @SuppressWarnings("unused")
   private static void beforeClass() {
-    String cname = getSimpleClassName();
-    dataDir = new File(TEMP_DIR,
-            "solrtest-" + cname + "-" + System.currentTimeMillis());
-    dataDir.mkdirs();
-    System.err.println("Creating dataDir: " + dataDir.getAbsolutePath());
+    initCoreDataDir = createTempDir("init-core-data");
+
+    System.err.println("Creating dataDir: " + initCoreDataDir.getAbsolutePath());
     
     System.setProperty("jetty.testMode", "true");
     System.setProperty("enable.update.log", usually() ? "true" : "false");
@@ -199,39 +184,19 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       resetFactory();
       coreName = ConfigSolrXmlOld.DEFAULT_DEFAULT_CORE_NAME;
     } finally {
-      try {
-        boolean skip = Boolean.getBoolean("solr.test.leavedatadir");
-        if (skip) {
-          System.err
-              .println("NOTE: per solr.test.leavedatadir, dataDir will not be removed: "
-                  + dataDir.getAbsolutePath());
-        } else {
-          
-          if (dataDir != null && dataDir.exists() && !recurseDelete(dataDir)) {
-            String msg = "!!!! WARNING: best effort to remove "
-                + dataDir.getAbsolutePath() + " FAILED !!!!!";
-            if (RandomizedContext.current().getTargetClass()
-                .isAnnotationPresent(SuppressTempDirCleanUp.class)) {
-              System.err.println(msg);
-            } else {
-              fail(msg);
-            }
-          }
-        }
-      } finally {
-        dataDir = null;
-        System.clearProperty("jetty.testMode");
-        System.clearProperty("tests.shardhandler.randomSeed");
-        System.clearProperty("enable.update.log");
-        System.clearProperty("useCompoundFile");
-        System.clearProperty("urlScheme");
-        
-        if (isSSLMode()) {
-          HttpClientUtil.setConfigurer(new HttpClientConfigurer());
-        }
-        // clean up static
-        sslConfig = null;
+      initCoreDataDir = null;
+      System.clearProperty("jetty.testMode");
+      System.clearProperty("tests.shardhandler.randomSeed");
+      System.clearProperty("enable.update.log");
+      System.clearProperty("useCompoundFile");
+      System.clearProperty("urlScheme");
+      
+      if (isSSLMode()) {
+        HttpClientUtil.setConfigurer(new HttpClientConfigurer());
       }
+
+      // clean up static
+      sslConfig = null;
     }
     
     IpTables.unblockAllPorts();
@@ -497,7 +462,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       SolrException.ignorePatterns.remove(pattern);
   }
 
-
   public static void resetExceptionIgnores() {
     SolrException.ignorePatterns = null;
     ignoreException("ignore_exception");  // always ignore "ignore_exception"    
@@ -554,9 +518,9 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
 
   /**
-   * The directory used to story the index managed by the TestHarness h
+   * The directory used to story the index managed by the TestHarness
    */
-  protected static volatile File dataDir;
+  protected static volatile File initCoreDataDir;
   
   // hack due to File dataDir
   protected static String hdfsDataDir;
@@ -600,7 +564,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static void createCore() {
     assertNotNull(testSolrHome);
     solrConfig = TestHarness.createConfig(testSolrHome, coreName, getSolrConfigFile());
-    h = new TestHarness( coreName, hdfsDataDir == null ? dataDir.getAbsolutePath() : hdfsDataDir,
+    h = new TestHarness( coreName, hdfsDataDir == null ? initCoreDataDir.getAbsolutePath() : hdfsDataDir,
             solrConfig,
             getSchemaFile());
     lrf = h.getRequestFactory
@@ -616,7 +580,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   public static CoreContainer createDefaultCoreContainer(String solrHome) {
     testSolrHome = checkNotNull(solrHome);
-    h = new TestHarness("collection1", dataDir.getAbsolutePath(), "solrconfig.xml", "schema.xml");
+    h = new TestHarness("collection1", initCoreDataDir.getAbsolutePath(), "solrconfig.xml", "schema.xml");
     lrf = h.getRequestFactory("standard", 0, 20, CommonParams.VERSION, "2.2");
     return h.getCoreContainer();
   }

@@ -17,7 +17,6 @@
 
 package org.apache.solr.cloud.hdfs;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -60,9 +59,7 @@ public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
   @BeforeClass
   public static void setupClass() throws Exception {
     schemaString = "schema15.xml";      // we need a string id
-    dfsCluster = HdfsTestUtil.setupClass(new File(dataDir,
-        HdfsBasicDistributedZk2Test.class.getName() + "_"
-            + System.currentTimeMillis()).getAbsolutePath());
+    dfsCluster = HdfsTestUtil.setupClass(createTempDir().getAbsolutePath());
     System.setProperty(SOLR_HDFS_HOME, dfsCluster.getURI().toString() + "/solr");
   }
   

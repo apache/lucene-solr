@@ -30,6 +30,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.util.LuceneTestCase;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.store.hdfs.HdfsDirectory;
 import org.junit.After;
@@ -104,9 +105,7 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    file = new File(dataDir, HdfsDirectory.class.getName() + "-" + System.currentTimeMillis());
-    rm(file);
-    file.mkdirs();
+    file = createTempDir();
     FSDirectory dir = FSDirectory.open(new File(file, "base"));
     mapperCache = new MapperCache();
     directory = new BlockDirectory("test", dir, mapperCache, null, true, true);
@@ -117,7 +116,6 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
   public void tearDown() throws Exception {
     super.tearDown();
     directory.close();
-    FileUtils.deleteDirectory(file);
   }
 
   @Test

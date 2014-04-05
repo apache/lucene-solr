@@ -41,7 +41,7 @@ public class AddIndexesTaskTest extends BenchmarkTestCase {
   
   @BeforeClass
   public static void beforeClassAddIndexesTaskTest() throws Exception {
-    testDir = TestUtil.getTempDir("addIndexesTask");
+    testDir = createTempDir("addIndexesTask");
     
     // create a dummy index under inputDir
     inputDir = new File(testDir, "input");

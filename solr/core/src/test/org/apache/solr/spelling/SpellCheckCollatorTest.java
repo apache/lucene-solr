@@ -21,9 +21,9 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.SolrTestCaseJ4.SuppressTempDirCleanUp;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.GroupParams;
@@ -42,7 +42,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 @Slow
-@SuppressTempDirCleanUp(bugUrl = "https://issues.apache.org/jira/browse/SOLR-1877 Spellcheck IndexReader leak bug?")
+@SuppressTempFileChecks(bugUrl = "https://issues.apache.org/jira/browse/SOLR-1877 Spellcheck IndexReader leak bug?")
 public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {

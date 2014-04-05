@@ -16,6 +16,13 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Pattern;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
@@ -29,13 +36,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.junit.After;
 import org.junit.Before;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.regex.Pattern;
-
 public class TestManagedSchema extends AbstractBadConfigTestBase {
 
   private static File tmpSolrHome;
@@ -46,9 +46,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
   
   @Before
   private void initManagedSchemaCore() throws Exception {
-    final String tmpSolrHomePath 
-        = dataDir + File.separator + TestManagedSchema.class.getSimpleName() + System.currentTimeMillis();
-    tmpSolrHome = new File(tmpSolrHomePath).getAbsoluteFile();
+    tmpSolrHome = createTempDir();
     tmpConfDir = new File(tmpSolrHome, confDir);
     File testHomeConfDir = new File(TEST_HOME(), confDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig-managed-schema.xml"), tmpConfDir);
@@ -68,9 +66,8 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
   }
 
   @After
-  private void deleteCoreAndTempSolrHomeDirectory() throws Exception {
+  private void afterClass() throws Exception {
     deleteCore();
-    FileUtils.deleteDirectory(tmpSolrHome);
     System.clearProperty("managed.schema.mutable");
     System.clearProperty("enable.update.log");
   }

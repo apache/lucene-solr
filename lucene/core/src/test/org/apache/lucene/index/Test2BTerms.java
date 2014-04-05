@@ -148,7 +148,7 @@ public class Test2BTerms extends LuceneTestCase {
 
     List<BytesRef> savedTerms = null;
 
-    BaseDirectoryWrapper dir = newFSDirectory(TestUtil.getTempDir("2BTerms"));
+    BaseDirectoryWrapper dir = newFSDirectory(createTempDir("2BTerms"));
     //MockDirectoryWrapper dir = newFSDirectory(new File("/p/lucene/indices/2bindex"));
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
