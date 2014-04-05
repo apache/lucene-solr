@@ -921,7 +921,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals(3, results.get(2).value);
 
     // Try again after save/load:
-    File tmpDir = TestUtil.getTempDir("AnalyzingSuggesterTest");
+    File tmpDir = createTempDir("AnalyzingSuggesterTest");
     tmpDir.mkdir();
 
     File path = new File(tmpDir, "suggester");
@@ -983,7 +983,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals(5, results.get(1).value);
 
     // Try again after save/load:
-    File tmpDir = TestUtil.getTempDir("AnalyzingSuggesterTest");
+    File tmpDir = createTempDir("AnalyzingSuggesterTest");
     tmpDir.mkdir();
 
     File path = new File(tmpDir, "suggester");
@@ -1053,7 +1053,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals(5, results.get(1).value);
 
     // Try again after save/load:
-    File tmpDir = TestUtil.getTempDir("AnalyzingSuggesterTest");
+    File tmpDir = createTempDir("AnalyzingSuggesterTest");
     tmpDir.mkdir();
 
     File path = new File(tmpDir, "suggester");

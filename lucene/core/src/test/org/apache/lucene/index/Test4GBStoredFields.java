@@ -42,7 +42,7 @@ public class Test4GBStoredFields extends LuceneTestCase {
 
   @Nightly
   public void test() throws Exception {
-    MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), new MMapDirectory(TestUtil.getTempDir("4GBStoredFields")));
+    MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), new MMapDirectory(createTempDir("4GBStoredFields")));
     dir.setThrottling(MockDirectoryWrapper.Throttling.NEVER);
 
     IndexWriter w = new IndexWriter(dir,

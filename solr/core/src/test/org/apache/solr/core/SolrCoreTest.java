@@ -17,19 +17,6 @@
 
 package org.apache.solr.core;
 
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.handler.component.SpellCheckComponent;
-import org.apache.solr.handler.component.QueryComponent;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.apache.solr.util.plugin.SolrCoreAware;
-import org.junit.Test;
-
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +25,18 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.component.QueryComponent;
+import org.apache.solr.handler.component.SpellCheckComponent;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.plugin.SolrCoreAware;
+import org.junit.Test;
 
 public class SolrCoreTest extends SolrTestCaseJ4 {
   private static final String COLLECTION1 = "collection1";
@@ -67,8 +66,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     core.close();
     
     
-    SolrCore newCore = new SolrCore(COLLECTION1, dataDir + File.separator
-        + "datadir2", new SolrConfig("solr/collection1", "solrconfig.xml", null), schema,
+    SolrCore newCore = new SolrCore(COLLECTION1, createTempDir("dataDir2").getAbsolutePath(), new SolrConfig("solr/collection1", "solrconfig.xml", null), schema,
         new CoreDescriptor(cores, COLLECTION1, "solr/collection1"));
     
     cores.register(newCore, false);

@@ -81,12 +81,10 @@ public class TestSolrXMLSerializer extends SolrTestCaseJ4 {
     }
     
     assertResults(w.toString().getBytes(StandardCharsets.UTF_8));
-    
-    // again with default file
-    File tmpFile = TestUtil.createTempFile("solr.xml", null, dataDir);
-    
-    serializer.persistFile(tmpFile, solrXMLDef);
 
+    // again with default file
+    File tmpFile = new File(createTempDir(), "solr.xml");
+    serializer.persistFile(tmpFile, solrXMLDef);
     assertResults(FileUtils.readFileToByteArray(tmpFile));
     tmpFile.delete();
   }

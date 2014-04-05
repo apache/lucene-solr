@@ -17,6 +17,9 @@ package org.apache.solr;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.io.IOException;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
@@ -29,9 +32,6 @@ import org.apache.solr.core.SolrCore;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-import java.io.File;
-import java.io.IOException;
-
 public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
   
   private static String tmpSolrHome;
@@ -42,14 +42,14 @@ public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    tmpSolrHome = dataDir + File.separator + AnalysisAfterCoreReloadTest.class.getSimpleName() + System.currentTimeMillis();
+    tmpSolrHome = createTempDir().getAbsolutePath();
     FileUtils.copyDirectory(new File(TEST_HOME()), new File(tmpSolrHome).getAbsoluteFile());
     initCore("solrconfig.xml", "schema.xml", new File(tmpSolrHome).getAbsolutePath());
   }
 
   @AfterClass
   public static void AfterClass() throws Exception {
-    FileUtils.deleteDirectory(new File(tmpSolrHome).getAbsoluteFile());
+    
   }
   
   public void testStopwordsAfterCoreReload() throws Exception {

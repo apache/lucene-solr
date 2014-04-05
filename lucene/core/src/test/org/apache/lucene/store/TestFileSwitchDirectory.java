@@ -88,8 +88,8 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
   }
   
   private Directory newFSSwitchDirectory(Set<String> primaryExtensions) throws IOException {
-    File primDir = TestUtil.getTempDir("foo");
-    File secondDir = TestUtil.getTempDir("bar");
+    File primDir = createTempDir("foo");
+    File secondDir = createTempDir("bar");
     return newFSSwitchDirectory(primDir, secondDir, primaryExtensions);
   }
 
@@ -102,10 +102,10 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
   
   // LUCENE-3380 -- make sure we get exception if the directory really does not exist.
   public void testNoDir() throws Throwable {
-    File primDir = TestUtil.getTempDir("foo");
-    File secondDir = TestUtil.getTempDir("bar");
-    TestUtil.rmDir(primDir);
-    TestUtil.rmDir(secondDir);
+    File primDir = createTempDir("foo");
+    File secondDir = createTempDir("bar");
+    TestUtil.rm(primDir);
+    TestUtil.rm(secondDir);
     Directory dir = newFSSwitchDirectory(primDir, secondDir, Collections.<String>emptySet());
     try {
       DirectoryReader.open(dir);

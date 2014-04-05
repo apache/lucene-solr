@@ -17,6 +17,16 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
+
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -31,19 +41,9 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.util.TestHarness;
-import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
 
 public class TestLazyCores extends SolrTestCaseJ4 {
 
@@ -52,14 +52,17 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     initCore("solrconfig-minimal.xml", "schema-tiny.xml");
   }
 
-  private final File solrHomeDirectory = new File(dataDir, TestLazyCores.getSimpleClassName());
+  private File solrHomeDirectory;
+  
+  @Before
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+  }
 
   private CoreContainer init() throws Exception {
-
-    if (solrHomeDirectory.exists()) {
-      FileUtils.deleteDirectory(solrHomeDirectory);
-    }
-    assertTrue("Failed to mkdirs workDir", solrHomeDirectory.mkdirs());
+    solrHomeDirectory = createTempDir();
+    
     for (int idx = 1; idx < 10; ++idx) {
       copyMinConf(new File(solrHomeDirectory, "collection" + idx));
     }
@@ -77,13 +80,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     cores.load();
     return cores;
   }
-
-  @After
-  public void after() throws Exception {
-    if (solrHomeDirectory.exists()) {
-      FileUtils.deleteDirectory(solrHomeDirectory);
-    }
-  }
+  
   @Test
   public void testLazyLoad() throws Exception {
     CoreContainer cc = init();
@@ -502,13 +499,13 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       // Did we get the expected message for each of the cores that failed to load? Make sure we don't run afoul of
       // the dreaded slash/backslash difference on Windows and *nix machines.
       testMessage(cc.getCoreInitFailures(),
-          "TestLazyCores" + File.separator + "badConfig1" + File.separator + "solrconfig.xml");
+          "badConfig1" + File.separator + "solrconfig.xml");
       testMessage(cc.getCoreInitFailures(),
-          "TestLazyCores" + File.separator + "badConfig2" + File.separator + "solrconfig.xml");
+          "badConfig2" + File.separator + "solrconfig.xml");
       testMessage(cc.getCoreInitFailures(),
-          "TestLazyCores" + File.separator + "badSchema1" + File.separator + "schema.xml");
+          "badSchema1" + File.separator + "schema.xml");
       testMessage(cc.getCoreInitFailures(),
-          "TestLazyCores" + File.separator + "badSchema2" + File.separator + "schema.xml");
+          "badSchema2" + File.separator + "schema.xml");
 
       // Status should report that there are failure messages for the bad cores and none for the good cores.
       checkStatus(cc, true, "core1");
@@ -591,15 +588,11 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   private CoreContainer initGoodAndBad(List<String> goodCores,
                                        List<String> badSchemaCores,
                                        List<String> badConfigCores) throws Exception {
-
+    solrHomeDirectory = createTempDir();
+    
     // Don't pollute the log with exception traces when they're expected.
     ignoreException(Pattern.quote("SAXParseException"));
-
-    if (solrHomeDirectory.exists()) {
-      FileUtils.deleteDirectory(solrHomeDirectory);
-    }
-    assertTrue("Failed to mkdirs workDir", solrHomeDirectory.mkdirs());
-
+    
     // Create the cores that should be fine.
     for (String coreName : goodCores) {
       File coreRoot = new File(solrHomeDirectory, coreName);

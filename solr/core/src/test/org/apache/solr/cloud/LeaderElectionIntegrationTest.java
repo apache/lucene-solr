@@ -79,8 +79,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
     
     System.setProperty("zkClientTimeout", "8000");
     
-    zkDir = dataDir.getAbsolutePath() + File.separator
-        + "zookeeper" + System.currentTimeMillis() + "/server1/data";
+    zkDir = createTempDir("zkData").getAbsolutePath();
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
     System.setProperty("zkHost", zkServer.getZkAddress());
@@ -133,8 +132,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
      
   private void setupContainer(int port, String shard) throws IOException,
       ParserConfigurationException, SAXException {
-    File data = new File(dataDir + File.separator + "data_" + port);
-    data.mkdirs();
+    File data = createTempDir();
     
     System.setProperty("hostPort", Integer.toString(port));
     System.setProperty("shard", shard);

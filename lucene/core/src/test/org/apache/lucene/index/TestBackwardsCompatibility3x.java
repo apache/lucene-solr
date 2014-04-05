@@ -54,7 +54,6 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -63,7 +62,6 @@ import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -151,7 +149,7 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
     names.addAll(Arrays.asList(oldSingleSegmentNames));
     oldIndexDirs = new HashMap<>();
     for (String name : names) {
-      File dir = TestUtil.getTempDir(name);
+      File dir = createTempDir(name);
       File dataFile = new File(TestBackwardsCompatibility3x.class.getResource("index." + name + ".zip").toURI());
       TestUtil.unzip(dataFile, dir);
       oldIndexDirs.put(name, newFSDirectory(dir));
@@ -172,9 +170,9 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("TEST: index " + unsupportedNames[i]);
       }
-      File oldIndxeDir = TestUtil.getTempDir(unsupportedNames[i]);
-      TestUtil.unzip(getDataFile("unsupported." + unsupportedNames[i] + ".zip"), oldIndxeDir);
-      BaseDirectoryWrapper dir = newFSDirectory(oldIndxeDir);
+      File oldIndexDir = createTempDir(unsupportedNames[i]);
+      TestUtil.unzip(getDataFile("unsupported." + unsupportedNames[i] + ".zip"), oldIndexDir);
+      BaseDirectoryWrapper dir = newFSDirectory(oldIndexDir);
       // don't checkindex, these are intentionally not supported
       dir.setCheckIndexOnClose(false);
 
@@ -222,7 +220,6 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
       assertTrue(bos.toString("UTF-8").contains(IndexFormatTooOldException.class.getName()));
 
       dir.close();
-      TestUtil.rmDir(oldIndxeDir);
     }
   }
   
@@ -552,7 +549,7 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
   public File createIndex(String dirName, boolean doCFS, boolean fullyMerged) throws IOException {
     // we use a real directory name that is not cleaned up, because this method is only used to create backwards indexes:
     File indexDir = new File("/tmp/4x", dirName);
-    TestUtil.rmDir(indexDir);
+    TestUtil.rm(indexDir);
     Directory dir = newFSDirectory(indexDir);
     LogByteSizeMergePolicy mp = new LogByteSizeMergePolicy();
     mp.setNoCFSRatio(doCFS ? 1.0 : 0.0);
@@ -598,69 +595,63 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
   /* Verifies that the expected file names were produced */
 
   public void testExactFileNames() throws IOException {
-
     String outputDirName = "lucene.backwardscompat0.index";
-    File outputDir = TestUtil.getTempDir(outputDirName);
-    TestUtil.rmDir(outputDir);
+    File outputDir = createTempDir(outputDirName);
 
-    try {
-      Directory dir = newFSDirectory(outputDir);
+    Directory dir = newFSDirectory(outputDir);
 
-      MergePolicy mergePolicy = newLogMergePolicy(true, 10);
-      
-      // This test expects all of its segments to be in CFS:
-      mergePolicy.setNoCFSRatio(1.0); 
-      mergePolicy.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
+    MergePolicy mergePolicy = newLogMergePolicy(true, 10);
+    
+    // This test expects all of its segments to be in CFS:
+    mergePolicy.setNoCFSRatio(1.0); 
+    mergePolicy.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
 
-      IndexWriter writer = new IndexWriter(
-          dir,
-          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
-              setMaxBufferedDocs(-1).
-              setRAMBufferSizeMB(16.0).
-              setMergePolicy(mergePolicy).setUseCompoundFile(true)
-      );
-      for(int i=0;i<35;i++) {
-        addDoc(writer, i);
-      }
-      assertEquals("wrong doc count", 35, writer.maxDoc());
-      writer.close();
-
-      // Delete one doc so we get a .del file:
-      writer = new IndexWriter(
-          dir,
-          newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
-            .setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES)
-      );
-      Term searchTerm = new Term("id", "7");
-      writer.deleteDocuments(searchTerm);
-      writer.close();
-
-      // Now verify file names... TODO: fix this test better, we could populate from 
-      // separateFiles() or something.
-      String[] expected = new String[] {"_0.cfs", "_0.cfe",
-                                        "_0_1.del",
-                                        "_0.si",
-                                        "segments_2",
-                                        "segments.gen"};
-      
-      String[] expectedSimpleText = new String[] {"_0.cfs", "_0.cfe",
-                                                  "_0_1.liv",
-                                                  "_0.si",
-                                                  "segments_2",
-                                                  "segments.gen"};
-
-      String[] actual = dir.listAll();
-      Arrays.sort(expected);
-      Arrays.sort(expectedSimpleText);
-      Arrays.sort(actual);
-      if (!Arrays.equals(expected, actual) && !Arrays.equals(expectedSimpleText, actual)) {
-        fail("incorrect filenames in index: expected:\n    " + asString(expected) 
-            + "\n or " + asString(expectedSimpleText) + "\n actual:\n    " + asString(actual));
-      }
-      dir.close();
-    } finally {
-      TestUtil.rmDir(outputDir);
+    IndexWriter writer = new IndexWriter(
+        dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
+            setMaxBufferedDocs(-1).
+            setRAMBufferSizeMB(16.0).
+            setMergePolicy(mergePolicy).setUseCompoundFile(true)
+    );
+    for(int i=0;i<35;i++) {
+      addDoc(writer, i);
     }
+    assertEquals("wrong doc count", 35, writer.maxDoc());
+    writer.close();
+
+    // Delete one doc so we get a .del file:
+    writer = new IndexWriter(
+        dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+          .setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES)
+    );
+    Term searchTerm = new Term("id", "7");
+    writer.deleteDocuments(searchTerm);
+    writer.close();
+
+    // Now verify file names... TODO: fix this test better, we could populate from 
+    // separateFiles() or something.
+    String[] expected = new String[] {"_0.cfs", "_0.cfe",
+                                      "_0_1.del",
+                                      "_0.si",
+                                      "segments_2",
+                                      "segments.gen"};
+    
+    String[] expectedSimpleText = new String[] {"_0.cfs", "_0.cfe",
+                                                "_0_1.liv",
+                                                "_0.si",
+                                                "segments_2",
+                                                "segments.gen"};
+
+    String[] actual = dir.listAll();
+    Arrays.sort(expected);
+    Arrays.sort(expectedSimpleText);
+    Arrays.sort(actual);
+    if (!Arrays.equals(expected, actual) && !Arrays.equals(expectedSimpleText, actual)) {
+      fail("incorrect filenames in index: expected:\n    " + asString(expected) 
+          + "\n or " + asString(expectedSimpleText) + "\n actual:\n    " + asString(actual));
+    }
+    dir.close();
   }
 
   private String asString(String[] l) {
@@ -959,14 +950,14 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
   public static final String surrogatesIndexName = "index.36.surrogates.zip";
 
   public void testSurrogates() throws Exception {
-    File oldIndexDir = TestUtil.getTempDir("surrogates");
+    File oldIndexDir = createTempDir("surrogates");
     TestUtil.unzip(getDataFile(surrogatesIndexName), oldIndexDir);
     Directory dir = newFSDirectory(oldIndexDir);
     // TODO: more tests
     TestUtil.checkIndex(dir);
     dir.close();
   }
-  
+
   /* 
    * Index with negative positions (LUCENE-1542)
    * Created with this code, using a 2.4.0 jar, then upgraded with 3.6 upgrader:
@@ -1016,7 +1007,7 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
   public static final String bogus24IndexName = "bogus24.upgraded.to.36.zip";
 
   public void testNegativePositions() throws Exception {
-    File oldIndexDir = TestUtil.getTempDir("negatives");
+    File oldIndexDir = createTempDir("negatives");
     TestUtil.unzip(getDataFile(bogus24IndexName), oldIndexDir);
     Directory dir = newFSDirectory(oldIndexDir);
     DirectoryReader ir = DirectoryReader.open(dir);

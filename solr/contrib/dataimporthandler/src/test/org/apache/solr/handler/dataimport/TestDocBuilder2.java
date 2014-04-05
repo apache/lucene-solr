@@ -16,15 +16,16 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.apache.solr.request.LocalSolrQueryRequest;
-
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.io.File;
+
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
+
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -240,10 +241,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   @Test
   @Ignore("Fix Me. See SOLR-4103.")
   public void testFileListEntityProcessor_lastIndexTime() throws Exception  {
-    File tmpdir = File.createTempFile("test", "tmp", dataDir);
-    tmpdir.delete();
-    tmpdir.mkdir();
-    tmpdir.deleteOnExit();
+    File tmpdir = File.createTempFile("test", "tmp", createTempDir());
 
     Map<String, String> params = createMap("baseDir", tmpdir.getAbsolutePath());
 

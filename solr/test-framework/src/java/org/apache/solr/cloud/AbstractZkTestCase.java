@@ -63,8 +63,7 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void azt_beforeClass() throws Exception {
-    zkDir = dataDir.getAbsolutePath() + File.separator
-        + "zookeeper/server1/data";
+    zkDir = createTempDir("zkData").getAbsolutePath();
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
     
@@ -155,13 +154,11 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
     System.clearProperty("jetty.port");
     System.clearProperty(ZOOKEEPER_FORCE_SYNC);
 
-    zkServer.shutdown();
-
-    zkServer = null;
+    if (zkServer != null) {
+      zkServer.shutdown();
+      zkServer = null;
+    }
     zkDir = null;
-    
-    // wait just a bit for any zk client threads to outlast timeout
-    Thread.sleep(2000);
   }
 
   protected void printLayout(String zkHost) throws Exception {

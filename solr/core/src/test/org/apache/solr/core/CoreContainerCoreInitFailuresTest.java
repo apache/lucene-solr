@@ -17,6 +17,11 @@
 
 package org.apache.solr.core;
 
+import java.io.File;
+import java.util.Collection;
+import java.util.Map;
+import java.util.regex.Pattern;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -24,21 +29,13 @@ import org.apache.solr.common.SolrException;
 import org.junit.After;
 import org.xml.sax.SAXParseException;
 
-import java.io.File;
-import java.util.Collection;
-import java.util.Map;
-import java.util.regex.Pattern;
-
 public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
   
   File solrHome = null;
   CoreContainer cc = null;
 
   private void init(final String dirSuffix) {
-    // would be nice to do this in an @Before method,
-    // but junit doesn't let @Before methods have test names
-    solrHome = new File(dataDir, this.getClass().getName() + "_" + dirSuffix);
-    assertTrue("Failed to mkdirs solrhome [" + solrHome + "]", solrHome.mkdirs());
+    solrHome = createTempDir(dirSuffix);
   }
 
   @After
@@ -48,12 +45,7 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
       cc = null;
     }
 
-    if (null != solrHome) {
-      if (solrHome.exists()) {
-        FileUtils.deleteDirectory(solrHome);
-      }
-      solrHome = null;
-    }
+    solrHome = null;
   }
 
   public void testFlowWithEmpty() throws Exception {

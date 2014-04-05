@@ -62,7 +62,7 @@ public class TestFilesystemResourceLoader extends LuceneTestCase {
   }
   
   public void testBaseDir() throws Exception {
-    final File base = TestUtil.getTempDir("fsResourceLoaderBase").getAbsoluteFile();
+    final File base = createTempDir("fsResourceLoaderBase").getAbsoluteFile();
     try {
       base.mkdirs();
       Writer os = new OutputStreamWriter(new FileOutputStream(new File(base, "template.txt")), StandardCharsets.UTF_8);
@@ -88,7 +88,7 @@ public class TestFilesystemResourceLoader extends LuceneTestCase {
       assertClasspathDelegation(rl);
       assertNotFound(rl);
     } finally {
-      TestUtil.rmDir(base);
+      TestUtil.rm(base);
     }
   }
   

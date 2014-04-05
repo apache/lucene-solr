@@ -16,22 +16,17 @@
  */
 package org.apache.solr.search;
 
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.ManagedIndexSchema;
-
-import org.apache.lucene.util.TestUtil;
-
-import org.apache.commons.io.FileUtils;
-
 import java.io.File;
 import java.util.Collections;
 
-import org.junit.BeforeClass;
+import org.apache.commons.io.FileUtils;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.ManagedIndexSchema;
+import org.apache.solr.schema.SchemaField;
 import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 /**
  * Requests to open a new searcher w/o any underlying change to the index exposed 
@@ -54,7 +49,7 @@ public class TestSearcherReuse extends SolrTestCaseJ4 {
    */
   @BeforeClass
   private static void setupTempDirAndCoreWithManagedSchema() throws Exception {
-    solrHome = new File(dataDir, TestSearcherReuse.class.getSimpleName());
+    solrHome = createTempDir();
     solrHome = solrHome.getAbsoluteFile();
 
     File confDir = new File(solrHome, confPath);
@@ -71,8 +66,7 @@ public class TestSearcherReuse extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  private static void deleteCoreAndTempSolrHomeDirectory() throws Exception {
-    FileUtils.deleteDirectory(solrHome);
+  private static void afterClass() throws Exception {
     solrHome = null;
   }
 

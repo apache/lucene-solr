@@ -46,10 +46,10 @@ public abstract class MRUnitBase extends SolrTestCaseJ4 {
   
   protected void setupHadoopConfig(Configuration config) throws IOException {
     
-    String tempDir = dataDir + "/test-morphlines-" + System.currentTimeMillis();
-    new File(tempDir).mkdirs();
+    String tempDir = createTempDir().getAbsolutePath();
+
     FileUtils.copyFile(new File(RESOURCES_DIR + "/custom-mimetypes.xml"), new File(tempDir + "/custom-mimetypes.xml"));
-    
+
     AbstractSolrMorphlineTestBase.setupMorphline(tempDir, "test-morphlines/solrCellDocumentTypes", true);
     
     config.set(MorphlineMapRunner.MORPHLINE_FILE_PARAM, tempDir + "/test-morphlines/solrCellDocumentTypes.conf");

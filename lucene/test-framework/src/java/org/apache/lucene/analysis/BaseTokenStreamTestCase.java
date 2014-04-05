@@ -503,7 +503,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
         !(postingsFormat.equals("Memory") ||
             postingsFormat.equals("SimpleText"));
     if (rarely(random) && codecOk) {
-      dir = newFSDirectory(TestUtil.getTempDir("bttc"));
+      dir = newFSDirectory(createTempDir("bttc"));
       iw = new RandomIndexWriter(new Random(seed), dir, a);
     }
     boolean success = false;

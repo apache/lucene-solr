@@ -16,6 +16,8 @@
  */
 package org.apache.solr.servlet;
 
+
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
@@ -28,7 +30,6 @@ import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.cookie.DateUtils;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.common.params.CommonParams;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -38,17 +39,18 @@ import org.junit.Test;
  * A test case for the several HTTP cache headers emitted by Solr
  */
 public class CacheHeaderTest extends CacheHeaderTestBase {
-    private static final File solrHomeDirectory = new File(dataDir, "CacheHeaderTest");
+  private static File solrHomeDirectory;
     
   @BeforeClass
   public static void beforeTest() throws Exception {
+    solrHomeDirectory = createTempDir();
     setupJettyTestHome(solrHomeDirectory, "collection1");
     createJetty(solrHomeDirectory.getAbsolutePath(), null, null);
   }
 
   @AfterClass
   public static void afterTest() throws Exception {
-    cleanUpJettyHome(solrHomeDirectory);
+
   }
 
   protected static final String CONTENTS = "id\n100\n101\n102";
@@ -252,7 +254,7 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
 
   protected File makeFile(String contents, String charset) {
     try {
-      File f = TestUtil.createTempFile("cachetest_csv", null, dataDir);
+      File f = new File(initCoreDataDir, "cachetest_csv");
       Writer out = new OutputStreamWriter(new FileOutputStream(f), charset);
       out.write(contents);
       out.close();

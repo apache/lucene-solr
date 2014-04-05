@@ -16,14 +16,14 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 
 public class TestNonWritablePersistFile extends AbstractDataImportHandlerTestCase {
   private static final String FULLIMPORT_QUERY = "select * from x";
@@ -52,16 +52,11 @@ public class TestNonWritablePersistFile extends AbstractDataImportHandlerTestCas
 
   @BeforeClass
   public static void createTempSolrHomeAndCore() throws Exception {
-    tmpSolrHome = dataDir + File.separator + TestNonWritablePersistFile.class.getSimpleName() + System.currentTimeMillis();
+    tmpSolrHome = createTempDir().getAbsolutePath();
     FileUtils.copyDirectory(getFile("dih/solr"), new File(tmpSolrHome).getAbsoluteFile());
     initCore("dataimport-solrconfig.xml", "dataimport-schema.xml", 
              new File(tmpSolrHome).getAbsolutePath());
   }  
-  
-  @AfterClass
-  public static void destroyTempSolrHomeAndCore() throws Exception {
-    FileUtils.deleteDirectory(new File(tmpSolrHome).getAbsoluteFile());
-  }
 
   @Test
   @SuppressWarnings("unchecked")

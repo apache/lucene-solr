@@ -42,7 +42,7 @@ public class TestCompoundFile extends LuceneTestCase
     @Override
     public void setUp() throws Exception {
        super.setUp();
-       File file = TestUtil.getTempDir("testIndex");
+       File file = createTempDir("testIndex");
        // use a simple FSDir here, to be sure to have SimpleFSInputs
        dir = new SimpleFSDirectory(file,null);
     }
@@ -769,7 +769,7 @@ public class TestCompoundFile extends LuceneTestCase
   // when reading a CFS with many subs:
   public void testManySubFiles() throws IOException {
 
-    final Directory d = newFSDirectory(TestUtil.getTempDir("CFSManySubFiles"));
+    final Directory d = newFSDirectory(createTempDir("CFSManySubFiles"));
     final int FILE_COUNT = atLeast(500);
 
     for(int fileIdx=0;fileIdx<FILE_COUNT;fileIdx++) {

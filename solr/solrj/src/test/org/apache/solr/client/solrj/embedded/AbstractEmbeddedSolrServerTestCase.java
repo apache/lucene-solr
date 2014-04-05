@@ -36,13 +36,6 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends SolrTestCaseJ4 
   protected CoreContainer cores = null;
   protected File tempDir;
 
-  protected void createTempDir() {
-    if (tempDir == null) {
-      tempDir = new File(dataDir, "solrtest-" + getTestClass().getSimpleName() + "-" + System.currentTimeMillis());
-      tempDir.mkdirs();
-    }
-  }
-
   @Override
   @Before
   public void setUp() throws Exception {
@@ -53,7 +46,7 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends SolrTestCaseJ4 
     System.out.println("Solr home: " + SOLR_HOME.getAbsolutePath());
 
     //The index is always stored within a temporary directory
-    createTempDir();
+    tempDir = createTempDir();
     
     File dataDir = new File(tempDir,"data1");
     File dataDir2 = new File(tempDir,"data2");

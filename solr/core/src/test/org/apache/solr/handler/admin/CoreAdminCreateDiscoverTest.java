@@ -17,6 +17,12 @@
 
 package org.apache.solr.handler.admin;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.Properties;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -28,12 +34,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.Properties;
 
 public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
 
@@ -49,11 +50,7 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     useFactory(null); // I require FS-based indexes for this test.
 
-    solrHomeDirectory = new File(dataDir, "solrHome/" + CoreAdminCreateDiscoverTest.getClassName());
-    if (solrHomeDirectory.exists()) {
-      FileUtils.deleteDirectory(solrHomeDirectory);
-    }
-    assertTrue("Failed to mkdirs workDir", solrHomeDirectory.mkdirs());
+    solrHomeDirectory = createTempDir();
 
     setupNoCoreTest(solrHomeDirectory, null);
 
@@ -63,9 +60,6 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
   @AfterClass
   public static void afterClass() throws Exception {
     admin = null; // Release it or the test harness complains.
-    if (solrHomeDirectory.exists()) {
-      FileUtils.deleteDirectory(solrHomeDirectory);
-    }
   }
 
   private static void setupCore(String coreName, boolean blivet) throws IOException {

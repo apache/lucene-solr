@@ -80,7 +80,7 @@ public class MorphlineBasicMiniMRTest extends SolrTestCaseJ4 {
   
   private static String tempDir;
   
-  private static final File solrHomeDirectory = new File(dataDir, MorphlineBasicMiniMRTest.class.getName());
+  private static File solrHomeDirectory;
   
   protected MapReduceIndexerTool createTool() {
     return new MapReduceIndexerTool();
@@ -109,6 +109,7 @@ public class MorphlineBasicMiniMRTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void setupClass() throws Exception {
+    solrHomeDirectory = createTempDir();
     assumeTrue(
         "Currently this test can only be run without the lucene test security policy in place",
         System.getProperty("java.security.manager", "").equals(""));
@@ -122,8 +123,8 @@ public class MorphlineBasicMiniMRTest extends SolrTestCaseJ4 {
     
     AbstractZkTestCase.SOLRHOME = solrHomeDirectory;
     FileUtils.copyDirectory(MINIMR_CONF_DIR, solrHomeDirectory);
-    
-    tempDir = dataDir + "/test-morphlines-" + System.currentTimeMillis();
+    File dataDir = createTempDir();
+    tempDir = dataDir.getAbsolutePath();
     new File(tempDir).mkdirs();
     FileUtils.copyFile(new File(RESOURCES_DIR + "/custom-mimetypes.xml"), new File(tempDir + "/custom-mimetypes.xml"));
     

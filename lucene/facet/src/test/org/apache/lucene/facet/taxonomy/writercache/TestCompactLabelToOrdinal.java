@@ -68,7 +68,7 @@ public class TestCompactLabelToOrdinal extends FacetTestCase {
       }
     }
 
-    File tmpDir = TestUtil.getTempDir("testLableToOrdinal");
+    File tmpDir = createTempDir("testLableToOrdinal");
     File f = new File(tmpDir, "CompactLabelToOrdinalTest.tmp");
     int flushInterval = 10;
 
