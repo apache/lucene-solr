@@ -22,14 +22,16 @@ import java.io.IOException;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 
-abstract class TermsWithScoreCollector extends Collector {
+abstract class TermsWithScoreCollector extends SimpleCollector {
 
   private final static int INITIAL_ARRAY_SIZE = 256;
 
@@ -128,7 +130,7 @@ abstract class TermsWithScoreCollector extends Collector {
     }
 
     @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
       fromDocTerms = FieldCache.DEFAULT.getTerms(context.reader(), field, false);
     }
 
@@ -214,7 +216,7 @@ abstract class TermsWithScoreCollector extends Collector {
     }
 
     @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
       fromDocTermOrds = FieldCache.DEFAULT.getDocTermOrds(context.reader(), field);
     }
 

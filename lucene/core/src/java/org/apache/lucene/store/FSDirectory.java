@@ -22,6 +22,8 @@ import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.channels.FileChannel;
+import java.nio.file.StandardOpenOption;
 
 import java.util.Collection;
 import static java.util.Collections.synchronizedSet;
@@ -402,11 +404,11 @@ public abstract class FSDirectory extends BaseDirectory {
     IOException exc = null;
     while (!success && retryCount < 5) {
       retryCount++;
-      RandomAccessFile file = null;
+      FileChannel file = null;
       try {
         try {
-          file = new RandomAccessFile(fullFile, "rw");
-          file.getFD().sync();
+          file = FileChannel.open(fullFile.toPath(), StandardOpenOption.WRITE);
+          file.force(true); // TODO: we probably dont care about metadata, but this is what we did before...
           success = true;
         } finally {
           if (file != null)

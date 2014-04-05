@@ -307,7 +307,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
   }
   
   // counting collector that can slow down at collect().
-  private class MyHitCollector extends Collector {
+  private class MyHitCollector extends SimpleCollector {
     private final BitSet bits = new BitSet();
     private int slowdown = 0;
     private int lastDocCollected = -1;
@@ -349,7 +349,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
     }
     
     @Override
-    public void setNextReader(AtomicReaderContext context) {
+    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
       docBase = context.docBase;
     }
     

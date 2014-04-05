@@ -31,8 +31,8 @@ import org.apache.lucene.util.VirtualMethod;
 /** Wraps a Scorer with additional checks */
 public class AssertingBulkScorer extends BulkScorer {
 
-  private static final VirtualMethod<BulkScorer> SCORE_COLLECTOR = new VirtualMethod<BulkScorer>(BulkScorer.class, "score", Collector.class);
-  private static final VirtualMethod<BulkScorer> SCORE_COLLECTOR_RANGE = new VirtualMethod<BulkScorer>(BulkScorer.class, "score", Collector.class, int.class);
+  private static final VirtualMethod<BulkScorer> SCORE_COLLECTOR = new VirtualMethod<BulkScorer>(BulkScorer.class, "score", LeafCollector.class);
+  private static final VirtualMethod<BulkScorer> SCORE_COLLECTOR_RANGE = new VirtualMethod<BulkScorer>(BulkScorer.class, "score", LeafCollector.class, int.class);
 
   public static BulkScorer wrap(Random random, BulkScorer other) {
     if (other == null || other instanceof AssertingBulkScorer) {
@@ -58,7 +58,7 @@ public class AssertingBulkScorer extends BulkScorer {
   }
 
   @Override
-  public void score(Collector collector) throws IOException {
+  public void score(LeafCollector collector) throws IOException {
     if (random.nextBoolean()) {
       try {
         final boolean remaining = in.score(collector, DocsEnum.NO_MORE_DOCS);
@@ -72,7 +72,7 @@ public class AssertingBulkScorer extends BulkScorer {
   }
 
   @Override
-  public boolean score(Collector collector, int max) throws IOException {
+  public boolean score(LeafCollector collector, int max) throws IOException {
     return in.score(collector, max);
   }
 

@@ -508,7 +508,7 @@ on the built-in available scoring models and extending or changing Similarity.
         abstract method:
         <ol>
             <li>
-                {@link org.apache.lucene.search.BulkScorer#score(org.apache.lucene.search.Collector,int) score(Collector,int)} &mdash;
+                {@link org.apache.lucene.search.BulkScorer#score(org.apache.lucene.search.LeafCollector,int) score(LeafCollector,int)} &mdash;
 		Score all documents up to but not including the specified max document.
 	    </li>
         </ol>
@@ -563,7 +563,7 @@ on the built-in available scoring models and extending or changing Similarity.
 <p>If a Filter is being used, some initial setup is done to determine which docs to include. 
    Otherwise, we ask the Weight for a {@link org.apache.lucene.search.Scorer Scorer} for each
    {@link org.apache.lucene.index.IndexReader IndexReader} segment and proceed by calling
-   {@link org.apache.lucene.search.BulkScorer#score(org.apache.lucene.search.Collector) BulkScorer.score(Collector)}.
+   {@link org.apache.lucene.search.BulkScorer#score(org.apache.lucene.search.LeafCollector) BulkScorer.score(LeafCollector)}.
 </p>
 <p>At last, we are actually going to score some documents. The score method takes in the Collector
    (most likely the TopScoreDocCollector or TopFieldCollector) and does its business.Of course, here 

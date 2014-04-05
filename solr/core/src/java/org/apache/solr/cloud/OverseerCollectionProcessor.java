@@ -557,14 +557,14 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       Snapshot snapshot = timer.getSnapshot();
       lst.add("totalTime", timer.getSum());
       lst.add("avgRequestsPerMinute", timer.getMeanRate());
-      lst.add("5minRateReqsPerMinute", timer.getFiveMinuteRate());
-      lst.add("15minRateReqsPerMinute", timer.getFifteenMinuteRate());
+      lst.add("5minRateRequestsPerMinute", timer.getFiveMinuteRate());
+      lst.add("15minRateRequestsPerMinute", timer.getFifteenMinuteRate());
       lst.add("avgTimePerRequest", timer.getMean());
       lst.add("medianRequestTime", snapshot.getMedian());
-      lst.add("75thPcRequestTime", snapshot.get75thPercentile());
-      lst.add("95thPcRequestTime", snapshot.get95thPercentile());
-      lst.add("99thPcRequestTime", snapshot.get99thPercentile());
-      lst.add("999thPcRequestTime", snapshot.get999thPercentile());
+      lst.add("75thPctlRequestTime", snapshot.get75thPercentile());
+      lst.add("95thPctlRequestTime", snapshot.get95thPercentile());
+      lst.add("99thPctlRequestTime", snapshot.get99thPercentile());
+      lst.add("999thPctlRequestTime", snapshot.get999thPercentile());
     }
     results.add("overseer_operations", overseerStats);
     results.add("collection_operations", collectionStats);

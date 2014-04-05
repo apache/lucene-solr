@@ -80,7 +80,7 @@ public class BasicAccumulator extends ValueAccumulator {
   }
   
   @Override
-  public void setNextReader(AtomicReaderContext context) throws IOException {
+  protected void doSetNextReader(AtomicReaderContext context) throws IOException {
     this.context = context;
     for (StatsCollector counter : statsCollectors) {
       counter.setNextReader(context);

@@ -150,7 +150,7 @@ public abstract class Weight {
     }
 
     @Override
-    public boolean score(Collector collector, int max) throws IOException {
+    public boolean score(LeafCollector collector, int max) throws IOException {
       // TODO: this may be sort of weird, when we are
       // embedded in a BooleanScorer, because we are
       // called for every chunk of 2048 documents.  But,
@@ -172,7 +172,7 @@ public abstract class Weight {
   /**
    * Returns true iff this implementation scores docs only out of order. This
    * method is used in conjunction with {@link Collector}'s
-   * {@link Collector#acceptsDocsOutOfOrder() acceptsDocsOutOfOrder} and
+   * {@link LeafCollector#acceptsDocsOutOfOrder() acceptsDocsOutOfOrder} and
    * {@link #bulkScorer(AtomicReaderContext, boolean, Bits)} to
    * create a matching {@link Scorer} instance for a given {@link Collector}, or
    * vice versa.

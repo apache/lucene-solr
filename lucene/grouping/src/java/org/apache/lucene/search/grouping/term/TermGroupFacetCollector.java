@@ -21,6 +21,7 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.grouping.AbstractGroupFacetCollector;
 import org.apache.lucene.util.BytesRef;
@@ -122,7 +123,7 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
     }
 
     @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
       if (segmentFacetCounts != null) {
         segmentResults.add(createSegmentResult());
       }
@@ -277,7 +278,7 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
     }
 
     @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
       if (segmentFacetCounts != null) {
         segmentResults.add(createSegmentResult());
       }

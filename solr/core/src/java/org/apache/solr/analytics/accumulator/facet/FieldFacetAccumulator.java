@@ -82,7 +82,7 @@ public class FieldFacetAccumulator extends ValueAccumulator {
    * Move to the next set of documents to add to the field facet.
    */
   @Override
-  public void setNextReader(AtomicReaderContext context) throws IOException { 
+  protected void doSetNextReader(AtomicReaderContext context) throws IOException {
     if (multiValued) {
       setValues = context.reader().getSortedSetDocValues(name);
     } else {

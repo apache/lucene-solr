@@ -75,7 +75,7 @@ public class SortRescorer extends Rescorer {
 
       if (readerContext != null) {
         // We advanced to another segment:
-        collector.setNextReader(readerContext);
+        collector.getLeafCollector(readerContext);
         collector.setScorer(fakeScorer);
         docBase = readerContext.docBase;
       }

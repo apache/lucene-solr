@@ -18,37 +18,39 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Random;
 
-/** A crazy {@link BulkScorer} that wraps another {@link BulkScorer}
- *  but shuffles the order of the collected documents. */
-public class AssertingBulkOutOfOrderScorer extends BulkScorer {
+/**
+ * {@link LeafCollector} delegator.
+ *
+ * @lucene.experimental
+ */
+public class FilterLeafCollector implements LeafCollector {
 
-  final BulkScorer in;
-  final Random random;
+  protected final LeafCollector in;
 
-  public AssertingBulkOutOfOrderScorer(Random random, BulkScorer in) {
+  /** Sole constructor. */
+  public FilterLeafCollector(LeafCollector in) {
     this.in = in;
-    this.random = random;
   }
 
   @Override
-  public boolean score(LeafCollector collector, int max) throws IOException {
-    final RandomOrderCollector randomCollector = new RandomOrderCollector(random, collector);
-    final boolean remaining = in.score(randomCollector, max);
-    randomCollector.flush();
-    return remaining;
+  public void setScorer(Scorer scorer) throws IOException {
+    in.setScorer(scorer);
   }
 
   @Override
-  public void score(LeafCollector collector) throws IOException {
-    final RandomOrderCollector randomCollector = new RandomOrderCollector(random, collector);
-    in.score(randomCollector);
-    randomCollector.flush();
+  public void collect(int doc) throws IOException {
+    in.collect(doc);
+  }
+
+  @Override
+  public boolean acceptsDocsOutOfOrder() {
+    return in.acceptsDocsOutOfOrder();
   }
 
   @Override
   public String toString() {
-    return "AssertingBulkOutOfOrderScorer(" + in + ")";
+    return getClass().getSimpleName() + "(" + in + ")";
   }
+
 }

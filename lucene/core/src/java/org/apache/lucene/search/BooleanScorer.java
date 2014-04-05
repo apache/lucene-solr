@@ -61,7 +61,7 @@ import org.apache.lucene.search.BooleanQuery.BooleanWeight;
 
 final class BooleanScorer extends BulkScorer {
   
-  private static final class BooleanScorerCollector extends Collector {
+  private static final class BooleanScorerCollector extends SimpleCollector {
     private BucketTable bucketTable;
     private int mask;
     private Scorer scorer;
@@ -90,11 +90,6 @@ final class BooleanScorer extends BulkScorer {
         bucket.bits |= mask;                      // add bits in mask
         bucket.coord++;                           // increment coord
       }
-    }
-    
-    @Override
-    public void setNextReader(AtomicReaderContext context) {
-      // not needed by this implementation
     }
     
     @Override
@@ -136,7 +131,7 @@ final class BooleanScorer extends BulkScorer {
       }
     }
 
-    public Collector newCollector(int mask) {
+    public LeafCollector newCollector(int mask) {
       return new BooleanScorerCollector(mask, this);
     }
 
@@ -148,12 +143,12 @@ final class BooleanScorer extends BulkScorer {
     // TODO: re-enable this if BQ ever sends us required clauses
     //public boolean required = false;
     public boolean prohibited;
-    public Collector collector;
+    public LeafCollector collector;
     public SubScorer next;
     public boolean more;
 
     public SubScorer(BulkScorer scorer, boolean required, boolean prohibited,
-        Collector collector, SubScorer next) {
+        LeafCollector collector, SubScorer next) {
       if (required) {
         throw new IllegalArgumentException("this scorer cannot handle required=true");
       }
@@ -200,7 +195,7 @@ final class BooleanScorer extends BulkScorer {
   }
 
   @Override
-  public boolean score(Collector collector, int max) throws IOException {
+  public boolean score(LeafCollector collector, int max) throws IOException {
 
     boolean more;
     Bucket tmp;

@@ -34,11 +34,15 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.FilterCollector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
@@ -340,7 +344,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
         IntOpenHashSet boostDocs = getBoostDocs(searcher, this.boosted);
 
-        if(this.min != null || this.max != null) {
+        if (this.min != null || this.max != null) {
 
           return new CollapsingFieldValueCollector(maxDoc,
                                                    leafCount,
@@ -436,7 +440,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private SortedDocValues values;
     private int[] ords;
     private float[] scores;
-    private int docBase;
     private int maxDoc;
     private int nullPolicy;
     private float nullScore = -Float.MAX_VALUE;
@@ -489,7 +492,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
       this.contexts[context.ord] = context;
       this.docBase = context.docBase;
     }
@@ -546,9 +549,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       int currentContext = 0;
       int currentDocBase = 0;
       int nextDocBase = currentContext+1 < contexts.length ? contexts[currentContext+1].docBase : maxDoc;
-      delegate.setNextReader(contexts[currentContext]);
+      leafDelegate = delegate.getLeafCollector(contexts[currentContext]);
       DummyScorer dummy = new DummyScorer();
-      delegate.setScorer(dummy);
+      leafDelegate.setScorer(dummy);
       DocIdSetIterator it = collapsedSet.iterator();
       int docId = -1;
       int nullScoreIndex = 0;
@@ -571,13 +574,13 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           currentContext++;
           currentDocBase = contexts[currentContext].docBase;
           nextDocBase = currentContext+1 < contexts.length ? contexts[currentContext+1].docBase : maxDoc;
-          delegate.setNextReader(contexts[currentContext]);
-          delegate.setScorer(dummy);
+          leafDelegate = delegate.getLeafCollector(contexts[currentContext]);
+          leafDelegate.setScorer(dummy);
         }
 
         int contextDoc = docId-currentDocBase;
         dummy.docId = contextDoc;
-        delegate.collect(contextDoc);
+        leafDelegate.collect(contextDoc);
       }
 
       if(delegate instanceof DelegatingCollector) {
@@ -590,7 +593,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private AtomicReaderContext[] contexts;
     private SortedDocValues values;
 
-    private int docBase;
     private int maxDoc;
     private int nullPolicy;
 
@@ -640,7 +642,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       this.fieldValueCollapse.setScorer(scorer);
     }
 
-    public void setNextReader(AtomicReaderContext context) throws IOException {
+    public void doSetNextReader(AtomicReaderContext context) throws IOException {
       this.contexts[context.ord] = context;
       this.docBase = context.docBase;
       this.fieldValueCollapse.setNextReader(context);
@@ -660,9 +662,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       int currentContext = 0;
       int currentDocBase = 0;
       int nextDocBase = currentContext+1 < contexts.length ? contexts[currentContext+1].docBase : maxDoc;
-      delegate.setNextReader(contexts[currentContext]);
+      leafDelegate = delegate.getLeafCollector(contexts[currentContext]);
       DummyScorer dummy = new DummyScorer();
-      delegate.setScorer(dummy);
+      leafDelegate.setScorer(dummy);
       DocIdSetIterator it = fieldValueCollapse.getCollapsedSet().iterator();
       int docId = -1;
       int nullScoreIndex = 0;
@@ -689,13 +691,13 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           currentContext++;
           currentDocBase = contexts[currentContext].docBase;
           nextDocBase = currentContext+1 < contexts.length ? contexts[currentContext+1].docBase : maxDoc;
-          delegate.setNextReader(contexts[currentContext]);
-          delegate.setScorer(dummy);
+          leafDelegate = delegate.getLeafCollector(contexts[currentContext]);
+          leafDelegate.setScorer(dummy);
         }
 
         int contextDoc = docId-currentDocBase;
         dummy.docId = contextDoc;
-        delegate.collect(contextDoc);
+        leafDelegate.collect(contextDoc);
       }
 
       if(delegate instanceof DelegatingCollector) {

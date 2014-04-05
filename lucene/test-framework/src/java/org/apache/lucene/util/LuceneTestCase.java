@@ -872,28 +872,13 @@ public abstract class LuceneTestCase extends Assert {
       int maxNumThreadStates = rarely(r) ? TestUtil.nextInt(r, 5, 20) // crazy value
           : TestUtil.nextInt(r, 1, 4); // reasonable value
 
-      Method setIndexerThreadPoolMethod = null;
-      try {
-        // Retrieve the package-private setIndexerThreadPool
-        // method:
-        for(Method m : IndexWriterConfig.class.getDeclaredMethods()) {
-          if (m.getName().equals("setIndexerThreadPool")) {
-            m.setAccessible(true);
-            setIndexerThreadPoolMethod = m;
-            break;
-          }
-        }
-      } catch (Exception e) {
-        // Should not happen?
-        throw new RuntimeException(e);
-      }
-
-      if (setIndexerThreadPoolMethod == null) {
-        throw new RuntimeException("failed to lookup IndexWriterConfig.setIndexerThreadPool method");
-      }
-
       try {
         if (rarely(r)) {
+          // Retrieve the package-private setIndexerThreadPool
+          // method:
+          Method setIndexerThreadPoolMethod = IndexWriterConfig.class.getDeclaredMethod("setIndexerThreadPool",
+            Class.forName("org.apache.lucene.index.DocumentsWriterPerThreadPool"));
+          setIndexerThreadPoolMethod.setAccessible(true);
           Class<?> clazz = Class.forName("org.apache.lucene.index.RandomDocumentsWriterPerThreadPool");
           Constructor<?> ctor = clazz.getConstructor(int.class, Random.class);
           ctor.setAccessible(true);
@@ -904,7 +889,7 @@ public abstract class LuceneTestCase extends Assert {
           c.setMaxThreadStates(maxNumThreadStates);
         }
       } catch (Exception e) {
-        throw new RuntimeException(e);
+        Rethrow.rethrow(e);
       }
     }
 
@@ -1097,7 +1082,8 @@ public abstract class LuceneTestCase extends Assert {
       }
       return wrapped;
     } catch (Exception e) {
-      throw new RuntimeException(e);
+      Rethrow.rethrow(e);
+      throw null; // dummy to prevent compiler failure
     }
   }
 
@@ -1278,7 +1264,8 @@ public abstract class LuceneTestCase extends Assert {
       // try empty ctor
       return clazz.newInstance();
     } catch (Exception e) {
-      throw new RuntimeException(e);
+      Rethrow.rethrow(e);
+      throw null; // dummy to prevent compiler failure
     }
   }
   
@@ -1400,20 +1387,30 @@ public abstract class LuceneTestCase extends Assert {
   public static IndexSearcher newSearcher(IndexReader r) {
     return newSearcher(r, true);
   }
-  
+
+  /**
+   * Create a new searcher over the reader. This searcher might randomly use
+   * threads.
+   */
+  public static IndexSearcher newSearcher(IndexReader r, boolean maybeWrap) {
+    return newSearcher(r, maybeWrap, true);
+  }
+
   /**
    * Create a new searcher over the reader. This searcher might randomly use
    * threads. if <code>maybeWrap</code> is true, this searcher might wrap the
-   * reader with one that returns null for getSequentialSubReaders.
+   * reader with one that returns null for getSequentialSubReaders. If
+   * <code>wrapWithAssertions</code> is true, this searcher might be an
+   * {@link AssertingIndexSearcher} instance.
    */
-  public static IndexSearcher newSearcher(IndexReader r, boolean maybeWrap) {
+  public static IndexSearcher newSearcher(IndexReader r, boolean maybeWrap, boolean wrapWithAssertions) {
     Random random = random();
     if (usually()) {
       if (maybeWrap) {
         try {
           r = maybeWrapReader(r);
         } catch (IOException e) {
-          throw new AssertionError(e);
+          Rethrow.rethrow(e);
         }
       }
       // TODO: this whole check is a coverage hack, we should move it to tests for various filterreaders.
@@ -1424,10 +1421,15 @@ public abstract class LuceneTestCase extends Assert {
         try {
           TestUtil.checkReader(r);
         } catch (IOException e) {
-          throw new AssertionError(e);
+          Rethrow.rethrow(e);
         }
       }
-      IndexSearcher ret = random.nextBoolean() ? new AssertingIndexSearcher(random, r) : new AssertingIndexSearcher(random, r.getContext());
+      final IndexSearcher ret;
+      if (wrapWithAssertions) {
+        ret = random.nextBoolean() ? new AssertingIndexSearcher(random, r) : new AssertingIndexSearcher(random, r.getContext());
+      } else {
+        ret = random.nextBoolean() ? new IndexSearcher(r) : new IndexSearcher(r.getContext());
+      }
       ret.setSimilarity(classEnvRule.similarity);
       return ret;
     } else {
@@ -1454,9 +1456,16 @@ public abstract class LuceneTestCase extends Assert {
          }
        });
       }
-      IndexSearcher ret = random.nextBoolean() 
-          ? new AssertingIndexSearcher(random, r, ex)
-          : new AssertingIndexSearcher(random, r.getContext(), ex);
+      IndexSearcher ret;
+      if (wrapWithAssertions) {
+        ret = random.nextBoolean()
+            ? new AssertingIndexSearcher(random, r, ex)
+            : new AssertingIndexSearcher(random, r.getContext(), ex);
+      } else {
+        ret = random.nextBoolean()
+            ? new IndexSearcher(r, ex)
+            : new IndexSearcher(r.getContext(), ex);
+      }
       ret.setSimilarity(classEnvRule.similarity);
       return ret;
     }

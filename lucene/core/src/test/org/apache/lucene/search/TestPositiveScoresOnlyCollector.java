@@ -22,6 +22,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.document.Document;
 
 public class TestPositiveScoresOnlyCollector extends LuceneTestCase {
 
@@ -78,6 +79,7 @@ public class TestPositiveScoresOnlyCollector extends LuceneTestCase {
     
     Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
+    writer.addDocument(new Document());
     writer.commit();
     IndexReader ir = writer.getReader();
     writer.close();
@@ -86,9 +88,10 @@ public class TestPositiveScoresOnlyCollector extends LuceneTestCase {
     Scorer s = new SimpleScorer(fake);
     TopDocsCollector<ScoreDoc> tdc = TopScoreDocCollector.create(scores.length, true);
     Collector c = new PositiveScoresOnlyCollector(tdc);
-    c.setScorer(s);
+    LeafCollector ac = c.getLeafCollector(ir.leaves().get(0));
+    ac.setScorer(s);
     while (s.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
-      c.collect(0);
+      ac.collect(0);
     }
     TopDocs td = tdc.topDocs();
     ScoreDoc[] sd = td.scoreDocs;

@@ -20,20 +20,14 @@ package org.apache.solr.analytics.accumulator;
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.search.SimpleCollector;
 import org.apache.solr.common.util.NamedList;
 
 /**
  * Abstract Collector that manages all StatsCollectors, Expressions and Facets.
  */
-public abstract class ValueAccumulator extends Collector {
-
-  /**
-   * @param context The context to read documents from.
-   * @throws IOException if setting next reader fails
-   */
-  public abstract void setNextReader(AtomicReaderContext context) throws IOException;
+public abstract class ValueAccumulator extends SimpleCollector {
   
   /**
    * Finalizes the statistics within each StatsCollector.
@@ -51,9 +45,4 @@ public abstract class ValueAccumulator extends Collector {
     return true;
   }
 
-  @Override
-  public void setScorer(Scorer scorer) throws IOException {
-    // NOP
-  }
-  
 }

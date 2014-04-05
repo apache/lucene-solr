@@ -19,8 +19,6 @@ package org.apache.lucene.spatial.prefix;
 
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.FieldInfo;
@@ -31,7 +29,6 @@ import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.util.ShapeFieldCacheDistanceValueSource;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -125,13 +122,12 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
 
   public Field[] createIndexableFields(Shape shape, double distErr) {
     int detailLevel = grid.getLevelForDistance(distErr);
+    // note: maybe CellTokenStream should do this line, but it doesn't matter and it would create extra
+    // coupling
     List<Cell> cells = grid.getCells(shape, detailLevel, true, simplifyIndexedCells);//intermediates cells
 
-    //TODO is CellTokenStream supposed to be re-used somehow? see Uwe's comments:
-    //  http://code.google.com/p/lucene-spatial-playground/issues/detail?id=4
-
     Field field = new Field(getFieldName(),
-        new CellTokenStream(cells.iterator()), FIELD_TYPE);
+        new CellTokenStream().setCells(cells.iterator()), FIELD_TYPE);
     return new Field[]{field};
   }
 
@@ -144,41 +140,6 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
     FIELD_TYPE.setOmitNorms(true);
     FIELD_TYPE.setIndexOptions(FieldInfo.IndexOptions.DOCS_ONLY);
     FIELD_TYPE.freeze();
-  }
-
-  /** Outputs the tokenString of a cell, and if its a leaf, outputs it again with the leaf byte. */
-  final static class CellTokenStream extends TokenStream {
-
-    private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-
-    private Iterator<Cell> iter = null;
-
-    public CellTokenStream(Iterator<Cell> tokens) {
-      this.iter = tokens;
-    }
-
-    CharSequence nextTokenStringNeedingLeaf = null;
-
-    @Override
-    public boolean incrementToken() {
-      clearAttributes();
-      if (nextTokenStringNeedingLeaf != null) {
-        termAtt.append(nextTokenStringNeedingLeaf);
-        termAtt.append((char) Cell.LEAF_BYTE);
-        nextTokenStringNeedingLeaf = null;
-        return true;
-      }
-      if (iter.hasNext()) {
-        Cell cell = iter.next();
-        CharSequence token = cell.getTokenString();
-        termAtt.append(token);
-        if (cell.isLeaf())
-          nextTokenStringNeedingLeaf = token;
-        return true;
-      }
-      return false;
-    }
-
   }
 
   @Override

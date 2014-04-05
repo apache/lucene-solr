@@ -32,10 +32,13 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.BitsFilteredDocIdSet;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.FilterLeafCollector;
+import org.apache.lucene.search.FilterCollector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.ScoreDoc;
@@ -265,30 +268,21 @@ public class TestSort extends SolrTestCaseJ4 {
 
         final List<MyDoc> collectedDocs = new ArrayList<>();
         // delegate and collect docs ourselves
-        Collector myCollector = new Collector() {
-          int docBase;
+        Collector myCollector = new FilterCollector(topCollector) {
 
           @Override
-          public void setScorer(Scorer scorer) throws IOException {
-            topCollector.setScorer(scorer);
+          public LeafCollector getLeafCollector(AtomicReaderContext context)
+              throws IOException {
+            final int docBase = context.docBase;
+            return new FilterLeafCollector(super.getLeafCollector(context)) {
+              @Override
+              public void collect(int doc) throws IOException {
+                super.collect(doc);
+                collectedDocs.add(mydocs[docBase + doc]);
+              }
+            };
           }
 
-          @Override
-          public void collect(int doc) throws IOException {
-            topCollector.collect(doc);
-            collectedDocs.add(mydocs[doc + docBase]);
-          }
-
-          @Override
-          public void setNextReader(AtomicReaderContext context) throws IOException {
-            topCollector.setNextReader(context);
-            docBase = context.docBase;
-          }
-
-          @Override
-          public boolean acceptsDocsOutOfOrder() {
-            return topCollector.acceptsDocsOutOfOrder();
-          }
         };
 
         searcher.search(new MatchAllDocsQuery(), filt, myCollector);

@@ -67,6 +67,7 @@ import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SetOnce;
@@ -2368,6 +2369,49 @@ public class TestIndexWriter extends LuceneTestCase {
 
     // Make sure document was not (incorrectly) deleted:
     assertEquals(1, r.numDocs());
+    r.close();
+    dir.close();
+  }
+
+  // LUCENE-5574
+  public void testClosingNRTReaderDoesNotCorruptYourIndex() throws IOException {
+
+    // Windows disallows deleting & overwriting files still
+    // open for reading:
+    assumeFalse("this test can't run on Windows", Constants.WINDOWS);
+
+    MockDirectoryWrapper dir = newMockDirectory();
+
+    // Allow deletion of still open files:
+    dir.setNoDeleteOpenFile(false);
+
+    // Allow writing to same file more than once:
+    dir.setPreventDoubleWrite(false);
+
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    LogMergePolicy lmp = new LogDocMergePolicy();
+    lmp.setMergeFactor(2);
+    iwc.setMergePolicy(lmp);
+
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    Document doc = new Document();
+    doc.add(new TextField("a", "foo", Field.Store.NO));
+    w.addDocument(doc);
+    w.commit();
+    w.addDocument(doc);
+
+    // Get a new reader, but this also sets off a merge:
+    IndexReader r = w.getReader();
+    w.close();
+
+    // Blow away index and make a new writer:
+    for(String fileName : dir.listAll()) {
+      dir.deleteFile(fileName);
+    }
+
+    w = new RandomIndexWriter(random(), dir);
+    w.addDocument(doc);
+    w.close();
     r.close();
     dir.close();
   }

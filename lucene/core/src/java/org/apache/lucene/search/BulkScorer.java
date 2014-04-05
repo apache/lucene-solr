@@ -31,7 +31,7 @@ public abstract class BulkScorer {
   /** Scores and collects all matching documents.
    * @param collector The collector to which all matching documents are passed.
    */
-  public void score(Collector collector) throws IOException {
+  public void score(LeafCollector collector) throws IOException {
     score(collector, Integer.MAX_VALUE);
   }
 
@@ -42,5 +42,5 @@ public abstract class BulkScorer {
    * @param max Score up to, but not including, this doc
    * @return true if more matching documents may remain.
    */
-  public abstract boolean score(Collector collector, int max) throws IOException;
+  public abstract boolean score(LeafCollector collector, int max) throws IOException;
 }

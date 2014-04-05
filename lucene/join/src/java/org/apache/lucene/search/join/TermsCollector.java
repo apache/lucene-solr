@@ -22,9 +22,11 @@ import java.io.IOException;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 
@@ -33,7 +35,7 @@ import org.apache.lucene.util.BytesRefHash;
  *
  * @lucene.experimental
  */
-abstract class TermsCollector extends Collector {
+abstract class TermsCollector extends SimpleCollector {
 
   final String field;
   final BytesRefHash collectorTerms = new BytesRefHash();
@@ -44,10 +46,6 @@ abstract class TermsCollector extends Collector {
 
   public BytesRefHash getCollectorTerms() {
     return collectorTerms;
-  }
-
-  @Override
-  public void setScorer(Scorer scorer) throws IOException {
   }
 
   @Override
@@ -86,7 +84,7 @@ abstract class TermsCollector extends Collector {
     }
 
     @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
       docTermOrds = FieldCache.DEFAULT.getDocTermOrds(context.reader(), field);
     }
   }
@@ -108,7 +106,7 @@ abstract class TermsCollector extends Collector {
     }
 
     @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
+    protected void doSetNextReader(AtomicReaderContext context) throws IOException {
       fromDocTerms = FieldCache.DEFAULT.getTerms(context.reader(), field, false);
     }
   }

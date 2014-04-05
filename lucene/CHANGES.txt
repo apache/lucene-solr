@@ -50,6 +50,9 @@ API Changes
   via setReader.  
   (Benson Margulies via Robert Muir - pull request #16)
 
+* LUCENE-5527: The Collector API has been refactored to use a dedicated Collector
+  per leaf. (Shikhar Bhushan, Adrien Grand)
+
 Documentation
 
 * LUCENE-5392: Add/improve analysis package documentation to reflect
@@ -187,6 +190,8 @@ API Changes
 
 * LUCENE-5543: Remove/deprecate Directory.fileExists (Mike McCandless)
 
+* LUCENE-5565: Refactor SpatialPrefixTree/Cell to not use Strings. (David Smiley)
+
 Optimizations
 
 * LUCENE-5468: HunspellStemFilter uses 10 to 100x less RAM. It also loads
@@ -230,6 +235,16 @@ Bug fixes
   numeric arguments.  (Ahmet Arslan via Robert Muir)
 
 * LUCENE-5568: Benchmark module's "default.codec" option didn't work. (David Smiley)
+
+* LUCENE-5574: Closing a near-real-time reader no longer attempts to
+  delete unreferenced files if the original writer has been closed;
+  this could cause index corruption in certain cases where index files
+  were directly changed (deleted, overwritten, etc.) in the index
+  directory outside of Lucene.  (Simon Willnauer, Shai Erera, Robert
+  Muir, Mike McCandless)
+
+* LUCENE-5570: Don't let FSDirectory.sync() create new zero-byte files, instead throw
+  exception if a file is missing.  (Uwe Schindler, Mike McCandless, Robert Muir)
 
 Test Framework
 

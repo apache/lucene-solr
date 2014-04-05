@@ -12,3 +12,10 @@ of the return type is enough to upgrade.
 The constructor of Tokenizer no longer takes Reader, as this was a leftover
 from before it was reusable. See the org.apache.lucene.analysis package
 documentation for more details.
+
+## Refactored Collector API (LUCENE-5299)
+
+The Collector API has been refactored to use a different Collector instance
+per segment. It is possible to migrate existing collectors painlessly by
+extending SimpleCollector instead of Collector: SimpleCollector is a
+specialization of Collector that returns itself as a per-segment Collector.

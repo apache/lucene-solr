@@ -35,12 +35,13 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.TopDocs;
-
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
@@ -116,7 +117,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
           new SpanTermQuery(new Term(FIELD, "fox")),
           new SpanTermQuery(new Term(FIELD, "jumped")) }, 0, true);
       final FixedBitSet bitset = new FixedBitSet(indexReader.maxDoc());
-      indexSearcher.search(phraseQuery, new Collector() {
+      indexSearcher.search(phraseQuery, new SimpleCollector() {
         private int baseDoc;
 
         @Override
@@ -130,7 +131,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
         }
 
         @Override
-        public void setNextReader(AtomicReaderContext context) {
+        protected void doSetNextReader(AtomicReaderContext context) throws IOException {
           this.baseDoc = context.docBase;
         }
 
