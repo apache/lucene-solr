@@ -2360,6 +2360,13 @@ public abstract class LuceneTestCase extends Assert {
             throw e;
           }
         }
+      } else {
+        synchronized (cleanupQueue) {
+          if (tempDirBase != null) {
+            System.err.println("NOTE: leaving temporary files on disk at: " +
+                tempDirBase.getAbsolutePath());
+          }
+        }
       }
     }
   }
