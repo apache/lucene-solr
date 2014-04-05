@@ -993,6 +993,7 @@
                 <propertyref prefix="tests.filter" />
                 <propertyref prefix="tests.leavetmpdir" />
                 <propertyref prefix="tests.leaveTemporary" />
+                <propertyref prefix="tests.leavetemporary" />
                 <propertyref prefix="solr.test.leavetmpdir" />
             </syspropertyset>
 
