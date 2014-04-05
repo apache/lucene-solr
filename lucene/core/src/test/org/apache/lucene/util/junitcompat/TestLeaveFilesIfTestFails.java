@@ -69,9 +69,9 @@ public class TestLeaveFilesIfTestFails extends WithNestedTests {
   @Test
   public void testWindowsUnremovableFile() throws IOException {
     RandomizedTest.assumeTrue("Requires Windows.", Constants.WINDOWS);
+    RandomizedTest.assumeFalse(LuceneTestCase.LEAVE_TEMPORARY);
 
     Result r = JUnitCore.runClasses(Nested2.class);
-    super.prevSysErr.println(r.getFailures().get(0).getMessage());
     Assert.assertEquals(1, r.getFailureCount());
 
     Nested2.openFile.close();
