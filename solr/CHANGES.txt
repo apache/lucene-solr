@@ -171,6 +171,10 @@ New Features
   capable of reporting its configuration, via REST API.
   (Tim Potter via Steve Rowe)
 
+* SOLR-5960: Add support for basic authentication in post.jar tool, e.g.:
+  java -Durl="http://username:password@hostname:8983/solr/update" -jar post.jar sample.xml
+  (Sameer Maggon via Uwe Schindler)
+
 Bug Fixes
 ----------------------
 

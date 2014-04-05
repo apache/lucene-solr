@@ -21,7 +21,6 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -62,7 +61,7 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
     t_web = SimplePostTool.parseArgsAndInit(args);
 
     System.setProperty("params", "param1=foo&param2=bar");
-    System.setProperty("url", "http://localhost:5150/solr/update");
+    System.setProperty("url", "http://user:password@localhost:5150/solr/update");
     t_test = SimplePostTool.parseArgsAndInit(args);
 
     pf = new MockPageFetcher();
@@ -83,7 +82,7 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
     assertEquals(1, t_web.recursive);
     assertEquals(10, t_web.delay);
     
-    assertEquals("http://localhost:5150/solr/update?param1=foo&param2=bar",t_test.solrUrl.toExternalForm());
+    assertEquals("http://user:password@localhost:5150/solr/update?param1=foo&param2=bar",t_test.solrUrl.toExternalForm());
   }
   
   @Test
