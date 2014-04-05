@@ -454,6 +454,7 @@
       <analyzer>
         <tokenizer class="solr.StandardTokenizerFactory"/>
         <filter class="solr.ManagedStopFilterFactory" managed="english" />
+        <filter class="solr.ManagedSynonymFilterFactory" managed="english" />
       </analyzer>
     </fieldType>
 
