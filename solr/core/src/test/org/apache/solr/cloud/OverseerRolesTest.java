@@ -90,8 +90,8 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
 
   @Override
   public void doTest() throws Exception {
-    testOverseerRole();
     testQuitCommand();
+    testOverseerRole();
 
   }
 
@@ -109,11 +109,11 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
     String s = (String) m.get("id");
     String leader = LeaderElector.getNodeName(s);
     Overseer.getInQueue(zk).offer(ZkStateReader.toJSON(new ZkNodeProps(Overseer.QUEUE_OPERATION, Overseer.QUIT)));
-    long timeout = System.currentTimeMillis()+5000;
+    long timeout = System.currentTimeMillis()+10000;
     String newLeader=null;
     for(;System.currentTimeMillis() < timeout;){
       newLeader = OverseerCollectionProcessor.getLeaderNode(zk);
-      if(!newLeader.equals(leader)) break;
+      if(newLeader!=null && !newLeader.equals(leader)) break;
       Thread.sleep(100);
     }
     assertNotSame( "Leader not changed yet",newLeader,leader);
@@ -196,13 +196,16 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
     Matcher m = pattern.matcher(currentOverseer);
     JettySolrRunner stoppedJetty =null;
 
+    String hostPort = null;
+    StringBuilder sb = new StringBuilder();
     if(m.matches()){
-      String hostPort =  m.group(1)+":"+m.group(2);
+      hostPort =  m.group(1)+":"+m.group(2);
 
       log.info("hostPort : {}", hostPort);
 
       for (JettySolrRunner jetty : jettys) {
         String s = jetty.getBaseUrl().toString();
+        sb.append(s).append(" , ");
         if(s.contains(hostPort)){
           log.info("leader node {}",s);
           ChaosMonkey.stop(jetty);
@@ -222,23 +225,28 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
 
       }
 
+    } else{
+      fail("pattern didn't match for"+currentOverseer );
     }
 
-    ChaosMonkey.start(stoppedJetty);
+    if(stoppedJetty !=null) {
+      ChaosMonkey.start(stoppedJetty);
 
-    timeout = System.currentTimeMillis()+10000;
-    leaderchanged = false;
-    for(;System.currentTimeMillis() < timeout;){
-      List<String> sortedNodeNames = getSortedOverseerNodeNames(client.getZkStateReader().getZkClient());
-      if(sortedNodeNames.get(1).equals(killedOverseer) || sortedNodeNames.get(0).equals(killedOverseer)){
-        leaderchanged =true;
-        break;
+      timeout = System.currentTimeMillis() + 10000;
+      leaderchanged = false;
+      for (; System.currentTimeMillis() < timeout; ) {
+        List<String> sortedNodeNames = getSortedOverseerNodeNames(client.getZkStateReader().getZkClient());
+        if (sortedNodeNames.get(1).equals(killedOverseer) || sortedNodeNames.get(0).equals(killedOverseer)) {
+          leaderchanged = true;
+          break;
+        }
+        Thread.sleep(100);
       }
-      Thread.sleep(100);
+
+      assertTrue("New overseer not the frontrunner : " + getSortedOverseerNodeNames(client.getZkStateReader().getZkClient()) + " expected : " + killedOverseer, leaderchanged);
+    } else {
+      log.warn("The jetty where the overseer {} is running could not be located in {}",hostPort,sb);
     }
-
-    assertTrue("New overseer not the frontrunner : "+ getSortedOverseerNodeNames(client.getZkStateReader().getZkClient()) + " expected : "+ killedOverseer, leaderchanged);
-
   }
 
   private void setOverseerRole(CollectionAction action, String overseerDesignate) throws Exception, IOException {
