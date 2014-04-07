@@ -158,7 +158,7 @@
   <property name="javac.target" value="1.7"/>
   <property name="javac.source.backwards" value="1.7"/>
   <property name="javac.target.backwards" value="1.7"/>
-  <property name="javac.args" value="-Xlint -Xlint:-deprecation -Xlint:-serial -Xlint:-options -Xlint:-processing"/>
+  <property name="javac.args" value="-Xlint -Xlint:-deprecation -Xlint:-serial -Xlint:-options"/>
   <property name="javadoc.link" value="http://download.oracle.com/javase/7/docs/api/"/>
   <property name="javadoc.link.junit" value="http://junit.sourceforge.net/javadoc/"/>
   <property name="javadoc.packagelist.dir" location="${common.dir}/tools/javadoc"/>
