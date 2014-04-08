@@ -52,7 +52,7 @@ public class TestTermsEnum extends LuceneTestCase {
       w.addDocument(docs.nextDoc());
     }
     final IndexReader r = w.getReader();
-    w.close();
+    w.shutdown();
 
     final List<BytesRef> terms = new ArrayList<>();
     final TermsEnum termsEnum = MultiFields.getTerms(r, "body").iterator(null);
@@ -224,7 +224,7 @@ public class TestTermsEnum extends LuceneTestCase {
     }
 
     final IndexReader r = w.getReader();
-    w.close();
+    w.shutdown();
 
     // NOTE: intentional insanity!!
     final FieldCache.Ints docIDToID = FieldCache.DEFAULT.getInts(SlowCompositeReaderWrapper.wrap(r), "id", false);
@@ -374,7 +374,7 @@ public class TestTermsEnum extends LuceneTestCase {
       close();
     }
     r = w.getReader();
-    w.close();
+    w.shutdown();
     return r;
   }
 
@@ -513,7 +513,7 @@ public class TestTermsEnum extends LuceneTestCase {
     w.deleteDocuments(new Term("field", "one"));
     w.forceMerge(1);
     IndexReader r = w.getReader();
-    w.close();
+    w.shutdown();
     assertEquals(1, r.numDocs());
     assertEquals(1, r.maxDoc());
     Terms terms = MultiFields.getTerms(r, "field");
@@ -741,7 +741,7 @@ public class TestTermsEnum extends LuceneTestCase {
 
     w.forceMerge(1);
     DirectoryReader r = w.getReader();
-    w.close();
+    w.shutdown();
     AtomicReader sub = getOnlySegmentReader(r);
     Terms terms = sub.fields().terms("field");
     Automaton automaton = new RegExp(".*", RegExp.NONE).toAutomaton();    
@@ -795,7 +795,7 @@ public class TestTermsEnum extends LuceneTestCase {
 
     w.forceMerge(1);
     DirectoryReader r = w.getReader();
-    w.close();
+    w.shutdown();
     AtomicReader sub = getOnlySegmentReader(r);
     Terms terms = sub.fields().terms("field");
 
@@ -849,7 +849,7 @@ public class TestTermsEnum extends LuceneTestCase {
 
     w.forceMerge(1);
     DirectoryReader r = w.getReader();
-    w.close();
+    w.shutdown();
     AtomicReader sub = getOnlySegmentReader(r);
     Terms terms = sub.fields().terms("field");
 

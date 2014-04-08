@@ -65,7 +65,7 @@ public class TestRegexpRandom extends LuceneTestCase {
     }
     
     reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
     searcher = newSearcher(reader);
   }
   

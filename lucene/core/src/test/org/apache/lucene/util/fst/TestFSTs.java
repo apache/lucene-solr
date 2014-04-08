@@ -321,7 +321,7 @@ public class TestFSTs extends LuceneTestCase {
       docCount++;
     }
     IndexReader r = DirectoryReader.open(writer, true);
-    writer.close();
+    writer.shutdown();
     final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
 
     final boolean doRewrite = random().nextBoolean();
@@ -779,14 +779,14 @@ public class TestFSTs extends LuceneTestCase {
     System.out.println("DOT before rewrite");
     Writer w = new OutputStreamWriter(new FileOutputStream("/mnt/scratch/before.dot"));
     Util.toDot(fst, w, false, false);
-    w.close();
+    w.shutdown();
 
     final FST<Object> rewrite = new FST<Object>(fst, 1, 100);
 
     System.out.println("DOT after rewrite");
     w = new OutputStreamWriter(new FileOutputStream("/mnt/scratch/after.dot"));
     Util.toDot(rewrite, w, false, false);
-    w.close();
+    w.shutdown();
   }
   */
 
@@ -885,7 +885,7 @@ public class TestFSTs extends LuceneTestCase {
       // turn writer into reader:
       final IndexReader r = w.getReader();
       final IndexSearcher s = newSearcher(r);
-      w.close();
+      w.shutdown();
 
       final List<String> allIDsList = new ArrayList<>(allIDs);
       final List<String> sortedAllIDsList = new ArrayList<>(allIDsList);
@@ -1009,7 +1009,7 @@ public class TestFSTs extends LuceneTestCase {
       System.out.println("TEST: got reader=" + r);
     }
     IndexSearcher s = newSearcher(r);
-    w.close();
+    w.shutdown();
 
     final List<String> allTermsList = new ArrayList<>(allTerms);
     Collections.shuffle(allTermsList, random());
@@ -1237,7 +1237,7 @@ public class TestFSTs extends LuceneTestCase {
     final FST<Long> fst = builder.finish();
     //Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"));
     //Util.toDot(fst, w, false, false);
-    //w.close();
+    //w.shutdown();
 
     Util.TopResults<Long> res = Util.shortestPaths(fst,
                                                   fst.getFirstArc(new FST.Arc<Long>()),
@@ -1332,7 +1332,7 @@ public class TestFSTs extends LuceneTestCase {
     final FST<Pair<Long,Long>> fst = builder.finish();
     //Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"));
     //Util.toDot(fst, w, false, false);
-    //w.close();
+    //w.shutdown();
 
     Util.TopResults<Pair<Long,Long>> res = Util.shortestPaths(fst,
                                                              fst.getFirstArc(new FST.Arc<Pair<Long,Long>>()),
@@ -1392,7 +1392,7 @@ public class TestFSTs extends LuceneTestCase {
     //System.out.println("SAVE out.dot");
     //Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"));
     //Util.toDot(fst, w, false, false);
-    //w.close();
+    //w.shutdown();
 
     BytesReader reader = fst.getBytesReader();
 
@@ -1514,7 +1514,7 @@ public class TestFSTs extends LuceneTestCase {
     //System.out.println("SAVE out.dot");
     //Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"));
     //Util.toDot(fst, w, false, false);
-    //w.close();
+    //w.shutdown();
 
     BytesReader reader = fst.getBytesReader();
 

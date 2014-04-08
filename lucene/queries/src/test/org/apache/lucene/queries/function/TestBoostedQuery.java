@@ -60,7 +60,7 @@ public class TestBoostedQuery extends LuceneTestCase {
     iw.addDocument(document);
     ir = iw.getReader();
     is = newSearcher(ir);
-    iw.close();
+    iw.shutdown();
   }
   
   @AfterClass

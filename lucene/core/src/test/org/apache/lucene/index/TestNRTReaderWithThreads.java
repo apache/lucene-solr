@@ -69,7 +69,7 @@ public class TestNRTReaderWithThreads extends LuceneTestCase {
     }
     //System.out.println("addCount:"+addCount);
     //System.out.println("delCount:"+delCount);
-    writer.close();
+    writer.shutdown();
     mainDir.close();
   }
 

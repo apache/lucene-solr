@@ -51,7 +51,7 @@ public class AddIndexesTaskTest extends BenchmarkTestCase {
       for (int i = 0; i < 10; i++) {
         writer.addDocument(new Document());
       }
-      writer.close();
+      writer.shutdown();
     } finally {
       tmpDir.close();
     }

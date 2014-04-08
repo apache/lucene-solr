@@ -360,7 +360,7 @@ public abstract class AbstractTestCase extends LuceneTestCase {
       doc.add( new Field( F, value, customType) );
     }
     writer.addDocument( doc );
-    writer.close();
+    writer.shutdown();
     if (reader != null) reader.close();
     reader = DirectoryReader.open(dir);
   }
@@ -379,7 +379,7 @@ public abstract class AbstractTestCase extends LuceneTestCase {
       //doc.add( new Field( F, value, Store.YES, Index.NOT_ANALYZED, TermVector.WITH_POSITIONS_OFFSETS ) );
     }
     writer.addDocument( doc );
-    writer.close();
+    writer.shutdown();
     if (reader != null) reader.close();
     reader = DirectoryReader.open(dir);
   }

@@ -117,7 +117,7 @@ public class SpatialExample extends LuceneTestCase {
     indexWriter.addDocument(newSampleDocument(
         20, ctx.makePoint(0.1,0.1), ctx.makePoint(0, 0)));
 
-    indexWriter.close();
+    indexWriter.shutdown();
   }
 
   private Document newSampleDocument(int id, Shape... shapes) {

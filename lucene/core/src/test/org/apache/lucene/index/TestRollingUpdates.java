@@ -131,7 +131,7 @@ public class TestRollingUpdates extends LuceneTestCase {
     w.commit();
     assertEquals(SIZE, w.numDocs());
 
-    w.close();
+    w.shutdown();
 
     TestIndexWriter.assertNoUnreferencedFiles(dir, "leftover files after rolling updates");
 
@@ -174,7 +174,7 @@ public class TestRollingUpdates extends LuceneTestCase {
         threads[i].join();
       }
 
-      w.close();
+      w.shutdown();
     }
 
     IndexReader open = DirectoryReader.open(dir);

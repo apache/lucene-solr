@@ -99,7 +99,7 @@ public class TestExceedMaxTermLength extends LuceneTestCase {
                    msg.contains(name));
       }
     } finally {
-      w.close();
+      w.shutdown();
     }
   }
 }

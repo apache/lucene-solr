@@ -59,6 +59,7 @@ import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.ThreadInterruptedException;
+import org.apache.lucene.util.Version;
 
 /**
   An <code>IndexWriter</code> creates and maintains an index.
@@ -843,109 +844,113 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     }
   }
 
+  /** Gracefully shuts down this {@code IndexWriter} instance,
+   *  by writing any changes, waiting for any running
+   *  merges, committing, and closing.  If you don't want to
+   *  wait for merges, use {@link #shutdown(boolean)} instead.
+   *
+   *  <p>If you called prepareCommit but failed to call
+   *  commit, this method will throw {@code
+   *  IllegalStateException} and the {@code IndexWriter}
+   *  will not be closed.
+   *
+   *  <p>If this method throws any other
+   *  exception, the {@code IndexWriter} will be closed, but
+   *  changes may have been lost.
+   *
+   *  <p><b>NOTE</b>: You must ensure no
+   *  other threads are still making changes at the same
+   *  time that this method is invoked.  */
+  public void shutdown() throws IOException {
+    shutdown(true);
+  }
+
+  /** Gracefully shut down this {@code IndexWriter}
+   *  instance, with control over whether to wait for
+   *  merges.  See {@link #shutdown()}. */
+  public void shutdown(boolean waitForMerges) throws IOException {
+    if (pendingCommit != null) {
+      throw new IllegalStateException("cannot shutdown: prepareCommit was already called with no corresponding call to commit");
+    }
+    if (infoStream.isEnabled("IW")) {
+      infoStream.message("IW", "now flush at shutdown");
+    }
+    boolean success = false;
+    try {
+      flush(waitForMerges, true);
+      finishMerges(waitForMerges);
+      commit();
+      // TODO: we could just call rollback, but ... it's nice
+      // to catch IW bugs where after waitForMerges/commit we
+      // still have running merges / uncommitted changes, or
+      // tests that illegally leave threads indexing and then
+      // try to use shutdown:
+      close();
+      success = true;
+    } finally {
+      if (success == false) {
+        // Be certain to close the index on any exception
+        try {
+          rollback();
+        } catch (Throwable t) {
+          // Suppress so we keep throwing original exception
+        }
+      }
+    }
+  }
+  
   /**
-   * Commits all changes to an index, waits for pending merges
-   * to complete, and closes all associated files.  
-   * <p>
-   * This is a "slow graceful shutdown" which may take a long time
-   * especially if a big merge is pending: If you only want to close
-   * resources use {@link #rollback()}. If you only want to commit
-   * pending changes and close resources see {@link #close(boolean)}.
-   * <p>
-   * Note that this may be a costly
-   * operation, so, try to re-use a single writer instead of
-   * closing and opening a new one.  See {@link #commit()} for
-   * caveats about write caching done by some IO devices.
+   * Closes all open resources and releases the write lock.
+   * If there are running merges or uncommitted
+   * changes:
+   * <ul>
+   *   <li> If config.matchVersion >= LUCENE_50 then the
+   *        changes are silently discarded.
+   *   <li> Otherwise, a RuntimeException is thrown to
+   *        indicate what was lost, but the IndexWriter is
+   *        still closed.
+   * </ul>
    *
-   * <p> If an Exception is hit during close, eg due to disk
-   * full or some other reason, then both the on-disk index
-   * and the internal state of the IndexWriter instance will
-   * be consistent.  However, the close will not be complete
-   * even though part of it (flushing buffered documents)
-   * may have succeeded, so the write lock will still be
-   * held.</p>
-   *
-   * <p> If you can correct the underlying cause (eg free up
-   * some disk space) then you can call close() again.
-   * Failing that, if you want to force the write lock to be
-   * released (dangerous, because you may then lose buffered
-   * docs in the IndexWriter instance) then you can do
-   * something like this:</p>
-   *
-   * <pre class="prettyprint">
-   * try {
-   *   writer.close();
-   * } finally {
-   *   if (IndexWriter.isLocked(directory)) {
-   *     IndexWriter.unlock(directory);
-   *   }
-   * }
-   * </pre>
-   *
-   * after which, you must be certain not to use the writer
-   * instance anymore.</p>
-   *
-   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
-   * you should immediately close the writer, again.  See <a
-   * href="#OOME">above</a> for details.</p>
-   *
+   * Use {@link #shutdown} if you want to flush, commit, and
+   * wait for merges, before closing.
+   * 
    * @throws IOException if there is a low-level IO error
+   *   (the IndexWriter will still be closed)
+   * @throws RuntimeException if config.matchVersion <
+   *   LUCENE_50 and there were pending changes that were
+   *   lost (the IndexWriter will still be closed)
    */
   @Override
   public void close() throws IOException {
-    close(true);
-  }
 
-  /**
-   * Closes the index with or without waiting for currently
-   * running merges to finish.  This is only meaningful when
-   * using a MergeScheduler that runs merges in background
-   * threads.
-   *
-   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
-   * you should immediately close the writer, again.  See <a
-   * href="#OOME">above</a> for details.</p>
-   *
-   * <p><b>NOTE</b>: it is dangerous to always call
-   * close(false), especially when IndexWriter is not open
-   * for very long, because this can result in "merge
-   * starvation" whereby long merges will never have a
-   * chance to finish.  This will cause too many segments in
-   * your index over time.</p>
-   *
-   * @param waitForMerges if true, this call will block
-   * until all merges complete; else, it will ask all
-   * running merges to abort, wait until those merges have
-   * finished (which should be at most a few seconds), and
-   * then return.
-   */
-  public void close(boolean waitForMerges) throws IOException {
+    // If there are uncommitted changes, or still running
+    // merges, we will in fact close, but we'll throw an
+    // exception notifying the caller that they lost
+    // changes, if IWC.matchVersion is < 5.0:
+    boolean lostChanges = false;
 
-    // Ensure that only one thread actually gets to do the
-    // closing, and make sure no commit is also in progress:
-    synchronized(commitLock) {
-      if (shouldClose()) {
-        // If any methods have hit OutOfMemoryError, then abort
-        // on close, in case the internal state of IndexWriter
-        // or DocumentsWriter is corrupt
-        if (hitOOM) {
-          rollbackInternal();
-        } else {
-          closeInternal(waitForMerges, true);
+    // Only check for lost changes if the version earlier than 5.0:
+    if (config.getMatchVersion().onOrAfter(Version.LUCENE_50) == false) {
+      lostChanges = hasUncommittedChanges();
+      if (lostChanges == false) {
+        synchronized(this) {
+          if (pendingMerges.isEmpty() == false) {
+            lostChanges = true;
+          }
+          if (runningMerges.isEmpty() == false) {
+            lostChanges = true;
+          }
         }
       }
-      assert assertEventQueueAfterClose();
     }
-  }
 
-  private boolean assertEventQueueAfterClose() {
-    if (eventQueue.isEmpty()) {
-      return true;
+    // As long as there are no pending changes and no
+    // running merges, we just rollback to close:
+    rollback();
+
+    if (lostChanges) {
+      throw new RuntimeException("this writer is closed, but some pending changes or running merges were discarded; use shutdown to save pending changes and finish merges before closing");
     }
-    for (Event e : eventQueue) {
-      assert e instanceof DocumentsWriter.MergePendingEvent : e;
-    }
-    return true;
   }
 
   // Returns true if this thread should attempt to close, or
@@ -966,117 +971,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
       } else {
         return false;
       }
-    }
-  }
-
-  private void closeInternal(boolean waitForMerges, boolean doFlush) throws IOException {
-    boolean interrupted = false;
-    try {
-
-      if (pendingCommit != null) {
-        throw new IllegalStateException("cannot close: prepareCommit was already called with no corresponding call to commit");
-      }
-
-      if (infoStream.isEnabled("IW")) {
-        infoStream.message("IW", "now flush at close waitForMerges=" + waitForMerges);
-      }
-
-      docWriter.close();
-
-      try {
-        // Only allow a new merge to be triggered if we are
-        // going to wait for merges:
-        if (doFlush) {
-          flush(waitForMerges, true);
-        } else {
-          docWriter.abort(this); // already closed -- never sync on IW 
-        }
-        
-      } finally {
-        try {
-          // clean up merge scheduler in all cases, although flushing may have failed:
-          interrupted = Thread.interrupted();
-        
-          if (waitForMerges) {
-            try {
-              // Give merge scheduler last chance to run, in case
-              // any pending merges are waiting:
-              mergeScheduler.merge(this, MergeTrigger.CLOSING, false);
-            } catch (ThreadInterruptedException tie) {
-              // ignore any interruption, does not matter
-              interrupted = true;
-              if (infoStream.isEnabled("IW")) {
-                infoStream.message("IW", "interrupted while waiting for final merges");
-              }
-            }
-          }
-          
-          synchronized(this) {
-            for (;;) {
-              try {
-                finishMerges(waitForMerges && !interrupted);
-                break;
-              } catch (ThreadInterruptedException tie) {
-                // by setting the interrupted status, the
-                // next call to finishMerges will pass false,
-                // so it will not wait
-                interrupted = true;
-                if (infoStream.isEnabled("IW")) {
-                  infoStream.message("IW", "interrupted while waiting for merges to finish");
-                }
-              }
-            }
-            stopMerges = true;
-          }
-          
-        } finally {
-          // shutdown policy, scheduler and all threads (this call is not interruptible):
-          IOUtils.closeWhileHandlingException(mergePolicy, mergeScheduler);
-        }
-      }
-
-      if (infoStream.isEnabled("IW")) {
-        infoStream.message("IW", "now call final commit()");
-      }
-
-      if (doFlush) {
-        commitInternal();
-      }
-      processEvents(false, true);
-      synchronized(this) {
-        // commitInternal calls ReaderPool.commit, which
-        // writes any pending liveDocs from ReaderPool, so
-        // it's safe to drop all readers now:
-        readerPool.dropAll(true);
-        deleter.close();
-      }
-
-      if (infoStream.isEnabled("IW")) {
-        infoStream.message("IW", "at close: " + segString());
-      }
-
-      if (writeLock != null) {
-        writeLock.close();                          // release write lock
-        writeLock = null;
-      }
-      synchronized(this) {
-        closed = true;
-      }
-      assert docWriter.perThreadPool.numDeactivatedThreadStates() == docWriter.perThreadPool.getMaxThreadStates() : "" +  docWriter.perThreadPool.numDeactivatedThreadStates() + " " +  docWriter.perThreadPool.getMaxThreadStates();
-    } catch (OutOfMemoryError oom) {
-      handleOOM(oom, "closeInternal");
-    } finally {
-      synchronized(this) {
-        closing = false;
-        notifyAll();
-        if (!closed) {
-          if (infoStream.isEnabled("IW")) {
-            infoStream.message("IW", "hit exception while closing");
-          }
-        }
-      }
-      // finally, restore interrupt status:
-      if (interrupted) Thread.currentThread().interrupt();
     }
   }
 
@@ -1732,10 +1626,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
    * you should immediately close the writer.  See <a
    * href="#OOME">above</a> for details.</p>
    *
-   * <p><b>NOTE</b>: if you call {@link #close(boolean)}
-   * with <tt>false</tt>, which aborts all running merges,
-   * then any thread still running this method might hit a
-   * {@link MergePolicy.MergeAbortedException}.
+   * <p><b>NOTE</b>: if you call {@link #abortMerges}, which
+   * aborts all running merges, then any thread still
+   * running this method might hit a {@link
+   * MergePolicy.MergeAbortedException}.
    *
    * @param maxNumSegments maximum number of segments left
    * in the index after merging finishes
@@ -1863,11 +1757,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
    * you should immediately close the writer.  See <a
    * href="#OOME">above</a> for details.</p>
    *
-   * <p><b>NOTE</b>: if you call {@link #close(boolean)}
-   * with <tt>false</tt>, which aborts all running merges,
-   * then any thread still running this method might hit a
-   * {@link MergePolicy.MergeAbortedException}.
-   */
+   * <p><b>NOTE</b>: if you call {@link #abortMerges}, which
+   * aborts all running merges, then any thread still
+   * running this method might hit a {@link
+   * MergePolicy.MergeAbortedException}. */
   public void forceMergeDeletes(boolean doWait)
     throws IOException {
     ensureOpen();
@@ -2136,7 +2029,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
         if (infoStream.isEnabled("IW") ) {
           infoStream.message("IW", "rollback: infos=" + segString(segmentInfos));
         }
-        
 
         assert testPoint("rollback before checkpoint");
 
@@ -2147,7 +2039,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
 
         lastCommitChangeCount = changeCount;
         
-        processEvents(false, true);
         deleter.refresh();
         deleter.close();
 
@@ -2161,6 +2052,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "rollbackInternal");
     } finally {
+      if (!success) {
+        // Must not hold IW's lock while closing
+        // mergePolicy/Scheduler: this can lead to deadlock,
+        // e.g. TestIW.testThreadInterruptDeadlock
+        IOUtils.closeWhileHandlingException(mergePolicy, mergeScheduler);
+      }
       synchronized(this) {
         if (!success) {
           // we tried to be nice about it: do the minimum
@@ -2174,7 +2071,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
           }
           
           // close all the closeables we can (but important is readerPool and writeLock to prevent leaks)
-          IOUtils.closeWhileHandlingException(mergePolicy, mergeScheduler, readerPool, deleter, writeLock);
+          IOUtils.closeWhileHandlingException(readerPool, deleter, writeLock);
           writeLock = null;
         }
         closed = true;
@@ -2260,6 +2157,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
         docWriter.unlockAllAfterAbortAll(this);
       }
     }
+  }
+
+  /** Aborts running merges.  Be careful when using this
+   *  method: when you abort a long-running merge, you lose
+   *  a lot of work that must later be redone. */
+  public void abortMerges() {
+    finishMerges(false);
   }
 
   private synchronized void finishMerges(boolean waitForMerges) {
@@ -2613,7 +2517,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
    * call.
    * 
    * <p>
-   * <b>NOTE</b>: if you call {@link #close(boolean)} with <tt>false</tt>, which
+   * <b>NOTE</b>: if you call {@link #abortMerges}, which
    * aborts all running merges, then any thread still running this method might
    * hit a {@link MergePolicy.MergeAbortedException}.
    * 

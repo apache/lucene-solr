@@ -110,7 +110,7 @@ public class TestSlowFuzzyQuery2 extends LuceneTestCase {
     // otherwise scores are different!
     searcher.setSimilarity(new DefaultSimilarity());
     
-    writer.close();
+    writer.shutdown();
     String line;
     while ((line = reader.readLine()) != null) {
       String params[] = line.split(",");

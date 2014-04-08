@@ -340,12 +340,12 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   public synchronized void close() throws IOException {
     if (!isClosed) {
       commit();
+      indexWriter.shutdown();
       doClose();
     }
   }
   
   private void doClose() throws IOException {
-    indexWriter.close();
     isClosed = true;
     closeResources();
   }

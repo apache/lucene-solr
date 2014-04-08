@@ -318,7 +318,7 @@ public class TestMultiMMap extends LuceneTestCase {
       writer.addDocument(doc);
     }
     IndexReader reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
     
     int numAsserts = atLeast(100);
     for (int i = 0; i < numAsserts; i++) {

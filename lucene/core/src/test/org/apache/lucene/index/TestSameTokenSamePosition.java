@@ -40,7 +40,7 @@ public class TestSameTokenSamePosition extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new TextField("eng", new BugReproTokenStream()));
     riw.addDocument(doc);
-    riw.close();
+    riw.shutdown();
     dir.close();
   }
   
@@ -55,7 +55,7 @@ public class TestSameTokenSamePosition extends LuceneTestCase {
       doc.add(new TextField("eng", new BugReproTokenStream()));
       riw.addDocument(doc);
     }
-    riw.close();
+    riw.shutdown();
     dir.close();
   }
 }

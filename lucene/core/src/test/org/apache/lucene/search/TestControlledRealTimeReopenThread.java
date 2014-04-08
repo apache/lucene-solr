@@ -371,7 +371,8 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
     }
     thread.close();
     thread.join();
-    IOUtils.close(manager, _writer, d);
+    _writer.shutdown();
+    IOUtils.close(manager, d);
   }
   
   public static class LatchedIndexWriter extends IndexWriter {
@@ -425,7 +426,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
     } catch (IllegalStateException ise) {
       // expected
     }
-    w.close();
+    w.shutdown();
     other.close();
     dir.close();
   }
@@ -452,7 +453,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
     sm.maybeRefreshBlocking();
     assertTrue(afterRefreshCalled.get());
     sm.close();
-    iw.close();
+    iw.shutdown();
     dir.close();
   }
 
@@ -531,7 +532,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
 
     controlledRealTimeReopenThread.close();
     sm.close();
-    iw.close();
+    iw.shutdown();
     dir.close();
   }
 }

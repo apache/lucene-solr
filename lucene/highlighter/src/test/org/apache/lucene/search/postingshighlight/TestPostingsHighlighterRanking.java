@@ -87,7 +87,7 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
     for (int i = 0; i < numDocs; i++) {
       checkDocument(searcher, i, maxTopN);
     }
-    iw.close();
+    iw.shutdown();
     ir.close();
     dir.close();
   }
@@ -262,7 +262,7 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
     iw.addDocument(doc);
     
     IndexReader ir = iw.getReader();
-    iw.close();
+    iw.shutdown();
     
     IndexSearcher searcher = newSearcher(ir);
     PostingsHighlighter highlighter = new PostingsHighlighter(10000) {
@@ -301,7 +301,7 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
     iw.addDocument(doc);
     
     IndexReader ir = iw.getReader();
-    iw.close();
+    iw.shutdown();
     
     IndexSearcher searcher = newSearcher(ir);
     PostingsHighlighter highlighter = new PostingsHighlighter(10000) {

@@ -210,8 +210,7 @@ public class QueryUtils {
       w.addDocument(new Document());
     }
     w.forceMerge(1);
-    w.commit();
-    w.close();
+    w.shutdown();
     DirectoryReader reader = DirectoryReader.open(d);
     return new AllDeletedFilterReader(LuceneTestCase.getOnlySegmentReader(reader));
   }

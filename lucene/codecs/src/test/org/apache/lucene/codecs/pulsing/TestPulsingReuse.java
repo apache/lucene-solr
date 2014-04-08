@@ -52,7 +52,7 @@ public class TestPulsingReuse extends LuceneTestCase {
     doc.add(new TextField("foo", "a b b c c c d e f g g h i i j j k", Field.Store.NO));
     iw.addDocument(doc);
     DirectoryReader ir = iw.getReader();
-    iw.close();
+    iw.shutdown();
     
     AtomicReader segment = getOnlySegmentReader(ir);
     DocsEnum reuse = null;
@@ -93,7 +93,7 @@ public class TestPulsingReuse extends LuceneTestCase {
     // but this seems 'good enough' for now.
     iw.addDocument(doc);
     DirectoryReader ir = iw.getReader();
-    iw.close();
+    iw.shutdown();
     
     AtomicReader segment = getOnlySegmentReader(ir);
     DocsEnum reuse = null;

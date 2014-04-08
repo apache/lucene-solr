@@ -151,7 +151,7 @@ public class TestAtomicUpdate extends LuceneTestCase {
     searcherThread1.join();
     searcherThread2.join();
 
-    writer.close();
+    writer.shutdown();
 
     assertTrue("hit unexpected exception in indexer", !indexerThread.failed);
     assertTrue("hit unexpected exception in indexer2", !indexerThread2.failed);

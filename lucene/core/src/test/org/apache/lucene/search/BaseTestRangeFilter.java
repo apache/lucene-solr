@@ -176,7 +176,7 @@ public class BaseTestRangeFilter extends LuceneTestCase {
         // exceedingly rare (Yonik calculates 1 in ~429,000)
         // times) that this loop requires more than one try:
         IndexReader ir = writer.getReader();
-        writer.close();
+        writer.shutdown();
         return ir;
       }
 

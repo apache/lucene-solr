@@ -86,7 +86,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
       add(docText[i%docText.length], iw);
     }
     reader = iw.getReader();
-    iw.close();
+    iw.shutdown();
     searcher = newSearcher(reader);
 
     BooleanQuery booleanQuery = new BooleanQuery();

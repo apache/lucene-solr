@@ -91,7 +91,8 @@ public class TestMultipleIndexFields extends FacetTestCase {
 
     assertOrdinalsExist("$facets", ir);
 
-    IOUtils.close(tr, ir, iw, tw, indexDir, taxoDir);
+    iw.shutdown();
+    IOUtils.close(tr, ir, tw, indexDir, taxoDir);
   }
 
   @Test
@@ -130,7 +131,8 @@ public class TestMultipleIndexFields extends FacetTestCase {
     assertOrdinalsExist("$facets", ir);
     assertOrdinalsExist("$author", ir);
 
-    IOUtils.close(tr, ir, iw, tw, indexDir, taxoDir);
+    iw.shutdown();
+    IOUtils.close(tr, ir, tw, indexDir, taxoDir);
   }
 
   @Test
@@ -173,7 +175,8 @@ public class TestMultipleIndexFields extends FacetTestCase {
     assertOrdinalsExist("$music", ir);
     assertOrdinalsExist("$music", ir);
 
-    IOUtils.close(tr, ir, iw, tw, indexDir, taxoDir);
+    iw.shutdown();
+    IOUtils.close(tr, ir, tw, indexDir, taxoDir);
   }
 
   private void assertOrdinalsExist(String field, IndexReader ir) throws IOException {
@@ -224,7 +227,8 @@ public class TestMultipleIndexFields extends FacetTestCase {
     assertOrdinalsExist("$bands", ir);
     assertOrdinalsExist("$composers", ir);
 
-    IOUtils.close(tr, ir, iw, tw, indexDir, taxoDir);
+    iw.shutdown();
+    IOUtils.close(tr, ir, tw, indexDir, taxoDir);
   }
 
   @Test
@@ -267,8 +271,8 @@ public class TestMultipleIndexFields extends FacetTestCase {
     assertOrdinalsExist("$music", ir);
     assertOrdinalsExist("$literature", ir);
 
-    IOUtils.close(tr, ir, iw, tw);
-    IOUtils.close(indexDir, taxoDir);
+    iw.shutdown();
+    IOUtils.close(tr, ir, iw, tw, indexDir, taxoDir);
   }
 
   private void assertCorrectResults(Facets facets) throws IOException {

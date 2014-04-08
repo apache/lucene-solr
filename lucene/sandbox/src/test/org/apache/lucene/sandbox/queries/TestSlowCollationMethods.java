@@ -62,7 +62,7 @@ public class TestSlowCollationMethods extends LuceneTestCase {
     }
     splitDoc = TestUtil.randomUnicodeString(random());
     reader = iw.getReader();
-    iw.close();
+    iw.shutdown();
 
     searcher = newSearcher(reader);
   }
@@ -168,7 +168,7 @@ public class TestSlowCollationMethods extends LuceneTestCase {
       iw.addDocument(doc);
     }
     IndexReader reader = iw.getReader();
-    iw.close();
+    iw.shutdown();
 
     IndexSearcher searcher = newSearcher(reader);
 

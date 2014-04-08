@@ -80,7 +80,7 @@ public class Test2BPostings extends LuceneTestCase {
       }
     }
     w.forceMerge(1);
-    w.close();
+    w.shutdown();
     dir.close();
   }
   

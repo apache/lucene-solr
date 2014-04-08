@@ -96,7 +96,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     d.add(newTextField("field", "bogus", Field.Store.YES));
     writer.addDocument(d);
     IndexReader reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
     
 
     IndexSearcher searcher = newSearcher(reader);
@@ -283,7 +283,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     }
     assertEquals(5, count);
     assertTrue(sawZero);
-    writer.close();
+    writer.shutdown();
     is.getIndexReader().close();
     dir.close();
   }

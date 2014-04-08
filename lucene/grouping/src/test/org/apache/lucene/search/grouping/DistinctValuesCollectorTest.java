@@ -139,7 +139,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
     w.addDocument(doc);
 
     IndexSearcher indexSearcher = newSearcher(w.getReader());
-    w.close();
+    w.shutdown();
 
     Comparator<AbstractDistinctValuesCollector.GroupCount<Comparable<Object>>> cmp = new Comparator<AbstractDistinctValuesCollector.GroupCount<Comparable<Object>>>() {
 
@@ -509,7 +509,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
       }
     }
 
-    w.close();
+    w.shutdown();
     return new IndexContext(dir, reader, dvType, searchTermToGroupCounts, contentStrings.toArray(new String[contentStrings.size()]));
   }
 

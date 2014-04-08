@@ -73,7 +73,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     }
 
     reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
   }
 
   @AfterClass

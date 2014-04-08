@@ -74,7 +74,7 @@ public class TestForceMergeForever extends LuceneTestCase {
       ((LogMergePolicy) mp).setMergeFactor(mergeAtOnce);
     } else {
       // skip test
-      w.close();
+      w.shutdown();
       d.close();
       return;
     }
@@ -101,7 +101,7 @@ public class TestForceMergeForever extends LuceneTestCase {
     doStop.set(true);
     t.join();
     assertTrue("merge count is " + w.mergeCount.get(), w.mergeCount.get() <= 1);
-    w.close();
+    w.shutdown();
     d.close();
     docs.close();
   }

@@ -445,7 +445,7 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
     final String s = a.toDot();
     Writer w = new OutputStreamWriter(new FileOutputStream("/x/tmp/out.dot"));
     w.write(s);
-    w.close();
+    w.shutdown();
     System.out.println("TEST: saved to /x/tmp/out.dot");
   }
   */

@@ -150,7 +150,8 @@ public class IndexReplicationClientTest extends ReplicatorTestCase {
   @After
   @Override
   public void tearDown() throws Exception {
-    IOUtils.close(client, callback, publishWriter, replicator, publishDir, handlerDir);
+    publishWriter.shutdown();
+    IOUtils.close(client, callback, replicator, publishDir, handlerDir);
     super.tearDown();
   }
   

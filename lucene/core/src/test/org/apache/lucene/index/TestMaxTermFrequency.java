@@ -57,7 +57,7 @@ public class TestMaxTermFrequency extends LuceneTestCase {
       writer.addDocument(doc);
     }
     reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
   }
   
   @Override

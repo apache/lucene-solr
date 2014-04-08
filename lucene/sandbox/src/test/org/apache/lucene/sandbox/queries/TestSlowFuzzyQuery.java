@@ -58,7 +58,7 @@ public class TestSlowFuzzyQuery extends LuceneTestCase {
 
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    writer.close();
+    writer.shutdown();
 
     SlowFuzzyQuery query = new SlowFuzzyQuery(new Term("field", "aaaaa"), SlowFuzzyQuery.defaultMinSimilarity, 0);   
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
@@ -206,7 +206,7 @@ public class TestSlowFuzzyQuery extends LuceneTestCase {
 
      IndexReader reader = writer.getReader();
      IndexSearcher searcher = newSearcher(reader);
-     writer.close();
+     writer.shutdown();
 
      SlowFuzzyQuery query;
      
@@ -229,7 +229,7 @@ public class TestSlowFuzzyQuery extends LuceneTestCase {
 
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    writer.close();
+    writer.shutdown();
 
     SlowFuzzyQuery query;
     // not similar enough:
@@ -345,8 +345,8 @@ public class TestSlowFuzzyQuery extends LuceneTestCase {
     mr.close();
     ir1.close();
     ir2.close();
-    writer.close();
-    writer2.close();
+    writer.shutdown();
+    writer2.shutdown();
     directory.close();
     directory2.close(); 
   }
@@ -359,7 +359,7 @@ public class TestSlowFuzzyQuery extends LuceneTestCase {
 
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    writer.close();
+    writer.shutdown();
 
     Query query;
     // term not over 10 chars, so optimization shortcuts
@@ -396,7 +396,7 @@ public class TestSlowFuzzyQuery extends LuceneTestCase {
 
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    writer.close();
+    writer.shutdown();
     
     SlowFuzzyQuery query = new SlowFuzzyQuery(new Term("field", "lucene"));
     query.setRewriteMethod(new MultiTermQuery.TopTermsBoostOnlyBooleanQueryRewrite(50));
@@ -433,7 +433,7 @@ public class TestSlowFuzzyQuery extends LuceneTestCase {
     addDoc("Brute willis", w);
     addDoc("B. willis", w);
     IndexReader r = w.getReader();
-    w.close();
+    w.shutdown();
 
     Query q = new SlowFuzzyQuery(new Term("field", "giga"), 0.9f);
 
@@ -454,7 +454,7 @@ public class TestSlowFuzzyQuery extends LuceneTestCase {
     addDoc("working", w);
     IndexReader reader = w.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    w.close();
+    w.shutdown();
     
     SlowFuzzyQuery q = new SlowFuzzyQuery(new Term("field", "fouba"), 2);
     ScoreDoc[] hits = searcher.search(q, 10).scoreDocs;

@@ -114,7 +114,7 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
     indexSearcher = newSearcher(directoryReader);
     result = indexSearcher.search(new MatchAllDocsQuery(), 2);
     assertEquals(2, result.totalHits);
-    writer.close();
+    writer.shutdown();
     indexSearcher.getIndexReader().close();
     dir.close();
   }

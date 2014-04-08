@@ -106,7 +106,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
 
     // NRT open
     IndexSearcher searcher = newSearcher(writer.getReader());
-    writer.close();
+    writer.shutdown();
 
     // NRT open
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
@@ -172,7 +172,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
 
     // NRT open
     IndexSearcher searcher = newSearcher(writer.getReader());
-    writer.close();
+    writer.shutdown();
 
     // NRT open
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
@@ -215,7 +215,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
 
     // NRT open
     IndexSearcher searcher = newSearcher(writer.getReader());
-    writer.close();
+    writer.shutdown();
 
     // NRT open
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
@@ -278,8 +278,9 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     
     int expected = (int) (td.getMaxScore() * td.totalHits);
     assertEquals(expected, facets.getSpecificValue("dim", "a").intValue());
-    
-    IOUtils.close(iw, taxoWriter, taxoReader, taxoDir, r, indexDir);
+
+    iw.shutdown();
+    IOUtils.close(taxoWriter, taxoReader, taxoDir, r, indexDir);
   }
   
   public void testNoScore() throws Exception {
@@ -303,8 +304,9 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     newSearcher(r).search(new MatchAllDocsQuery(), sfc);
     Facets facets = new TaxonomyFacetSumValueSource(taxoReader, config, sfc, new LongFieldSource("price"));
     assertEquals("dim=a path=[] value=10.0 childCount=2\n  1 (6.0)\n  0 (4.0)\n", facets.getTopChildren(10, "a").toString());
-    
-    IOUtils.close(taxoWriter, iw, taxoReader, taxoDir, r, indexDir);
+
+    iw.shutdown();
+    IOUtils.close(taxoWriter, taxoReader, taxoDir, r, indexDir);
   }
 
   public void testWithScore() throws Exception {
@@ -354,8 +356,9 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     Facets facets = new TaxonomyFacetSumValueSource(taxoReader, config, fc, valueSource);
     
     assertEquals("dim=a path=[] value=10.0 childCount=2\n  1 (6.0)\n  0 (4.0)\n", facets.getTopChildren(10, "a").toString());
-    
-    IOUtils.close(taxoWriter, iw, taxoReader, taxoDir, r, indexDir);
+
+    iw.shutdown();
+    IOUtils.close(taxoWriter, taxoReader, taxoDir, r, indexDir);
   }
 
   public void testRollupValues() throws Exception {
@@ -384,8 +387,9 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     Facets facets = new TaxonomyFacetSumValueSource(taxoReader, config, sfc, valueSource);
     
     assertEquals("dim=a path=[] value=10.0 childCount=2\n  1 (6.0)\n  0 (4.0)\n", facets.getTopChildren(10, "a").toString());
-    
-    IOUtils.close(taxoWriter, iw, taxoReader, taxoDir, r, indexDir);
+
+    iw.shutdown();
+    IOUtils.close(taxoWriter, taxoReader, taxoDir, r, indexDir);
   }
 
   public void testCountAndSumScore() throws Exception {
@@ -416,7 +420,8 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
 
     assertEquals(r.maxDoc(), facets1.getTopChildren(10, "a").value.intValue());
     assertEquals(r.maxDoc(), facets2.getTopChildren(10, "b").value.doubleValue(), 1E-10);
-    IOUtils.close(taxoWriter, iw, taxoReader, taxoDir, r, indexDir);
+    iw.shutdown();
+    IOUtils.close(taxoWriter, taxoReader, taxoDir, r, indexDir);
   }
 
   public void testRandom() throws Exception {
@@ -512,6 +517,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
       assertFloatValuesEquals(expected, actual);
     }
 
-    IOUtils.close(w, tw, searcher.getIndexReader(), tr, indexDir, taxoDir);
+    w.shutdown();
+    IOUtils.close(tw, searcher.getIndexReader(), tr, indexDir, taxoDir);
   }
 }

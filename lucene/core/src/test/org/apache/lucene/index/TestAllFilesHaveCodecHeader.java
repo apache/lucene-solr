@@ -61,7 +61,7 @@ public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
       //  riw.deleteDocuments(new Term("id", Integer.toString(i)));
       // }
     }
-    riw.close();
+    riw.shutdown();
     checkHeaders(dir);
     dir.close();
   }

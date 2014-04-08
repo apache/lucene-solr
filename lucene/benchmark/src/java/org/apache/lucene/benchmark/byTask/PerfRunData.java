@@ -142,7 +142,10 @@ public class PerfRunData implements Closeable {
   
   @Override
   public void close() throws IOException {
-    IOUtils.close(indexWriter, indexReader, directory, 
+    if (indexWriter != null) {
+      indexWriter.shutdown();
+    }
+    IOUtils.close(indexReader, directory, 
                   taxonomyWriter, taxonomyReader, taxonomyDir, 
                   docMaker, facetSource, contentSource);
     
@@ -160,7 +163,10 @@ public class PerfRunData implements Closeable {
   public void reinit(boolean eraseIndex) throws Exception {
 
     // cleanup index
-    IOUtils.close(indexWriter, indexReader, directory);
+    if (indexWriter != null) {
+      indexWriter.shutdown();
+    }
+    IOUtils.close(indexReader, directory);
     indexWriter = null;
     indexReader = null;
 

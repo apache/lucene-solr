@@ -101,7 +101,7 @@ public class TokenSourcesTest extends LuceneTestCase {
       document.add(new Field(FIELD, new OverlappingTokenStream(), customType));
       indexWriter.addDocument(document);
     } finally {
-      indexWriter.close();
+      indexWriter.shutdown();
     }
     final IndexReader indexReader = DirectoryReader.open(directory);
     assertEquals(1, indexReader.numDocs());
@@ -146,7 +146,7 @@ public class TokenSourcesTest extends LuceneTestCase {
       document.add(new Field(FIELD, new OverlappingTokenStream(), customType));
       indexWriter.addDocument(document);
     } finally {
-      indexWriter.close();
+      indexWriter.shutdown();
     }
     final IndexReader indexReader = DirectoryReader.open(directory);
     try {
@@ -190,7 +190,7 @@ public class TokenSourcesTest extends LuceneTestCase {
       document.add(new Field(FIELD, new OverlappingTokenStream(), customType));
       indexWriter.addDocument(document);
     } finally {
-      indexWriter.close();
+      indexWriter.shutdown();
     }
     final IndexReader indexReader = DirectoryReader.open(directory);
     try {
@@ -234,7 +234,7 @@ public class TokenSourcesTest extends LuceneTestCase {
       document.add(new Field(FIELD, new OverlappingTokenStream(), customType));
       indexWriter.addDocument(document);
     } finally {
-      indexWriter.close();
+      indexWriter.shutdown();
     }
     final IndexReader indexReader = DirectoryReader.open(directory);
     try {
@@ -278,7 +278,7 @@ public class TokenSourcesTest extends LuceneTestCase {
       document.add(new Field(FIELD, new OverlappingTokenStream(), customType));
       indexWriter.addDocument(document);
     } finally {
-      indexWriter.close();
+      indexWriter.shutdown();
     }
     final IndexReader indexReader = DirectoryReader.open(directory);
     try {
@@ -332,7 +332,7 @@ public class TokenSourcesTest extends LuceneTestCase {
     writer.addDocument(doc);
   
     IndexReader reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
     assertEquals(1, reader.numDocs());
 
     for(int i=0;i<2;i++) {

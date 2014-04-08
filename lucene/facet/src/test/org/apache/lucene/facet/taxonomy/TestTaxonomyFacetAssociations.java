@@ -86,7 +86,7 @@ public class TestTaxonomyFacetAssociations extends FacetTestCase {
     
     taxoWriter.close();
     reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
     taxoReader = new DirectoryTaxonomyReader(taxoDir);
   }
   
@@ -182,7 +182,8 @@ public class TestTaxonomyFacetAssociations extends FacetTestCase {
     } catch (IllegalArgumentException exc) {
       // expected
     }
-    IOUtils.close(writer, taxoWriter, dir, taxoDir);
+    writer.shutdown();
+    IOUtils.close(taxoWriter, dir, taxoDir);
   }
 
   public void testNoHierarchy() throws Exception {
@@ -202,7 +203,8 @@ public class TestTaxonomyFacetAssociations extends FacetTestCase {
     } catch (IllegalArgumentException exc) {
       // expected
     }
-    IOUtils.close(writer, taxoWriter, dir, taxoDir);
+    writer.shutdown();
+    IOUtils.close(taxoWriter, dir, taxoDir);
   }
 
   public void testRequireDimCount() throws Exception {
@@ -222,7 +224,8 @@ public class TestTaxonomyFacetAssociations extends FacetTestCase {
     } catch (IllegalArgumentException exc) {
       // expected
     }
-    IOUtils.close(writer, taxoWriter, dir, taxoDir);
+    writer.shutdown();
+    IOUtils.close(taxoWriter, dir, taxoDir);
   }
   
   public void testIntSumAssociationDrillDown() throws Exception {

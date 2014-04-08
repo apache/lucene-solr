@@ -46,7 +46,7 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
             ldmp));
       for(int j=0;j<numDocs;j++)
         writer.addDocument(doc);
-      writer.close();
+      writer.shutdown();
 
       SegmentInfos sis = new SegmentInfos();
       sis.read(dir);
@@ -57,7 +57,7 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
       writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT,
         new MockAnalyzer(random())).setMergePolicy(ldmp));
       writer.forceMerge(3);
-      writer.close();
+      writer.shutdown();
 
       sis = new SegmentInfos();
       sis.read(dir);
@@ -109,7 +109,7 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
       else
         assertEquals("seg: " + segCount, 7, optSegCount);
     }
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
 
@@ -133,7 +133,7 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
     // we see the doc stores get merged
     writer.commit();
     TestIndexWriter.addDocWithIndex(writer, 500);
-    writer.close();
+    writer.shutdown();
 
     if (VERBOSE) {
       System.out.println("TEST: start disk usage");
@@ -152,7 +152,7 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
 
     writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy()));
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
     long maxDiskUsage = dir.getMaxUsedSizeInBytes();
     assertTrue("forceMerge used too much temporary space: starting usage was " + startDiskUsage + " bytes; max temp usage was " + maxDiskUsage + " but should have been " + (4*startDiskUsage) + " (= 4X starting usage)",
                maxDiskUsage <= 4*startDiskUsage);
@@ -161,7 +161,7 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
   
   // Test calling forceMerge(1, false) whereby forceMerge is kicked
   // off but we don't wait for it to finish (but
-  // writer.close()) does wait
+  // writer.shutdown()) does wait
   public void testBackgroundForceMerge() throws IOException {
 
     Directory dir = newDirectory();
@@ -180,7 +180,7 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
       writer.forceMerge(1, false);
 
       if (0 == pass) {
-        writer.close();
+        writer.shutdown();
         DirectoryReader reader = DirectoryReader.open(dir);
         assertEquals(1, reader.leaves().size());
         reader.close();
@@ -189,7 +189,7 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
         // NOT included in the merging
         writer.addDocument(doc);
         writer.addDocument(doc);
-        writer.close();
+        writer.shutdown();
 
         DirectoryReader reader = DirectoryReader.open(dir);
         assertTrue(reader.leaves().size() > 1);

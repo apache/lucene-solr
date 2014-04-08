@@ -338,6 +338,19 @@ public class RandomIndexWriter implements Closeable {
   }
 
   /**
+   * Shuts down this writer
+   * @see IndexWriter#shutdown()
+   */
+  public void shutdown() throws IOException {
+    // if someone isn't using getReader() API, we want to be sure to
+    // forceMerge since presumably they might open a reader on the dir.
+    if (getReaderCalled == false && r.nextInt(8) == 2) {
+      doRandomForceMerge();
+    }
+    w.shutdown();
+  }
+
+  /**
    * Forces a forceMerge.
    * <p>
    * NOTE: this should be avoided in tests unless absolutely necessary,

@@ -633,7 +633,8 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
     assertEquals("index=" + writer.segString() + " addCount=" + addCount + " delCount=" + delCount, addCount.get() - delCount.get(), writer.numDocs());
 
     doClose();
-    writer.close(false);
+
+    writer.shutdown(false);
 
     // Cannot shutdown until after writer is closed because
     // writer has merged segment warmer that uses IS to run

@@ -55,7 +55,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
     addDoc(writer, "lucene release");
 
     reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
     searcher = newSearcher(reader);
   }
   

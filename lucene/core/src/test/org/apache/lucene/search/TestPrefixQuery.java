@@ -60,7 +60,7 @@ public class TestPrefixQuery extends LuceneTestCase {
     assertFalse(query.getTermsEnum(terms) instanceof PrefixTermsEnum);
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("everything", 3, hits.length);
-    writer.close();
+    writer.shutdown();
     reader.close();
     directory.close();
   }

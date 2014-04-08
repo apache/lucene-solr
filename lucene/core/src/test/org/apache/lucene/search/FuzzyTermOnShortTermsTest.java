@@ -92,7 +92,7 @@ public class FuzzyTermOnShortTermsTest extends LuceneTestCase {
          writer.addDocument(d);
             
       }
-      writer.close();
+      writer.shutdown();
       return directory;
    }
 }

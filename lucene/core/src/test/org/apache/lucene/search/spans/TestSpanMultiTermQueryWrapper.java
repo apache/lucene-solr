@@ -54,7 +54,7 @@ public class TestSpanMultiTermQueryWrapper extends LuceneTestCase {
     field.setStringValue("jumps over extremely very lazy broxn dog");
     iw.addDocument(doc);
     reader = iw.getReader();
-    iw.close();
+    iw.shutdown();
     searcher = newSearcher(reader);
   }
   

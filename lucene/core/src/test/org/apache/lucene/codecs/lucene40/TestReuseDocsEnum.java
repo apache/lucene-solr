@@ -71,6 +71,7 @@ public class TestReuseDocsEnum extends LuceneTestCase {
       
       assertEquals(terms.size(), enums.size());
     }
+    writer.commit();
     IOUtils.close(writer, open, dir);
   }
   
@@ -115,7 +116,8 @@ public class TestReuseDocsEnum extends LuceneTestCase {
       }
       assertEquals(1, enums.size());  
     }
-    IOUtils.close(writer, open, dir);
+    writer.shutdown();
+    IOUtils.close(open, dir);
   }
   
   // make sure we never reuse from another reader even if it is the same field & codec etc
@@ -159,7 +161,8 @@ public class TestReuseDocsEnum extends LuceneTestCase {
       }
       assertEquals(terms.size(), enums.size());
     }
-    IOUtils.close(writer, firstReader, secondReader, dir);
+    writer.shutdown();
+    IOUtils.close(firstReader, secondReader, dir);
   }
   
   public DocsEnum randomDocsEnum(String field, BytesRef term, List<AtomicReaderContext> readers, Bits bits) throws IOException {

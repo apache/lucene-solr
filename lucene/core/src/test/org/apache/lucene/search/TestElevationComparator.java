@@ -52,7 +52,7 @@ public class TestElevationComparator extends LuceneTestCase {
     writer.addDocument(adoc(new String[] {"id", "z", "title", "boosted boosted boosted","str_s", "z"}));
 
     IndexReader r = DirectoryReader.open(writer, true);
-    writer.close();
+    writer.shutdown();
 
     IndexSearcher searcher = newSearcher(r);
     searcher.setSimilarity(new DefaultSimilarity());

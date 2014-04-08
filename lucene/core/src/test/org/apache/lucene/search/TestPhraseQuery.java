@@ -79,7 +79,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     writer.addDocument(doc);
 
     reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
 
     searcher = newSearcher(reader);
   }
@@ -220,7 +220,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     doc.add(newTextField("field", "the stop words are here", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
 
     IndexSearcher searcher = newSearcher(reader);
 
@@ -250,7 +250,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     writer.addDocument(doc);
     
     IndexReader reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
     
     IndexSearcher searcher = newSearcher(reader);
     
@@ -288,7 +288,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     writer.addDocument(doc);
 
     reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
     
     searcher = newSearcher(reader);
     
@@ -341,7 +341,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     writer.addDocument(doc3);
     
     IndexReader reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
 
     IndexSearcher searcher = newSearcher(reader);
     searcher.setSimilarity(new DefaultSimilarity());
@@ -644,7 +644,7 @@ public class TestPhraseQuery extends LuceneTestCase {
 
     IndexReader reader = w.getReader();
     IndexSearcher s = newSearcher(reader);
-    w.close();
+    w.shutdown();
 
     // now search
     int num = atLeast(10);

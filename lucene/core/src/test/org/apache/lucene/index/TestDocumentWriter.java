@@ -35,7 +35,6 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
 
 public class TestDocumentWriter extends LuceneTestCase {
   private Directory dir;
@@ -63,7 +62,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.addDocument(testDoc);
     writer.commit();
     SegmentCommitInfo info = writer.newestSegment();
-    writer.close();
+    writer.shutdown();
     //After adding the document, we should be able to read it back in
     SegmentReader reader = new SegmentReader(info, newIOContext(random()));
     assertTrue(reader != null);
@@ -125,7 +124,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.addDocument(doc);
     writer.commit();
     SegmentCommitInfo info = writer.newestSegment();
-    writer.close();
+    writer.shutdown();
     SegmentReader reader = new SegmentReader(info, newIOContext(random()));
 
     DocsAndPositionsEnum termPositions = MultiFields.getTermPositionsEnum(reader, MultiFields.getLiveDocs(reader),
@@ -197,7 +196,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.addDocument(doc);
     writer.commit();
     SegmentCommitInfo info = writer.newestSegment();
-    writer.close();
+    writer.shutdown();
     SegmentReader reader = new SegmentReader(info, newIOContext(random()));
 
     DocsAndPositionsEnum termPositions = MultiFields.getTermPositionsEnum(reader, reader.getLiveDocs(), "f1", new BytesRef("a"));
@@ -240,7 +239,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.addDocument(doc);
     writer.commit();
     SegmentCommitInfo info = writer.newestSegment();
-    writer.close();
+    writer.shutdown();
     SegmentReader reader = new SegmentReader(info, newIOContext(random()));
 
     DocsAndPositionsEnum termPositions = reader.termPositionsEnum(new Term("preanalyzed", "term1"));
@@ -281,7 +280,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     writer.addDocument(doc);
-    writer.close();
+    writer.shutdown();
 
     TestUtil.checkIndex(dir);
 
@@ -322,7 +321,7 @@ public class TestDocumentWriter extends LuceneTestCase {
         TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     writer.addDocument(doc);
     writer.forceMerge(1); // be sure to have a single segment
-    writer.close();
+    writer.shutdown();
 
     TestUtil.checkIndex(dir);
 

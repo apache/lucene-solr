@@ -116,7 +116,7 @@ public class TestGrouping extends LuceneTestCase {
     w.addDocument(doc);
 
     IndexSearcher indexSearcher = newSearcher(w.getReader());
-    w.close();
+    w.shutdown();
 
     final Sort groupSort = Sort.RELEVANCE;
 
@@ -592,7 +592,7 @@ public class TestGrouping extends LuceneTestCase {
     }
 
     final DirectoryReader r = w.getReader();
-    w.close();
+    w.shutdown();
 
     return r;
   }
@@ -740,7 +740,7 @@ public class TestGrouping extends LuceneTestCase {
       System.arraycopy(groupDocs, 0, groupDocsByID, 0, groupDocs.length);
 
       final DirectoryReader r = w.getReader();
-      w.close();
+      w.shutdown();
 
       // NOTE: intentional but temporary field cache insanity!
       final FieldCache.Ints docIDToID = FieldCache.DEFAULT.getInts(SlowCompositeReaderWrapper.wrap(r), "id", false);

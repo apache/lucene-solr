@@ -195,7 +195,7 @@ public class Test2BTerms extends LuceneTestCase {
       System.out.println("TEST: full merge");
       w.forceMerge(1);
       System.out.println("TEST: close writer");
-      w.close();
+      w.shutdown();
     }
 
     System.out.println("TEST: open reader");

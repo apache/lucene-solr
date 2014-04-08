@@ -242,7 +242,8 @@ public class TestDrillSideways extends FacetTestCase {
     assertEquals(0, r.hits.totalHits);
     assertNull(r.facets.getTopChildren(10, "Publish Date"));
     assertNull(r.facets.getTopChildren(10, "Author"));
-    IOUtils.close(searcher.getIndexReader(), taxoReader, writer, taxoWriter, dir, taxoDir);
+    writer.shutdown();
+    IOUtils.close(searcher.getIndexReader(), taxoReader, taxoWriter, dir, taxoDir);
   }
 
   public void testSometimesInvalidDrillDown() throws Exception {
@@ -296,7 +297,8 @@ public class TestDrillSideways extends FacetTestCase {
     // published once:
     assertEquals("dim=Author path=[] value=2 childCount=2\n  Bob (1)\n  Lisa (1)\n", r.facets.getTopChildren(10, "Author").toString());
 
-    IOUtils.close(searcher.getIndexReader(), taxoReader, writer, taxoWriter, dir, taxoDir);
+    writer.shutdown();
+    IOUtils.close(searcher.getIndexReader(), taxoReader, taxoWriter, dir, taxoDir);
   }
 
   public void testMultipleRequestsPerDim() throws Exception {
@@ -351,7 +353,8 @@ public class TestDrillSideways extends FacetTestCase {
     assertEquals("dim=dim path=[] value=6 childCount=4\n  a (3)\n  b (1)\n  c (1)\n  d (1)\n", r.facets.getTopChildren(10, "dim").toString());
     assertEquals("dim=dim path=[a] value=3 childCount=3\n  x (1)\n  y (1)\n  z (1)\n", r.facets.getTopChildren(10, "dim", "a").toString());
 
-    IOUtils.close(searcher.getIndexReader(), taxoReader, writer, taxoWriter, dir, taxoDir);
+    writer.shutdown();
+    IOUtils.close(searcher.getIndexReader(), taxoReader, taxoWriter, dir, taxoDir);
   }
 
   private static class Doc implements Comparable<Doc> {
@@ -755,7 +758,8 @@ public class TestDrillSideways extends FacetTestCase {
       }
     }
 
-    IOUtils.close(r, tr, w, tw, d, td);
+    w.shutdown();
+    IOUtils.close(r, tr, tw, d, td);
   }
 
   private static class Counters {
@@ -1061,8 +1065,9 @@ public class TestDrillSideways extends FacetTestCase {
 
     r = ds.search(ddq, null, null, 10, new Sort(new SortField("foo", SortField.Type.INT)), false, false); // this used to fail on IllegalArgEx
     assertEquals(0, r.hits.totalHits);
-    
-    IOUtils.close(writer, taxoWriter, searcher.getIndexReader(), taxoReader, dir, taxoDir);
+
+    writer.shutdown();
+    IOUtils.close(taxoWriter, searcher.getIndexReader(), taxoReader, dir, taxoDir);
   }
 }
 

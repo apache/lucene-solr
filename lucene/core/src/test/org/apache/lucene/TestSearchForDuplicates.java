@@ -84,7 +84,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
         d.add(new IntField(ID_FIELD, j, Field.Store.YES));
         writer.addDocument(d);
       }
-      writer.close();
+      writer.shutdown();
 
       // try a search without OR
       IndexReader reader = DirectoryReader.open(directory);

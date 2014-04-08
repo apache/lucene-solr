@@ -62,7 +62,7 @@ public abstract class BaseMergePolicyTestCase extends LuceneTestCase {
       mayMerge.set(segmentCount > maxNumSegments);
       writer.forceMerge(maxNumSegments);
     }
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
   

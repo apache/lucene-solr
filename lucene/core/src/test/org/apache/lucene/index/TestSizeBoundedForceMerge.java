@@ -64,7 +64,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
       int numDocs = i == 7 ? 30 : 1;
       addDocs(writer, numDocs);
     }
-    writer.close();
+    writer.shutdown();
 
     SegmentInfos sis = new SegmentInfos();
     sis.read(dir);
@@ -77,7 +77,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     
     writer = new IndexWriter(dir, conf);
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
 
     // Should only be 3 segments in the index, because one of them exceeds the size limit
     sis = new SegmentInfos();
@@ -101,7 +101,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     addDocs(writer, 3);
     addDocs(writer, 3);
     
-    writer.close();
+    writer.shutdown();
 
     conf = newWriterConfig();
     LogMergePolicy lmp = new LogDocMergePolicy();
@@ -110,7 +110,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     
     writer = new IndexWriter(dir, conf);
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
 
     // Should only be 3 segments in the index, because one of them exceeds the size limit
     SegmentInfos sis = new SegmentInfos();
@@ -129,7 +129,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     addDocs(writer, 3);
     addDocs(writer, 5);
     
-    writer.close();
+    writer.shutdown();
 
     conf = newWriterConfig();
     LogMergePolicy lmp = new LogDocMergePolicy();
@@ -138,7 +138,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     
     writer = new IndexWriter(dir, conf);
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
 
     SegmentInfos sis = new SegmentInfos();
     sis.read(dir);
@@ -156,7 +156,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     addDocs(writer, 3);
     addDocs(writer, 3);
     
-    writer.close();
+    writer.shutdown();
     
     conf = newWriterConfig();
     LogMergePolicy lmp = new LogDocMergePolicy();
@@ -165,7 +165,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     
     writer = new IndexWriter(dir, conf);
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
     
     SegmentInfos sis = new SegmentInfos();
     sis.read(dir);
@@ -183,7 +183,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     addDocs(writer, 3);
     addDocs(writer, 3);
     
-    writer.close();
+    writer.shutdown();
     
     conf = newWriterConfig();
     LogMergePolicy lmp = new LogDocMergePolicy();
@@ -192,7 +192,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     
     writer = new IndexWriter(dir, conf);
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
     
     SegmentInfos sis = new SegmentInfos();
     sis.read(dir);
@@ -209,7 +209,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     addDocs(writer, 3);
     addDocs(writer, 3);
     
-    writer.close();
+    writer.shutdown();
     
     conf = newWriterConfig();
     LogMergePolicy lmp = new LogDocMergePolicy();
@@ -218,7 +218,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     
     writer = new IndexWriter(dir, conf);
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
     
     SegmentInfos sis = new SegmentInfos();
     sis.read(dir);
@@ -236,7 +236,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     addDocs(writer, 3);
     addDocs(writer, 5);
     
-    writer.close();
+    writer.shutdown();
     
     conf = newWriterConfig();
     LogMergePolicy lmp = new LogDocMergePolicy();
@@ -245,7 +245,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     
     writer = new IndexWriter(dir, conf);
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
     
     SegmentInfos sis = new SegmentInfos();
     sis.read(dir);
@@ -266,7 +266,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     addDocs(writer, 3);
     addDocs(writer, 3);
     
-    writer.close();
+    writer.shutdown();
     
     conf = newWriterConfig();
     LogMergePolicy lmp = new LogDocMergePolicy();
@@ -276,7 +276,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     
     writer = new IndexWriter(dir, conf);
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
     
     // Should only be 4 segments in the index, because of the merge factor and
     // max merge docs settings.
@@ -297,7 +297,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     
     // delete the last document, so that the last segment is merged.
     writer.deleteDocuments(new Term("id", "10"));
-    writer.close();
+    writer.shutdown();
     
     conf = newWriterConfig();
     LogMergePolicy lmp = new LogDocMergePolicy();
@@ -306,7 +306,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     
     writer = new IndexWriter(dir, conf);
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
     
     // Verify that the last segment does not have deletions.
     SegmentInfos sis = new SegmentInfos();
@@ -323,7 +323,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     
     addDocs(writer, 3, true);
     
-    writer.close();
+    writer.shutdown();
     
     conf = newWriterConfig();
     LogMergePolicy lmp = new LogDocMergePolicy();
@@ -332,7 +332,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     
     writer = new IndexWriter(dir, conf);
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
     
     // Verify that the last segment does not have deletions.
     SegmentInfos sis = new SegmentInfos();
@@ -351,7 +351,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     // delete the last document
     
     writer.deleteDocuments(new Term("id", "4"));
-    writer.close();
+    writer.shutdown();
     
     conf = newWriterConfig();
     LogMergePolicy lmp = new LogDocMergePolicy();
@@ -360,7 +360,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     
     writer = new IndexWriter(dir, conf);
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
     
     // Verify that the last segment does not have deletions.
     SegmentInfos sis = new SegmentInfos();

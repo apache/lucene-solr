@@ -76,7 +76,7 @@ public class TestNumericRangeFilterBuilder extends LuceneTestCase {
     }
     finally {
       writer.commit();
-      writer.close();
+      writer.shutdown();
       ramDir.close();
     }
   }

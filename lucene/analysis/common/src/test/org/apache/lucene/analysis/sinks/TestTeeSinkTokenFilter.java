@@ -104,7 +104,7 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
     doc.add(f1);
     doc.add(f2);
     w.addDocument(doc);
-    w.close();
+    w.shutdown();
 
     IndexReader r = DirectoryReader.open(dir);
     Terms vector = r.getTermVectors(0).terms("field");

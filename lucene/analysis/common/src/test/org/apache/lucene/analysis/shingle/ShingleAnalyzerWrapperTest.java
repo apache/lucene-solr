@@ -73,7 +73,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
     doc.add(new TextField("content", "a sentence which contains no test", Field.Store.YES));
     writer.addDocument(doc);
 
-    writer.close();
+    writer.shutdown();
 
     reader = DirectoryReader.open(directory);
     searcher = newSearcher(reader);

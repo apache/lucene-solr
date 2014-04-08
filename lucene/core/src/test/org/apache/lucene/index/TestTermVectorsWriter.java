@@ -55,7 +55,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     doc.add(f2);
     doc.add(f);
     w.addDocument(doc);
-    w.close();
+    w.shutdown();
 
     IndexReader r = DirectoryReader.open(dir);
     Terms vector = r.getTermVectors(0).terms("field");
@@ -111,7 +111,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     doc.add(f);
     doc.add(f);
     w.addDocument(doc);
-    w.close();
+    w.shutdown();
 
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
@@ -146,7 +146,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     doc.add(f);
     doc.add(f);
     w.addDocument(doc);
-    w.close();
+    w.shutdown();
 
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
@@ -186,7 +186,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
       doc.add(f);
       w.addDocument(doc);
     }
-    w.close();
+    w.shutdown();
 
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
@@ -222,7 +222,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     doc.add(f);
     doc.add(f);
     w.addDocument(doc);
-    w.close();
+    w.shutdown();
 
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
@@ -259,7 +259,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     doc.add(f);
     doc.add(f2);
     w.addDocument(doc);
-    w.close();
+    w.shutdown();
 
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
@@ -304,7 +304,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     doc.add(f);
     doc.add(f2);
     w.addDocument(doc);
-    w.close();
+    w.shutdown();
 
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
@@ -347,7 +347,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     doc.add(f2);
 
     w.addDocument(doc);
-    w.close();
+    w.shutdown();
 
     IndexReader r = DirectoryReader.open(dir);
     TermsEnum termsEnum = r.getTermVectors(0).terms("field").iterator(null);
@@ -404,7 +404,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
       document.add(termVectorField);
       writer.addDocument(document);
       writer.forceMerge(1);
-      writer.close();
+      writer.shutdown();
 
       IndexReader reader = DirectoryReader.open(dir);
       for(int i=0;i<reader.numDocs();i++) {
@@ -422,7 +422,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
       Directory[] indexDirs = {new MockDirectoryWrapper(random(), new RAMDirectory(dir, newIOContext(random())))};
       writer.addIndexes(indexDirs);
       writer.forceMerge(1);
-      writer.close();
+      writer.shutdown();
     }
     dir.close();
   }
@@ -458,7 +458,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
       document.add(termVectorField);
       writer.addDocument(document);
       writer.forceMerge(1);
-      writer.close();
+      writer.shutdown();
 
       IndexReader reader = DirectoryReader.open(dir);
       assertNull(reader.getTermVectors(0));
@@ -492,7 +492,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     document.add(termVectorField);
     for(int i=0;i<10;i++)
       writer.addDocument(document);
-    writer.close();
+    writer.shutdown();
 
     writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT,
         new MockAnalyzer(random())).setMaxBufferedDocs(2)
@@ -503,7 +503,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
       writer.addDocument(document);
 
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
 
     IndexReader reader = DirectoryReader.open(dir);
     for(int i=0;i<10;i++) {
@@ -540,7 +540,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     iw.commit();
 
     iw.forceMerge(1);
-    iw.close();
+    iw.shutdown();
     dir.close();
   }
 
@@ -572,7 +572,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     iw.commit();
     iw.forceMerge(1);
 
-    iw.close();
+    iw.shutdown();
     dir.close();
   }
 }

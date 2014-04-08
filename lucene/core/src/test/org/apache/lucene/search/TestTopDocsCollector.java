@@ -112,7 +112,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
       writer.addDocument(new Document());
     }
     reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
   }
   
   @Override

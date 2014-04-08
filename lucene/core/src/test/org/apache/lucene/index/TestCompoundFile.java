@@ -820,7 +820,7 @@ public class TestCompoundFile extends LuceneTestCase
         riw.commit();
       }
     }
-    riw.close();
+    riw.shutdown();
     checkFiles(dir);
     dir.close();
   }

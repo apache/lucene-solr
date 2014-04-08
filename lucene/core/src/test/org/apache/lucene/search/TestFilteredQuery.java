@@ -87,7 +87,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     writer.forceMerge(1);
 
     reader = writer.getReader();
-    writer.close ();
+    writer.shutdown();
 
     searcher = newSearcher(reader);
 
@@ -415,7 +415,7 @@ public class TestFilteredQuery extends LuceneTestCase {
       writer.addDocument(doc);
     }
     IndexReader reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
     
     IndexSearcher searcher = newSearcher(reader);
     Query query = new FilteredQuery(new TermQuery(new Term("field", "0")),
@@ -471,9 +471,8 @@ public class TestFilteredQuery extends LuceneTestCase {
         }, FilteredQuery.QUERY_FIRST_FILTER_STRATEGY);
     
     TopDocs search = searcher.search(query, 10);
-    assertEquals(totalDocsWithZero, search.totalHits);
-    IOUtils.close(reader, writer, directory);
-    
+    assertEquals(totalDocsWithZero, search.totalHits);  
+    IOUtils.close(reader, directory);
   }
   
   /*
@@ -495,7 +494,7 @@ public class TestFilteredQuery extends LuceneTestCase {
       writer.addDocument (doc);  
     }
     IndexReader reader = writer.getReader();
-    writer.close ();
+    writer.shutdown();
     final boolean queryFirst = random().nextBoolean();
     IndexSearcher searcher = newSearcher(reader);
     Query query = new FilteredQuery(new TermQuery(new Term("field", "0")), new Filter() {
@@ -551,8 +550,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     
     TopDocs search = searcher.search(query, 10);
     assertEquals(totalDocsWithZero, search.totalHits);
-    IOUtils.close(reader, writer, directory);
-     
+    IOUtils.close(reader, directory);
   }
 }
 

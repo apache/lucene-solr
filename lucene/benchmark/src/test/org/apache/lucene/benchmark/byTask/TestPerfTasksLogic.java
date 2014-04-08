@@ -106,7 +106,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(),
         new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
             .setOpenMode(OpenMode.APPEND));
-    iw.close();
+    iw.shutdown();
     IndexReader ir = DirectoryReader.open(benchmark.getRunData().getDirectory());
     assertEquals("1000 docs were added to the index, this is what we expect to find!",1000,ir.numDocs());
     ir.close();
@@ -197,7 +197,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     assertTrue("Index does not exist?...!", DirectoryReader.indexExists(benchmark.getRunData().getDirectory()));
     // now we should be able to open the index for write.
     IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
-    iw.close();
+    iw.shutdown();
     IndexReader ir = DirectoryReader.open(benchmark.getRunData().getDirectory());
     assertEquals("100 docs were added to the index, this is what we expect to find!",100,ir.numDocs());
     ir.close();
@@ -237,7 +237,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     assertTrue("Index does not exist?...!", DirectoryReader.indexExists(benchmark.getRunData().getDirectory()));
     // now we should be able to open the index for write.
     IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
-    iw.close();
+    iw.shutdown();
     IndexReader ir = DirectoryReader.open(benchmark.getRunData().getDirectory());
     assertEquals("1000 docs were added to the index, this is what we expect to find!",1000,ir.numDocs());
     ir.close();
@@ -310,7 +310,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     assertTrue("Index does not exist?...!", DirectoryReader.indexExists(benchmark.getRunData().getDirectory()));
     // now we should be able to open the index for write. 
     IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
-    iw.close();
+    iw.shutdown();
     IndexReader ir = DirectoryReader.open(benchmark.getRunData().getDirectory());
     assertEquals("1 docs were added to the index, this is what we expect to find!",1,ir.numDocs());
     ir.close();
@@ -442,7 +442,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(),
         new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
             .setOpenMode(OpenMode.APPEND));
-    iw.close();
+    iw.shutdown();
 
     IndexReader ir = DirectoryReader.open(benchmark.getRunData().getDirectory());
     assertEquals(numLines + " lines were created but " + ir.numDocs() + " docs are in the index", numLines, ir.numDocs());
@@ -665,7 +665,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     assertTrue("did not use the specified MergeScheduler",
         ((MyMergeScheduler) benchmark.getRunData().getIndexWriter().getConfig()
             .getMergeScheduler()).called);
-    benchmark.getRunData().getIndexWriter().close();
+    benchmark.getRunData().getIndexWriter().shutdown();
 
     // 3. test number of docs in the index
     IndexReader ir = DirectoryReader.open(benchmark.getRunData().getDirectory());
@@ -711,7 +711,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     // 2. execute the algorithm  (required in every "logic" test)
     Benchmark benchmark = execBenchmark(algLines);
     assertTrue("did not use the specified MergePolicy", ((MyMergePolicy) benchmark.getRunData().getIndexWriter().getConfig().getMergePolicy()).called);
-    benchmark.getRunData().getIndexWriter().close();
+    benchmark.getRunData().getIndexWriter().shutdown();
     
     // 3. test number of docs in the index
     IndexReader ir = DirectoryReader.open(benchmark.getRunData().getDirectory());
@@ -756,7 +756,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     assertEquals(IndexWriterConfig.DISABLE_AUTO_FLUSH, (int) writer.getConfig().getRAMBufferSizeMB());
     assertEquals(3, ((LogMergePolicy) writer.getConfig().getMergePolicy()).getMergeFactor());
     assertEquals(0.0d, writer.getConfig().getMergePolicy().getNoCFSRatio(), 0.0);
-    writer.close();
+    writer.shutdown();
     Directory dir = benchmark.getRunData().getDirectory();
     IndexReader reader = DirectoryReader.open(dir);
     Fields tfv = reader.getTermVectors(0);

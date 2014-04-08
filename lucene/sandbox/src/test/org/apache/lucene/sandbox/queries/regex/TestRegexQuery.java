@@ -50,7 +50,7 @@ public class TestRegexQuery extends LuceneTestCase {
     doc.add(newTextField(FN, "the quick brown fox jumps over the lazy dog", Field.Store.NO));
     writer.addDocument(doc);
     reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
     searcher = newSearcher(reader);
   }
 

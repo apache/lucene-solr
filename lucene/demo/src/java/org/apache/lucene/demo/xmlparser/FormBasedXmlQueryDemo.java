@@ -155,7 +155,7 @@ public class FormBasedXmlQueryDemo extends HttpServlet {
       }
       line = br.readLine();
     }
-    writer.close();
+    writer.shutdown();
 
     //open searcher
     // this example never closes it reader!

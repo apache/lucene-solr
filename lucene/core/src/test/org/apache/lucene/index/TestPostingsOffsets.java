@@ -80,7 +80,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
 
     w.addDocument(doc);
     IndexReader r = w.getReader();
-    w.close();
+    w.shutdown();
 
     DocsAndPositionsEnum dp = MultiFields.getTermPositionsEnum(r, null, "content", new BytesRef("a"));
     assertNotNull(dp);
@@ -149,7 +149,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     }
     
     IndexReader reader = w.getReader();
-    w.close();
+    w.shutdown();
     
     String terms[] = { "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "hundred" };
     
@@ -285,7 +285,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
       w.addDocument(doc);
     }
     final DirectoryReader r = w.getReader();
-    w.close();
+    w.shutdown();
 
     final String[] terms = new String[] {"a", "b", "c", "d"};
     for(AtomicReaderContext ctx : r.leaves()) {
@@ -382,7 +382,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     assertEquals(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS, fis.fieldInfo("foo").getIndexOptions());
     slow.close();
     ir.close();
-    riw.close();
+    riw.shutdown();
     dir.close();
   }
   
@@ -398,7 +398,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     doc.add(new Field("content3", "here is more content with aaa aaa aaa", customType3));
     doc.add(new Field("content3", "here is more content with aaa aaa aaa", customType3));
     iw.addDocument(doc);
-    iw.close();
+    iw.shutdown();
     dir.close(); // checkindex
   }
   
@@ -467,7 +467,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     Field field = new Field("foo", tokenStream, ft);
     doc.add(field);
     iw.addDocument(doc);
-    iw.close();
+    iw.shutdown();
     dir.close();
   }
   // TODO: more tests with other possibilities
@@ -487,10 +487,11 @@ public class TestPostingsOffsets extends LuceneTestCase {
       Document doc = new Document();
       doc.add(new Field("body", new CannedTokenStream(tokens), ft));
       riw.addDocument(doc);
+      riw.shutdown();
       success = true;
     } finally {
       if (success) {
-        IOUtils.close(riw, dir);
+        IOUtils.close(dir);
       } else {
         IOUtils.closeWhileHandlingException(riw, dir);
       }

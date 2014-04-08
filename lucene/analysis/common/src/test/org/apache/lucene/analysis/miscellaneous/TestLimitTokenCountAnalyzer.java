@@ -78,7 +78,7 @@ public class TestLimitTokenCountAnalyzer extends BaseTokenStreamTestCase {
       b.append(" z");
       doc.add(newTextField("field", b.toString(), Field.Store.NO));
       writer.addDocument(doc);
-      writer.close();
+      writer.shutdown();
       
       IndexReader reader = DirectoryReader.open(dir);
       Term t = new Term("field", "x");

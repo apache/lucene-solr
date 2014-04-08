@@ -533,12 +533,15 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
           throw new RuntimeException("some thread(s) failed");
         }
       }
+      if (iw != null) {
+        iw.shutdown();
+      }
       success = true;
     } finally {
       if (success) {
-        IOUtils.close(iw, dir);
+        IOUtils.close(dir);
       } else {
-        IOUtils.closeWhileHandlingException(iw, dir); // checkindex
+        IOUtils.closeWhileHandlingException(dir); // checkindex
       }
     }
   }

@@ -81,7 +81,7 @@ public class TestCrashCausesCorruptIndex extends LuceneTestCase  {
       // expected
     }
     // writes segments_3
-    indexWriter.close();
+    indexWriter.shutdown();
     assertFalse(slowFileExists(realDirectory, "segments_2"));
     crashAfterCreateOutput.close();
   }
@@ -101,7 +101,7 @@ public class TestCrashCausesCorruptIndex extends LuceneTestCase  {
     // currently the test fails above.
     // however, to test the fix, the following lines should pass as well.
     indexWriter.addDocument(getDocument());
-    indexWriter.close();
+    indexWriter.shutdown();
     assertFalse(slowFileExists(realDirectory, "segments_2"));
     realDirectory.close();
   }

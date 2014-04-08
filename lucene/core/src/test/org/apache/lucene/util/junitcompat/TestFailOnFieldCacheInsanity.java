@@ -48,7 +48,7 @@ public class TestFailOnFieldCacheInsanity extends WithNestedTests {
       w.addDocument(doc);
       w.forceMerge(1);
       r = w.getReader();
-      w.close();
+      w.shutdown();
 
       subR = r.leaves().get(0).reader();
     }

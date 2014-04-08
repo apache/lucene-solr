@@ -68,7 +68,8 @@ public class TestFacetsConfig extends FacetTestCase {
     // these two addDocument() used to fail
     indexWriter.addDocument(doc);
     indexWriter.addDocument(doc);
-    IOUtils.close(indexWriter, taxoWriter);
+    indexWriter.shutdown();
+    IOUtils.close(taxoWriter);
     
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);

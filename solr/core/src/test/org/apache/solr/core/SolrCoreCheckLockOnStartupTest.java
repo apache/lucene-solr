@@ -45,7 +45,7 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
     new IndexWriter(
         directory,
         indexWriterConfig.setOpenMode(IndexWriterConfig.OpenMode.CREATE)
-    ).close();
+    ).shutdown();
     directory.close();
   }
 
@@ -67,7 +67,7 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
     } finally {
       System.clearProperty("solr.tests.lockType");
       unIgnoreException("locked");
-      indexWriter.close();
+      indexWriter.shutdown();
       directory.close();
       deleteCore();
     }
@@ -94,7 +94,7 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
     } finally {
       System.clearProperty("solr.tests.lockType");
       unIgnoreException("locked");
-      indexWriter.close();
+      indexWriter.shutdown();
       directory.close();
       deleteCore();
     }

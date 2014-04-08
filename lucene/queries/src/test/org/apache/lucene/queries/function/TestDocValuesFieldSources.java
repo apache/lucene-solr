@@ -91,7 +91,7 @@ public class TestDocValuesFieldSources extends LuceneTestCase {
         iw.commit();
       }
     }
-    iw.close();
+    iw.shutdown();
 
     DirectoryReader rd = DirectoryReader.open(d);
     for (AtomicReaderContext leave : rd.leaves()) {

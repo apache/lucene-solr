@@ -65,7 +65,7 @@ public class TestAutomatonQuery extends LuceneTestCase {
     writer.addDocument(doc);
     reader = writer.getReader();
     searcher = newSearcher(reader);
-    writer.close();
+    writer.shutdown();
   }
   
   @Override

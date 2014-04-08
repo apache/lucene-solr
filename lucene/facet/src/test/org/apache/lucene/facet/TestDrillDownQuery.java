@@ -110,7 +110,7 @@ public class TestDrillDownQuery extends FacetTestCase {
     
     taxoWriter.close();
     reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
     
     taxo = new DirectoryTaxonomyReader(taxoDir);
   }

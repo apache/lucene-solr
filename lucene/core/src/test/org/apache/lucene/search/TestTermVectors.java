@@ -76,7 +76,7 @@ public class TestTermVectors extends LuceneTestCase {
       writer.addDocument(doc);
     }
     reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
   }
   
   @AfterClass
@@ -118,7 +118,7 @@ public class TestTermVectors extends LuceneTestCase {
     doc.add(newField("field", "one", ft5));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
 
     IndexSearcher searcher = newSearcher(reader);
 
@@ -164,7 +164,7 @@ public class TestTermVectors extends LuceneTestCase {
   private void createDir(Directory dir) throws IOException {
     IndexWriter writer = createWriter(dir);
     writer.addDocument(createDoc());
-    writer.close();
+    writer.shutdown();
   }
 
   private Document createDoc() {
@@ -195,7 +195,7 @@ public class TestTermVectors extends LuceneTestCase {
       writer.addDocument(createDoc());
     }
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
     
     verifyIndex(target);
     target.close();
@@ -212,7 +212,7 @@ public class TestTermVectors extends LuceneTestCase {
     IndexWriter writer = createWriter(target);
     writer.addIndexes(input);
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
 
     verifyIndex(target);
 
@@ -234,7 +234,7 @@ public class TestTermVectors extends LuceneTestCase {
       r.close();
     }
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
     
     verifyIndex(target);
     IOUtils.close(target, input[0], input[1]);

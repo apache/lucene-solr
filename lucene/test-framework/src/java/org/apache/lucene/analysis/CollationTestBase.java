@@ -70,7 +70,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
     doc.add(new TextField("content", "\u0633\u0627\u0628", Field.Store.YES));
     doc.add(new StringField("body", "body", Field.Store.YES));
     writer.addDocument(doc);
-    writer.close();
+    writer.shutdown();
     IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = new IndexSearcher(reader);
     Query query = new TermQuery(new Term("body","body"));
@@ -106,7 +106,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
     // Collator (or an Arabic one for the case when Farsi is not supported).
     doc.add(new TextField("content", "\u0633\u0627\u0628", Field.Store.YES));
     writer.addDocument(doc);
-    writer.close();
+    writer.shutdown();
     IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = new IndexSearcher(reader);
 
@@ -131,7 +131,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
     doc.add(new TextField("content", "\u0633\u0627\u0628", Field.Store.YES));
     doc.add(new StringField("body", "body", Field.Store.YES));
     writer.addDocument(doc);
-    writer.close();
+    writer.shutdown();
 
     IndexReader reader = DirectoryReader.open(farsiIndex);
     IndexSearcher search = newSearcher(reader);
@@ -208,7 +208,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
       writer.addDocument(doc);
     }
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
     IndexReader reader = DirectoryReader.open(indexStore);
     IndexSearcher searcher = new IndexSearcher(reader);
 

@@ -109,7 +109,7 @@ public class DistanceFacetsExample implements Closeable {
 
     // Open near-real-time searcher
     searcher = new IndexSearcher(DirectoryReader.open(writer, true));
-    writer.close();
+    writer.shutdown();
   }
 
   private ValueSource getDistanceValueSource() {

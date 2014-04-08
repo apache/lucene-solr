@@ -219,7 +219,7 @@ public class TestSort extends SolrTestCaseJ4 {
           iw.commit();
         }
       }
-      iw.close();
+      iw.shutdown();
 
 
       DirectoryReader reader = DirectoryReader.open(dir);

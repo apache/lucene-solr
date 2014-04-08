@@ -297,7 +297,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
       iw.addDocument(doc);
     }
     iw.forceMerge(1);
-    iw.close();
+    iw.shutdown();
     dir.close();
     indexDir.mkdirs();
     spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());

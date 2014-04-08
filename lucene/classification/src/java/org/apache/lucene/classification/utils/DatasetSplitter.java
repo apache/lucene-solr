@@ -128,9 +128,9 @@ public class DatasetSplitter {
       cvWriter.commit();
       trainingWriter.commit();
       // close IWs
-      testWriter.close();
-      cvWriter.close();
-      trainingWriter.close();
+      testWriter.shutdown();
+      cvWriter.shutdown();
+      trainingWriter.shutdown();
     }
   }
 

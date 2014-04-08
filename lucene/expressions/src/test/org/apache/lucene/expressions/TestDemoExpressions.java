@@ -75,7 +75,7 @@ public class  TestDemoExpressions extends LuceneTestCase {
     
     reader = iw.getReader();
     searcher = new IndexSearcher(reader);
-    iw.close();
+    iw.shutdown();
   }
   
   @Override

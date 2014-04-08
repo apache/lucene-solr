@@ -70,7 +70,7 @@ public class TestWordBreakSpellChecker extends LuceneTestCase {
     }
     
     writer.commit();
-    writer.close();
+    writer.shutdown();
   }
   
   @Override
@@ -300,7 +300,7 @@ public class TestWordBreakSpellChecker extends LuceneTestCase {
         writer.addDocument(doc);
       }
       writer.commit();
-      writer.close();
+      writer.shutdown();
       
       ir = DirectoryReader.open(dir);
       WordBreakSpellChecker wbsp = new WordBreakSpellChecker();
@@ -352,7 +352,7 @@ public class TestWordBreakSpellChecker extends LuceneTestCase {
         ir.close();
       } catch (Exception e1) {}
       try {
-        writer.close();
+        writer.shutdown();
       } catch (Exception e1) {}
       try {
         dir.close();

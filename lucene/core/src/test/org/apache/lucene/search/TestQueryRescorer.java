@@ -64,7 +64,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     doc.add(newTextField("field", "wizard oz the the the the the the", Field.Store.NO));
     w.addDocument(doc);
     IndexReader r = w.getReader();
-    w.close();
+    w.shutdown();
 
     // Do ordinary BooleanQuery:
     BooleanQuery bq = new BooleanQuery();
@@ -121,7 +121,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     doc.add(newTextField("field", "wizard oz the the the the the the", Field.Store.NO));
     w.addDocument(doc);
     IndexReader r = w.getReader();
-    w.close();
+    w.shutdown();
 
     // Do ordinary BooleanQuery:
     BooleanQuery bq = new BooleanQuery();
@@ -175,7 +175,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     doc.add(newTextField("field", "wizard oz the the the the the the", Field.Store.NO));
     w.addDocument(doc);
     IndexReader r = w.getReader();
-    w.close();
+    w.shutdown();
 
     // Do ordinary BooleanQuery:
     BooleanQuery bq = new BooleanQuery();
@@ -253,7 +253,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     doc.add(newTextField("field", "wizard oz the the the the the the", Field.Store.NO));
     w.addDocument(doc);
     IndexReader r = w.getReader();
-    w.close();
+    w.shutdown();
 
     // Do ordinary BooleanQuery:
     BooleanQuery bq = new BooleanQuery();
@@ -315,7 +315,7 @@ public class TestQueryRescorer extends LuceneTestCase {
       w.addDocument(doc);
     }
     final IndexReader r = w.getReader();
-    w.close();
+    w.shutdown();
 
     IndexSearcher s = newSearcher(r);
     int numHits = TestUtil.nextInt(random(), 1, numDocs);

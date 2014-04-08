@@ -68,7 +68,7 @@ public class Test2BSortedDocValues extends LuceneTestCase {
     }
     
     w.forceMerge(1);
-    w.close();
+    w.shutdown();
     
     System.out.println("verifying...");
     System.out.flush();
@@ -127,7 +127,7 @@ public class Test2BSortedDocValues extends LuceneTestCase {
     }
     
     w.forceMerge(1);
-    w.close();
+    w.shutdown();
     
     System.out.println("verifying...");
     System.out.flush();

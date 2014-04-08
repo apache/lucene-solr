@@ -169,7 +169,7 @@ public final class IndexUpgrader {
         infoStream.message("IndexUpgrader", "All segments upgraded to version " + Constants.LUCENE_MAIN_VERSION);
       }
     } finally {
-      w.close();
+      w.shutdown();
     }
   }
   

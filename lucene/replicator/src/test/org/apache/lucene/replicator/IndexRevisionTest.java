@@ -47,7 +47,8 @@ public class IndexRevisionTest extends ReplicatorTestCase {
     } catch (IllegalArgumentException e) {
       // expected
     } finally {
-      IOUtils.close(writer, dir);
+      writer.shutdown();
+      IOUtils.close(dir);
     }
   }
   
@@ -63,7 +64,8 @@ public class IndexRevisionTest extends ReplicatorTestCase {
     } catch (IllegalStateException e) {
       // expected
     } finally {
-      IOUtils.close(writer, dir);
+      writer.shutdown();
+      IOUtils.close(dir);
     }
   }
   
@@ -87,8 +89,9 @@ public class IndexRevisionTest extends ReplicatorTestCase {
       assertNotNull(new IndexRevision(writer));
       rev1.release(); // this release should trigger the delete of segments_1
       assertFalse(slowFileExists(dir, IndexFileNames.SEGMENTS + "_1"));
+      writer.shutdown();
     } finally {
-      IOUtils.close(writer, dir);
+      IOUtils.close(dir);
     }
   }
   
@@ -108,8 +111,9 @@ public class IndexRevisionTest extends ReplicatorTestCase {
       List<RevisionFile> files = sourceFiles.values().iterator().next();
       String lastFile = files.get(files.size() - 1).fileName;
       assertTrue(lastFile.startsWith(IndexFileNames.SEGMENTS) && !lastFile.equals(IndexFileNames.SEGMENTS_GEN));
+      writer.shutdown();
     } finally {
-      IOUtils.close(writer, dir);
+      IOUtils.close(dir);
     }
   }
   
@@ -147,8 +151,9 @@ public class IndexRevisionTest extends ReplicatorTestCase {
         assertArrayEquals(srcBytes, inBytes);
         IOUtils.close(src, in);
       }
+      writer.shutdown();
     } finally {
-      IOUtils.close(writer, dir);
+      IOUtils.close(dir);
     }
   }
   

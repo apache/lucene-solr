@@ -77,7 +77,7 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
       assertFalse(fileExtensions.contains(ext));
     }
     reader.close();
-    writer.close();
+    writer.shutdown();
 
     files = fsd.listAll();
     for(int i=0;i<files.length;i++) {

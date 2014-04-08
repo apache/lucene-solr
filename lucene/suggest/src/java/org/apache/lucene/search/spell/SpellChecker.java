@@ -173,7 +173,7 @@ public class SpellChecker implements java.io.Closeable {
           IndexWriter writer = new IndexWriter(spellIndexDir,
             new IndexWriterConfig(Version.LUCENE_CURRENT,
                 null));
-          writer.close();
+          writer.shutdown();
       }
       swapSearcher(spellIndexDir);
     }
@@ -460,7 +460,7 @@ public class SpellChecker implements java.io.Closeable {
           Version.LUCENE_CURRENT,
           null)
           .setOpenMode(OpenMode.CREATE));
-      writer.close();
+      writer.shutdown();
       swapSearcher(dir);
     }
   }
@@ -542,7 +542,7 @@ public class SpellChecker implements java.io.Closeable {
         writer.forceMerge(1);
       }
       // close writer
-      writer.close();
+      writer.shutdown();
       // TODO: this isn't that great, maybe in the future SpellChecker should take
       // IWC in its ctor / keep its writer open?
       

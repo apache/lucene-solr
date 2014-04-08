@@ -547,7 +547,7 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
       final Fields fields = reader.getTermVectors(docWithVectorsID);
       assertEquals(doc, fields);
       reader.close();
-      writer.close();
+      writer.shutdown();
       dir.close();
     }
   }
@@ -565,7 +565,7 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
       final IndexReader reader = writer.getReader();
       assertEquals(doc, reader.getTermVectors(0));
       reader.close();
-      writer.close();
+      writer.shutdown();
       dir.close();
     }
   }
@@ -580,7 +580,7 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
       final IndexReader reader = writer.getReader();
       assertEquals(doc, reader.getTermVectors(0));
       reader.close();
-      writer.close();
+      writer.shutdown();
       dir.close();
     }
   }
@@ -606,7 +606,7 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
         final int doc2ID = docID(reader, "2");
         assertEquals(doc2, reader.getTermVectors(doc2ID));
         reader.close();
-        writer.close();
+        writer.shutdown();
         dir.close();
       }
     }
@@ -630,7 +630,7 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
       assertEquals(docs[i], reader.getTermVectors(docID));
     }
     reader.close();
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
 
@@ -668,7 +668,7 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
         }
       }
       reader.close();
-      writer.close();
+      writer.shutdown();
       dir.close();
     }
   }
@@ -719,7 +719,7 @@ public abstract class BaseTermVectorsFormatTestCase extends LuceneTestCase {
         thread.join();
       }
       reader.close();
-      writer.close();
+      writer.shutdown();
       dir.close();
       assertNull("One thread threw an exception", exception.get());
     }

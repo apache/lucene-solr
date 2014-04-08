@@ -48,7 +48,7 @@ public class TestEarlyTermination extends LuceneTestCase {
   @Override
   public void tearDown() throws Exception {
     super.tearDown();
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
 

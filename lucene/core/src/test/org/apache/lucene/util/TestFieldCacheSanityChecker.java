@@ -69,8 +69,8 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
         wB.addDocument(doc);
       }
     }
-    wA.close();
-    wB.close();
+    wA.shutdown();
+    wB.shutdown();
     DirectoryReader rA = DirectoryReader.open(dirA);
     readerA = SlowCompositeReaderWrapper.wrap(rA);
     readerAclone = SlowCompositeReaderWrapper.wrap(rA);

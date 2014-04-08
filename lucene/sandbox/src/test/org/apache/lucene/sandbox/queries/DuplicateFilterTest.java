@@ -61,7 +61,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
     writer.forceMerge(1);
 
     reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
     searcher = newSearcher(reader);
 
   }

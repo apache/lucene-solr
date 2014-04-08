@@ -110,7 +110,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     TestUtil.checkIndex(dir);
     writer.forceMerge(1);
     assertEquals(30, writer.maxDoc());
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
 
@@ -138,7 +138,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     }
     addDocs3(writer, 10);
     writer.commit();
-    writer.close();
+    writer.shutdown();
 
     assertQuery(new Term("content", "ccc"), dir, 10);
     assertQuery(new Term("content", "aaa"), dir, 10);
@@ -179,7 +179,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     }
     writer.forceMerge(1);
     assertEquals(40, writer.maxDoc());
-    writer.close();
+    writer.shutdown();
     assertQuery(new Term("content", "ccc"), dir, 10);
     assertQuery(new Term("content", "bbb"), dir, 20);
     assertQuery(new Term("content", "aaa"), dir, 10);
@@ -262,7 +262,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
       }
       writer.commit();
       assertEquals((i + 1) * docsPerRound, writer.maxDoc());
-      writer.close();
+      writer.shutdown();
     }
     dir.close();
   }
@@ -319,7 +319,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
       dateField.setStringValue(Integer.toString(random().nextInt(100)));
       iw.addDocument(doc);
     }
-    iw.close();
+    iw.shutdown();
     dir.close(); // checkindex
   }
 }

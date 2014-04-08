@@ -260,8 +260,9 @@ public class TestTaxonomyFacetCounts2 extends FacetTestCase {
     
     // segment w/ categories and some content
     indexDocsWithFacetsAndSomeTerms(indexWriter, taxoWriter, allExpectedCounts);
-    
-    IOUtils.close(indexWriter, taxoWriter);
+
+    indexWriter.shutdown();
+    IOUtils.close(taxoWriter);
   }
   
   @Test

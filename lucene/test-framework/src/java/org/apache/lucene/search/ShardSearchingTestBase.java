@@ -537,7 +537,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
       }
       searchers.close();
       mgr.close();
-      writer.close();
+      writer.shutdown();
       dir.close();
     }
   }

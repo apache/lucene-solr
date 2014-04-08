@@ -63,7 +63,7 @@ public class TestWildcardRandom extends LuceneTestCase {
     
     reader = writer.getReader();
     searcher = newSearcher(reader);
-    writer.close();
+    writer.shutdown();
     if (VERBOSE) {
       System.out.println("TEST: setUp searcher=" + searcher);
     }

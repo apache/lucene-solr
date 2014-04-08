@@ -83,7 +83,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     bestFragments = highlighter.getBestFragments(fieldQuery, reader, docId, "field", 30, 1);
     assertEquals("a test where <b>foo</b> is highlighed", bestFragments[0]);
     reader.close();
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
   
@@ -128,7 +128,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
       assertEquals("first browser war it lost virtually all of its share to <b>Internet Explorer</b> Netscape was discontinued and support for all Netscape browsers", bestFragments[0]);
     }
     reader.close();
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
   
@@ -256,7 +256,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
           bestFragments[0]);
     }
     reader.close();
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
 
@@ -301,7 +301,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     assertEquals( "junk junk junk junk junk junk junk junk <b>highlight words together</b> junk junk junk junk junk junk junk junk", fragment );
 
     reader.close();
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
 
@@ -344,7 +344,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     assertEquals("Hello this is a piece of <b>text</b> that is <b>very</b> <b>long</b> and contains too much preamble and the meat is really here which says kennedy has been shot", bestFragments[0]);
 
     reader.close();
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
   
@@ -503,7 +503,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     }
 
     reader.close();
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
   
@@ -566,7 +566,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     assertEquals("<b>Test: http://www.facebook.com</b>", bestFragments[0]);
     
     reader.close();
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
 
@@ -648,7 +648,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     assertEquals( expected, bestFragments[ 0 ] );
 
     reader.close();
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
 

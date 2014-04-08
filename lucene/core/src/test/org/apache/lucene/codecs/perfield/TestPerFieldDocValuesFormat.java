@@ -100,7 +100,7 @@ public class TestPerFieldDocValuesFormat extends BaseDocValuesFormatTestCase {
     doc.add(new NumericDocValuesField("dv1", 5));
     doc.add(new BinaryDocValuesField("dv2", new BytesRef("hello world")));
     iwriter.addDocument(doc);
-    iwriter.close();
+    iwriter.shutdown();
     
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true

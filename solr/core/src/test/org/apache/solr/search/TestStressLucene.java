@@ -368,7 +368,7 @@ public class TestStressLucene extends TestRTGBase {
       thread.join();
     }
 
-    writer.close();
+    writer.shutdown();
     reader.close();
     dir.close();
   }

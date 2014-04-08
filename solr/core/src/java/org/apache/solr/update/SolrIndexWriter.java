@@ -129,7 +129,10 @@ public class SolrIndexWriter extends IndexWriter {
     try {
       while (true) {
         try {
-          super.close();
+          flush(true, true);
+          waitForMerges();
+          commit();
+          super.rollback();
         } catch (ThreadInterruptedException e) {
           // don't allow interruption
           continue;

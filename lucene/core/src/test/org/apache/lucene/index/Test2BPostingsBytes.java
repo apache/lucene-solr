@@ -87,7 +87,7 @@ public class Test2BPostingsBytes extends LuceneTestCase {
       w.addDocument(doc);
     }
     w.forceMerge(1);
-    w.close();
+    w.shutdown();
     
     DirectoryReader oneThousand = DirectoryReader.open(dir);
     IndexReader subReaders[] = new IndexReader[1000];
@@ -101,7 +101,7 @@ public class Test2BPostingsBytes extends LuceneTestCase {
         new IndexWriterConfig(TEST_VERSION_CURRENT, null));
     w2.addIndexes(mr);
     w2.forceMerge(1);
-    w2.close();
+    w2.shutdown();
     oneThousand.close();
     
     DirectoryReader oneMillion = DirectoryReader.open(dir2);
@@ -116,7 +116,7 @@ public class Test2BPostingsBytes extends LuceneTestCase {
         new IndexWriterConfig(TEST_VERSION_CURRENT, null));
     w3.addIndexes(mr);
     w3.forceMerge(1);
-    w3.close();
+    w3.shutdown();
     oneMillion.close();
     
     dir.close();

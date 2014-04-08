@@ -128,7 +128,7 @@ public class TestLongPostings extends LuceneTestCase {
     }
 
     r = riw.getReader();
-    riw.close();
+    riw.shutdown();
 
     /*
     if (VERBOSE) {
@@ -328,7 +328,7 @@ public class TestLongPostings extends LuceneTestCase {
       }
 
       r = riw.getReader();
-      riw.close();
+      riw.shutdown();
     } else {
       r = DirectoryReader.open(dir);
     }

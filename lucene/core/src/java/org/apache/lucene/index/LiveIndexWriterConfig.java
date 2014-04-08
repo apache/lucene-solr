@@ -527,6 +527,9 @@ public class LiveIndexWriterConfig {
     return sb.toString();
   }
 
-
-
+  /** Returns the {@code matchVersion} that was provided to
+   *  the constructor. */
+  public Version getMatchVersion() {
+    return matchVersion;
+  }
 }

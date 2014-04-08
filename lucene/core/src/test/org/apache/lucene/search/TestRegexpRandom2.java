@@ -87,7 +87,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     reader = writer.getReader();
     searcher1 = newSearcher(reader);
     searcher2 = newSearcher(reader);
-    writer.close();
+    writer.shutdown();
   }
 
   @Override

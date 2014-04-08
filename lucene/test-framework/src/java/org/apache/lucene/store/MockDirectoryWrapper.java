@@ -777,7 +777,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
           DirectoryReader ir1 = DirectoryReader.open(this);
           int numDocs1 = ir1.numDocs();
           ir1.close();
-          new IndexWriter(this, new IndexWriterConfig(LuceneTestCase.TEST_VERSION_CURRENT, null)).close();
+          new IndexWriter(this, new IndexWriterConfig(LuceneTestCase.TEST_VERSION_CURRENT, null)).shutdown();
           DirectoryReader ir2 = DirectoryReader.open(this);
           int numDocs2 = ir2.numDocs();
           ir2.close();

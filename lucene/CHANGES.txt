@@ -53,6 +53,14 @@ API Changes
 * LUCENE-5527: The Collector API has been refactored to use a dedicated Collector
   per leaf. (Shikhar Bhushan, Adrien Grand)
 
+* LUCENE-4246: IndexWriter.close now discards any changes and always
+  closes, even if it throws an exception.  If matchVersion is <
+  LUCENE_50 yet there were uncommitted changes or still-running
+  merges, then a RuntimeException will be thrown indicating changes
+  were lost (but the writer will still be closed).  Finally, a new
+  shutdown method was added to do what close used to do (flush, wait
+  for merges, commit, close).
+
 Documentation
 
 * LUCENE-5392: Add/improve analysis package documentation to reflect

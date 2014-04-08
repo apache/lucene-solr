@@ -82,7 +82,7 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
       iw.addDocument(doc);
     }
     iw.forceMerge(1);
-    iw.close();
+    iw.shutdown();
     r = DirectoryReader.open(dir);
     reader = getOnlySegmentReader(r);
     searcher = new IndexSearcher(reader);

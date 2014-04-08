@@ -118,7 +118,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     // Make sure the index is created?
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
     writer.commit();
-    writer.close();
+    writer.shutdown();
     IndexReader ir = DirectoryReader.open(dir);
     Dictionary dictionary = new DocumentDictionary(ir, FIELD_NAME, WEIGHT_FIELD_NAME, PAYLOAD_FIELD_NAME);
     InputIterator inputIterator = dictionary.getEntryIterator();
@@ -144,7 +144,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
       writer.addDocument(doc);
     }
     writer.commit();
-    writer.close();
+    writer.shutdown();
     IndexReader ir = DirectoryReader.open(dir);
     Dictionary dictionary = new DocumentDictionary(ir, FIELD_NAME, WEIGHT_FIELD_NAME, PAYLOAD_FIELD_NAME);
     InputIterator inputIterator = dictionary.getEntryIterator();
@@ -179,7 +179,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
       writer.addDocument(doc);
     }
     writer.commit();
-    writer.close();
+    writer.shutdown();
     IndexReader ir = DirectoryReader.open(dir);
     Dictionary dictionary = new DocumentDictionary(ir, FIELD_NAME, WEIGHT_FIELD_NAME);
     InputIterator inputIterator = dictionary.getEntryIterator();
@@ -215,7 +215,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
       writer.addDocument(doc);
     }
     writer.commit();
-    writer.close();
+    writer.shutdown();
     IndexReader ir = DirectoryReader.open(dir);
     Dictionary dictionary = new DocumentDictionary(ir, FIELD_NAME, WEIGHT_FIELD_NAME, PAYLOAD_FIELD_NAME, CONTEXT_FIELD_NAME);
     InputIterator inputIterator = dictionary.getEntryIterator();
@@ -272,7 +272,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
       writer.deleteDocuments(delTerm);  
     }
     writer.commit();
-    writer.close();
+    writer.shutdown();
     
     for(String termToDel: termsToDel) {
       assertTrue(null!=docs.remove(termToDel));

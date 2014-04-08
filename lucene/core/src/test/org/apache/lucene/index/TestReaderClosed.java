@@ -52,7 +52,7 @@ public class TestReaderClosed extends LuceneTestCase {
       writer.addDocument(doc);
     }
     reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
   }
   
   public void test() throws Exception {

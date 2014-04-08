@@ -124,7 +124,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     }
     writer.commit();
     seg = writer.newestSegment();
-    writer.close();
+    writer.shutdown();
 
     fieldInfos = SegmentReader.readFieldInfos(seg);
   }
@@ -386,7 +386,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
       assertEquals("cannot index term vector payloads when term vectors are not indexed (field=\"field\")", iae.getMessage());
     }
 
-    w.close();
+    w.shutdown();
     
     dir.close();
   }

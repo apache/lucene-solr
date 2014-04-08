@@ -66,7 +66,7 @@ public class TestSpanRegexQuery extends LuceneTestCase {
     doc.add(newTextField("field", "first auto update", Field.Store.NO));
     writer.addDocument(doc);
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
 
     IndexReader reader = DirectoryReader.open(directory);
     IndexSearcher searcher = newSearcher(reader);

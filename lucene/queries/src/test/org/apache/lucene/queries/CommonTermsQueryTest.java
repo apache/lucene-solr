@@ -127,7 +127,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       
     }
     r.close();
-    w.close();
+    w.shutdown();
     dir.close();
   }
   
@@ -322,7 +322,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
               r.document(search.scoreDocs[1].doc).get("id"))));
     }
     r.close();
-    w.close();
+    w.shutdown();
     dir.close();
   }
   
@@ -396,7 +396,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       assertEquals("0", r.document(search.scoreDocs[2].doc).get("id"));
     }
     r.close();
-    w.close();
+    w.shutdown();
     dir.close();
   }
   
@@ -498,7 +498,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
     } finally {
       reader.close();
       wrapper.close();
-      w.close();
+      w.shutdown();
       dir.close();
     }
     

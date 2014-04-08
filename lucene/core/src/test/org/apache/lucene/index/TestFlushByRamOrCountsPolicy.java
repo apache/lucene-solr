@@ -111,7 +111,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     if (ensureNotStalled) {
       assertFalse(docsWriter.flushControl.stallControl.wasStalled());
     }
-    writer.close();
+    writer.shutdown();
     assertEquals(0, flushControl.activeBytes());
     dir.close();
   }
@@ -162,7 +162,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       assertTrue("peak bytes without flush exceeded watermark",
           flushPolicy.peakDocCountWithoutFlush <= iwc.getMaxBufferedDocs());
       assertActiveBytesAfter(flushControl);
-      writer.close();
+      writer.shutdown();
       assertEquals(0, flushControl.activeBytes());
       dir.close();
     }
@@ -225,7 +225,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       assertFalse("never block if we don't flush on RAM", docsWriter.flushControl.stallControl.hasBlocked());
     }
     r.close();
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
 
@@ -276,7 +276,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
         assertTrue(docsWriter.flushControl.stallControl.wasStalled());
       }
       assertActiveBytesAfter(flushControl);
-      writer.close(true);
+      writer.shutdown();
       dir.close();
     }
   }

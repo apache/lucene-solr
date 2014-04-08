@@ -72,7 +72,7 @@ public class TestTransactionRollback extends LuceneTestCase {
     Map<String,String> data = new HashMap<>();
     data.put("index", "Rolled back to 1-"+id);
     w.setCommitData(data);
-    w.close();
+    w.shutdown();
   }
 
   public void testRepeatedRollBacks() throws Exception {
@@ -146,7 +146,7 @@ public class TestTransactionRollback extends LuceneTestCase {
       }
     }
 
-    w.close();
+    w.shutdown();
   }
   
   @Override
@@ -213,7 +213,7 @@ public class TestTransactionRollback extends LuceneTestCase {
       // Unless you specify a prior commit point, rollback
       // should not work:
       new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random()))
-          .setIndexDeletionPolicy(new DeleteLastCommitPolicy())).close();
+          .setIndexDeletionPolicy(new DeleteLastCommitPolicy())).shutdown();
       IndexReader r = DirectoryReader.open(dir);
       assertEquals(100, r.numDocs());
       r.close();

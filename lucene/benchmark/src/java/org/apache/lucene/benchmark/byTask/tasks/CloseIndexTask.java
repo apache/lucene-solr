@@ -45,7 +45,10 @@ public class CloseIndexTask extends PerfTask {
       if (infoStream != null) {
         infoStream.close();
       }
-      iw.close(doWait);
+      if (doWait == false) {
+        iw.abortMerges();
+      }
+      iw.shutdown();
       getRunData().setIndexWriter(null);
     }
     return 1;

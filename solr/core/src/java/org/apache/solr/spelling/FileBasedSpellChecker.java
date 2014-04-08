@@ -112,7 +112,7 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
           writer.addDocument(d);
         }
         writer.forceMerge(1);
-        writer.close();
+        writer.shutdown();
 
         dictionary = new HighFrequencyDictionary(DirectoryReader.open(ramDir),
                 WORD_FIELD_NAME, 0.0f);

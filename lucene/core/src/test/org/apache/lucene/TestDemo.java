@@ -53,7 +53,7 @@ public class TestDemo extends LuceneTestCase {
     String text = "This is the text to be indexed. " + longTerm;
     doc.add(newTextField("fieldname", text, Field.Store.YES));
     iwriter.addDocument(doc);
-    iwriter.close();
+    iwriter.shutdown();
     
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true

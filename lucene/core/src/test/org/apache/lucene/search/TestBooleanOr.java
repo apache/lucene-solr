@@ -149,7 +149,7 @@ public class TestBooleanOr extends LuceneTestCase {
     reader = writer.getReader();
     //
     searcher = newSearcher(reader);
-    writer.close();
+    writer.shutdown();
   }
 
   @Override
@@ -173,7 +173,7 @@ public class TestBooleanOr extends LuceneTestCase {
 
     riw.forceMerge(1);
     IndexReader r = riw.getReader();
-    riw.close();
+    riw.shutdown();
 
     IndexSearcher s = newSearcher(r);
     BooleanQuery bq = new BooleanQuery();

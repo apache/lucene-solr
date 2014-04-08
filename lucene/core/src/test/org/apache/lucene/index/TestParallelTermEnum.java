@@ -49,7 +49,7 @@ public class TestParallelTermEnum extends LuceneTestCase {
     doc.add(newTextField("field2", "the quick brown fox jumps", Field.Store.YES));
     iw1.addDocument(doc);
 
-    iw1.close();
+    iw1.shutdown();
     rd2 = newDirectory();
     IndexWriter iw2 = new IndexWriter(rd2, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random())));
@@ -59,7 +59,7 @@ public class TestParallelTermEnum extends LuceneTestCase {
     doc.add(newTextField("field3", "the fox jumps over the lazy dog", Field.Store.YES));
     iw2.addDocument(doc);
 
-    iw2.close();
+    iw2.shutdown();
 
     this.ir1 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(rd1));
     this.ir2 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(rd2));

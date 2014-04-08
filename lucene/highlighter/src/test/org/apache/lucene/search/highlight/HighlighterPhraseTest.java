@@ -65,7 +65,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
       document.add(new Field(FIELD, new TokenStreamConcurrent(), customType));
       indexWriter.addDocument(document);
     } finally {
-      indexWriter.close();
+      indexWriter.shutdown();
     }
     final IndexReader indexReader = DirectoryReader.open(directory);
     try {
@@ -107,7 +107,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
       document.add(new Field(FIELD, new TokenStreamConcurrent(), customType));
       indexWriter.addDocument(document);
     } finally {
-      indexWriter.close();
+      indexWriter.shutdown();
     }
     final IndexReader indexReader = DirectoryReader.open(directory);
     try {
@@ -175,7 +175,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
       document.add(new Field(FIELD, new TokenStreamSparse(), customType));
       indexWriter.addDocument(document);
     } finally {
-      indexWriter.close();
+      indexWriter.shutdown();
     }
     final IndexReader indexReader = DirectoryReader.open(directory);
     try {
@@ -216,7 +216,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
       document.add(new Field(FIELD, TEXT, customType));
       indexWriter.addDocument(document);
     } finally {
-      indexWriter.close();
+      indexWriter.shutdown();
     }
     final IndexReader indexReader = DirectoryReader.open(directory);
     try {
@@ -255,7 +255,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
       document.add(new Field(FIELD, new TokenStreamSparse(), customType));
       indexWriter.addDocument(document);
     } finally {
-      indexWriter.close();
+      indexWriter.shutdown();
     }
     final IndexReader indexReader = DirectoryReader.open(directory);
     try {

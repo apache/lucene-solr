@@ -57,7 +57,7 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
     doc.add(new TextField("description", "Illidium Space Modulator", Field.Store.YES));
     writer.addDocument(doc);
 
-    writer.close();
+    writer.shutdown();
 
     reader = DirectoryReader.open(directory);
     searcher = newSearcher(reader);
@@ -94,7 +94,7 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
     doc = new Document();
     doc.add(new TextField("partnum", "Q37", Field.Store.YES));
     writer.addDocument(doc);
-    writer.close();
+    writer.shutdown();
 
     IndexReader reader = DirectoryReader.open(dir);
     DocsEnum td = TestUtil.docs(random(),

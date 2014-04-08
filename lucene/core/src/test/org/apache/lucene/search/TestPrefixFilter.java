@@ -100,7 +100,7 @@ public class TestPrefixFilter extends LuceneTestCase {
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(0, hits.length);
     
-    writer.close();
+    writer.shutdown();
     reader.close();
     directory.close();
   }

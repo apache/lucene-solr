@@ -65,7 +65,7 @@ public class TestTryDelete extends LuceneTestCase
     }
 
     writer.commit();
-    writer.close();
+    writer.shutdown();
 
     return directory;
   }
@@ -153,7 +153,7 @@ public class TestTryDelete extends LuceneTestCase
 
     assertEquals(0, topDocs.totalHits);
 
-    writer.close();
+    writer.shutdown();
 
     searcher = new IndexSearcher(DirectoryReader.open(directory));
 

@@ -64,7 +64,7 @@ public class TestBoolean2 extends LuceneTestCase {
       doc.add(newTextField(field, docFields[i], Field.Store.NO));
       writer.addDocument(doc);
     }
-    writer.close();
+    writer.shutdown();
     littleReader = DirectoryReader.open(directory);
     searcher = newSearcher(littleReader);
     // this is intentionally using the baseline sim, because it compares against bigSearcher (which uses a random one)
@@ -87,7 +87,7 @@ public class TestBoolean2 extends LuceneTestCase {
       RandomIndexWriter w = new RandomIndexWriter(random(), dir2);
       w.addIndexes(copy);
       docCount = w.maxDoc();
-      w.close();
+      w.shutdown();
       mulFactor *= 2;
     } while(docCount < 3000);
 
@@ -106,7 +106,7 @@ public class TestBoolean2 extends LuceneTestCase {
     }
     reader = w.getReader();
     bigSearcher = newSearcher(reader);
-    w.close();
+    w.shutdown();
   }
 
   @AfterClass

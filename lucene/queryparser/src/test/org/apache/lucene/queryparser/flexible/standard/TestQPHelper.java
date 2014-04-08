@@ -1321,7 +1321,7 @@ public class TestQPHelper extends LuceneTestCase {
     assertTrue(q instanceof MultiPhraseQuery);
     assertEquals(1, s.search(q, 10).totalHits);
     r.close();
-    w.close();
+    w.shutdown();
     dir.close();
   }
 

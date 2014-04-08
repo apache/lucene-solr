@@ -83,7 +83,8 @@ public class HttpReplicatorTest extends ReplicatorTestCase {
   @Override
   public void tearDown() throws Exception {
     stopHttpServer(server);
-    IOUtils.close(reader, writer, handlerIndexDir, serverIndexDir);
+    writer.rollback();
+    IOUtils.close(reader, handlerIndexDir, serverIndexDir);
     System.clearProperty("org.eclipse.jetty.LEVEL");
     super.tearDown();
   }

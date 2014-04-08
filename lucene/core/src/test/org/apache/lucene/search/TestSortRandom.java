@@ -41,7 +41,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
 
 /** random sorting tests */
 public class TestSortRandom extends LuceneTestCase {
@@ -111,7 +110,7 @@ public class TestSortRandom extends LuceneTestCase {
     }
 
     final IndexReader r = writer.getReader();
-    writer.close();
+    writer.shutdown();
     if (VERBOSE) {
       System.out.println("  reader=" + r);
     }

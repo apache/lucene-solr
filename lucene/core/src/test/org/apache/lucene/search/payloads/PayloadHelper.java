@@ -131,7 +131,7 @@ public class PayloadHelper {
       writer.addDocument(doc);
     }
     reader = DirectoryReader.open(writer, true);
-    writer.close();
+    writer.shutdown();
 
     IndexSearcher searcher = LuceneTestCase.newSearcher(reader);
     searcher.setSimilarity(similarity);

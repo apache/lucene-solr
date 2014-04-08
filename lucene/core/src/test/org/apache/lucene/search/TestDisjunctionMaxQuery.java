@@ -159,7 +159,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     }
     
     r = SlowCompositeReaderWrapper.wrap(writer.getReader());
-    writer.close();
+    writer.shutdown();
     s = newSearcher(r);
     s.setSimilarity(sim);
   }
@@ -488,7 +488,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     Document d = new Document();
     d.add(new TextField(FIELD, "clockwork orange", Field.Store.YES));
     writer.addDocument(d);
-    writer.close();
+    writer.shutdown();
 
     IndexReader indexReader = DirectoryReader.open(directory);
     IndexSearcher searcher = newSearcher(indexReader);

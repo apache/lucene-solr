@@ -71,7 +71,7 @@ public class TestLockFactory extends LuceneTestCase {
                        lock.lockAttempts > 0);
         }
         
-        writer.close();
+        writer.shutdown();
     }
 
     // Verify: we can use the NoLockFactory with RAMDirectory w/ no
@@ -96,9 +96,9 @@ public class TestLockFactory extends LuceneTestCase {
             fail("Should not have hit an IOException with no locking");
         }
 
-        writer.close();
+        writer.shutdown();
         if (writer2 != null) {
-            writer2.close();
+            writer2.shutdown();
         }
     }
 
@@ -120,9 +120,9 @@ public class TestLockFactory extends LuceneTestCase {
         } catch (IOException e) {
         }
 
-        writer.close();
+        writer.shutdown();
         if (writer2 != null) {
-            writer2.close();
+            writer2.shutdown();
         }
     }
     
@@ -155,7 +155,7 @@ public class TestLockFactory extends LuceneTestCase {
         // First create a 1 doc index:
         IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE));
         addDoc(w);
-        w.close();
+        w.shutdown();
 
         WriterThread writer = new WriterThread(100, dir);
         SearcherThread searcher = new SearcherThread(100, dir);
@@ -319,7 +319,7 @@ public class TestLockFactory extends LuceneTestCase {
                         break;
                     }
                     try {
-                        writer.close();
+                        writer.shutdown();
                     } catch (IOException e) {
                         hitException = true;
                         System.out.println("Stress Test Index Writer: close hit unexpected exception: " + e.toString());

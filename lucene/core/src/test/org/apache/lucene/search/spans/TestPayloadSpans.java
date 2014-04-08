@@ -117,7 +117,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     doc.add(newTextField(PayloadHelper.FIELD, "one two three one four three", Field.Store.YES));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
     
 
     checkSpans(MultiSpansWrapper.wrap(reader.getContext(), snq), 1,new int[]{2});
@@ -262,7 +262,7 @@ public class TestPayloadSpans extends LuceneTestCase {
 
     IndexReader reader = writer.getReader();
     IndexSearcher is = newSearcher(reader);
-    writer.close();
+    writer.shutdown();
 
     SpanTermQuery stq1 = new SpanTermQuery(new Term("content", "a"));
     SpanTermQuery stq2 = new SpanTermQuery(new Term("content", "k"));
@@ -298,7 +298,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     IndexSearcher is = newSearcher(reader);
-    writer.close();
+    writer.shutdown();
 
     SpanTermQuery stq1 = new SpanTermQuery(new Term("content", "a"));
     SpanTermQuery stq2 = new SpanTermQuery(new Term("content", "k"));
@@ -333,7 +333,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     IndexSearcher is = newSearcher(reader);
-    writer.close();
+    writer.shutdown();
 
     SpanTermQuery stq1 = new SpanTermQuery(new Term("content", "a"));
     SpanTermQuery stq2 = new SpanTermQuery(new Term("content", "k"));
@@ -374,7 +374,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     writer.addDocument(doc);
   
     IndexReader reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
     IndexSearcher searcher = newSearcher(reader);
 
     PayloadSpanUtil psu = new PayloadSpanUtil(searcher.getTopReaderContext());
@@ -438,7 +438,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     }
 
     closeIndexReader = writer.getReader();
-    writer.close();
+    writer.shutdown();
 
     IndexSearcher searcher = newSearcher(closeIndexReader);
     return searcher;

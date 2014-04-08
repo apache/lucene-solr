@@ -122,7 +122,7 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
     doc.add(new TextField("name", "name2", Field.Store.YES));
     iw.addDocument(doc);
     iw.commit();
-    iw.close();
+    iw.shutdown();
 
     //commit will cause searcher to open with the new index dir
     assertU(commit());

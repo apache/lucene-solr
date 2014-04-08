@@ -87,7 +87,7 @@ public class TestSpellChecker extends LuceneTestCase {
       writer.addDocument(doc);
     }
     
-    writer.close();
+    writer.shutdown();
     searchers = Collections.synchronizedList(new ArrayList<IndexSearcher>());
     // create the spellChecker
     spellindex = newDirectory();

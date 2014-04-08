@@ -87,7 +87,7 @@ public class MultiCategoryListsFacetsExample {
     doc.add(new FacetField("Publish Date", "1999", "5", "5"));
     indexWriter.addDocument(config.build(taxoWriter, doc));
     
-    indexWriter.close();
+    indexWriter.shutdown();
     taxoWriter.close();
   }
 

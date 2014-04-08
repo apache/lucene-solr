@@ -58,7 +58,7 @@ public class TestPhrasePrefixQuery extends LuceneTestCase {
     writer.addDocument(doc4);
     writer.addDocument(doc5);
     IndexReader reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
     
     IndexSearcher searcher = newSearcher(reader);
     

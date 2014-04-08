@@ -90,7 +90,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     hitCount = getHitCount(dir, term);
     assertEquals(0, hitCount);
 
-    modifier.close();
+    modifier.shutdown();
     dir.close();
   }
 
@@ -125,7 +125,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     reader = DirectoryReader.open(dir);
     assertEquals(0, reader.numDocs());
     reader.close();
-    modifier.close();
+    modifier.shutdown();
     dir.close();
   }
 
@@ -139,7 +139,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     writer.deleteDocuments(new Term("foobar", "1"));
     writer.deleteDocuments(new Term("foobar", "1"));
     assertEquals(3, writer.getFlushDeletesCount());
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
   
@@ -180,7 +180,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       int hitCount = getHitCount(dir, new Term("id", String.valueOf(id)));
       assertEquals(1, hitCount);
       reader.close();
-      modifier.close();
+      modifier.shutdown();
       dir.close();
     }
   }
@@ -214,7 +214,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     IndexReader reader = DirectoryReader.open(dir);
     assertEquals(5, reader.numDocs());
-    modifier.close();
+    modifier.shutdown();
     reader.close();
     dir.close();
   }
@@ -258,7 +258,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     assertEquals(2, reader.numDocs());
     reader.close();
 
-    modifier.close();
+    modifier.shutdown();
     dir.close();
   }
 
@@ -304,7 +304,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     assertEquals(2, reader.numDocs());
     reader.close();
 
-    modifier.close();
+    modifier.shutdown();
     dir.close();
   }
   
@@ -361,7 +361,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       thread.join();
     }
     
-    modifier.close();
+    modifier.shutdown();
     DirectoryReader reader = DirectoryReader.open(dir);
     assertEquals(reader.maxDoc(), 0);
     assertEquals(reader.numDocs(), 0);
@@ -397,7 +397,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     // Roll it back
     modifier.rollback();
-    modifier.close();
 
     // Validate that the docs are still there
     reader = DirectoryReader.open(dir);
@@ -440,7 +439,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     // Roll it back
     modifier.rollback();
-    modifier.close();
 
     // Validate that the docs are still there
     reader = DirectoryReader.open(dir);
@@ -510,7 +508,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       d.add(new NumericDocValuesField("dv", i));
       writer.addDocument(d);
     }
-    writer.close();
+    writer.shutdown();
 
     long diskUsage = startDir.sizeInBytes();
     long diskFree = diskUsage + 10;
@@ -597,8 +595,8 @@ public class TestIndexWriterDelete extends LuceneTestCase {
               }
               docId += 12;
             }
+            modifier.shutdown();
           }
-          modifier.close();
           success = true;
           if (0 == x) {
             done = true;
@@ -696,7 +694,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         }
       }
       dir.close();
-      modifier.close();
 
       // Try again with 10 more bytes of free space:
       diskFree += 10;
@@ -861,7 +858,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     // Make sure the delete was successfully flushed:
     assertEquals(0, hitCount);
 
-    modifier.close();
+    modifier.shutdown();
     dir.close();
   }
 
@@ -918,7 +915,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       }
     }
 
-    modifier.close();
+    modifier.shutdown();
     TestIndexWriter.assertNoUnreferencedFiles(dir, "docsWriter.abort() failed to delete unreferenced files");
     dir.close();
   }
@@ -934,7 +931,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     modifier.deleteDocuments(new TermQuery(new Term("nada", "nada")));
     modifier.commit();
     assertEquals(5, modifier.numDocs());
-    modifier.close();
+    modifier.shutdown();
     dir.close();
   }
   
@@ -966,7 +963,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       r.close();
     }
 
-    w.close();
+    w.shutdown();
     dir.close();
   }
   
@@ -1014,7 +1011,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       }
       assertTrue("flush happened too quickly during " + (doIndexing ? "indexing" : "deleting") + " count=" + count, count > 2500);
     }
-    w.close();
+    w.shutdown();
     dir.close();
   }
 
@@ -1060,7 +1057,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         fail("delete's were not applied");
       }
     }
-    w.close();
+    w.shutdown();
     dir.close();
   }
 
@@ -1099,7 +1096,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         fail("delete's were not applied at count=" + flushAtDelCount);
       }
     }
-    w.close();
+    w.shutdown();
     dir.close();
   }
 
@@ -1148,7 +1145,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     }
     closing.set(true);
     assertTrue(sawAfterFlush.get());
-    w.close();
+    w.shutdown();
     dir.close();
   }
 
@@ -1171,7 +1168,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     w.deleteDocuments(new Term("field", "0"));
     w.commit();
     assertEquals(1, w.getSegmentCount());
-    w.close();
+    w.shutdown();
 
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
     CheckIndex checker = new CheckIndex(dir);
@@ -1184,7 +1181,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     assertTrue(s.contains("has deletions"));
     w = new IndexWriter(dir, iwc.clone());
     w.forceMerge(1);
-    w.close();
+    w.shutdown();
 
     bos = new ByteArrayOutputStream(1024);
     checker.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8), false);
@@ -1205,7 +1202,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     w.addDocument(doc);
     w.addDocument(doc);
     w.addDocument(doc);
-    w.close();
+    w.shutdown();
 
     iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwc.setOpenMode(IndexWriterConfig.OpenMode.APPEND);
@@ -1214,7 +1211,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     assertTrue(w.tryDeleteDocument(r, 1));
     assertTrue(w.tryDeleteDocument(r.leaves().get(0).reader(), 0));
     r.close();
-    w.close();
+    w.shutdown();
 
     r = DirectoryReader.open(d);
     assertEquals(2, r.numDeletedDocs());

@@ -345,9 +345,9 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
   }
 
   /** Thrown when a merge was explicity aborted because
-   *  {@link IndexWriter#close(boolean)} was called with
-   *  <code>false</code>.  Normally this exception is
-   *  privately caught and suppresed by {@link IndexWriter}.  */
+   *  {@link IndexWriter#abortMerges} was called.  Normally
+   *  this exception is privately caught and suppresed by
+   *  {@link IndexWriter}. */
   public static class MergeAbortedException extends IOException {
     /** Create a {@link MergeAbortedException}. */
     public MergeAbortedException() {

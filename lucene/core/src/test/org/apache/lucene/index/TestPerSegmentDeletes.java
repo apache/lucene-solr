@@ -160,7 +160,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     **/
     // System.out.println("segdels2:"+writer.docWriter.segmentDeletes.toString());
     //System.out.println("close");
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
 

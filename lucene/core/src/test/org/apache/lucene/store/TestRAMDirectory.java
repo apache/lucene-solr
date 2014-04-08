@@ -63,7 +63,7 @@ public class TestRAMDirectory extends LuceneTestCase {
       writer.addDocument(doc);
     }
     assertEquals(docsToAdd, writer.maxDoc());
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
   
@@ -136,7 +136,7 @@ public class TestRAMDirectory extends LuceneTestCase {
     writer.forceMerge(1);
     assertEquals(ramDir.sizeInBytes(), ramDir.getRecomputedSizeInBytes());
     
-    writer.close();
+    writer.shutdown();
   }
 
   @Override

@@ -103,7 +103,7 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
       writer.addDocument(doc);
 
     ((MyMergeScheduler) writer.getConfig().getMergeScheduler()).sync();
-    writer.close();
+    writer.shutdown();
     
     assertTrue(mergeThreadCreated);
     assertTrue(mergeCalled);
@@ -142,7 +142,7 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
     writer.addDocument(new Document());
     writer.commit(); // trigger flush
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
   

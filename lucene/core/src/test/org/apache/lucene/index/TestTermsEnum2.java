@@ -72,7 +72,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
     
     reader = writer.getReader();
     searcher = newSearcher(reader);
-    writer.close();
+    writer.shutdown();
   }
   
   @Override

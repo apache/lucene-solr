@@ -78,7 +78,7 @@ public class Test10KPulsings extends LuceneTestCase {
     }
     
     IndexReader ir = iw.getReader();
-    iw.close();
+    iw.shutdown();
 
     TermsEnum te = MultiFields.getTerms(ir, "field").iterator(null);
     DocsEnum de = null;
@@ -136,7 +136,7 @@ public class Test10KPulsings extends LuceneTestCase {
     }
     
     IndexReader ir = iw.getReader();
-    iw.close();
+    iw.shutdown();
 
     TermsEnum te = MultiFields.getTerms(ir, "field").iterator(null);
     DocsEnum de = null;

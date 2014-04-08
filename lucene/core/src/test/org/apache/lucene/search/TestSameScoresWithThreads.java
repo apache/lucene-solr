@@ -58,7 +58,7 @@ public class TestSameScoresWithThreads extends LuceneTestCase {
     }
     IndexReader r = w.getReader();
     //System.out.println("numDocs=" + r.numDocs());
-    w.close();
+    w.shutdown();
 
     final IndexSearcher s = newSearcher(r);
     Terms terms = MultiFields.getFields(r).terms("body");

@@ -74,7 +74,7 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
   @After
   public void tearDown() throws Exception {
     super.tearDown();
-    indexWriter.close();
+    indexWriter.shutdown();
     dir.close();
   }
 

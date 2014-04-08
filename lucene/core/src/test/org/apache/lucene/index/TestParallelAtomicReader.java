@@ -149,7 +149,7 @@ public class TestParallelAtomicReader extends LuceneTestCase {
 
     d3.add(newTextField("f3", "v1", Field.Store.YES));
     w2.addDocument(d3);
-    w2.close();
+    w2.shutdown();
     
     AtomicReader ir1 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1));
     AtomicReader ir2 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir2));
@@ -274,7 +274,7 @@ public class TestParallelAtomicReader extends LuceneTestCase {
     d2.add(newTextField("f3", "v2", Field.Store.YES));
     d2.add(newTextField("f4", "v2", Field.Store.YES));
     w.addDocument(d2);
-    w.close();
+    w.shutdown();
 
     DirectoryReader ir = DirectoryReader.open(dir);
     return newSearcher(ir);
@@ -302,7 +302,7 @@ public class TestParallelAtomicReader extends LuceneTestCase {
     d2.add(newTextField("f1", "v2", Field.Store.YES));
     d2.add(newTextField("f2", "v2", Field.Store.YES));
     w1.addDocument(d2);
-    w1.close();
+    w1.shutdown();
     return dir1;
   }
 
@@ -317,7 +317,7 @@ public class TestParallelAtomicReader extends LuceneTestCase {
     d4.add(newTextField("f3", "v2", Field.Store.YES));
     d4.add(newTextField("f4", "v2", Field.Store.YES));
     w2.addDocument(d4);
-    w2.close();
+    w2.shutdown();
     return dir2;
   }
 

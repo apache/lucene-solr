@@ -63,7 +63,7 @@ public class TestDocValuesWithThreads extends LuceneTestCase {
 
     w.forceMerge(1);
     final IndexReader r = w.getReader();
-    w.close();
+    w.shutdown();
 
     assertEquals(1, r.leaves().size());
     final AtomicReader ar = r.leaves().get(0).reader();
@@ -176,7 +176,7 @@ public class TestDocValuesWithThreads extends LuceneTestCase {
 
     writer.forceMerge(1);
     final DirectoryReader r = writer.getReader();
-    writer.close();
+    writer.shutdown();
     
     final AtomicReader sr = getOnlySegmentReader(r);
 

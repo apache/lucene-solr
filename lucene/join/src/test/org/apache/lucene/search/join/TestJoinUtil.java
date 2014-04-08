@@ -128,7 +128,7 @@ public class TestJoinUtil extends LuceneTestCase {
     w.addDocument(doc);
 
     IndexSearcher indexSearcher = new IndexSearcher(w.getReader());
-    w.close();
+    w.shutdown();
 
     // Search for product
     Query joinQuery =
@@ -214,7 +214,7 @@ public class TestJoinUtil extends LuceneTestCase {
     w.forceMerge(1);
 
     IndexSearcher indexSearcher = new IndexSearcher(w.getReader());
-    w.close();
+    w.shutdown();
 
     // Search for product
     Query joinQuery =
@@ -302,7 +302,7 @@ public class TestJoinUtil extends LuceneTestCase {
     w.addDocument(doc);
 
     IndexSearcher indexSearcher = new IndexSearcher(w.getReader());
-    w.close();
+    w.shutdown();
 
     // Search for movie via subtitle
     Query joinQuery =
@@ -369,7 +369,7 @@ public class TestJoinUtil extends LuceneTestCase {
       IndexIterationContext context = createContext(numberOfDocumentsToIndex, w, multipleValuesPerDocument, scoreDocsInOrder);
 
       IndexReader topLevelReader = w.getReader();
-      w.close();
+      w.shutdown();
       for (int searchIter = 1; searchIter <= maxSearchIter; searchIter++) {
         if (VERBOSE) {
           System.out.println("searchIter=" + searchIter);

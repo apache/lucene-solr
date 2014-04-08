@@ -34,7 +34,7 @@ public class TestMockDirectoryWrapper extends LuceneTestCase {
     } catch (Exception expected) {
       assertTrue(expected.getMessage().contains("there are still open locks"));
     }
-    iw.close();
+    iw.shutdown();
     dir.close();
   }
   
@@ -48,7 +48,7 @@ public class TestMockDirectoryWrapper extends LuceneTestCase {
     } catch (Exception expected) {
       assertTrue(expected.getMessage().contains("there are still open locks"));
     }
-    iw.close();
+    iw.shutdown();
     dir.close();
   }
   

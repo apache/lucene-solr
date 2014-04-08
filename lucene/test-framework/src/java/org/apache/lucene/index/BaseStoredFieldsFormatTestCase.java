@@ -184,7 +184,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
         w.forceMerge(1);
       }
     }
-    w.close();
+    w.shutdown();
     dir.close();
   }
   
@@ -219,7 +219,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
     assertEquals(f.stringValue(), "1 2 3");
     assertFalse(it.hasNext());
     r.close();
-    w.close();
+    w.shutdown();
     d.close();
   }
   
@@ -240,7 +240,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
     assertEquals(17, f.binaryValue().length);
     doc.add(f);
     w.addDocument(doc);
-    w.close();
+    w.shutdown();
 
     IndexReader ir = DirectoryReader.open(dir);
     StoredDocument doc2 = ir.document(0);
@@ -306,7 +306,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
       w.addDocument(doc);
     }
     final DirectoryReader r = w.getReader();
-    w.close();
+    w.shutdown();
     
     assertEquals(numDocs, r.numDocs());
 
@@ -334,7 +334,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
     doc.add(new StringField("field2", "value", Field.Store.YES));
     w.addDocument(doc);
     IndexReader r = w.getReader();
-    w.close();
+    w.shutdown();
     assertFalse(r.document(0).getField("field").fieldType().indexed());
     assertTrue(r.document(0).getField("field2").fieldType().indexed());
     r.close();
@@ -390,7 +390,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
       }
     }
     reader.close();
-    iw.close();
+    iw.shutdown();
     dir.close();
   }
   
@@ -415,7 +415,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
     }
     rd.close();
     
-    iw.close();
+    iw.shutdown();
     dir.close();
   }
   
@@ -488,7 +488,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
       throw ex.get();
     }
     
-    iw.close();
+    iw.shutdown();
     dir.close();
   }
   
@@ -543,7 +543,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
       }
       iw.w.addDocument(doc);
       if (random().nextBoolean() && (i % (data.length / 10) == 0)) {
-        iw.w.close();
+        iw.w.shutdown();
         // test merging against a non-compressing codec
         if (iwConf.getCodec() == otherCodec) {
           iwConf.setCodec(Codec.getDefault());
@@ -589,7 +589,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
     iw.commit();
     iw.forceMerge(1);
     
-    iw.close();
+    iw.shutdown();
     dir.close();
   }
   
@@ -658,7 +658,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
       }
     }
     rd.close();
-    iw.close();
+    iw.shutdown();
     dir.close();
   }
 }

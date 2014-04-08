@@ -15,19 +15,20 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.store.Directory;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Random;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Random;
 
 
 public class TestIndexWriterMerging extends LuceneTestCase
@@ -66,7 +67,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     );
     writer.addIndexes(indexA, indexB);
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
 
     fail = verifyIndex(merged, 0);
 
@@ -114,7 +115,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
 
       writer.addDocument(temp);
     }
-    writer.close();
+    writer.shutdown();
   }
   
   // LUCENE-325: test forceMergeDeletes, when 2 singular merges
@@ -146,7 +147,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
       idField.setStringValue("" + i);
       writer.addDocument(document);
     }
-    writer.close();
+    writer.shutdown();
 
     IndexReader ir = DirectoryReader.open(dir);
     assertEquals(10, ir.maxDoc());
@@ -158,7 +159,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     writer = new IndexWriter(dir, dontMergeConfig);
     writer.deleteDocuments(new Term("id", "0"));
     writer.deleteDocuments(new Term("id", "7"));
-    writer.close();
+    writer.shutdown();
     
     ir = DirectoryReader.open(dir);
     assertEquals(8, ir.numDocs());
@@ -169,7 +170,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     assertEquals(10, writer.maxDoc());
     writer.forceMergeDeletes();
     assertEquals(8, writer.numDocs());
-    writer.close();
+    writer.shutdown();
     ir = DirectoryReader.open(dir);
     assertEquals(8, ir.maxDoc());
     assertEquals(8, ir.numDocs());
@@ -209,7 +210,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
       idField.setStringValue("" + i);
       writer.addDocument(document);
     }
-    writer.close();
+    writer.shutdown();
 
     IndexReader ir = DirectoryReader.open(dir);
     assertEquals(98, ir.maxDoc());
@@ -222,7 +223,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     for(int i=0;i<98;i+=2) {
       writer.deleteDocuments(new Term("id", "" + i));
     }
-    writer.close();
+    writer.shutdown();
     
     ir = DirectoryReader.open(dir);
     assertEquals(49, ir.numDocs());
@@ -235,7 +236,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     );
     assertEquals(49, writer.numDocs());
     writer.forceMergeDeletes();
-    writer.close();
+    writer.shutdown();
     ir = DirectoryReader.open(dir);
     assertEquals(49, ir.maxDoc());
     assertEquals(49, ir.numDocs());
@@ -275,7 +276,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
       idField.setStringValue("" + i);
       writer.addDocument(document);
     }
-    writer.close();
+    writer.shutdown();
 
     IndexReader ir = DirectoryReader.open(dir);
     assertEquals(98, ir.maxDoc());
@@ -288,7 +289,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     for(int i=0;i<98;i+=2) {
       writer.deleteDocuments(new Term("id", "" + i));
     }
-    writer.close();
+    writer.shutdown();
     ir = DirectoryReader.open(dir);
     assertEquals(49, ir.numDocs());
     ir.close();
@@ -299,7 +300,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
             setMergePolicy(newLogMergePolicy(3))
     );
     writer.forceMergeDeletes(false);
-    writer.close();
+    writer.shutdown();
     ir = DirectoryReader.open(dir);
     assertEquals(49, ir.maxDoc());
     assertEquals(49, ir.numDocs());
@@ -347,12 +348,16 @@ public class TestIndexWriterMerging extends LuceneTestCase
     document.add(newField("tvtest", "a b c", customType));
     for(int i=0;i<177;i++)
       iw.addDocument(document);
-    iw.close();
+    iw.shutdown();
     dir.close();
   }
   
   public void testNoWaitClose() throws Throwable {
     Directory directory = newDirectory();
+
+    if (directory instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper) directory).setPreventDoubleWrite(false);
+    }
 
     final Document doc = new Document();
     FieldType customType = new FieldType(TextField.TYPE_STORED);
@@ -432,7 +437,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
 
         t1.start();
 
-        writer.close(false);
+        writer.shutdown(false);
         t1.join();
 
         // Make sure reader can read
@@ -442,7 +447,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
         // Reopen
         writer = new IndexWriter(directory, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy()));
       }
-      writer.close();
+      writer.shutdown();
     }
 
     directory.close();

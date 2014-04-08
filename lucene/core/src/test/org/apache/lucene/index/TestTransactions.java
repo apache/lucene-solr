@@ -146,8 +146,8 @@ public class TestTransactions extends LuceneTestCase {
         TestTransactions.doFail = false;
       }  
 
-      writer1.close();
-      writer2.close();
+      writer1.shutdown();
+      writer2.shutdown();
     }
 
     public void update(IndexWriter writer) throws IOException {
@@ -219,7 +219,7 @@ public class TestTransactions extends LuceneTestCase {
       d.add(newTextField("contents", English.intToEnglish(n), Field.Store.NO));
       writer.addDocument(d);
     }
-    writer.close();
+    writer.shutdown();
   }
 
   public void testTransactions() throws Throwable {

@@ -56,7 +56,7 @@ public class TestFieldsReader extends LuceneTestCase {
     conf.getMergePolicy().setNoCFSRatio(0.0);
     IndexWriter writer = new IndexWriter(dir, conf);
     writer.addDocument(testDoc);
-    writer.close();
+    writer.shutdown();
     FaultyIndexInput.doFail = false;
   }
   
@@ -197,7 +197,7 @@ public class TestFieldsReader extends LuceneTestCase {
       for(int i=0;i<2;i++)
         writer.addDocument(testDoc);
       writer.forceMerge(1);
-      writer.close();
+      writer.shutdown();
 
       IndexReader reader = DirectoryReader.open(dir);
 

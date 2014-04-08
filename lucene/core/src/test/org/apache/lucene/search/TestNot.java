@@ -50,7 +50,7 @@ public class TestNot extends LuceneTestCase {
 
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(0, hits.length);
-    writer.close();
+    writer.shutdown();
     reader.close();
     store.close();
   }

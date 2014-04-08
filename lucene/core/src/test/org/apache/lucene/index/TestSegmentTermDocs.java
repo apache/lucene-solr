@@ -116,7 +116,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
       
     // assure that we deal with a single segment  
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
     
     IndexReader reader = DirectoryReader.open(dir);
 

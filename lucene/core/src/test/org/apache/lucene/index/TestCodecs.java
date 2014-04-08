@@ -826,7 +826,7 @@ public class TestCodecs extends LuceneTestCase {
       doc.add(new StringField("f", "doc", Store.NO));
       writer.addDocument(doc);
     }
-    writer.close();
+    writer.shutdown();
     
     Term term = new Term("f", new BytesRef("doc"));
     DirectoryReader reader = DirectoryReader.open(dir);
@@ -855,7 +855,7 @@ public class TestCodecs extends LuceneTestCase {
     
     OLD_FORMAT_IMPERSONATION_IS_ACTIVE = false;
     try {
-      writer.close();
+      writer.shutdown();
       fail("should not have succeeded to impersonate an old format!");
     } catch (UnsupportedOperationException e) {
       writer.rollback();

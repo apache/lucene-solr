@@ -113,7 +113,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
                                          field("first",  "bubba"),
                                          field("last",   "jones")     }));
     reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
     searcher = newSearcher(reader);
   }
 

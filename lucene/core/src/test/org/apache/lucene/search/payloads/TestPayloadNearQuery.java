@@ -118,7 +118,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
       writer.addDocument(doc);
     }
     reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
 
     searcher = newSearcher(reader);
     searcher.setSimilarity(similarity);

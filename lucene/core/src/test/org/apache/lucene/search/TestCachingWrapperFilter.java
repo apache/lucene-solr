@@ -66,7 +66,8 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   
   @Override
   public void tearDown() throws Exception {
-    IOUtils.close(iw, ir, dir);
+    iw.shutdown();
+    IOUtils.close(ir, dir);
     super.tearDown();
   }
   
@@ -143,7 +144,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   public void testCachingWorks() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    writer.close();
+    writer.shutdown();
 
     IndexReader reader = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
     AtomicReaderContext context = (AtomicReaderContext) reader.getContext();
@@ -169,7 +170,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   public void testNullDocIdSet() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    writer.close();
+    writer.shutdown();
 
     IndexReader reader = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
     AtomicReaderContext context = (AtomicReaderContext) reader.getContext();
@@ -192,7 +193,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   public void testNullDocIdSetIterator() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    writer.close();
+    writer.shutdown();
 
     IndexReader reader = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
     AtomicReaderContext context = (AtomicReaderContext) reader.getContext();
@@ -244,7 +245,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     writer.addDocument(new Document());
-    writer.close();
+    writer.shutdown();
 
     IndexReader reader = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
 
@@ -403,7 +404,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     assertTrue(oldReader != null);
 
     reader.close();
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
 

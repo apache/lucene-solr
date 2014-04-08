@@ -30,6 +30,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
@@ -99,14 +100,18 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
               if (VERBOSE) {
                 System.out.println("TEST: now close");
               }
-              writer.close();
+              writer.shutdown();
             } catch (IOException e) {
               if (VERBOSE) {
                 System.out.println("TEST: exception on close; retry w/ no disk space limit");
                 e.printStackTrace(System.out);
               }
               dir.setMaxSizeInBytes(0);
-              writer.close();
+              try {
+                writer.shutdown();
+              } catch (AlreadyClosedException ace) {
+                // OK
+              }
             }
           }
 
@@ -126,7 +131,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
         } else {
           //_TestUtil.syncConcurrentMerges(writer);
           dir.setMaxSizeInBytes(0);
-          writer.close();
+          writer.shutdown();
           dir.close();
           break;
         }
@@ -174,7 +179,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
       for(int j=0;j<25;j++) {
         addDocWithIndex(writer, 25*i+j);
       }
-      writer.close();
+      writer.shutdown();
       String[] files = dirs[i].listAll();
       for(int j=0;j<files.length;j++) {
         inputDiskUsage += dirs[i].fileLength(files[j]);
@@ -188,7 +193,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     for(int j=0;j<START_COUNT;j++) {
       addDocWithIndex(writer, j);
     }
-    writer.close();
+    writer.shutdown();
     
     // Make sure starting index seems to be working properly:
     Term searchTerm = new Term("content", "aaa");        
@@ -437,7 +442,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
         dir.setRandomIOExceptionRate(0.0);
         dir.setRandomIOExceptionRateOnOpen(0.0);
         
-        writer.close();
+        writer.shutdown();
         
         // Wait for all BG threads to finish else
         // dir.close() will throw IOException because
@@ -517,7 +522,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     TestUtil.checkIndex(dir);
     ftdm.clearDoFail();
     w.addDocument(doc);
-    w.close();
+    w.shutdown();
 
     dir.close();
   }
@@ -545,7 +550,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     } catch (IOException ioe) {
     }
     try {
-      writer.close(false);
+      writer.shutdown(false);
       fail("did not hit disk full");
     } catch (IOException ioe) {
     }
@@ -553,7 +558,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     // Make sure once disk space is avail again, we can
     // cleanly close:
     dir.setMaxSizeInBytes(0);
-    writer.close(false);
+    writer.close();
     dir.close();
   }
   

@@ -37,7 +37,7 @@ public class TestIndexReaderClose extends LuceneTestCase {
       Directory dir = newDirectory();
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random(), TEST_VERSION_CURRENT, new MockAnalyzer(random())));
       writer.commit();
-      writer.close();
+      writer.shutdown();
       DirectoryReader open = DirectoryReader.open(dir);
       final boolean throwOnClose = !rarely();
       AtomicReader wrap = SlowCompositeReaderWrapper.wrap(open);

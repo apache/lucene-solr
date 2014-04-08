@@ -62,7 +62,7 @@ public class Test2BNumericDocValues extends LuceneTestCase {
     }
     
     w.forceMerge(1);
-    w.close();
+    w.shutdown();
     
     System.out.println("verifying...");
     System.out.flush();

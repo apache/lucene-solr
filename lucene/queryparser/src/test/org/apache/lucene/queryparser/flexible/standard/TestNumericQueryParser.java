@@ -247,7 +247,7 @@ public class TestNumericQueryParser extends LuceneTestCase {
     
     reader = writer.getReader();
     searcher = newSearcher(reader);
-    writer.close();
+    writer.shutdown();
     
   }
   

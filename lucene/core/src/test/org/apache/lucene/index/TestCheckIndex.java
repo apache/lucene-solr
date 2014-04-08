@@ -52,7 +52,7 @@ public class TestCheckIndex extends LuceneTestCase {
     writer.forceMerge(1);
     writer.commit();
     writer.deleteDocuments(new Term("field","aaa5"));
-    writer.close();
+    writer.shutdown();
 
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
     CheckIndex checker = new CheckIndex(dir);
@@ -112,7 +112,7 @@ public class TestCheckIndex extends LuceneTestCase {
     ));
     doc.add(field);
     iw.addDocument(doc);
-    iw.close();
+    iw.shutdown();
     dir.close(); // checkindex
   }
 }

@@ -209,7 +209,7 @@ public class TestBlockJoinSorting extends LuceneTestCase {
     w.addDocument(document);
 
     IndexSearcher searcher = new IndexSearcher(DirectoryReader.open(w.w, false));
-    w.close();
+    w.shutdown();
     Filter parentFilter = new QueryWrapperFilter(new TermQuery(new Term("__type", "parent")));
     Filter childFilter = new QueryWrapperFilter(new PrefixQuery(new Term("field2")));
     ToParentBlockJoinQuery query = new ToParentBlockJoinQuery(

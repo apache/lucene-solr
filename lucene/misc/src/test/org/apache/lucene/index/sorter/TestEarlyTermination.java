@@ -100,7 +100,7 @@ public class TestEarlyTermination extends LuceneTestCase {
   @Override
   public void tearDown() throws Exception {
     reader.close();
-    iw.close();
+    iw.shutdown();
     dir.close();
     super.tearDown();
   }

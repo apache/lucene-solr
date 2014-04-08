@@ -134,13 +134,13 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
       field8.setStringValue(stringValue);
       iw.addDocument(doc);
     }
-    iw.close();
+    iw.shutdown();
     verify(dir);
     TestUtil.checkIndex(dir); // for some extra coverage, checkIndex before we forceMerge
     iwc.setOpenMode(OpenMode.APPEND);
     IndexWriter iw2 = new IndexWriter(dir, iwc.clone());
     iw2.forceMerge(1);
-    iw2.close();
+    iw2.shutdown();
     verify(dir);
     dir.close();
   }

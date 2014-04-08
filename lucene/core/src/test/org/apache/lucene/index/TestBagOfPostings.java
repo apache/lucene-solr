@@ -140,7 +140,7 @@ public class TestBagOfPostings extends LuceneTestCase {
       // from a docsAndPositionsEnum.
     }
     ir.close();
-    iw.close();
+    iw.shutdown();
     dir.close();
   }
 }

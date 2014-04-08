@@ -34,7 +34,7 @@ public class TestRollback extends LuceneTestCase {
       doc.add(newStringField("pk", Integer.toString(i), Field.Store.YES));
       rw.addDocument(doc);
     }
-    rw.close();
+    rw.shutdown();
 
     // If buffer size is small enough to cause a flush, errors ensue...
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(2).setOpenMode(IndexWriterConfig.OpenMode.APPEND));

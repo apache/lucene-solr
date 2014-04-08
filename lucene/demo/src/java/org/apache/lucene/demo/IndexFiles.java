@@ -118,7 +118,7 @@ public class IndexFiles {
       //
       // writer.forceMerge(1);
 
-      writer.close();
+      writer.shutdown();
 
       Date end = new Date();
       System.out.println(end.getTime() - start.getTime() + " total milliseconds");

@@ -104,7 +104,7 @@ public class TestOmitTf extends LuceneTestCase {
     // force merge
     writer.forceMerge(1);
     // flush
-    writer.close();
+    writer.shutdown();
 
     SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(ram));
     FieldInfos fi = reader.getFieldInfos();
@@ -156,7 +156,7 @@ public class TestOmitTf extends LuceneTestCase {
     // force merge
     writer.forceMerge(1);
     // flush
-    writer.close();
+    writer.shutdown();
 
     SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(ram));
     FieldInfos fi = reader.getFieldInfos();
@@ -199,7 +199,7 @@ public class TestOmitTf extends LuceneTestCase {
     writer.forceMerge(1);
 
     // flush
-    writer.close();
+    writer.shutdown();
 
     SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(ram));
     FieldInfos fi = reader.getFieldInfos();
@@ -251,7 +251,7 @@ public class TestOmitTf extends LuceneTestCase {
     // force merge
     writer.forceMerge(1);
     // flush
-    writer.close();
+    writer.shutdown();
 
     assertNoPrx(ram);
     ram.close();
@@ -287,7 +287,7 @@ public class TestOmitTf extends LuceneTestCase {
         
     writer.forceMerge(1);
     // flush
-    writer.close();
+    writer.shutdown();
 
     /*
      * Verify the index
@@ -453,7 +453,7 @@ public class TestOmitTf extends LuceneTestCase {
     doc.add(f);
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
-    iw.close();
+    iw.shutdown();
     assertEquals(-1, ir.totalTermFreq(new Term("foo", new BytesRef("bar"))));
     assertEquals(-1, ir.getSumTotalTermFreq("foo"));
     ir.close();

@@ -154,7 +154,7 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
       doc.add(newTextField("role", docsContent[i].role, Field.Store.YES));
       w.addDocument(doc);
     }
-    w.close();
+    w.shutdown();
     reader = DirectoryReader.open(rd);
     searcher = newSearcher(reader);
   }

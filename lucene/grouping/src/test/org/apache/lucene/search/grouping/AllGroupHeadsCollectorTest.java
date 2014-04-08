@@ -140,7 +140,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     IndexReader reader = w.getReader();
     IndexSearcher indexSearcher = newSearcher(reader);
 
-    w.close();
+    w.shutdown();
     int maxDoc = reader.maxDoc();
 
     Sort sortWithinGroup = new Sort(new SortField("id_1", SortField.Type.INT, true));
@@ -299,7 +299,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
       }
 
       final DirectoryReader r = w.getReader();
-      w.close();
+      w.shutdown();
 
       // NOTE: intentional but temporary field cache insanity!
       final FieldCache.Ints docIdToFieldId = FieldCache.DEFAULT.getInts(SlowCompositeReaderWrapper.wrap(r), "id", false);

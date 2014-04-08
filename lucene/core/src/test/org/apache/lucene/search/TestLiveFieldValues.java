@@ -170,7 +170,7 @@ public class TestLiveFieldValues extends LuceneTestCase {
 
     rt.close();
     mgr.close();
-    w.close();
+    w.shutdown();
     dir.close();
   }
 }

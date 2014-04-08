@@ -58,7 +58,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
       writer.addDocument(doc);
     }
     IndexReader reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
 
     int num = atLeast(13);
     for (int i = 0; i < num; i++) {
@@ -140,7 +140,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     }
 
     IndexReader reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
 
     int num = atLeast(13);
     for (int i = 0; i < num; i++) {
@@ -216,7 +216,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     }
 
     IndexReader reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
 
     int num = atLeast(13);
     for (int i = 0; i < num; i++) {
@@ -293,7 +293,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
 
     // now do searches
     IndexReader reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
 
     int num = atLeast(13);
     for (int i = 0; i < num; i++) {
@@ -346,7 +346,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     docid = disi.docID();
     assertEquals(-1, docid);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    writer.close();
+    writer.shutdown();
     r.close();
     dir.close();
   }
@@ -371,7 +371,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     docid = disi.docID();
     assertEquals(-1, docid);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    writer.close();
+    writer.shutdown();
     r.close();
     dir.close();
   }

@@ -77,7 +77,7 @@ public class RangeFacetsExample implements Closeable {
 
     // Open near-real-time searcher
     searcher = new IndexSearcher(DirectoryReader.open(indexWriter, true));
-    indexWriter.close();
+    indexWriter.shutdown();
   }
 
   private FacetsConfig getConfig() {

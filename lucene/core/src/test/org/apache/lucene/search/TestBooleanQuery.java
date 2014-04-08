@@ -138,7 +138,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     assertEquals(1, s.search(dmq, 10).totalHits);
     
     r.close();
-    w.close();
+    w.shutdown();
     dir.close();
   }
 
@@ -149,7 +149,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     doc1.add(newTextField("field", "foo bar", Field.Store.NO));
     iw1.addDocument(doc1);
     IndexReader reader1 = iw1.getReader();
-    iw1.close();
+    iw1.shutdown();
     
     Directory dir2 = newDirectory();
     RandomIndexWriter iw2 = new RandomIndexWriter(random(), dir2);
@@ -157,7 +157,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     doc2.add(newTextField("field", "foo baz", Field.Store.NO));
     iw2.addDocument(doc2);
     IndexReader reader2 = iw2.getReader();
-    iw2.close();
+    iw2.shutdown();
 
     BooleanQuery query = new BooleanQuery(); // Query: +foo -ba*
     query.add(new TermQuery(new Term("field", "foo")), BooleanClause.Occur.MUST);
@@ -212,7 +212,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     w.forceMerge(1);
     final IndexReader r = w.getReader();
     final IndexSearcher s = newSearcher(r);
-    w.close();
+    w.shutdown();
 
     for(int iter=0;iter<10*RANDOM_MULTIPLIER;iter++) {
       if (VERBOSE) {
@@ -304,7 +304,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     Document d = new Document();
     d.add(new TextField(FIELD, "clockwork orange", Field.Store.YES));
     writer.addDocument(d);
-    writer.close();
+    writer.shutdown();
 
     IndexReader indexReader = DirectoryReader.open(directory);
     IndexSearcher searcher = newSearcher(indexReader);
@@ -334,7 +334,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     doc.add(newTextField("field", "some text here", Field.Store.NO));
     w.addDocument(doc);
     IndexReader r = w.getReader();
-    w.close();
+    w.shutdown();
     IndexSearcher s = new IndexSearcher(r) {
         @Override
         protected void search(List<AtomicReaderContext> leaves, Weight weight, Collector collector) throws IOException {

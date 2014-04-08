@@ -144,7 +144,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     Directory dir = newDirectory();
     // test that IWC cannot be reused across two IWs
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
-    new RandomIndexWriter(random(), dir, conf).close();
+    new RandomIndexWriter(random(), dir, conf).shutdown();
 
     // this should fail
     try {
@@ -164,8 +164,8 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     
     // if it's cloned in advance, it should be ok
     conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
-    new RandomIndexWriter(random(), dir, conf.clone()).close();
-    new RandomIndexWriter(random(), dir, conf.clone()).close();
+    new RandomIndexWriter(random(), dir, conf.clone()).shutdown();
+    new RandomIndexWriter(random(), dir, conf.clone()).shutdown();
     
     dir.close();
   }
@@ -396,7 +396,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     w.forceMerge(1);
     w.commit();
     assertTrue("Expected CFS after merge", w.newestSegment().info.getUseCompoundFile());
-    w.close();
+    w.shutdown();
     dir.close();
   }
 

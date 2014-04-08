@@ -52,7 +52,7 @@ public class TestDateFilter extends LuceneTestCase {
     writer.addDocument(doc);
     
     IndexReader reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
     IndexSearcher searcher = newSearcher(reader);
     
     // filter that should preserve matches
@@ -115,7 +115,7 @@ public class TestDateFilter extends LuceneTestCase {
     writer.addDocument(doc);
     
     IndexReader reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
     IndexSearcher searcher = newSearcher(reader);
     
     // filter that should preserve matches

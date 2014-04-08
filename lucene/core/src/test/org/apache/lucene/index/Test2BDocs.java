@@ -38,7 +38,7 @@ public class Test2BDocs extends LuceneTestCase {
       iw.addDocument(doc);
     }
     iw.forceMerge(1);
-    iw.close();
+    iw.shutdown();
   }
   
   @AfterClass
@@ -67,7 +67,7 @@ public class Test2BDocs extends LuceneTestCase {
     for (int i = 0; i < 262143; i++) {
       iw.addDocument(doc);
     }
-    iw.close();
+    iw.shutdown();
     DirectoryReader ir = DirectoryReader.open(dir);
     DirectoryReader ir2 = DirectoryReader.open(dir2);
     IndexReader subReaders[] = new IndexReader[8192];

@@ -243,7 +243,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
     IndexReader r = w.getReader();
     assertEquals(1, r.docFreq(new Term("field", "a\uffffb")));
     r.close();
-    w.close();
+    w.shutdown();
     d.close();
   }
 
@@ -257,7 +257,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
     for(int i=0;i<count;i++)
       doc.add(newTextField("f" + i, utf8Data[2*i], Field.Store.YES));
     w.addDocument(doc);
-    w.close();
+    w.shutdown();
 
     IndexReader ir = DirectoryReader.open(dir);
     StoredDocument doc2 = ir.document(0);
@@ -331,7 +331,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
     checkTermsOrder(r, allTerms, true);
     r.close();
 
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
 }

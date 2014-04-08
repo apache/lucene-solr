@@ -63,7 +63,7 @@ public class TestSumDocFreq extends LuceneTestCase {
       writer.deleteDocuments(new Term("id", "" + random().nextInt(numDocs)));
     }
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
     
     ir = DirectoryReader.open(dir);
     assertSumDocFreq(ir);

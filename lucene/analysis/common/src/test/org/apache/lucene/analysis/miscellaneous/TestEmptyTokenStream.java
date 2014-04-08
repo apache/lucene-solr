@@ -67,7 +67,7 @@ public class TestEmptyTokenStream extends BaseTokenStreamTestCase {
     
     assertEquals(1, writer.numDocs());
 
-    writer.close();
+    writer.shutdown();
     directory.close();
   }
 

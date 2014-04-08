@@ -52,7 +52,7 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
       doc.add(new TextField("repetitiveField", repetitiveFieldValue, Field.Store.YES));
       writer.addDocument(doc);
     }
-    writer.close();
+    writer.shutdown();
     reader = DirectoryReader.open(dir);
   }
 

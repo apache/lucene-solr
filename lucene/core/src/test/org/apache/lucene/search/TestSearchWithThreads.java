@@ -65,7 +65,7 @@ public class TestSearchWithThreads extends LuceneTestCase {
       sb.delete(0, sb.length());
     }
     final IndexReader r = w.getReader();
-    w.close();
+    w.shutdown();
 
     final long endTime = System.currentTimeMillis();
     if (VERBOSE) System.out.println("BUILD took " + (endTime-startTime));

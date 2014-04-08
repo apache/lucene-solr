@@ -58,7 +58,7 @@ public class TestFlex extends LuceneTestCase {
       r.close();
     }
 
-    w.close();
+    w.shutdown();
     d.close();
   }
 
@@ -79,7 +79,7 @@ public class TestFlex extends LuceneTestCase {
       // ok -- codec is not required to support this op
     }
     r.close();
-    w.close();
+    w.shutdown();
     d.close();
   }
 }

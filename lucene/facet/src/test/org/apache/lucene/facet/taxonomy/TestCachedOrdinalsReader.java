@@ -80,7 +80,8 @@ public class TestCachedOrdinalsReader extends FacetTestCase {
         assertEquals(ramBytesUsed, ordsReader.ramBytesUsed());
       }
     }
-    
-    IOUtils.close(writer, taxoWriter, reader, indexDir, taxoDir);
+
+    writer.shutdown();
+    IOUtils.close(taxoWriter, reader, indexDir, taxoDir);
   }
 }

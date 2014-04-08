@@ -85,7 +85,7 @@ public class TestNRTCachingDirectory extends LuceneTestCase {
     }
 
     // Close should force cache to clear since all files are sync'd
-    w.close();
+    w.shutdown();
 
     final String[] cachedFiles = cachedDir.listCachedFiles();
     for(String file : cachedFiles) {

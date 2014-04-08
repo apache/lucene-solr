@@ -1298,7 +1298,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
     assertEquals(termsEnum.term(), new BytesRef("something"));
     assertNull(termsEnum.next());
     ir.close();
-    iw.close();
+    iw.shutdown();
     dir.close();
   }
   
@@ -1323,7 +1323,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
     assertEquals(termsEnum.term(), new BytesRef(""));
     assertNull(termsEnum.next());
     ir.close();
-    iw.close();
+    iw.shutdown();
     dir.close();
   }
   
@@ -1358,7 +1358,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
       }
     }
     ir.close();
-    iw.close();
+    iw.shutdown();
     dir.close();
   }
 
@@ -1555,7 +1555,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
     }
 
     IndexReader r = w.getReader();
-    w.close();
+    w.shutdown();
 
     Terms terms = MultiFields.getTerms(r, "body");
     assertEquals(sumDocFreq.get(), terms.getSumDocFreq());

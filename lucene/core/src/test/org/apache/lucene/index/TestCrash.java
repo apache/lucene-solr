@@ -85,7 +85,7 @@ public class TestCrash extends LuceneTestCase {
     Directory dir2 = newDirectory(dir);
     dir.close();
 
-    new RandomIndexWriter(random(), dir2).close();
+    new RandomIndexWriter(random(), dir2).shutdown();
     dir2.close();
   }
 
@@ -106,7 +106,7 @@ public class TestCrash extends LuceneTestCase {
     System.out.println("TEST: now crash");
     crash(writer);
     writer = initIndex(random(), dir, false);
-    writer.close();
+    writer.shutdown();
 
     IndexReader reader = DirectoryReader.open(dir);
     assertTrue(reader.numDocs() < 314);
@@ -118,7 +118,7 @@ public class TestCrash extends LuceneTestCase {
     Directory dir2 = newDirectory(dir);
     dir.close();
 
-    new RandomIndexWriter(random(), dir2).close();
+    new RandomIndexWriter(random(), dir2).shutdown();
     dir2.close();
   }
 
@@ -130,7 +130,7 @@ public class TestCrash extends LuceneTestCase {
     // running when we crash:
     dir.setAssertNoUnrefencedFilesOnClose(false);
 
-    writer.close();
+    writer.shutdown();
     writer = initIndex(random(), dir, false);
     assertEquals(314, writer.maxDoc());
     crash(writer);
@@ -154,7 +154,7 @@ public class TestCrash extends LuceneTestCase {
     Directory dir2 = newDirectory(dir);
     dir.close();
 
-    new RandomIndexWriter(random(), dir2).close();
+    new RandomIndexWriter(random(), dir2).shutdown();
     dir2.close();
   }
 
@@ -163,7 +163,7 @@ public class TestCrash extends LuceneTestCase {
     IndexWriter writer = initIndex(random(), false);
     MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
 
-    writer.close();
+    writer.shutdown();
     dir.crash();
 
     /*
@@ -184,7 +184,7 @@ public class TestCrash extends LuceneTestCase {
     IndexWriter writer = initIndex(random(), false);
     MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
 
-    writer.close(false);
+    writer.shutdown(false);
 
     dir.crash();
 

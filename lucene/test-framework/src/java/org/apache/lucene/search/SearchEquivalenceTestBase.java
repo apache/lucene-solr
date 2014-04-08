@@ -88,7 +88,7 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
     reader = iw.getReader();
     s1 = newSearcher(reader);
     s2 = newSearcher(reader);
-    iw.close();
+    iw.shutdown();
   }
   
   @AfterClass

@@ -227,7 +227,7 @@ public class TestHighFreqTerms extends LuceneTestCase {
     }
     doc.add(newTextField(rnd, "different_field", content, Field.Store.YES));
     writer.addDocument(doc);
-    writer.close();
+    writer.shutdown();
     
   }
   

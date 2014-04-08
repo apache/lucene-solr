@@ -271,7 +271,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         hits = searcher.search(new TermQuery(aaa), null, 1000).scoreDocs;
         dir.tweakBufferSizes();
         assertEquals(35, hits.length);
-        writer.close();
+        writer.shutdown();
         reader.close();
       } finally {
         TestUtil.rm(indexDir);

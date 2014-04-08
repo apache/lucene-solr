@@ -276,7 +276,7 @@ class DocHelper {
     writer.addDocument(doc);
     writer.commit();
     SegmentCommitInfo info = writer.newestSegment();
-    writer.close();
+    writer.shutdown();
     return info;
   }
 

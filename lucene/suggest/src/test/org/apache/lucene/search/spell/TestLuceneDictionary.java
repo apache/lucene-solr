@@ -74,7 +74,7 @@ public class TestLuceneDictionary extends LuceneTestCase {
     writer.addDocument(doc);
 
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
   }
 
   @Override

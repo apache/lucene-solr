@@ -50,7 +50,7 @@ public class TestBooleanScorer extends LuceneTestCase {
       writer.addDocument(doc);
     }
     IndexReader ir = writer.getReader();
-    writer.close();
+    writer.shutdown();
 
     BooleanQuery booleanQuery1 = new BooleanQuery();
     booleanQuery1.add(new TermQuery(new Term(FIELD, "1")), BooleanClause.Occur.SHOULD);
@@ -77,7 +77,7 @@ public class TestBooleanScorer extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     writer.commit();
     IndexReader ir = writer.getReader();
-    writer.close();
+    writer.shutdown();
     IndexSearcher searcher = newSearcher(ir);
     BooleanWeight weight = (BooleanWeight) new BooleanQuery().createWeight(searcher);
     BulkScorer[] scorers = new BulkScorer[] {new BulkScorer() {
@@ -137,7 +137,7 @@ public class TestBooleanScorer extends LuceneTestCase {
     doc.add(new TextField("field", "33", Field.Store.NO));
     w.addDocument(doc);
     final IndexReader r = w.getReader();
-    w.close();
+    w.shutdown();
     // we don't wrap with AssertingIndexSearcher in order to have the original scorer in setScorer.
     final IndexSearcher s = newSearcher(r, true, false);
 
@@ -236,7 +236,7 @@ public class TestBooleanScorer extends LuceneTestCase {
     doc.add(newTextField("field", "doctors are people who prescribe medicines of which they know little, to cure diseases of which they know less, in human beings of whom they know nothing", Field.Store.NO));
     w.addDocument(doc);
     IndexReader r = w.getReader();
-    w.close();
+    w.shutdown();
 
     IndexSearcher s = newSearcher(r);
     BooleanQuery q1 = new BooleanQuery();

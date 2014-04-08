@@ -179,7 +179,8 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
 //      System.out.println();
     }
     
-    IOUtils.close(writer, reader, dir);
+    writer.shutdown();
+    IOUtils.close(reader, dir);
   }
   
   public void testStressMultiThreading() throws Exception {
@@ -290,7 +291,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     
     for (Thread t : threads) t.start();
     done.await();
-    writer.close();
+    writer.shutdown();
     
     DirectoryReader reader = DirectoryReader.open(dir);
     BytesRef scratch = new BytesRef();
@@ -357,7 +358,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
       }
       reader.close();
     }
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
 
@@ -411,7 +412,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
       writer.updateNumericDocValue(updateTerm, "cf" + field, value * 2);
     }
 
-    writer.close();
+    writer.shutdown();
     
     DirectoryReader reader = DirectoryReader.open(dir);
     BytesRef scratch = new BytesRef();

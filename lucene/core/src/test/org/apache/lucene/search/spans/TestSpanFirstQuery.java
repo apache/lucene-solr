@@ -59,7 +59,7 @@ public class TestSpanFirstQuery extends LuceneTestCase {
     sfq = new SpanNotQuery(include, sfq);
     assertEquals(1, searcher.search(sfq, 10).totalHits);
     
-    writer.close();
+    writer.shutdown();
     reader.close();
     dir.close();
   }

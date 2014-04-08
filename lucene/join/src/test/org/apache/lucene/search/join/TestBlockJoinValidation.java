@@ -70,7 +70,7 @@ public class TestBlockJoinValidation extends LuceneTestCase {
       indexWriter.commit();
     }
     indexReader = DirectoryReader.open(indexWriter, random().nextBoolean());
-    indexWriter.close();
+    indexWriter.shutdown();
     indexSearcher = new IndexSearcher(indexReader);
     parentsFilter = new FixedBitSetCachingWrapperFilter(new QueryWrapperFilter(new WildcardQuery(new Term("parent", "*"))));
   }

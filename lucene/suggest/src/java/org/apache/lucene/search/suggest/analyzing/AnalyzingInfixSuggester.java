@@ -207,11 +207,10 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     }
 
     if (writer != null) {
-      writer.close();
+      writer.shutdown();
       writer = null;
     }
 
-    AtomicReader r = null;
     boolean success = false;
     try {
       // First pass: build a temporary normal Lucene index,
@@ -238,10 +237,8 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       searcherMgr = new SearcherManager(writer, true, null);
       success = true;
     } finally {
-      if (success) {
-        IOUtils.close(r);
-      } else {
-        IOUtils.closeWhileHandlingException(writer, r);
+      if (success == false) {
+        writer.rollback();
         writer = null;
       }
     }
@@ -640,7 +637,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       searcherMgr = null;
     }
     if (writer != null) {
-      writer.close();
+      writer.shutdown();
       dir.close();
       writer = null;
     }

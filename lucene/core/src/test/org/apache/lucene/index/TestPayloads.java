@@ -76,7 +76,7 @@ public class TestPayloads extends LuceneTestCase {
         analyzer.setPayloadData("f2", "somedata".getBytes(StandardCharsets.UTF_8), 0, 1);
         writer.addDocument(d);
         // flush
-        writer.close();
+        writer.shutdown();
 
       SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(ram));
         FieldInfos fi = reader.getFieldInfos();
@@ -103,7 +103,7 @@ public class TestPayloads extends LuceneTestCase {
         // force merge
         writer.forceMerge(1);
         // flush
-        writer.close();
+        writer.shutdown();
 
       reader = getOnlySegmentReader(DirectoryReader.open(ram));
         fi = reader.getFieldInfos();
@@ -173,7 +173,7 @@ public class TestPayloads extends LuceneTestCase {
         
         writer.forceMerge(1);
         // flush
-        writer.close();
+        writer.shutdown();
         
         
         /*
@@ -278,7 +278,7 @@ public class TestPayloads extends LuceneTestCase {
         
         writer.forceMerge(1);
         // flush
-        writer.close();
+        writer.shutdown();
         
         reader = DirectoryReader.open(dir);
         tp = MultiFields.getTermPositionsEnum(reader,
@@ -479,7 +479,7 @@ public class TestPayloads extends LuceneTestCase {
         for (int i = 0; i < numThreads; i++) {
           ingesters[i].join();
         }
-        writer.close();
+        writer.shutdown();
         IndexReader reader = DirectoryReader.open(dir);
         TermsEnum terms = MultiFields.getFields(reader).terms(field).iterator(null);
         Bits liveDocs = MultiFields.getLiveDocs(reader);
@@ -567,7 +567,7 @@ public class TestPayloads extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new TextField("hasMaybepayload", "here we go", Field.Store.YES));
     writer.addDocument(doc);
-    writer.close();
+    writer.shutdown();
 
     writer = new RandomIndexWriter(random(), dir,
                                    new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true));
@@ -576,7 +576,7 @@ public class TestPayloads extends LuceneTestCase {
     writer.addDocument(doc);
     writer.addDocument(doc);
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
 
     dir.close();
   }
@@ -612,7 +612,7 @@ public class TestPayloads extends LuceneTestCase {
     de.nextDoc();
     de.nextPosition();
     assertEquals(new BytesRef("test"), de.getPayload());
-    writer.close();
+    writer.shutdown();
     reader.close();
     dir.close();
   }
@@ -649,7 +649,7 @@ public class TestPayloads extends LuceneTestCase {
     de.nextDoc();
     de.nextPosition();
     assertEquals(new BytesRef("test"), de.getPayload());
-    writer.close();
+    writer.shutdown();
     reader.close();
     dir.close();
   }

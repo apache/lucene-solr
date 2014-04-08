@@ -122,7 +122,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
       assertEquals(20*(i+1)+extraCount, writer.numDocs());
     }
 
-    writer.close();
+    writer.shutdown();
     IndexReader reader = DirectoryReader.open(directory);
     assertEquals(200+extraCount, reader.numDocs());
     reader.close();
@@ -167,7 +167,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
       writer.commit();
     }
 
-    writer.close();
+    writer.shutdown();
     IndexReader reader = DirectoryReader.open(directory);
     // Verify that we did not lose any deletes...
     assertEquals(450, reader.numDocs());
@@ -192,7 +192,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
         writer.addDocument(doc);
       }
         
-      writer.close();
+      writer.shutdown();
       TestIndexWriter.assertNoUnreferencedFiles(directory, "testNoExtraFiles");
 
       // Reopen
@@ -201,7 +201,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
           .setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(2));
     }
 
-    writer.close();
+    writer.shutdown();
 
     directory.close();
   }
@@ -239,7 +239,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
       writer.addDocument(doc);
       writer.commit();
 
-      writer.close(false);
+      writer.shutdown(false);
 
       IndexReader reader = DirectoryReader.open(directory);
       assertEquals((1+iter)*182, reader.numDocs());
@@ -255,7 +255,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
               setMaxBufferedDocs(2)
       );
     }
-    writer.close();
+    writer.shutdown();
 
     directory.close();
   }
@@ -325,7 +325,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
         w.addDocument(doc);
       }
     }
-    w.close(false);
+    w.shutdown(false);
     dir.close();
   }
 
@@ -367,7 +367,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
       }
     }
     assertTrue(((TrackingCMS) w.w.getConfig().getMergeScheduler()).totMergedBytes != 0);
-    w.close();
+    w.shutdown();
     d.close();
   }
 }

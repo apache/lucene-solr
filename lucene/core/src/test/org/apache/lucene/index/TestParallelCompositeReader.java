@@ -225,7 +225,7 @@ public class TestParallelCompositeReader extends LuceneTestCase {
 
     d3.add(newTextField("f3", "v1", Field.Store.YES));
     w2.addDocument(d3);
-    w2.close();
+    w2.shutdown();
     
     DirectoryReader ir1 = DirectoryReader.open(dir1),
         ir2 = DirectoryReader.open(dir2);
@@ -444,7 +444,7 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     d4.add(newTextField("f3", "v4", Field.Store.YES));
     d4.add(newTextField("f4", "v4", Field.Store.YES));
     w.addDocument(d4);
-    w.close();
+    w.shutdown();
 
     final CompositeReader ir;
     if (compositeComposite) {
@@ -498,7 +498,7 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     d4.add(newTextField("f1", "v4", Field.Store.YES));
     d4.add(newTextField("f2", "v4", Field.Store.YES));
     w1.addDocument(d4);
-    w1.close();
+    w1.shutdown();
     return dir1;
   }
 
@@ -525,7 +525,7 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     d4.add(newTextField("f3", "v4", Field.Store.YES));
     d4.add(newTextField("f4", "v4", Field.Store.YES));
     w2.addDocument(d4);
-    w2.close();
+    w2.shutdown();
     return dir2;
   }
 
@@ -552,7 +552,7 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     d4.add(newTextField("f3", "v4", Field.Store.YES));
     d4.add(newTextField("f4", "v4", Field.Store.YES));
     w2.addDocument(d4);
-    w2.close();
+    w2.shutdown();
     return dir2;
   }
 

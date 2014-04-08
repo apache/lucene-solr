@@ -270,7 +270,7 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
     doc = new Document();
     doc.add(new TextField("content", "abc bbb ccc", Field.Store.NO));
     writer.addDocument(doc);
-    writer.close();
+    writer.shutdown();
 
     IndexReader reader = DirectoryReader.open(dir);
 
@@ -304,7 +304,7 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
     sa.setMaxTokenLength(100000);
     writer  = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, sa));
     writer.addDocument(doc);
-    writer.close();
+    writer.shutdown();
     reader = DirectoryReader.open(dir);
     assertEquals(1, reader.docFreq(new Term("content", bigTerm)));
     reader.close();

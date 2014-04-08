@@ -163,7 +163,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
       // Make sure once disk space is avail again, we can
       // cleanly close:
       dir.setMaxSizeInBytes(0);
-      writer.close(false);
+      writer.shutdown(false);
       dir.close();
     }
   }
@@ -215,7 +215,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("\nTEST: now close");
       }
-      writer.close(false);
+      writer.shutdown(false);
 
       // Make sure threads that are adding docs are not hung:
       for(int i=0;i<NUM_THREADS;i++) {
@@ -286,11 +286,11 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
 
       boolean success = false;
       try {
-        writer.close(false);
+        writer.shutdown(false);
         success = true;
       } catch (IOException ioe) {
         failure.clearDoFail();
-        writer.close(false);
+        writer.shutdown(false);
       }
       if (VERBOSE) {
         System.out.println("TEST: success=" + success);
@@ -340,7 +340,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     }
     failure.clearDoFail();
     writer.addDocument(doc);
-    writer.close(false);
+    writer.shutdown(false);
     dir.close();
   }
 
@@ -528,7 +528,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
         iwConstructed.countDown();
         startIndexing.await();
         writer.addDocument(doc);
-        writer.close();
+        writer.shutdown();
       } catch (Throwable e) {
         failed = true;
         failure = e;
@@ -630,7 +630,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     }
 
     assertTrue(!failed.get());
-    writerRef.get().close();
+    writerRef.get().shutdown();
     d.close();
   }
 }

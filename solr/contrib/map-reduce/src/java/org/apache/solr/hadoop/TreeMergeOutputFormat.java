@@ -163,7 +163,7 @@ public class TreeMergeOutputFormat extends FileOutputFormat<Text, NullWritable> 
         
         start = System.nanoTime();
         LOG.info("Optimizing Solr: Closing index writer");
-        writer.close();
+        writer.shutdown();
         secs = (System.nanoTime() - start) / (float)(10^9);
         LOG.info("Optimizing Solr: Done closing index writer in {} secs", secs);
         context.setStatus("Done");

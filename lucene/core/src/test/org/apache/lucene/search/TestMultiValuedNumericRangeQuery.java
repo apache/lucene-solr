@@ -58,7 +58,7 @@ public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
       writer.addDocument(doc);
     }
     IndexReader reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
     
     IndexSearcher searcher=newSearcher(reader);
     num = atLeast(50);

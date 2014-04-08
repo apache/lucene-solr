@@ -77,7 +77,7 @@ public class TermsFilterTest extends LuceneTestCase {
     IndexReader reader = SlowCompositeReaderWrapper.wrap(w.getReader());
     assertTrue(reader.getContext() instanceof AtomicReaderContext);
     AtomicReaderContext context = (AtomicReaderContext) reader.getContext();
-    w.close();
+    w.shutdown();
 
     List<Term> terms = new ArrayList<>();
     terms.add(new Term(fieldName, "19"));
@@ -108,7 +108,7 @@ public class TermsFilterTest extends LuceneTestCase {
     doc.add(newStringField(fieldName, "content1", Field.Store.YES));
     w1.addDocument(doc);
     IndexReader reader1 = w1.getReader();
-    w1.close();
+    w1.shutdown();
     
     fieldName = "field2";
     Directory rd2 = newDirectory();
@@ -117,7 +117,7 @@ public class TermsFilterTest extends LuceneTestCase {
     doc.add(newStringField(fieldName, "content2", Field.Store.YES));
     w2.addDocument(doc);
     IndexReader reader2 = w2.getReader();
-    w2.close();
+    w2.shutdown();
     
     TermsFilter tf = new TermsFilter(new Term(fieldName, "content1"));
     MultiReader multi = new MultiReader(reader1, reader2);
@@ -155,7 +155,7 @@ public class TermsFilterTest extends LuceneTestCase {
     
     w.forceMerge(1);
     IndexReader reader = w.getReader();
-    w.close();
+    w.shutdown();
     assertEquals(1, reader.leaves().size());
     
     
@@ -194,7 +194,7 @@ public class TermsFilterTest extends LuceneTestCase {
     }
     w.forceMerge(1);
     IndexReader reader = w.getReader();
-    w.close();
+    w.shutdown();
     assertEquals(1, reader.leaves().size());
     AtomicReaderContext context = reader.leaves().get(0);
     TermsFilter tf = new TermsFilter(new ArrayList<>(terms));
@@ -220,7 +220,7 @@ public class TermsFilterTest extends LuceneTestCase {
       w.addDocument(doc);
     }
     IndexReader reader = w.getReader();
-    w.close();
+    w.shutdown();
     
     IndexSearcher searcher = newSearcher(reader);
     

@@ -32,7 +32,7 @@ public class TestHighFrequencyDictionary extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     writer.commit();
-    writer.close();
+    writer.shutdown();
     IndexReader ir = DirectoryReader.open(dir);
     Dictionary dictionary = new HighFrequencyDictionary(ir, "bogus", 0.1f);
     BytesRefIterator tf = dictionary.getEntryIterator();

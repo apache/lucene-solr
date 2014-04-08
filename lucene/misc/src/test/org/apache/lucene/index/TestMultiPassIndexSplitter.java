@@ -43,7 +43,7 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
     }
     w.commit();
     w.deleteDocuments(new Term("id", "" + (NUM_DOCS-1)));
-    w.close();
+    w.shutdown();
     input = DirectoryReader.open(dir);
   }
   

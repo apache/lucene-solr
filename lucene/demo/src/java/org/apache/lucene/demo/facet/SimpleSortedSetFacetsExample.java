@@ -82,7 +82,7 @@ public class SimpleSortedSetFacetsExample {
     doc.add(new SortedSetDocValuesFacetField("Publish Year", "1999"));
     indexWriter.addDocument(config.build(doc));
     
-    indexWriter.close();
+    indexWriter.shutdown();
   }
 
   /** User runs a query and counts facets. */

@@ -63,7 +63,7 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
     w.forceMergeDeletes();
     assertEquals(60, w.maxDoc());
     assertEquals(60, w.numDocs());
-    w.close();
+    w.shutdown();
     dir.close();
   }
 
@@ -104,7 +104,7 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
       w.forceMerge(targetCount);
       assertEquals(targetCount, w.getSegmentCount());
 
-      w.close();
+      w.shutdown();
       dir.close();
     }
   }
@@ -152,7 +152,7 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
     assertEquals(numDocs-1, r.numDocs());
     r.close();
 
-    w.close();
+    w.shutdown();
 
     dir.close();
   }

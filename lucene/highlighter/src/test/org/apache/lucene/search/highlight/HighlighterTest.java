@@ -1776,7 +1776,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     writer.addDocument( doc( "t_text1", "random words for highlighting tests del" ) );
     writer.addDocument( doc( "t_text1", "more random words for second field" ) );
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
   }
   
   private void deleteDocument() throws IOException {
@@ -1784,7 +1784,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     writer.deleteDocuments( new Term( "t_text1", "del" ) );
     // To see negative idf, keep comment the following line
     //writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
   }
   
   private void searchIndex() throws IOException, InvalidTokenOffsetsException {
@@ -1904,7 +1904,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     writer.addDocument(doc, analyzer);
 
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
     reader = DirectoryReader.open(ramDir);
     numHighlights = 0;
   }

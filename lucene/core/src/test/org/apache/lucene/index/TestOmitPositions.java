@@ -49,7 +49,7 @@ public class TestOmitPositions extends LuceneTestCase {
     }
     
     IndexReader reader = w.getReader();
-    w.close();
+    w.shutdown();
     
     assertNull(MultiFields.getTermPositionsEnum(reader, null, "foo", new BytesRef("test")));
     
@@ -151,7 +151,7 @@ public class TestOmitPositions extends LuceneTestCase {
     // force merge
     writer.forceMerge(1);
     // flush
-    writer.close();
+    writer.shutdown();
 
     SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(ram));
     FieldInfos fi = reader.getFieldInfos();
@@ -220,7 +220,7 @@ public class TestOmitPositions extends LuceneTestCase {
     // force merge
     writer.forceMerge(1);
     // flush
-    writer.close();
+    writer.shutdown();
 
     assertNoPrx(ram);
     ram.close();
@@ -258,7 +258,7 @@ public class TestOmitPositions extends LuceneTestCase {
     FieldInfos fis = MultiFields.getMergedFieldInfos(ir);
     assertEquals(IndexOptions.DOCS_AND_FREQS, fis.fieldInfo("foo").getIndexOptions());
     assertFalse(fis.fieldInfo("foo").hasPayloads());
-    iw.close();
+    iw.shutdown();
     ir.close();
     dir.close(); // checkindex
   }

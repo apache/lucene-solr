@@ -165,7 +165,7 @@ public class TestSearchAfter extends LuceneTestCase {
       }
     }
     reader = iw.getReader();
-    iw.close();
+    iw.shutdown();
     searcher = newSearcher(reader);
     if (VERBOSE) {
       System.out.println("  searcher=" + searcher);

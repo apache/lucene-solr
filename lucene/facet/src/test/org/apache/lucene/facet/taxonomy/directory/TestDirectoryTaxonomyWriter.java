@@ -225,7 +225,7 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     Directory dir = newDirectory();
     
     // create an empty index first, so that DirTaxoWriter initializes indexEpoch to 1.
-    new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null)).close();
+    new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null)).shutdown();
     
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, NO_OP_CACHE);
     taxoWriter.close();
@@ -465,8 +465,9 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
 
     // when too large components were allowed to be added, this resulted in a new added category
     assertEquals(ordinal, taxoWriter.addCategory(cp));
-    
-    IOUtils.close(indexWriter, taxoWriter);
+
+    indexWriter.shutdown();
+    IOUtils.close(taxoWriter);
     
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);

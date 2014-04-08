@@ -86,7 +86,7 @@ public class AssociationsFacetsExample {
     doc.add(new FloatAssociationFacetField(0.34f, "genre", "software"));
     indexWriter.addDocument(config.build(taxoWriter, doc));
 
-    indexWriter.close();
+    indexWriter.shutdown();
     taxoWriter.close();
   }
 

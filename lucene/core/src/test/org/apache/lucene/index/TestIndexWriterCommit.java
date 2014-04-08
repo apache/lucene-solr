@@ -46,7 +46,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
       for (int i = 0; i < 14; i++) {
         TestIndexWriter.addDoc(writer);
       }
-      writer.close();
+      writer.shutdown();
 
       Term searchTerm = new Term("content", "aaa");
       DirectoryReader reader = DirectoryReader.open(dir);
@@ -71,7 +71,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
       }
 
       // Now, close the writer:
-      writer.close();
+      writer.shutdown();
       assertFalse("reader should not be current now", reader.isCurrent());
 
       IndexReader r = DirectoryReader.open(dir);
@@ -97,7 +97,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     for (int i = 0; i < 14; i++) {
       TestIndexWriter.addDoc(writer);
     }
-    writer.close();
+    writer.shutdown();
 
     Term searchTerm = new Term("content", "aaa");
     IndexReader reader = DirectoryReader.open(dir);
@@ -153,7 +153,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
       r.close();
     }
 
-    writer.close();
+    writer.shutdown();
     IndexReader r = DirectoryReader.open(dir);
     searcher = newSearcher(r);
     hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
@@ -212,7 +212,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     for(int j=0;j<30;j++) {
       TestIndexWriter.addDocWithIndex(writer, j);
     }
-    writer.close();
+    writer.shutdown();
     dir.resetMaxUsedSizeInBytes();
 
     dir.setTrackDiskUsage(true);
@@ -233,7 +233,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     long midDiskUsage = dir.getMaxUsedSizeInBytes();
     dir.resetMaxUsedSizeInBytes();
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
 
     DirectoryReader.open(dir).close();
 
@@ -275,7 +275,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     for(int j=0;j<17;j++) {
       TestIndexWriter.addDocWithIndex(writer, j);
     }
-    writer.close();
+    writer.shutdown();
 
     writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
     writer.forceMerge(1);
@@ -304,7 +304,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     }
     writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
 
     if (VERBOSE) {
       System.out.println("TEST: writer closed");
@@ -373,7 +373,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
       threads[i].join();
     }
     assertFalse(failed.get());
-    w.close();
+    w.shutdown();
     dir.close();
   }
 
@@ -413,7 +413,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     reader = DirectoryReader.open(dir);
     assertEquals(40, reader.numDocs());
     reader.close();
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
   
@@ -434,7 +434,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     w.addDocument(doc);
     commitData.put("tag", "second");
     w.setCommitData(commitData);
-    w.close();
+    w.shutdown();
 
     // open "first" with IndexWriter
     IndexCommit commit = null;
@@ -455,7 +455,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     w.addDocument(doc);
     commitData.put("tag", "third");
     w.setCommitData(commitData);
-    w.close();
+    w.shutdown();
 
     // make sure "second" commit is still there
     commit = null;
@@ -484,7 +484,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
       // that's expected !
     }
     // No changes still should generate a commit, because it's a new index.
-    writer.close();
+    writer.shutdown();
     assertEquals("expected 1 commits!", 1, DirectoryReader.listCommits(dir).size());
     dir.close();
   }
@@ -541,7 +541,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     reader = DirectoryReader.open(dir);
     assertEquals(40, reader.numDocs());
     reader.close();
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
 
@@ -598,7 +598,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     reader = DirectoryReader.open(dir);
     assertEquals(17, reader.numDocs());
     reader.close();
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
 
@@ -609,7 +609,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     writer.prepareCommit();
     writer.commit();
-    writer.close();
+    writer.shutdown();
 
     IndexReader reader = DirectoryReader.open(dir);
     assertEquals(0, reader.numDocs());
@@ -623,7 +623,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(2));
     for(int j=0;j<17;j++)
       TestIndexWriter.addDoc(w);
-    w.close();
+    w.shutdown();
 
     DirectoryReader r = DirectoryReader.open(dir);
     // commit(Map) never called for this index
@@ -636,7 +636,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     Map<String,String> data = new HashMap<>();
     data.put("label", "test1");
     w.setCommitData(data);
-    w.close();
+    w.shutdown();
 
     r = DirectoryReader.open(dir);
     assertEquals("test1", r.getIndexCommit().getUserData().get("label"));
@@ -644,7 +644,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
 
     w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     w.forceMerge(1);
-    w.close();
+    w.shutdown();
 
     dir.close();
   }

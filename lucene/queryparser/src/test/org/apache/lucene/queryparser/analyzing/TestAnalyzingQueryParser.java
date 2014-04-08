@@ -281,7 +281,7 @@ public class TestAnalyzingQueryParser extends LuceneTestCase {
     Field field = new Field(FIELD, content, fieldType);
     doc.add(field);
     writer.addDocument(doc);
-    writer.close();
+    writer.shutdown();
     DirectoryReader ir = DirectoryReader.open(ramDir);
     IndexSearcher is = new IndexSearcher(ir);
       

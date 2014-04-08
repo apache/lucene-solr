@@ -81,7 +81,7 @@ public class Test4GBStoredFields extends LuceneTestCase {
       }
     }
     w.forceMerge(1);
-    w.close();
+    w.shutdown();
     if (VERBOSE) {
       boolean found = false;
       for (String file : dir.listAll()) {

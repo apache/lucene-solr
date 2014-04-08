@@ -58,7 +58,8 @@ public class TestRandomSamplingFacetsCollector extends FacetTestCase {
     // NRT open
     IndexSearcher searcher = newSearcher(writer.getReader());
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
-    IOUtils.close(writer, taxoWriter);
+    writer.shutdown();
+    IOUtils.close(taxoWriter);
     
     // Test empty results
     RandomSamplingFacetsCollector collectRandomZeroResults = new RandomSamplingFacetsCollector(numDocs / 10, random.nextLong());

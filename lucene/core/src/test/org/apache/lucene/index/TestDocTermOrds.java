@@ -64,7 +64,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     w.addDocument(doc);
     
     final IndexReader r = w.getReader();
-    w.close();
+    w.shutdown();
 
     final AtomicReader ar = SlowCompositeReaderWrapper.wrap(r);
     final DocTermOrds dto = new DocTermOrds(ar, ar.getLiveDocs(), "field");
@@ -151,7 +151,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     }
     
     final DirectoryReader r = w.getReader();
-    w.close();
+    w.shutdown();
 
     if (VERBOSE) {
       System.out.println("TEST: reader=" + r);
@@ -248,7 +248,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     }
     
     final DirectoryReader r = w.getReader();
-    w.close();
+    w.shutdown();
 
     if (VERBOSE) {
       System.out.println("TEST: reader=" + r);
@@ -401,7 +401,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     v.setDocument(1);
     assertEquals(1, v.nextOrd());
     
-    iw.close();
+    iw.shutdown();
     r1.close();
     r2.close();
     dir.close();
@@ -428,7 +428,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     iwriter.forceMerge(1);
     
     DirectoryReader ireader = iwriter.getReader();
-    iwriter.close();
+    iwriter.shutdown();
 
     AtomicReader ar = getOnlySegmentReader(ireader);
     SortedSetDocValues dv = FieldCache.DEFAULT.getDocTermOrds(ar, "field");

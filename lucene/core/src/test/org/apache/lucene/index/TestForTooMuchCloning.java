@@ -55,7 +55,7 @@ public class TestForTooMuchCloning extends LuceneTestCase {
       w.addDocument(doc);
     }
     final IndexReader r = w.getReader();
-    w.close();
+    w.shutdown();
 
     final int cloneCount = dir.getInputCloneCount();
     //System.out.println("merge clone count=" + cloneCount);

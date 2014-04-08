@@ -271,7 +271,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     assertEquals("15", entries.get(1).getValue().utf8ToString());
     assertEquals(2, entries.get(1).getCount());
 
-    w.close();
+    w.shutdown();
     indexSearcher.getIndexReader().close();
     dir.close();
   }
@@ -344,7 +344,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     w.addDocument(doc);
     w.commit();
 
-    w.close();
+    w.shutdown();
     IndexSearcher indexSearcher = newSearcher(DirectoryReader.open(dir));
     AbstractGroupFacetCollector groupedAirportFacetCollector = createRandomCollector(groupField, "airport", null, true);
     indexSearcher.search(new MatchAllDocsQuery(), groupedAirportFacetCollector);
@@ -661,7 +661,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     }
 
     DirectoryReader reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
 
     return new IndexContext(searchTermToFacetToGroups, reader, numDocs, dir, facetWithMostGroups, numGroups, contentBrs, uniqueFacetValues, useDv);
   }

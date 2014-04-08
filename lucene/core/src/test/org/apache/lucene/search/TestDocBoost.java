@@ -52,7 +52,7 @@ public class TestDocBoost extends LuceneTestCase {
     writer.addDocument(d2);
 
     IndexReader reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
 
     final float[] scores = new float[4];
 

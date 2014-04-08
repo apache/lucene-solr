@@ -76,7 +76,7 @@ public class ExpressionAggregationFacetsExample {
     doc.add(new FacetField("A", "C"));
     indexWriter.addDocument(config.build(taxoWriter, doc));
     
-    indexWriter.close();
+    indexWriter.shutdown();
     taxoWriter.close();
   }
 

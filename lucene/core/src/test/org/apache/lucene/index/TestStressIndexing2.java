@@ -66,7 +66,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
     dw.writer.commit();
     verifyEquals(random(), reader, dir, "id");
     reader.close();
-    dw.writer.close();
+    dw.writer.shutdown();
     dir.close();
   }
   
@@ -178,7 +178,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
     }
 
     // w.forceMerge(1);
-    //w.close();    
+    //w.shutdown();    
 
     for (int i=0; i<threads.length; i++) {
       IndexingThread th = threads[i];
@@ -223,7 +223,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
     }
 
     //w.forceMerge(1);
-    w.close();    
+    w.shutdown();    
 
     for (int i=0; i<threads.length; i++) {
       IndexingThread th = threads[i];
@@ -259,7 +259,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       // System.out.println("indexing "+d1);
     }
     
-    w.close();
+    w.shutdown();
   }
   
   public void verifyEquals(Random r, DirectoryReader r1, Directory dir2, String idField) throws Throwable {

@@ -83,7 +83,8 @@ public abstract class SpatialTestCase extends LuceneTestCase {
   @Override
   @After
   public void tearDown() throws Exception {
-    IOUtils.close(indexWriter,indexReader,directory);
+    indexWriter.shutdown();
+    IOUtils.close(indexReader,directory);
     super.tearDown();
   }
 

@@ -89,7 +89,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     // Make sure the index is created?
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
     writer.commit();
-    writer.close();
+    writer.shutdown();
     IndexReader ir = DirectoryReader.open(dir);
     Dictionary dictionary = new DocumentValueSourceDictionary(ir, FIELD_NAME,  new DoubleConstValueSource(10), PAYLOAD_FIELD_NAME);
     InputIterator inputIterator = dictionary.getEntryIterator();
@@ -113,7 +113,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
       writer.addDocument(doc);
     }
     writer.commit();
-    writer.close();
+    writer.shutdown();
 
     IndexReader ir = DirectoryReader.open(dir);
     ValueSource[] toAdd = new ValueSource[] {new LongFieldSource(WEIGHT_FIELD_NAME_1), new LongFieldSource(WEIGHT_FIELD_NAME_2), new LongFieldSource(WEIGHT_FIELD_NAME_3)};
@@ -145,7 +145,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
       writer.addDocument(doc);
     }
     writer.commit();
-    writer.close();
+    writer.shutdown();
 
     IndexReader ir = DirectoryReader.open(dir);
     ValueSource[] toAdd = new ValueSource[] {new LongFieldSource(WEIGHT_FIELD_NAME_1), new LongFieldSource(WEIGHT_FIELD_NAME_2), new LongFieldSource(WEIGHT_FIELD_NAME_3)};
@@ -182,7 +182,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
       writer.addDocument(doc);
     }
     writer.commit();
-    writer.close();
+    writer.shutdown();
 
     IndexReader ir = DirectoryReader.open(dir);
     ValueSource[] toAdd = new ValueSource[] {new LongFieldSource(WEIGHT_FIELD_NAME_1), new LongFieldSource(WEIGHT_FIELD_NAME_2), new LongFieldSource(WEIGHT_FIELD_NAME_3)};
@@ -229,7 +229,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
       writer.deleteDocuments(delTerm);  
     }
     writer.commit();
-    writer.close();
+    writer.shutdown();
     
     for(String termToDel: termsToDel) {
       assertTrue(null!=docs.remove(termToDel));
@@ -268,7 +268,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
       writer.addDocument(doc);
     }
     writer.commit();
-    writer.close();
+    writer.shutdown();
 
     IndexReader ir = DirectoryReader.open(dir);
     Dictionary dictionary = new DocumentValueSourceDictionary(ir, FIELD_NAME, new DoubleConstValueSource(10), PAYLOAD_FIELD_NAME);

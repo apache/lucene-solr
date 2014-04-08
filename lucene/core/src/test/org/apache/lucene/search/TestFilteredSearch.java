@@ -51,11 +51,9 @@ public class TestFilteredSearch extends LuceneTestCase {
     searchFiltered(writer, directory, filter, enforceSingleSegment);
     // run the test on more than one segment
     enforceSingleSegment = false;
-    writer.close();
     writer = new IndexWriter(directory, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(10).setMergePolicy(newLogMergePolicy()));
     // we index 60 docs - this will create 6 segments
     searchFiltered(writer, directory, filter, enforceSingleSegment);
-    writer.close();
     directory.close();
   }
 
@@ -68,7 +66,7 @@ public class TestFilteredSearch extends LuceneTestCase {
     if (fullMerge) {
       writer.forceMerge(1);
     }
-    writer.close();
+    writer.shutdown();
 
     BooleanQuery booleanQuery = new BooleanQuery();
     booleanQuery.add(new TermQuery(new Term(FIELD, "36")), BooleanClause.Occur.SHOULD);

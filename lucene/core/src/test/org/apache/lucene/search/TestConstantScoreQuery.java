@@ -90,7 +90,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
       writer.addDocument(doc);
 
       reader = writer.getReader();
-      writer.close();
+      writer.shutdown();
       // we don't wrap with AssertingIndexSearcher in order to have the original scorer in setScorer.
       searcher = newSearcher(reader, true, false);
       
@@ -137,7 +137,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
     doc.add(newStringField("field", "b", Field.Store.NO));
     w.addDocument(doc);
     IndexReader r = w.getReader();
-    w.close();
+    w.shutdown();
 
     Filter filterB = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("field", "b"))));
     Query query = new ConstantScoreQuery(filterB);
@@ -163,7 +163,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
     doc.add(newStringField("field", "a", Field.Store.NO));
     w.addDocument(doc);
     IndexReader r = w.getReader();
-    w.close();
+    w.shutdown();
 
     Filter filter = new QueryWrapperFilter(AssertingQuery.wrap(random(), new TermQuery(new Term("field", "a"))));
     IndexSearcher s = newSearcher(r);

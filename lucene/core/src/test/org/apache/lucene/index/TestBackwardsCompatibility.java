@@ -152,7 +152,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     for(int i=0;i<50;i++) {
       writer.addDocument(docs.nextDoc());
     }
-    writer.close();
+    writer.shutdown();
     dir.close();
 
     // Gives you time to copy the index out!: (there is also
@@ -286,7 +286,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         // IndexFormatTooOldException, and we don't want to mask the fail()
         // above, so close without waiting for merges.
         if (writer != null) {
-          writer.close(false);
+          writer.shutdown(false);
         }
         writer = null;
       }
@@ -312,7 +312,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer(random())));
       w.forceMerge(1);
-      w.close();
+      w.shutdown();
       
       dir.close();
     }
@@ -330,7 +330,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("\nTEST: done adding indices; now close");
       }
-      w.close();
+      w.shutdown();
       
       targetDir.close();
     }
@@ -344,7 +344,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       IndexWriter w = new IndexWriter(targetDir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer(random())));
       w.addIndexes(reader);
-      w.close();
+      w.shutdown();
       reader.close();
             
       targetDir.close();
@@ -546,7 +546,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       expected = 45;
     }
     assertEquals("wrong doc count", expected, writer.numDocs());
-    writer.close();
+    writer.shutdown();
 
     // make sure searching sees right # hits
     IndexReader reader = DirectoryReader.open(dir);
@@ -560,7 +560,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     // fully merge
     writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy()));
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
 
     reader = DirectoryReader.open(dir);
     searcher = newSearcher(reader);
@@ -585,7 +585,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     // fully merge
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)).setOpenMode(OpenMode.APPEND));
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
 
     reader = DirectoryReader.open(dir);
     searcher = newSearcher(reader);
@@ -615,7 +615,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     if (fullyMerged) {
       writer.forceMerge(1);
     }
-    writer.close();
+    writer.shutdown();
 
     if (!fullyMerged) {
       // open fresh writer so we get no prx file in the added segment
@@ -626,14 +626,14 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         .setMaxBufferedDocs(10).setMergePolicy(mp);
       writer = new IndexWriter(dir, conf);
       addNoProxDoc(writer);
-      writer.close();
+      writer.shutdown();
 
       writer = new IndexWriter(dir,
         conf.setMergePolicy(doCFS ? NoMergePolicy.COMPOUND_FILES : NoMergePolicy.NO_COMPOUND_FILES)
       );
       Term searchTerm = new Term("id", "7");
       writer.deleteDocuments(searchTerm);
-      writer.close();
+      writer.shutdown();
     }
     
     dir.close();
@@ -669,7 +669,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         addDoc(writer, i);
       }
       assertEquals("wrong doc count", 35, writer.maxDoc());
-      writer.close();
+      writer.shutdown();
 
       // Delete one doc so we get a .del file:
       writer = new IndexWriter(
@@ -679,7 +679,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       );
       Term searchTerm = new Term("id", "7");
       writer.deleteDocuments(searchTerm);
-      writer.close();
+      writer.shutdown();
 
       // Now verify file names... TODO: fix this test better, we could populate from 
       // separateFiles() or something.
@@ -848,7 +848,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     Directory currentDir = newDirectory();
     RandomIndexWriter riw = new RandomIndexWriter(random(), currentDir);
     riw.addDocument(new Document());
-    riw.close();
+    riw.shutdown();
     DirectoryReader ir = DirectoryReader.open(currentDir);
     SegmentReader air = (SegmentReader)ir.leaves().get(0).reader();
     String currentVersion = air.getSegmentInfo().info.getVersion();
@@ -1021,7 +1021,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         for(int j = 0; j < RANDOM_MULTIPLIER * random().nextInt(30); j++) {
           addDoc(w, id++);
         }
-        w.close(false);
+        w.shutdown(false);
       }
       
       // add dummy segments (which are all in current
@@ -1031,7 +1031,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         .setMergePolicy(mp);
       IndexWriter w = new IndexWriter(dir, iwc);
       w.addIndexes(ramDir);
-      w.close(false);
+      w.shutdown(false);
       
       // determine count of segments in modified index
       final int origSegCount = getNumberOfSegments(dir);

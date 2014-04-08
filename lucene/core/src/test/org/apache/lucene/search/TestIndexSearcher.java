@@ -51,7 +51,7 @@ public class TestIndexSearcher extends LuceneTestCase {
       iw.addDocument(doc);
     }
     reader = iw.getReader();
-    iw.close();
+    iw.shutdown();
   }
   
   @Override
@@ -126,7 +126,7 @@ public class TestIndexSearcher extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     w.addDocument(new Document());
     IndexReader r = w.getReader();
-    w.close();
+    w.shutdown();
     
     IndexSearcher s = new IndexSearcher(r);
     try {

@@ -86,7 +86,7 @@ public class TestDocInverterPerFieldErrorInfo extends LuceneTestCase {
       assertTrue(infoStream.contains("distinctiveFieldName"));
     }
 
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
 
@@ -111,7 +111,7 @@ public class TestDocInverterPerFieldErrorInfo extends LuceneTestCase {
     String infoStream = new String(infoBytes.toByteArray(), IOUtils.UTF_8);
     assertFalse(infoStream.contains("boringFieldName"));
 
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
 

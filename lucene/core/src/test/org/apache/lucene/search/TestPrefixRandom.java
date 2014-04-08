@@ -65,7 +65,7 @@ public class TestPrefixRandom extends LuceneTestCase {
     }
     reader = writer.getReader();
     searcher = newSearcher(reader);
-    writer.close();
+    writer.shutdown();
   }
 
   @Override

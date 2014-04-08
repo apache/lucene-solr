@@ -379,13 +379,17 @@ public class FreeTextSuggester extends Lookup {
       pw.close();
       */
 
+      // Writer was only temporary, to count up bigrams,
+      // which we transferred to the FST, so now we
+      // rollback:
+      writer.rollback();
       success = true;
     } finally {
       try {
         if (success) {
-          IOUtils.close(writer, reader);
+          IOUtils.close(reader);
         } else {
-          IOUtils.closeWhileHandlingException(writer, reader);
+          IOUtils.closeWhileHandlingException(reader, writer);
         }
       } finally {
         for(String file : dir.listAll()) {

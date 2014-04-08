@@ -249,14 +249,14 @@ public class TestTermRangeQuery extends LuceneTestCase {
     for (int i = 0; i < values.length; i++) {
       insertDoc(writer, values[i]);
     }
-    writer.close();
+    writer.shutdown();
   }
 
   // shouldnt create an analyzer for every doc?
   private void addDoc(String content) throws IOException {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)).setOpenMode(OpenMode.APPEND));
     insertDoc(writer, content);
-    writer.close();
+    writer.shutdown();
   }
 
   private void insertDoc(IndexWriter writer, String content) throws IOException {

@@ -55,7 +55,7 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
     assertNull(psdp.getLastSaveFile());
     prepareIndexAndSnapshots(psdp, writer, numSnapshots);
     assertNotNull(psdp.getLastSaveFile());
-    writer.close();
+    writer.shutdown();
 
     // Make sure only 1 save file exists:
     int count = 0;
@@ -88,7 +88,7 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
     assertEquals(numSnapshots+1, psdp.getSnapshotCount());
     assertSnapshotExists(dir, psdp, numSnapshots+1, false);
 
-    writer.close();
+    writer.shutdown();
     dir.close();
   }
 
@@ -142,7 +142,7 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
       }
     }
     assertEquals(0, psdp.getSnapshotCount());
-    writer.close();
+    writer.shutdown();
     assertEquals(1, DirectoryReader.listCommits(dir).size());
     dir.close();
   }
@@ -153,7 +153,7 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
     IndexWriter writer = new IndexWriter(dir, getConfig(random(), getDeletionPolicy(dir)));
     PersistentSnapshotDeletionPolicy psdp = (PersistentSnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
     prepareIndexAndSnapshots(psdp, writer, 1);
-    writer.close();
+    writer.shutdown();
 
     psdp.release(snapshots.get(0));
 
@@ -169,7 +169,7 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
     IndexWriter writer = new IndexWriter(dir, getConfig(random(), getDeletionPolicy(dir)));
     PersistentSnapshotDeletionPolicy psdp = (PersistentSnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
     prepareIndexAndSnapshots(psdp, writer, 1);
-    writer.close();
+    writer.shutdown();
 
     psdp.release(snapshots.get(0).getGeneration());
 

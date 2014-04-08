@@ -89,7 +89,7 @@ public class TestWindowsMMap extends LuceneTestCase {
     }
     
     reader.close();
-    writer.close();
+    writer.shutdown();
     rmDir(dirPath);
   }
 

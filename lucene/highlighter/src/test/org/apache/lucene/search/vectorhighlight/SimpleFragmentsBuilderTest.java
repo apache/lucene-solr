@@ -158,7 +158,7 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     doc.add( new Field( F, "aaa", customType) );
     //doc.add( new Field( F, "aaa", Store.NO, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS ) );
     writer.addDocument( doc );
-    writer.close();
+    writer.shutdown();
     if (reader != null) reader.close();
     reader = DirectoryReader.open(dir);
   }
@@ -269,7 +269,7 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
       documents.add(document);
     }
     writer.addDocuments(documents);
-    writer.close();
+    writer.shutdown();
     IndexReader reader = DirectoryReader.open(dir);
 
     try {

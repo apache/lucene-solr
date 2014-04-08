@@ -100,7 +100,7 @@ public class TestTermdocPerf extends LuceneTestCase {
     }
 
     writer.forceMerge(1);
-    writer.close();
+    writer.shutdown();
   }
 
 

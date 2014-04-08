@@ -63,7 +63,7 @@ public class TestDateSort extends LuceneTestCase {
     writer.addDocument(createDocument("Document 5", 1192209943000L));
 
     reader = writer.getReader();
-    writer.close();
+    writer.shutdown();
   }
 
   @Override

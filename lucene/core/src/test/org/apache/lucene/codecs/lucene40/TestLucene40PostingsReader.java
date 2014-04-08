@@ -98,7 +98,7 @@ public class TestLucene40PostingsReader extends LuceneTestCase {
       // delete 1-100% of docs
       iw.deleteDocuments(new Term("title", terms[random().nextInt(terms.length)]));
     }
-    iw.close();
+    iw.shutdown();
     dir.close(); // checkindex
   }
   
