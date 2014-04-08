@@ -290,7 +290,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
         success = true;
       } catch (IOException ioe) {
         failure.clearDoFail();
-        writer.shutdown(false);
+        writer.close();
       }
       if (VERBOSE) {
         System.out.println("TEST: success=" + success);
