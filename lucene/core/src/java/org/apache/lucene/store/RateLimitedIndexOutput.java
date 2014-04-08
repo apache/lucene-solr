@@ -22,13 +22,13 @@ import java.io.IOException;
  * 
  * @lucene.internal
  */
-final class RateLimitedIndexOutput extends BufferedIndexOutput {
+public final class RateLimitedIndexOutput extends BufferedIndexOutput {
   
   private final IndexOutput delegate;
   private final BufferedIndexOutput bufferedDelegate;
   private final RateLimiter rateLimiter;
 
-  RateLimitedIndexOutput(final RateLimiter rateLimiter, final IndexOutput delegate) {
+  public RateLimitedIndexOutput(final RateLimiter rateLimiter, final IndexOutput delegate) {
     // TODO should we make buffer size configurable
     if (delegate instanceof BufferedIndexOutput) {
       bufferedDelegate = (BufferedIndexOutput) delegate;

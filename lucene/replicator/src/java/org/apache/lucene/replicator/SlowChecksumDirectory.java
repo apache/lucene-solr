@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -77,8 +78,11 @@ public class SlowChecksumDirectory extends FilterDirectory {
       }
 
       long value = checksum.getValue();
-      System.out.println(Thread.currentThread().getName() + " id=" + checksums.id + " " + name + ": record pending checksum=" + value);
+      System.out.println("[" + Thread.currentThread().getName() + "] id=" + checksums.id + " " + name + ": record pending checksum=" + value + " (current checkums=" + getChecksum(name) + ") len=" + in.fileLength(name));
       pendingChecksums.put(name, value);
+
+      // In case we overwrote this file:
+      checksums.remove(name);
     } finally {
       input.close();
     }
@@ -97,7 +101,7 @@ public class SlowChecksumDirectory extends FilterDirectory {
   }
 
   public void sync(Collection<String> names) throws IOException {
-    System.out.println(Thread.currentThread().getName() + " id=" + checksums.id + " sync " + names);
+    System.out.println("[" + Thread.currentThread().getName() + "] id=" + checksums.id + " sync " + names);
     in.sync(names);
     for(String name : names) {
       Long v = pendingChecksums.get(name);
@@ -116,7 +120,7 @@ public class SlowChecksumDirectory extends FilterDirectory {
 
   @Override
   public void deleteFile(String name) throws IOException {
-    System.out.println(Thread.currentThread().getName() + " id=" + checksums.id + " " + name + " now delete");
+    System.out.println("[" + Thread.currentThread().getName() + "] id=" + checksums.id + " " + name + " now delete");
     in.deleteFile(name);
     pendingChecksums.remove(name);
     checksums.remove(name);
@@ -156,6 +160,7 @@ public class SlowChecksumDirectory extends FilterDirectory {
       this.id = id;
       this.dir = dir;
       long maxGen = -1;
+      Set<String> seen = new HashSet<>();
       for (String fileName : dir.listAll()) {
         if (fileName.startsWith(FILE_NAME_PREFIX)) {
           long gen = Long.parseLong(fileName.substring(1+FILE_NAME_PREFIX.length()),
@@ -163,6 +168,8 @@ public class SlowChecksumDirectory extends FilterDirectory {
           if (gen > maxGen) {
             maxGen = gen;
           }
+        } else {
+          seen.add(fileName);
         }
       }
 
@@ -177,7 +184,15 @@ public class SlowChecksumDirectory extends FilterDirectory {
           for(int i=0;i<count;i++) {
             String name = in.readString();
             long checksum = in.readLong();
-            checksums.put(name, checksum);
+            // Must filter according to what's in the
+            // directory now because we may have deleted
+            // some files but then crashed and then our
+            // checksum state is invalid:
+            if (seen.contains(name)) {
+              checksums.put(name, checksum);
+            } else {
+              System.out.println(Thread.currentThread().getName() + ": id=" + id + " " + name + ": skip this checkum file on init: it does not exist");
+            }
           }
           nextWriteGen = maxGen+1;
           System.out.println(Thread.currentThread().getName() + ": id=" + id + " " + genToFileName(maxGen) + " loaded checksums");

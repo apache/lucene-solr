@@ -415,6 +415,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   private void write(Directory directory) throws IOException {
 
     String segmentFileName = getNextSegmentFileName();
+    assert directory.fileExists(segmentFileName) == false: "segments file " + segmentFileName + " already exists!";
     
     // Always advance the generation on write:
     if (generation == -1) {

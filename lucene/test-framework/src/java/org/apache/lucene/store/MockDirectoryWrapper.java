@@ -41,6 +41,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.NoDeletionPolicy;
 import org.apache.lucene.index.SegmentInfos;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ThrottledIndexOutput;
 import org.apache.lucene.util._TestUtil;
@@ -628,6 +629,14 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     this.wrapLockFactory = v;
   }
 
+  boolean allowCloseWithOpenFiles;
+
+  /** Set to true to disable checking for still-open files
+      on close.  Default is false. */
+  public void setAllowCloseWithOpenFiles(boolean v) {
+    allowCloseWithOpenFiles = v;
+  }
+
   @Override
   public synchronized void close() throws IOException {
     // files that we tried to delete, but couldn't because readers were open.
@@ -639,14 +648,23 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       openFilesDeleted = new HashSet<String>();
     }
     if (openFiles.size() > 0) {
-      // print the first one as its very verbose otherwise
-      Exception cause = null;
-      Iterator<Exception> stacktraces = openFileHandles.values().iterator();
-      if (stacktraces.hasNext())
-        cause = stacktraces.next();
-      // RuntimeException instead of IOException because
-      // super() does not throw IOException currently:
-      throw new RuntimeException("MockDirectoryWrapper: cannot close: there are still open files: " + openFiles, cause);
+      if (allowCloseWithOpenFiles) {
+        // Force close all still open files:
+        if (LuceneTestCase.VERBOSE) {
+          System.out.println(Thread.currentThread().getName() + " NOTE: MockDirectoryWrapper: now force-close " + openFileHandles.keySet());
+        }
+        // Must clone else we get ConcurrentModificationExc
+        IOUtils.close(new HashSet<Closeable>(openFileHandles.keySet()));
+      } else {
+        // print the first one as its very verbose otherwise
+        Exception cause = null;
+        Iterator<Exception> stacktraces = openFileHandles.values().iterator();
+        if (stacktraces.hasNext())
+          cause = stacktraces.next();
+        // RuntimeException instead of IOException because
+        // super() does not throw IOException currently:
+        throw new RuntimeException("MockDirectoryWrapper: cannot close: there are still open files: " + openFiles, cause);
+      }
     }
     if (openLocks.size() > 0) {
       throw new RuntimeException("MockDirectoryWrapper: cannot close: there are still open locks: " + openLocks);
