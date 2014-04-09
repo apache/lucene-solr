@@ -44,18 +44,10 @@ public class StatsValuesFactory {
   public static StatsValues createStatsValues(SchemaField sf, boolean calcDistinct) {
     // TODO: allow for custom field types
     FieldType fieldType = sf.getType();
-    if (DoubleField.class.isInstance(fieldType) ||
-        IntField.class.isInstance(fieldType) ||
-        LongField.class.isInstance(fieldType) ||
-        FloatField.class.isInstance(fieldType) ||
-        TrieField.class.isInstance(fieldType) ||
-        SortableDoubleField.class.isInstance(fieldType) ||
-        SortableIntField.class.isInstance(fieldType) ||
-        SortableLongField.class.isInstance(fieldType) ||
-        SortableFloatField.class.isInstance(fieldType)) {
-      return new NumericStatsValues(sf, calcDistinct);
-    } else if (DateField.class.isInstance(fieldType)) {
+    if (TrieDateField.class.isInstance(fieldType)) {
       return new DateStatsValues(sf, calcDistinct);
+    } else if (TrieField.class.isInstance(fieldType)) {
+      return new NumericStatsValues(sf, calcDistinct);
     } else if (StrField.class.isInstance(fieldType)) {
       return new StringStatsValues(sf, calcDistinct);
     } else if (sf.getType().getClass().equals(EnumField.class)) {

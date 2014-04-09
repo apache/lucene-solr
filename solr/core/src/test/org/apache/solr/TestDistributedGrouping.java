@@ -36,7 +36,7 @@ import org.apache.solr.common.util.NamedList;
 public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
 
   String t1="a_t";
-  String i1="a_si";
+  String i1="a_i1";
   String s1="a_s";
   String tlong = "other_tl1";
   String tdate_a = "a_n_tdt";

@@ -113,10 +113,6 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     frange_fields.put("foo_td", doubles);
     frange_fields.put("foo_tdt", dates);
 
-    frange_fields.put("foo_pi", ints);
-    frange_fields.put("foo_pl", longs);
-    frange_fields.put("foo_pd", doubles);
-
     frange_fields.put("foo_s", strings);
     frange_fields.put("foo_dt", dates);
 
@@ -202,9 +198,8 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
   @Test
   public void testRandomRangeQueries() throws Exception {
     String handler="";
-    final String[] fields = {"foo_s","foo_i","foo_l","foo_f","foo_d"  // SortableIntField, etc
-            ,"foo_pi","foo_pl","foo_pf","foo_pd"                      // plain int  IntField, etc
-            ,"foo_ti","foo_tl","foo_tf","foo_td"                      // trie numer fields
+    final String[] fields = {"foo_s","foo_i","foo_l","foo_f","foo_d"
+            ,"foo_ti","foo_tl","foo_tf","foo_td"
     };
     final int l=5;
     final int u=25;
@@ -226,8 +221,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     };
     
     // fields that a value source range query should work on
-    String[] frange_fields = {"foo_i","foo_l","foo_f","foo_d",
-            "foo_pi","foo_pl","foo_pf","foo_pd"};
+    String[] frange_fields = {"foo_i","foo_l","foo_f","foo_d"};
 
     for (int i=0; i<1000; i++) {
       int lower = l + r.nextInt(u-l+10)-5;

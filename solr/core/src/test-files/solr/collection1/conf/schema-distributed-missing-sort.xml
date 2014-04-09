@@ -35,8 +35,8 @@
 
     <fieldtype name="boolean"   class="solr.BoolField"        sortMissingLast="true"/>
 
-    <fieldtype name="sint_ml"   class="solr.SortableIntField" sortMissingLast="true"/>
-    <fieldtype name="sint_mf"   class="solr.SortableIntField" sortMissingFirst="true"/>
+    <fieldtype name="int_ml"   class="solr.TrieIntField" precisionStep="0" sortMissingLast="true"/>
+    <fieldtype name="int_mf"   class="solr.TrieIntField" precisionStep="0" sortMissingFirst="true"/>
 
     <fieldType name="long_ml"   class="solr.TrieLongField"    precisionStep="0" omitNorms="true" positionIncrementGap="0" sortMissingLast="true"/>
     <fieldType name="long_mf"   class="solr.TrieLongField"    precisionStep="0" omitNorms="true" positionIncrementGap="0" sortMissingFirst="true"/>
@@ -51,8 +51,8 @@
     <field name="signatureField"  type="string_ml" indexed="true"  stored="false"/>
 
     <dynamicField name="*_ti1"    type="tint"      indexed="true"  stored="true"  multiValued="false"/>
-    <dynamicField name="*_si_ml"  type="sint_ml"   indexed="true"  stored="true"  multiValued="false"/>
-    <dynamicField name="*_si_mf"  type="sint_mf"   indexed="true"  stored="true"  multiValued="false"/>
+    <dynamicField name="*_i1_ml"  type="int_ml"    indexed="true"  stored="true"  multiValued="false"/>
+    <dynamicField name="*_i1_mf"  type="int_mf"    indexed="true"  stored="true"  multiValued="false"/>
 
     <dynamicField name="*_l1_ml"  type="long_ml"   indexed="true"  stored="true"  multiValued="false"/>
     <dynamicField name="*_l1_mf"  type="long_mf"   indexed="true"  stored="true"  multiValued="false"/>

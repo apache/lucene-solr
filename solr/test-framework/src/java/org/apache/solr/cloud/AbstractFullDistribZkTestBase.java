@@ -100,21 +100,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected boolean printLayoutOnTearDown = false;
   
   String t1 = "a_t";
-  String i1 = "a_si";
-  String nint = "n_i";
-  String tint = "n_ti";
-  String nfloat = "n_f";
-  String tfloat = "n_tf";
-  String ndouble = "n_d";
-  String tdouble = "n_td";
-  String nlong = "n_l";
+  String i1 = "a_i1";
   String tlong = "other_tl1";
-  String ndate = "n_dt";
-  String tdate = "n_tdt";
-  
+
   String oddField = "oddField_s";
   String missingField = "ignore_exception__missing_but_valid_field_t";
-  String invalidField = "ignore_exception__invalid_field_not_in_schema";
   protected int sliceCount;
 
   protected CloudSolrServer controlClientCloud;  // cloud version of the control client

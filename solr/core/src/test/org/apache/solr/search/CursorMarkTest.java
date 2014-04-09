@@ -24,9 +24,9 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.schema.DateField;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.CursorPagingTest;
@@ -232,54 +232,16 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
           byte[] randBytes = new byte[TestUtil.nextInt(random(), 1, 50)];
           random().nextBytes(randBytes);
           val = new BytesRef(randBytes);
-        } else if (fieldName.startsWith("bcd")) {
-          if (fieldName.startsWith("bcd_long")) {           // BCDLongField
-            val = Long.toString(random().nextLong());
-            val = sf.getType().toInternal((String)val);
-            val = sf.getType().unmarshalSortValue(val);
-          } else {                                          // BCDIntField & BCDStrField
-            val = Integer.toString(random().nextInt());
-            val = sf.getType().toInternal((String)val);
-            val = sf.getType().unmarshalSortValue(val);
-          }
         } else if (fieldName.contains("int")) {
           val = random().nextInt();                         // TrieIntField
-          if (fieldName.startsWith("legacy")) {             // IntField
-            val = Integer.toString((Integer)val);
-            if (fieldName.startsWith("legacy_sortable")) {  // SortableIntField
-              val = sf.getType().unmarshalSortValue(val);
-            }
-          }
         } else if (fieldName.contains("long")) {
           val = random().nextLong();                        // TrieLongField
-          if (fieldName.startsWith("legacy")) {             // LongField
-            val = Long.toString((Long)val);
-            if (fieldName.startsWith("legacy_sortable")) {  // SortableLongField
-              val = sf.getType().unmarshalSortValue(val);
-            }
-          }
         } else if (fieldName.contains("float")) {
           val = random().nextFloat() * random().nextInt();  // TrieFloatField
-          if (fieldName.startsWith("legacy")) {             // FloatField
-            val = Float.toString((Float)val);
-            if (fieldName.startsWith("legacy_sortable")) {  // SortableFloatField
-              val = sf.getType().unmarshalSortValue(val);
-            }
-          }
         } else if (fieldName.contains("double")) {
           val = random().nextDouble() * random().nextInt(); // TrieDoubleField
-          if (fieldName.startsWith("legacy")) {             // DoubleField
-            val = Double.toString((Double)val);
-            if (fieldName.startsWith("legacy_sortable")) {  // SortableDoubleField
-              val = sf.getType().unmarshalSortValue(val);
-            }
-          }
         } else if (fieldName.contains("date")) {
           val = random().nextLong();                        // TrieDateField
-          if (fieldName.startsWith("legacy_date")) {        // DateField
-            val = ((DateField)sf.getType()).toInternal(new Date((Long)val));
-            val = sf.getType().unmarshalSortValue(val);
-          }
         } else if (fieldName.startsWith("currency")) {
           val = random().nextDouble();
         } else if (fieldName.startsWith("uuid")) {

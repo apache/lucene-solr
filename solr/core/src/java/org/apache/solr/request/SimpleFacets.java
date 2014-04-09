@@ -73,14 +73,10 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.schema.BoolField;
-import org.apache.solr.schema.DateField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.SortableDoubleField;
-import org.apache.solr.schema.SortableFloatField;
-import org.apache.solr.schema.SortableIntField;
-import org.apache.solr.schema.SortableLongField;
+import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocIterator;
@@ -980,12 +976,12 @@ public class SimpleFacets {
     final NamedList<Object> resInner = new SimpleOrderedMap<>();
     resOuter.add(key, resInner);
     final SchemaField sf = schema.getField(f);
-    if (! (sf.getType() instanceof DateField)) {
+    if (! (sf.getType() instanceof TrieDateField)) {
       throw new SolrException
           (SolrException.ErrorCode.BAD_REQUEST,
-              "Can not date facet on a field which is not a DateField: " + f);
+              "Can not date facet on a field which is not a TrieDateField: " + f);
     }
-    final DateField ft = (DateField) sf.getType();
+    final TrieDateField ft = (TrieDateField) sf.getType();
     final String startS
         = required.getFieldParam(f,FacetParams.FACET_DATE_START);
     final Date start;
@@ -1179,16 +1175,8 @@ public class SimpleFacets {
               (SolrException.ErrorCode.BAD_REQUEST,
                   "Unable to range facet on tried field of unexpected type:" + f);
       }
-    } else if (ft instanceof DateField) {
+    } else if (ft instanceof TrieDateField) {
       calc = new DateRangeEndpointCalculator(sf, null);
-    } else if (ft instanceof SortableIntField) {
-      calc = new IntegerRangeEndpointCalculator(sf);
-    } else if (ft instanceof SortableLongField) {
-      calc = new LongRangeEndpointCalculator(sf);
-    } else if (ft instanceof SortableFloatField) {
-      calc = new FloatRangeEndpointCalculator(sf);
-    } else if (ft instanceof SortableDoubleField) {
-      calc = new DoubleRangeEndpointCalculator(sf);
     } else {
       throw new SolrException
           (SolrException.ErrorCode.BAD_REQUEST,
@@ -1346,7 +1334,7 @@ public class SimpleFacets {
   @Deprecated
   protected int rangeCount(SchemaField sf, Date low, Date high,
                            boolean iLow, boolean iHigh) throws IOException {
-    Query rangeQ = ((DateField)(sf.getType())).getRangeQuery(null, sf, low, high, iLow, iHigh);
+    Query rangeQ = ((TrieDateField)(sf.getType())).getRangeQuery(null, sf, low, high, iLow, iHigh);
     return searcher.numDocs(rangeQ, docs);
   }
   
@@ -1534,18 +1522,18 @@ public class SimpleFacets {
                                        final Date now) { 
       super(f); 
       this.now = now;
-      if (! (field.getType() instanceof DateField) ) {
+      if (! (field.getType() instanceof TrieDateField) ) {
         throw new IllegalArgumentException
-          ("SchemaField must use filed type extending DateField");
+          ("SchemaField must use field type extending TrieDateField");
       }
     }
     @Override
     public String formatValue(Date val) {
-      return ((DateField)field.getType()).toExternal(val);
+      return ((TrieDateField)field.getType()).toExternal(val);
     }
     @Override
     protected Date parseVal(String rawval) {
-      return ((DateField)field.getType()).parseMath(now, rawval);
+      return ((TrieDateField)field.getType()).parseMath(now, rawval);
     }
     @Override
     protected Object parseGap(final String rawval) {

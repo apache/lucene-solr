@@ -120,7 +120,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     List<String> tests = new ArrayList<>();
 
     // Construct xpaths like the following:
-    // "//doc[./float[@name='foo_pf']='10.0' and ./float[@name='score']='10.0']"
+    // "//doc[./float[@name='foo_f']='10.0' and ./float[@name='score']='10.0']"
 
     for (int i=0; i<results.length; i+=2) {
       String xpath = "//doc[./float[@name='" + "id" + "']='"
@@ -208,7 +208,6 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
   @Test
   public void testFunctions() {
-    doTest("foo_pf");  // a plain float field
     doTest("foo_f");  // a sortable float field
     doTest("foo_tf");  // a trie float field
   }
@@ -742,7 +741,6 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     
     for (String suffix : new String[] {"s", "b", "dt", "tdt",
                                        "i", "l", "f", "d", 
-                                       "pi", "pl", "pf", "pd",
                                        "ti", "tl", "tf", "td"    }) {
       final String field = "no__vals____" + suffix;
       assertQ(req("q","id:1",

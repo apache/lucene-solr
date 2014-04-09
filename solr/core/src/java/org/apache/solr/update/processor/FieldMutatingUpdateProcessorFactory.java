@@ -91,7 +91,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  *     &lt;str name="fieldRegex"&gt;.*SKIP.*&lt;/str&gt;
  *   &lt;/lst&gt;
  *   &lt;lst name="exclude"&gt;
- *     &lt;str name="typeClass"&gt;solr.DateField&lt;/str&gt;
+ *     &lt;str name="typeClass"&gt;solr.TrieDateField&lt;/str&gt;
  *   &lt;/lst&gt;
  * &lt;/processor&gt;</pre>
  * 

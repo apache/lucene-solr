@@ -39,8 +39,7 @@ import java.util.Locale;
  * <p>
  * The default selection behavior is to mutate both those fields that don't match
  * a schema field, as well as those fields that match a schema field with a field 
- * type that uses class solr.FloatField, solr.TrieFloatField, or 
- * solr.SortableFloatField.
+ * type that uses class solr.TrieFloatField.
  * </p>
  * <p>
  * If all values are parseable as float (or are already Float), then the field

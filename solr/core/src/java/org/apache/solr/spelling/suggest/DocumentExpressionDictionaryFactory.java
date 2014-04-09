@@ -29,11 +29,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.search.suggest.DocumentValueSourceDictionary;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.schema.DoubleField;
 import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.FloatField;
-import org.apache.solr.schema.IntField;
-import org.apache.solr.schema.LongField;
 import org.apache.solr.schema.TrieDoubleField;
 import org.apache.solr.schema.TrieFloatField;
 import org.apache.solr.schema.TrieIntField;
@@ -116,13 +112,13 @@ public class DocumentExpressionDictionaryFactory extends DictionaryFactory {
     SortField.Type type = null;
     String fieldTypeName = core.getLatestSchema().getField(sortFieldName).getType().getTypeName();
     FieldType ft = core.getLatestSchema().getFieldTypes().get(fieldTypeName);
-    if (ft instanceof FloatField || ft instanceof TrieFloatField) {
+    if (ft instanceof TrieFloatField) {
       type = SortField.Type.FLOAT;
-    } else if (ft instanceof IntField || ft instanceof TrieIntField) {
+    } else if (ft instanceof TrieIntField) {
       type = SortField.Type.INT;
-    } else if (ft instanceof LongField || ft instanceof TrieLongField) {
+    } else if (ft instanceof TrieLongField) {
       type = SortField.Type.LONG;
-    } else if (ft instanceof DoubleField || ft instanceof TrieDoubleField) {
+    } else if (ft instanceof TrieDoubleField) {
       type = SortField.Type.DOUBLE;
     }
     return type;

@@ -256,18 +256,6 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
 
   static {
     KNOWN_TYPES.add(BoolField.class);
-    KNOWN_TYPES.add(BCDIntField.class);
-    KNOWN_TYPES.add(BCDLongField.class);
-    KNOWN_TYPES.add(BCDStrField.class);
-    KNOWN_TYPES.add(DateField.class);
-    KNOWN_TYPES.add(DoubleField.class);
-    KNOWN_TYPES.add(FloatField.class);
-    KNOWN_TYPES.add(IntField.class);
-    KNOWN_TYPES.add(LongField.class);
-    KNOWN_TYPES.add(SortableLongField.class);
-    KNOWN_TYPES.add(SortableIntField.class);
-    KNOWN_TYPES.add(SortableFloatField.class);
-    KNOWN_TYPES.add(SortableDoubleField.class);
     KNOWN_TYPES.add(StrField.class);
     KNOWN_TYPES.add(TextField.class);
     KNOWN_TYPES.add(TrieField.class);

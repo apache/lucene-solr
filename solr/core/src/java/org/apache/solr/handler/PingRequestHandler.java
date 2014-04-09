@@ -28,11 +28,11 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.schema.DateField;
 
 import org.apache.commons.io.FileUtils;
 
@@ -274,7 +274,7 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
       try {
         // write out when the file was created
         FileUtils.write(healthcheck, 
-                        DateField.formatExternal(new Date()), "UTF-8");
+                        TrieDateField.formatExternal(new Date()), "UTF-8");
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
                                 "Unable to write healthcheck flag file", e);

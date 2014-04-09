@@ -27,14 +27,13 @@ import org.apache.solr.analytics.request.RangeFacetRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams.FacetRangeInclude;
 import org.apache.solr.common.params.FacetParams.FacetRangeOther;
-import org.apache.solr.schema.DateField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.util.DateMathParser;
 
 
-@SuppressWarnings("deprecation")
 public abstract class RangeEndpointCalculator<T extends Comparable<T>> {
   protected final SchemaField field;
   protected final RangeFacetRequest request;
@@ -248,7 +247,7 @@ public abstract class RangeEndpointCalculator<T extends Comparable<T>> {
         default:
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unable to range facet on tried field of unexpected type:" + sf.getName());
       }
-    } else if (ft instanceof DateField) {
+    } else if (ft instanceof TrieDateField) {
       calc = new DateRangeEndpointCalculator(request, null);
     } else {
       throw new SolrException (SolrException.ErrorCode.BAD_REQUEST, "Unable to range facet on field:" + sf);
@@ -325,21 +324,19 @@ public abstract class RangeEndpointCalculator<T extends Comparable<T>> {
     public DateRangeEndpointCalculator(final RangeFacetRequest request, final Date now) { 
       super(request); 
       this.now = now;
-      if (! (field.getType() instanceof DateField) ) {
-        throw new IllegalArgumentException("SchemaField must use filed type extending DateField");
+      if (! (field.getType() instanceof TrieDateField) ) {
+        throw new IllegalArgumentException("SchemaField must use field type extending TrieDateField");
       }
     }
     
     @Override
-    @SuppressWarnings("deprecation")
     public String formatValue(Date val) {
-      return ((DateField)field.getType()).toExternal(val);
+      return ((TrieDateField)field.getType()).toExternal(val);
     }
     
     @Override
-    @SuppressWarnings("deprecation")
     protected Date parseVal(String rawval) {
-      return ((DateField)field.getType()).parseMath(now, rawval);
+      return ((TrieDateField)field.getType()).parseMath(now, rawval);
     }
     
     @Override

@@ -41,6 +41,13 @@ Upgrading from Solr 4.x
   update your configs to use <arr name="fieldName"> instead. See SOLR-4249 for more 
   details.
 
+* The following legacy numeric and date field types, deprecated in Solr 4.8, are no
+  longer supported: BCDIntField, BCDLongField, BCDStrField, IntField, LongField,
+  FloatField, DoubleField, SortableIntField, SortableLongField, SortableFloatField,
+  SortableDoubleField, and DateField.  Convert these types in your schema to the
+  corresponding Trie-based field type and then re-index.  See SOLR-5936 for more
+  information.
+
 Detailed Change List
 ----------------------
 
@@ -65,6 +72,9 @@ Other Changes
   were deprecated in 4.3 have been removed completely. (hossman)
 
 * SOLR-4792: Stop shipping a .war. (Robert Muir)
+
+* SOLR-5936: Removed deprecated non-Trie-based numeric & date field types.
+  (Steve Rowe)
 
 ==================  4.8.0 ==================
 
@@ -276,6 +286,8 @@ Other Changes
 
 * SOLR-5914: Cleanup and fix Solr's test cleanup code. 
  (Mark Miller, Uwe Schindler)
+
+* SOLR-5936: Deprecate non-Trie-based numeric & date field types. (Steve Rowe)
 
 * SOLR-5934: LBHttpSolrServer exception handling improvement and small test
   improvements. (Gregory Chanan via Mark Miller)

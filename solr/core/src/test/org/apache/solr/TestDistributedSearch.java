@@ -48,16 +48,10 @@ import org.apache.solr.common.util.NamedList;
 public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
   String t1="a_t";
-  String i1="a_si";
+  String i1="a_i1";
   String nint = "n_i";
   String tint = "n_ti";
-  String nfloat = "n_f";
-  String tfloat = "n_tf";
-  String ndouble = "n_d";
-  String tdouble = "n_td";
-  String nlong = "n_l";
   String tlong = "other_tl1";
-  String ndate = "n_dt";
   String tdate_a = "a_n_tdt";
   String tdate_b = "b_n_tdt";
   

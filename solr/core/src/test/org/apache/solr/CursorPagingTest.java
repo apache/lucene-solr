@@ -31,7 +31,7 @@ import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.DateField;
+import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.search.CursorMark; //jdoc
 
 import org.noggit.ObjectBuilder;
@@ -963,7 +963,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   }
 
   private static String randomDate() {
-    return DateField.formatExternal(new Date(random().nextLong()));
+    return TrieDateField.formatExternal(new Date(random().nextLong()));
   }
 
   private static String dateWithRandomSecondOn2010_10_31_at_10_31() {
@@ -998,9 +998,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
       String field = shuffledNames.get(i);
 
       // wrap in a function sometimes
-      if ( (!"score".equals(field) && !field.contains("bcd"))
-           && 
-           (0 == TestUtil.nextInt(random(), 0, 7)) ) {
+      if ( ! "score".equals(field) && 0 == TestUtil.nextInt(random(), 0, 7)) {
         // specific function doesn't matter, just proving that we can handle the concept.
         // but we do have to be careful with non numeric fields
         if (field.contains("float") || field.contains("double")

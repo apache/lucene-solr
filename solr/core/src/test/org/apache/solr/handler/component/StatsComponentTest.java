@@ -63,8 +63,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
       doTestFacetStatisticsMissingResult(f);
     }
 
-    for (String f : new String[] {"stats_ii", // plain int
-            "stats_is",    // sortable int
+    for (String f : new String[] {"stats_ii",
             "stats_tis","stats_tfs","stats_tls","stats_tds"  // trie fields
                                   }) {
       doTestMVFieldStatisticsResult(f);

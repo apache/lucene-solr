@@ -34,59 +34,45 @@
          behavior of the fieldtype.
       -->
 
-    <!-- numeric field types that store and index the text
-         value verbatim (and hence don't sort correctly or support range queries.)
-         These are provided more for backward compatability, allowing one
-         to create a schema that matches an existing lucene index.
+    <!--
+      Default numeric field types. For faster range queries, consider the tint/tfloat/tlong/tdouble types.
     -->
-    <fieldType name="integer" class="solr.IntField"/>
-    <fieldType name="long" class="solr.LongField"/>
-    <fieldtype name="float" class="solr.FloatField"/>
-    <fieldType name="double" class="solr.DoubleField"/>
+    <fieldType name="int" class="solr.TrieIntField" precisionStep="0" positionIncrementGap="0"/>
+    <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" positionIncrementGap="0"/>
+    <fieldType name="long" class="solr.TrieLongField" precisionStep="0" positionIncrementGap="0"/>
+    <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" positionIncrementGap="0"/>
 
-    <!-- numeric field types that manipulate the value into
-       a string value that isn't human readable in it's internal form,
-       but sorts correctly and supports range queries.
+    <!--
+     Numeric field types that index each value at various levels of precision
+     to accelerate range queries when the number of values between the range
+     endpoints is large. See the javadoc for NumericRangeQuery for internal
+     implementation details.
 
-         If sortMissingLast="true" then a sort on this field will cause documents
-       without the field to come after documents with the field,
-       regardless of the requested sort order.
-         If sortMissingFirst="true" then a sort on this field will cause documents
-       without the field to come before documents with the field,
-       regardless of the requested sort order.
-         If sortMissingLast="false" and sortMissingFirst="false" (the default),
-       then default lucene sorting will be used which places docs without the field
-       first in an ascending sort and last in a descending sort.
+     Smaller precisionStep values (specified in bits) will lead to more tokens
+     indexed per value, slightly larger index size, and faster range queries.
+     A precisionStep of 0 disables indexing at different precision levels.
     -->
-    <fieldtype name="sint" class="solr.SortableIntField" sortMissingLast="true"/>
-    <fieldtype name="slong" class="solr.SortableLongField" sortMissingLast="true"/>
-    <fieldtype name="sfloat" class="solr.SortableFloatField" sortMissingLast="true"/>
-    <fieldtype name="sdouble" class="solr.SortableDoubleField" sortMissingLast="true"/>
+    <fieldType name="tint" class="solr.TrieIntField" precisionStep="8" positionIncrementGap="0"/>
+    <fieldType name="tfloat" class="solr.TrieFloatField" precisionStep="8" positionIncrementGap="0"/>
+    <fieldType name="tlong" class="solr.TrieLongField" precisionStep="8" positionIncrementGap="0"/>
+    <fieldType name="tdouble" class="solr.TrieDoubleField" precisionStep="8" positionIncrementGap="0"/>
+
+
     <fieldtype name="binary" class="solr.BinaryField"/>
-
-    <!-- bcd versions of sortable numeric type may provide smaller
-         storage space and support very large numbers.
-    -->
-    <fieldtype name="bcdint" class="solr.BCDIntField" sortMissingLast="true"/>
-    <fieldtype name="bcdlong" class="solr.BCDLongField" sortMissingLast="true"/>
-    <fieldtype name="bcdstr" class="solr.BCDStrField" sortMissingLast="true"/>
-
-
-
     <fieldtype name="boolean" class="solr.BoolField" sortMissingLast="true"/>
     <fieldtype name="string" class="solr.StrField" sortMissingLast="true"/>
 
     <!-- format for date is 1995-12-31T23:59:59.999Z and only the fractional
          seconds part (.999) is optional.
       -->
-    <fieldtype name="date" class="solr.DateField" sortMissingLast="true"/>
+    <fieldtype name="date" class="solr.TrieDateField" sortMissingLast="true"/>
 
 
 
  </types>
 
  <fields>
-   <field name="id" type="integer" indexed="true" stored="true" multiValued="false" required="true"/>
+   <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="true"/>
    <field name="data" type="binary" stored="true"/>
 
  </fields>

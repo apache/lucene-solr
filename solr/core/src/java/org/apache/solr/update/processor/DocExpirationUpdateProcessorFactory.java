@@ -35,7 +35,7 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.schema.DateField;
+import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
@@ -402,7 +402,7 @@ public final class DocExpirationUpdateProcessorFactory
           try {
             DeleteUpdateCommand del = new DeleteUpdateCommand(req);
             del.setQuery("{!cache=false}" + expireField + ":[* TO " +
-                         DateField.formatExternal(SolrRequestInfo.getRequestInfo().getNOW())
+                         TrieDateField.formatExternal(SolrRequestInfo.getRequestInfo().getNOW())
                          + "]");
             proc.processDelete(del);
             

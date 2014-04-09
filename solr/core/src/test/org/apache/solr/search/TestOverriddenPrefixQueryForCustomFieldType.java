@@ -90,8 +90,6 @@ public class TestOverriddenPrefixQueryForCustomFieldType extends SolrTestCaseJ4 
     assertQ(req("q", "swap_foo_bar_in_prefix_query:bar*"), "//*[@numFound='" + counts[0] + "']");
     assertQ(req("q", "swap_foo_bar_in_prefix_query:spam*"), "//*[@numFound='" + otherCounts + "']");
 
-    assertQ(req("q", "intfield:2*"), "//*[@numFound='11']"); //2 and the 10 in twenties
-
     //Custom field should query for the range [2,MAX_INT)
     assertQ(req("q", "int_prefix_as_range:2*"),"//*[@numFound='98']");
 

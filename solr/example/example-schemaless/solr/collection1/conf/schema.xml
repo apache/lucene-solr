@@ -150,7 +150,6 @@
     <dynamicField name="*_td" type="tdouble" indexed="true"  stored="true"/>
     <dynamicField name="*_tdt" type="tdate"  indexed="true"  stored="true"/>
 
-    <dynamicField name="*_pi"  type="pint"    indexed="true"  stored="true"/>
     <dynamicField name="*_c"   type="currency" indexed="true"  stored="true"/>
 
     <dynamicField name="ignored_*" type="ignored" multiValued="true"/>
@@ -315,7 +314,7 @@
                   ... 6 months and 3 days in the future from the start of
                       the current day
                       
-         Consult the DateField javadocs for more information.
+         Consult the TrieDateField javadocs for more information.
 
          Note: For faster range queries, consider the tdate type
       -->
@@ -329,21 +328,6 @@
 
     <!--Binary data type. The data should be sent/retrieved in as Base64 encoded Strings -->
     <fieldtype name="binary" class="solr.BinaryField"/>
-
-    <!--
-      Note:
-      These should only be used for compatibility with existing indexes (created with lucene or older Solr versions).
-      Use Trie based fields instead. As of Solr 3.5 and 4.x, Trie based fields support sortMissingFirst/Last
-      
-      Plain numeric field types that store and index the text
-      value verbatim (and hence don't correctly support range queries, since the
-      lexicographic ordering isn't equal to the numeric ordering)
-    -->
-    <fieldType name="pint" class="solr.IntField"/>
-    <fieldType name="plong" class="solr.LongField"/>
-    <fieldType name="pfloat" class="solr.FloatField"/>
-    <fieldType name="pdouble" class="solr.DoubleField"/>
-    <fieldType name="pdate" class="solr.DateField" sortMissingLast="true"/>
 
     <!-- The "RandomSortField" is not used to store or search any
          data.  You can declare fields of this type it in your schema

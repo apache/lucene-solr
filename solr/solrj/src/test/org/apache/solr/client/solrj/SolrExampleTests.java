@@ -626,7 +626,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     server.commit();
     assertNumFound( "*:*", 0 ); // make sure it got in
 
-    String f = "val_pi";
+    String f = "val_i";
     
     int i=0;               // 0   1   2   3   4   5   6   7   8   9 
     int[] nums = new int[] { 23, 26, 38, 46, 55, 63, 77, 84, 92, 94 };

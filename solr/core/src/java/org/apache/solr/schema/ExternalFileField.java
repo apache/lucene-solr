@@ -69,9 +69,9 @@ public class ExternalFileField extends FieldType implements SchemaAware {
     String ftypeS = args.remove("valType");
     if (ftypeS != null) {
       ftype = schema.getFieldTypes().get(ftypeS);
-      if (ftype != null && !(ftype instanceof FloatField) && !(ftype instanceof TrieFloatField)) {
+      if (ftype != null && !(ftype instanceof TrieFloatField)) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Only float and pfloat (Trie|Float)Field are currently supported as external field type.  Got " + ftypeS);
+            "Only float (TrieFloatField) is currently supported as external field type.  Got " + ftypeS);
       }
     }
     keyFieldName = args.remove("keyField");
