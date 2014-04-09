@@ -500,6 +500,12 @@ public abstract class FSDirectory extends BaseDirectory {
       retryCount++;
       RandomAccessFile file = null;
       try {
+        // LUCENE-5570: throw FNFE if it doesnt exist
+        try {
+          file = new RandomAccessFile(fullFile, "r");
+        } finally {
+          IOUtils.closeWhileHandlingException(file);
+        }
         try {
           file = new RandomAccessFile(fullFile, "rw");
           file.getFD().sync();

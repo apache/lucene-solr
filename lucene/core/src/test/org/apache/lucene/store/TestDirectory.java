@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 
 import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
 import org.apache.lucene.util.LuceneTestCase;
@@ -285,6 +286,35 @@ public class TestDirectory extends LuceneTestCase {
       fsDir.close();
       _TestUtil.rmDir(path);
     }
+  }
+  
+  public void testFsyncDoesntCreateNewFiles() throws Exception {
+    File path = _TestUtil.getTempDir("nocreate");
+    Directory fsdir = new SimpleFSDirectory(path);
+    
+    // write a file
+    IndexOutput out = fsdir.createOutput("afile", newIOContext(random()));
+    out.writeString("boo");
+    out.close();
+    
+    // delete it
+    assertTrue(new File(path, "afile").delete());
+    
+    // directory is empty
+    assertEquals(0, fsdir.listAll().length);
+    
+    // fsync it
+    try {
+      fsdir.sync(Collections.singleton("afile"));
+      fail("didn't get expected exception, instead fsync created new files: " + Arrays.asList(fsdir.listAll()));
+    } catch (FileNotFoundException expected) {
+      // ok
+    }
+    
+    // directory is still empty
+    assertEquals(0, fsdir.listAll().length);
+    
+    fsdir.close();
   }
 }
 
