@@ -295,6 +295,8 @@ Other Changes
 * SOLR-5773: CollapsingQParserPlugin should make elevated documents the 
   group head. (David Boychuck, Joel Bernstein)
 
+* SOLR-5937: Modernize the DIH example config sets. (Steve Rowe)
+
 ==================  4.7.1  ==================
 
 Versions of Major Components
