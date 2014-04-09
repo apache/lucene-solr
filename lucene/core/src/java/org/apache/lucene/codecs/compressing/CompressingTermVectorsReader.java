@@ -114,6 +114,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       indexReader = new CompressingStoredFieldsIndexReader(indexStream, si);
       
       if (version >= VERSION_CHECKSUM) {
+        indexStream.readVLong(); // the end of the data file
         CodecUtil.checkFooter(indexStream);
       } else {
         CodecUtil.checkEOF(indexStream);

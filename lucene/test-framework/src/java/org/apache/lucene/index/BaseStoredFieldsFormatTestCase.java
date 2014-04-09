@@ -57,8 +57,6 @@ import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TestUtil;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
@@ -70,28 +68,16 @@ import com.carrotsearch.randomizedtesting.generators.RandomPicks;
  * uses it and extend this class and override {@link #getCodec()}.
  * @lucene.experimental
  */
-public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
-  private Codec savedCodec;
-
-  /**
-   * Returns the Codec to run tests against
-   */
-  protected abstract Codec getCodec();
+public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormatTestCase {
 
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    // set the default codec, so adding test cases to this isn't fragile
-    savedCodec = Codec.getDefault();
-    Codec.setDefault(getCodec());
+  protected void addRandomFields(Document d) {
+    final int numValues = random().nextInt(3);
+    for (int i = 0; i < numValues; ++i) {
+      d.add(new StoredField("f", TestUtil.randomSimpleString(random(), 100)));
+    }
   }
 
-  @Override
-  public void tearDown() throws Exception {
-    Codec.setDefault(savedCodec); // restore
-    super.tearDown();
-  }
-  
   public void testRandomStoredFields() throws IOException {
     Directory dir = newDirectory();
     Random rand = random();
@@ -661,4 +647,5 @@ public abstract class BaseStoredFieldsFormatTestCase extends LuceneTestCase {
     iw.shutdown();
     dir.close();
   }
+
 }

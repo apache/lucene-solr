@@ -661,7 +661,7 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
     if (numDocs != this.numDocs) {
       throw new RuntimeException("Wrote " + this.numDocs + " docs, finish called with numDocs=" + numDocs);
     }
-    indexWriter.finish(numDocs);
+    indexWriter.finish(numDocs, vectorsStream.getFilePointer());
     CodecUtil.writeFooter(vectorsStream);
   }
 

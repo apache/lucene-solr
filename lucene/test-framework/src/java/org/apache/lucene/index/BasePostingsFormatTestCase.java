@@ -44,6 +44,8 @@ import org.apache.lucene.codecs.lucene46.Lucene46Codec;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.Directory;
@@ -84,12 +86,7 @@ import org.junit.BeforeClass;
     they weren't indexed
 */
 
-public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
-
-  /**
-   * Returns the Codec to run tests against
-   */
-  protected abstract Codec getCodec();
+public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTestCase {
 
   private enum Option {
     // Sometimes use .advance():
@@ -1573,5 +1570,19 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
 
     r.close();
     dir.close();
+  }
+
+  @Override
+  protected void addRandomFields(Document doc) {
+    for (IndexOptions opts : IndexOptions.values()) {
+      FieldType ft = new FieldType();
+      ft.setIndexOptions(opts);
+      ft.setIndexed(true);
+      ft.freeze();
+      final int numFields = random().nextInt(5);
+      for (int j = 0; j < numFields; ++j) {
+        doc.add(new Field("f_" + opts, TestUtil.randomSimpleString(random(), 2), ft));
+      }
+    }
   }
 }
