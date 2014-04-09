@@ -50,7 +50,6 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
   final static BytesRef SIZE             = new BytesRef("size ");
   final static BytesRef DOC              = new BytesRef("  doc ");
   final static BytesRef END              = new BytesRef("END");
-  final static BytesRef CHECKSUM         = new BytesRef("checksum ");
   
   @Override
   public MutableBits newLiveDocs(int size) throws IOException {
@@ -89,7 +88,7 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
         SimpleTextUtil.readLine(in, scratch);
       }
       
-      SimpleTextUtil.checkFooter(in, CHECKSUM);
+      SimpleTextUtil.checkFooter(in);
       
       success = true;
       return new SimpleTextBits(bits, size);
@@ -130,10 +129,7 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
       
       SimpleTextUtil.write(out, END);
       SimpleTextUtil.writeNewline(out);
-      String checksum = Long.toString(out.getChecksum());
-      SimpleTextUtil.write(out, CHECKSUM);
-      SimpleTextUtil.write(out, checksum, scratch);
-      SimpleTextUtil.writeNewline(out);
+      SimpleTextUtil.writeChecksum(out, scratch);
       success = true;
     } finally {
       if (success) {

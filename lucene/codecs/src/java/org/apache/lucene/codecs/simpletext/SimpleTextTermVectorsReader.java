@@ -95,7 +95,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
         upto++;
       }
     }
-    SimpleTextUtil.checkFooter(input, CHECKSUM);
+    SimpleTextUtil.checkFooter(input);
     assert upto == offsets.length;
   }
   

@@ -17,7 +17,6 @@ package org.apache.lucene.codecs.simpletext;
  * limitations under the License.
  */
 
-import static org.apache.lucene.codecs.simpletext.SimpleTextSegmentInfoWriter.SI_CHECKSUM;
 import static org.apache.lucene.codecs.simpletext.SimpleTextSegmentInfoWriter.SI_DIAG_KEY;
 import static org.apache.lucene.codecs.simpletext.SimpleTextSegmentInfoWriter.SI_DIAG_VALUE;
 import static org.apache.lucene.codecs.simpletext.SimpleTextSegmentInfoWriter.SI_DOCCOUNT;
@@ -99,7 +98,7 @@ public class SimpleTextSegmentInfoReader extends SegmentInfoReader {
         files.add(fileName);
       }
       
-      SimpleTextUtil.checkFooter(input, SI_CHECKSUM);
+      SimpleTextUtil.checkFooter(input);
 
       SegmentInfo info = new SegmentInfo(directory, version, segmentName, docCount, 
                                          isCompoundFile, null, diagnostics);

@@ -36,7 +36,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
 class SimpleTextDocValuesWriter extends DocValuesConsumer {
-  final static BytesRef CHECKSUM = new BytesRef("checksum ");
   final static BytesRef END     = new BytesRef("END");
   final static BytesRef FIELD   = new BytesRef("field ");
   final static BytesRef TYPE    = new BytesRef("  type ");
@@ -397,10 +396,7 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
         // TODO: sheisty to do this here?
         SimpleTextUtil.write(data, END);
         SimpleTextUtil.writeNewline(data);
-        String checksum = Long.toString(data.getChecksum());
-        SimpleTextUtil.write(data, CHECKSUM);
-        SimpleTextUtil.write(data, checksum, scratch);
-        SimpleTextUtil.writeNewline(data);
+        SimpleTextUtil.writeChecksum(data, scratch);
         success = true;
       } finally {
         if (success) {
