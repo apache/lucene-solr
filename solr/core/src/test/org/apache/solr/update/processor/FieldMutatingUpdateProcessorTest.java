@@ -367,6 +367,59 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
                  d.getFieldValue("content"));
     assertEquals("ThisXtitleXhasXaXlotXofXspaces", 
                  d.getFieldValue("title"));
+
+    // literalReplacement = true
+    d = processAdd("regex-replace-literal-true",
+        doc(f("id", "doc2"),
+            f("content", "Let's try this one"),
+            f("title", "Let's try try this one")));
+
+    assertNotNull(d);
+
+    assertEquals("Let's <$1> this one",
+        d.getFieldValue("content"));
+    assertEquals("Let's <$1> <$1> this one",
+        d.getFieldValue("title"));
+
+    // literalReplacement is not specified, defaults to true
+    d = processAdd("regex-replace-literal-default-true",
+        doc(f("id", "doc3"),
+            f("content", "Let's try this one"),
+            f("title", "Let's try try this one")));
+
+    assertNotNull(d);
+
+    assertEquals("Let's <$1> this one",
+        d.getFieldValue("content"));
+    assertEquals("Let's <$1> <$1> this one",
+        d.getFieldValue("title"));
+
+    // if user passes literalReplacement as a string param instead of boolean
+    d = processAdd("regex-replace-literal-str-true",
+        doc(f("id", "doc4"),
+            f("content", "Let's try this one"),
+            f("title", "Let's try try this one")));
+
+    assertNotNull(d);
+
+    assertEquals("Let's <$1> this one",
+        d.getFieldValue("content"));
+    assertEquals("Let's <$1> <$1> this one",
+        d.getFieldValue("title"));
+
+    // This is with literalReplacement = false
+    d = processAdd("regex-replace-literal-false",
+        doc(f("id", "doc5"),
+            f("content", "Let's try this one"),
+            f("title", "Let's try try this one")));
+
+    assertNotNull(d);
+
+    assertEquals("Let's <try> this one",
+        d.getFieldValue("content"));
+    assertEquals("Let's <try> <try> this one",
+        d.getFieldValue("title"));
+
   }
  
   public void testFirstValue() throws Exception {

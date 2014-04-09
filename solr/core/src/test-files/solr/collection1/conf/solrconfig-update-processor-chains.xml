@@ -412,6 +412,45 @@
     </processor>
   </updateRequestProcessorChain>
 
+  <updateRequestProcessorChain name="regex-replace-literal-true">
+    <processor class="solr.RegexReplaceProcessorFactory">
+      <str name="fieldName">content</str>
+      <str name="fieldName">title</str>
+      <str name="pattern">(try)</str>
+      <str name="replacement">&lt;$1&gt;</str>
+      <bool name="literalReplacement">true</bool>
+    </processor>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="regex-replace-literal-default-true">
+    <processor class="solr.RegexReplaceProcessorFactory">
+      <str name="fieldName">content</str>
+      <str name="fieldName">title</str>
+      <str name="pattern">(try)</str>
+      <str name="replacement">&lt;$1&gt;</str>
+    </processor>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="regex-replace-literal-false">
+    <processor class="solr.RegexReplaceProcessorFactory">
+      <str name="fieldName">content</str>
+      <str name="fieldName">title</str>
+      <str name="pattern">(try)</str>
+      <str name="replacement">&lt;$1&gt;</str>
+      <bool name="literalReplacement">false</bool>
+    </processor>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="regex-replace-literal-str-true">
+    <processor class="solr.RegexReplaceProcessorFactory">
+      <str name="fieldName">content</str>
+      <str name="fieldName">title</str>
+      <str name="pattern">(try)</str>
+      <str name="replacement">&lt;$1&gt;</str>
+      <str name="literalReplacement">true</str>
+    </processor>
+  </updateRequestProcessorChain>
+
   <updateRequestProcessorChain name="default-values">
     <processor class="solr.DefaultValueUpdateProcessorFactory">
       <str name="fieldName">processor_default_s</str>
