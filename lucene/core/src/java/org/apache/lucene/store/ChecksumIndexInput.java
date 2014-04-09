@@ -36,7 +36,7 @@ public abstract class ChecksumIndexInput extends IndexInput {
   public abstract long getChecksum() throws IOException;
 
   @Override
-  public void seek(long pos) {
+  public void seek(long pos) throws IOException {
     throw new UnsupportedOperationException();
   }
 }

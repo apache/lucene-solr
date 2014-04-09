@@ -648,4 +648,29 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     dir.close();
   }
 
+  public void testBulkMergeWithDeletes() throws IOException {
+    final int numDocs = atLeast(200);
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.COMPOUND_FILES));
+    for (int i = 0; i < numDocs; ++i) {
+      Document doc = new Document();
+      doc.add(new StringField("id", Integer.toString(i), Store.YES));
+      doc.add(new StoredField("f", TestUtil.randomSimpleString(random())));
+      w.addDocument(doc);
+    }
+    final int deleteCount = TestUtil.nextInt(random(), 5, numDocs);
+    for (int i = 0; i < deleteCount; ++i) {
+      final int id = random().nextInt(numDocs);
+      w.deleteDocuments(new Term("id", Integer.toString(id)));
+    }
+    w.commit();
+    w.close();
+    w = new RandomIndexWriter(random(), dir);
+    w.forceMerge(TestUtil.nextInt(random(), 1, 3));
+    w.commit();
+    w.close();
+    TestUtil.checkIndex(dir);
+    dir.close();
+  }
+
 }

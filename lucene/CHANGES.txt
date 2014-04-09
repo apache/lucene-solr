@@ -160,6 +160,9 @@ New Features
   before merges by enabling IndexWriterConfig.setCheckIntegrityAtMerge.
   (Robert Muir)
 
+* LUCENE-5580: Checksums are automatically verified on the default stored
+  fields format when performing a bulk merge. (Adrien Grand)
+
 API Changes
 
 * LUCENE-5454: Add RandomAccessOrds, an optional extension of SortedSetDocValues
