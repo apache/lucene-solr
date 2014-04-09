@@ -28,10 +28,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.StandardOpenOption;
 
 /** This class emulates the new Java 7 "Try-With-Resources" statement.
  * Remove once Lucene is on Java 7.
@@ -365,5 +367,35 @@ public final class IOUtils {
       }
       throw new RuntimeException(th);
     }
+  }
+
+  /**
+   * Ensure that any writes to the given file is written to the storage device that contains it.
+   * @param fileToSync the file to fsync
+   */
+  public static void fsync(File fileToSync) throws IOException {
+    IOException exc = null;
+    for (int retry = 0; retry < 5; retry++) {
+      try {
+        try (FileChannel file = FileChannel.open(fileToSync.toPath(), StandardOpenOption.WRITE)) {
+          file.force(true); // TODO: we probably dont care about metadata, but this is what we did before...
+          return;
+        }
+      } catch (IOException ioe) {
+        if (exc == null) {
+          exc = ioe;
+        }
+        try {
+          // Pause 5 msec
+          Thread.sleep(5);
+        } catch (InterruptedException ie) {
+          ThreadInterruptedException ex = new ThreadInterruptedException(ie);
+          ex.addSuppressed(exc);
+          throw ex;
+        }
+      }
+    }
+    // Throw original exception
+    throw exc;
   }
 }
