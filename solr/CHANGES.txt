@@ -175,6 +175,10 @@ New Features
   java -Durl="http://username:password@hostname:8983/solr/update" -jar post.jar sample.xml
   (Sameer Maggon via Uwe Schindler)
 
+* SOLR-4864: RegexReplaceProcessorFactory should support pattern capture group
+  substitution in replacement string.
+  (Sunil Srinivasan, Jack Krupansky via Steve Rowe)
+
 Bug Fixes
 ----------------------
 
