@@ -18,6 +18,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -131,7 +132,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     FieldType customType = new FieldType();
     customType.setStored(true);
 
-    FieldType customType1 = new FieldType(TextField.TYPE_NOT_STORED);
+    FieldType customType1 = new FieldType(TextField.TYPE_STORED);
     customType1.setTokenized(false);
     customType1.setStoreTermVectors(true);
     customType1.setStoreTermVectorPositions(true);
@@ -360,7 +361,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     }
 
     final Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_STORED);
+    FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
     customType.setTokenized(false);
 
     Field idField = newField("id", "", customType);
@@ -398,12 +399,14 @@ public class TestIndexWriterMerging extends LuceneTestCase
           delID += 5;
         }
 
+        writer.commit();
+
         // Force a bunch of merge threads to kick off so we
         // stress out aborting them on close:
         ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
 
         final IndexWriter finalWriter = writer;
-        final ArrayList<Throwable> failure = new ArrayList<>();
+        final AtomicReference<Throwable> failure = new AtomicReference<>();
         Thread t1 = new Thread() {
             @Override
             public void run() {
@@ -420,7 +423,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
                     break;
                   } catch (Throwable e) {
                     e.printStackTrace(System.out);
-                    failure.add(e);
+                    failure.set(e);
                     done = true;
                     break;
                   }
@@ -431,14 +434,14 @@ public class TestIndexWriterMerging extends LuceneTestCase
             }
           };
 
-        if (failure.size() > 0) {
-          throw failure.get(0);
-        }
-
         t1.start();
 
-        writer.shutdown(false);
+        writer.close();
         t1.join();
+
+        if (failure.get() != null) {
+          throw failure.get();
+        }
 
         // Make sure reader can read
         IndexReader reader = DirectoryReader.open(directory);
