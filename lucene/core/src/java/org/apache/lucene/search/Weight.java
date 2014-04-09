@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReader; // javadocs
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReaderContext; // javadocs
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
@@ -145,7 +144,9 @@ public abstract class Weight {
     private final Scorer scorer;
 
     public DefaultBulkScorer(Scorer scorer) {
-      assert scorer != null;
+      if (scorer == null) {
+        throw new NullPointerException();
+      }
       this.scorer = scorer;
     }
 
@@ -158,14 +159,31 @@ public abstract class Weight {
       // Collector doing something "interesting" in
       // setScorer will be forced to use BS2 anyways:
       collector.setScorer(scorer);
-      if (scorer.docID() == -1) {
-        scorer.nextDoc();
+      if (max == DocIdSetIterator.NO_MORE_DOCS) {
+        scoreAll(collector, scorer);
+        return false;
+      } else {
+        int doc = scorer.docID();
+        if (doc < 0) {
+          doc = scorer.nextDoc();
+        }
+        return scoreRange(collector, scorer, doc, max);
       }
+    }
+    
+    static boolean scoreRange(LeafCollector collector, Scorer scorer, int currentDoc, int end) throws IOException {
+      while (currentDoc < end) {
+        collector.collect(currentDoc);
+        currentDoc = scorer.nextDoc();
+      }
+      return currentDoc != DocIdSetIterator.NO_MORE_DOCS;
+    }
+    
+    static void scoreAll(LeafCollector collector, Scorer scorer) throws IOException {
       int doc;
-      for (doc = scorer.docID(); doc < max; doc = scorer.nextDoc()) {
+      while ((doc = scorer.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
         collector.collect(doc);
       }
-      return doc != DocsEnum.NO_MORE_DOCS;
     }
   }
 
