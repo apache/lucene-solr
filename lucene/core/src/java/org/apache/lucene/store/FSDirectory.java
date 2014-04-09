@@ -17,23 +17,20 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.IOUtils;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.nio.channels.FileChannel;
-import java.nio.file.StandardOpenOption;
-
 import java.util.Collection;
-import static java.util.Collections.synchronizedSet;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Future;
 
-import org.apache.lucene.util.ThreadInterruptedException;
-import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.IOUtils;
+import static java.util.Collections.synchronizedSet;
 
 /**
  * Base class for Directory implementations that store index
@@ -398,35 +395,6 @@ public abstract class FSDirectory extends BaseDirectory {
   }
 
   protected void fsync(String name) throws IOException {
-    File fullFile = new File(directory, name);
-    boolean success = false;
-    int retryCount = 0;
-    IOException exc = null;
-    while (!success && retryCount < 5) {
-      retryCount++;
-      FileChannel file = null;
-      try {
-        try {
-          file = FileChannel.open(fullFile.toPath(), StandardOpenOption.WRITE);
-          file.force(true); // TODO: we probably dont care about metadata, but this is what we did before...
-          success = true;
-        } finally {
-          if (file != null)
-            file.close();
-        }
-      } catch (IOException ioe) {
-        if (exc == null)
-          exc = ioe;
-        try {
-          // Pause 5 msec
-          Thread.sleep(5);
-        } catch (InterruptedException ie) {
-          throw new ThreadInterruptedException(ie);
-        }
-      }
-    }
-    if (!success)
-      // Throw original exception
-      throw exc;
+    IOUtils.fsync(new File(directory, name));
   }
 }
