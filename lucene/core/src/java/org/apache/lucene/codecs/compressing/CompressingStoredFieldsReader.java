@@ -84,6 +84,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
   private final int version;
   private final FieldInfos fieldInfos;
   private final CompressingStoredFieldsIndexReader indexReader;
+  private final long maxPointer;
   private final IndexInput fieldsStream;
   private final int chunkSize;
   private final int packedIntsVersion;
@@ -99,6 +100,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     this.fieldInfos = reader.fieldInfos;
     this.fieldsStream = reader.fieldsStream.clone();
     this.indexReader = reader.indexReader.clone();
+    this.maxPointer = reader.maxPointer;
     this.chunkSize = reader.chunkSize;
     this.packedIntsVersion = reader.packedIntsVersion;
     this.compressionMode = reader.compressionMode;
@@ -118,24 +120,27 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     numDocs = si.getDocCount();
     ChecksumIndexInput indexStream = null;
     try {
-      // Load the index into memory
       final String indexStreamFN = IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_INDEX_EXTENSION);
+      final String fieldsStreamFN = IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_EXTENSION);
+      // Load the index into memory
       indexStream = d.openChecksumInput(indexStreamFN, context);
       final String codecNameIdx = formatName + CODEC_SFX_IDX;
       version = CodecUtil.checkHeader(indexStream, codecNameIdx, VERSION_START, VERSION_CURRENT);
       assert CodecUtil.headerLength(codecNameIdx) == indexStream.getFilePointer();
       indexReader = new CompressingStoredFieldsIndexReader(indexStream, si);
-      
+
       if (version >= VERSION_CHECKSUM) {
+        maxPointer = indexStream.readVLong();
+        assert maxPointer + CodecUtil.footerLength() == d.fileLength(fieldsStreamFN);
         CodecUtil.checkFooter(indexStream);
       } else {
+        maxPointer = d.fileLength(fieldsStreamFN);
         CodecUtil.checkEOF(indexStream);
       }
       indexStream.close();
       indexStream = null;
 
       // Open the data file and read metadata
-      final String fieldsStreamFN = IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_EXTENSION);
       fieldsStream = d.openInput(fieldsStreamFN, context);
       final String codecNameDat = formatName + CODEC_SFX_DAT;
       final int fieldsVersion = CodecUtil.checkHeader(fieldsStream, codecNameDat, VERSION_START, VERSION_CURRENT);
@@ -502,8 +507,9 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
      * Copy compressed data.
      */
     void copyCompressedData(DataOutput out) throws IOException {
+      assert getVersion() == VERSION_CURRENT;
       final long chunkEnd = docBase + chunkDocs == numDocs
-          ? fieldsStream.length()
+          ? maxPointer
           : indexReader.getStartPointer(docBase + chunkDocs);
       out.copyBytes(fieldsStream, chunkEnd - fieldsStream.getFilePointer());
     }

@@ -17,13 +17,15 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import static org.apache.lucene.index.SortedSetDocValues.NO_MORE_ORDS;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
@@ -55,10 +57,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-
-import static org.apache.lucene.index.SortedSetDocValues.NO_MORE_ORDS;
 
 /**
  * Abstract class to do basic tests for a docvalues format.
@@ -68,23 +67,21 @@ import static org.apache.lucene.index.SortedSetDocValues.NO_MORE_ORDS;
  * test passes, then all Lucene/Solr tests should also pass.  Ie,
  * if there is some bug in a given DocValuesFormat that this
  * test fails to catch then this test needs to be improved! */
-public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
-  
-  /** Returns the codec to run tests against */
-  protected abstract Codec getCodec();
-  
-  private Codec savedCodec;
-  
-  public void setUp() throws Exception {
-    super.setUp();
-    // set the default codec, so adding test cases to this isn't fragile
-    savedCodec = Codec.getDefault();
-    Codec.setDefault(getCodec());
-  }
-  
-  public void tearDown() throws Exception {
-    Codec.setDefault(savedCodec); // restore
-    super.tearDown();
+public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTestCase {
+
+  @Override
+  protected void addRandomFields(Document doc) {
+    if (usually()) {
+      doc.add(new NumericDocValuesField("ndv", random().nextInt(1 << 12)));
+      doc.add(new BinaryDocValuesField("bdv", new BytesRef(TestUtil.randomSimpleString(random()))));
+      doc.add(new SortedDocValuesField("sdv", new BytesRef(TestUtil.randomSimpleString(random(), 2))));
+    }
+    if (defaultCodecSupportsSortedSet()) {
+      final int numValues = random().nextInt(5);
+      for (int i = 0; i < numValues; ++i) {
+        doc.add(new SortedSetDocValuesField("ssdv", new BytesRef(TestUtil.randomSimpleString(random(), 2))));
+      }
+    }
   }
 
   public void testOneNumber() throws IOException {

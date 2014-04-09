@@ -192,7 +192,7 @@ public final class CompressingStoredFieldsIndexWriter implements Closeable {
     maxStartPointer = startPointer;
   }
 
-  void finish(int numDocs) throws IOException {
+  void finish(int numDocs, long maxPointer) throws IOException {
     if (numDocs != totalDocs) {
       throw new IllegalStateException("Expected " + numDocs + " docs, but got " + totalDocs);
     }
@@ -200,6 +200,7 @@ public final class CompressingStoredFieldsIndexWriter implements Closeable {
       writeBlock();
     }
     fieldsIndexOut.writeVInt(0); // end marker
+    fieldsIndexOut.writeVLong(maxPointer);
     CodecUtil.writeFooter(fieldsIndexOut);
   }
 

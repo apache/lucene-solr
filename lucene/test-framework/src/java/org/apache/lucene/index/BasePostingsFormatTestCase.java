@@ -38,6 +38,9 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsConsumer;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.codecs.TermsConsumer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.Directory;
@@ -47,7 +50,6 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -76,12 +78,7 @@ import org.junit.BeforeClass;
     they weren't indexed
 */
 
-public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
-
-  /**
-   * Returns the Codec to run tests against
-   */
-  protected abstract Codec getCodec();
+public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTestCase {
 
   private enum Option {
     // Sometimes use .advance():
@@ -1135,6 +1132,26 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
 
       dir.close();
       TestUtil.rm(path);
+    }
+  }
+
+  @Override
+  protected void addRandomFields(Document doc) {
+    for (IndexOptions opts : IndexOptions.values()) {
+      final String field = "f_" + opts;
+      String pf = TestUtil.getPostingsFormat(Codec.getDefault(), field);
+      if (opts == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS && doesntSupportOffsets.contains(pf)) {
+        continue;
+      }
+      FieldType ft = new FieldType();
+      ft.setIndexOptions(opts);
+      ft.setIndexed(true);
+      ft.setOmitNorms(true);
+      ft.freeze();
+      final int numFields = random().nextInt(5);
+      for (int j = 0; j < numFields; ++j) {
+        doc.add(new Field("f_" + opts, TestUtil.randomSimpleString(random(), 2), ft));
+      }
     }
   }
 }

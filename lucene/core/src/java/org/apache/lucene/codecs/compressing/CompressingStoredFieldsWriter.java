@@ -316,7 +316,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     if (docBase != numDocs) {
       throw new RuntimeException("Wrote " + docBase + " docs, finish called with numDocs=" + numDocs);
     }
-    indexWriter.finish(numDocs);
+    indexWriter.finish(numDocs, fieldsStream.getFilePointer());
     CodecUtil.writeFooter(fieldsStream);
     assert bufferedDocs.length == 0;
   }

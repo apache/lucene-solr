@@ -28,16 +28,15 @@ import org.apache.lucene.index.RandomCodec;
  * Basic tests of PerFieldPostingsFormat
  */
 public class TestPerFieldPostingsFormat extends BasePostingsFormatTestCase {
-  private Codec codec;
-  
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    codec = new RandomCodec(new Random(random().nextLong()), Collections.<String>emptySet());
-  }
-  
+
   @Override
   protected Codec getCodec() {
-    return codec;
+    return new RandomCodec(new Random(random().nextLong()), Collections.<String>emptySet());
   }
+
+  @Override
+  public void testMergeStability() throws Exception {
+    assumeTrue("The MockRandom PF randomizes content on the fly, so we can't check it", false);
+  }
+
 }
