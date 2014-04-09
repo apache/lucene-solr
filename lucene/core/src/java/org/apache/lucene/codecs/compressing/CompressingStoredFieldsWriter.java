@@ -399,6 +399,8 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
               }
             }
           } while (docID < maxDoc);
+
+          it.checkIntegrity();
         }
       }
     }

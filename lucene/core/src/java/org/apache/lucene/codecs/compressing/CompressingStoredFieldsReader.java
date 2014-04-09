@@ -48,6 +48,7 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.store.BufferedChecksumIndexInput;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataInput;
@@ -393,25 +394,47 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
 
   ChunkIterator chunkIterator(int startDocID) throws IOException {
     ensureOpen();
-    fieldsStream.seek(indexReader.getStartPointer(startDocID));
-    return new ChunkIterator();
+    return new ChunkIterator(startDocID);
   }
 
   final class ChunkIterator {
 
-    BytesRef spare;
-    BytesRef bytes;
+    final ChecksumIndexInput fieldsStream;
+    final BytesRef spare;
+    final BytesRef bytes;
     int docBase;
     int chunkDocs;
     int[] numStoredFields;
     int[] lengths;
 
-    private ChunkIterator() {
+    private ChunkIterator(int startDocId) throws IOException {
       this.docBase = -1;
       bytes = new BytesRef();
       spare = new BytesRef();
       numStoredFields = new int[1];
       lengths = new int[1];
+
+      IndexInput in = CompressingStoredFieldsReader.this.fieldsStream;
+      in.seek(0);
+      fieldsStream = new BufferedChecksumIndexInput(in) {
+
+        final byte[] skipBuffer = new byte[256];
+
+        @Override
+        public void seek(long target) throws IOException {
+          final long skip = target - getFilePointer();
+          if (skip < 0) {
+            throw new IllegalStateException("Seeking backward on merge: " + skip);
+          }
+          for (long skipped = 0; skipped < skip; ) {
+            final int step = (int) Math.min(skipBuffer.length, skip - skipped);
+            readBytes(skipBuffer, 0, step);
+            skipped += step;
+          }
+        }
+
+      };
+      fieldsStream.seek(indexReader.getStartPointer(startDocId));
     }
 
     /**
@@ -512,6 +535,16 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
           ? maxPointer
           : indexReader.getStartPointer(docBase + chunkDocs);
       out.copyBytes(fieldsStream, chunkEnd - fieldsStream.getFilePointer());
+    }
+
+    /**
+     * Check integrity of the data. The iterator is not usable after this method has been called.
+     */
+    void checkIntegrity() throws IOException {
+      if (version >= VERSION_CHECKSUM) {
+        fieldsStream.seek(fieldsStream.length() - CodecUtil.footerLength());
+        CodecUtil.checkFooter(fieldsStream);
+      }
     }
 
   }
