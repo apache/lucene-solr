@@ -51,7 +51,6 @@ public class SimpleTextStoredFieldsWriter extends StoredFieldsWriter {
   final static BytesRef TYPE_FLOAT  = new BytesRef("float");
   final static BytesRef TYPE_DOUBLE = new BytesRef("double");
 
-  final static BytesRef CHECKSUM = new BytesRef("checksum ");
   final static BytesRef END      = new BytesRef("END");
   final static BytesRef DOC      = new BytesRef("doc ");
   final static BytesRef NUM      = new BytesRef("  numfields ");
@@ -172,10 +171,7 @@ public class SimpleTextStoredFieldsWriter extends StoredFieldsWriter {
     }
     write(END);
     newLine();
-    String checksum = Long.toString(out.getChecksum());
-    write(CHECKSUM);
-    write(checksum);
-    newLine();
+    SimpleTextUtil.writeChecksum(out, scratch);
   }
 
   @Override

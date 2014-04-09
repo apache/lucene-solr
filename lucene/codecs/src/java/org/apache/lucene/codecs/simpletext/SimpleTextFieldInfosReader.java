@@ -129,7 +129,7 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
         infos[i].setDocValuesGen(dvGen);
       }
 
-      SimpleTextUtil.checkFooter(input, CHECKSUM);
+      SimpleTextUtil.checkFooter(input);
       
       FieldInfos fieldInfos = new FieldInfos(infos);
       success = true;

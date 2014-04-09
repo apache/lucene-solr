@@ -53,7 +53,6 @@ import org.apache.lucene.util.fst.PairOutputs;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
 
-import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.CHECKSUM;
 import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.END;
 import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.FIELD;
 import static org.apache.lucene.codecs.simpletext.SimpleTextFieldsWriter.TERM;
@@ -93,7 +92,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     while (true) {
       SimpleTextUtil.readLine(input, scratch);
       if (scratch.equals(END)) {
-        SimpleTextUtil.checkFooter(input, CHECKSUM);
+        SimpleTextUtil.checkFooter(input);
         return fields;
       } else if (StringHelper.startsWith(scratch, FIELD)) {
         String fieldName = new String(scratch.bytes, scratch.offset + FIELD.length, scratch.length - FIELD.length, StandardCharsets.UTF_8);

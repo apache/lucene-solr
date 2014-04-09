@@ -39,7 +39,6 @@ class SimpleTextFieldsWriter extends FieldsConsumer implements Closeable {
   private final BytesRef scratch = new BytesRef(10);
   private final SegmentWriteState writeState;
 
-  final static BytesRef CHECKSUM     = new BytesRef("checksum ");
   final static BytesRef END          = new BytesRef("END");
   final static BytesRef FIELD        = new BytesRef("field ");
   final static BytesRef TERM         = new BytesRef("  term ");
@@ -220,10 +219,7 @@ class SimpleTextFieldsWriter extends FieldsConsumer implements Closeable {
       try {
         write(END);
         newline();
-        String checksum = Long.toString(out.getChecksum());
-        write(CHECKSUM);
-        write(checksum);
-        newline();
+        SimpleTextUtil.writeChecksum(out, scratch);
       } finally {
         out.close();
         out = null;

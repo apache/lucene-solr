@@ -17,7 +17,6 @@ package org.apache.lucene.codecs.simpletext;
  * limitations under the License.
  */
 
-import static org.apache.lucene.codecs.simpletext.SimpleTextDocValuesWriter.CHECKSUM;
 import static org.apache.lucene.codecs.simpletext.SimpleTextDocValuesWriter.END;
 import static org.apache.lucene.codecs.simpletext.SimpleTextDocValuesWriter.FIELD;
 import static org.apache.lucene.codecs.simpletext.SimpleTextDocValuesWriter.LENGTH;
@@ -481,7 +480,7 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
     while(true) {
       SimpleTextUtil.readLine(input, scratch);
       if (scratch.equals(END)) {
-        SimpleTextUtil.checkFooter(input, CHECKSUM);
+        SimpleTextUtil.checkFooter(input);
         break;
       }
     }

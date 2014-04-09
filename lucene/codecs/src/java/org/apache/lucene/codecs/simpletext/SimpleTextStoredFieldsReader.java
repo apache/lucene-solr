@@ -91,7 +91,7 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
         upto++;
       }
     }
-    SimpleTextUtil.checkFooter(input, CHECKSUM);
+    SimpleTextUtil.checkFooter(input);
     assert upto == offsets.length;
   }
   
@@ -191,11 +191,6 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
   private int parseIntAt(int offset) {
     UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+offset, scratch.length-offset, scratchUTF16);
     return ArrayUtil.parseInt(scratchUTF16.chars, 0, scratchUTF16.length);
-  }
-  
-  private String readString(int offset, BytesRef scratch) {
-    UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+offset, scratch.length-offset, scratchUTF16);
-    return scratchUTF16.toString();
   }
   
   private boolean equalsAt(BytesRef a, BytesRef b, int bOffset) {
