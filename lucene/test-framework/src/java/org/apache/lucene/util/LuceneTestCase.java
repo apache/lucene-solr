@@ -35,12 +35,10 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.NoSuchFileException;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Deque;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -2318,7 +2316,7 @@ public abstract class LuceneTestCase extends Assert {
    * suite completes.
    * @see #registerToRemoveAfterSuite(File)
    */
-  private final static Deque<File> cleanupQueue = new ArrayDeque<File>();
+  private final static List<File> cleanupQueue = new ArrayList<File>();
 
   /**
    * Register temporary folder for removal after the suite completes.
@@ -2332,7 +2330,7 @@ public abstract class LuceneTestCase extends Assert {
     }
 
     synchronized (cleanupQueue) {
-      cleanupQueue.addLast(f);
+      cleanupQueue.add(f);
     }
   }
 
@@ -2345,38 +2343,39 @@ public abstract class LuceneTestCase extends Assert {
 
     @Override
     protected void afterAlways(List<Throwable> errors) throws Throwable {
-      try {
-        if (LuceneTestCase.suiteFailureMarker.wasSuccessful()) {
-          synchronized (cleanupQueue) {
-            File [] everything = new File [cleanupQueue.size()];
-            for (int i = 0; !cleanupQueue.isEmpty(); i++) {
-              everything[i] = cleanupQueue.removeLast();
-            }
-  
-            // Will throw an IOException on un-removable files.
-            try {
-              TestUtil.rm(everything);
-            } catch (IOException e) {
-              Class<?> suiteClass = RandomizedContext.current().getTargetClass();
-              if (suiteClass.isAnnotationPresent(SuppressTempFileChecks.class)) {
-                System.err.println("WARNING: Leftover undeleted temporary files (bugUrl: "
-                    + suiteClass.getAnnotation(SuppressTempFileChecks.class).bugUrl() + "): "
-                    + e.getMessage());
-                return;
-              }
-              throw e;
-            }
-          }
-        } else {
-          synchronized (cleanupQueue) {
-            if (tempDirBase != null) {
-              System.err.println("NOTE: leaving temporary files on disk at: " +
-                  tempDirBase.getAbsolutePath());
-            }
-          }
-        }
-      } finally {
+      // Drain cleanup queue and clear it.
+      final File [] everything;
+      final String tempDirBasePath;
+      synchronized (cleanupQueue) {
+        tempDirBasePath = (tempDirBase != null ? tempDirBase.getAbsolutePath() : null);
         tempDirBase = null;
+
+        Collections.reverse(cleanupQueue);
+        everything = new File [cleanupQueue.size()];
+        cleanupQueue.toArray(everything);
+        cleanupQueue.clear();
+      }
+
+      // Only check and throw an IOException on un-removable files if the test
+      // was successful. Otherwise just report the path of temporary files
+      // and leave them there.
+      if (LuceneTestCase.suiteFailureMarker.wasSuccessful()) {
+        try {
+          TestUtil.rm(everything);
+        } catch (IOException e) {
+          Class<?> suiteClass = RandomizedContext.current().getTargetClass();
+          if (suiteClass.isAnnotationPresent(SuppressTempFileChecks.class)) {
+            System.err.println("WARNING: Leftover undeleted temporary files (bugUrl: "
+                + suiteClass.getAnnotation(SuppressTempFileChecks.class).bugUrl() + "): "
+                + e.getMessage());
+            return;
+          }
+          throw e;
+        }
+      } else {
+        if (tempDirBasePath != null) {
+          System.err.println("NOTE: leaving temporary files on disk at: " + tempDirBasePath);
+        }
       }
     }
   }
