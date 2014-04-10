@@ -534,13 +534,17 @@ public class CheckIndex {
         if (infoStream != null)
           infoStream.print("    test: open reader.........");
         reader = new SegmentReader(info, IOContext.DEFAULT);
+        msg(infoStream, "OK");
 
         segInfoStat.openReaderPassed = true;
         
         if (infoStream != null)
-          infoStream.print("    test: check integrity.........");
+          infoStream.print("    test: check integrity.....");
         reader.checkIntegrity();
+        msg(infoStream, "OK");
 
+        if (infoStream != null)
+          infoStream.print("    test: check live docs.....");
         final int numDocs = reader.numDocs();
         toLoseDocCount = numDocs;
         if (reader.hasDeletions()) {
