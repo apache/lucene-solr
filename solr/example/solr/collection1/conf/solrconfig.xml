@@ -1156,11 +1156,6 @@
     -->
 
   <!--
-    Enabling this request handler (which is NOT a default part of the admin handler) will allow the Solr UI to edit
-    all the config files. This is intended for secure/development use ONLY! Leaving available and publically
-    accessible is a security vulnerability and should be done with extreme caution!
-  -->
-  <!--
   <requestHandler name="/admin/fileedit" class="solr.admin.EditFileRequestHandler" >
     <lst name="invariants">
          <str name="hidden">synonyms.txt</str>
