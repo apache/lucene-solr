@@ -104,7 +104,9 @@ public final class ICUNormalizer2CharFilter extends BaseCharFilter {
 
     // if checkedInputBoundary was at the end of a buffer, we need to check that char again
     checkedInputBoundary = Math.max(checkedInputBoundary - 1, 0);
-    if (normalizer.isInert(tmpBuffer[len - 1]) && !Character.isHighSurrogate(tmpBuffer[len-1])) {
+    // this loop depends on 'isInert' (changes under normalization) but looks only at characters.
+    // so we treat all surrogates as non-inert for simplicity
+    if (normalizer.isInert(tmpBuffer[len - 1]) && !Character.isSurrogate(tmpBuffer[len-1])) {
       return len;
     } else return len + readInputToBuffer();
   }
