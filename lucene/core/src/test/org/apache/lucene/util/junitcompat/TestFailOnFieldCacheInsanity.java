@@ -24,6 +24,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.RAMDirectory;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.JUnitCore;
@@ -41,8 +43,10 @@ public class TestFailOnFieldCacheInsanity extends WithNestedTests {
     private AtomicReader subR;
 
     private void makeIndex() throws Exception {
-      d = newDirectory();
-      RandomIndexWriter w = new RandomIndexWriter(random(), d);
+      // we use RAMDirectory here, because we dont want to stay on open files on Windows:
+      d = new MockDirectoryWrapper(random(), new RAMDirectory());
+      @SuppressWarnings("resource") RandomIndexWriter w =
+          new RandomIndexWriter(random(), d);
       Document doc = new Document();
       doc.add(newField("ints", "1", StringField.TYPE_NOT_STORED));
       w.addDocument(doc);
