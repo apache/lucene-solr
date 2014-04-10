@@ -75,7 +75,8 @@ public final class ByteArrayDataInput extends DataInput {
     return pos == limit;
   }
 
-  public void skipBytes(int count) {
+  @Override
+  public void skipBytes(long count) {
     pos += count;
   }
 

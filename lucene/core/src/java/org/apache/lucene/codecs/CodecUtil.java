@@ -264,13 +264,7 @@ public final class CodecUtil {
     clone.seek(0);
     ChecksumIndexInput in = new BufferedChecksumIndexInput(clone);
     assert in.getFilePointer() == 0;
-    final byte[] buffer = new byte[1024];
-    long bytesToRead = in.length() - footerLength();
-    for (long skipped = 0; skipped < bytesToRead; ) {
-      final int toRead = (int) Math.min(bytesToRead - skipped, buffer.length);
-      in.readBytes(buffer, 0, toRead);
-      skipped += toRead;
-    }
+    in.seek(in.length() - footerLength());
     return checkFooter(in);
   }
 }

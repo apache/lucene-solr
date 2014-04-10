@@ -70,18 +70,6 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
   // Do not reuse the decompression buffer when there is more than 32kb to decompress
   private static final int BUFFER_REUSE_THRESHOLD = 1 << 15;
 
-  private static final byte[] SKIP_BUFFER = new byte[1024];
-
-  // TODO: should this be a method on DataInput?
-  private static void skipBytes(DataInput in, long numBytes) throws IOException {
-    assert numBytes >= 0;
-    for (long skipped = 0; skipped < numBytes; ) {
-      final int toRead = (int) Math.min(numBytes - skipped, SKIP_BUFFER.length);
-      in.readBytes(SKIP_BUFFER, 0, toRead);
-      skipped += toRead;
-    }
-  }
-
   private final int version;
   private final FieldInfos fieldInfos;
   private final CompressingStoredFieldsIndexReader indexReader;
@@ -223,7 +211,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       case BYTE_ARR:
       case STRING:
         final int length = in.readVInt();
-        skipBytes(in, length);
+        in.skipBytes(length);
         break;
       case NUMERIC_INT:
       case NUMERIC_FLOAT:
@@ -416,24 +404,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
 
       IndexInput in = CompressingStoredFieldsReader.this.fieldsStream;
       in.seek(0);
-      fieldsStream = new BufferedChecksumIndexInput(in) {
-
-        final byte[] skipBuffer = new byte[256];
-
-        @Override
-        public void seek(long target) throws IOException {
-          final long skip = target - getFilePointer();
-          if (skip < 0) {
-            throw new IllegalStateException("Seeking backward on merge: " + skip);
-          }
-          for (long skipped = 0; skipped < skip; ) {
-            final int step = (int) Math.min(skipBuffer.length, skip - skipped);
-            readBytes(skipBuffer, 0, step);
-            skipped += step;
-          }
-        }
-
-      };
+      fieldsStream = new BufferedChecksumIndexInput(in);
       fieldsStream.seek(indexReader.getStartPointer(startDocId));
     }
 
