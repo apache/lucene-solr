@@ -304,7 +304,9 @@ public abstract class FSDirectory extends BaseDirectory {
 
     for (String name : toSync)
       fsync(name);
-
+    
+    IOUtils.fsync(directory, true);
+    
     staleFiles.removeAll(toSync);
   }
 
@@ -436,6 +438,6 @@ public abstract class FSDirectory extends BaseDirectory {
   }
 
   protected void fsync(String name) throws IOException {
-    IOUtils.fsync(new File(directory, name));
+    IOUtils.fsync(new File(directory, name), false);
   }
 }

@@ -98,6 +98,12 @@ New Features
 * LUCENE-5583: Added DataInput.skipBytes. ChecksumIndexInput can now seek, but
   only forward. (Adrien Grand, Mike McCandless, Simon Willnauer, Uwe Schindler)
 
+* LUCENE-5588: Lucene now calls fsync() on the index directory, ensuring
+  that all file metadata is persisted on disk in case of power failure.
+  This does not work on all file systems and operating systems, but Linux
+  and MacOSX are known to work. On Windows, fsyncing a directory is not
+  possible with Java APIs.  (Mike McCandless, Uwe Schindler)
+
 API Changes
 
 * LUCENE-5454: Add RandomAccessOrds, an optional extension of SortedSetDocValues
