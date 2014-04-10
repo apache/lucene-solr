@@ -69,4 +69,9 @@ public class BufferedChecksumIndexInput extends ChecksumIndexInput {
   public long length() {
     return main.length();
   }
+
+  @Override
+  public IndexInput clone() {
+    throw new UnsupportedOperationException();
+  }
 }
