@@ -289,10 +289,15 @@ public abstract class FSDirectory extends BaseDirectory {
     Set<String> toSync = new HashSet<>(names);
     toSync.retainAll(staleFiles);
 
-    for (String name : toSync)
+    for (String name : toSync) {
       fsync(name);
+    }
     
-    IOUtils.fsync(directory, true);
+    // fsync the directory itsself, but only if there was any file fsynced before
+    // (otherwise it can happen that the directory does not yet exist)!
+    if (!toSync.isEmpty()) {
+      IOUtils.fsync(directory, true);
+    }
     
     staleFiles.removeAll(toSync);
   }
