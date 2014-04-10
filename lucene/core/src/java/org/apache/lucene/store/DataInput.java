@@ -36,6 +36,19 @@ import java.util.Set;
  * resource, but positioned independently.
  */
 public abstract class DataInput implements Cloneable {
+
+  private static final int SKIP_BUFFER_SIZE = 1024;
+
+  /* This buffer is used to skip over bytes with the default implementation of
+   * skipBytes. The reason why we need to use an instance member instead of
+   * sharing a single instance across threads is that some delegating
+   * implementations of DataInput might want to reuse the provided buffer in
+   * order to eg. update the checksum. If we shared the same buffer across
+   * threads, then another thread might update the buffer while the checksum is
+   * being computed, making it invalid. See LUCENE-5583 for more information.
+   */
+  private byte[] skipBuffer;
+
   /** Reads and returns a single byte.
    * @see DataOutput#writeByte(byte)
    */
@@ -233,4 +246,26 @@ public abstract class DataInput implements Cloneable {
 
     return set;
   }
+
+  /**
+   * Skip over <code>numBytes</code> bytes. The contract on this method is that it
+   * should have the same behavior as reading the same number of bytes into a
+   * buffer and discarding its content. Negative values of <code>numBytes</code>
+   * are not supported.
+   */
+  public void skipBytes(final long numBytes) throws IOException {
+    if (numBytes < 0) {
+      throw new IllegalArgumentException("numBytes must be >= 0, got " + numBytes);
+    }
+    if (skipBuffer == null) {
+      skipBuffer = new byte[SKIP_BUFFER_SIZE];
+    }
+    assert skipBuffer.length == SKIP_BUFFER_SIZE;
+    for (long skipped = 0; skipped < numBytes; ) {
+      final int step = (int) Math.min(SKIP_BUFFER_SIZE, numBytes - skipped);
+      readBytes(skipBuffer, 0, step, false);
+      skipped += step;
+    }
+  }
+
 }

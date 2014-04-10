@@ -163,6 +163,9 @@ New Features
 * LUCENE-5580: Checksums are automatically verified on the default stored
   fields format when performing a bulk merge. (Adrien Grand)
 
+* LUCENE-5583: Added DataInput.skipBytes. ChecksumIndexInput can now seek, but
+  only forward. (Adrien Grand, Mike McCandless, Simon Willnauer, Uwe Schindler)
+
 API Changes
 
 * LUCENE-5454: Add RandomAccessOrds, an optional extension of SortedSetDocValues

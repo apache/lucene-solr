@@ -35,8 +35,19 @@ public abstract class ChecksumIndexInput extends IndexInput {
   /** Returns the current checksum value */
   public abstract long getChecksum() throws IOException;
 
+  /**
+   * {@inheritDoc}
+   *
+   * {@link ChecksumIndexInput} can only seek forward and seeks are expensive
+   * since they imply to read bytes in-between the current position and the
+   * target position in order to update the checksum.
+   */
   @Override
   public void seek(long pos) throws IOException {
-    throw new UnsupportedOperationException();
+    final long skip = pos - getFilePointer();
+    if (skip < 0) {
+      throw new IllegalStateException(ChecksumIndexInput.class + " cannot seed backward");
+    }
+    skipBytes(skip);
   }
 }
