@@ -17,9 +17,9 @@ package org.apache.lucene.util.packed;
  * limitations under the License.
  */
 
+import static org.apache.lucene.util.BitUtil.zigZagDecode;
 import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.MAX_BLOCK_SIZE;
 import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.MIN_BLOCK_SIZE;
-import static org.apache.lucene.util.packed.BlockPackedReaderIterator.zigZagDecode;
 import static org.apache.lucene.util.packed.PackedInts.checkBlockSize;
 import static org.apache.lucene.util.packed.PackedInts.numBlocks;
 

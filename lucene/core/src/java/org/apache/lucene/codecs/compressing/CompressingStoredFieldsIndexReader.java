@@ -17,6 +17,8 @@ package org.apache.lucene.codecs.compressing;
  * limitations under the License.
  */
 
+import static org.apache.lucene.util.BitUtil.zigZagDecode;
+
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -32,10 +34,6 @@ import org.apache.lucene.util.packed.PackedInts;
  * @lucene.internal
  */
 public final class CompressingStoredFieldsIndexReader implements Cloneable {
-
-  static long moveLowOrderBitToSign(long n) {
-    return ((n >>> 1) ^ -(n & 1));
-  }
 
   final int maxDoc;
   final int[] docBases;
@@ -122,13 +120,13 @@ public final class CompressingStoredFieldsIndexReader implements Cloneable {
 
   private int relativeDocBase(int block, int relativeChunk) {
     final int expected = avgChunkDocs[block] * relativeChunk;
-    final long delta = moveLowOrderBitToSign(docBasesDeltas[block].get(relativeChunk));
+    final long delta = zigZagDecode(docBasesDeltas[block].get(relativeChunk));
     return expected + (int) delta;
   }
 
   private long relativeStartPointer(int block, int relativeChunk) {
     final long expected = avgChunkSizes[block] * relativeChunk;
-    final long delta = moveLowOrderBitToSign(startPointersDeltas[block].get(relativeChunk));
+    final long delta = zigZagDecode(startPointersDeltas[block].get(relativeChunk));
     return expected + delta;
   }
 

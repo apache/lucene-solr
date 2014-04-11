@@ -31,10 +31,6 @@ abstract class AbstractBlockPackedWriter {
   static final int MIN_VALUE_EQUALS_0 = 1 << 0;
   static final int BPV_SHIFT = 1;
 
-  static long zigZagEncode(long n) {
-    return (n >> 63) ^ (n << 1);
-  }
-
   // same as DataOutput.writeVLong but accepts negative values
   static void writeVLong(DataOutput out, long i) throws IOException {
     int k = 0;
