@@ -94,7 +94,11 @@ Upgrading from Solr 4.8
 Detailed Change List
 ----------------------
 
-* placeholder
+Other Changes
+---------------------
+
+* SOLR-5980: AbstractFullDistribZkTestBase#compareResults always returns false
+  for shouldFail. (Mark Miller, Gregory Chanan)
 
 ==================  4.8.0 ==================
 

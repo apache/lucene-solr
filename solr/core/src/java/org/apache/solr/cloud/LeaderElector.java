@@ -337,6 +337,7 @@ public  class LeaderElector {
       }
     });
   }
+  
   void retryElection() throws KeeperException, InterruptedException, IOException {
     context.cancelElection();
     ElectionWatcher watcher = this.watcher;

@@ -1278,7 +1278,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   
   protected boolean compareResults(long controlDocs, long cloudClientDocs, Set<String> addFails, Set<String> deleteFails)
       throws SolrServerException {
-    boolean shouldFail = false;
     SolrParams q;
     SolrDocumentList controlDocList;
     SolrDocumentList cloudDocList;
@@ -1327,7 +1326,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       log.error("controlClient :" + a + "\n\tcloudClient :" + b);
     }
     
-    return shouldFail;
+    return true;
   }
   
   protected SolrServer getClient(String nodeName) {
@@ -1642,7 +1641,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       SolrServer server = createNewSolrServer("", baseUrl);
       try {
         res.setResponse(server.request(request));
-        server.shutdown();
       } finally {
         if (server != null) server.shutdown();
       }
