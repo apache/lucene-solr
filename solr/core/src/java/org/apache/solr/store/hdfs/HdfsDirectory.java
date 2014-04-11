@@ -258,11 +258,6 @@ public class HdfsDirectory extends BaseDirectory {
         throws IOException {
       writer.writeBytes(b, offset, len);
     }
-
-    @Override
-    public long length() throws IOException {
-      return writer.length();
-    }
   }
   
   @Override

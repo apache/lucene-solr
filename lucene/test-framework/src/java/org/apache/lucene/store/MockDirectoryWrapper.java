@@ -294,7 +294,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         // Totally truncate the file to zero bytes
         deleteFile(name, true);
         IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState));
-        out.setLength(0);
         out.close();
       }
       if (LuceneTestCase.VERBOSE) {
@@ -977,11 +976,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     public BufferedIndexOutputWrapper(int bufferSize, IndexOutput io) {
       super(bufferSize);
       this.io = io;
-    }
-    
-    @Override
-    public long length() throws IOException {
-      return io.length();
     }
     
     @Override

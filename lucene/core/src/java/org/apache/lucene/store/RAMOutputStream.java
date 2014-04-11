@@ -108,11 +108,6 @@ public class RAMOutputStream extends IndexOutput {
   }
 
   @Override
-  public long length() {
-    return file.length;
-  }
-
-  @Override
   public void writeByte(byte b) throws IOException {
     if (bufferPosition == bufferLength) {
       currentBufferIndex++;

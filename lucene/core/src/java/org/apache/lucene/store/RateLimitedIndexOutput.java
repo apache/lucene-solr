@@ -52,11 +52,6 @@ final class RateLimitedIndexOutput extends BufferedIndexOutput {
   }
   
   @Override
-  public long length() throws IOException {
-    return delegate.length();
-  }
-
-  @Override
   public void flush() throws IOException {
     try {
       super.flush();

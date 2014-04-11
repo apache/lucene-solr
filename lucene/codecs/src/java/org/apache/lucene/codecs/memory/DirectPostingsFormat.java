@@ -384,7 +384,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
           final byte[] payloads;
           if (hasPayloads) {
             ros.flush();
-            payloads = new byte[(int) ros.length()];
+            payloads = new byte[(int) ros.getFilePointer()];
             ros.writeTo(payloads, 0);
           } else {
             payloads = null;

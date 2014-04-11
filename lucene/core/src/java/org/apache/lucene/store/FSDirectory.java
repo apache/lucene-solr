@@ -389,16 +389,6 @@ public abstract class FSDirectory extends BaseDirectory {
         }
       }
     }
-
-    @Override
-    public long length() throws IOException {
-      return file.length();
-    }
-
-    @Override
-    public void setLength(long length) throws IOException {
-      file.setLength(length);
-    }
   }
 
   protected void fsync(String name) throws IOException {

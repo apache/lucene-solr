@@ -327,12 +327,6 @@ final class CompoundFileWriter implements Closeable{
     }
 
     @Override
-    public long length() throws IOException {
-      assert !closed;
-      return delegate.length() - offset;
-    }
-
-    @Override
     public void writeByte(byte b) throws IOException {
       assert !closed;
       writtenBytes++;
