@@ -37,6 +37,7 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
@@ -45,7 +46,6 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomAccessOrds;
 import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.index.SingletonSortedSetDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.TermsEnum;
@@ -525,7 +525,7 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
     SortedSetEntry ss = sortedSets.get(field.number);
     if (ss.format == SORTED_SET_SINGLE_VALUED_SORTED) {
       final SortedDocValues values = getSorted(field);
-      return new SingletonSortedSetDocValues(values);
+      return DocValues.singleton(values);
     } else if (ss.format != SORTED_SET_WITH_ADDRESSES) {
       throw new AssertionError();
     }
@@ -629,9 +629,9 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
   public Bits getDocsWithField(FieldInfo field) throws IOException {
     switch(field.getDocValuesType()) {
       case SORTED_SET:
-        return new SortedSetDocsWithField(getSortedSet(field), maxDoc);
+        return DocValues.docsWithValue(getSortedSet(field), maxDoc);
       case SORTED:
-        return new SortedDocsWithField(getSorted(field), maxDoc);
+        return DocValues.docsWithValue(getSorted(field), maxDoc);
       case BINARY:
         BinaryEntry be = binaries.get(field.number);
         return getMissingBits(be.missingOffset);

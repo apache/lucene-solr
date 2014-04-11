@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
@@ -45,7 +46,7 @@ public class DocValuesOrdinalsReader extends OrdinalsReader {
   public OrdinalsSegmentReader getReader(AtomicReaderContext context) throws IOException {
     BinaryDocValues values0 = context.reader().getBinaryDocValues(field);
     if (values0 == null) {
-      values0 = BinaryDocValues.EMPTY;
+      values0 = DocValues.EMPTY_BINARY;
     }
 
     final BinaryDocValues values = values0;

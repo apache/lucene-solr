@@ -2188,7 +2188,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     // can be null for the segment if no docs actually had any SortedDocValues
     // in this case FC.getDocTermsOrds returns EMPTY
     if (actual == null) {
-      assertEquals(SortedSetDocValues.EMPTY, expected);
+      assertEquals(DocValues.EMPTY_SORTED_SET, expected);
       return;
     }
     assertEquals(expected.getValueCount(), actual.getValueCount());

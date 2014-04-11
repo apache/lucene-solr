@@ -68,26 +68,6 @@ public abstract class SortedDocValues extends BinaryDocValues {
     }
   }
 
-  /** An empty SortedDocValues which returns {@link BytesRef#EMPTY_BYTES} for every document */
-  public static final SortedDocValues EMPTY = new SortedDocValues() {
-    @Override
-    public int getOrd(int docID) {
-      return -1;
-    }
-
-    @Override
-    public void lookupOrd(int ord, BytesRef result) {
-      result.bytes = BytesRef.EMPTY_BYTES;
-      result.offset = 0;
-      result.length = 0;
-    }
-
-    @Override
-    public int getValueCount() {
-      return 0;
-    }
-  };
-
   /** If {@code key} exists, returns its ordinal, else
    *  returns {@code -insertionPoint-1}, like {@code
    *  Arrays.binarySearch}.

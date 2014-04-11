@@ -762,7 +762,7 @@ public class DocTermOrds {
   /** Returns a SortedSetDocValues view of this instance */
   public SortedSetDocValues iterator(AtomicReader reader) throws IOException {
     if (isEmpty()) {
-      return SortedSetDocValues.EMPTY;
+      return DocValues.EMPTY_SORTED_SET;
     } else {
       return new Iterator(reader);
     }

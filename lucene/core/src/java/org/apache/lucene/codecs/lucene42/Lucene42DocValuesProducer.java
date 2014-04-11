@@ -26,6 +26,7 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
@@ -380,7 +381,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
   public SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
     final FSTEntry entry = fsts.get(field.number);
     if (entry.numOrds == 0) {
-      return SortedSetDocValues.EMPTY; // empty FST!
+      return DocValues.EMPTY_SORTED_SET; // empty FST!
     }
     FST<Long> instance;
     synchronized(this) {
@@ -469,7 +470,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
   @Override
   public Bits getDocsWithField(FieldInfo field) throws IOException {
     if (field.getDocValuesType() == FieldInfo.DocValuesType.SORTED_SET) {
-      return new SortedSetDocsWithField(getSortedSet(field), maxDoc);
+      return DocValues.docsWithValue(getSortedSet(field), maxDoc);
     } else {
       return new Bits.MatchAllBits(maxDoc);
     }

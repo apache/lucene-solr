@@ -30,14 +30,4 @@ public abstract class BinaryDocValues {
 
   /** Lookup the value for document. */
   public abstract void get(int docID, BytesRef result);
-  
-  /** An empty BinaryDocValues which returns {@link BytesRef#EMPTY_BYTES} for every document */
-  public static final BinaryDocValues EMPTY = new BinaryDocValues() {
-    @Override
-    public void get(int docID, BytesRef result) {
-      result.bytes = BytesRef.EMPTY_BYTES;
-      result.offset = 0;
-      result.length = 0;
-    }
-  };
 }

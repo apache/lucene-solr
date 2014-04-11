@@ -20,8 +20,8 @@ package org.apache.lucene.sandbox.queries;
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.RandomAccessOrds;
-import org.apache.lucene.index.SingletonSortedSetDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.search.FieldCache;
@@ -165,11 +165,12 @@ public class SortedSetSortField extends SortField {
           throw new UnsupportedOperationException("fields containing more than " + (Integer.MAX_VALUE-1) + " unique terms are unsupported");
         }
         
-        if (sortedSet instanceof SingletonSortedSetDocValues) {
+        SortedDocValues singleton = DocValues.unwrapSingleton(sortedSet);
+        if (singleton != null) {
           // it's actually single-valued in practice, but indexed as multi-valued,
           // so just sort on the underlying single-valued dv directly.
           // regardless of selector type, this optimization is safe!
-          return ((SingletonSortedSetDocValues) sortedSet).getSortedDocValues();
+          return singleton;
         } else if (selector == Selector.MIN) {
           return new MinValue(sortedSet);
         } else {
