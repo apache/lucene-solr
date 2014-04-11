@@ -71,6 +71,12 @@ Other
 * LUCENE-5563: Removed sep layout: which has fallen behind on features and doesn't
   perform as well as other options.  (Robert Muir)
 
+======================= Lucene 4.9.0 =======================
+
+New Features
+
+* placeolder
+
 ======================= Lucene 4.8.0 =======================
 
 System Requirements
