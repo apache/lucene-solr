@@ -36,6 +36,8 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReader;
+import org.apache.lucene.store.BufferedChecksumIndexInput;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -743,6 +745,7 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
       final Bits liveDocs = reader.getLiveDocs();
 
       if (matchingVectorsReader == null
+          || matchingVectorsReader.getVersion() != VERSION_CURRENT
           || matchingVectorsReader.getCompressionMode() != compressionMode
           || matchingVectorsReader.getChunkSize() != chunkSize
           || matchingVectorsReader.getPackedIntsVersion() != PackedInts.VERSION_CURRENT) {
@@ -755,12 +758,19 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
         }
       } else {
         final CompressingStoredFieldsIndexReader index = matchingVectorsReader.getIndex();
-        final IndexInput vectorsStream = matchingVectorsReader.getVectorsStream();
+        final IndexInput vectorsStreamOrig = matchingVectorsReader.getVectorsStream();
+        vectorsStreamOrig.seek(0);
+        final ChecksumIndexInput vectorsStream = new BufferedChecksumIndexInput(vectorsStreamOrig.clone());
+        
         for (int i = nextLiveDoc(0, liveDocs, maxDoc); i < maxDoc; ) {
-          if (pendingDocs.isEmpty()
-              && (i == 0 || index.getStartPointer(i - 1) < index.getStartPointer(i))) { // start of a chunk
-            final long startPointer = index.getStartPointer(i);
+          // We make sure to move the checksum input in any case, otherwise the final
+          // integrity check might need to read the whole file a second time
+          final long startPointer = index.getStartPointer(i);
+          if (startPointer > vectorsStream.getFilePointer()) {
             vectorsStream.seek(startPointer);
+          }
+          if (pendingDocs.isEmpty()
+              && (i == 0 || index.getStartPointer(i - 1) < startPointer)) { // start of a chunk
             final int docBase = vectorsStream.readVInt();
             final int chunkDocs = vectorsStream.readVInt();
             assert docBase + chunkDocs <= matchingSegmentReader.maxDoc();
@@ -792,6 +802,9 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
             i = nextLiveDoc(i + 1, liveDocs, maxDoc);
           }
         }
+        
+        vectorsStream.seek(vectorsStream.length() - CodecUtil.footerLength());
+        CodecUtil.checkFooter(vectorsStream);
       }
     }
     finish(mergeState.fieldInfos, docCount);

@@ -46,7 +46,7 @@ public abstract class ChecksumIndexInput extends IndexInput {
   public void seek(long pos) throws IOException {
     final long skip = pos - getFilePointer();
     if (skip < 0) {
-      throw new IllegalStateException(ChecksumIndexInput.class + " cannot seed backward");
+      throw new IllegalStateException(getClass() + " cannot seek backwards");
     }
     skipBytes(skip);
   }
