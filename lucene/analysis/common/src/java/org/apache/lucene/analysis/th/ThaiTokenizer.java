@@ -99,7 +99,7 @@ public class ThaiTokenizer extends SegmentingTokenizerBase {
     }
 
     clearAttributes();
-    termAtt.copyBuffer(buffer, start, end - start);
+    termAtt.copyBuffer(buffer, sentenceStart + start, end - start);
     offsetAtt.setOffset(correctOffset(offset + sentenceStart + start), correctOffset(offset + sentenceStart + end));
     return true;
   }

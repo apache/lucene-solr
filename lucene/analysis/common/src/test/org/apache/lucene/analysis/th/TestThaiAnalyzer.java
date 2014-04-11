@@ -117,4 +117,11 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
     ts.addAttribute(FlagsAttribute.class);
     assertTokenStreamContents(ts, new String[] { "ภาษา", "ไทย" });
   }
+  
+  public void testTwoSentences() throws Exception {
+    assertAnalyzesTo(new ThaiAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET), "This is a test. การที่ได้ต้องแสดงว่างานดี", 
+          new String[] { "this", "is", "a", "test", "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี" },
+          new int[] { 0, 5, 8, 10, 16, 19, 22, 25, 29, 33, 36, 39 },
+          new int[] { 4, 7, 9, 14, 19, 22, 25, 29, 33, 36, 39, 41 });
+  }
 }
