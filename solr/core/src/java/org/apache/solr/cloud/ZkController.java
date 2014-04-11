@@ -546,7 +546,7 @@ public final class ZkController {
       adminPath = cc.getAdminPath();
       
       overseerElector = new LeaderElector(zkClient);
-      this.overseer = new Overseer(shardHandler, adminPath, zkStateReader,this);
+      this.overseer = new Overseer(shardHandler, adminPath, zkStateReader, this);
       ElectionContext context = new OverseerElectionContext(zkClient, overseer, getNodeName());
       overseerElector.setup(context);
       overseerElector.joinElection(context, false);
