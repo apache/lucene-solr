@@ -7,7 +7,8 @@ http://s.apache.org/luceneversions
 
 New Features
 
-* placeolder
+* LUCENE-5602: Checksums are automatically verified on the default term
+  vectors format when performing a bulk merge. (Adrien Grand, Robert Muir)
 
 ======================= Lucene 4.8.0 =======================
 
