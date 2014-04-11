@@ -24,6 +24,7 @@ import java.io.InputStream;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.InputStreamDataInput;
+import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -53,8 +54,7 @@ public final class ConnectionCosts {
       for (int j = 0; j < costs.length; j++) {
         final short[] a = costs[j];
         for (int i = 0; i < a.length; i++) {
-          int raw = in.readVInt();
-          accum += (raw >>> 1) ^ -(raw & 1);
+          accum += BitUtil.zigZagDecode(in.readVInt());
           a[i] = (short)accum;
         }
       }

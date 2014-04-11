@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.ja.dict.ConnectionCosts;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.OutputStreamDataOutput;
+import org.apache.lucene.util.BitUtil;
 
 public final class ConnectionCostsWriter {
   
@@ -64,7 +65,7 @@ public final class ConnectionCostsWriter {
         assert a.length == forwardSize;
         for (int i = 0; i < a.length; i++) {
           int delta = (int)a[i] - last;
-          out.writeVInt((delta >> 31) ^ (delta << 1));
+          out.writeVInt(BitUtil.zigZagEncode(delta));
           last = a[i];
         }
       }
