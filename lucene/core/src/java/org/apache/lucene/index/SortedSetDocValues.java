@@ -67,39 +67,6 @@ public abstract class SortedSetDocValues {
    */
   public abstract long getValueCount();
 
-
-  /** An empty SortedDocValues which returns {@link #NO_MORE_ORDS} for every document */
-  public static final SortedSetDocValues EMPTY = new RandomAccessOrds() {
-
-    @Override
-    public long nextOrd() {
-      return NO_MORE_ORDS;
-    }
-
-    @Override
-    public void setDocument(int docID) {}
-
-    @Override
-    public void lookupOrd(long ord, BytesRef result) {
-      throw new IndexOutOfBoundsException();
-    }
-
-    @Override
-    public long getValueCount() {
-      return 0;
-    }
-
-    @Override
-    public long ordAt(int index) {
-      throw new IndexOutOfBoundsException();
-    }
-
-    @Override
-    public int cardinality() {
-      return 0;
-    }
-  };
-
   /** If {@code key} exists, returns its ordinal, else
    *  returns {@code -insertionPoint-1}, like {@code
    *  Arrays.binarySearch}.

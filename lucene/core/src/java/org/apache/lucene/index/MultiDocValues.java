@@ -73,7 +73,7 @@ public class MultiDocValues {
       AtomicReaderContext context = leaves.get(i);
       NumericDocValues v = context.reader().getNormValues(field);
       if (v == null) {
-        v = NumericDocValues.EMPTY;
+        v = DocValues.EMPTY_NUMERIC;
       } else {
         anyReal = true;
       }
@@ -115,7 +115,7 @@ public class MultiDocValues {
       AtomicReaderContext context = leaves.get(i);
       NumericDocValues v = context.reader().getNumericDocValues(field);
       if (v == null) {
-        v = NumericDocValues.EMPTY;
+        v = DocValues.EMPTY_NUMERIC;
       } else {
         anyReal = true;
       }
@@ -205,7 +205,7 @@ public class MultiDocValues {
       AtomicReaderContext context = leaves.get(i);
       BinaryDocValues v = context.reader().getBinaryDocValues(field);
       if (v == null) {
-        v = BinaryDocValues.EMPTY;
+        v = DocValues.EMPTY_BINARY;
       } else {
         anyReal = true;
       }
@@ -250,7 +250,7 @@ public class MultiDocValues {
       AtomicReaderContext context = leaves.get(i);
       SortedDocValues v = context.reader().getSortedDocValues(field);
       if (v == null) {
-        v = SortedDocValues.EMPTY;
+        v = DocValues.EMPTY_SORTED;
       } else {
         anyReal = true;
       }
@@ -294,7 +294,7 @@ public class MultiDocValues {
       AtomicReaderContext context = leaves.get(i);
       SortedSetDocValues v = context.reader().getSortedSetDocValues(field);
       if (v == null) {
-        v = SortedSetDocValues.EMPTY;
+        v = DocValues.EMPTY_SORTED_SET;
       } else {
         anyReal = true;
       }

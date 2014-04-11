@@ -26,7 +26,7 @@ import org.apache.lucene.util.BytesRef;
  * against e.g. FieldCache.getDocTermOrds that also works for single-valued 
  * fields.
  */
-public class SingletonSortedSetDocValues extends SortedSetDocValues {
+final class SingletonSortedSetDocValues extends SortedSetDocValues {
   private final SortedDocValues in;
   private int docID;
   private boolean set;

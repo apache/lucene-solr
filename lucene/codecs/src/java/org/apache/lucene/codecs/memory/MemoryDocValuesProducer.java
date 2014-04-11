@@ -27,6 +27,7 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
@@ -322,7 +323,7 @@ class MemoryDocValuesProducer extends DocValuesProducer {
   public SortedDocValues getSorted(FieldInfo field) throws IOException {
     final FSTEntry entry = fsts.get(field.number);
     if (entry.numOrds == 0) {
-      return SortedDocValues.EMPTY;
+      return DocValues.EMPTY_SORTED;
     }
     FST<Long> instance;
     synchronized(this) {
@@ -397,7 +398,7 @@ class MemoryDocValuesProducer extends DocValuesProducer {
   public SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
     final FSTEntry entry = fsts.get(field.number);
     if (entry.numOrds == 0) {
-      return SortedSetDocValues.EMPTY; // empty FST!
+      return DocValues.EMPTY_SORTED_SET; // empty FST!
     }
     FST<Long> instance;
     synchronized(this) {
@@ -510,9 +511,9 @@ class MemoryDocValuesProducer extends DocValuesProducer {
   public Bits getDocsWithField(FieldInfo field) throws IOException {
     switch(field.getDocValuesType()) {
       case SORTED_SET:
-        return new SortedSetDocsWithField(getSortedSet(field), maxDoc);
+        return DocValues.docsWithValue(getSortedSet(field), maxDoc);
       case SORTED:
-        return new SortedDocsWithField(getSorted(field), maxDoc);
+        return DocValues.docsWithValue(getSorted(field), maxDoc);
       case BINARY:
         BinaryEntry be = binaries.get(field.number);
         return getMissingBits(field.number, be.missingOffset, be.missingBytes);
