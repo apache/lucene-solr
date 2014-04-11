@@ -17,6 +17,7 @@ package org.apache.lucene.util.packed;
  * limitations under the License.
  */
 
+import static org.apache.lucene.util.BitUtil.zigZagDecode;
 import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.BPV_SHIFT;
 import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.MAX_BLOCK_SIZE;
 import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.MIN_BLOCK_SIZE;
@@ -37,10 +38,6 @@ import org.apache.lucene.util.LongsRef;
  * @lucene.internal
  */
 public final class BlockPackedReaderIterator {
-
-  static long zigZagDecode(long n) {
-    return ((n >>> 1) ^ -(n & 1));
-  }
 
   // same as DataInput.readVLong but supports negative values
   static long readVLong(DataInput in) throws IOException {
