@@ -130,12 +130,19 @@ public enum Version {
   @Deprecated
   LUCENE_47,
 
-  /** Match settings and bugs in Lucene's 4.8 release.
+  /**
+   * Match settings and bugs in Lucene's 4.8 release.
+   * @deprecated (4.9) Use latest
+   */
+  @Deprecated
+  LUCENE_48,
+
+  /** Match settings and bugs in Lucene's 4.9 release.
    *  <p>
    *  Use this to get the latest &amp; greatest settings, bug
    *  fixes, etc, for Lucene.
    */
-  LUCENE_48,
+  LUCENE_49,
 
   /* Add new constants for later versions **here** to respect order! */
 

@@ -118,7 +118,7 @@ public final class Constants {
    * anything else is not allowed. This is done to prevent people from
    * using indexes created with ALPHA/BETA versions with the released version.
    */
-  public static final String LUCENE_MAIN_VERSION = ident("4.8");
+  public static final String LUCENE_MAIN_VERSION = ident("4.9");
 
   /**
    * This is the Lucene version for display purposes.
