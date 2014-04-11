@@ -78,6 +78,12 @@ New Features
 * LUCENE-5602: Checksums are automatically verified on the default term
   vectors format when performing a bulk merge. (Adrien Grand, Robert Muir)
 
+API Changes
+
+* LUCENE-5582: Deprecate IndexOutput.length (just use
+  IndexOutput.getFilePointer instead) and IndexOutput.setLength.
+  (Mike McCandless)
+
 ======================= Lucene 4.8.0 =======================
 
 System Requirements
