@@ -54,7 +54,12 @@ public abstract class IndexOutput extends DataOutput implements Closeable {
   /** Returns the current checksum of bytes written so far */
   public abstract long getChecksum() throws IOException;
 
-  /** The number of bytes in the file. */
+  /** The number of bytes in the file.
+   * 
+   * @deprecated Use {@link #getFilePointer} instead; this
+   * method will be removed in Lucene5.0.
+   */
+  @Deprecated
   public abstract long length() throws IOException;
 
   /** Set the file length. By default, this method does
@@ -66,7 +71,9 @@ public abstract class IndexOutput extends DataOutput implements Closeable {
    * current file length, the bytes added to the file are
    * undefined.  Otherwise the file is truncated.
    * @param length file length
+   * @deprecated (4.1) This method will be removed in Lucene 5.0
    */
+  @Deprecated
   public void setLength(long length) throws IOException {}
 
 }
