@@ -302,7 +302,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         // TODO: could cause huge ram usage to use full int range for some filters
         // (e.g. allocate enormous arrays)
         // return Integer.valueOf(random.nextInt());
-        return Integer.valueOf(TestUtil.nextInt(random, -100, 100));
+        return Integer.valueOf(TestUtil.nextInt(random, -50, 50));
       }
     });
     put(char.class, new ArgProducer() {
@@ -917,7 +917,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         System.out.println("Creating random analyzer:" + a);
       }
       try {
-        checkRandomData(random, a, 50*RANDOM_MULTIPLIER, 128, false,
+        checkRandomData(random, a, 50*RANDOM_MULTIPLIER, 80, false,
                         false /* We already validate our own offsets... */);
       } catch (Throwable e) {
         System.err.println("Exception from random analyzer: " + a);
