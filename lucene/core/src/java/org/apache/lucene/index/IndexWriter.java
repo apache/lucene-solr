@@ -933,9 +933,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
           rollbackInternal();
         } else {
           closeInternal(waitForMerges, true);
+          assert assertEventQueueAfterClose();
         }
       }
-      assert assertEventQueueAfterClose();
     }
   }
 
@@ -2113,7 +2113,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
       mergeScheduler.close();
 
       bufferedUpdatesStream.clear();
-      processEvents(false, true);
       docWriter.close(); // mark it as closed first to prevent subsequent indexing actions/flushes 
       docWriter.abort(this); // don't sync on IW here
       synchronized(this) {
@@ -2137,7 +2136,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
         if (infoStream.isEnabled("IW") ) {
           infoStream.message("IW", "rollback: infos=" + segString(segmentInfos));
         }
-        
 
         assert testPoint("rollback before checkpoint");
 
@@ -2148,7 +2146,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
 
         lastCommitChangeCount = changeCount;
         
-        processEvents(false, true);
         deleter.refresh();
         deleter.close();
 
@@ -2162,6 +2159,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "rollbackInternal");
     } finally {
+      if (!success) {
+        // Must not hold IW's lock while closing
+        // mergePolicy/Scheduler: this can lead to deadlock,
+        // e.g. TestIW.testThreadInterruptDeadlock
+        IOUtils.closeWhileHandlingException(mergePolicy, mergeScheduler);
+      }
       synchronized(this) {
         if (!success) {
           // we tried to be nice about it: do the minimum
@@ -2175,7 +2178,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
           }
           
           // close all the closeables we can (but important is readerPool and writeLock to prevent leaks)
-          IOUtils.closeWhileHandlingException(mergePolicy, mergeScheduler, readerPool, deleter, writeLock);
+          IOUtils.closeWhileHandlingException(readerPool, deleter, writeLock);
           writeLock = null;
         }
         closed = true;
