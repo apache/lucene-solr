@@ -2005,7 +2005,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
       mergeScheduler.close();
 
       bufferedUpdatesStream.clear();
-      processEvents(false, true);
       docWriter.close(); // mark it as closed first to prevent subsequent indexing actions/flushes 
       docWriter.abort(this); // don't sync on IW here
       synchronized(this) {
