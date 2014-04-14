@@ -214,10 +214,16 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     
     // shard should be inconsistent
     shardFailMessage = waitTillInconsistent();
-    
     assertNotNull(
         "Test Setup Failure: shard1 should have just been set up to be inconsistent - but it's still consistent. Leader:"
             + leaderJetty.url + " Dead Guy:" + deadJetty.url + "skip list:" + skipServers, shardFailMessage);
+    
+    // good place to test compareResults
+    boolean shouldFail = compareResults(
+        controlClient.query(new SolrQuery("*:*")).getResults().getNumFound(),
+        cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound());
+    assertTrue("A test that compareResults is working correctly failed",
+        shouldFail);
     
     jetties = new HashSet<>();
     jetties.addAll(shardToJetty.get("shard1"));
