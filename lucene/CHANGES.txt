@@ -16,6 +16,11 @@ API Changes
   IndexOutput.getFilePointer instead) and IndexOutput.setLength.
   (Mike McCandless)
 
+Optimizations
+
+* LUCENE-5603: hunspell stemmer more efficiently strips prefixes
+  and suffixes.  (Robert Muir)
+
 ======================= Lucene 4.8.0 =======================
 
 System Requirements
