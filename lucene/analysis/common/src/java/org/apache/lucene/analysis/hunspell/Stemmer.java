@@ -31,6 +31,8 @@ import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
+import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.Outputs;
 
 /**
  * Stemmer uses the affix rules declared in the Dictionary to generate one or more stems for a word.  It
@@ -54,6 +56,16 @@ final class Stemmer {
   public Stemmer(Dictionary dictionary) {
     this.dictionary = dictionary;
     this.affixReader = new ByteArrayDataInput(dictionary.affixData);
+    for (int level = 0; level < 3; level++) {
+      if (dictionary.prefixes != null) {
+        prefixArcs[level] = new FST.Arc<>();
+        prefixReaders[level] = dictionary.prefixes.getBytesReader();
+      }
+      if (dictionary.suffixes != null) {
+        suffixArcs[level] = new FST.Arc<>();
+        suffixReaders[level] = dictionary.suffixes.getBytesReader();
+      }
+    }
   } 
   
   /**
@@ -93,7 +105,11 @@ final class Stemmer {
         stems.add(newStem(word, length));
       }
     }
-    stems.addAll(stem(word, length, -1, -1, -1, 0, true, true, false, false));
+    try {
+      stems.addAll(stem(word, length, -1, -1, -1, 0, true, true, false, false));
+    } catch (IOException bogus) {
+      throw new RuntimeException(bogus);
+    }
     return stems;
   }
   
@@ -138,6 +154,16 @@ final class Stemmer {
 
   // ================================================= Helper Methods ================================================
 
+  // some state for traversing FSTs
+  final FST.BytesReader prefixReaders[] = new FST.BytesReader[3];
+  @SuppressWarnings("unchecked")
+  final FST.Arc<IntsRef> prefixArcs[] = new FST.Arc[3];
+  
+  final FST.BytesReader suffixReaders[] = new FST.BytesReader[3];
+  @SuppressWarnings("unchecked")
+  final FST.Arc<IntsRef> suffixArcs[] = new FST.Arc[3];
+
+  
   /**
    * Generates a list of stems for the provided word
    *
@@ -155,16 +181,33 @@ final class Stemmer {
    *        this means inner most suffix must also contain circumfix flag.
    * @return List of stems, or empty list if no stems are found
    */
-  private List<CharsRef> stem(char word[], int length, int previous, int prevFlag, int prefixFlag, int recursionDepth, boolean doPrefix, boolean doSuffix, boolean previousWasPrefix, boolean circumfix) {
+  private List<CharsRef> stem(char word[], int length, int previous, int prevFlag, int prefixFlag, int recursionDepth, boolean doPrefix, boolean doSuffix, boolean previousWasPrefix, boolean circumfix) throws IOException {
     
     // TODO: allow this stuff to be reused by tokenfilter
     List<CharsRef> stems = new ArrayList<>();
     
     if (doPrefix && dictionary.prefixes != null) {
-      for (int i = length - 1; i >= 0; i--) {
-        IntsRef prefixes = dictionary.lookupPrefix(word, 0, i);
-        if (prefixes == null) {
+      FST<IntsRef> fst = dictionary.prefixes;
+      Outputs<IntsRef> outputs = fst.outputs;
+      FST.BytesReader bytesReader = prefixReaders[recursionDepth];
+      FST.Arc<IntsRef> arc = prefixArcs[recursionDepth];
+      fst.getFirstArc(arc);
+      IntsRef NO_OUTPUT = outputs.getNoOutput();
+      IntsRef output = NO_OUTPUT;
+      for (int i = 0; i < length; i++) {
+        if (i > 0) {
+          int ch = word[i-1];
+          if (fst.findTargetArc(ch, arc, arc, bytesReader) == null) {
+            break;
+          } else if (arc.output != NO_OUTPUT) {
+            output = fst.outputs.add(output, arc.output);
+          }
+        }
+        IntsRef prefixes = null;
+        if (!arc.isFinal()) {
           continue;
+        } else {
+          prefixes = fst.outputs.add(output, arc.nextFinalOutput);
         }
         
         for (int j = 0; j < prefixes.length; j++) {
@@ -218,10 +261,27 @@ final class Stemmer {
     } 
     
     if (doSuffix && dictionary.suffixes != null) {
-      for (int i = 0; i < length; i++) {
-        IntsRef suffixes = dictionary.lookupSuffix(word, i, length - i);
-        if (suffixes == null) {
+      FST<IntsRef> fst = dictionary.suffixes;
+      Outputs<IntsRef> outputs = fst.outputs;
+      FST.BytesReader bytesReader = suffixReaders[recursionDepth];
+      FST.Arc<IntsRef> arc = suffixArcs[recursionDepth];
+      fst.getFirstArc(arc);
+      IntsRef NO_OUTPUT = outputs.getNoOutput();
+      IntsRef output = NO_OUTPUT;
+      for (int i = length; i >= 0; i--) {
+        if (i < length) {
+          int ch = word[i];
+          if (fst.findTargetArc(ch, arc, arc, bytesReader) == null) {
+            break;
+          } else if (arc.output != NO_OUTPUT) {
+            output = fst.outputs.add(output, arc.output);
+          }
+        }
+        IntsRef suffixes = null;
+        if (!arc.isFinal()) {
           continue;
+        } else {
+          suffixes = fst.outputs.add(output, arc.nextFinalOutput);
         }
         
         for (int j = 0; j < suffixes.length; j++) {
@@ -313,7 +373,7 @@ final class Stemmer {
    * @param prefix true if we are removing a prefix (false if its a suffix)
    * @return List of stems for the word, or an empty list if none are found
    */
-  List<CharsRef> applyAffix(char strippedWord[], int length, int affix, int prefixFlag, int recursionDepth, boolean prefix, boolean circumfix) {    
+  List<CharsRef> applyAffix(char strippedWord[], int length, int affix, int prefixFlag, int recursionDepth, boolean prefix, boolean circumfix) throws IOException {    
     // TODO: just pass this in from before, no need to decode it twice
     affixReader.setPosition(8 * affix);
     char flag = (char) (affixReader.readShort() & 0xffff);
