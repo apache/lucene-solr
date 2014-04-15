@@ -28,4 +28,10 @@ public class TestRateLimitedDirectoryWrapper extends BaseDirectoryTestCase {
     dir.setRateLimiter(limiter, IOContext.Context.MERGE);
     return dir;
   }
+
+  // since we are rate-limiting, this test gets pretty slow
+  @Override @Nightly
+  public void testThreadSafety() throws Exception {
+    super.testThreadSafety();
+  }
 }

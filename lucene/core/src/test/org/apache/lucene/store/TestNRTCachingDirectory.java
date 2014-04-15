@@ -18,6 +18,7 @@ package org.apache.lucene.store;
  */
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,9 +39,12 @@ import org.apache.lucene.util.TestUtil;
 
 public class TestNRTCachingDirectory extends BaseDirectoryTestCase {
 
+  // TODO: RAMDir used here, because its still too slow to use e.g. SimpleFS
+  // for the threads tests... maybe because of the synchronization in listAll?
+  // would be good to investigate further...
   @Override
-  protected Directory getDirectory(File path) {
-    return new NRTCachingDirectory(newFSDirectory(path),
+  protected Directory getDirectory(File path) throws IOException {
+    return new NRTCachingDirectory(new RAMDirectory(),
                                    .1 + 2.0*random().nextDouble(),
                                    .1 + 5.0*random().nextDouble());
   }

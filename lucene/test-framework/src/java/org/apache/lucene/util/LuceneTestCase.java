@@ -1099,11 +1099,11 @@ public abstract class LuceneTestCase extends Assert {
   }
   
   private static BaseDirectoryWrapper wrapDirectory(Random random, Directory directory, boolean bare) {
-    if (rarely(random)) {
+    if (rarely(random) && !bare) {
       directory = new NRTCachingDirectory(directory, random.nextDouble(), random.nextDouble());
     }
     
-    if (rarely(random)) { 
+    if (rarely(random) && !bare) { 
       final double maxMBPerSec = 10 + 5*(random.nextDouble()-0.5);
       if (LuceneTestCase.VERBOSE) {
         System.out.println("LuceneTestCase: will rate limit output IndexOutput to " + maxMBPerSec + " MB/sec");

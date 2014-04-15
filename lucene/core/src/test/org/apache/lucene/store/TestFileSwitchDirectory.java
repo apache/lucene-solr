@@ -97,8 +97,7 @@ public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
   private Directory newFSSwitchDirectory(File aDir, File bDir, Set<String> primaryExtensions) throws IOException {
     Directory a = new SimpleFSDirectory(aDir);
     Directory b = new SimpleFSDirectory(bDir);
-    FileSwitchDirectory switchDir = new FileSwitchDirectory(primaryExtensions, a, b, true);
-    return new MockDirectoryWrapper(random(), switchDir);
+    return new FileSwitchDirectory(primaryExtensions, a, b, true);
   }
   
   // LUCENE-3380 -- make sure we get exception if the directory really does not exist.

@@ -37,6 +37,12 @@ public class TestDirectory extends BaseDirectoryTestCase {
     }
   }
 
+  // we wrap the directory in slow stuff, so only run nightly
+  @Override @Nightly
+  public void testThreadSafety() throws Exception {
+    super.testThreadSafety();
+  }
+
   // Test that different instances of FSDirectory can coexist on the same
   // path, can read, write, and lock files.
   public void testDirectInstantiation() throws Exception {
