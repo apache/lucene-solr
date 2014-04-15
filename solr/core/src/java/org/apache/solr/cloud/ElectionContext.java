@@ -286,62 +286,26 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           + ZkCoreNodeProps.getCoreUrl(leaderProps) + " " + shardId);
       core.getCoreDescriptor().getCloudDescriptor().setLeader(true);
     }
-    boolean success = false;
+
     try {
       super.runLeaderProcess(weAreReplacement, 0);
-      success = true;
     } catch (Exception e) {
       SolrException.log(log, "There was a problem trying to register as the leader", e);
   
       try (SolrCore core = cc.getCore(coreName)) {
 
         if (core == null) {
-          throw new SolrException(ErrorCode.SERVER_ERROR,
-              "Fatal Error, SolrCore not found:" + coreName + " in "
-                  + cc.getCoreNames());
+          log.debug("SolrCore not found:" + coreName + " in " + cc.getCoreNames());
+          return;
         }
         
         core.getCoreDescriptor().getCloudDescriptor().setLeader(false);
         
-        // we could not publish ourselves as leader - rejoin election
+        // we could not publish ourselves as leader - try and rejoin election
         rejoinLeaderElection(leaderSeqPath, core);
-      } finally {
-        if (!success)
-          cancelElection();
       }
     }
     
-  }
-  
-  private boolean areAnyOtherReplicasActive(ZkController zkController,
-      ZkNodeProps leaderProps, String collection, String shardId) {
-    ClusterState clusterState = zkController.getZkStateReader()
-        .getClusterState();
-    Map<String,Slice> slices = clusterState.getSlicesMap(collection);
-    Slice slice = slices.get(shardId);
-    if (!slice.getState().equals(Slice.ACTIVE)) {
-      //Return false if the Slice is not active yet.
-      return false;
-    }
-    Map<String,Replica> replicasMap = slice.getReplicasMap();
-    for (Map.Entry<String,Replica> shard : replicasMap.entrySet()) {
-      String state = shard.getValue().getStr(ZkStateReader.STATE_PROP);
-      // System.out.println("state:"
-      // + state
-      // + shard.getValue().get(ZkStateReader.NODE_NAME_PROP)
-      // + " live: "
-      // + clusterState.liveNodesContain(shard.getValue().get(
-      // ZkStateReader.NODE_NAME_PROP)));
-      if (state.equals(ZkStateReader.ACTIVE)
-          && clusterState.liveNodesContain(shard.getValue().getStr(
-              ZkStateReader.NODE_NAME_PROP))
-          && !new ZkCoreNodeProps(shard.getValue()).getCoreUrl().equals(
-              new ZkCoreNodeProps(leaderProps).getCoreUrl())) {
-        return true;
-      }
-    }
-    
-    return false;
   }
 
   private void waitForReplicasToComeUp(boolean weAreReplacement, int timeoutms) throws InterruptedException {

@@ -38,6 +38,13 @@ Upgrading from Solr 4.8
 Detailed Change List
 ----------------------
 
+Bug Fixes
+----------------------
+
+* SOLR-5904: ElectionContext can cancel an election when it should not if there
+  was an exception while trying to register as the leader. 
+  (Mark Miller, Alan Woodward)
+
 Other Changes
 ---------------------
 
