@@ -164,35 +164,5 @@ public class TestDirectory extends BaseDirectoryTestCase {
       TestUtil.rm(path);
     }
   }
-  
-  public void testFsyncDoesntCreateNewFiles() throws Exception {
-    File path = createTempDir("nocreate");
-    System.out.println(path.getAbsolutePath());
-    Directory fsdir = new SimpleFSDirectory(path);
-    
-    // write a file
-    IndexOutput out = fsdir.createOutput("afile", newIOContext(random()));
-    out.writeString("boo");
-    out.close();
-    
-    // delete it
-    assertTrue(new File(path, "afile").delete());
-    
-    // directory is empty
-    assertEquals(0, fsdir.listAll().length);
-    
-    // fsync it
-    try {
-      fsdir.sync(Collections.singleton("afile"));
-      fail("didn't get expected exception, instead fsync created new files: " + Arrays.asList(fsdir.listAll()));
-    } catch (FileNotFoundException | NoSuchFileException expected) {
-      // ok
-    }
-    
-    // directory is still empty
-    assertEquals(0, fsdir.listAll().length);
-    
-    fsdir.close();
-  }
 }
 
