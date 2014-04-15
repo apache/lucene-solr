@@ -51,13 +51,11 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     }
   }
   
-  // test is occasionally very slow, i dont know why
-  // try this seed: 7D7E036AD12927F5:93333EF9E6DE44DE
-  @Nightly
   public void testThreadSafety() throws Exception {
-    final Directory raw = getDirectory(createTempDir("testThreadSafety"));
-    final BaseDirectoryWrapper dir = newDirectory(raw);
-    dir.setCheckIndexOnClose(false); // we arent making an index
+    final Directory dir = getDirectory(createTempDir("testThreadSafety"));
+    if (dir instanceof BaseDirectoryWrapper) {
+      ((BaseDirectoryWrapper)dir).setCheckIndexOnClose(false); // we arent making an index
+    }
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER); // makes this test really slow
     }
@@ -91,6 +89,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     
     class TheThread2 extends Thread {
       private String name;
+      private volatile boolean stop;
 
       public TheThread2(String name) {
         this.name = name;
@@ -98,7 +97,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       
       @Override
       public void run() {
-        for (int i = 0; i < 10000; i++) {
+        while (stop == false) {
           try {
             String[] files = dir.listAll();
             for (String file : files) {
@@ -109,7 +108,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
               } catch (FileNotFoundException | NoSuchFileException e) {
                 // ignore
               } catch (IOException e) {
-                if (e.getMessage().contains("still open for writing")) {
+                if (e.getMessage() != null && e.getMessage().contains("still open for writing")) {
                   // ignore
                 } else {
                   throw new RuntimeException(e);
@@ -132,10 +131,13 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     theThread2.start();
     
     theThread.join();
+    
+    // after first thread is done, no sense in waiting on thread 2 
+    // to listFiles() and loop over and over
+    theThread2.stop = true;
     theThread2.join();
     
     dir.close();
-    raw.close();
   }
 
   /** LUCENE-1464: just creating a Directory should not
