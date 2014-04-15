@@ -23,9 +23,13 @@ import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.zip.CRC32;
 
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexNotFoundException;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -37,7 +41,245 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
    *  an FS-based directory it should point to the specified
    *  path, else it can ignore it. */
   protected abstract Directory getDirectory(File path) throws IOException;
+  
+  // first some basic tests for the directory api
+  
+  public void testCopy() throws Exception {
+    Directory source = getDirectory(createTempDir("testCopy"));
+    Directory dest = newDirectory();
+    
+    IndexOutput output = source.createOutput("foobar", newIOContext(random()));
+    int numBytes = random().nextInt(20000);
+    byte bytes[] = new byte[numBytes];
+    random().nextBytes(bytes);
+    output.writeBytes(bytes, bytes.length);
+    output.close();
+    
+    source.copy(dest, "foobar", "foobaz", newIOContext(random()));
+    assertTrue(slowFileExists(dest, "foobaz"));
+    
+    IndexInput input = dest.openInput("foobaz", newIOContext(random()));
+    byte bytes2[] = new byte[numBytes];
+    input.readBytes(bytes2, 0, bytes2.length);
+    assertEquals(input.length(), numBytes);
+    input.close();
+    
+    assertArrayEquals(bytes, bytes2);
+    
+    IOUtils.close(source, dest);
+  }
+  
+  public void testCopyDestination() throws Exception {
+    Directory source = newDirectory();
+    Directory dest = getDirectory(createTempDir("testCopyDestination"));
+    
+    IndexOutput output = source.createOutput("foobar", newIOContext(random()));
+    int numBytes = random().nextInt(20000);
+    byte bytes[] = new byte[numBytes];
+    random().nextBytes(bytes);
+    output.writeBytes(bytes, bytes.length);
+    output.close();
+    
+    source.copy(dest, "foobar", "foobaz", newIOContext(random()));
+    assertTrue(slowFileExists(dest, "foobaz"));
+    
+    IndexInput input = dest.openInput("foobaz", newIOContext(random()));
+    byte bytes2[] = new byte[numBytes];
+    input.readBytes(bytes2, 0, bytes2.length);
+    assertEquals(input.length(), numBytes);
+    input.close();
+    
+    assertArrayEquals(bytes, bytes2);
+    
+    IOUtils.close(source, dest);
+  }
+  
+  // TODO: are these semantics really needed by lucene? can we just throw exception?
+  public void testCopyOverwrite() throws Exception {
+    Directory source = getDirectory(createTempDir("testCopyOverwrite"));
+    Directory dest = newDirectory();
+    
+    // we are double-writing intentionally, because thats the api
+    if (dest instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper) dest).setPreventDoubleWrite(false);
+    }
+    
+    IndexOutput output = source.createOutput("foobar", newIOContext(random()));
+    int numBytes = random().nextInt(20000);
+    byte bytes[] = new byte[numBytes];
+    random().nextBytes(bytes);
+    output.writeBytes(bytes, bytes.length);
+    output.close();
+    
+    // create foobaz first, it should be overwritten
+    IndexOutput output2 = dest.createOutput("foobaz", newIOContext(random()));
+    output2.writeString("bogus!");
+    output2.close();
+    
+    source.copy(dest, "foobar", "foobaz", newIOContext(random()));
+    assertTrue(slowFileExists(dest, "foobaz"));
+    
+    IndexInput input = dest.openInput("foobaz", newIOContext(random()));
+    byte bytes2[] = new byte[numBytes];
+    input.readBytes(bytes2, 0, bytes2.length);
+    assertEquals(input.length(), numBytes);
+    input.close();
+    
+    assertArrayEquals(bytes, bytes2);
+    
+    IOUtils.close(source, dest);
+  }
 
+  public void testDeleteFile() throws Exception {
+    Directory dir = getDirectory(createTempDir("testDeleteFile"));
+    dir.createOutput("foo.txt", IOContext.DEFAULT).close();
+    dir.deleteFile("foo.txt");
+    assertEquals(0, dir.listAll().length);
+    dir.close();
+  }
+  
+  public void testByte() throws Exception {
+    Directory dir = getDirectory(createTempDir("testByte"));
+    IndexOutput output = dir.createOutput("byte", newIOContext(random()));
+    output.writeByte((byte)128);
+    output.close();
+    
+    IndexInput input = dir.openInput("byte", newIOContext(random()));
+    assertEquals(1, input.length());
+    assertEquals((byte)128, input.readByte());
+    input.close();
+    dir.close();
+  }
+  
+  public void testShort() throws Exception {
+    Directory dir = getDirectory(createTempDir("testShort"));
+    IndexOutput output = dir.createOutput("short", newIOContext(random()));
+    output.writeShort((short)-20);
+    output.close();
+    
+    IndexInput input = dir.openInput("short", newIOContext(random()));
+    assertEquals(2, input.length());
+    assertEquals((short)-20, input.readShort());
+    input.close();
+    dir.close();
+  }
+  
+  public void testInt() throws Exception {
+    Directory dir = getDirectory(createTempDir("testInt"));
+    IndexOutput output = dir.createOutput("int", newIOContext(random()));
+    output.writeInt(-500);
+    output.close();
+    
+    IndexInput input = dir.openInput("int", newIOContext(random()));
+    assertEquals(4, input.length());
+    assertEquals(-500, input.readInt());
+    input.close();
+    dir.close();
+  }
+  
+  public void testLong() throws Exception {
+    Directory dir = getDirectory(createTempDir("testLong"));
+    IndexOutput output = dir.createOutput("long", newIOContext(random()));
+    output.writeLong(-5000);
+    output.close();
+    
+    IndexInput input = dir.openInput("long", newIOContext(random()));
+    assertEquals(8, input.length());
+    assertEquals(-5000L, input.readLong());
+    input.close();
+    dir.close();
+  }
+  
+  public void testString() throws Exception {
+    Directory dir = getDirectory(createTempDir("testString"));
+    IndexOutput output = dir.createOutput("string", newIOContext(random()));
+    output.writeString("hello!");
+    output.close();
+    
+    IndexInput input = dir.openInput("string", newIOContext(random()));
+    assertEquals("hello!", input.readString());
+    assertEquals(7, input.length());
+    input.close();
+    dir.close();
+  }
+  
+  public void testVInt() throws Exception {
+    Directory dir = getDirectory(createTempDir("testVInt"));
+    IndexOutput output = dir.createOutput("vint", newIOContext(random()));
+    output.writeVInt(500);
+    output.close();
+    
+    IndexInput input = dir.openInput("vint", newIOContext(random()));
+    assertEquals(2, input.length());
+    assertEquals(500, input.readVInt());
+    input.close();
+    dir.close();
+  }
+  
+  public void testVLong() throws Exception {
+    Directory dir = getDirectory(createTempDir("testVLong"));
+    IndexOutput output = dir.createOutput("vlong", newIOContext(random()));
+    output.writeVLong(Long.MAX_VALUE);
+    output.close();
+    
+    IndexInput input = dir.openInput("vlong", newIOContext(random()));
+    assertEquals(9, input.length());
+    assertEquals(Long.MAX_VALUE, input.readVLong());
+    input.close();
+    dir.close();
+  }
+  
+  public void testStringSet() throws Exception {
+    Directory dir = getDirectory(createTempDir("testStringSet"));
+    IndexOutput output = dir.createOutput("stringset", newIOContext(random()));
+    output.writeStringSet(asSet("test1", "test2"));
+    output.close();
+    
+    IndexInput input = dir.openInput("stringset", newIOContext(random()));
+    assertEquals(16, input.length());
+    assertEquals(asSet("test1", "test2"), input.readStringSet());
+    input.close();
+    dir.close();
+  }
+  
+  public void testStringMap() throws Exception {
+    Map<String,String> m = new HashMap<>();
+    m.put("test1", "value1");
+    m.put("test2", "value2");
+    
+    Directory dir = getDirectory(createTempDir("testStringMap"));
+    IndexOutput output = dir.createOutput("stringmap", newIOContext(random()));
+    output.writeStringStringMap(m);
+    output.close();
+    
+    IndexInput input = dir.openInput("stringmap", newIOContext(random()));
+    assertEquals(30, input.length());
+    assertEquals(m, input.readStringStringMap());
+    input.close();
+    dir.close();
+  }
+  
+  // TODO: fold in some of the testing of o.a.l.index.TestIndexInput in here!
+  public void testChecksum() throws Exception {
+    CRC32 expected = new CRC32();
+    int numBytes = random().nextInt(20000);
+    byte bytes[] = new byte[numBytes];
+    random().nextBytes(bytes);
+    expected.update(bytes);
+    
+    Directory dir = getDirectory(createTempDir("testChecksum"));
+    IndexOutput output = dir.createOutput("checksum", newIOContext(random()));
+    output.writeBytes(bytes, 0, bytes.length);
+    output.close();
+    
+    ChecksumIndexInput input = dir.openChecksumInput("checksum", newIOContext(random()));
+    input.skipBytes(numBytes);
+    
+    assertEquals(expected.getValue(), input.getChecksum());
+    input.close();
+    dir.close();
+  }
+  
   /** Make sure directory throws AlreadyClosedException if
    *  you try to createOutput after closing. */
   public void testDetectClose() throws Throwable {
@@ -194,14 +436,6 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     IndexInput i = dir.openInput("out", newIOContext(random()));
     i.seek(1024);
     i.close();
-    dir.close();
-  }
-
-  public void testDeleteFile() throws Exception {
-    Directory dir = getDirectory(createTempDir("testDeleteFile"));
-    dir.createOutput("foo.txt", IOContext.DEFAULT).close();
-    dir.deleteFile("foo.txt");
-    assertEquals(0, dir.listAll().length);
     dir.close();
   }
 
@@ -394,6 +628,45 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
         throw new RuntimeException(ex);
       }
     }
+  }
+  
+  // this test backdoors the directory via the filesystem. so it must actually use the filesystem
+  // TODO: somehow change this test to 
+  public void testFsyncDoesntCreateNewFiles() throws Exception {
+    File path = createTempDir("nocreate");
+    Directory fsdir = getDirectory(path);
+    
+    // this test backdoors the directory via the filesystem. so it must be an FSDir (for now)
+    // TODO: figure a way to test this better/clean it up. E.g. we should be testing for FileSwitchDir,
+    // if its using two FSdirs and so on
+    if (fsdir instanceof FSDirectory == false) {
+      fsdir.close();
+      assumeTrue("test only works for FSDirectory subclasses", false);
+    }
+    
+    // write a file
+    IndexOutput out = fsdir.createOutput("afile", newIOContext(random()));
+    out.writeString("boo");
+    out.close();
+    
+    // delete it
+    assertTrue(new File(path, "afile").delete());
+    
+    // directory is empty
+    assertEquals(0, fsdir.listAll().length);
+    
+    // fsync it
+    try {
+      fsdir.sync(Collections.singleton("afile"));
+      fail("didn't get expected exception, instead fsync created new files: " + Arrays.asList(fsdir.listAll()));
+    } catch (FileNotFoundException | NoSuchFileException expected) {
+      // ok
+    }
+    
+    // directory is still empty
+    assertEquals(0, fsdir.listAll().length);
+    
+    fsdir.close();
   }
 }
 
