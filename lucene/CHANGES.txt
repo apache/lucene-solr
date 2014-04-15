@@ -95,6 +95,9 @@ New Features
 * LUCENE-5580: Checksums are automatically verified on the default stored
   fields format when performing a bulk merge. (Adrien Grand)
 
+* LUCENE-5602: Checksums are automatically verified on the default term
+  vectors format when performing a bulk merge. (Adrien Grand, Robert Muir)
+
 * LUCENE-5583: Added DataInput.skipBytes. ChecksumIndexInput can now seek, but
   only forward. (Adrien Grand, Mike McCandless, Simon Willnauer, Uwe Schindler)
 

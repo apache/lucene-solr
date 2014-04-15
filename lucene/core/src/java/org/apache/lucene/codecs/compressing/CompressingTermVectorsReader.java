@@ -158,6 +158,10 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
   int getPackedIntsVersion() {
     return packedIntsVersion;
   }
+  
+  int getVersion() {
+    return version;
+  }
 
   CompressingStoredFieldsIndexReader getIndex() {
     return indexReader;
