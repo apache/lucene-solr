@@ -18,6 +18,7 @@ package org.apache.lucene.store;
  */
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -27,7 +28,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory.IndexInputSlicer;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 /**
@@ -37,7 +37,13 @@ import org.apache.lucene.util.TestUtil;
  * values, it's necessary to access a file >
  * Integer.MAX_VALUE in size using multiple byte buffers.
  */
-public class TestMultiMMap extends LuceneTestCase {
+public class TestMultiMMap extends BaseDirectoryTestCase {
+  File workDir;
+
+  @Override
+  protected Directory getDirectory(File path) throws IOException {
+    return new MMapDirectory(path, null, 1<<TestUtil.nextInt(random(), 10, 28));
+  }
   
   @Override
   public void setUp() throws Exception {
