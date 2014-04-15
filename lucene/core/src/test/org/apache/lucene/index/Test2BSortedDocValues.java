@@ -25,11 +25,10 @@ import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
 import org.junit.Ignore;
-
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 @TimeoutSuite(millis = 80 * TimeUnits.HOUR)
@@ -93,7 +92,6 @@ public class Test2BSortedDocValues extends LuceneTestCase {
   }
   
   // indexes Integer.MAX_VALUE docs with a fixed binary field
-  // TODO: must use random.nextBytes (like Test2BTerms) to avoid BytesRefHash probing issues
   public void test2BOrds() throws Exception {
     BaseDirectoryWrapper dir = newFSDirectory(createTempDir("2BOrds"));
     if (dir instanceof MockDirectoryWrapper) {
@@ -118,7 +116,10 @@ public class Test2BSortedDocValues extends LuceneTestCase {
     Random random = new Random(seed);
     
     for (int i = 0; i < Integer.MAX_VALUE; i++) {
-      random.nextBytes(bytes);
+      bytes[0] = (byte)(i >> 24);
+      bytes[1] = (byte)(i >> 16);
+      bytes[2] = (byte)(i >> 8);
+      bytes[3] = (byte) i;
       w.addDocument(doc);
       if (i % 100000 == 0) {
         System.out.println("indexed: " + i);

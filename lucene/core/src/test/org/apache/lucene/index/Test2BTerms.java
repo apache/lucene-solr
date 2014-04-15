@@ -44,7 +44,7 @@ import java.util.Random;
 @SuppressCodecs({ "SimpleText", "Memory", "Direct" })
 public class Test2BTerms extends LuceneTestCase {
 
-  private final static int TOKEN_LEN = 10;
+  private final static int TOKEN_LEN = 5;
 
   private final static BytesRef bytes = new BytesRef(TOKEN_LEN);
 
@@ -54,6 +54,7 @@ public class Test2BTerms extends LuceneTestCase {
     private int tokenCount;
     public final List<BytesRef> savedTerms = new ArrayList<>();
     private int nextSave;
+    private long termCounter;
     private final Random random;
 
     public MyTokenStream(Random random, int tokensPerDoc) {
@@ -67,10 +68,16 @@ public class Test2BTerms extends LuceneTestCase {
     
     @Override
     public boolean incrementToken() {
+      clearAttributes();
       if (tokenCount >= tokensPerDoc) {
         return false;
       }
-      random.nextBytes(bytes.bytes);
+      int shift = 32;
+      for(int i=0;i<5;i++) {
+        bytes.bytes[i] = (byte) ((termCounter >> shift) & 0xFF);
+        shift -= 8;
+      }
+      termCounter++;
       tokenCount++;
       if (--nextSave == 0) {
         savedTerms.add(BytesRef.deepCopyOf(bytes));
