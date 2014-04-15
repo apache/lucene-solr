@@ -1255,8 +1255,21 @@ public abstract class LuceneTestCase extends Assert {
       // If it is a FSDirectory type, try its ctor(File)
       if (FSDirectory.class.isAssignableFrom(clazz)) {
         final File dir = createTempDir("index-" + clazzName);
-        dir.mkdirs(); // ensure it's created so we 'have' it.
         return newFSDirectoryImpl(clazz.asSubclass(FSDirectory.class), dir);
+      }
+
+      // See if it has a File ctor even though it's not an
+      // FSDir subclass:
+      Constructor<? extends Directory> fileCtor = null;
+      try {
+        fileCtor = clazz.getConstructor(File.class);
+      } catch (NoSuchMethodException nsme) {
+        // Ignore
+      }
+
+      if (fileCtor != null) {
+        final File dir = createTempDir("index");
+        return fileCtor.newInstance(dir);
       }
 
       // try empty ctor
@@ -1445,7 +1458,7 @@ public abstract class LuceneTestCase extends Assert {
       }
       if (ex != null) {
        if (VERBOSE) {
-        System.out.println("NOTE: newSearcher using ExecutorService with " + threads + " threads");
+         System.out.println("NOTE: newSearcher using ExecutorService with " + threads + " threads");
        }
        r.addReaderClosedListener(new ReaderClosedListener() {
          @Override

@@ -35,7 +35,8 @@ import org.apache.lucene.index.TestIndexWriterReader;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-public class TestFileSwitchDirectory extends LuceneTestCase {
+public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
+
   /**
    * Test if writing doc stores to disk and everything else to ram works.
    */
@@ -115,51 +116,28 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
     }
     dir.close();
   }
-  
-  // LUCENE-3380 test that we can add a file, and then when we call list() we get it back
-  public void testDirectoryFilter() throws IOException {
-    Directory dir = newFSSwitchDirectory(Collections.<String>emptySet());
-    String name = "file";
-    try {
-      dir.createOutput(name, newIOContext(random())).close();
-      assertTrue(slowFileExists(dir, name));
-      assertTrue(Arrays.asList(dir.listAll()).contains(name));
-    } finally {
-      dir.close();
+
+  @Override
+  protected Directory getDirectory(File path) throws IOException {
+    Set<String> extensions = new HashSet<String>();
+    if (random().nextBoolean()) {
+      extensions.add("cfs");
     }
+    if (random().nextBoolean()) {
+      extensions.add("prx");
+    }
+    if (random().nextBoolean()) {
+      extensions.add("frq");
+    }
+    if (random().nextBoolean()) {
+      extensions.add("tip");
+    }
+    if (random().nextBoolean()) {
+      extensions.add("tim");
+    }
+    if (random().nextBoolean()) {
+      extensions.add("del");
+    }
+    return newFSSwitchDirectory(extensions);
   }
-  
-  // LUCENE-3380 test that delegate compound files correctly.
-  public void testCompoundFileAppendTwice() throws IOException {
-    Directory newDir = newFSSwitchDirectory(Collections.singleton("cfs"));
-    CompoundFileDirectory csw = new CompoundFileDirectory(newDir, "d.cfs", newIOContext(random()), true);
-    createSequenceFile(newDir, "d1", (byte) 0, 15);
-    IndexOutput out = csw.createOutput("d.xyz", newIOContext(random()));
-    out.writeInt(0);
-    out.close();
-    assertEquals(1, csw.listAll().length);
-    assertEquals("d.xyz", csw.listAll()[0]);
-   
-    csw.close();
-
-    CompoundFileDirectory cfr = new CompoundFileDirectory(newDir, "d.cfs", newIOContext(random()), false);
-    assertEquals(1, cfr.listAll().length);
-    assertEquals("d.xyz", cfr.listAll()[0]);
-    cfr.close();
-    newDir.close();
-  }
-  
-  /** Creates a file of the specified size with sequential data. The first
-   *  byte is written as the start byte provided. All subsequent bytes are
-   *  computed as start + offset where offset is the number of the byte.
-   */
-  private void createSequenceFile(Directory dir, String name, byte start, int size) throws IOException {
-      IndexOutput os = dir.createOutput(name, newIOContext(random()));
-      for (int i=0; i < size; i++) {
-          os.writeByte(start);
-          start ++;
-      }
-      os.close();
-  }
-
 }

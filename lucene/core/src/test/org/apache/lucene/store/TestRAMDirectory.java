@@ -20,39 +20,38 @@ package org.apache.lucene.store;
 import java.io.File;
 import java.io.IOException;
 
-import org.apache.lucene.document.Field;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.StoredDocument;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.English;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * JUnit testcase to test RAMDirectory. RAMDirectory itself is used in many testcases,
  * but not one of them uses an different constructor other than the default constructor.
  */
-public class TestRAMDirectory extends LuceneTestCase {
+public class TestRAMDirectory extends BaseDirectoryTestCase {
   
-  private File indexDir = null;
+  @Override
+  protected Directory getDirectory(File path) {
+    return new RAMDirectory();
+  }
   
   // add enough document so that the index will be larger than RAMDirectory.READ_BUFFER_SIZE
   private final int docsToAdd = 500;
-  
-  // setup the index
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    indexDir = createTempDir("RAMDirIndex");
+
+  private File buildIndex() throws IOException {
+    File path = createTempDir("buildIndex");
     
-    Directory dir = newFSDirectory(indexDir);
+    Directory dir = newFSDirectory(path);
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE));
     // add some documents
@@ -65,9 +64,27 @@ public class TestRAMDirectory extends LuceneTestCase {
     assertEquals(docsToAdd, writer.maxDoc());
     writer.shutdown();
     dir.close();
+
+    return path;
   }
   
+  // LUCENE-1468
+  public void testCopySubdir() throws Throwable {
+    File path = createTempDir("testsubdir");
+    Directory fsDir = null;
+    try {
+      path.mkdirs();
+      new File(path, "subdir").mkdirs();
+      fsDir = newFSDirectory(path);
+      assertEquals(0, new RAMDirectory(fsDir, newIOContext(random())).listAll().length);
+    } finally {
+      TestUtil.rm(path);
+      IOUtils.close(fsDir);
+    }
+  }
+
   public void testRAMDirectory () throws IOException {
+    File indexDir = buildIndex();
     
     Directory dir = newFSDirectory(indexDir);
     MockDirectoryWrapper ramDir = new MockDirectoryWrapper(random(), new RAMDirectory(dir, newIOContext(random())));
@@ -99,6 +116,8 @@ public class TestRAMDirectory extends LuceneTestCase {
   private final int docsPerThread = 40;
   
   public void testRAMDirectorySize() throws IOException, InterruptedException {
+
+    File indexDir = buildIndex();
       
     Directory dir = newFSDirectory(indexDir);
     final MockDirectoryWrapper ramDir = new MockDirectoryWrapper(random(), new RAMDirectory(dir, newIOContext(random())));
@@ -137,53 +156,5 @@ public class TestRAMDirectory extends LuceneTestCase {
     assertEquals(ramDir.sizeInBytes(), ramDir.getRecomputedSizeInBytes());
     
     writer.shutdown();
-  }
-
-  @Override
-  public void tearDown() throws Exception {
-    // cleanup 
-    if (indexDir != null && indexDir.exists()) {
-      rmDir (indexDir);
-    }
-    super.tearDown();
-  }
-
-  // LUCENE-1196
-  public void testIllegalEOF() throws Exception {
-    RAMDirectory dir = new RAMDirectory();
-    IndexOutput o = dir.createOutput("out", newIOContext(random()));
-    byte[] b = new byte[1024];
-    o.writeBytes(b, 0, 1024);
-    o.close();
-    IndexInput i = dir.openInput("out", newIOContext(random()));
-    i.seek(1024);
-    i.close();
-    dir.close();
-  }
-  
-  private void rmDir(File dir) {
-    File[] files = dir.listFiles();
-    for (int i = 0; i < files.length; i++) {
-      files[i].delete();
-    }
-    dir.delete();
-  }
-
-  // LUCENE-2852
-  public void testSeekToEOFThenBack() throws Exception {
-    RAMDirectory dir = new RAMDirectory();
-
-    IndexOutput o = dir.createOutput("out", newIOContext(random()));
-    byte[] bytes = new byte[3*RAMInputStream.BUFFER_SIZE];
-    o.writeBytes(bytes, 0, bytes.length);
-    o.close();
-
-    IndexInput i = dir.openInput("out", newIOContext(random()));
-    i.seek(2*RAMInputStream.BUFFER_SIZE-1);
-    i.seek(3*RAMInputStream.BUFFER_SIZE);
-    i.seek(RAMInputStream.BUFFER_SIZE);
-    i.readBytes(bytes, 0, 2*RAMInputStream.BUFFER_SIZE);
-    i.close();
-    dir.close();
   }
 }
