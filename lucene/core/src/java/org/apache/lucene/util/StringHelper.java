@@ -170,6 +170,7 @@ public abstract class StringHelper {
   /** Returns the MurmurHash3_x86_32 hash.
    * Original source/tests at https://github.com/yonik/java_util/
    */
+  @SuppressWarnings("fallthrough")
   public static int murmurhash3_x86_32(byte[] data, int offset, int len, int seed) {
 
     final int c1 = 0xcc9e2d51;
