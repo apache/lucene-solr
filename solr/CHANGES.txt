@@ -101,6 +101,8 @@ Bug Fixes
   was an exception while trying to register as the leader. 
   (Mark Miller, Alan Woodward)
 
+* SOLR-5954: Slower DataImportHandler process caused by not reusing jdbc
+  connections. (Mark Miller, Paco Garcia, Raja Nagendra Kumar)
 Other Changes
 ---------------------
 
