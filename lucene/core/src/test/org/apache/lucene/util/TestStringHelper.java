@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis;
+package org.apache.lucene.util;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,24 +17,13 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import java.nio.charset.Charset;
+public class TestStringHelper extends LuceneTestCase {
 
-import org.apache.lucene.analysis.tokenattributes.CharTermAttributeImpl;
-import org.apache.lucene.util.BytesRef;
-
-/**
- * Extension of {@link CharTermAttributeImpl} that encodes the term
- * text as UTF-16 bytes instead of as UTF-8 bytes.
- */
-public class MockUTF16TermAttributeImpl extends CharTermAttributeImpl {
-  static final Charset charset = Charset.forName("UTF-16LE");
-  
-  @Override
-  public void fillBytesRef() {
-    BytesRef bytes = getBytesRef();
-    byte[] utf16 = toString().getBytes(charset);
-    bytes.bytes = utf16;
-    bytes.offset = 0;
-    bytes.length = utf16.length;
+  public void testMurmurHash3() throws Exception {
+    // Hashes computed using murmur3_32 from https://code.google.com/p/pyfasthash
+    assertEquals(0xf6a5c420, StringHelper.murmurhash3_x86_32(new BytesRef("foo"), 0));
+    assertEquals(0xcd018ef6, StringHelper.murmurhash3_x86_32(new BytesRef("foo"), 16));
+    assertEquals(0x111e7435, StringHelper.murmurhash3_x86_32(new BytesRef("You want weapons? We're in a library! Books! The best weapons in the world!"), 0));
+    assertEquals(0x2c628cd0, StringHelper.murmurhash3_x86_32(new BytesRef("You want weapons? We're in a library! Books! The best weapons in the world!"), 3476));
   }
 }

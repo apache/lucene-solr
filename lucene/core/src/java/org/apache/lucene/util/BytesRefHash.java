@@ -17,15 +17,15 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_MASK;
-import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SHIFT;
-import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
-
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.util.ByteBlockPool.DirectAllocator;
+
+import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_MASK;
+import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SHIFT;
+import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 
 /**
  * {@link BytesRefHash} is a special purpose hash-map like data-structure
@@ -271,41 +271,10 @@ public final class BytesRefHash {
    *           {@link ByteBlockPool#BYTE_BLOCK_SIZE}
    */
   public int add(BytesRef bytes) {
-    return add(bytes, bytes.hashCode());
-  }
-
-  /**
-   * Adds a new {@link BytesRef} with a pre-calculated hash code.
-   * 
-   * @param bytes
-   *          the bytes to hash
-   * @param code
-   *          the bytes hash code
-   * 
-   *          <p>
-   *          Hashcode is defined as:
-   * 
-   *          <pre class="prettyprint">
-   * int hash = 0;
-   * for (int i = offset; i &lt; offset + length; i++) {
-   *   hash = 31 * hash + bytes[i];
-   * }
-   * </pre>
-   * 
-   * @return the id the given bytes are hashed if there was no mapping for the
-   *         given bytes, otherwise <code>(-(id)-1)</code>. This guarantees
-   *         that the return value will always be &gt;= 0 if the given bytes
-   *         haven't been hashed before.
-   * 
-   * @throws MaxBytesLengthExceededException
-   *           if the given bytes are >
-   *           {@link ByteBlockPool#BYTE_BLOCK_SIZE} - 2
-   */
-  public int add(BytesRef bytes, int code) {
     assert bytesStart != null : "Bytesstart is null - not initialized";
     final int length = bytes.length;
     // final position
-    final int hashPos = findHash(bytes, code);
+    final int hashPos = findHash(bytes);
     int e = ids[hashPos];
     
     if (e == -1) {
@@ -362,38 +331,32 @@ public final class BytesRefHash {
   /**
    * Returns the id of the given {@link BytesRef}.
    * 
-   * @see #find(BytesRef, int)
-   */
-  public int find(BytesRef bytes) {
-    return find(bytes, bytes.hashCode());
-  }
-
-  /**
-   * Returns the id of the given {@link BytesRef} with a pre-calculated hash code.
-   * 
    * @param bytes
    *          the bytes to look for
-   * @param code
-   *          the bytes hash code
    * 
    * @return the id of the given bytes, or {@code -1} if there is no mapping for the
    *         given bytes.
    */
-  public int find(BytesRef bytes, int code) {
-    return ids[findHash(bytes, code)];
+  public int find(BytesRef bytes) {
+    return ids[findHash(bytes)];
   }
-  
-  private int findHash(BytesRef bytes, int code) {
+
+  public static int totConflict;
+
+  private int findHash(BytesRef bytes) {
     assert bytesStart != null : "bytesStart is null - not initialized";
+
+    int code = doHash(bytes.bytes, bytes.offset, bytes.length);
+
     // final position
     int hashPos = code & hashMask;
     int e = ids[hashPos];
     if (e != -1 && !equals(e, bytes)) {
-      // Conflict: keep searching different locations in
-      // the hash table.
-      final int inc = ((code >> 8) + code) | 1;
+      // Conflict; use linear probe to find an open slot
+      // (see LUCENE-5604):
       do {
-        code += inc;
+        totConflict++;
+        code++;
         hashPos = code & hashMask;
         e = ids[hashPos];
       } while (e != -1 && !equals(e, bytes));
@@ -415,11 +378,10 @@ public final class BytesRefHash {
     int hashPos = offset & hashMask;
     int e = ids[hashPos];
     if (e != -1 && bytesStart[e] != offset) {
-      // Conflict: keep searching different locations in
-      // the hash table.
-      final int inc = ((code >> 8) + code) | 1;
+      // Conflict; use linear probe to find an open slot
+      // (see LUCENE-5604):
       do {
-        code += inc;
+        code++;
         hashPos = code & hashMask;
         e = ids[hashPos];
       } while (e != -1 && bytesStart[e] != offset);
@@ -461,7 +423,6 @@ public final class BytesRefHash {
           final int off = bytesStart[e0];
           final int start = off & BYTE_BLOCK_MASK;
           final byte[] bytes = pool.buffers[off >> BYTE_BLOCK_SHIFT];
-          code = 0;
           final int len;
           int pos;
           if ((bytes[start] & 0x80) == 0) {
@@ -472,11 +433,7 @@ public final class BytesRefHash {
             len = (bytes[start] & 0x7f) + ((bytes[start + 1] & 0xff) << 7);
             pos = start + 2;
           }
-
-          final int endPos = pos + len;
-          while (pos < endPos) {
-            code = 31 * code + bytes[pos++];
-          }
+          code = doHash(bytes, pos, len);
         } else {
           code = bytesStart[e0];
         }
@@ -484,9 +441,10 @@ public final class BytesRefHash {
         int hashPos = code & newMask;
         assert hashPos >= 0;
         if (newHash[hashPos] != -1) {
-          final int inc = ((code >> 8) + code) | 1;
+          // Conflict; use linear probe to find an open slot
+          // (see LUCENE-5604):
           do {
-            code += inc;
+            code++;
             hashPos = code & newMask;
           } while (newHash[hashPos] != -1);
         }
@@ -499,6 +457,11 @@ public final class BytesRefHash {
     ids = newHash;
     hashSize = newSize;
     hashHalfSize = newSize / 2;
+  }
+
+  // TODO: maybe use long?  But our keys are typically short...
+  private int doHash(byte[] bytes, int offset, int length) {
+    return StringHelper.murmurhash3_x86_32(bytes, offset, length, StringHelper.GOOD_FAST_HASH_SEED);
   }
 
   /**
