@@ -277,16 +277,6 @@ Bug fixes
 
 * LUCENE-5568: Benchmark module's "default.codec" option didn't work. (David Smiley)
 
-* LUCENE-5574: Closing a near-real-time reader no longer attempts to
-  delete unreferenced files if the original writer has been closed;
-  this could cause index corruption in certain cases where index files
-  were directly changed (deleted, overwritten, etc.) in the index
-  directory outside of Lucene.  (Simon Willnauer, Shai Erera, Robert
-  Muir, Mike McCandless)
-
-* LUCENE-5570: Don't let FSDirectory.sync() create new zero-byte files, instead throw
-  exception if a file is missing.  (Uwe Schindler, Mike McCandless, Robert Muir)
-
 Test Framework
 
 * LUCENE-5592: Incorrectly reported uncloseable files. (Dawid Weiss)
@@ -317,6 +307,20 @@ Documentation:
 
 * LUCENE-5534: Add javadocs to GreekStemmer methods. 
   (Stamatis Pitsios via Robert Muir)
+
+======================= Lucene 4.7.2 =======================
+
+Bug Fixes
+
+* LUCENE-5574: Closing a near-real-time reader no longer attempts to
+  delete unreferenced files if the original writer has been closed;
+  this could cause index corruption in certain cases where index files
+  were directly changed (deleted, overwritten, etc.) in the index
+  directory outside of Lucene.  (Simon Willnauer, Shai Erera, Robert
+  Muir, Mike McCandless)
+
+* LUCENE-5570: Don't let FSDirectory.sync() create new zero-byte files, instead throw
+  exception if a file is missing.  (Uwe Schindler, Mike McCandless, Robert Muir)
 
 ======================= Lucene 4.7.1 =======================
 
