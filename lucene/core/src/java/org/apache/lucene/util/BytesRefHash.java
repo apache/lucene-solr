@@ -341,8 +341,6 @@ public final class BytesRefHash {
     return ids[findHash(bytes)];
   }
 
-  public static int totConflict;
-
   private int findHash(BytesRef bytes) {
     assert bytesStart != null : "bytesStart is null - not initialized";
 
@@ -355,7 +353,6 @@ public final class BytesRefHash {
       // Conflict; use linear probe to find an open slot
       // (see LUCENE-5604):
       do {
-        totConflict++;
         code++;
         hashPos = code & hashMask;
         e = ids[hashPos];
