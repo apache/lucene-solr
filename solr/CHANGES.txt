@@ -147,14 +147,6 @@ Bug Fixes
 * SOLR-5943: SolrCmdDistributor does not distribute the openSearcher parameter.
   (ludovic Boutros via shalin)
 
-* SOLR-5951: Fixed SolrDispatchFilter to throw useful exception on startup if
-  SLF4j logging jars are missing.  (Uwe Schindler, Hossman, Shawn Heisey)
-
-* SOLR-5950: Maven config: make the org.slf4j:slf4j-api dependency transitive
-  (i.e., not optional) in all modules in which it's a dependency, including
-  solrj, except for the WAR, where it will remain optional.
-  (Uwe Schindler, Steve Rowe)
-
 Optimizations
 ----------------------
 * SOLR-1880: Distributed Search skips GET_FIELDS stage if EXECUTE_QUERY
@@ -240,6 +232,30 @@ Other Changes
   group head. (David Boychuck, Joel Bernstein)
 
 * SOLR-5937: Modernize the DIH example config sets. (Steve Rowe)
+
+==================  4.7.2  ==================
+
+Versions of Major Components
+---------------------
+Apache Tika 1.4
+Carrot2 3.8.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.5
+
+Detailed Change List
+----------------------
+
+Bug Fixes
+----------------------
+
+* SOLR-5951: Fixed SolrDispatchFilter to throw useful exception on startup if
+  SLF4j logging jars are missing.  (Uwe Schindler, Hossman, Shawn Heisey)
+
+* SOLR-5950: Maven config: make the org.slf4j:slf4j-api dependency transitive
+  (i.e., not optional) in all modules in which it's a dependency, including
+  solrj, except for the WAR, where it will remain optional.
+  (Uwe Schindler, Steve Rowe)
 
 ==================  4.7.1  ==================
 
