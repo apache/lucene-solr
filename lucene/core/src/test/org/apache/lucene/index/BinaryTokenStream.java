@@ -62,8 +62,8 @@ public final class BinaryTokenStream extends TokenStream {
     private BytesRef bytes;
     
     @Override
-    public int fillBytesRef() {
-      return bytes.hashCode();
+    public void fillBytesRef() {
+      // no-op: the bytes was already filled by our owner's incrementToken
     }
     
     @Override

@@ -52,21 +52,12 @@ import org.apache.lucene.util.BytesRef;
  * for UTF-8 terms.
  */
 public interface TermToBytesRefAttribute extends Attribute {
+
   /** 
    * Updates the bytes {@link #getBytesRef()} to contain this term's
-   * final encoding, and returns its hashcode.
-   * @return the hashcode as defined by {@link BytesRef#hashCode}:
-   * <pre class="prettyprint">
-   *  int hash = 0;
-   *  for (int i = termBytes.offset; i &lt; termBytes.offset+termBytes.length; i++) {
-   *    hash = 31*hash + termBytes.bytes[i];
-   *  }
-   * </pre>
-   * Implement this for performance reasons, if your code can calculate
-   * the hash on-the-fly. If this is not the case, just return
-   * {@code termBytes.hashCode()}.
+   * final encoding.
    */
-  public int fillBytesRef();
+  public void fillBytesRef();
   
   /**
    * Retrieve this attribute's BytesRef. The bytes are updated 

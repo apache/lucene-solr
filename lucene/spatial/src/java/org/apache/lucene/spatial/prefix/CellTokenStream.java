@@ -107,12 +107,11 @@ class CellTokenStream extends TokenStream {
     }
 
     @Override
-    public int fillBytesRef() {
+    public void fillBytesRef() {
       if (omitLeafByte)
         cell.getTokenBytesNoLeaf(bytes);
       else
         cell.getTokenBytes(bytes);
-      return bytes.hashCode();
     }
 
     @Override

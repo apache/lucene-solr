@@ -464,8 +464,8 @@ public class Dictionary {
         appendFlags = NOFLAGS;
       }
       
-      final int hashCode = encodeFlagsWithHash(scratch, appendFlags);
-      int appendFlagsOrd = flagLookup.add(scratch, hashCode);
+      encodeFlags(scratch, appendFlags);
+      int appendFlagsOrd = flagLookup.add(scratch);
       if (appendFlagsOrd < 0) {
         // already exists in our hash
         appendFlagsOrd = (-appendFlagsOrd)-1;
@@ -765,8 +765,8 @@ public class Dictionary {
       if (cmp < 0) {
         throw new IllegalArgumentException("out of order: " + entry + " < " + currentEntry);
       } else {
-        final int hashCode = encodeFlagsWithHash(flagsScratch, wordForm);
-        int ord = flagLookup.add(flagsScratch, hashCode);
+        encodeFlags(flagsScratch, wordForm);
+        int ord = flagLookup.add(flagsScratch);
         if (ord < 0) {
           // already exists in our hash
           ord = (-ord)-1;
@@ -808,18 +808,16 @@ public class Dictionary {
     return flags;
   }
   
-  static int encodeFlagsWithHash(BytesRef b, char flags[]) {
-    int hash = 0;
+  static void encodeFlags(BytesRef b, char flags[]) {
     int len = flags.length << 1;
     b.grow(len);
     b.length = len;
     int upto = b.offset;
     for (int i = 0; i < flags.length; i++) {
       int flag = flags[i];
-      hash = 31*hash + (b.bytes[upto++] = (byte) ((flag >> 8) & 0xff));
-      hash = 31*hash + (b.bytes[upto++] = (byte) (flag & 0xff));
+      b.bytes[upto++] = (byte) ((flag >> 8) & 0xff);
+      b.bytes[upto++] = (byte) (flag & 0xff);
     }
-    return hash;
   }
 
   private void parseAlias(String line) {

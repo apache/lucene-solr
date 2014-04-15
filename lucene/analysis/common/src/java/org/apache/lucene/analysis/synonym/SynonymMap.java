@@ -153,9 +153,9 @@ public class SynonymMap {
       assert !hasHoles(output): "output has holes: " + output;
 
       //System.out.println("fmap.add input=" + input + " numInputWords=" + numInputWords + " output=" + output + " numOutputWords=" + numOutputWords);
-      final int hashCode = UnicodeUtil.UTF16toUTF8WithHash(output.chars, output.offset, output.length, utf8Scratch);
+      UnicodeUtil.UTF16toUTF8(output.chars, output.offset, output.length, utf8Scratch);
       // lookup in hash
-      int ord = words.add(utf8Scratch, hashCode);
+      int ord = words.add(utf8Scratch);
       if (ord < 0) {
         // already exists in our hash
         ord = (-ord)-1;

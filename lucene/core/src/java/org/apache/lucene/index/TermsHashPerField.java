@@ -172,12 +172,14 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
   @Override
   void add() throws IOException {
 
+    termAtt.fillBytesRef();
+
     // We are first in the chain so we must "intern" the
     // term text into textStart address
     // Get the text & hash of this term.
     int termID;
     try {
-      termID = bytesHash.add(termBytesRef, termAtt.fillBytesRef());
+      termID = bytesHash.add(termBytesRef);
     } catch (MaxBytesLengthExceededException e) {
       // Term is too large; record this here (can't throw an
       // exc because DocInverterPerField will then abort the

@@ -40,12 +40,11 @@ public class CollatedTermAttributeImpl extends CharTermAttributeImpl {
   }
   
   @Override
-  public int fillBytesRef() {
+  public void fillBytesRef() {
     BytesRef bytes = getBytesRef();
     bytes.bytes = collator.getCollationKey(toString()).toByteArray();
     bytes.offset = 0;
     bytes.length = bytes.bytes.length;
-    return bytes.hashCode();
   }
 
 }

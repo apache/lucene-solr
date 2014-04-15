@@ -159,11 +159,13 @@ public final class NumericTokenStream extends TokenStream {
     }
     
     @Override
-    public int fillBytesRef() {
+    public void fillBytesRef() {
       assert valueSize == 64 || valueSize == 32;
-      return (valueSize == 64) ? 
-        NumericUtils.longToPrefixCoded(value, shift, bytes) :
+      if (valueSize == 64) {
+        NumericUtils.longToPrefixCoded(value, shift, bytes);
+      } else {
         NumericUtils.intToPrefixCoded((int) value, shift, bytes);
+      }
     }
 
     @Override

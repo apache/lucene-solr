@@ -87,8 +87,8 @@ public class Test2BTerms extends LuceneTestCase {
 
     private final static class MyTermAttributeImpl extends AttributeImpl implements TermToBytesRefAttribute {
       @Override
-      public int fillBytesRef() {
-        return bytes.hashCode();
+      public void fillBytesRef() {
+        // no-op: the bytes was already filled by our owner's incrementToken
       }
       
       @Override

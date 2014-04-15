@@ -72,8 +72,8 @@ public final class CannedBinaryTokenStream extends TokenStream {
     private final BytesRef bytes = new BytesRef();
 
     @Override
-    public int fillBytesRef() {
-      return bytes.hashCode();
+    public void fillBytesRef() {
+      // no-op: we already filled externally during owner's incrementToken
     }
       
     @Override
