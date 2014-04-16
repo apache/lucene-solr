@@ -221,13 +221,13 @@ public abstract class HttpClientBase implements Closeable {
       }
       @Override
       public int read(byte[] b) throws IOException {
-        final int res = super.read(b);
+        final int res = in.read(b);
         consume(res);
         return res;
       }
       @Override
       public int read(byte[] b, int off, int len) throws IOException {
-        final int res = super.read(b, off, len);
+        final int res = in.read(b, off, len);
         consume(res);
         return res;
       }

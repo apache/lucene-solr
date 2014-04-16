@@ -15,6 +15,9 @@ Optimizations
 
 * LUCENE-5603: hunspell stemmer more efficiently strips prefixes
   and suffixes.  (Robert Muir)
+  
+* LUCENE-5599: HttpReplicator did not properly delegate bulk read() to wrapped
+  InputStream. (Christoph Kaser via Shai Erera)
 
 ======================= Lucene 4.8.0 =======================
 
