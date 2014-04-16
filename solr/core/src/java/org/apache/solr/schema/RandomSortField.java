@@ -54,10 +54,10 @@ import org.apache.solr.search.QParser;
  * 
  * Examples of queries:
  * <ul>
- * <li>http://localhost:8983/solr/select/?q=*:*&fl=name&sort=rand_1234%20desc</li>
- * <li>http://localhost:8983/solr/select/?q=*:*&fl=name&sort=rand_2345%20desc</li>
- * <li>http://localhost:8983/solr/select/?q=*:*&fl=name&sort=rand_ABDC%20desc</li>
- * <li>http://localhost:8983/solr/select/?q=*:*&fl=name&sort=rand_21%20desc</li>
+ * <li>http://localhost:8983/solr/select/?q=*:*&fl=name&sort=random_1234%20desc</li>
+ * <li>http://localhost:8983/solr/select/?q=*:*&fl=name&sort=random_2345%20desc</li>
+ * <li>http://localhost:8983/solr/select/?q=*:*&fl=name&sort=random_ABDC%20desc</li>
+ * <li>http://localhost:8983/solr/select/?q=*:*&fl=name&sort=random_21%20desc</li>
  * </ul>
  * Note that multiple calls to the same URL will return the same sorting order.
  * 
