@@ -58,6 +58,7 @@ import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -465,6 +466,7 @@ public class CollectionsHandler extends RequestHandlerBase {
          MAX_SHARDS_PER_NODE,
         CREATE_NODE_SET ,
         SHARDS_PROP,
+        DocCollection.STATE_FORMAT,
         ASYNC,
         "router.");
 

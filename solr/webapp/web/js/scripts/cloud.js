@@ -368,7 +368,7 @@ var prepare_graph = function( graph_element, callback )
         $.ajax
         (
           {
-            url : app.config.solr_path + '/zookeeper?wt=json&detail=true&path=%2Fclusterstate.json',
+            url : app.config.solr_path + '/zookeeper?wt=json&detail=true&path=%2Fclusterstate.json&all=true',
             dataType : 'json',
             context : graph_element,
             beforeSend : function( xhr, settings )

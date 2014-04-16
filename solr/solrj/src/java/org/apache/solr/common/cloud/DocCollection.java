@@ -33,19 +33,27 @@ import java.util.Map;
 public class DocCollection extends ZkNodeProps {
   public static final String DOC_ROUTER = "router";
   public static final String SHARDS = "shards";
+  public static final String STATE_FORMAT = "stateFormat";
+  private int version;
 
   private final String name;
   private final Map<String, Slice> slices;
   private final Map<String, Slice> activeSlices;
   private final DocRouter router;
+  private final boolean external;
+
+  public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
+    this(name, slices, props, router, -1);
+  }
 
   /**
    * @param name  The name of the collection
    * @param slices The logical shards of the collection.  This is used directly and a copy is not made.
    * @param props  The properties of the slice.  This is used directly and a copy is not made.
    */
-  public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
-    super( props==null ? props = new HashMap<>() : props);
+  public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router, int zkVersion) {
+    super( props==null ? props = new HashMap<String,Object>() : props);
+    this.version = zkVersion;
     this.name = name;
 
     this.slices = slices;
@@ -59,6 +67,7 @@ public class DocCollection extends ZkNodeProps {
         this.activeSlices.put(slice.getKey(), slice.getValue());
     }
     this.router = router;
+    external = getInt(STATE_FORMAT,1)>1;
 
     assert name != null && slices != null;
   }
@@ -103,6 +112,16 @@ public class DocCollection extends ZkNodeProps {
   public Map<String, Slice> getActiveSlicesMap() {
     return activeSlices;
   }
+
+  public int getVersion(){
+    return version;
+
+  }
+
+  public boolean isExternal(){
+    return external;
+  }
+
 
   public DocRouter getRouter() {
     return router;

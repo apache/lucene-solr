@@ -109,6 +109,11 @@ Other Changes
 * SOLR-5980: AbstractFullDistribZkTestBase#compareResults always returns false
   for shouldFail. (Mark Miller, Gregory Chanan)
 
+* SOLR-5473: Make one state.json per collection (Noble Paul)
+
+* SOLR-5474: Have a new mode for SolrJ to support stateFormat=2 (Noble Paul, Tim Potter)
+
+
 ==================  4.8.0 ==================
 
 Versions of Major Components

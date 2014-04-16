@@ -24,19 +24,28 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.lucene.util.BytesRef;
+import org.noggit.CharArr;
+import org.noggit.JSONWriter;
+import org.noggit.ObjectBuilder;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.FastWriter;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.data.Stat;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
@@ -49,9 +58,9 @@ import org.slf4j.LoggerFactory;
  *
  * @since solr 4.0
  */
-public final class ZookeeperInfoServlet extends BaseSolrServlet {
+public final class ZookeeperInfoServlet extends HttpServlet {
   static final Logger log = LoggerFactory.getLogger(ZookeeperInfoServlet.class);
-  
+
   @Override
   public void init() {
   }
@@ -65,7 +74,7 @@ public final class ZookeeperInfoServlet extends BaseSolrServlet {
     if (cores == null) {
       throw new ServletException("Missing request attribute org.apache.solr.CoreContainer.");
     }
-    
+
     final SolrParams params;
     try {
       params = SolrRequestParsers.DEFAULT.parse(null, request.getServletPath(), request).getParams();
@@ -80,6 +89,7 @@ public final class ZookeeperInfoServlet extends BaseSolrServlet {
 
     String path = params.get("path");
     String addr = params.get("addr");
+    boolean all = "true".equals(params.get("all"));
 
     if (addr != null && addr.length() == 0) {
       addr = null;
@@ -101,11 +111,11 @@ public final class ZookeeperInfoServlet extends BaseSolrServlet {
     printer.dump = dump;
 
     try {
-      printer.print(path);
+      printer.print(path, all);
     } finally {
       printer.close();
     }
-    
+
     out.flush();
   }
 
@@ -184,7 +194,7 @@ public final class ZookeeperInfoServlet extends BaseSolrServlet {
     }
 
     // main entry point
-    void print(String path) throws IOException {
+    void print(String path, boolean all) throws IOException {
       if (zkClient == null) {
         return;
       }
@@ -214,7 +224,7 @@ public final class ZookeeperInfoServlet extends BaseSolrServlet {
       json.startObject();
 
       if (detail) {
-        if (!printZnode(json, path)) {
+        if (!printZnode(json, path,all)) {
           return;
         }
         json.writeValueSeparator();
@@ -285,7 +295,7 @@ public final class ZookeeperInfoServlet extends BaseSolrServlet {
 
         if (dump) {
           json.writeValueSeparator();
-          printZnode(json, path);
+          printZnode(json, path, false);
         }
 
       } catch (IllegalArgumentException e) {
@@ -358,7 +368,8 @@ public final class ZookeeperInfoServlet extends BaseSolrServlet {
       json.write(v);
     }
 
-    boolean printZnode(JSONWriter json, String path) throws IOException {
+    @SuppressWarnings("unchecked")
+    boolean printZnode(JSONWriter json, String path, boolean all) throws IOException {
       try {
         Stat stat = new Stat();
         // Trickily, the call to zkClient.getData fills in the stat variable
@@ -371,6 +382,48 @@ public final class ZookeeperInfoServlet extends BaseSolrServlet {
             dataStr = (new BytesRef(data)).utf8ToString();
           } catch (Exception e) {
             dataStrErr = "data is not parsable as a utf8 String: " + e.toString();
+          }
+        }
+
+        // pull in external collections too
+        if ("/clusterstate.json".equals(path) && all) {
+          SortedMap<String,Object> collectionStates = null;
+          List<String> children = zkClient.getChildren("/collections", null, true);
+          java.util.Collections.sort(children);
+          for (String collection : children) {
+            String collStatePath = String.format("/collections/%s/state", collection);
+            String childDataStr = null;
+            try {
+              byte[] childData = zkClient.getData(collStatePath, null, null, true);
+              if (childData != null) {
+                childDataStr = (new BytesRef(childData)).utf8ToString();
+              }
+            } catch (NoNodeException nne) {
+              // safe to ignore
+            } catch (Exception childErr) {
+              log.error("Failed to get "+collStatePath+" due to: "+childErr);
+            }
+
+            if (childDataStr != null) {
+              if (collectionStates == null) {
+                // initialize lazily as there may not be any external collections
+                collectionStates = new TreeMap<String,Object>();
+
+                // add the internal collections
+                if (dataStr != null)
+                  collectionStates.putAll((Map<String,Object>)ObjectBuilder.fromJSON(dataStr));
+              }
+
+              // now add in the external collections
+              Map<String,Object> extColl = (Map<String,Object>)ObjectBuilder.fromJSON(childDataStr);
+              collectionStates.put(collection, extColl.get(collection));
+            }
+          }
+
+          if (collectionStates != null) {
+            CharArr out = new CharArr();
+            new JSONWriter(out, 2).write(collectionStates);
+            dataStr = out.toString();
           }
         }
 

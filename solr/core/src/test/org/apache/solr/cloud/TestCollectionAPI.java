@@ -63,6 +63,11 @@ public class TestCollectionAPI extends AbstractFullDistribZkTestBase {
       client.shutdown();
     }
 
+    waitForCollection(cloudClient.getZkStateReader(), COLLECTION_NAME, 2);
+    waitForCollection(cloudClient.getZkStateReader(), COLLECTION_NAME1, 1);
+    waitForRecoveriesToFinish(COLLECTION_NAME, false);
+    waitForRecoveriesToFinish(COLLECTION_NAME1, false);
+
     listCollection();
     clusterStatusNoCollection();
     clusterStatusWithCollection();

@@ -1072,9 +1072,18 @@ public final class ZkController {
     if (context != null) {
       context.cancelElection();
     }
-    
+
     CloudDescriptor cloudDescriptor = cd.getCloudDescriptor();
-    
+    boolean removeWatch = true;
+    for (SolrCore solrCore : cc.getCores()) {//if there is no SolrCoe which is a member of this collection, remove the watch
+      CloudDescriptor cloudDesc = solrCore.getCoreDescriptor().getCloudDescriptor();
+      if (cloudDesc != null && cloudDescriptor.getCollectionName().equals(cloudDesc.getCollectionName())) {
+        //means
+        removeWatch = false;
+        break;
+      }
+    }
+    if(removeWatch) zkStateReader.removeZKWatch(collection);
     ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
         Overseer.DELETECORE, ZkStateReader.CORE_NAME_PROP, coreName,
         ZkStateReader.NODE_NAME_PROP, getNodeName(),
@@ -1291,7 +1300,7 @@ public final class ZkController {
     log.info("waiting to find shard id in clusterstate for " + cd.getName());
     int retryCount = 320;
     while (retryCount-- > 0) {
-      final String shardId = zkStateReader.getClusterState().getShardId(getNodeName(), cd.getName());
+      final String shardId = zkStateReader.getClusterState().getShardId(cd.getCollectionName(), getNodeName(), cd.getName());
       if (shardId != null) {
         cd.getCloudDescriptor().setShardId(shardId);
         return;
@@ -1376,6 +1385,11 @@ public final class ZkController {
       }
 
       publish(cd, ZkStateReader.DOWN, false, true);
+      DocCollection collection = zkStateReader.getClusterState().getCollectionOrNull(cd.getCloudDescriptor().getCollectionName());
+      if(collection !=null && collection.isExternal()  ){
+        log.info("Registering watch for external collection {}",cd.getCloudDescriptor().getCollectionName());
+        zkStateReader.addCollectionWatch(cd.getCloudDescriptor().getCollectionName());
+      }
     } catch (KeeperException e) {
       log.error("", e);
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);

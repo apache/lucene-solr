@@ -22,6 +22,7 @@ import static org.apache.solr.cloud.OverseerCollectionProcessor.MAX_SHARDS_PER_N
 import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.SHARDS_PROP;
+import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 
 import java.io.File;
 import java.io.IOException;
@@ -60,6 +61,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -312,7 +314,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected void waitForCollection(ZkStateReader reader, String collection, int slices) throws Exception {
     // wait until shards have started registering...
     int cnt = 30;
-    while (!reader.getClusterState().getCollections().contains(collection)) {
+    while (!reader.getClusterState().hasCollection(collection)) {
       if (cnt == 0) {
         throw new RuntimeException("timeout waiting for collection in cluster state: collection=" + collection);
       }
@@ -334,7 +336,20 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected List<JettySolrRunner> createJettys(int numJettys) throws Exception {
     return createJettys(numJettys, false);
   }
-  
+
+  protected int defaultStateFormat = 1 + random().nextInt(2);
+
+  protected int getStateFormat()  {
+    String stateFormat = System.getProperty("tests.solr.stateFormat", null);
+    if (stateFormat != null)  {
+      if ("2".equals(stateFormat)) {
+        return defaultStateFormat = 2;
+      } else if ("1".equals(stateFormat))  {
+        return defaultStateFormat = 1;
+      }
+    }
+    return defaultStateFormat; // random
+  }
 
   /**
    * @param checkCreatedVsState
@@ -346,6 +361,18 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     List<JettySolrRunner> jettys = new ArrayList<>();
     List<SolrServer> clients = new ArrayList<>();
     StringBuilder sb = new StringBuilder();
+
+    if(getStateFormat() == 2) {
+      log.info("Creating collection1 with stateFormat=2");
+      SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT);
+      Overseer.getInQueue(zkClient).offer(ZkStateReader.toJSON(ZkNodeProps.makeMap(
+          Overseer.QUEUE_OPERATION, OverseerCollectionProcessor.CREATECOLLECTION,
+          "name", DEFAULT_COLLECTION,
+          "numShards", String.valueOf(sliceCount),
+          DocCollection.STATE_FORMAT, getStateFormat())));
+      zkClient.close();
+    }
+
     for (int i = 1; i <= numJettys; i++) {
       if (sb.length() > 0) sb.append(',');
       int cnt = this.jettyIntCntr.incrementAndGet();
@@ -354,7 +381,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
       jettyDir.mkdirs();
       setupJettySolrHome(jettyDir);
-      log.info("create jetty " + i); 
+      log.info("create jetty " + i);
       JettySolrRunner j = createJetty(jettyDir, useJettyDataDir ? getDataDir(testDir + "/jetty"
           + cnt) : null, null, "solrconfig.xml", null);
       jettys.add(j);
@@ -1632,6 +1659,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       collectionInfos.put(collectionName, list);
     }
     params.set("name", collectionName);
+    if (useExternalCollections()) {
+      log.info("Creating external collection: " + collectionName);
+      params.set(DocCollection.STATE_FORMAT, "2");
+    }
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
@@ -1648,6 +1679,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       res.setResponse(client.request(request));
     }
     return res;
+  }
+
+
+  public boolean useExternalCollections() {
+    return getStateFormat() == 2;
   }
 
   protected CollectionAdminResponse createCollection(Map<String,List<Integer>> collectionInfos,
@@ -1839,6 +1875,43 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
 
     fail("Could not find the new collection - " + exp.code() + " : " + collectionClient.getBaseURL());
+  }
+
+  protected void checkForMissingCollection(String collectionName)
+      throws Exception {
+    // check for a  collection - we poll the state
+    long timeoutAt = System.currentTimeMillis() + 45000;
+    boolean found = true;
+    while (System.currentTimeMillis() < timeoutAt) {
+      getCommonCloudSolrServer().getZkStateReader().updateClusterState(true);
+      ClusterState clusterState = getCommonCloudSolrServer().getZkStateReader().getClusterState();
+//      Map<String,DocCollection> collections = clusterState
+//          .getCollectionStates();
+      if (! clusterState.hasCollection(collectionName)) {
+        found = false;
+        break;
+      }
+      Thread.sleep(100);
+    }
+    if (found) {
+      fail("Found collection that should be gone " + collectionName);
+    }
+  }
+
+
+  protected void createCollection(String collName,
+                                  CloudSolrServer client,
+                                  int replicationFactor ,
+                                  int numShards ) throws Exception {
+    int maxShardsPerNode = ((((numShards+1) * replicationFactor) / getCommonCloudSolrServer()
+        .getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
+
+    Map<String, Object> props = makeMap(
+        REPLICATION_FACTOR, replicationFactor,
+        MAX_SHARDS_PER_NODE, maxShardsPerNode,
+        NUM_SLICES, numShards);
+    Map<String,List<Integer>> collectionInfos = new HashMap<String,List<Integer>>();
+    createCollection(collectionInfos, collName, props, client);
   }
 
 }

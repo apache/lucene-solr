@@ -18,7 +18,9 @@ package org.apache.solr.client.solrj.impl;
  */
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.MalformedURLException;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,13 +32,16 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
+import org.apache.http.NoHttpResponseException;
 import org.apache.http.client.HttpClient;
+import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
@@ -67,6 +72,8 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * SolrJ client class to communicate with SolrCloud.
@@ -79,6 +86,8 @@ import org.apache.zookeeper.KeeperException;
  * with {@link #setIdField(String)}.
  */
 public class CloudSolrServer extends SolrServer {
+  private static final Logger log = LoggerFactory.getLogger(CloudSolrServer.class);
+
   private volatile ZkStateReader zkStateReader;
   private String zkHost; // the zk server address
   private int zkConnectTimeout = 10000;
@@ -95,6 +104,7 @@ public class CloudSolrServer extends SolrServer {
       .newCachedThreadPool(new SolrjNamedThreadFactory(
           "CloudSolrServer ThreadPool"));
   private String idField = "id";
+  public static final String STATE_VERSION = "_stateVer_";
   private final Set<String> NON_ROUTABLE_PARAMS;
   {
     NON_ROUTABLE_PARAMS = new HashSet<>();
@@ -112,25 +122,51 @@ public class CloudSolrServer extends SolrServer {
     // NON_ROUTABLE_PARAMS.add(UpdateParams.ROLLBACK);
 
   }
+  private volatile long timeToLive;
 
 
+  protected Map<String, ExpiringCachedDocCollection> collectionStateCache = new ConcurrentHashMap<String, ExpiringCachedDocCollection>(){
+    @Override
+    public ExpiringCachedDocCollection get(Object key) {
+      ExpiringCachedDocCollection val = super.get(key);
+      if(val == null) return null;
+      if(val.isExpired(timeToLive)) {
+        super.remove(key);
+        return null;
+      }
+      return val;
+    }
+
+  };
+
+  class ExpiringCachedDocCollection {
+    DocCollection cached;
+    long cachedAt;
+
+    ExpiringCachedDocCollection(DocCollection cached) {
+      this.cached = cached;
+      this.cachedAt = System.currentTimeMillis();
+    }
+
+    boolean isExpired(long timeToLive) {
+      return (System.currentTimeMillis() - cachedAt) > timeToLive;
+    }
+  }
 
   /**
    * @param zkHost The client endpoint of the zookeeper quorum containing the cloud state,
    * in the form HOST:PORT.
    */
   public CloudSolrServer(String zkHost) {
-      this.zkHost = zkHost;
-      this.myClient = HttpClientUtil.createClient(null);
-      this.lbServer = new LBHttpSolrServer(myClient);
-      this.lbServer.setRequestWriter(new BinaryRequestWriter());
-      this.lbServer.setParser(new BinaryResponseParser());
-      this.updatesToLeaders = true;
-      shutdownLBHttpSolrServer = true;
+    this(zkHost, true, 60);
   }
-  
-  public CloudSolrServer(String zkHost, boolean updatesToLeaders)
-      throws MalformedURLException {
+
+  public CloudSolrServer(String zkHost, boolean updatesToLeaders) throws MalformedURLException {
+    this(zkHost, updatesToLeaders, 60);
+  }
+
+  public CloudSolrServer(String zkHost, boolean updatesToLeaders, int cachedStateTimeToLiveSecs) {
+
     this.zkHost = zkHost;
     this.myClient = HttpClientUtil.createClient(null);
     this.lbServer = new LBHttpSolrServer(myClient);
@@ -138,6 +174,9 @@ public class CloudSolrServer extends SolrServer {
     this.lbServer.setParser(new BinaryResponseParser());
     this.updatesToLeaders = updatesToLeaders;
     shutdownLBHttpSolrServer = true;
+
+    timeToLive = cachedStateTimeToLiveSecs * 1000L;
+    setupStateVerParamOnQueryString(lbServer);
   }
 
   /**
@@ -146,10 +185,7 @@ public class CloudSolrServer extends SolrServer {
    * @param lbServer LBHttpSolrServer instance for requests. 
    */
   public CloudSolrServer(String zkHost, LBHttpSolrServer lbServer) {
-    this.zkHost = zkHost;
-    this.lbServer = lbServer;
-    this.updatesToLeaders = true;
-    shutdownLBHttpSolrServer = false;
+    this(zkHost, lbServer, true);
   }
   
   /**
@@ -159,12 +195,34 @@ public class CloudSolrServer extends SolrServer {
    * @param updatesToLeaders sends updates only to leaders - defaults to true
    */
   public CloudSolrServer(String zkHost, LBHttpSolrServer lbServer, boolean updatesToLeaders) {
+    this(zkHost, lbServer, updatesToLeaders, 60);
+  }
+
+  public CloudSolrServer(String zkHost, LBHttpSolrServer lbServer, boolean updatesToLeaders, int cachedStateTimeToLiveSecs) {
     this.zkHost = zkHost;
     this.lbServer = lbServer;
     this.updatesToLeaders = updatesToLeaders;
     shutdownLBHttpSolrServer = false;
+    timeToLive = cachedStateTimeToLiveSecs * 1000L;
+
+    setupStateVerParamOnQueryString(lbServer);
   }
-  
+
+  /**
+   * Used internally to setup the _stateVer_ param to be sent in the query string of requests
+   * coming from this instance.
+   * @param lbServer
+   */
+  protected void setupStateVerParamOnQueryString(LBHttpSolrServer lbServer) {
+    // setup the stateVer param to be passed in the query string of every request
+    Set<String> queryStringParams = lbServer.getQueryParams();
+    if (queryStringParams == null) {
+      queryStringParams = new HashSet<String>(2);
+      lbServer.setQueryParams(queryStringParams);
+    }
+    queryStringParams.add("_stateVer_");
+  }
+
   public ResponseParser getParser() {
     return lbServer.getParser();
   }
@@ -237,10 +295,7 @@ public class CloudSolrServer extends SolrServer {
       synchronized (this) {
         if (zkStateReader == null) {
           try {
-            ZkStateReader zk = new ZkStateReader(zkHost, zkClientTimeout,
-                zkConnectTimeout);
-            zk.createClusterStateWatchersAndUpdate();
-            zkStateReader = zk;
+            zkStateReader = createZkStateReader(zkHost, zkClientTimeout, zkConnectTimeout);
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
@@ -293,7 +348,7 @@ public class CloudSolrServer extends SolrServer {
       }
     }
 
-    DocCollection col = clusterState.getCollection(collection);
+    DocCollection col = getDocCollection(clusterState, collection);
 
     DocRouter router = col.getRouter();
     
@@ -311,8 +366,8 @@ public class CloudSolrServer extends SolrServer {
       return null;
     }
 
-    NamedList<Throwable> exceptions = new NamedList<Throwable>();
-    NamedList<NamedList> shardResponses = new NamedList<NamedList>();
+    NamedList<Throwable> exceptions = new NamedList<>();
+    NamedList<NamedList> shardResponses = new NamedList<>();
 
     Map<String, LBHttpSolrServer.Req> routes = updateRequest.getRoutes(router, col, urlMap, routableParams, this.idField);
     if (routes == null) {
@@ -496,7 +551,145 @@ public class CloudSolrServer extends SolrServer {
   }
 
   @Override
-  public NamedList<Object> request(SolrRequest request)
+  public NamedList<Object> request(SolrRequest request) throws SolrServerException, IOException {
+    SolrParams reqParams = request.getParams();
+    String collection = (reqParams != null) ? reqParams.get("collection", getDefaultCollection()) : getDefaultCollection();
+    return requestWithRetryOnStaleState(request, true, collection);
+  }
+
+  /**
+   * As this class doesn't watch external collections on the client side,
+   * there's a chance that the request will fail due to cached stale state,
+   * which means the state must be refreshed from ZK and retried.
+   */
+  protected NamedList<Object> requestWithRetryOnStaleState(SolrRequest request, boolean retry, String collection)
+      throws SolrServerException, IOException {
+
+    connect(); // important to call this before you start working with the ZkStateReader
+
+    // build up a _stateVer_ param to pass to the server containing all of the
+    // external collection state versions involved in this request, which allows
+    // the server to notify us that our cached state for one or more of the external
+    // collections is stale and needs to be refreshed ... this code has no impact on internal collections
+    String stateVerParam = null;
+    List<DocCollection> requestedExternalCollections = null;
+    if (collection != null && !request.getPath().startsWith("/admin")) { // don't do _stateVer_ checking for admin requests
+      Set<String> requestedCollectionNames = getCollectionList(getZkStateReader().getClusterState(), collection);
+      requestedExternalCollections = new ArrayList<DocCollection>(requestedCollectionNames.size());
+      StringBuilder stateVerParamBuilder = null;
+      for (String requestedCollection : requestedCollectionNames) {
+        // track the version of state we're using on the client side using the _stateVer_ param
+        DocCollection coll = getDocCollection(getZkStateReader().getClusterState(), requestedCollection);
+        int collVer = coll.getVersion();
+        if (coll.isExternal()) {
+          requestedExternalCollections.add(coll);
+
+          if (stateVerParamBuilder == null) {
+            stateVerParamBuilder = new StringBuilder();
+          } else {
+            stateVerParamBuilder.append("|"); // hopefully pipe is not an allowed char in a collection name          
+          }
+
+          stateVerParamBuilder.append(coll.getName()).append(":").append(collVer);
+        }
+      }
+
+      if (stateVerParamBuilder != null) {
+        stateVerParam = stateVerParamBuilder.toString();
+      }
+    }
+
+    if (request.getParams() instanceof ModifiableSolrParams) {
+      ModifiableSolrParams params = (ModifiableSolrParams) request.getParams();
+      if (stateVerParam != null) {
+        params.set(STATE_VERSION, stateVerParam);
+      } else {
+        params.remove(STATE_VERSION);
+      }
+    } // else: ??? how to set this ???
+
+    NamedList<Object> resp = null;
+    try {
+      resp = sendRequest(request);
+    } catch (Exception exc) {
+
+      Throwable rootCause = SolrException.getRootCause(exc);
+      // don't do retry support for admin requests or if the request doesn't have a collection specified
+      if (collection == null || request.getPath().startsWith("/admin")) {
+        if (exc instanceof SolrServerException) {
+          throw (SolrServerException)exc;
+        } else if (exc instanceof IOException) {
+          throw (IOException)exc;
+        }else if (exc instanceof RuntimeException) {
+          throw (RuntimeException) exc;
+        }
+        else {
+          throw new SolrServerException(rootCause);
+        }
+      }
+
+      int errorCode = (rootCause instanceof SolrException) ?
+          ((SolrException)rootCause).code() : SolrException.ErrorCode.UNKNOWN.code;
+
+      log.error("Request to collection {} failed due to ("+errorCode+
+          ") {}, retry? "+retry, collection, rootCause.toString());
+
+      boolean wasCommError =
+          (rootCause instanceof ConnectException ||
+              rootCause instanceof ConnectTimeoutException ||
+              rootCause instanceof NoHttpResponseException ||
+              rootCause instanceof SocketException);
+
+      boolean stateWasStale = false;
+      if (retry &&
+          !requestedExternalCollections.isEmpty() &&
+          SolrException.ErrorCode.getErrorCode(errorCode) == SolrException.ErrorCode.INVALID_STATE)
+      {
+        // cached state for one or more external collections was stale
+        // re-issue request using updated state
+        stateWasStale = true;
+
+        // just re-read state for all of them, which is a little heavy handed but hopefully a rare occurrence
+        for (DocCollection ext : requestedExternalCollections) {
+          collectionStateCache.remove(ext.getName());
+        }
+      }
+
+      // if we experienced a communication error, it's worth checking the state
+      // with ZK just to make sure the node we're trying to hit is still part of the collection
+      if (retry && !stateWasStale && !requestedExternalCollections.isEmpty() && wasCommError) {
+        for (DocCollection ext : requestedExternalCollections) {
+          DocCollection latestStateFromZk = getZkStateReader().getExternCollection(ext.getName());
+          if (latestStateFromZk.getVersion() != ext.getVersion()) {
+            // looks like we couldn't reach the server because the state was stale == retry
+            stateWasStale = true;
+            // we just pulled state from ZK, so update the cache so that the retry uses it
+            collectionStateCache.put(ext.getName(), new ExpiringCachedDocCollection(latestStateFromZk));
+          }
+        }
+      }
+
+      requestedExternalCollections.clear(); // done with this
+
+      // if the state was stale, then we retry the request once with new state pulled from Zk
+      if (stateWasStale) {
+        log.warn("Re-trying request to external collection(s) "+collection+" after stale state error from server.");
+        resp = requestWithRetryOnStaleState(request, false, collection);
+      } else {
+        if (exc instanceof SolrServerException) {
+          throw (SolrServerException)exc;
+        } else if (exc instanceof IOException) {
+          throw (IOException)exc;
+        } else {
+          throw new SolrServerException(rootCause);
+        }
+      }
+    }
+
+    return resp;
+  }
+
+  protected NamedList<Object> sendRequest(SolrRequest request)
       throws SolrServerException, IOException {
     connect();
     
@@ -556,7 +749,7 @@ public class CloudSolrServer extends SolrServer {
       // add it to the Map of slices.
       Map<String,Slice> slices = new HashMap<>();
       for (String collectionName : collectionsList) {
-        DocCollection col = clusterState.getCollection(collectionName);
+        DocCollection col = getDocCollection(clusterState, collectionName);
         Collection<Slice> routeSlices = col.getRouter().getSearchSlices(shardKeys, reqParams , col);
         ClientUtils.addSlices(slices, collectionName, routeSlices, true);
       }
@@ -637,26 +830,31 @@ public class CloudSolrServer extends SolrServer {
     return rsp.getResponse();
   }
 
-  private Set<String> getCollectionList(ClusterState clusterState,
-      String collection) {
+  protected Set<String> getCollectionList(ClusterState clusterState,
+                                          String collection) {
     // Extract each comma separated collection name and store in a List.
-    List<String> rawCollectionsList = StrUtils.splitSmart(collection, ",", true);
-    Set<String> collectionsList = new HashSet<>();
+    Set<String> collectionsList = new HashSet<String>();
     // validate collections
-    for (String collectionName : rawCollectionsList) {
-      if (!clusterState.getCollections().contains(collectionName)) {
-        Aliases aliases = zkStateReader.getAliases();
-        String alias = aliases.getCollectionAlias(collectionName);
-        if (alias != null) {
-          List<String> aliasList = StrUtils.splitSmart(alias, ",", true); 
-          collectionsList.addAll(aliasList);
-          continue;
+    List<String> rawCollectionsList = (collection != null) ? StrUtils.splitSmart(collection, ",", true) : null;
+    if (rawCollectionsList != null) {
+      for (String collectionName : rawCollectionsList) {
+        if (!clusterState.hasCollection(collectionName)) {
+          Aliases aliases = zkStateReader.getAliases();
+          String alias = aliases.getCollectionAlias(collectionName);
+          if (alias != null) {
+            List<String> aliasList = StrUtils.splitSmart(alias, ",", true);
+            collectionsList.addAll(aliasList);
+            continue;
+          }
+
+          DocCollection docCollection = getDocCollection(clusterState, collection);
+          if (docCollection == null) {
+            throw new SolrException(ErrorCode.BAD_REQUEST, "Collection not found: " + collectionName);
+          }
         }
-        
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Collection not found: " + collectionName);
+
+        collectionsList.add(collectionName);
       }
-      
-      collectionsList.add(collectionName);
     }
     return collectionsList;
   }
@@ -690,6 +888,28 @@ public class CloudSolrServer extends SolrServer {
   
   public boolean isUpdatesToLeaders() {
     return updatesToLeaders;
+  }
+
+  protected DocCollection getDocCollection(ClusterState clusterState, String collection) throws SolrException {
+    ExpiringCachedDocCollection cachedState = collectionStateCache != null ? collectionStateCache.get(collection) : null;
+    if (cachedState != null && cachedState.cached != null) {
+      return cachedState.cached;
+    }
+
+    DocCollection col = clusterState.getCollectionOrNull(collection);
+    if(col == null ) return  null;
+    collectionStateCache.put(collection, new ExpiringCachedDocCollection(col));
+    return col;
+  }
+
+  /**
+   * Extension point to allow sub-classes to override the ZkStateReader this class uses internally.
+   */
+  protected ZkStateReader createZkStateReader(String zkHost, int zkClientTimeout, int zkConnectTimeout)
+      throws InterruptedException, TimeoutException, IOException, KeeperException {
+    ZkStateReader zk = new ZkStateReader(zkHost, zkClientTimeout, zkConnectTimeout);
+    zk.createClusterStateWatchersAndUpdate();
+    return zk;
   }
 
 }

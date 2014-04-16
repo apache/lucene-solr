@@ -144,7 +144,8 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       ROUTER, DocRouter.DEFAULT_NAME,
       REPLICATION_FACTOR, "1",
       MAX_SHARDS_PER_NODE, "1",
-      "external",null );
+      "external",null ,
+      DocCollection.STATE_FORMAT , null);
 
 
   // TODO: use from Overseer?
@@ -607,7 +608,14 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     if (collection == null) {
       Set<String> collections = clusterState.getCollections();
       for (String name : collections) {
-        Map<String, Object> collectionStatus = getCollectionStatus(stateMap, name, shard);
+        Map<String, Object> collectionStatus = null;
+        if (clusterState.hasExternalCollection(name)) {
+          bytes = ZkStateReader.toJSON(clusterState.getCollection(name));
+          Map<String, Object> docCollection = (Map<String, Object>) ZkStateReader.fromJSON(bytes);
+          collectionStatus = getCollectionStatus(docCollection, name, shard);
+        } else  {
+          collectionStatus = getCollectionStatus((Map<String, Object>) stateMap.get(name), name, shard);
+        }
         if (collectionVsAliases.containsKey(name) && !collectionVsAliases.get(name).isEmpty())  {
           collectionStatus.put("aliases", collectionVsAliases.get(name));
         }
@@ -615,16 +623,23 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       }
     } else {
       String routeKey = message.getStr(ShardParams._ROUTE_);
+      Map<String, Object> docCollection = null;
+      if (clusterState.hasExternalCollection(collection)) {
+        bytes = ZkStateReader.toJSON(clusterState.getCollection(collection));
+        docCollection = (Map<String, Object>) ZkStateReader.fromJSON(bytes);
+      } else  {
+        docCollection = (Map<String, Object>) stateMap.get(collection);
+      }
       if (routeKey == null) {
-        Map<String, Object> collectionStatus = getCollectionStatus(stateMap, collection, shard);
+        Map<String, Object> collectionStatus = getCollectionStatus(docCollection, collection, shard);
         if (collectionVsAliases.containsKey(collection) && !collectionVsAliases.get(collection).isEmpty())  {
           collectionStatus.put("aliases", collectionVsAliases.get(collection));
         }
         collectionProps.add(collection, collectionStatus);
       } else {
-        DocCollection docCollection = clusterState.getCollection(collection);
-        DocRouter router = docCollection.getRouter();
-        Collection<Slice> slices = router.getSearchSlices(routeKey, null, docCollection);
+        DocCollection coll = clusterState.getCollection(collection);
+        DocRouter router = coll.getRouter();
+        Collection<Slice> slices = router.getSearchSlices(routeKey, null, coll);
         String s = "";
         for (Slice slice : slices) {
           s += slice.getName() + ",";
@@ -632,7 +647,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
         if (shard != null)  {
           s += shard;
         }
-        Map<String, Object> collectionStatus = getCollectionStatus(stateMap, collection, s);
+        Map<String, Object> collectionStatus = getCollectionStatus(docCollection, collection, s);
         if (collectionVsAliases.containsKey(collection) && !collectionVsAliases.get(collection).isEmpty())  {
           collectionStatus.put("aliases", collectionVsAliases.get(collection));
         }
@@ -663,20 +678,19 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
    * Can return collection status by given shard name.
    *
    *
-   * @param clusterState cloud state map parsed from JSON-serialized {@link ClusterState}
+   * @param collection collection map parsed from JSON-serialized {@link ClusterState}
    * @param name  collection name
    * @param shardStr comma separated shard names
    * @return map of collection properties
    */
-  private Map<String, Object> getCollectionStatus(Map<String, Object> clusterState, String name, String shardStr) {
-    Map<String, Object> docCollection = (Map<String, Object>) clusterState.get(name);
-    if (docCollection == null)  {
+  private Map<String, Object> getCollectionStatus(Map<String, Object> collection, String name, String shardStr) {
+    if (collection == null)  {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Collection: " + name + " not found");
     }
     if (shardStr == null) {
-      return docCollection;
+      return collection;
     } else {
-      Map<String, Object> shards = (Map<String, Object>) docCollection.get("shards");
+      Map<String, Object> shards = (Map<String, Object>) collection.get("shards");
       Map<String, Object>  selected = new HashMap<>();
       List<String> selectedShards = Arrays.asList(shardStr.split(","));
       for (String selectedShard : selectedShards) {
@@ -684,9 +698,9 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
           throw new SolrException(ErrorCode.BAD_REQUEST, "Collection: " + name + " shard: " + selectedShard + " not found");
         }
         selected.put(selectedShard, shards.get(selectedShard));
-        docCollection.put("shards", selected);
+        collection.put("shards", selected);
       }
-      return docCollection;
+      return collection;
     }
   }
 

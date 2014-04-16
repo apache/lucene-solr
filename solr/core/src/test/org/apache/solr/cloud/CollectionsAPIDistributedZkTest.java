@@ -50,6 +50,7 @@ import javax.management.ObjectName;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
@@ -245,7 +246,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     checkForMissingCollection(collectionName);
     
     assertFalse(cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, true));
-    
+
   }
 
   private void testSolrJAPICalls() throws Exception {
@@ -410,7 +411,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     }
 
     assertFalse("Still found collection that should be gone", cloudClient.getZkStateReader().getClusterState().hasCollection("halfdeletedcollection2"));
-    
+
   }
 
   private void testErrorHandling() throws Exception {
@@ -1162,27 +1163,6 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     fail("Could not find the new collection - " + exp.code() + " : " + collectionClient.getBaseURL());
   }*/
   
-  private void checkForMissingCollection(String collectionName)
-      throws Exception {
-    // check for a  collection - we poll the state
-    long timeoutAt = System.currentTimeMillis() + 45000;
-    boolean found = true;
-    while (System.currentTimeMillis() < timeoutAt) {
-      getCommonCloudSolrServer().getZkStateReader().updateClusterState(true);
-      ClusterState clusterState = getCommonCloudSolrServer().getZkStateReader().getClusterState();
-//      Map<String,DocCollection> collections = clusterState
-//          .getCollectionStates();
-      if (! clusterState.hasCollection(collectionName)) {
-        found = false;
-        break;
-      }
-      Thread.sleep(100);
-    }
-    if (found) {
-      fail("Found collection that should be gone " + collectionName);
-    }
-  }
-
   private void checkNoTwoShardsUseTheSameIndexDir() throws Exception {
     Map<String, Set<String>> indexDirToShardNamesMap = new HashMap<>();
     
