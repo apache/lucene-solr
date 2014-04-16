@@ -335,7 +335,6 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
         }
       }
 
-      // Check if we can and should return a BooleanScorer
       return new BooleanScorer(this, disableCoord, minNrShouldMatch, optional, prohibited, maxCoord);
     }
 
