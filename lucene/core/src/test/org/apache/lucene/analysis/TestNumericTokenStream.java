@@ -41,8 +41,7 @@ public class TestNumericTokenStream extends BaseTokenStreamTestCase {
     for (int shift=0; shift<64; shift+=NumericUtils.PRECISION_STEP_DEFAULT) {
       assertTrue("New token is available", stream.incrementToken());
       assertEquals("Shift value wrong", shift, numericAtt.getShift());
-      final int hash = bytesAtt.fillBytesRef();
-      assertEquals("Hash incorrect", bytes.hashCode(), hash);
+      bytesAtt.fillBytesRef();
       assertEquals("Term is incorrectly encoded", lvalue & ~((1L << shift) - 1L), NumericUtils.prefixCodedToLong(bytes));
       assertEquals("Term raw value is incorrectly encoded", lvalue & ~((1L << shift) - 1L), numericAtt.getRawValue());
       assertEquals("Type incorrect", (shift == 0) ? NumericTokenStream.TOKEN_TYPE_FULL_PREC : NumericTokenStream.TOKEN_TYPE_LOWER_PREC, typeAtt.type());
@@ -64,8 +63,7 @@ public class TestNumericTokenStream extends BaseTokenStreamTestCase {
     for (int shift=0; shift<32; shift+=NumericUtils.PRECISION_STEP_DEFAULT) {
       assertTrue("New token is available", stream.incrementToken());
       assertEquals("Shift value wrong", shift, numericAtt.getShift());
-      final int hash = bytesAtt.fillBytesRef();
-      assertEquals("Hash incorrect", bytes.hashCode(), hash);
+      bytesAtt.fillBytesRef();
       assertEquals("Term is incorrectly encoded", ivalue & ~((1 << shift) - 1), NumericUtils.prefixCodedToInt(bytes));
       assertEquals("Term raw value is incorrectly encoded", ((long) ivalue) & ~((1L << shift) - 1L), numericAtt.getRawValue());
       assertEquals("Type incorrect", (shift == 0) ? NumericTokenStream.TOKEN_TYPE_FULL_PREC : NumericTokenStream.TOKEN_TYPE_LOWER_PREC, typeAtt.type());

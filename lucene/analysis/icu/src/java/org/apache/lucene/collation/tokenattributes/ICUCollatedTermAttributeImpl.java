@@ -45,12 +45,11 @@ public class ICUCollatedTermAttributeImpl extends CharTermAttributeImpl {
   }
 
   @Override
-  public int fillBytesRef() {
+  public void fillBytesRef() {
     BytesRef bytes = getBytesRef();
     collator.getRawCollationKey(toString(), key);
     bytes.bytes = key.bytes;
     bytes.offset = 0;
     bytes.length = key.size;
-    return bytes.hashCode();
   }
 }

@@ -108,11 +108,9 @@ public final class NumericUtils {
    * @param val the numeric value
    * @param shift how many bits to strip from the right
    * @param bytes will contain the encoded value
-   * @return the hash code for indexing (TermsHash)
    */
-  public static int longToPrefixCoded(final long val, final int shift, final BytesRef bytes) {
+  public static void longToPrefixCoded(final long val, final int shift, final BytesRef bytes) {
     longToPrefixCodedBytes(val, shift, bytes);
-    return bytes.hashCode();
   }
 
   /**
@@ -122,11 +120,9 @@ public final class NumericUtils {
    * @param val the numeric value
    * @param shift how many bits to strip from the right
    * @param bytes will contain the encoded value
-   * @return the hash code for indexing (TermsHash)
    */
-  public static int intToPrefixCoded(final int val, final int shift, final BytesRef bytes) {
+  public static void intToPrefixCoded(final int val, final int shift, final BytesRef bytes) {
     intToPrefixCodedBytes(val, shift, bytes);
-    return bytes.hashCode();
   }
 
   /**
