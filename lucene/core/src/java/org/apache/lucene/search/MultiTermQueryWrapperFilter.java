@@ -77,6 +77,8 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
 
   /** Returns the field name for this query */
   public final String getField() { return query.getField(); }
+
+  public static long rewriteTermCount;
   
   /**
    * Returns a DocIdSet with documents that should be permitted in search
@@ -104,6 +106,7 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
       final FixedBitSet bitSet = new FixedBitSet(context.reader().maxDoc());
       DocsEnum docsEnum = null;
       do {
+        rewriteTermCount++;
         // System.out.println("  iter termCount=" + termCount + " term=" +
         // enumerator.term().toBytesString());
         docsEnum = termsEnum.docs(acceptDocs, docsEnum, DocsEnum.FLAG_NONE);

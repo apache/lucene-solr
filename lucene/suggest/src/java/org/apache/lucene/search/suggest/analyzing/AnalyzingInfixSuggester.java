@@ -93,17 +93,16 @@ import org.apache.lucene.util.Version;
  *  on prefix matches to any tokens in the indexed text.
  *  This also highlights the tokens that match.
  *
- *  <p>This just uses an ordinary Lucene index.  It
- *  supports payloads, and records these as a
- *  {@link BinaryDocValues} field.  Matches are sorted only
+ *  <p>This suggester supports payloads.  Matches are sorted only
  *  by the suggest weight; it would be nice to support
  *  blended score + weight sort in the future.  This means
  *  this suggester best applies when there is a strong
- *  apriori ranking of all the suggestions.
+ *  a-priori ranking of all the suggestions.
  *
  *  <p>This suggester supports contexts, however the
  *  contexts must be valid utf8 (arbitrary binary terms will
  *  not work).
+ *
  * @lucene.experimental */    
 
 public class AnalyzingInfixSuggester extends Lookup implements Closeable {
@@ -141,14 +140,18 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
   private static final Sort SORT = new Sort(new SortField("weight", SortField.Type.LONG, true));
 
   /** Create a new instance, loading from a previously built
-   *  directory, if it exists.  Note that {@link #close}
+   *  AnalyzingInfixSuggester directory, if it exists.  This directory must be
+   *  private to the infix suggester (i.e., not an external
+   *  Lucene index).  Note that {@link #close}
    *  will also close the provided directory. */
   public AnalyzingInfixSuggester(Version matchVersion, Directory dir, Analyzer analyzer) throws IOException {
     this(matchVersion, dir, analyzer, analyzer, DEFAULT_MIN_PREFIX_CHARS);
   }
 
   /** Create a new instance, loading from a previously built
-   *  directory, if it exists. Note that {@link #close}
+   *  AnalyzingInfixSuggester directory, if it exists.  This directory must be
+   *  private to the infix suggester (i.e., not an external
+   *  Lucene index).  Note that {@link #close}
    *  will also close the provided directory.
    *
    *  @param minPrefixChars Minimum number of leading characters
