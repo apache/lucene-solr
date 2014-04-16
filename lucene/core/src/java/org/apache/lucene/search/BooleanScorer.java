@@ -61,7 +61,7 @@ import org.apache.lucene.search.BooleanQuery.BooleanWeight;
 
 final class BooleanScorer extends BulkScorer {
   
-  private /*static*/ final class BooleanScorerCollector extends SimpleCollector {
+  private static final class BooleanScorerCollector extends SimpleCollector {
     private BucketTable bucketTable;
     private int mask;
     private Scorer scorer;
@@ -77,19 +77,18 @@ final class BooleanScorer extends BulkScorer {
       final int i = doc & BucketTable.MASK;
       final Bucket bucket = table.buckets[i];
       
-      final int coord = (mask & REQUIRED_MASK) == REQUIRED_MASK ? requiredNrMatchers : 1;
       if (bucket.doc != doc) {                    // invalid bucket
         bucket.doc = doc;                         // set doc
         bucket.score = scorer.score();            // initialize score
         bucket.bits = mask;                       // initialize mask
-        bucket.coord = /*1*/coord;                         // initialize coord
+        bucket.coord = 1;                         // initialize coord
 
         bucket.next = table.first;                // push onto valid list
         table.first = bucket;
       } else {                                    // valid bucket
         bucket.score += scorer.score();           // increment score
         bucket.bits |= mask;                      // add bits in mask
-        bucket.coord/*++*/+= coord;                           // increment coord
+        bucket.coord++;                           // increment coord
       }
     }
     
@@ -117,7 +116,7 @@ final class BooleanScorer extends BulkScorer {
   }
   
   /** A simple hash table of document scores within a range. */
-  /*static*/ final class BucketTable {
+  static final class BucketTable {
     public static final int SIZE = 1 << 11;
     public static final int MASK = SIZE - 1;
 
@@ -141,7 +140,8 @@ final class BooleanScorer extends BulkScorer {
 
   static final class SubScorer {
     public BulkScorer scorer;
-    public boolean required = false;
+    // TODO: re-enable this if BQ ever sends us required clauses
+    //public boolean required = false;
     public boolean prohibited;
     public LeafCollector collector;
     public SubScorer next;
@@ -149,9 +149,13 @@ final class BooleanScorer extends BulkScorer {
 
     public SubScorer(BulkScorer scorer, boolean required, boolean prohibited,
         LeafCollector collector, SubScorer next) {
+      if (required) {
+        throw new IllegalArgumentException("this scorer cannot handle required=true");
+      }
       this.scorer = scorer;
       this.more = true;
-      this.required = required;
+      // TODO: re-enable this if BQ ever sends us required clauses
+      //this.required = required;
       this.prohibited = prohibited;
       this.collector = collector;
       this.next = next;
@@ -161,30 +165,20 @@ final class BooleanScorer extends BulkScorer {
   private SubScorer scorers = null;
   private BucketTable bucketTable = new BucketTable();
   private final float[] coordFactors;
+  // TODO: re-enable this if BQ ever sends us required clauses
+  //private int requiredMask = 0;
   private final int minNrShouldMatch;
   private int end;
   private Bucket current;
   // Any time a prohibited clause matches we set bit 0:
   private static final int PROHIBITED_MASK = 1;
-  // Any time a prohibited clause matches we set bit 1:
-  private static final int REQUIRED_MASK = 2;
-  private final int requiredNrMatchers;
 
   private final Weight weight;
 
-  BooleanScorer(BooleanWeight weight, boolean disableCoord, int minNrShouldMatch, 
-      List<Scorer> requiredScorers, List<BulkScorer> optionalScorers, List<BulkScorer> prohibitedScorers, 
-      int maxCoord) throws IOException {
-    
+  BooleanScorer(BooleanWeight weight, boolean disableCoord, int minNrShouldMatch,
+      List<BulkScorer> optionalScorers, List<BulkScorer> prohibitedScorers, int maxCoord) throws IOException {
     this.minNrShouldMatch = minNrShouldMatch;
     this.weight = weight;
-    
-    this.requiredNrMatchers = requiredScorers.size();
-    if ( this.requiredNrMatchers > 0 ) {
-      BulkScorer requiredScorer = new Weight.DefaultBulkScorer(new ConjunctionScorer(
-          this.weight, requiredScorers.toArray(new Scorer[requiredScorers.size()])));
-      scorers = new SubScorer(requiredScorer, true, false, bucketTable.newCollector(REQUIRED_MASK), scorers);
-    }
 
     for (BulkScorer scorer : optionalScorers) {
       scorers = new SubScorer(scorer, false, false, bucketTable.newCollector(0), scorers);
@@ -194,8 +188,7 @@ final class BooleanScorer extends BulkScorer {
       scorers = new SubScorer(scorer, false, true, bucketTable.newCollector(PROHIBITED_MASK), scorers);
     }
 
-    // TODO: required add requriredScorer.size().
-    coordFactors = new float[requiredScorers.size() + optionalScorers.size() + 1];
+    coordFactors = new float[optionalScorers.size() + 1];
     for (int i = 0; i < coordFactors.length; i++) {
       coordFactors[i] = disableCoord ? 1.0f : weight.coord(i, maxCoord); 
     }
@@ -216,9 +209,12 @@ final class BooleanScorer extends BulkScorer {
       while (current != null) {         // more queued 
 
         // check prohibited & required
-        if ((current.bits & PROHIBITED_MASK) == 0 &&
-            (requiredNrMatchers == 0 || (current.bits & REQUIRED_MASK) == REQUIRED_MASK)) {
+        if ((current.bits & PROHIBITED_MASK) == 0) {
 
+          // TODO: re-enable this if BQ ever sends us required
+          // clauses
+          //&& (current.bits & requiredMask) == requiredMask) {
+          
           // NOTE: Lucene always passes max =
           // Integer.MAX_VALUE today, because we never embed
           // a BooleanScorer inside another (even though
@@ -233,7 +229,7 @@ final class BooleanScorer extends BulkScorer {
             continue;
           }
           
-          if (current.coord >= minNrShouldMatch + requiredNrMatchers) {
+          if (current.coord >= minNrShouldMatch) {
             fs.score = (float) (current.score * coordFactors[current.coord]);
             fs.doc = current.doc;
             fs.freq = current.coord;

@@ -313,7 +313,6 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
         return super.bulkScorer(context, scoreDocsInOrder, acceptDocs);
       }
 
-      List<Scorer> required = new ArrayList<Scorer>();
       List<BulkScorer> prohibited = new ArrayList<BulkScorer>();
       List<BulkScorer> optional = new ArrayList<BulkScorer>();
       Iterator<BooleanClause> cIter = clauses.iterator();
@@ -328,11 +327,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
           // TODO: there are some cases where BooleanScorer
           // would handle conjunctions faster than
           // BooleanScorer2...
-//          return super.bulkScorer(context, scoreDocsInOrder, acceptDocs);
-          Scorer requiredSubScorer = w.scorer(context, acceptDocs);
-          if ( requiredSubScorer == null ) return null;
-          required.add(requiredSubScorer);
-          
+          return super.bulkScorer(context, scoreDocsInOrder, acceptDocs);
         } else if (c.isProhibited()) {
           prohibited.add(subScorer);
         } else {
@@ -341,7 +336,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       }
 
       // Check if we can and should return a BooleanScorer
-      return new BooleanScorer(this, disableCoord, minNrShouldMatch, required, optional, prohibited, maxCoord);
+      return new BooleanScorer(this, disableCoord, minNrShouldMatch, optional, prohibited, maxCoord);
     }
 
     @Override
