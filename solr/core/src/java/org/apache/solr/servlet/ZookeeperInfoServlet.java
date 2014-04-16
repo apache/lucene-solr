@@ -24,6 +24,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -391,7 +392,7 @@ public final class ZookeeperInfoServlet extends HttpServlet {
           List<String> children = zkClient.getChildren("/collections", null, true);
           java.util.Collections.sort(children);
           for (String collection : children) {
-            String collStatePath = String.format("/collections/%s/state", collection);
+            String collStatePath = String.format(Locale.ROOT, "/collections/%s/state", collection);
             String childDataStr = null;
             try {
               byte[] childData = zkClient.getData(collStatePath, null, null, true);
