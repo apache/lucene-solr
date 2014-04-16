@@ -113,6 +113,7 @@ Other Changes
 
 * SOLR-5474: Have a new mode for SolrJ to support stateFormat=2 (Noble Paul, Tim Potter)
 
+* SOLR-5987: Add "collection" to UpdateParams. (Mark Miller, Greg Solovyev)
 
 ==================  4.8.0 ==================
 

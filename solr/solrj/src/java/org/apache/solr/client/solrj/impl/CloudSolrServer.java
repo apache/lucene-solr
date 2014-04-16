@@ -332,7 +332,7 @@ public class CloudSolrServer extends SolrServer {
       }
     }
 
-    String collection = nonRoutableParams.get("collection", defaultCollection);
+    String collection = nonRoutableParams.get(UpdateParams.COLLECTION, defaultCollection);
     if (collection == null) {
       throw new SolrServerException("No collection param specified on request and no default collection has been set.");
     }
@@ -721,7 +721,7 @@ public class CloudSolrServer extends SolrServer {
         theUrlList.add(zkStateReader.getBaseUrlForNodeName(liveNode));
       }
     } else {
-      String collection = reqParams.get("collection", defaultCollection);
+      String collection = reqParams.get(UpdateParams.COLLECTION, defaultCollection);
       
       if (collection == null) {
         throw new SolrServerException(
@@ -771,7 +771,7 @@ public class CloudSolrServer extends SolrServer {
           if (nodes.put(node, nodeProps) == null) {
             if (!sendToLeaders || (sendToLeaders && coreNodeProps.isLeader())) {
               String url;
-              if (reqParams.get("collection") == null) {
+              if (reqParams.get(UpdateParams.COLLECTION) == null) {
                 url = ZkCoreNodeProps.getCoreUrl(
                     nodeProps.getStr(ZkStateReader.BASE_URL_PROP),
                     defaultCollection);
@@ -781,7 +781,7 @@ public class CloudSolrServer extends SolrServer {
               urlList2.add(url);
             } else if (sendToLeaders) {
               String url;
-              if (reqParams.get("collection") == null) {
+              if (reqParams.get(UpdateParams.COLLECTION) == null) {
                 url = ZkCoreNodeProps.getCoreUrl(
                     nodeProps.getStr(ZkStateReader.BASE_URL_PROP),
                     defaultCollection);
