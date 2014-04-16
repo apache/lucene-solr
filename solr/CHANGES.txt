@@ -45,8 +45,6 @@ Bug Fixes
   was an exception while trying to register as the leader. 
   (Mark Miller, Alan Woodward)
 
-* SOLR-5954: Slower DataImportHandler process caused by not reusing jdbc
-  connections. (Mark Miller, Paco Garcia, Raja Nagendra Kumar)
 Other Changes
 ---------------------
 
@@ -179,6 +177,9 @@ Bug Fixes
 
 * SOLR-5943: SolrCmdDistributor does not distribute the openSearcher parameter.
   (ludovic Boutros via shalin)
+
+* SOLR-5954: Slower DataImportHandler process caused by not reusing jdbc
+  connections. (Mark Miller, Paco Garcia, Raja Nagendra Kumar)
 
 Optimizations
 ----------------------
