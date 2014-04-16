@@ -211,7 +211,6 @@ public class CloudSolrServer extends SolrServer {
   /**
    * Used internally to setup the _stateVer_ param to be sent in the query string of requests
    * coming from this instance.
-   * @param lbServer
    */
   protected void setupStateVerParamOnQueryString(LBHttpSolrServer lbServer) {
     // setup the stateVer param to be passed in the query string of every request

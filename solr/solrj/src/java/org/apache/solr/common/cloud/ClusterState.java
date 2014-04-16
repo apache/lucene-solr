@@ -302,7 +302,7 @@ public class ClusterState implements JSONWriter.Writable {
   }
 
   /**
-   * @deprecated
+   * @deprecated use {@link #load(Integer, byte[], Set, ZkStateReader)}
    */
   @Deprecated
   public static ClusterState load(Integer version, byte[] bytes, Set<String> liveNodes){

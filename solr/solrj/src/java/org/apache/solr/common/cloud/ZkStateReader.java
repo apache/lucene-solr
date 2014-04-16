@@ -865,9 +865,7 @@ public class ZkStateReader {
     externalWatchedCollections.put(coll, getExternCollectionFresh(this, coll));
   }
 
-  /**This is not a public API. Only used by ZkController
-   * @param coll
-   */
+  /**This is not a public API. Only used by ZkController */
   public void removeZKWatch(final String coll){
     synchronized (this){
       watchedCollections.remove(coll);
