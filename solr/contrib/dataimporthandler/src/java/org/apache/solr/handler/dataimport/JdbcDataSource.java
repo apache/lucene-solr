@@ -442,7 +442,7 @@ public class JdbcDataSource extends
     }
   }
 
-  private static final long CONN_TIME_OUT = 10 * 1000; // 10 seconds
+  private static final long CONN_TIME_OUT = TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);
 
   private static final int FETCH_SIZE = 500;
 
