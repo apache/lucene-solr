@@ -114,9 +114,6 @@ public class Test2BSortedDocValues extends LuceneTestCase {
     SortedDocValuesField dvField = new SortedDocValuesField("dv", data);
     doc.add(dvField);
     
-    long seed = random().nextLong();
-    Random random = new Random(seed);
-    
     for (int i = 0; i < Integer.MAX_VALUE; i++) {
       bytes[0] = (byte)(i >> 24);
       bytes[1] = (byte)(i >> 16);
@@ -136,13 +133,17 @@ public class Test2BSortedDocValues extends LuceneTestCase {
     System.out.flush();
     
     DirectoryReader r = DirectoryReader.open(dir);
-    random.setSeed(seed);
+    int counter = 0;
     for (AtomicReaderContext context : r.leaves()) {
       AtomicReader reader = context.reader();
       BytesRef scratch = new BytesRef();
       BinaryDocValues dv = reader.getSortedDocValues("dv");
       for (int i = 0; i < reader.maxDoc(); i++) {
-        random.nextBytes(bytes);
+        bytes[0] = (byte) (counter >> 24);
+        bytes[1] = (byte) (counter >> 16);
+        bytes[2] = (byte) (counter >> 8);
+        bytes[3] = (byte) counter;
+        counter++;
         dv.get(i, scratch);
         assertEquals(data, scratch);
       }
