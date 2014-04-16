@@ -34,7 +34,7 @@ import org.apache.lucene.util.packed.PackedInts;
 import org.junit.Ignore;
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
-@Ignore("Requires tons of heap to run (420G works)")
+@Ignore("Requires tons of heap to run (30 GB hits OOME but 35 GB passes after ~4.5 hours)")
 @TimeoutSuite(millis = 100 * TimeUnits.HOUR)
 public class Test2BFST extends LuceneTestCase {
 
