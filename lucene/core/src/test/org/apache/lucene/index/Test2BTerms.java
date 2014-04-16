@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.util.*;
+import org.apache.lucene.util.LuceneTestCase.Monster;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.store.*;
 import org.apache.lucene.search.*;
@@ -37,11 +38,12 @@ import java.util.Random;
 // disk (but, should run successfully).  Best to run w/
 // -Dtests.codec=<current codec>, and w/ plenty of RAM, eg:
 //
-//   ant test -Dtest.slow=true -Dtests.heapsize=8g
+//   ant test -Dtests.monster=true -Dtests.heapsize=8g
 //
 //   java -server -Xmx8g -d64 -cp .:lib/junit-4.10.jar:./build/classes/test:./build/classes/test-framework:./build/classes/java -Dlucene.version=4.0-dev -Dtests.directory=MMapDirectory -DtempDir=build -ea org.junit.runner.JUnitCore org.apache.lucene.index.Test2BTerms
 //
 @SuppressCodecs({ "SimpleText", "Memory", "Direct" })
+@Monster("very slow, use 8g heap")
 public class Test2BTerms extends LuceneTestCase {
 
   private final static int TOKEN_LEN = 5;
@@ -145,7 +147,6 @@ public class Test2BTerms extends LuceneTestCase {
     }
   }
 
-  @Ignore("Very slow. Enable manually by removing @Ignore.")
   public void test2BTerms() throws IOException {
 
     System.out.println("Starting Test2B");

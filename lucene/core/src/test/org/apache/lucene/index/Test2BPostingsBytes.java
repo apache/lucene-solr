@@ -32,8 +32,8 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
+import org.apache.lucene.util.LuceneTestCase.Monster;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-import org.junit.Ignore;
 
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
@@ -44,11 +44,9 @@ import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
  */
 @SuppressCodecs({ "SimpleText", "Memory", "Direct" })
 @TimeoutSuite(millis = 4 * TimeUnits.HOUR)
+@Monster("takes ~20GB-30GB of space and 10 minutes, and more heap space sometimes")
 public class Test2BPostingsBytes extends LuceneTestCase {
 
-  // @Absurd @Ignore takes ~20GB-30GB of space and 10 minutes.
-  // with some codecs needs more heap space as well.
-  @Ignore("Very slow. Enable manually by removing @Ignore.")
   public void test() throws Exception {
     BaseDirectoryWrapper dir = newFSDirectory(createTempDir("2BPostingsBytes1"));
     if (dir instanceof MockDirectoryWrapper) {

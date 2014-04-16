@@ -26,14 +26,15 @@ import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.LuceneTestCase.Monster;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TimeUnits;
-import org.junit.Ignore;
 
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
+@SuppressCodecs({"SimpleText", "Memory", "Direct"})
 @TimeoutSuite(millis = 80 * TimeUnits.HOUR)
-@Ignore("takes ~ 45 minutes")
+@Monster("takes ~ 45 minutes")
 public class Test2BBinaryDocValues extends LuceneTestCase {
   
   // indexes Integer.MAX_VALUE docs with a fixed binary field

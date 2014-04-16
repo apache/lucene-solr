@@ -24,9 +24,10 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.util.LuceneTestCase.Monster;
 import org.junit.Ignore;
 
-@Ignore("You must increase heap to > 2 G to run this")
+@Monster("You must increase heap to > 2 G to run this")
 public class Test2BPagedBytes extends LuceneTestCase {
 
   public void test() throws Exception {

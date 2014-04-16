@@ -25,14 +25,16 @@ import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TimeUnits;
-import org.junit.Ignore;
+import org.apache.lucene.util.LuceneTestCase.Monster;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
+@SuppressCodecs({"SimpleText", "Memory", "Direct"})
 @TimeoutSuite(millis = 80 * TimeUnits.HOUR)
-@Ignore("very slow")
+@Monster("very slow")
 public class Test2BSortedDocValues extends LuceneTestCase {
   
   // indexes Integer.MAX_VALUE docs with a fixed binary field

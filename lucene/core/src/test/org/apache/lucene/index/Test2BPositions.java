@@ -31,6 +31,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.LuceneTestCase.Monster;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.junit.Ignore;
 
@@ -42,10 +43,9 @@ import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
  */
 @SuppressCodecs({ "SimpleText", "Memory", "Direct" })
 @TimeoutSuite(millis = 4 * TimeUnits.HOUR)
+@Monster("uses lots of space and takes a few minutes")
 public class Test2BPositions extends LuceneTestCase {
 
-  // uses lots of space and takes a few minutes
-  @Ignore("Very slow. Enable manually by removing @Ignore.")
   public void test() throws Exception {
     BaseDirectoryWrapper dir = newFSDirectory(createTempDir("2BPositions"));
     if (dir instanceof MockDirectoryWrapper) {

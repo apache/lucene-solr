@@ -236,6 +236,7 @@ public abstract class LuceneTestCase extends Assert {
 
   public static final String SYSPROP_NIGHTLY = "tests.nightly";
   public static final String SYSPROP_WEEKLY = "tests.weekly";
+  public static final String SYSPROP_MONSTER = "tests.monster";
   public static final String SYSPROP_AWAITSFIX = "tests.awaitsfix";
   public static final String SYSPROP_SLOW = "tests.slow";
   public static final String SYSPROP_BADAPPLES = "tests.badapples";
@@ -263,6 +264,17 @@ public abstract class LuceneTestCase extends Assert {
   @Retention(RetentionPolicy.RUNTIME)
   @TestGroup(enabled = false, sysProperty = SYSPROP_WEEKLY)
   public @interface Weekly {}
+  
+  /**
+   * Annotation for monster tests that require special setup (e.g. use tons of disk and RAM)
+   */
+  @Documented
+  @Inherited
+  @Retention(RetentionPolicy.RUNTIME)
+  @TestGroup(enabled = false, sysProperty = SYSPROP_MONSTER)
+  public @interface Monster {
+    String value();
+  }
 
   /**
    * Annotation for tests which exhibit a known issue and are temporarily disabled.

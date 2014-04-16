@@ -23,14 +23,15 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
-import org.junit.Ignore;
+import org.apache.lucene.util.LuceneTestCase.Monster;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
+@SuppressCodecs({"SimpleText", "Memory", "Direct"})
 @TimeoutSuite(millis = 80 * TimeUnits.HOUR)
-@Ignore("takes ~ 30 minutes")
+@Monster("takes ~ 30 minutes")
 public class Test2BNumericDocValues extends LuceneTestCase {
   
   // indexes Integer.MAX_VALUE docs with an increasing dv field

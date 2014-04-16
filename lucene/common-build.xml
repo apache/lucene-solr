@@ -111,6 +111,7 @@
   <property name="tests.loggingfile" location="${common.dir}/tools/junit4/logging.properties"/>
   <property name="tests.nightly" value="false" />
   <property name="tests.weekly" value="false" />
+  <property name="tests.monster" value="false" />
   <property name="tests.slow" value="true" />
   <property name="tests.cleanthreads.sysprop" value="perMethod"/>
   <property name="tests.asserts.gracious" value="false"/>
@@ -819,6 +820,7 @@
     <attribute name="threadNum" default="1"/>
     <attribute name="tests.nightly" default="${tests.nightly}"/>
     <attribute name="tests.weekly" default="${tests.weekly}"/>
+    <attribute name="tests.monster" default="${tests.monster}"/>
     <attribute name="tests.slow" default="${tests.slow}"/>
     <attribute name="tests.multiplier" default="${tests.multiplier}"/>
       
@@ -950,6 +952,8 @@
             <sysproperty key="tests.nightly" value="@{tests.nightly}"/>
               <!-- set whether or not weekly tests should run -->
             <sysproperty key="tests.weekly" value="@{tests.weekly}"/>
+            <!-- set whether or not monster tests should run -->
+            <sysproperty key="tests.monster" value="@{tests.monster}"/>
               <!-- set whether or not slow tests should run -->
             <sysproperty key="tests.slow" value="@{tests.slow}"/>
               
