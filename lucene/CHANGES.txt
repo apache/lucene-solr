@@ -11,11 +11,6 @@ API Changes
   IndexOutput.getFilePointer instead) and IndexOutput.setLength.
   (Mike McCandless)
 
-* LUCENE-5604: Switched BytesRef.hashCode to MurmurHash3 (32 bit).
-  TermToBytesRefAttribute.fillBytesRef no longer returns the hash
-  code.  BytesRefHash now uses MurmurHash3 for its hashing.  (Robert
-  Muir, Mike McCandless)
-
 Optimizations
 
 * LUCENE-5603: hunspell stemmer more efficiently strips prefixes
@@ -167,6 +162,11 @@ API Changes
 
 * LUCENE-5573: Move docvalues constants and helper methods to o.a.l.index.DocValues.
   (Dawid Weiss, Robert Muir)
+
+* LUCENE-5604: Switched BytesRef.hashCode to MurmurHash3 (32 bit).
+  TermToBytesRefAttribute.fillBytesRef no longer returns the hash
+  code.  BytesRefHash now uses MurmurHash3 for its hashing.  (Robert
+  Muir, Mike McCandless)
 
 Optimizations
 
