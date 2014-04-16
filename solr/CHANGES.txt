@@ -51,6 +51,8 @@ Other Changes
 * SOLR-5980: AbstractFullDistribZkTestBase#compareResults always returns false
   for shouldFail. (Mark Miller, Gregory Chanan)
 
+* SOLR-5987: Add "collection" to UpdateParams. (Mark Miller, Greg Solovyev)
+
 ==================  4.8.0 ==================
 
 Versions of Major Components
