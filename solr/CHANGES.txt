@@ -82,6 +82,9 @@ Other Changes
 
 * SOLR-5868: HttpClient should be configured to use ALLOW_ALL_HOSTNAME hostname
   verifier to simplify SSL setup. (Steve Davids via Mark Miller)
+  
+* SOLR-5776: Enabled SSL tests can easily exhaust random generator entropy and
+  block. (Mark Miller, hossman, Steve Davids)
 
 ==================  4.9.0 ==================
 

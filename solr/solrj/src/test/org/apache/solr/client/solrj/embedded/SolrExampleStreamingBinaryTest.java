@@ -17,7 +17,6 @@ package org.apache.solr.client.solrj.embedded;
  * limitations under the License.
  */
 
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
@@ -25,7 +24,6 @@ import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer;
 
 @Slow
-@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class SolrExampleStreamingBinaryTest extends SolrExampleStreamingTest {
 
   @Override

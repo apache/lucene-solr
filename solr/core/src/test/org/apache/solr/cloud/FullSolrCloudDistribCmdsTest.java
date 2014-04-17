@@ -21,9 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.util.LuceneTestCase.BadApple;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -49,7 +47,6 @@ import org.junit.BeforeClass;
  * Super basic testing, no shard restarting or anything.
  */
 @Slow
-@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase {
   
   @BeforeClass

@@ -17,7 +17,6 @@
 
 package org.apache.solr.client.solrj.embedded;
 
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.util.ExternalPaths;
@@ -31,7 +30,6 @@ import org.junit.Test;
  * rather then open a real connection?
  * 
  */
-@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class SolrExampleJettyTest extends SolrExampleTests {
 
   @BeforeClass

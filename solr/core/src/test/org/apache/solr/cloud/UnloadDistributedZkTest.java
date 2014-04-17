@@ -24,7 +24,6 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
@@ -46,7 +45,6 @@ import org.junit.BeforeClass;
  * work as expected.
  */
 @Slow
-@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class UnloadDistributedZkTest extends BasicDistributedZkTest {
   
   @BeforeClass

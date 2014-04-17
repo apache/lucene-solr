@@ -38,7 +38,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.JSONTestUtil;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
@@ -77,7 +76,6 @@ import org.junit.BeforeClass;
  * work as expected.
  */
 @Slow 
-@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   
   private static final String DEFAULT_COLLECTION = "collection1";

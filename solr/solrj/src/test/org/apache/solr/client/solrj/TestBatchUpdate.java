@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj;
 
 import org.apache.solr.SolrJettyTestBase;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.beans.Field;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
@@ -37,7 +36,6 @@ import java.util.Iterator;
  * @since solr 1.4
  *
  */
-@SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class TestBatchUpdate extends SolrJettyTestBase {
 
   @BeforeClass

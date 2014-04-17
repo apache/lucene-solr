@@ -358,6 +358,9 @@ public class JettySolrRunner {
       if (null != sslConfig.getTrustStorePassword()) {
         sslcontext.setTrustStorePassword(sslConfig.getTrustStorePassword());
       }
+      if (null != sslConfig.getSecureRandomAlgorithm()) {
+        sslcontext.setSecureRandomAlgorithm(sslConfig.getSecureRandomAlgorithm());
+      }
       sslcontext.setNeedClientAuth(sslConfig.isClientAuthMode());
     } else {
       boolean jettySsl = Boolean.getBoolean(System.getProperty("tests.jettySsl"));

@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.http.client.HttpClient;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
@@ -46,7 +45,6 @@ import org.slf4j.LoggerFactory;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 
 @Slow
-@SuppressSSL
 @ThreadLeakLingering(linger = 60000)
 public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase {
   private static final int FAIL_TOLERANCE = 20;

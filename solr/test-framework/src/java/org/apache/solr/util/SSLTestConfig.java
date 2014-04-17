@@ -22,6 +22,7 @@ import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.security.UnrecoverableKeyException;
 
 import javax.net.ssl.SSLContext;
@@ -51,7 +52,7 @@ public class SSLTestConfig extends SSLConfig {
   }
   
   public SSLTestConfig(boolean useSSL, boolean clientAuth) {
-    super(useSSL, clientAuth, TEST_KEYSTORE_PATH, TEST_KEYSTORE_PASSWORD, TEST_KEYSTORE_PATH, TEST_KEYSTORE_PASSWORD);
+    this(useSSL, clientAuth, TEST_KEYSTORE_PATH, TEST_KEYSTORE_PASSWORD, TEST_KEYSTORE_PATH, TEST_KEYSTORE_PASSWORD);
   }
  
   public SSLTestConfig(boolean useSSL, boolean clientAuth, String keyStore, String keyStorePassword, String trustStore, String trustStorePassword) {
@@ -73,10 +74,11 @@ public class SSLTestConfig extends SSLConfig {
    */
   protected SSLContext buildSSLContext() throws KeyManagementException, 
     UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException {
-    
+
     return SSLContexts.custom()
         .loadKeyMaterial(buildKeyStore(getKeyStore(), getKeyStorePassword()), getKeyStorePassword().toCharArray())
-        .loadTrustMaterial(buildKeyStore(getTrustStore(), getTrustStorePassword()), new TrustSelfSignedStrategy()).build();
+        .loadTrustMaterial(buildKeyStore(getTrustStore(), getTrustStorePassword()), new TrustSelfSignedStrategy())
+        .setSecureRandom(new NullSecureRandom()).build();
   }
   
   
@@ -118,4 +120,19 @@ public class SSLTestConfig extends SSLConfig {
     System.clearProperty("javax.net.ssl.trustStorePassword");
   }
   
+  /**
+   * We use this to avoid SecureRandom blocking issues due to too many
+   * instances or not enough random entropy. Tests do not need secure SSL.
+   */
+  private static class NullSecureRandom extends SecureRandom {
+    public byte[] generateSeed(int numBytes) {
+      return new byte[0];
+    }
+    
+    synchronized public void nextBytes(byte[] bytes) {
+    }
+    
+    synchronized public void setSeed(byte[] seed) {
+    }
+  }
 }
