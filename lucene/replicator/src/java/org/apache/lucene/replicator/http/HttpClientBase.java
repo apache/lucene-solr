@@ -37,6 +37,7 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.util.EntityUtils;
 import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * Base class for Http clients.
@@ -124,7 +125,11 @@ public abstract class HttpClientBase implements Closeable {
   protected void verifyStatus(HttpResponse response) throws IOException {
     StatusLine statusLine = response.getStatusLine();
     if (statusLine.getStatusCode() != HttpStatus.SC_OK) {
-      throwKnownError(response, statusLine); 
+      try {
+        throwKnownError(response, statusLine); 
+      } finally {
+        EntityUtils.consumeQuietly(response.getEntity());
+      }
     }
   }
   
@@ -132,27 +137,20 @@ public abstract class HttpClientBase implements Closeable {
     ObjectInputStream in = null;
     try {
       in = new ObjectInputStream(response.getEntity().getContent());
-    } catch (Exception e) {
+    } catch (Throwable t) {
       // the response stream is not an exception - could be an error in servlet.init().
-      throw new RuntimeException("Uknown error: " + statusLine);
+      throw new RuntimeException("Unknown error: " + statusLine, t);
     }
     
     Throwable t;
     try {
       t = (Throwable) in.readObject();
-    } catch (Exception e) { 
-      //not likely
-      throw new RuntimeException("Failed to read exception object: " + statusLine, e);
+    } catch (Throwable th) { 
+      throw new RuntimeException("Failed to read exception object: " + statusLine, th);
     } finally {
       in.close();
     }
-    if (t instanceof IOException) {
-      throw (IOException) t;
-    }
-    if (t instanceof RuntimeException) {
-      throw (RuntimeException) t;
-    }
-    throw new RuntimeException("unknown exception "+statusLine,t);
+    IOUtils.reThrow(t);
   }
   
   /**
@@ -216,7 +214,7 @@ public abstract class HttpClientBase implements Closeable {
       }
       @Override
       public void close() throws IOException {
-        super.close();
+        in.close();
         consume(-1);
       }
       @Override
@@ -232,7 +230,7 @@ public abstract class HttpClientBase implements Closeable {
         return res;
       }
       private void consume(int minusOne) {
-        if (!consumed && minusOne==-1) {
+        if (!consumed && minusOne == -1) {
           try {
             EntityUtils.consume(entity);
           } catch (Exception e) {
@@ -266,27 +264,23 @@ public abstract class HttpClientBase implements Closeable {
    * release the response at exit, depending on <code>consume</code> parameter.
    */
   protected <T> T doAction(HttpResponse response, boolean consume, Callable<T> call) throws IOException {
-    IOException error = null;
+    Throwable th = null;
     try {
       return call.call();
-    } catch (IOException e) {
-      error = e;
-    } catch (Exception e) {
-      error = new IOException(e);
+    } catch (Throwable t) {
+      th = t;
     } finally {
       try {
         verifyStatus(response);
       } finally {
         if (consume) {
-          try {
-            EntityUtils.consume(response.getEntity());
-          } catch (Exception e) {
-            // ignoring on purpose
-          }
+          EntityUtils.consumeQuietly(response.getEntity());
         }
       }
     }
-    throw error; // should not get here
+    assert th != null; // extra safety - if we get here, it means the callable failed
+    IOUtils.reThrow(th);
+    return null; // silly, if we're here, IOUtils.reThrow always throws an exception 
   }
   
   @Override

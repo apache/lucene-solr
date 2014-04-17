@@ -18,6 +18,11 @@ Optimizations
   
 * LUCENE-5599: HttpReplicator did not properly delegate bulk read() to wrapped
   InputStream. (Christoph Kaser via Shai Erera)
+  
+Bug fixes
+
+* LUCENE-5600: HttpClientBase did not properly consume a connection if a server
+  error occurred. (Christoph Kaser via Shai Erera)
 
 ======================= Lucene 4.8.0 =======================
 
