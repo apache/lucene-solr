@@ -77,7 +77,7 @@ public class HttpReplicator extends HttpClientBase implements Replicator {
     return doAction(response, false, new Callable<InputStream>() {
       @Override
       public InputStream call() throws Exception {
-        return responseInputStream(response,true);
+        return responseInputStream(response, true);
       }
     });
   }

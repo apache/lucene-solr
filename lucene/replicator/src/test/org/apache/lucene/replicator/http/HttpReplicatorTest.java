@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 
+import org.apache.http.impl.conn.BasicClientConnectionManager;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
@@ -35,7 +36,6 @@ import org.apache.lucene.replicator.Replicator;
 import org.apache.lucene.replicator.ReplicatorTestCase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.TestUtil;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -52,11 +52,13 @@ public class HttpReplicatorTest extends ReplicatorTestCase {
   private int port;
   private String host;
   private Directory serverIndexDir, handlerIndexDir;
+  private ReplicationServlet replicationServlet;
   
   private void startServer() throws Exception {
     ServletHandler replicationHandler = new ServletHandler();
     ReplicationService service = new ReplicationService(Collections.singletonMap("s1", serverReplicator));
-    ServletHolder servlet = new ServletHolder(new ReplicationServlet(service));
+    replicationServlet = new ReplicationServlet(service);
+    ServletHolder servlet = new ServletHolder(replicationServlet);
     replicationHandler.addServletWithMapping(servlet, ReplicationService.REPLICATION_CONTEXT + "/*");
     server = newHttpServer(replicationHandler);
     port = serverPort(server);
@@ -120,6 +122,38 @@ public class HttpReplicatorTest extends ReplicatorTestCase {
     client.updateNow();
     reopenReader();
     assertEquals(2, Integer.parseInt(reader.getIndexCommit().getUserData().get("ID"), 16));
+    
+    client.close();
   }
   
+  @Test  
+  public void testServerErrors() throws Exception {
+    // tests the behaviour of the client when the server sends an error
+    // must use BasicClientConnectionManager to test whether the client is closed correctly
+    BasicClientConnectionManager conMgr = new BasicClientConnectionManager();
+    Replicator replicator = new HttpReplicator(host, port, ReplicationService.REPLICATION_CONTEXT + "/s1", conMgr);
+    ReplicationClient client = new ReplicationClient(replicator, new IndexReplicationHandler(handlerIndexDir, null), 
+        new PerSessionDirectoryFactory(clientWorkDir));
+    
+    try {
+      publishRevision(5);
+      
+      try {
+        replicationServlet.setRespondWithError(true);
+        client.updateNow();
+        fail("expected exception");
+      } catch (Throwable t) {
+        // expected
+      }
+      
+      replicationServlet.setRespondWithError(false);
+      client.updateNow(); // now it should work
+      reopenReader();
+      assertEquals(5, Integer.parseInt(reader.getIndexCommit().getUserData().get("ID"), 16));
+      
+      client.close();
+    } finally {
+      replicationServlet.setRespondWithError(false);
+    }
+  }
 }
