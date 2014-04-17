@@ -31134,7 +31134,7 @@ public final class HTMLStripCharFilter extends BaseCharFilter {
       cumulativeDiff += inputSegment.length() - outputSegment.length();
       // position the correction at (already output length) + (substitution length)
       addOffCorrectMap(outputCharCount + outputSegment.length(), cumulativeDiff);
-      eofReturnValue = outputSegment.nextChar();
+      eofReturnValue = outputSegment.length() > 0 ? outputSegment.nextChar() : -1;
       break;
     }
     case BANG:
@@ -31147,7 +31147,7 @@ public final class HTMLStripCharFilter extends BaseCharFilter {
     case LEFT_ANGLE_BRACKET_SLASH:
     case LEFT_ANGLE_BRACKET_SPACE: {        // Include
       outputSegment = inputSegment;
-      eofReturnValue = outputSegment.nextChar();
+      eofReturnValue = outputSegment.length() > 0 ? outputSegment.nextChar() : -1;
       break;
     }
     default: {
@@ -31506,7 +31506,11 @@ public final class HTMLStripCharFilter extends BaseCharFilter {
           }
         case 84: break;
         case 32: 
-          { yybegin(COMMENT);
+          { if (inputSegment.length() > 2) { // Chars between "<!" and "--" - this is not a comment
+      inputSegment.append(yytext());
+    } else {
+      yybegin(COMMENT);
+    }
           }
         case 85: break;
         case 33: 
@@ -31611,12 +31615,16 @@ public final class HTMLStripCharFilter extends BaseCharFilter {
           }
         case 99: break;
         case 47: 
-          { // add (previously matched input length) + (this match length) [ - (substitution length) = 0 ]
-    cumulativeDiff += inputSegment.length() + yylength();
-    // position the correction at (already output length) [ + (substitution length) = 0 ]
-    addOffCorrectMap(outputCharCount, cumulativeDiff);
-    inputSegment.clear();
-    yybegin(CDATA);
+          { if (inputSegment.length() > 2) { // Chars between "<!" and "[CDATA[" - this is not a CDATA section
+      inputSegment.append(yytext());
+    } else {
+      // add (previously matched input length) + (this match length) [ - (substitution length) = 0 ]
+      cumulativeDiff += inputSegment.length() + yylength();
+      // position the correction at (already output length) [ + (substitution length) = 0 ]
+      addOffCorrectMap(outputCharCount, cumulativeDiff);
+      inputSegment.clear();
+      yybegin(CDATA);
+    }
           }
         case 100: break;
         case 48: 
