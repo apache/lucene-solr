@@ -17,17 +17,23 @@
 package org.apache.solr.client.solrj.impl;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.http.auth.AuthScope;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.params.ClientPNames;
-import org.apache.http.impl.conn.PoolingClientConnectionManager;
+import org.apache.http.conn.ssl.AllowAllHostnameVerifier;
+import org.apache.http.conn.ssl.BrowserCompatHostnameVerifier;
+import org.apache.http.conn.ssl.SSLSocketFactory;
+import org.apache.http.conn.ssl.X509HostnameVerifier;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.conn.PoolingClientConnectionManager;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.util.SSLTestConfig;
 import org.junit.Test;
 
 public class HttpClientUtilTest {
@@ -88,6 +94,37 @@ public class HttpClientUtilTest {
       HttpClientUtil.setConfigurer(new HttpClientConfigurer());
     }
 
+  }
+  
+  @Test
+  @SuppressWarnings("deprecation")
+  public void testSSLSystemProperties() {
+    try {
+      SSLTestConfig.setSSLSystemProperties();
+      assertNotNull("HTTPS scheme could not be created using the javax.net.ssl.* system properties.", 
+          HttpClientUtil.createClient(null).getConnectionManager().getSchemeRegistry().get("https"));
+      
+      System.clearProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME);
+      assertEquals(BrowserCompatHostnameVerifier.class, getHostnameVerifier(HttpClientUtil.createClient(null)).getClass());
+      
+      System.setProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME, "true");
+      assertEquals(BrowserCompatHostnameVerifier.class, getHostnameVerifier(HttpClientUtil.createClient(null)).getClass());
+      
+      System.setProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME, "");
+      assertEquals(BrowserCompatHostnameVerifier.class, getHostnameVerifier(HttpClientUtil.createClient(null)).getClass());
+      
+      System.setProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME, "false");
+      assertEquals(AllowAllHostnameVerifier.class, getHostnameVerifier(HttpClientUtil.createClient(null)).getClass());
+    } finally {
+      SSLTestConfig.clearSSLSystemProperties();
+      System.clearProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME);
+    }
+  }
+  
+  @SuppressWarnings("deprecation")
+  private X509HostnameVerifier getHostnameVerifier(HttpClient client) {
+    return ((SSLSocketFactory) client.getConnectionManager().getSchemeRegistry()
+        .get("https").getSchemeSocketFactory()).getHostnameVerifier();
   }
   
 }
