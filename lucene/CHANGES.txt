@@ -238,9 +238,6 @@ Build
 * LUCENE-5463: RamUsageEstimator.(human)sizeOf(Object) is now a forbidden API.
   (Adrien Grand, Robert Muir)
 
-* LUCENE-5511: "ant precommit" / "ant check-svn-working-copy" now work again
-  with any working copy format (thanks to svnkit 1.8.4).  (Uwe Schindler)
-
 * LUCENE-5512: Remove redundant typing (use diamond operator) throughout
   the codebase.  (Furkan KAMACI via Robert Muir)
 
@@ -273,8 +270,8 @@ Changes in Runtime Behavior
 
 Bug Fixes
 
-* LUCENE-5450: Fix getField() NPE issues with SpanOr/SpanNear when they have an
-  empty list of clauses. This can happen for example,  when a wildcard matches
+* LUCENE-5450: Fix getField() NPE issues with SpanOr/SpanNear when they have an 
+  empty list of clauses. This can happen for example,  when a wildcard matches 
   no terms.  (Tim Allison via Robert Muir)
 
 * LUCENE-5473: Throw IllegalArgumentException, not
@@ -289,8 +286,8 @@ Bug Fixes
 
 * LUCENE-5502: Fixed TermsFilter.equals that could return true for different
   filters. (Igor Motov via Adrien Grand)
-
-* LUCENE-5522: FacetsConfig didn't add drill-down terms for association facet
+  
+* LUCENE-5522: FacetsConfig didn't add drill-down terms for association facet 
   fields labels. (Shai Erera)
 
 * LUCENE-5520: ToChildBlockJoinQuery would hit
@@ -321,6 +318,11 @@ Bug Fixes
   thrown during interal close or on any of the close listerns some or all
   listerners might be missed. This can cause memory leaks if the core listeners
   are used to clear caches. (Simon Willnauer)
+
+Build
+
+* LUCENE-5511: "ant precommit" / "ant check-svn-working-copy" now work again
+  with any working copy format (thanks to svnkit 1.8.4).  (Uwe Schindler)
 
 ======================= Lucene 4.7.0 =======================
 
