@@ -225,7 +225,10 @@ Build
 * LUCENE-5512: Remove redundant typing (use diamond operator) throughout
   the codebase.  (Furkan KAMACI via Robert Muir)
 
-Documentation:
+* LUCENE-5614: Enable building on Java 8 using Apache Ant 1.8.3 or 1.8.4
+  by adding a workaround for the Ant bug.  (Uwe Schindler)
+
+Documentation
 
 * LUCENE-5534: Add javadocs to GreekStemmer methods. 
   (Stamatis Pitsios via Robert Muir)
