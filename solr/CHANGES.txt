@@ -296,7 +296,7 @@ Bug Fixes
 
 * SOLR-5866: UpdateShardHandler needs to use the system default scheme registry to
   properly handle https via javax.net.ssl.* properties. (Steve Davids via shalin)
-
+  
 * SOLR-5782: The full MapReduceIndexer help text does not display when using --help.
   (Mark Miller, Wolfgang Hoschek)
 
@@ -340,7 +340,7 @@ Bug Fixes
   problem if you hit a bad work item. (Mark Miller)
 
 * SOLR-5796: Increase how long we are willing to wait for a core to see the ZK
-  advertised leader in it's local state. (Timothy Potter, Mark Miller)
+  advertised leader in it's local state. (Timothy Potter, Mark Miller)  
 
 * SOLR-5834: Overseer threads are only being interrupted and not closed.
   (hossman, Mark Miller)
@@ -368,7 +368,7 @@ Other Changes
 ---------------------
 
 * SOLR-5796: Make how long we are willing to wait for a core to see the ZK
-  advertised leader in it's local state configurable.
+  advertised leader in it's local state configurable. 
   (Timothy Potter via Mark Miller)
 
 ==================  4.7.0 ==================
