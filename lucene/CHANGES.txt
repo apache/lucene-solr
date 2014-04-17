@@ -199,6 +199,9 @@ Bug fixes
 
 * LUCENE-5568: Benchmark module's "default.codec" option didn't work. (David Smiley)
 
+* SOLR-5983: HTMLStripCharFilter is treating CDATA sections incorrectly.
+  (Dan Funk, Steve Rowe)
+
 Test Framework
 
 * LUCENE-5592: Incorrectly reported uncloseable files. (Dawid Weiss)
