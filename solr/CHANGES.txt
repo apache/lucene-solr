@@ -76,6 +76,10 @@ Other Changes
 * SOLR-5936: Removed deprecated non-Trie-based numeric & date field types.
   (Steve Rowe)
 
+* SOLR-5473: Make one state.json per collection (Noble Paul)
+
+* SOLR-5474: Have a new mode for SolrJ to support stateFormat=2 (Noble Paul, Tim Potter)
+
 ==================  4.9.0 ==================
 
 Versions of Major Components
@@ -106,10 +110,6 @@ Other Changes
 
 * SOLR-5980: AbstractFullDistribZkTestBase#compareResults always returns false
   for shouldFail. (Mark Miller, Gregory Chanan)
-
-* SOLR-5473: Make one state.json per collection (Noble Paul)
-
-* SOLR-5474: Have a new mode for SolrJ to support stateFormat=2 (Noble Paul, Tim Potter)
 
 * SOLR-5987: Add "collection" to UpdateParams. (Mark Miller, Greg Solovyev)
 
@@ -171,20 +171,13 @@ New Features
 * SOLR-5720: Add ExpandComponent to expand results collapsed by the 
   CollapsingQParserPlugin. (Joel Bernstein)
 
-* SOLR-5653: Create a RestManager to provide REST API endpoints for
-  reconfigurable plugins. (Tim Potter, Steve Rowe)
-
-* SOLR-5655: Create a stopword filter factory that is (re)configurable,
-  and capable of reporting its configuration, via REST API.
-  (Tim Potter via Steve Rowe)
-
-* SOLR-5477: Async execution of OverseerCollectionProcessor(CollectionsAPI)
-  tasks. (Anshum Gupta)
-
 * SOLR-3177: Enable tagging and excluding filters in StatsComponent via the
   localParams syntax. (Mathias H., Nikolai Luthman, Vitaliy Zhovtyuk, shalin)
   
 * SOLR-1604: Wildcards, ORs etc inside Phrase Queries. (Ahmet Arslan via Erick Erickson)
+
+* SOLR-5477: Async execution of OverseerCollectionProcessor(CollectionsAPI)
+  tasks. (Anshum Gupta)
 
 * SOLR-5865: Provide a MiniSolrCloudCluster to enable easier testing.
  (Greg Chanan via Mark Miller)
@@ -214,6 +207,13 @@ New Features
 * SOLR-5829: Allow ExpandComponent to accept query and filter query parameters
   (Joel Bernstein)
 
+* SOLR-5653: Create a RestManager to provide REST API endpoints for
+  reconfigurable plugins. (Tim Potter, Steve Rowe)
+
+* SOLR-5655: Create a stopword filter factory that is (re)configurable,
+  and capable of reporting its configuration, via REST API.
+  (Tim Potter via Steve Rowe)
+
 * SOLR-5654: Create a synonym filter factory that is (re)configurable, and
   capable of reporting its configuration, via REST API.
   (Tim Potter via Steve Rowe)
@@ -242,7 +242,7 @@ Bug Fixes
 
 * SOLR-5954: Slower DataImportHandler process caused by not reusing jdbc
   connections. (Mark Miller, Paco Garcia, Raja Nagendra Kumar)
-
+  
 Optimizations
 ----------------------
 * SOLR-1880: Distributed Search skips GET_FIELDS stage if EXECUTE_QUERY
@@ -266,7 +266,7 @@ Other Changes
   use SolrTestCaseJ4.getFile() and getResource() instead; fix morphlines/map-reduce
   to not duplicate test resources and fix dependencies among them.
   (Uwe Schindler)
-
+  
 * SOLR-5765: Update to SLF4J 1.7.6. (Mark Miller)
 
 * SOLR-5609: If legacy mode is disabled don't let cores create slices/replicas/collections .
@@ -389,7 +389,7 @@ Bug Fixes
 
 * SOLR-5866: UpdateShardHandler needs to use the system default scheme registry to
   properly handle https via javax.net.ssl.* properties. (Steve Davids via shalin)
-
+  
 * SOLR-5782: The full MapReduceIndexer help text does not display when using --help.
   (Mark Miller, Wolfgang Hoschek)
 
@@ -433,7 +433,7 @@ Bug Fixes
   problem if you hit a bad work item. (Mark Miller)
 
 * SOLR-5796: Increase how long we are willing to wait for a core to see the ZK
-  advertised leader in it's local state. (Timothy Potter, Mark Miller)
+  advertised leader in it's local state. (Timothy Potter, Mark Miller)  
 
 * SOLR-5834: Overseer threads are only being interrupted and not closed.
   (hossman, Mark Miller)
@@ -461,7 +461,7 @@ Other Changes
 ---------------------
 
 * SOLR-5796: Make how long we are willing to wait for a core to see the ZK
-  advertised leader in it's local state configurable.
+  advertised leader in it's local state configurable. 
   (Timothy Potter via Mark Miller)
 
 ==================  4.7.0 ==================
@@ -549,18 +549,18 @@ New Features
 * SOLR-5529: Add support for queries to use multiple suggesters.
   (Areek Zillur, Erick Erickson, via Robert Muir)
 
+* SOLR-1301: Add a Solr contrib that allows for building Solr indexes via
+  Hadoop's MapReduce. (Matt Revelle, Alexander Kanarsky, Steve Rowe,
+  Mark Miller, Greg Bowyer, Jason Rutherglen, Kris Jirapinyo, Jason Venner ,
+  Andrzej Bialecki, Patrick Hunt, Wolfgang Hoschek, Roman Shaposhnik,
+  Eric Wong)
+
 * SOLR-5631: Add support for Lucene's FreeTextSuggester.
   (Areek Zillur via Robert Muir)
 
 * SOLR-5695: Add support for Lucene's BlendedInfixSuggester.
   (Areek Zillur)
   
-* SOLR-1301: Add a Solr contrib that allows for building Solr indexes via 
-  Hadoop's MapReduce. (Matt Revelle, Alexander Kanarsky, Steve Rowe, 
-  Mark Miller, Greg Bowyer, Jason Rutherglen, Kris Jirapinyo, Jason Venner ,
-  Andrzej Bialecki, Patrick Hunt, Wolfgang Hoschek, Roman Shaposhnik, 
-  Eric Wong)
-
 * SOLR-5476: Overseer Role for nodes (Noble Paul)
 
 * SOLR-5594: Allow FieldTypes to specify custom PrefixQuery behavior
@@ -575,8 +575,7 @@ New Features
 * SOLR-5535: Set "partialResults" header for shards that error out if
   shards.tolerant is specified. (Steve Davids via shalin)
 
-* SOLR-5610: Support cluster-wide properties with an API called
-  CLUSTERPROP (Noble Paul)
+* SOLR-5610: Support cluster-wide properties with an API called CLUSTERPROP (Noble Paul)
 
 * SOLR-5623: Better diagnosis of RuntimeExceptions in analysis
   (Benson Margulies)
@@ -667,7 +666,7 @@ Bug Fixes
 
 * SOLR-5666: Using the hdfs write cache can result in appearance of corrupted
   index. (Mark Miller)
-	
+
 * SOLR-5230: Call DelegatingCollector.finish() during grouping.
   (Joel Bernstein, ehatcher)
 

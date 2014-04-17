@@ -306,9 +306,6 @@ Build
 * LUCENE-5463: RamUsageEstimator.(human)sizeOf(Object) is now a forbidden API.
   (Adrien Grand, Robert Muir)
 
-* LUCENE-5511: "ant precommit" / "ant check-svn-working-copy" now work again
-  with any working copy format (thanks to svnkit 1.8.4).  (Uwe Schindler)
-
 * LUCENE-5512: Remove redundant typing (use diamond operator) throughout
   the codebase.  (Furkan KAMACI via Robert Muir)
 
@@ -341,8 +338,8 @@ Changes in Runtime Behavior
 
 Bug Fixes
 
-* LUCENE-5450: Fix getField() NPE issues with SpanOr/SpanNear when they have an
-  empty list of clauses. This can happen for example,  when a wildcard matches
+* LUCENE-5450: Fix getField() NPE issues with SpanOr/SpanNear when they have an 
+  empty list of clauses. This can happen for example,  when a wildcard matches 
   no terms.  (Tim Allison via Robert Muir)
 
 * LUCENE-5473: Throw IllegalArgumentException, not
@@ -357,8 +354,8 @@ Bug Fixes
 
 * LUCENE-5502: Fixed TermsFilter.equals that could return true for different
   filters. (Igor Motov via Adrien Grand)
-
-* LUCENE-5522: FacetsConfig didn't add drill-down terms for association facet
+  
+* LUCENE-5522: FacetsConfig didn't add drill-down terms for association facet 
   fields labels. (Shai Erera)
 
 * LUCENE-5520: ToChildBlockJoinQuery would hit
@@ -390,12 +387,20 @@ Bug Fixes
   listerners might be missed. This can cause memory leaks if the core listeners
   are used to clear caches. (Simon Willnauer)
 
+Build
+
+* LUCENE-5511: "ant precommit" / "ant check-svn-working-copy" now work again
+  with any working copy format (thanks to svnkit 1.8.4).  (Uwe Schindler)
+
 ======================= Lucene 4.7.0 =======================
 
 New Features
 
 * LUCENE-5336: Add SimpleQueryParser: parser for human-entered queries.
   (Jack Conradson via Robert Muir)
+  
+* LUCENE-5337: Add Payload support to FileDictionary (Suggest) and make it more
+  configurable (Areek Zilluer via Erick Erickson)
 
 * LUCENE-5329: suggest: DocumentDictionary and
   DocumentExpressionDictionary are now lenient for dirty documents
@@ -427,7 +432,7 @@ New Features
   using SortField.setMissingValue(SortField.STRING_FIRST), or last,
   using SortField.setMissingValue(SortField.STRING_LAST). (Rob Muir,
   Mike McCandless)
-  
+
 * LUCENE-5099: QueryNode should have the ability to detach from its node
   parent. Added QueryNode.removeFromParent() that allows nodes to be 
   detached from its parent node. (Adriano Crestani)
@@ -438,13 +443,6 @@ New Features
   Shapes: ShapeCollection and BufferedLineString. Various other improvements and
   bug fixes too. More info:
   https://github.com/spatial4j/spatial4j/blob/master/CHANGES.md  (David Smiley)
-
-* LUCENE-5405: If an analysis component throws an exception, Lucene
-  logs the field name to the info stream to assist in
-  diagnosis. (Benson Margulies)
-
-* LUCENE-5406: Make ShingleAnalzyerWrapper.getWrappedAnalyzer() public
-  final (gsingers)
 
 * LUCENE-5415: Add multitermquery (wildcards,prefix,etc) to PostingsHighlighter.
   (Mike McCandless, Robert Muir)
@@ -543,6 +541,10 @@ Bug fixes
   domain-only URLs that are followed by an alphanumeric character.
   (Chris Geeringh, Steve Rowe)
 
+* LUCENE-5405: If an analysis component throws an exception, Lucene
+  logs the field name to the info stream to assist in
+  diagnosis. (Benson Margulies)
+
 * SOLR-5661: PriorityQueue now refuses to allocate itself if the
   incoming maxSize is too large (Raintung Li via Mike McCandless)
 
@@ -595,6 +597,8 @@ API Changes
   API, you must pass the Document that is returned from FacetConfig.build() 
   to IndexWriter.addDocument(). (Shai Erera, Gilad Barkai, Rob
   Muir, Mike McCandless)
+
+* LUCENE-5405: Make ShingleAnalzyerWrapper.getWrappedAnalyzer() public final (gsingers)
 
 * LUCENE-5395: The SpatialArgsParser now only reads WKT, no more "lat, lon"
   etc. but it's easy to override the parseShape method if you wish. (David
@@ -765,9 +769,6 @@ New Features
 * LUCENE-5297: Allow to range-facet on any ValueSource, not just
   NumericDocValues fields. (Shai Erera)
   
-* LUCENE-5337: Add Payload support to FileDictionary (Suggest) and make it more
-  configurable (Areek Zilluer via Erick Erickson)
-
 Bug Fixes
 
 * LUCENE-5272: OpenBitSet.ensureCapacity did not modify numBits, causing 
@@ -1338,12 +1339,6 @@ Bug Fixes
   when there is no more than 32kb to decompress. This prevents from running
   into out-of-memory errors when working with large stored fields.
   (Adrien Grand)
-
-* LUCENE-5048: CategoryPath with a long path could result in hitting 
-  NegativeArraySizeException, categories being added multiple times to the 
-  taxonomy or drill-down terms silently discarded by the indexer. CategoryPath 
-  is now limited to MAX_CATEGORY_PATH_LENGTH characters.
-  (Colton Jamieson, Mike McCandless, Shai Erera)
 
 * LUCENE-5062: If the spatial data for a document was comprised of multiple
   overlapping or adjacent parts then a CONTAINS predicate query might not match
