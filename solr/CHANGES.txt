@@ -56,6 +56,9 @@ Other Changes
 
 * SOLR-5987: Add "collection" to UpdateParams. (Mark Miller, Greg Solovyev)
 
+* SOLR-3862: Add remove" as update option for atomically removing a value 
+  from a multivalued field (Jim Musli, Steven Bower, Alaknantha via Erick Erickson) 
+
 ==================  4.8.0 ==================
 
 Versions of Major Components

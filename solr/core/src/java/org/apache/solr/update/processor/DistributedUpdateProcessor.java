@@ -905,49 +905,34 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     IndexSchema schema = cmd.getReq().getSchema();
     for (SolrInputField sif : sdoc.values()) {
-      Object val = sif.getValue();
+     Object val = sif.getValue();
       if (val instanceof Map) {
         for (Entry<String,Object> entry : ((Map<String,Object>) val).entrySet()) {
           String key = entry.getKey();
           Object fieldVal = entry.getValue();
           boolean updateField = false;
-          if ("add".equals(key)) {
-            updateField = true;
-            oldDoc.addField( sif.getName(), fieldVal, sif.getBoost());
-          } else if ("set".equals(key)) {
-            updateField = true;
-            oldDoc.setField(sif.getName(),  fieldVal, sif.getBoost());
-          } else if ("inc".equals(key)) {
-            updateField = true;
-            SolrInputField numericField = oldDoc.get(sif.getName());
-            if (numericField == null) {
-              oldDoc.setField(sif.getName(),  fieldVal, sif.getBoost());
-            } else {
-              // TODO: fieldtype needs externalToObject?
-              String oldValS = numericField.getFirstValue().toString();
-              SchemaField sf = schema.getField(sif.getName());
-              BytesRef term = new BytesRef();
-              sf.getType().readableToIndexed(oldValS, term);
-              Object oldVal = sf.getType().toObject(sf, term);
-
-              String fieldValS = fieldVal.toString();
-              Number result;
-              if (oldVal instanceof Long) {
-                result = ((Long) oldVal).longValue() + Long.parseLong(fieldValS);
-              } else if (oldVal instanceof Float) {
-                result = ((Float) oldVal).floatValue() + Float.parseFloat(fieldValS);
-              } else if (oldVal instanceof Double) {
-                result = ((Double) oldVal).doubleValue() + Double.parseDouble(fieldValS);
-              } else {
-                // int, short, byte
-                result = ((Integer) oldVal).intValue() + Integer.parseInt(fieldValS);
-              }
-
-              oldDoc.setField(sif.getName(),  result, sif.getBoost());
-            }
-
+          switch (key) {
+            case "add":
+              updateField = true;
+              oldDoc.addField(sif.getName(), fieldVal, sif.getBoost());
+              break;
+            case "set":
+              updateField = true;
+              oldDoc.setField(sif.getName(), fieldVal, sif.getBoost());
+              break;
+            case "remove":
+              updateField = true;
+              doRemove(oldDoc, sif, fieldVal);
+              break;
+            case "inc":
+              updateField = true;
+              doInc(oldDoc, schema, sif, fieldVal);
+              break;
+            default:
+              //Perhaps throw an error here instead?
+              log.warn("Unknown operation for the an atomic update, operation ignored: " + key);
+              break;
           }
-
           // validate that the field being modified is not the id field.
           if (updateField && idField.getName().equals(sif.getName())) {
             throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid update of id field: " + sif);
@@ -965,9 +950,52 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     return true;
   }
 
+  private void doInc(SolrInputDocument oldDoc, IndexSchema schema, SolrInputField sif, Object fieldVal) {
+    SolrInputField numericField = oldDoc.get(sif.getName());
+    if (numericField == null) {
+      oldDoc.setField(sif.getName(),  fieldVal, sif.getBoost());
+    } else {
+      // TODO: fieldtype needs externalToObject?
+      String oldValS = numericField.getFirstValue().toString();
+      SchemaField sf = schema.getField(sif.getName());
+      BytesRef term = new BytesRef();
+      sf.getType().readableToIndexed(oldValS, term);
+      Object oldVal = sf.getType().toObject(sf, term);
+
+      String fieldValS = fieldVal.toString();
+      Number result;
+      if (oldVal instanceof Long) {
+        result = ((Long) oldVal).longValue() + Long.parseLong(fieldValS);
+      } else if (oldVal instanceof Float) {
+        result = ((Float) oldVal).floatValue() + Float.parseFloat(fieldValS);
+      } else if (oldVal instanceof Double) {
+        result = ((Double) oldVal).doubleValue() + Double.parseDouble(fieldValS);
+      } else {
+        // int, short, byte
+        result = ((Integer) oldVal).intValue() + Integer.parseInt(fieldValS);
+      }
+
+      oldDoc.setField(sif.getName(),  result, sif.getBoost());
+    }
+  }
+
+  private void doRemove(SolrInputDocument oldDoc, SolrInputField sif, Object fieldVal) {
+    final String name = sif.getName();
+    SolrInputField existingField = oldDoc.get(name);
+    if (existingField != null) {
+      final Collection<Object> original = existingField.getValues();
+      if (fieldVal instanceof Collection) {
+        original.removeAll((Collection) fieldVal);
+      } else {
+        original.remove(fieldVal);
+      }
+
+      oldDoc.setField(name, original);
+
+    }
+  }
 
 
-  
   @Override
   public void processDelete(DeleteUpdateCommand cmd) throws IOException {
     updateCommand = cmd;
