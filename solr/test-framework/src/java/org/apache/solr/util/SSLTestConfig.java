@@ -104,10 +104,18 @@ public class SSLTestConfig extends SSLConfig {
     }
   }
   
-  public static void cleanStatics() {
-    DEFAULT_CONFIGURER = null;
-    TEST_KEYSTORE = null;
-    TEST_KEYSTORE_PASSWORD = null;
-    TEST_KEYSTORE_PATH = null;
+  public static void setSSLSystemProperties() {
+    System.setProperty("javax.net.ssl.keyStore", TEST_KEYSTORE_PATH);
+    System.setProperty("javax.net.ssl.keyStorePassword", TEST_KEYSTORE_PASSWORD);
+    System.setProperty("javax.net.ssl.trustStore", TEST_KEYSTORE_PATH);
+    System.setProperty("javax.net.ssl.trustStorePassword", TEST_KEYSTORE_PASSWORD);
   }
+  
+  public static void clearSSLSystemProperties() {
+    System.clearProperty("javax.net.ssl.keyStore");
+    System.clearProperty("javax.net.ssl.keyStorePassword");
+    System.clearProperty("javax.net.ssl.trustStore");
+    System.clearProperty("javax.net.ssl.trustStorePassword");
+  }
+  
 }

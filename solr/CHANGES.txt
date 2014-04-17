@@ -80,6 +80,9 @@ Other Changes
 
 * SOLR-5474: Have a new mode for SolrJ to support stateFormat=2 (Noble Paul, Tim Potter)
 
+* SOLR-5868: HttpClient should be configured to use ALLOW_ALL_HOSTNAME hostname
+  verifier to simplify SSL setup. (Steve Davids via Mark Miller)
+
 ==================  4.9.0 ==================
 
 Versions of Major Components
