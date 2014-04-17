@@ -333,6 +333,17 @@
     </and>
   </condition>
 
+  <!-- workaround for https://issues.apache.org/bugzilla/show_bug.cgi?id=53347 -->
+  <condition property="build.compiler" value="javac1.7">
+    <and>
+      <equals arg1="${build.java.runtime}" arg2="1.8"/>
+      <or>
+        <antversion exactly="1.8.3" />
+        <antversion exactly="1.8.4" />
+      </or>
+    </and>
+  </condition>
+
   <target name="-documentation-lint-unsupported" unless="documentation-lint.supported">
     <fail message="Linting documentation HTML is not supported on this Java version (${build.java.runtime}) / JVM (${java.vm.name}).">
       <condition>
