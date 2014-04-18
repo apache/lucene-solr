@@ -19,6 +19,7 @@ package org.apache.lucene.spatial.prefix;
 
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.spatial.DisjointSpatialFilter;
 import org.apache.lucene.spatial.prefix.tree.Cell;
@@ -112,7 +113,7 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
   }
 
   @Override
-  protected CellTokenStream createTokenStream(Shape shape, int detailLevel) {
+  protected TokenStream createTokenStream(Shape shape, int detailLevel) {
     if (shape instanceof Point || !pruneLeafyBranches)
       return super.createTokenStream(shape, detailLevel);
 

@@ -133,7 +133,7 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
     return new Field[]{field};
   }
 
-  protected CellTokenStream createTokenStream(Shape shape, int detailLevel) {
+  protected TokenStream createTokenStream(Shape shape, int detailLevel) {
     Iterator<Cell> cells = grid.getTreeCellIterator(shape, detailLevel);
     return new CellTokenStream().setCells(cells);
   }
