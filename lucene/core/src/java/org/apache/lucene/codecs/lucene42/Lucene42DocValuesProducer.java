@@ -148,6 +148,13 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
   private void readFields(IndexInput meta, FieldInfos infos) throws IOException {
     int fieldNumber = meta.readVInt();
     while (fieldNumber != -1) {
+      // check should be: infos.fieldInfo(fieldNumber) != null, which incorporates negative check
+      // but docvalues updates are currently buggy here (loading extra stuff, etc): LUCENE-5616
+      if (fieldNumber < 0) {
+        // trickier to validate more: because we re-use for norms, because we use multiple entries
+        // for "composite" types like sortedset, etc.
+        throw new CorruptIndexException("Invalid field number: " + fieldNumber + ", input=" + meta);
+      }
       int fieldType = meta.readByte();
       if (fieldType == NUMBER) {
         NumericEntry entry = new NumericEntry();
