@@ -219,11 +219,8 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
             + leaderJetty.url + " Dead Guy:" + deadJetty.url + "skip list:" + skipServers, shardFailMessage);
     
     // good place to test compareResults
-    boolean shouldFail = compareResults(
-        controlClient.query(new SolrQuery("*:*")).getResults().getNumFound(),
-        cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound());
-    assertTrue("A test that compareResults is working correctly failed",
-        shouldFail);
+    boolean shouldFail = CloudInspectUtil.compareResults(controlClient, cloudClient);
+    assertTrue("A test that compareResults is working correctly failed", shouldFail);
     
     jetties = new HashSet<>();
     jetties.addAll(shardToJetty.get("shard1"));

@@ -1052,7 +1052,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             SolrDocumentList lst1 = lastJetty.client.solrClient.query(query).getResults();
             SolrDocumentList lst2 = cjetty.client.solrClient.query(query).getResults();
 
-            showDiff(lst1, lst2, lastJetty.url, cjetty.url);
+            CloudInspectUtil.showDiff(lst1, lst2, lastJetty.url, cjetty.url);
           }
 
         }
@@ -1116,92 +1116,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         }
       }
     }
-  }
-  
-  private String toStr(SolrDocumentList lst, int maxSz) {
-    if (lst.size() <= maxSz) return lst.toString();
-
-    StringBuilder sb = new StringBuilder("SolrDocumentList[sz=" + lst.size());
-    if (lst.size() != lst.getNumFound()) {
-      sb.append(" numFound=" + lst.getNumFound());
-    }
-    sb.append("]=");
-    sb.append(lst.subList(0,maxSz/2).toString());
-    sb.append(" , [...] , ");
-    sb.append(lst.subList(lst.size()-maxSz/2, lst.size()).toString());
-
-    return sb.toString();
-  }
-  
-  boolean checkIfDiffIsLegal(SolrDocumentList a, SolrDocumentList b, String aName, String bName, Set<String> addFails, Set<String> deleteFails) {
-    boolean legal = true;
-    Set<SolrDocument> setA = new HashSet<>();
-    for (SolrDocument sdoc : a) {
-      setA.add(sdoc);
-    }
-
-    Set<SolrDocument> setB = new HashSet<>();
-    for (SolrDocument sdoc : b) {
-      setB.add(sdoc);
-    }
-
-    Set<SolrDocument> onlyInA = new HashSet<>(setA);
-    onlyInA.removeAll(setB);
-    Set<SolrDocument> onlyInB = new HashSet<>(setB);
-    onlyInB.removeAll(setA);
-
-    for (SolrDocument doc : onlyInA) {
-      if (!addFails.contains(doc.getFirstValue("id"))) {
-        legal = false;
-      } else {
-        System.err.println("###### Only in " + aName + ": " + onlyInA
-            + ", but this is expected because we found an add fail for "
-            + doc.getFirstValue("id"));
-      }
-    }
-      
-    for (SolrDocument doc : onlyInB) {
-      if (!deleteFails.contains(doc.getFirstValue("id"))) {
-        legal = false;
-      } else {
-        System.err.println("###### Only in " + bName + ": " + onlyInB
-            + ", but this is expected because we found a delete fail for "
-            + doc.getFirstValue("id"));
-      }
-    }
-    
-    return legal;
-  }
-
-  Set<Map> showDiff(SolrDocumentList a, SolrDocumentList b, String aName, String bName) {
-    System.err.println("######"+aName+ ": " + toStr(a,10));
-    System.err.println("######"+bName+ ": " + toStr(b,10));
-    System.err.println("###### sizes=" + a.size() + "," + b.size());
-    
-    Set<Map> setA = new HashSet<>();
-    for (SolrDocument sdoc : a) {
-      setA.add(new HashMap(sdoc));
-    }
-
-    Set<Map> setB = new HashSet<>();
-    for (SolrDocument sdoc : b) {
-      setB.add(new HashMap(sdoc));
-    }
-
-    Set<Map> onlyInA = new HashSet<>(setA);
-    onlyInA.removeAll(setB);
-    Set<Map> onlyInB = new HashSet<>(setB);
-    onlyInB.removeAll(setA);
-
-    if (onlyInA.size() > 0) {
-      System.err.println("###### Only in " + aName + ": " + onlyInA);
-    }
-    if (onlyInB.size() > 0) {
-      System.err.println("###### Only in " + bName + ": " + onlyInB);
-    }
-
-    onlyInA.addAll(onlyInB);
-    return onlyInA;
   }
 
   /* Checks both shard replcia consistency and against the control shard.
@@ -1288,69 +1202,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       String msg = "document count mismatch.  control=" + controlDocs + " sum(shards)="+ cnt + " cloudClient="+cloudClientDocs;
       log.error(msg);
 
-      boolean shouldFail = compareResults(controlDocs, cloudClientDocs, addFails, deleteFails);
+      boolean shouldFail = CloudInspectUtil.compareResults(controlClient, cloudClient, addFails, deleteFails);
       if (shouldFail) {
         fail(msg);
       }
     }
-  }
-
-  protected boolean compareResults(long controlDocs, long cloudClientDocs)
-      throws SolrServerException {
-    return compareResults(controlDocs, cloudClientDocs, null, null);
-  }
-  
-  protected boolean compareResults(long controlDocs, long cloudClientDocs, Set<String> addFails, Set<String> deleteFails)
-      throws SolrServerException {
-    SolrParams q;
-    SolrDocumentList controlDocList;
-    SolrDocumentList cloudDocList;
-    // re-execute the query getting ids
-    q = params("q","*:*","rows","100000", "fl","id", "tests","checkShardConsistency(vsControl)/getIds");    // add a tag to aid in debugging via logs
-    controlDocList = controlClient.query(q).getResults();
-    if (controlDocs != controlDocList.getNumFound()) {
-      log.error("Something changed! control now " + controlDocList.getNumFound());
-    };
-
-    cloudDocList = cloudClient.query(q).getResults();
-    if (cloudClientDocs != cloudDocList.getNumFound()) {
-      log.error("Something changed! cloudClient now " + cloudDocList.getNumFound());
-    };
-
-    if (addFails != null || deleteFails != null) {
-      boolean legal = checkIfDiffIsLegal(controlDocList, cloudDocList,
-          "controlDocList", "cloudDocList", addFails, deleteFails);
-      if (legal) {
-        return false;
-      }
-    }
-    
-    Set<Map> differences = showDiff(controlDocList, cloudDocList,
-        "controlDocList", "cloudDocList");
-
-    // get versions for the mismatched ids
-    boolean foundId = false;
-    StringBuilder ids = new StringBuilder("id:(");
-    for (Map doc : differences) {
-      ids.append(" "+doc.get("id"));
-      foundId = true;
-    }
-    ids.append(")");
-    
-    if (foundId) {
-      // get versions for those ids that don't match
-      q = params("q", ids.toString(), "rows", "100000", "fl", "id,_version_",
-          "sort", "id asc", "tests",
-          "checkShardConsistency(vsControl)/getVers"); // add a tag to aid in
-                                                       // debugging via logs
-      
-      SolrDocumentList a = controlClient.query(q).getResults();
-      SolrDocumentList b = cloudClient.query(q).getResults();
-      
-      log.error("controlClient :" + a + "\n\tcloudClient :" + b);
-    }
-    
-    return true;
   }
   
   protected SolrServer getClient(String nodeName) {

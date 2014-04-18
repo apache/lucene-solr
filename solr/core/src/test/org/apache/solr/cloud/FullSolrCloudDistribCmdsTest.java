@@ -412,7 +412,7 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
     long cloudCount = cloudClient.query(query).getResults().getNumFound();
 
     
-    compareResults(controlCount, cloudCount);
+    CloudInspectUtil.compareResults(controlClient, cloudClient);
     
     assertEquals("Control does not match cloud", controlCount, cloudCount);
     System.out.println("DOCS:" + controlCount);
