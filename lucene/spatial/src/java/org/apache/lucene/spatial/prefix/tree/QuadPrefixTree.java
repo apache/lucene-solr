@@ -38,7 +38,7 @@ import java.util.Locale;
  *
  * @lucene.experimental
  */
-public class QuadPrefixTree extends SpatialPrefixTree {
+public class QuadPrefixTree extends LegacyPrefixTree {
 
   /**
    * Factory for creating {@link QuadPrefixTree} instances with useful defaults
@@ -115,6 +115,11 @@ public class QuadPrefixTree extends SpatialPrefixTree {
     this(ctx, ctx.getWorldBounds(), maxLevels);
   }
 
+  @Override
+  public Cell getWorldCell() {
+    return new QuadCell(BytesRef.EMPTY_BYTES, 0, 0);
+  }
+
   public void printInfo(PrintStream out) {
     NumberFormat nf = NumberFormat.getNumberInstance(Locale.ROOT);
     nf.setMaximumFractionDigits(5);
@@ -145,11 +150,6 @@ public class QuadPrefixTree extends SpatialPrefixTree {
     List<Cell> cells = new ArrayList<>(1);
     build(xmid, ymid, 0, cells, new BytesRef(maxLevels+1), ctx.makePoint(p.getX(),p.getY()), level);
     return cells.get(0);//note cells could be longer if p on edge
-  }
-
-  @Override
-  public Cell getCell(byte[] bytes, int offset, int len) {
-    return new QuadCell(bytes, offset, len);
   }
 
   private void build(
@@ -214,7 +214,7 @@ public class QuadPrefixTree extends SpatialPrefixTree {
     str.length = strlen;
   }
 
-  class QuadCell extends Cell{
+  private class QuadCell extends LegacyCell {
 
     QuadCell(byte[] bytes, int off, int len) {
       super(bytes, off, len);
@@ -226,16 +226,10 @@ public class QuadPrefixTree extends SpatialPrefixTree {
     }
 
     @Override
-    protected SpatialPrefixTree getGrid() { return QuadPrefixTree.this; }
+    protected QuadPrefixTree getGrid() { return QuadPrefixTree.this; }
 
     @Override
-    public void reset(byte[] bytes, int off, int len) {
-      super.reset(bytes, off, len);
-      shape = null;
-    }
-
-    @Override
-    public Collection<Cell> getSubCells() {
+    protected Collection<Cell> getSubCells() {
       BytesRef source = getTokenBytesNoLeaf(null);
       BytesRef target = new BytesRef();
 
@@ -262,11 +256,9 @@ public class QuadPrefixTree extends SpatialPrefixTree {
     }
 
     @Override
-    public Cell getSubCell(Point p) {
-      return QuadPrefixTree.this.getCell(p, getLevel() + 1);//not performant!
+    protected QuadCell getSubCell(Point p) {
+      return (QuadCell) QuadPrefixTree.this.getCell(p, getLevel() + 1);//not performant!
     }
-
-    private Shape shape;//cache
 
     @Override
     public Shape getShape() {

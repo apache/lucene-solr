@@ -61,7 +61,9 @@ API Changes
   shutdown method was added to do what close used to do (flush, wait
   for merges, commit, close).
 
-* LUCENE-5565: Refactor SpatialPrefixTree/Cell to not use Strings. (David Smiley)
+* LUCENE-5608, LUCENE-5565: Refactor SpatialPrefixTree/Cell API. Doesn't use Strings
+  as tokens anymore, and now iterates cells on-demand during indexing instead of
+  building a collection.  RPT now has more setters. (David Smiley)
 
 Documentation
 

@@ -22,6 +22,7 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.spatial.prefix.tree.Cell;
+import org.apache.lucene.spatial.prefix.tree.CellIterator;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -45,6 +46,11 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
 
   //Historical note: this code resulted from a refactoring of RecursivePrefixTreeFilter,
   // which in turn came out of SOLR-2155
+
+  //This class perhaps could have been implemented in terms of FilteredTermsEnum & MultiTermQuery
+  //  & MultiTermQueryWrapperFilter.  Maybe so for simple Intersects predicate but not for when we want to collect terms
+  //  differently depending on cell state like IsWithin and for fuzzy/accurate collection planned improvements.  At
+  //  least it would just make things more complicated.
 
   protected final int prefixGridScanLevel;//at least one less than grid.getMaxLevels()
 
@@ -108,16 +114,21 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
     does act as a short-circuit.  So maybe do some percent of the time or when the level
     is above some threshold.
 
-  * Each shape.relate(otherShape) result could be cached since much of the same relations
-    will be invoked when multiple segments are involved.
+  * Once we don't have redundant non-leaves indexed with leaf cells (LUCENE-4942), we can
+    sometimes know to call next() instead of seek() if we're processing a leaf cell that
+    didn't have a corresponding non-leaf.
 
   */
+
+    //
+    //  TODO MAJOR REFACTOR SIMPLIFICATION BASED ON TreeCellIterator  TODO
+    //
 
     protected final boolean hasIndexedLeaves;//if false then we can skip looking for them
 
     private VNode curVNode;//current pointer, derived from query shape
     private BytesRef curVNodeTerm = new BytesRef();//curVNode.cell's term, without leaf
-    private Cell scanCell;
+    private Cell scanCell = grid.getWorldCell();
 
     private BytesRef thisTerm;//the result of termsEnum.term()
 
@@ -213,8 +224,8 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
       if (hasIndexedLeaves && cell.getLevel() != 0) {
         //If the next indexed term just adds a leaf marker ('+') to cell,
         // then add all of those docs
-        assert curVNode.cell.isWithin(curVNodeTerm, thisTerm);
-        scanCell = grid.getCell(thisTerm.bytes, thisTerm.offset, thisTerm.length, scanCell);
+        scanCell.readCell(thisTerm);
+        assert curVNode.cell.isPrefixOf(scanCell);
         if (scanCell.getLevel() == cell.getLevel() && scanCell.isLeaf()) {
           visitLeaf(scanCell);
           //advance
@@ -251,8 +262,8 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
      * guaranteed to have an intersection and thus this must return some number
      * of nodes.
      */
-    protected Iterator<Cell> findSubCellsToVisit(Cell cell) {
-      return cell.getSubCells(queryShape).iterator();
+    protected CellIterator findSubCellsToVisit(Cell cell) {
+      return cell.getNextLevelCells(queryShape);
     }
 
     /**
@@ -262,10 +273,12 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
      * #visitScanned(org.apache.lucene.spatial.prefix.tree.Cell)}.
      */
     protected void scan(int scanDetailLevel) throws IOException {
-      for (;
-           thisTerm != null && curVNode.cell.isWithin(curVNodeTerm, thisTerm);
-           thisTerm = termsEnum.next()) {
-        scanCell = grid.getCell(thisTerm.bytes, thisTerm.offset, thisTerm.length, scanCell);
+      for ( ;
+          thisTerm != null;
+          thisTerm = termsEnum.next()) {
+        scanCell.readCell(thisTerm);
+        if (!curVNode.cell.isPrefixOf(scanCell))
+          break;
 
         int termLevel = scanCell.getLevel();
         if (termLevel < scanDetailLevel) {

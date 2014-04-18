@@ -17,13 +17,20 @@ package org.apache.lucene.spatial.prefix;
  * limitations under the License.
  */
 
+import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.spatial.DisjointSpatialFilter;
+import org.apache.lucene.spatial.prefix.tree.Cell;
+import org.apache.lucene.spatial.prefix.tree.CellIterator;
+import org.apache.lucene.spatial.prefix.tree.LegacyCell;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * A {@link PrefixTreeStrategy} which uses {@link AbstractVisitingPrefixTreeFilter}.
@@ -35,19 +42,26 @@ import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
  * @lucene.experimental
  */
 public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
+  /* Future potential optimizations:
 
-  private int prefixGridScanLevel;
+    Each shape.relate(otherShape) result could be cached since much of the same relations will be invoked when
+    multiple segments are involved. Do this for "complex" shapes, not cheap ones, and don't cache when disjoint to
+    bbox because it's a cheap calc. This is one advantage TermQueryPrefixTreeStrategy has over RPT.
 
-  /** True if only indexed points shall be supported.  See
-   *  {@link IntersectsPrefixTreeFilter#hasIndexedLeaves}. */
-  protected boolean pointsOnly = false;
+   */
 
-  /** See {@link ContainsPrefixTreeFilter#multiOverlappingIndexedShapes}. */
+  protected int prefixGridScanLevel;
+
+  //Formerly known as simplifyIndexedCells. Eventually will be removed. Only compatible with RPT
+  // and a LegacyPrefixTree.
+  protected boolean pruneLeafyBranches = true;
+
+  protected boolean pointsOnly = false;//if true, there are no leaves
+
   protected boolean multiOverlappingIndexedShapes = true;
 
   public RecursivePrefixTreeStrategy(SpatialPrefixTree grid, String fieldName) {
-    super(grid, fieldName,
-        true);//simplify indexed cells
+    super(grid, fieldName);
     prefixGridScanLevel = grid.getMaxLevels() - 4;//TODO this default constant is dependent on the prefix grid size
   }
 
@@ -63,9 +77,88 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
     this.prefixGridScanLevel = prefixGridScanLevel;
   }
 
+  /** True if only indexed points shall be supported. There are no "leafs" in such a case.  See
+   *  {@link IntersectsPrefixTreeFilter#hasIndexedLeaves}. */
+  public void setPointsOnly(boolean pointsOnly) {
+    this.pointsOnly = pointsOnly;
+  }
+
+  /** See {@link ContainsPrefixTreeFilter#multiOverlappingIndexedShapes}. */
+  public void setMultiOverlappingIndexedShapes(boolean multiOverlappingIndexedShapes) {
+    this.multiOverlappingIndexedShapes = multiOverlappingIndexedShapes;
+  }
+
+  /** An optional hint affecting non-point shapes: it will
+   * simplify/aggregate sets of complete leaves in a cell to its parent, resulting in ~20-25%
+   * fewer indexed cells. However, it will likely be removed in the future. (default=true)
+   */
+  public void setPruneLeafyBranches(boolean pruneLeafyBranches) {
+    this.pruneLeafyBranches = pruneLeafyBranches;
+  }
+
   @Override
   public String toString() {
-    return getClass().getSimpleName()+"(prefixGridScanLevel:"+prefixGridScanLevel+",SPG:("+ grid +"))";
+    StringBuilder str = new StringBuilder(getClass().getSimpleName()).append('(');
+    str.append("SPG:(").append(grid.toString()).append(')');
+    if (pointsOnly)
+      str.append(",pointsOnly");
+    if (pruneLeafyBranches)
+      str.append(",pruneLeafyBranches");
+    if (prefixGridScanLevel != grid.getMaxLevels() - 4)
+      str.append(",prefixGridScanLevel:").append(""+prefixGridScanLevel);
+    if (!multiOverlappingIndexedShapes)
+      str.append(",!multiOverlappingIndexedShapes");
+    return str.append(')').toString();
+  }
+
+  @Override
+  protected CellTokenStream createTokenStream(Shape shape, int detailLevel) {
+    if (shape instanceof Point || !pruneLeafyBranches)
+      return super.createTokenStream(shape, detailLevel);
+
+    List<Cell> cells = new ArrayList<>(4096);
+    recursiveTraverseAndPrune(grid.getWorldCell(), shape, detailLevel, cells);
+    return new CellTokenStream().setCells(cells.iterator());
+  }
+
+  /** Returns true if cell was added as a leaf. If it wasn't it recursively descends. */
+  private boolean recursiveTraverseAndPrune(Cell cell, Shape shape, int detailLevel, List<Cell> result) {
+    // Important: this logic assumes Cells don't share anything with other cells when
+    // calling cell.getNextLevelCells(). This is only true for LegacyCell.
+    if (!(cell instanceof LegacyCell))
+      throw new IllegalStateException("pruneLeafyBranches must be disabled for use with grid "+grid);
+
+    if (cell.getLevel() == detailLevel) {
+      cell.setLeaf();//FYI might already be a leaf
+    }
+    if (cell.isLeaf()) {
+      result.add(cell);
+      return true;
+    }
+    if (cell.getLevel() != 0)
+      result.add(cell);
+
+    int leaves = 0;
+    CellIterator subCells = cell.getNextLevelCells(shape);
+    while (subCells.hasNext()) {
+      Cell subCell = subCells.next();
+      if (recursiveTraverseAndPrune(subCell, shape, detailLevel, result))
+        leaves++;
+    }
+    //can we prune?
+    if (leaves == ((LegacyCell)cell).getSubCellsSize() && cell.getLevel() != 0) {
+      //Optimization: substitute the parent as a leaf instead of adding all
+      // children as leaves
+
+      //remove the leaves
+      do {
+        result.remove(result.size() - 1);//remove last
+      } while (--leaves > 0);
+      //add cell as the leaf
+      cell.setLeaf();
+      return true;
+    }
+    return false;
   }
 
   @Override

@@ -50,7 +50,7 @@ import java.util.Map;
 
 /**
  * A SpatialStrategy based on serializing a Shape stored into BinaryDocValues.
- * This is not at all fast; it's designed to be used in conjuction with another index based
+ * This is not at all fast; it's designed to be used in conjunction with another index based
  * SpatialStrategy that is approximated (like {@link org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy})
  * to add precision or eventually make more specific / advanced calculations on the per-document
  * geometry.

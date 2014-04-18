@@ -52,6 +52,15 @@ public class IntersectsPrefixTreeFilter extends AbstractVisitingPrefixTreeFilter
 
   @Override
   public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+    /* Possible optimizations (in IN ADDITION TO THOSE LISTED IN VISITORTEMPLATE):
+
+    * If docFreq is 1 (or < than some small threshold), then check to see if we've already
+      collected it; if so short-circuit. Don't do this just for point data, as there is
+      no benefit, or only marginal benefit when multi-valued.
+
+    * Point query shape optimization when the only indexed data is a point (no leaves).  Result is a term query.
+
+     */
     return new VisitorTemplate(context, acceptDocs, hasIndexedLeaves) {
       private FixedBitSet results;
 

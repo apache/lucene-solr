@@ -24,28 +24,25 @@ import org.apache.lucene.spatial.util.ShapeFieldCacheProvider;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * Implementation of {@link ShapeFieldCacheProvider} designed for {@link PrefixTreeStrategy}s.
- *
- * Note, due to the fragmented representation of Shapes in these Strategies, this implementation
- * can only retrieve the central {@link Point} of the original Shapes.
+ * Implementation of {@link ShapeFieldCacheProvider} designed for {@link PrefixTreeStrategy}s that index points.
  *
  * @lucene.internal
  */
 public class PointPrefixTreeFieldCacheProvider extends ShapeFieldCacheProvider<Point> {
 
-  final SpatialPrefixTree grid; //
+  private final SpatialPrefixTree grid;
+  private Cell scanCell;
 
   public PointPrefixTreeFieldCacheProvider(SpatialPrefixTree grid, String shapeField, int defaultSize) {
     super( shapeField, defaultSize );
     this.grid = grid;
+    this.scanCell = grid.getWorldCell();//re-used in readShape to save GC
   }
-
-  private Cell scanCell = null;//re-used in readShape to save GC
 
   @Override
   protected Point readShape(BytesRef term) {
-    scanCell = grid.getCell(term.bytes, term.offset, term.length, scanCell);
-    if (scanCell.getLevel() == grid.getMaxLevels() && !scanCell.isLeaf())
+    scanCell.readCell(term);
+    if (scanCell.getLevel() == grid.getMaxLevels() && !scanCell.isLeaf())//points are never flagged as leaf
       return scanCell.getShape().getCenter();
     return null;
   }

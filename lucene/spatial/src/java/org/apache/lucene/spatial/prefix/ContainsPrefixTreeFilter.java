@@ -24,6 +24,7 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.spatial.prefix.tree.Cell;
+import org.apache.lucene.spatial.prefix.tree.CellIterator;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -31,7 +32,6 @@ import org.apache.lucene.util.SentinelIntSet;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collection;
 
 /**
  * Finds docs where its indexed shape {@link org.apache.lucene.spatial.query.SpatialOperation#Contains
@@ -84,7 +84,7 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
     }
 
     BytesRef termBytes = new BytesRef();//no leaf
-    Cell nextCell;//see getLeafDocs
+    Cell nextCell = grid.getWorldCell();//see getLeafDocs
 
     /** This is the primary algorithm; recursive.  Returns null if finds none. */
     private SmallDocSet visit(Cell cell, Bits acceptContains) throws IOException {
@@ -103,8 +103,9 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
         subCellsFilter = null;
         assert cell.getShape().relate(queryShape) == SpatialRelation.WITHIN;
       }
-      Collection <Cell> subCells = cell.getSubCells(subCellsFilter);
-      for (Cell subCell : subCells) {
+      CellIterator subCells = cell.getNextLevelCells(subCellsFilter);
+      while (subCells.hasNext()) {
+        Cell subCell = subCells.next();
         if (!seekExact(subCell))
           combinedSubResults = null;
         else if (subCell.getLevel() == detailLevel)
@@ -131,9 +132,9 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
 
     private boolean seekExact(Cell cell) throws IOException {
       assert cell.getTokenBytesNoLeaf(null).compareTo(termBytes) > 0;
-      cell.getTokenBytesNoLeaf(termBytes);
       if (termsEnum == null)
         return false;
+      termBytes = cell.getTokenBytesNoLeaf(termBytes);
       return termsEnum.seekExact(termBytes);
     }
 
@@ -157,7 +158,8 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
         termsEnum = null;//signals all done
         return null;
       }
-      nextCell = grid.getCell(nextTerm.bytes, nextTerm.offset, nextTerm.length, nextCell);
+      nextCell.readCell(nextTerm);
+      assert leafCell.isPrefixOf(nextCell);
       if (nextCell.getLevel() == leafCell.getLevel() && nextCell.isLeaf()) {
         return collectDocs(acceptContains);
       } else {

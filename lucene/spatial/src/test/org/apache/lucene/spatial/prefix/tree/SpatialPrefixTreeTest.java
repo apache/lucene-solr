@@ -61,7 +61,11 @@ public class SpatialPrefixTreeTest extends SpatialTestCase {
     assertEquals(ctx.getWorldBounds(), c.getShape());
     while (c.getLevel() < trie.getMaxLevels()) {
       prevC = c;
-      List<Cell> subCells = new ArrayList<>(c.getSubCells());
+      List<Cell> subCells = new ArrayList<>();
+      CellIterator subCellsIter = c.getNextLevelCells(null);
+      while (subCellsIter.hasNext()) {
+        subCells.add(subCellsIter.next());
+      }
       c = subCells.get(random().nextInt(subCells.size()-1));
       
       assertEquals(prevC.getLevel()+1,c.getLevel());
@@ -73,7 +77,7 @@ public class SpatialPrefixTreeTest extends SpatialTestCase {
     }
   }
   /**
-   * A PrefixTree pruning optimization gone bad.
+   * A PrefixTree pruning optimization gone bad, applicable when optimize=true.
    * See <a href="https://issues.apache.org/jira/browse/LUCENE-4770>LUCENE-4770</a>.
    */
   @Test

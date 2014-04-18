@@ -111,7 +111,7 @@ class CellTokenStream extends TokenStream {
       if (omitLeafByte)
         cell.getTokenBytesNoLeaf(bytes);
       else
-        cell.getTokenBytes(bytes);
+        cell.getTokenBytesWithLeaf(bytes);
     }
 
     @Override

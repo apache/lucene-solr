@@ -22,11 +22,11 @@ import com.spatial4j.core.io.GeohashUtils;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
+import org.apache.lucene.util.BytesRef;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
 
 /**
  * A {@link SpatialPrefixTree} based on
@@ -35,7 +35,7 @@ import java.util.List;
  *
  * @lucene.experimental
  */
-public class GeohashPrefixTree extends SpatialPrefixTree {
+public class GeohashPrefixTree extends LegacyPrefixTree {
 
   /**
    * Factory for creating {@link GeohashPrefixTree} instances with useful defaults
@@ -71,6 +71,11 @@ public class GeohashPrefixTree extends SpatialPrefixTree {
   }
 
   @Override
+  public Cell getWorldCell() {
+    return new GhCell(BytesRef.EMPTY_BYTES, 0, 0);
+  }
+
+  @Override
   public int getLevelForDistance(double dist) {
     if (dist == 0)
       return maxLevels;//short circuit
@@ -79,13 +84,8 @@ public class GeohashPrefixTree extends SpatialPrefixTree {
   }
 
   @Override
-  public Cell getCell(Point p, int level) {
+  protected Cell getCell(Point p, int level) {
     return new GhCell(GeohashUtils.encodeLatLon(p.getY(), p.getX(), level));//args are lat,lon (y,x)
-  }
-
-  @Override
-  public Cell getCell(byte[] bytes, int offset, int len) {
-    return new GhCell(bytes, offset, len);
   }
 
   private static byte[] stringToBytesPlus1(String token) {
@@ -97,9 +97,8 @@ public class GeohashPrefixTree extends SpatialPrefixTree {
     return bytes;
   }
 
-  class GhCell extends Cell {
+  private class GhCell extends LegacyCell {
 
-    private Shape shape;//cache
     private String geohash;//cache; never has leaf byte, simply a geohash
 
     GhCell(String geohash) {
@@ -114,13 +113,12 @@ public class GeohashPrefixTree extends SpatialPrefixTree {
     }
 
     @Override
-    protected SpatialPrefixTree getGrid() { return GeohashPrefixTree.this; }
+    protected GeohashPrefixTree getGrid() { return GeohashPrefixTree.this; }
 
     @Override
-    public void reset(byte[] bytes, int off, int len) {
-      super.reset(bytes, off, len);
+    public void readCell(BytesRef bytesRef) {
+      super.readCell(bytesRef);
       geohash = null;
-      shape = null;
     }
 
     @Override
@@ -139,8 +137,8 @@ public class GeohashPrefixTree extends SpatialPrefixTree {
     }
 
     @Override
-    public Cell getSubCell(Point p) {
-      return getGrid().getCell(p, getLevel() + 1);//not performant!
+    protected GhCell getSubCell(Point p) {
+      return (GhCell) getGrid().getCell(p, getLevel() + 1);//not performant!
     }
 
     @Override
@@ -149,11 +147,6 @@ public class GeohashPrefixTree extends SpatialPrefixTree {
         shape = GeohashUtils.decodeBoundary(getGeohash(), getGrid().getSpatialContext());
       }
       return shape;
-    }
-
-    @Override
-    public Point getCenter() {
-      return GeohashUtils.decode(getGeohash(), getGrid().getSpatialContext());
     }
 
     private String getGeohash() {

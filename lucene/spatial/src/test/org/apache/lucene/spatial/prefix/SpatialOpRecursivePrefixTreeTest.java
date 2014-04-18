@@ -33,6 +33,7 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.StrategyTestCase;
 import org.apache.lucene.spatial.prefix.tree.Cell;
+import org.apache.lucene.spatial.prefix.tree.CellIterator;
 import org.apache.lucene.spatial.prefix.tree.GeohashPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.QuadPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
@@ -63,7 +64,7 @@ import static com.spatial4j.core.shape.SpatialRelation.WITHIN;
 
 public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
 
-  static final int ITERATIONS = 1;//Test Iterations
+  static final int ITERATIONS = 10;
 
   private SpatialPrefixTree grid;
 
@@ -79,6 +80,8 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
     else
       setupGeohashGrid(maxLevels);
     //((PrefixTreeStrategy) strategy).setDistErrPct(0);//fully precise to grid
+
+    ((RecursivePrefixTreeStrategy)strategy).setPruneLeafyBranches(randomBoolean());
 
     System.out.println("Strategy: " + strategy.toString());
   }
@@ -378,11 +381,14 @@ public class SpatialOpRecursivePrefixTreeTest extends StrategyTestCase {
     double distErrPct = ((PrefixTreeStrategy) strategy).getDistErrPct();
     double distErr = SpatialArgs.calcDistanceFromErrPct(snapMe, distErrPct, ctx);
     int detailLevel = grid.getLevelForDistance(distErr);
-    List<Cell> cells = grid.getCells(snapMe, detailLevel, false, true);
+    CellIterator cells = grid.getTreeCellIterator(snapMe, detailLevel);
 
     //calc bounding box of cells.
-    List<Shape> cellShapes = new ArrayList<>(cells.size());
-    for (Cell cell : cells) {
+    List<Shape> cellShapes = new ArrayList<>(1024);
+    while (cells.hasNext()) {
+      Cell cell = cells.next();
+      if (!cell.isLeaf())
+        continue;
       cellShapes.add(cell.getShape());
     }
     return new ShapeCollection<>(cellShapes, ctx).getBoundingBox();
