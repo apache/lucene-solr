@@ -224,8 +224,10 @@ public class SegmentCommitInfo {
   }
 
   void setDelCount(int delCount) {
+    if (delCount < 0 || delCount > info.getDocCount()) {
+      throw new IllegalArgumentException("invalid delCount=" + delCount + " (docCount=" + info.getDocCount() + ")");
+    }
     this.delCount = delCount;
-    assert delCount <= info.getDocCount();
   }
 
   /** Returns a description of this segment. */

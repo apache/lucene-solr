@@ -346,7 +346,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         long delGen = input.readLong();
         int delCount = input.readInt();
         if (delCount < 0 || delCount > info.getDocCount()) {
-          throw new CorruptIndexException("invalid deletion count: " + delCount + " (resource: " + input + ")");
+          throw new CorruptIndexException("invalid deletion count: " + delCount + " vs docCount=" + info.getDocCount() + " (resource: " + input + ")");
         }
         long fieldInfosGen = -1;
         if (format >= VERSION_46) {
@@ -438,7 +438,11 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         segnOutput.writeString(si.name);
         segnOutput.writeString(si.getCodec().getName());
         segnOutput.writeLong(siPerCommit.getDelGen());
-        segnOutput.writeInt(siPerCommit.getDelCount());
+        int delCount = siPerCommit.getDelCount();
+        if (delCount < 0 || delCount > si.getDocCount()) {
+          throw new IllegalStateException("cannot write segment: invalid docCount segment=" + si.name + " docCount=" + si.getDocCount() + " delCount=" + delCount);
+        }
+        segnOutput.writeInt(delCount);
         segnOutput.writeLong(siPerCommit.getFieldInfosGen());
         final Map<Long,Set<String>> genUpdatesFiles = siPerCommit.getUpdatesFiles();
         segnOutput.writeInt(genUpdatesFiles.size());
@@ -447,8 +451,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
           segnOutput.writeStringSet(e.getValue());
         }
         assert si.dir == directory;
-
-        assert siPerCommit.getDelCount() <= si.getDocCount();
       }
       segnOutput.writeStringStringMap(userData);
       pendingSegnOutput = segnOutput;

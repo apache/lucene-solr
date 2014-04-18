@@ -293,6 +293,9 @@ Bug fixes
 * SOLR-5983: HTMLStripCharFilter is treating CDATA sections incorrectly.
   (Dan Funk, Steve Rowe)
 
+* LUCENE-5615: Validate per-segment delete counts at write time, to
+  help catch bugs that might otherwise cause corruption (Mike McCandless)
+
 Test Framework
 
 * LUCENE-5592: Incorrectly reported uncloseable files. (Dawid Weiss)
