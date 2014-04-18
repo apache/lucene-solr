@@ -25,6 +25,7 @@ import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.StringHelper;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -116,7 +117,7 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
     protected final boolean hasIndexedLeaves;//if false then we can skip looking for them
 
     private VNode curVNode;//current pointer, derived from query shape
-    private BytesRef curVNodeTerm = new BytesRef();//curVNode.cell's term, without leaf
+    private BytesRef curVNodeTerm = new BytesRef();//curVNode.cell's term.
     private Cell scanCell;
 
     private BytesRef thisTerm;//the result of termsEnum.term()
@@ -170,7 +171,8 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
         }
 
         //Seek to curVNode's cell (or skip if termsEnum has moved beyond)
-        curVNode.cell.getTokenBytesNoLeaf(curVNodeTerm);
+        curVNodeTerm.bytes = curVNode.cell.getTokenBytes();
+        curVNodeTerm.length = curVNodeTerm.bytes.length;
         int compare = termsEnum.getComparator().compare(thisTerm, curVNodeTerm);
         if (compare > 0) {
           // leap frog (termsEnum is beyond where we would otherwise seek)
@@ -213,7 +215,7 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
       if (hasIndexedLeaves && cell.getLevel() != 0) {
         //If the next indexed term just adds a leaf marker ('+') to cell,
         // then add all of those docs
-        assert curVNode.cell.isWithin(curVNodeTerm, thisTerm);
+        assert StringHelper.startsWith(thisTerm, curVNodeTerm);//TODO refactor to use method on curVNode.cell
         scanCell = grid.getCell(thisTerm.bytes, thisTerm.offset, thisTerm.length, scanCell);
         if (scanCell.getLevel() == cell.getLevel() && scanCell.isLeaf()) {
           visitLeaf(scanCell);
@@ -263,7 +265,7 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
      */
     protected void scan(int scanDetailLevel) throws IOException {
       for (;
-           thisTerm != null && curVNode.cell.isWithin(curVNodeTerm, thisTerm);
+           thisTerm != null && StringHelper.startsWith(thisTerm, curVNodeTerm);//TODO refactor to use method on curVNode.cell
            thisTerm = termsEnum.next()) {
         scanCell = grid.getCell(thisTerm.bytes, thisTerm.offset, thisTerm.length, scanCell);
 

@@ -21,12 +21,10 @@ import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
-import org.apache.lucene.util.BytesRef;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -105,14 +103,14 @@ public abstract class SpatialPrefixTree {
   private transient Cell worldCell;//cached
 
   /**
-   * Returns the level 0 cell which encompasses all spatial data. Equivalent to {@link #getCell(byte[], int, int)} with
-   * no bytes. This cell is thread-safe, just like a spatial prefix grid is, although cells aren't
-   * generally thread-safe.
+   * Returns the level 0 cell which encompasses all spatial data. Equivalent to {@link #getCell(String)} with "".
+   * This cell is threadsafe, just like a spatial prefix grid is, although cells aren't
+   * generally threadsafe.
+   * TODO rename to getTopCell or is this fine?
    */
-  public Cell getWorldCell() {//another possible name: getTopCell
+  public Cell getWorldCell() {
     if (worldCell == null) {
-      worldCell = getCell(BytesRef.EMPTY_BYTES, 0, 0);
-      worldCell.getShape();//lazy load; make thread-safe
+      worldCell = getCell("");
     }
     return worldCell;
   }
@@ -121,6 +119,8 @@ public abstract class SpatialPrefixTree {
    * The cell for the specified token. The empty string should be equal to {@link #getWorldCell()}.
    * Precondition: Never called when token length > maxLevel.
    */
+  public abstract Cell getCell(String token);
+
   public abstract Cell getCell(byte[] bytes, int offset, int len);
 
   public final Cell getCell(byte[] bytes, int offset, int len, Cell target) {
@@ -215,23 +215,40 @@ public abstract class SpatialPrefixTree {
    * A Point-optimized implementation of
    * {@link #getCells(com.spatial4j.core.shape.Shape, int, boolean, boolean)}. That
    * method in facts calls this for points.
+   * <p/>
+   * This implementation depends on {@link #getCell(String)} being fast, as its
+   * called repeatedly when incPlarents is true.
    */
   public List<Cell> getCells(Point p, int detailLevel, boolean inclParents) {
     Cell cell = getCell(p, detailLevel);
-    assert !cell.isLeaf();
-    if (!inclParents || detailLevel == 1) {
+    if (!inclParents) {
       return Collections.singletonList(cell);
     }
 
-    //fill in reverse order to be sorted
-    Cell[] cells = new Cell[detailLevel];
-    for (int i = detailLevel-1; true; i--) {
-      cells[i] = cell;
-      if (i == 0)
-        break;
-      cell = cell.getParent();
+    String endToken = cell.getTokenString();
+    assert endToken.length() == detailLevel;
+    List<Cell> cells = new ArrayList<>(detailLevel);
+    for (int i = 1; i < detailLevel; i++) {
+      cells.add(getCell(endToken.substring(0, i)));//TODO refactor: add a cell.getParent()
     }
-    return Arrays.asList(cells);
+    cells.add(cell);
+    return cells;
   }
 
+  /**
+   * Will add the trailing leaf byte for leaves. This isn't particularly efficient.
+   * @deprecated TODO remove; not used and not interesting, don't need collection in & out
+   */
+  public static List<String> cellsToTokenStrings(Collection<Cell> cells) {
+    List<String> tokens = new ArrayList<>((cells.size()));
+    for (Cell cell : cells) {
+      final String token = cell.getTokenString();
+      if (cell.isLeaf()) {
+        tokens.add(token + (char) Cell.LEAF_BYTE);
+      } else {
+        tokens.add(token);
+      }
+    }
+    return tokens;
+  }
 }
