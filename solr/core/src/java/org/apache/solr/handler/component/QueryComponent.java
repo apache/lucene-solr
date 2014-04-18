@@ -1025,7 +1025,6 @@ public class QueryComponent extends SearchComponent
     List<Object> nextCursorMarkValues = new ArrayList<>(sortFields.length);
     for (SortField sf : sortFields) {
       if (sf.getType().equals(SortField.Type.SCORE)) {
-        assert null != lastDoc.score : "lastDoc has null score";
         nextCursorMarkValues.add(lastDoc.score);
       } else {
         assert null != sf.getField() : "SortField has null field";
@@ -1152,7 +1151,7 @@ public class QueryComponent extends SearchComponent
           Object id = doc.getFieldValue(keyFieldName);
           ShardDoc sdoc = rb.resultIds.get(id.toString());
           if (sdoc != null) {
-            if (returnScores && sdoc.score != null) {
+            if (returnScores) {
               doc.setField("score", sdoc.score);
             }
             if (removeKeyField) {
