@@ -348,7 +348,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
           long delGen = input.readLong();
           int delCount = input.readInt();
           if (delCount < 0 || delCount > info.getDocCount()) {
-            throw new CorruptIndexException("invalid deletion count: " + delCount + " (resource: " + input + ")");
+            throw new CorruptIndexException("invalid deletion count: " + delCount + " vs docCount=" + info.getDocCount() + " (resource: " + input + ")");
           }
           long fieldInfosGen = -1;
           if (actualFormat >= VERSION_46) {
@@ -453,7 +453,11 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         segnOutput.writeString(si.name);
         segnOutput.writeString(si.getCodec().getName());
         segnOutput.writeLong(siPerCommit.getDelGen());
-        segnOutput.writeInt(siPerCommit.getDelCount());
+        int delCount = siPerCommit.getDelCount();
+        if (delCount < 0 || delCount > si.getDocCount()) {
+          throw new IllegalStateException("cannot write segment: invalid docCount segment=" + si.name + " docCount=" + si.getDocCount() + " delCount=" + delCount);
+        }
+        segnOutput.writeInt(delCount);
         segnOutput.writeLong(siPerCommit.getFieldInfosGen());
         final Map<Long,Set<String>> genUpdatesFiles = siPerCommit.getUpdatesFiles();
         segnOutput.writeInt(genUpdatesFiles.size());
@@ -462,8 +466,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
           segnOutput.writeStringSet(e.getValue());
         }
         assert si.dir == directory;
-
-        assert siPerCommit.getDelCount() <= si.getDocCount();
 
         // If this segment is pre-4.x, perform a one-time
         // "ugprade" to write the .si file for it:
@@ -484,7 +486,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
             // kill/crash, OS crash, power loss, etc. while
             // writing the upgraded file, the marker file
             // will be missing:
-            si.addFile(markerFileName);
             IndexOutput out = directory.createOutput(markerFileName, IOContext.DEFAULT);
             try {
               CodecUtil.writeHeader(out, SEGMENT_INFO_UPGRADE_CODEC, SEGMENT_INFO_UPGRADE_VERSION);
@@ -558,7 +559,10 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     try {
       // we are about to write this SI in 3.x format, dropping all codec information, etc.
       // so it had better be a 3.x segment or you will get very confusing errors later.
-      assert si.getCodec() instanceof Lucene3xCodec : "broken test, trying to mix preflex with other codecs";
+      if ((si.getCodec() instanceof Lucene3xCodec) == false) {
+        throw new IllegalStateException("cannot write 3x SegmentInfo unless codec is Lucene3x (got: " + si.getCodec() + ")");
+      }
+
       CodecUtil.writeHeader(output, Lucene3xSegmentInfoFormat.UPGRADED_SI_CODEC_NAME, 
                                     Lucene3xSegmentInfoFormat.UPGRADED_SI_VERSION_CURRENT);
       // Write the Lucene version that created this segment, since 3.1
