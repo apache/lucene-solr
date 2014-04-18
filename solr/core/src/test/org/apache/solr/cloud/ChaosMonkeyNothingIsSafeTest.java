@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.net.ConnectException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -128,11 +129,13 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
        del("*:*");
       
       List<StopableThread> threads = new ArrayList<>();
+      List<StopableIndexingThread> indexTreads = new ArrayList<>();
       int threadCount = TEST_NIGHTLY ? 3 : 1;
       int i = 0;
       for (i = 0; i < threadCount; i++) {
         StopableIndexingThread indexThread = new StopableIndexingThread(controlClient, cloudClient, Integer.toString(i), true);
         threads.add(indexThread);
+        indexTreads.add(indexThread);
         indexThread.start();
       }
       
@@ -213,9 +216,12 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
         }
       }
       
+      
+      Set<String> addFails = getAddFails(indexTreads);
+      Set<String> deleteFails = getDeleteFails(indexTreads);
       // full throttle thread can
       // have request fails 
-      checkShardConsistency(!runFullThrottle, true);
+      checkShardConsistency(!runFullThrottle, true, addFails, deleteFails);
       
       long ctrlDocs = controlClient.query(new SolrQuery("*:*")).getResults()
       .getNumFound(); 
@@ -250,7 +256,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       List<Integer> numShardsNumReplicas = new ArrayList<>(2);
       numShardsNumReplicas.add(1);
       numShardsNumReplicas.add(1);
-      checkForCollection("testcollection",numShardsNumReplicas, null);
+      checkForCollection("testcollection", numShardsNumReplicas, null);
       
       testsSuccesful = true;
     } finally {
@@ -258,6 +264,22 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
         printLayout();
       }
     }
+  }
+
+  private Set<String> getAddFails(List<StopableIndexingThread> threads) {
+    Set<String> addFails = new HashSet<String>();
+    for (StopableIndexingThread thread : threads)   {
+      addFails.addAll(thread.getAddFails());
+    }
+    return addFails;
+  }
+  
+  private Set<String> getDeleteFails(List<StopableIndexingThread> threads) {
+    Set<String> deleteFails = new HashSet<String>();
+    for (StopableIndexingThread thread : threads)   {
+      deleteFails.addAll(thread.getDeleteFails());
+    }
+    return deleteFails;
   }
 
   class FullThrottleStopableIndexingThread extends StopableIndexingThread {
