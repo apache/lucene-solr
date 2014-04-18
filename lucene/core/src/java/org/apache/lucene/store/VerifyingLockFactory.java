@@ -19,6 +19,7 @@ package org.apache.lucene.store;
 
 import java.net.Socket;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
@@ -38,7 +39,8 @@ import java.io.OutputStream;
 public class VerifyingLockFactory extends LockFactory {
 
   final LockFactory lf;
-  final Socket socket;
+  final InputStream in;
+  final OutputStream out;
 
   private class CheckedLock extends Lock {
     private final Lock lock;
@@ -48,10 +50,9 @@ public class VerifyingLockFactory extends LockFactory {
     }
 
     private void verify(byte message) throws IOException {
-      final OutputStream out = socket.getOutputStream();
       out.write(message);
       out.flush();
-      final int ret = socket.getInputStream().read();
+      final int ret = in.read();
       if (ret < 0) {
         throw new IllegalStateException("Lock server died because of locking error.");
       }
@@ -84,11 +85,13 @@ public class VerifyingLockFactory extends LockFactory {
 
   /**
    * @param lf the LockFactory that we are testing
-   * @param socket the socket connected to {@link LockVerifyServer}
+   * @param in the socket's input to {@link LockVerifyServer}
+   * @param out the socket's output to {@link LockVerifyServer}
   */
-  public VerifyingLockFactory(LockFactory lf, Socket socket) {
+  public VerifyingLockFactory(LockFactory lf, InputStream in, OutputStream out) throws IOException {
     this.lf = lf;
-    this.socket = socket;
+    this.in = in;
+    this.out = out;
   }
 
   @Override

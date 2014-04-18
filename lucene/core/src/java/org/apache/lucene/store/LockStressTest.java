@@ -19,6 +19,7 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 import java.io.File;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -89,45 +90,45 @@ public class LockStressTest {
     final InetSocketAddress addr = new InetSocketAddress(verifierHost, verifierPort);
     System.out.println("Connecting to server " + addr +
         " and registering as client " + myID + "...");
-    Socket socket = new Socket();
-    socket.setReuseAddress(true);
-    socket.connect(addr, 500);
-
-    OutputStream os = socket.getOutputStream();
-    os.write(myID);
-    os.flush();
-
-    lockFactory.setLockPrefix("test");
-    final LockFactory verifyLF = new VerifyingLockFactory(lockFactory, socket);
-    final Lock l = verifyLF.makeLock("test.lock");
-    final Random rnd = new Random();
-    
-    // wait for starting gun
-    if (socket.getInputStream().read() != 43) {
-      throw new IOException("Protocol violation");
-    }
-    
-    for (int i = 0; i < count; i++) {
-      boolean obtained = false;
-
-      try {
-        obtained = l.obtain(rnd.nextInt(100) + 10);
-      } catch (LockObtainFailedException e) {
+    try (Socket socket = new Socket()) {
+      socket.setReuseAddress(true);
+      socket.connect(addr, 500);
+      final OutputStream out = socket.getOutputStream();
+      final InputStream in = socket.getInputStream();
+      
+      out.write(myID);
+      out.flush();
+  
+      lockFactory.setLockPrefix("test");
+      final LockFactory verifyLF = new VerifyingLockFactory(lockFactory, in, out);
+      final Lock l = verifyLF.makeLock("test.lock");
+      final Random rnd = new Random();
+      
+      // wait for starting gun
+      if (in.read() != 43) {
+        throw new IOException("Protocol violation");
       }
       
-      if (obtained) {
+      for (int i = 0; i < count; i++) {
+        boolean obtained = false;
+  
+        try {
+          obtained = l.obtain(rnd.nextInt(100) + 10);
+        } catch (LockObtainFailedException e) {
+        }
+        
+        if (obtained) {
+          Thread.sleep(sleepTimeMS);
+          l.close();
+        }
+        
+        if (i % 500 == 0) {
+          System.out.println((i * 100. / count) + "% done.");
+        }
+        
         Thread.sleep(sleepTimeMS);
-        l.close();
-      }
-      
-      if (i % 500 == 0) {
-        System.out.println((i * 100. / count) + "% done.");
-      }
-      
-      Thread.sleep(sleepTimeMS);
+      } 
     }
-    
-    IOUtils.closeWhileHandlingException(socket);
     
     System.out.println("Finished " + count + " tries.");
   }
