@@ -122,6 +122,9 @@ Other Changes
 * SOLR-3862: Add remove" as update option for atomically removing a value 
   from a multivalued field (Jim Musli, Steven Bower, Alaknantha via Erick Erickson) 
 
+* SOLR-5974: Remove ShardDoc.score and use parent's ScoreDoc.score.
+  (Tomás Fernández Löbbe via Ryan Ernst)
+
 ==================  4.8.0 ==================
 
 Versions of Major Components
