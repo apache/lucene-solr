@@ -19,7 +19,6 @@ package org.apache.lucene.store;
 
 import java.net.Socket;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
@@ -38,47 +37,35 @@ import java.io.OutputStream;
 
 public class VerifyingLockFactory extends LockFactory {
 
-  LockFactory lf;
-  byte id;
-  String host;
-  int port;
+  final LockFactory lf;
+  final Socket socket;
 
   private class CheckedLock extends Lock {
-    private Lock lock;
+    private final Lock lock;
 
     public CheckedLock(Lock lock) {
       this.lock = lock;
     }
 
-    private void verify(byte message) {
-      try {
-        Socket s = new Socket(host, port);
-        OutputStream out = s.getOutputStream();
-        out.write(id);
-        out.write(message);
-        InputStream in = s.getInputStream();
-        int result = in.read();
-        in.close();
-        out.close();
-        s.close();
-        if (result != 0)
-          throw new RuntimeException("lock was double acquired");
-      } catch (Exception e) {
-        throw new RuntimeException(e);
+    private void verify(byte message) throws IOException {
+      final OutputStream out = socket.getOutputStream();
+      out.write(message);
+      out.flush();
+      final int ret = socket.getInputStream().read();
+      if (ret < 0) {
+        throw new IllegalStateException("Lock server died because of locking error.");
+      }
+      if (ret != message) {
+        throw new IOException("Protocol violation.");
       }
     }
 
     @Override
-    public synchronized boolean obtain(long lockWaitTimeout) throws IOException {
-      boolean obtained = lock.obtain(lockWaitTimeout);
+    public synchronized boolean obtain() throws IOException {
+      boolean obtained = lock.obtain();
       if (obtained)
         verify((byte) 1);
       return obtained;
-    }
-
-    @Override
-    public synchronized boolean obtain() throws IOException {
-      return lock.obtain();
     }
 
     @Override
@@ -96,18 +83,12 @@ public class VerifyingLockFactory extends LockFactory {
   }
 
   /**
-   * @param id should be a unique id across all clients
    * @param lf the LockFactory that we are testing
-   * @param host host or IP where {@link LockVerifyServer}
-            is running
-   * @param port the port {@link LockVerifyServer} is
-            listening on
+   * @param socket the socket connected to {@link LockVerifyServer}
   */
-  public VerifyingLockFactory(byte id, LockFactory lf, String host, int port) {
-    this.id = id;
+  public VerifyingLockFactory(LockFactory lf, Socket socket) {
     this.lf = lf;
-    this.host = host;
-    this.port = port;
+    this.socket = socket;
   }
 
   @Override

@@ -145,5 +145,74 @@
   </target>
 
   <target name="regenerate" depends="createLevAutomata,createPackedIntSources"/>
+  
+  <macrodef name="startLockStressTestClient">
+    <attribute name="clientId"/>
+    <sequential>
+      <local name="lockverifyserver.port"/>
+      <groovy><![CDATA[
+        String port;
+        while ((port = System.getProperty("lockverifyserver.port")) == null) {
+          Thread.sleep(10L);
+        }
+        properties["lockverifyserver.port"] = port;
+      ]]></groovy>
+      <java taskname="LockStressTest@{clientId}" fork="true" classpathref="test-lock.classpath" classname="org.apache.lucene.store.LockStressTest" failOnError="true"> 
+        <arg value="@{clientId}"/>
+        <arg value="${lockverifyserver.host}"/>
+        <arg value="${lockverifyserver.port}"/>
+        <arg value="${lock.factory.impl}"/>
+        <arg value="${lock.factory.dir}"/>
+        <arg value="${lockverify.delay}"/>
+        <arg value="${lockverify.count}"/>
+      </java>
+    </sequential>
+  </macrodef>
+  
+  <target name="test-lock-factory" depends="resolve-groovy,compile-core">
+    <property name="lockverifyserver.host" value="127.0.0.1"/>
+    <property name="lock.factory.impl" value="org.apache.lucene.store.NativeFSLockFactory"/>
+    <property name="lock.factory.dir" location="${build.dir}/lockfactorytest"/>
+    <property name="lockverify.delay" value="1"/>
+    <groovy taskname="LockVerifySetup"><![CDATA[
+      System.clearProperty("lockverifyserver.port"); // make sure it is undefined
+      
+      if (!properties["lockverify.count"]) {
+        int count = Boolean.parseBoolean(properties["tests.nightly"]) ?
+          20000 : 2000;
+        count *= Integer.parseInt(properties["tests.multiplier"]);
+        properties["lockverify.count"] = count;
+      }
+      
+      task.log("Configuration properties:");
+      ["lock.factory.impl", "lockverify.delay", "lockverify.count"].each {
+        k -> task.log(" " + k + "=" + properties[k]);
+      }
+    ]]></groovy>
+    <path id="test-lock.classpath">
+      <path refid="classpath"/>
+      <pathelement location="${build.dir}/classes/java"/>
+    </path>
+    <mkdir dir="${lock.factory.dir}"/>
+    <parallel threadCount="3" failonany="false">
+      <sequential>
+        <!-- the server runs in-process, so we can wait for the sysproperty -->
+        <java taskname="LockVerifyServer" fork="false" classpathref="test-lock.classpath" classname="org.apache.lucene.store.LockVerifyServer" failOnError="true">
+          <arg value="${lockverifyserver.host}"/>
+          <arg value="2"/>
+        </java>
+      </sequential>
+      <sequential>
+        <startLockStressTestClient clientId="1"/>
+      </sequential>
+      <sequential>
+        <startLockStressTestClient clientId="2"/>
+      </sequential>
+    </parallel>
+  </target>
+  
+  <!-- once we fixed LUCENE-5612, reenable this:
+  <target name="test" depends="common.test, test-lock-factory"/>
+  -->
 
 </project>
