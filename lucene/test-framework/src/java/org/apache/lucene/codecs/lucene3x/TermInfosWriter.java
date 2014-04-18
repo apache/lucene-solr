@@ -159,8 +159,11 @@ final class TermInfosWriter implements Closeable {
   
   /** note: -1 is the empty field: "" !!!! */
   static String fieldName(FieldInfos infos, int fieldNumber) {
-    FieldInfo fi = infos.fieldInfo(fieldNumber);
-    return (fi != null) ? fi.name : "";
+    if (fieldNumber == -1) {
+      return "";
+    } else {
+      return infos.fieldInfo(fieldNumber).name;
+    }
   }
 
   // Currently used only by assert statement
