@@ -1117,10 +1117,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return sb.toString();
   }
   
-  boolean checkForLegalDiff(SolrDocumentList a, SolrDocumentList b, String aName, String bName, Set<String> addFails, Set<String> deleteFails) {
-    // System.err.println("######"+aName+ ": " + toStr(a,10));
-    //  System.err.println("######"+bName+ ": " + toStr(b,10));
-    //System.err.println("###### sizes=" + a.size() + "," + b.size());
+  boolean checkIfDiffIsLegal(SolrDocumentList a, SolrDocumentList b, String aName, String bName, Set<String> addFails, Set<String> deleteFails) {
     boolean legal = true;
     Set<SolrDocument> setA = new HashSet<>();
     for (SolrDocument sdoc : a) {
@@ -1305,7 +1302,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     };
 
     if (addFails != null || deleteFails != null) {
-      boolean legal = checkForLegalDiff(controlDocList, cloudDocList,
+      boolean legal = checkIfDiffIsLegal(controlDocList, cloudDocList,
           "controlDocList", "cloudDocList", addFails, deleteFails);
       if (legal) {
         return false;
