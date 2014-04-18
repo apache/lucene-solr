@@ -35,9 +35,6 @@ import org.apache.lucene.spatial.query.SpatialOperation;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class SpatialPrefixTreeTest extends SpatialTestCase {
 
   //TODO plug in others and test them
@@ -59,10 +56,9 @@ public class SpatialPrefixTreeTest extends SpatialTestCase {
     Cell c = trie.getWorldCell();
     assertEquals(0, c.getLevel());
     assertEquals(ctx.getWorldBounds(), c.getShape());
-    while (c.getLevel() < trie.getMaxLevels()) {
+    while(c.getLevel() < trie.getMaxLevels()) {
       prevC = c;
-      List<Cell> subCells = new ArrayList<>(c.getSubCells());
-      c = subCells.get(random().nextInt(subCells.size()-1));
+      c = c.getSubCells().iterator().next();//TODO random which one?
       
       assertEquals(prevC.getLevel()+1,c.getLevel());
       Rectangle prevNShape = (Rectangle) prevC.getShape();

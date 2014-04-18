@@ -145,8 +145,6 @@ API Changes
 
 * LUCENE-5543: Remove/deprecate Directory.fileExists (Mike McCandless)
 
-* LUCENE-5565: Refactor SpatialPrefixTree/Cell to not use Strings. (David Smiley)
-
 * LUCENE-5573: Move docvalues constants and helper methods to o.a.l.index.DocValues.
   (Dawid Weiss, Robert Muir)
 
