@@ -47,7 +47,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
  * off in the cluster.
  */
 @Slow
-@SuppressSSL // tests starts with SSL off
+@SuppressSSL
 public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
   
   @Override

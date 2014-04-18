@@ -25,7 +25,6 @@ public class SSLConfig {
   private String keyStorePassword;
   private String trustStore;
   private String trustStorePassword;
-  private String secureRandomAlgorithm;
   
   public SSLConfig(boolean useSSL, boolean clientAuth, String keyStore, String keyStorePassword, String trustStore, String trustStorePassword) {
     this.useSsl = useSSL;
@@ -42,10 +41,6 @@ public class SSLConfig {
   
   public void setClientAuth(boolean clientAuth) {
     this.clientAuth = clientAuth;
-  }
-  
-  public void setSecureRandomAlgorithm(String secureRandomAlgorithm) {
-    this.secureRandomAlgorithm = secureRandomAlgorithm;
   }
   
   public boolean isSSLMode() {
@@ -70,9 +65,5 @@ public class SSLConfig {
 
   public String getTrustStorePassword() {
     return trustStorePassword;
-  }
-
-  public String getSecureRandomAlgorithm() {
-    return secureRandomAlgorithm;
   }
 }

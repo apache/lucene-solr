@@ -32,6 +32,7 @@ import com.google.common.collect.Maps;
 import junit.framework.Assert;
 
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer;
@@ -69,6 +70,7 @@ import org.slf4j.LoggerFactory;
  *
  * @since solr 1.3
  */
+@SuppressSSL
 abstract public class SolrExampleTests extends SolrExampleTestsBase
 {
   private static Logger log = LoggerFactory.getLogger(SolrExampleTests.class);
