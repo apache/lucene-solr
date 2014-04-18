@@ -108,6 +108,9 @@ Bug Fixes
   was an exception while trying to register as the leader. 
   (Mark Miller, Alan Woodward)
 
+* SOLR-5993: ZkController can warn about shard leader conflict even after the conflict
+  is resolved. (Gregory Chanan via shalin)
+
 Other Changes
 ---------------------
 

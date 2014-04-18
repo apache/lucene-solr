@@ -856,19 +856,18 @@ public final class ZkController {
                   + cloudDesc.getShardId() + " our state says:"
                   + clusterStateLeaderUrl + " but zookeeper says:" + leaderUrl);
         }
-        Thread.sleep(msInSec);
         tries++;
-        clusterStateLeaderUrl = zkStateReader.getLeaderUrl(collection, shardId,
-            timeoutms);
-        leaderUrl = getLeaderProps(collection, cloudDesc.getShardId(), timeoutms)
-            .getCoreUrl();
-        
         if (tries % 30 == 0) {
           String warnMsg = String.format(Locale.ENGLISH, "Still seeing conflicting information about the leader "
               + "of shard %s for collection %s after %d seconds; our state says %s, but ZooKeeper says %s",
               cloudDesc.getShardId(), collection, tries, clusterStateLeaderUrl, leaderUrl);
           log.warn(warnMsg);
         }
+        Thread.sleep(msInSec);
+        clusterStateLeaderUrl = zkStateReader.getLeaderUrl(collection, shardId,
+            timeoutms);
+        leaderUrl = getLeaderProps(collection, cloudDesc.getShardId(), timeoutms)
+            .getCoreUrl();
       }
       
     } catch (Exception e) {
