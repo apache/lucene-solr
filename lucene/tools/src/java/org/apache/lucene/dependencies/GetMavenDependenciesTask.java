@@ -68,9 +68,11 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 /**
- * An Ant task to verify that the '/org/name' keys in ivy-versions.properties
- * are sorted lexically and are neither duplicates nor orphans, and that all
- * dependencies in all ivy.xml files use rev="${/org/name}" format.
+ * An Ant task to generate a properties file containing maven dependency
+ * declarations, used to filter the maven POMs when copying them to
+ * maven-build/ via 'ant get-maven-poms', or to lucene/build/poms/
+ * via the '-filter-maven-poms' target, which is called from the
+ * 'generate-maven-artifacts' target.
  */
 public class GetMavenDependenciesTask extends Task {
   private static final Pattern PROPERTY_PREFIX_FROM_IVY_XML_FILE_PATTERN = Pattern.compile
