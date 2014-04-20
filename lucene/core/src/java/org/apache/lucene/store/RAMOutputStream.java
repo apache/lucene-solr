@@ -155,9 +155,7 @@ public class RAMOutputStream extends IndexOutput {
   }
 
   /** Forces any buffered output to be written. */
-  // TODO: remove 'public'. Something bogus is happening between this guy and DirectPF,
-  // not sure which one (or maybe both?) has the bug.
-  public void flush() throws IOException {
+  protected void flush() throws IOException {
     setFileLength();
   }
 
