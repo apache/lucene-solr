@@ -196,9 +196,7 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
     int writes = random.nextInt(MAX_NUMBER_OF_WRITES);
     int fileLength = random.nextInt(MAX_FILE_SIZE - MIN_FILE_SIZE) + MIN_FILE_SIZE;
     IndexOutput fsOutput = fsDir.createOutput(name, new IOContext());
-    fsOutput.setLength(fileLength);
     IndexOutput hdfsOutput = hdfs.createOutput(name, new IOContext());
-    hdfsOutput.setLength(fileLength);
     for (int i = 0; i < writes; i++) {
       byte[] buf = new byte[random.nextInt(Math.min(MAX_BUFFER_SIZE - MIN_BUFFER_SIZE,fileLength)) + MIN_BUFFER_SIZE];
       random.nextBytes(buf);

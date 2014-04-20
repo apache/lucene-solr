@@ -64,12 +64,12 @@ public class TestHugeRamFile extends LuceneTestCase {
       b2[i] = (byte) (i & 0x0003F);
     }
     long n = 0;
-    assertEquals("output length must match",n,out.length());
+    assertEquals("output length must match",n,out.getFilePointer());
     while (n <= MAX_VALUE - b1.length) {
       out.writeBytes(b1,0,b1.length);
       out.flush();
       n += b1.length;
-      assertEquals("output length must match",n,out.length());
+      assertEquals("output length must match",n,out.getFilePointer());
     }
     //System.out.println("after writing b1's, length = "+out.length()+" (MAX_VALUE="+MAX_VALUE+")");
     int m = b2.length;
@@ -81,7 +81,7 @@ public class TestHugeRamFile extends LuceneTestCase {
       out.writeBytes(b2,0,m);
       out.flush();
       n += m;
-      assertEquals("output length must match",n,out.length());
+      assertEquals("output length must match",n,out.getFilePointer());
     }
     out.close();
     // input part
