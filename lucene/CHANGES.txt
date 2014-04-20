@@ -11,6 +11,9 @@ API Changes
   IndexOutput.getFilePointer instead) and IndexOutput.setLength.
   (Mike McCandless)
 
+* LUCENE-5621: Deprecate IndexOutput.flush: this is not used by Lucene.
+  (Robert Muir)
+
 Optimizations
 
 * LUCENE-5603: hunspell stemmer more efficiently strips prefixes

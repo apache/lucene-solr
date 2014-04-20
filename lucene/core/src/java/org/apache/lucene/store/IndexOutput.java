@@ -31,7 +31,10 @@ import java.io.IOException;
  */
 public abstract class IndexOutput extends DataOutput implements Closeable {
 
-  /** Forces any buffered output to be written. */
+  /** Forces any buffered output to be written. 
+   * @deprecated Lucene never calls this method.
+   */
+  @Deprecated
   public abstract void flush() throws IOException;
 
   /** Closes this stream to further operations. */
