@@ -164,7 +164,6 @@ public class SlowRAMDirectory extends RAMDirectory {
     }
     
     @Override public void close() throws IOException { io.close(); }
-    @Override public void flush() throws IOException { io.flush(); }
     @Override public long getFilePointer() { return io.getFilePointer(); }
     @Override public long getChecksum() throws IOException { return io.getChecksum(); }
   }

@@ -100,8 +100,8 @@ public abstract class BufferedIndexOutput extends IndexOutput {
     }
   }
 
-  @Override
-  public void flush() throws IOException {
+  /** Forces any buffered output to be written. */
+  protected void flush() throws IOException {
     crc.update(buffer, 0, bufferPosition);
     flushBuffer(buffer, bufferPosition);
     bufferStart += bufferPosition;

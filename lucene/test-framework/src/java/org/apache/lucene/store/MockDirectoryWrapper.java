@@ -984,15 +984,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     }
     
     @Override
-    public void flush() throws IOException {
-      try {
-        super.flush();
-      } finally { 
-        io.flush();
-      }
-    }
-    
-    @Override
     public void close() throws IOException {
       try {
         super.close();

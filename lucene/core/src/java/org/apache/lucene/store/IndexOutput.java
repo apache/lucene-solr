@@ -31,9 +31,6 @@ import java.io.IOException;
  */
 public abstract class IndexOutput extends DataOutput implements Closeable {
 
-  /** Forces any buffered output to be written. */
-  public abstract void flush() throws IOException;
-
   /** Closes this stream to further operations. */
   @Override
   public abstract void close() throws IOException;

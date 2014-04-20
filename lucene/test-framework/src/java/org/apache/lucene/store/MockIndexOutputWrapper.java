@@ -106,12 +106,6 @@ public class MockIndexOutputWrapper extends IndexOutput {
   }
 
   @Override
-  public void flush() throws IOException {
-    dir.maybeThrowDeterministicException();
-    delegate.flush();
-  }
-
-  @Override
   public void writeByte(byte b) throws IOException {
     singleByte[0] = b;
     writeBytes(singleByte, 0, 1);

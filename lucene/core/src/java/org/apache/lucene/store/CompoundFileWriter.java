@@ -299,11 +299,6 @@ final class CompoundFileWriter implements Closeable{
     }
 
     @Override
-    public void flush() throws IOException {
-      delegate.flush();
-    }
-
-    @Override
     public void close() throws IOException {
       if (!closed) {
         closed = true;

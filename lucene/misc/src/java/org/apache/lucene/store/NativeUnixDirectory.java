@@ -198,11 +198,6 @@ public class NativeUnixDirectory extends FSDirectory {
     //   FileChannel provides an API?
     //}
 
-    @Override
-    public void flush() {
-      // TODO -- I don't think this method is necessary?
-    }
-
     private void dump() throws IOException {
       buffer.flip();
       final long limit = filePos + buffer.limit();

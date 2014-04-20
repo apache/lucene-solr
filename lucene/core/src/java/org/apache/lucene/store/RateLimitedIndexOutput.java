@@ -50,15 +50,6 @@ final class RateLimitedIndexOutput extends BufferedIndexOutput {
     }
     
   }
-  
-  @Override
-  public void flush() throws IOException {
-    try {
-      super.flush();
-    } finally { 
-      delegate.flush();
-    }
-  }
 
   @Override
   public void close() throws IOException {

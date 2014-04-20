@@ -35,11 +35,6 @@ public class NullIndexOutput extends IndexOutput {
   }
   
   @Override
-  public void flush() throws IOException {
-    
-  }
-  
-  @Override
   public long getFilePointer() {
     return pos;
   }

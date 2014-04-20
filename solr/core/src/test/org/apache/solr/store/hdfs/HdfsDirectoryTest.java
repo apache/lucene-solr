@@ -92,7 +92,6 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
     
     IndexOutput output = directory.createOutput("testing.test", new IOContext());
     output.writeInt(12345);
-    output.flush();
     output.close();
 
     IndexInput input = directory.openInput("testing.test", new IOContext());
