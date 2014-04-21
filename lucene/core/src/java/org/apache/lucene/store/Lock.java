@@ -72,7 +72,7 @@ public abstract class Lock implements Closeable {
    *         out of bounds
    * @throws IOException if obtain() throws IOException
    */
-  public boolean obtain(long lockWaitTimeout) throws IOException {
+  public final boolean obtain(long lockWaitTimeout) throws IOException {
     failureReason = null;
     boolean locked = obtain();
     if (lockWaitTimeout < 0 && lockWaitTimeout != LOCK_OBTAIN_WAIT_FOREVER)
