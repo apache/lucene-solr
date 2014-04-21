@@ -52,12 +52,14 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import static org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.LuceneTestCase.BadApple;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
 
 @Slow
+@BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5309")
 public class ShardSplitTest extends BasicDistributedZkTest {
 
   public static final String SHARD1_0 = SHARD1 + "_0";
