@@ -195,8 +195,8 @@ Bug Fixes
 * SOLR-5954: Slower DataImportHandler process caused by not reusing jdbc
   connections. (Mark Miller, Paco Garcia, Raja Nagendra Kumar)
 
-* SOLR-5897: JQuery file listed as version 1.7.2 but actually contains 1.4.3 code
-  (steffkes)
+* SOLR-5897: Upgraded to jQuery 1.7.2, Solr was previously using 1.4.3, the file was 
+  mistakenly named 1.7.2 (steffkes)
 
 Optimizations
 ----------------------
