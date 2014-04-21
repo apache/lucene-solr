@@ -205,12 +205,18 @@ public class QueryUtils {
   private static IndexReader makeEmptyIndex(Random random, final int numDocs) throws IOException {
     assert numDocs > 0;
     Directory d = new MockDirectoryWrapper(random, new RAMDirectory());
+    if (LuceneTestCase.VERBOSE) {
+      System.out.println("NOTE: QueryUtils: now create empty index");
+    }
     IndexWriter w = new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random)));
     for (int i = 0; i < numDocs; i++) {
       w.addDocument(new Document());
     }
     w.forceMerge(1);
     w.shutdown();
+    if (LuceneTestCase.VERBOSE) {
+      System.out.println("NOTE: QueryUtils: done create empty index");
+    }
     DirectoryReader reader = DirectoryReader.open(d);
     return new AllDeletedFilterReader(LuceneTestCase.getOnlySegmentReader(reader));
   }
