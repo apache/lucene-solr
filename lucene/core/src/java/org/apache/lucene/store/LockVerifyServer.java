@@ -17,11 +17,15 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.io.OutputStream;
-import java.io.InputStream;
-import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
+
+import org.apache.lucene.util.IOUtils;
 
 /**
  * Simple standalone server that must be running when you
@@ -35,62 +39,108 @@ import java.io.IOException;
 
 public class LockVerifyServer {
 
-  private static String getTime(long startTime) {
-    return "[" + ((System.currentTimeMillis()-startTime)/1000) + "s] ";
-  }
+  public static void main(String[] args) throws Exception {
 
-  public static void main(String[] args) throws IOException {
-
-    if (args.length != 1) {
-      System.out.println("\nUsage: java org.apache.lucene.store.LockVerifyServer port\n");
+    if (args.length != 2) {
+      System.out.println("Usage: java org.apache.lucene.store.LockVerifyServer bindToIp clients\n");
       System.exit(1);
     }
 
-    final int port = Integer.parseInt(args[0]);
+    int arg = 0;
+    final String hostname = args[arg++];
+    final int maxClients = Integer.parseInt(args[arg++]);
 
-    ServerSocket s = new ServerSocket(port);
-    s.setReuseAddress(true);
-    System.out.println("\nReady on port " + port + "...");
+    try (final ServerSocket s = new ServerSocket()) {
+      s.setReuseAddress(true);
+      s.setSoTimeout(30000); // initially 30 secs to give clients enough time to startup
+      s.bind(new InetSocketAddress(hostname, 0));
+      final InetSocketAddress localAddr = (InetSocketAddress) s.getLocalSocketAddress();
+      System.out.println("Listening on " + localAddr + "...");
+      
+      // we set the port as a sysprop, so the ANT task can read it. For that to work, this server must run in-process:
+      System.setProperty("lockverifyserver.port", Integer.toString(localAddr.getPort()));
+      
+      final Object localLock = new Object();
+      final int[] lockedID = new int[1];
+      lockedID[0] = -1;
+      final CountDownLatch startingGun = new CountDownLatch(1);
+      final Thread[] threads = new Thread[maxClients];
+      
+      for (int count = 0; count < maxClients; count++) {
+        final Socket cs = s.accept();
+        threads[count] = new Thread() {
+          @Override
+          public void run() {
+            try (InputStream in = cs.getInputStream(); OutputStream os = cs.getOutputStream()) {
+              final int id = in.read();
+              if (id < 0) {
+                throw new IOException("Client closed connection before communication started.");
+              }
+              
+              startingGun.await();
+              os.write(43);
+              os.flush();
+              
+              while(true) {
+                final int command = in.read();
+                if (command < 0) {
+                  return; // closed
+                }
+                
+                synchronized(localLock) {
+                  final int currentLock = lockedID[0];
+                  if (currentLock == -2) {
+                    return; // another thread got error, so we exit, too!
+                  }
+                  switch (command) {
+                    case 1:
+                      // Locked
+                      if (currentLock != -1) {
+                        lockedID[0] = -2;
+                        throw new IllegalStateException("id " + id + " got lock, but " + currentLock + " already holds the lock");
+                      }
+                      lockedID[0] = id;
+                      break;
+                    case 0:
+                      // Unlocked
+                      if (currentLock != id) {
+                        lockedID[0] = -2;
+                        throw new IllegalStateException("id " + id + " released the lock, but " + currentLock + " is the one holding the lock");
+                      }
+                      lockedID[0] = -1;
+                      break;
+                    default:
+                      throw new RuntimeException("Unrecognized command: " + command);
+                  }
+                  os.write(command);
+                  os.flush();
+                }
+              }
+            } catch (RuntimeException | Error e) {
+              throw e;
+            } catch (Exception ioe) {
+              throw new RuntimeException(ioe);
+            } finally {
+              IOUtils.closeWhileHandlingException(cs);
+            }
+          }
+        };
+        threads[count].start();
+      }
+      
+      // start
+      System.out.println("All clients started, fire gun...");
+      startingGun.countDown();
+      
+      // wait for all threads to finish
+      for (Thread t : threads) {
+        t.join();
+      }
+      
+      // cleanup sysprop
+      System.clearProperty("lockverifyserver.port");
 
-    int lockedID = 0;
-    long startTime = System.currentTimeMillis();
-
-    while(true) {
-      Socket cs = s.accept();
-      OutputStream out = cs.getOutputStream();
-      InputStream in = cs.getInputStream();
-
-      int id = in.read();
-      int command = in.read();
-
-      boolean err = false;
-
-      if (command == 1) {
-        // Locked
-        if (lockedID != 0) {
-          err = true;
-          System.out.println(getTime(startTime) + " ERROR: id " + id + " got lock, but " + lockedID + " already holds the lock");
-        }
-        lockedID = id;
-      } else if (command == 0) {
-        if (lockedID != id) {
-          err = true;
-          System.out.println(getTime(startTime) + " ERROR: id " + id + " released the lock, but " + lockedID + " is the one holding the lock");
-        }
-        lockedID = 0;
-      } else
-        throw new RuntimeException("unrecognized command " + command);
-
-      System.out.print(".");
-
-      if (err)
-        out.write(1);
-      else
-        out.write(0);
-
-      out.close();
-      in.close();
-      cs.close();
+      System.out.println("Server terminated.");
     }
   }
 }

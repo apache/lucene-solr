@@ -227,6 +227,11 @@ Bug fixes
 * LUCENE-5615: Validate per-segment delete counts at write time, to
   help catch bugs that might otherwise cause corruption (Mike McCandless)
 
+* LUCENE-5612: NativeFSLockFactory no longer deletes its lock file. This cannot be done
+  safely without the risk of deleting someone else's lock file. If you use NativeFSLockFactory,
+  you may see write.lock hanging around from time to time: its harmless.  
+  (Uwe Schindler, Mike McCandless, Robert Muir)
+
 Test Framework
 
 * LUCENE-5592: Incorrectly reported uncloseable files. (Dawid Weiss)
