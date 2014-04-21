@@ -51,9 +51,6 @@ Bug Fixes
 * SOLR-5993: ZkController can warn about shard leader conflict even after the conflict
   is resolved. (Gregory Chanan via shalin)
 
-* SOLR-5897: JQuery file listed as version 1.7.2 but actually contains 1.4.3 code
-  (steffkes)
-
 Other Changes
 ---------------------
 
@@ -197,6 +194,9 @@ Bug Fixes
 
 * SOLR-5954: Slower DataImportHandler process caused by not reusing jdbc
   connections. (Mark Miller, Paco Garcia, Raja Nagendra Kumar)
+
+* SOLR-5897: JQuery file listed as version 1.7.2 but actually contains 1.4.3 code
+  (steffkes)
 
 Optimizations
 ----------------------
