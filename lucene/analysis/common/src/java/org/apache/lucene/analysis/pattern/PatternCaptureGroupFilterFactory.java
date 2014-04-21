@@ -25,11 +25,11 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link PatternCaptureGroupTokenFilter}. 
-* <pre class="prettyprint" >
+ * <pre class="prettyprint">
  * &lt;fieldType name="text_ptncapturegroup" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.KeywordTokenizerFactory"/&gt;
- *     &lt;filter class="solr.PatternCaptureGroupTokenFilter" pattern="([^a-z])" preserve_original="true"/&gt;
+ *     &lt;filter class="solr.PatternCaptureGroupTokenFilterFactory" pattern="([^a-z])" preserve_original="true"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  *
