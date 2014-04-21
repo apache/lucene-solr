@@ -81,4 +81,9 @@ class ThreadAffinityDocumentsWriterThreadPool extends DocumentsWriterPerThreadPo
     clone.threadBindings = new ConcurrentHashMap<>();
     return clone;
   }
+
+  @Override
+  public String toString() {
+    return "ThreadAffinityDocumentsWriterThreadPool(maxThreadStates=" + getMaxThreadStates() + ")";
+  }
 }
