@@ -40,13 +40,22 @@ import org.apache.lucene.util.IOUtils;
  * could be left when the JVM exits abnormally.</p>
  *
  * <p>The primary benefit of {@link NativeFSLockFactory} is
- * that lock files will be properly removed (by the OS) if
- * the JVM has an abnormal exit.</p>
+ * that locks (not the lock file itsself) will be properly
+ * removed (by the OS) if the JVM has an abnormal exit.</p>
  * 
  * <p>Note that, unlike {@link SimpleFSLockFactory}, the existence of
- * leftover lock files in the filesystem on exiting the JVM
- * is fine because the OS will free the locks held against
- * these files even though the files still remain.</p>
+ * leftover lock files in the filesystem is fine because the OS
+ * will free the locks held against these files even though the
+ * files still remain. Lucene will never actively remove the lock
+ * files, so although you see them, the index may not be locked.</p>
+ *
+ * <p>Special care needs to be taken if you change the locking
+ * implementation: First be certain that no writer is in fact
+ * writing to the index otherwise you can easily corrupt
+ * your index. Be sure to do the LockFactory change on all Lucene
+ * instances and clean up all leftover lock files before starting
+ * the new configuration for the first time. Different implementations
+ * can not work together!</p>
  *
  * <p>If you suspect that this or any other LockFactory is
  * not working properly in your environment, you can easily
