@@ -177,7 +177,8 @@
     </or>
   </condition>
   
-  <target name="test-lock-factory" depends="resolve-groovy,compile-core" unless="-ignore-test-lock-factory">
+  <target name="test-lock-factory" depends="resolve-groovy,compile-core" unless="-ignore-test-lock-factory"
+    description="Run LockStressTest with multiple JVMs">
     <property name="lockverifyserver.host" value="127.0.0.1"/>
     <property name="lock.factory.impl" value="org.apache.lucene.store.NativeFSLockFactory"/>
     <property name="lock.factory.dir" location="${build.dir}/lockfactorytest"/>

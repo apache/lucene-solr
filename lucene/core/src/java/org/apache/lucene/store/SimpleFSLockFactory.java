@@ -42,6 +42,14 @@ import java.io.IOException;
  * writing to the index otherwise you can easily corrupt
  * your index.</p>
  *
+ * <p>Special care needs to be taken if you change the locking
+ * implementation: First be certain that no writer is in fact
+ * writing to the index otherwise you can easily corrupt
+ * your index. Be sure to do the LockFactory change all Lucene
+ * instances and clean up all leftover lock files before starting
+ * the new configuration for the first time. Different implementations
+ * can not work together!</p>
+ *
  * <p>If you suspect that this or any other LockFactory is
  * not working properly in your environment, you can easily
  * test it by using {@link VerifyingLockFactory}, {@link

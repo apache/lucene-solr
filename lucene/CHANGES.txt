@@ -330,6 +330,12 @@ Build
 * LUCENE-5614: Enable building on Java 8 using Apache Ant 1.8.3 or 1.8.4
   by adding a workaround for the Ant bug.  (Uwe Schindler)
 
+* LUCENE-5612: Add a new Ant target in lucene/core to test LockFactory
+  implementations: "ant test-lock-factory". By default it is ran
+  after the core testsuite on NativeFSLockFactory. To test another one,
+  pass -Dlock.factory.impl to Ant.  (Uwe Schindler, Mike McCandless,
+  Robert Muir)
+
 Documentation
 
 * LUCENE-5534: Add javadocs to GreekStemmer methods. 
