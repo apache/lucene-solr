@@ -1544,11 +1544,13 @@ public class TestIndexWriter extends LuceneTestCase {
 
     // After rollback, IW should remove all files
     writer.rollback();
-    assertEquals("no files should exist in the directory after rollback", 0, dir.listAll().length);
+    String allFiles[] = dir.listAll();
+    assertTrue("no files should exist in the directory after rollback", allFiles.length == 0 || Arrays.equals(allFiles, new String[] { IndexWriter.WRITE_LOCK_NAME }));
 
     // Since we rolled-back above, that close should be a no-op
     writer.close();
-    assertEquals("expected a no-op close after IW.rollback()", 0, dir.listAll().length);
+    allFiles = dir.listAll();
+    assertTrue("expected a no-op close after IW.rollback()", allFiles.length == 0 || Arrays.equals(allFiles, new String[] { IndexWriter.WRITE_LOCK_NAME }));
     dir.close();
   }
 

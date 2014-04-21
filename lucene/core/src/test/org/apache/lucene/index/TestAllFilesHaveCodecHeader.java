@@ -68,6 +68,9 @@ public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
   
   private void checkHeaders(Directory dir) throws IOException {
     for (String file : dir.listAll()) {
+      if (file.equals(IndexWriter.WRITE_LOCK_NAME)) {
+        continue; // write.lock has no header, thats ok
+      }
       if (file.equals(IndexFileNames.SEGMENTS_GEN)) {
         continue; // segments.gen has no header, thats ok
       }

@@ -25,8 +25,6 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.Random;
 
-import org.apache.lucene.util.IOUtils;
-
 /**
  * Simple standalone tool that forever acquires & releases a
  * lock using a specific LockFactory.  Run without any args

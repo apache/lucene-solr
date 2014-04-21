@@ -18,9 +18,11 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -71,10 +73,13 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
    * comparing indices that store the same content.
    */
   protected Collection<String> excludedExtensionsFromByteCounts() {
+    return new HashSet<String>(Arrays.asList(new String[] { 
     // segment infos store various pieces of information that don't solely depend
     // on the content of the index in the diagnostics (such as a timestamp) so we
     // exclude this file from the bytes counts
-    return Collections.singleton("si");
+                        "si", 
+    // lock files are 0 bytes (one directory in the test could be RAMDir, the other FSDir)
+                        "lock" }));
   }
 
   /** The purpose of this test is to make sure that bulk merge doesn't accumulate useless data over runs. */

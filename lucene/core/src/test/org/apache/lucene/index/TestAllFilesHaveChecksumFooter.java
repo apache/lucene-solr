@@ -67,6 +67,9 @@ public class TestAllFilesHaveChecksumFooter extends LuceneTestCase {
   
   private void checkHeaders(Directory dir) throws IOException {
     for (String file : dir.listAll()) {
+      if (file.equals(IndexWriter.WRITE_LOCK_NAME)) {
+        continue; // write.lock has no footer, thats ok
+      }
       if (file.endsWith(IndexFileNames.COMPOUND_FILE_EXTENSION)) {
         CompoundFileDirectory cfsDir = new CompoundFileDirectory(dir, file, newIOContext(random()), false);
         checkHeaders(cfsDir); // recurse into cfs

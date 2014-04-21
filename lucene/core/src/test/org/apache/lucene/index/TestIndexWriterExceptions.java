@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
@@ -939,7 +940,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       }
       assertTrue(failure.failOnCommit && failure.failOnDeleteFile);
       w.rollback();
-      assertEquals(0, dir.listAll().length);
+      String files[] = dir.listAll();
+      assertTrue(files.length == 0 || Arrays.equals(files, new String[] { IndexWriter.WRITE_LOCK_NAME }));
       dir.close();
     }
   }

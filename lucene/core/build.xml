@@ -169,7 +169,15 @@
     </sequential>
   </macrodef>
   
-  <target name="test-lock-factory" depends="resolve-groovy,compile-core">
+  <!-- we ignore our ant-based lock factory test, if user applies test filtering: -->
+  <condition property="-ignore-test-lock-factory">
+    <or>
+      <isset property="tests.class" />
+      <isset property="tests.method" />
+    </or>
+  </condition>
+  
+  <target name="test-lock-factory" depends="resolve-groovy,compile-core" unless="-ignore-test-lock-factory">
     <property name="lockverifyserver.host" value="127.0.0.1"/>
     <property name="lock.factory.impl" value="org.apache.lucene.store.NativeFSLockFactory"/>
     <property name="lock.factory.dir" location="${build.dir}/lockfactorytest"/>
@@ -211,8 +219,6 @@
     </parallel>
   </target>
   
-  <!-- once we fixed LUCENE-5612, reenable this:
   <target name="test" depends="common.test, test-lock-factory"/>
-  -->
 
 </project>
