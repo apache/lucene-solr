@@ -76,22 +76,22 @@ public class StopableIndexingThread extends AbstractFullDistribZkTestBase.Stopab
       boolean addFailed = false;
       
       if (doDeletes && AbstractFullDistribZkTestBase.random().nextBoolean() && deletes.size() > 0) {
-        String delete = deletes.remove(0);
+        String deleteId = deletes.remove(0);
         try {
           numDeletes++;
           if (controlClient != null) {
             UpdateRequest req = new UpdateRequest();
-            req.deleteById(delete);
+            req.deleteById(deleteId);
             req.setParam("CONTROL", "TRUE");
             req.process(controlClient);
           }
           
-          cloudClient.deleteById(delete);
+          cloudClient.deleteById(deleteId);
         } catch (Exception e) {
-          System.err.println("REQUEST FAILED:");
+          System.err.println("REQUEST FAILED for id=" + deleteId);
           e.printStackTrace();
           if (e instanceof SolrServerException) {
-            System.err.println("ROOT CAUSE:");
+            System.err.println("ROOT CAUSE for id=" + deleteId);
             ((SolrServerException) e).getRootCause().printStackTrace();
           }
           deleteFails.add(id);
@@ -104,10 +104,10 @@ public class StopableIndexingThread extends AbstractFullDistribZkTestBase.Stopab
             "to come to the aid of their country.");
       } catch (Exception e) {
         addFailed = true;
-        System.err.println("REQUEST FAILED:");
+        System.err.println("REQUEST FAILED for id=" + id);
         e.printStackTrace();
         if (e instanceof SolrServerException) {
-          System.err.println("ROOT CAUSE:");
+          System.err.println("ROOT CAUSE for id=" + id);
           ((SolrServerException) e).getRootCause().printStackTrace();
         }
         addFails.add(id);
