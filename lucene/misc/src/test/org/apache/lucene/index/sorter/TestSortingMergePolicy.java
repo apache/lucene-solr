@@ -71,18 +71,22 @@ public class TestSortingMergePolicy extends LuceneTestCase {
   }
 
   static MergePolicy newSortingMergePolicy(Sort sort) {
-    // create a MP with a low merge factor so that many merges happen
+    // usually create a MP with a low merge factor so that many merges happen
     MergePolicy mp;
-    if (random().nextBoolean()) {
+    int thingToDo = random().nextInt(3);
+    if (thingToDo == 0) {
       TieredMergePolicy tmp = newTieredMergePolicy(random());
       final int numSegs = TestUtil.nextInt(random(), 3, 5);
       tmp.setSegmentsPerTier(numSegs);
       tmp.setMaxMergeAtOnce(TestUtil.nextInt(random(), 2, numSegs));
       mp = tmp;
-    } else {
+    } else if (thingToDo == 1) {
       LogMergePolicy lmp = newLogMergePolicy(random());
       lmp.setMergeFactor(TestUtil.nextInt(random(), 3, 5));
       mp = lmp;
+    } else {
+      // just a regular random one from LTC (could be alcoholic etc)
+      mp = newMergePolicy();
     }
     // wrap it with a sorting mp
     return new SortingMergePolicy(mp, sort);

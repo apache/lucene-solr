@@ -70,8 +70,6 @@ public class EarlyTerminatingSortingCollector extends FilterCollector {
   /** Number of documents to collect in each segment */
   protected final int numDocsToCollect;
 
-  private int numCollected;
-
   /**
    * Create a new {@link EarlyTerminatingSortingCollector} instance.
    *
@@ -98,6 +96,7 @@ public class EarlyTerminatingSortingCollector extends FilterCollector {
     if (SortingMergePolicy.isSorted(context.reader(), sort)) {
       // segment is sorted, can early-terminate
       return new FilterLeafCollector(super.getLeafCollector(context)) {
+        private int numCollected;
 
         @Override
         public void collect(int doc) throws IOException {
