@@ -57,6 +57,10 @@ Bug Fixes
 * SOLR-5993: ZkController can warn about shard leader conflict even after the conflict
   is resolved. (Gregory Chanan via shalin)
 
+* SOLR-6002: Fix a couple of ugly issues around SolrIndexWriter close and 
+  rollback as well as how SolrIndexWriter manages it's ref counted directory
+  instance. (Mark Miller)
+
 Other Changes
 ---------------------
 

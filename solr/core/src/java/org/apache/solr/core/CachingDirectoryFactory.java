@@ -173,6 +173,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
                   this.getClass().getSimpleName(), val);
         try {
           // if there are still refs out, we have to wait for them
+          assert val.refCnt > -1 : val.refCnt;
           int cnt = 0;
           while(val.refCnt != 0) {
             wait(100);
