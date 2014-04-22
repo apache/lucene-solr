@@ -123,14 +123,10 @@ class NativeFSLock extends Lock {
     path = new File(lockDir, lockFileName);
   }
 
-  private synchronized boolean lockExists() {
-    return lock != null;
-  }
-
   @Override
   public synchronized boolean obtain() throws IOException {
 
-    if (lockExists()) {
+    if (lock != null) {
       // Our instance is already locked:
       return false;
     }
@@ -150,7 +146,7 @@ class NativeFSLock extends Lock {
     boolean success = false;
     try {
       lock = channel.tryLock();
-      success = true;
+      success = lock != null;
     } catch (IOException | OverlappingFileLockException e) {
       // At least on OS X, we will sometimes get an
       // intermittent "Permission Denied" IOException,
@@ -171,39 +167,20 @@ class NativeFSLock extends Lock {
         }
       }
     }
-    return lockExists();
+    return lock != null;
   }
 
   @Override
   public synchronized void close() throws IOException {
-    if (lockExists()) {
-      try {
+    try {
+      if (lock != null) {
         lock.release();
-      } finally {
         lock = null;
-        try {
-          channel.close();
-        } finally {
-          channel = null;
-        }
       }
-    } else {
-      // if we don't hold the lock, and somebody still called release(), for
-      // example as a result of calling IndexWriter.unlock(), we should attempt
-      // to obtain the lock and release it. If the obtain fails, it means the
-      // lock cannot be released, and we should throw a proper exception rather
-      // than silently failing/not doing anything.
-      boolean obtained = false;
-      try {
-        if (!(obtained = obtain())) {
-          throw new LockReleaseFailedException(
-              "Cannot forcefully unlock a NativeFSLock which is held by another indexer component: "
-                  + path);
-        }
-      } finally {
-        if (obtained) {
-          close();
-        }
+    } finally {
+      if (channel != null) {
+        channel.close();
+        channel = null;
       }
     }
   }
@@ -213,7 +190,7 @@ class NativeFSLock extends Lock {
     // The test for is isLocked is not directly possible with native file locks:
     
     // First a shortcut, if a lock reference in this instance is available
-    if (lockExists()) return true;
+    if (lock != null) return true;
     
     // Look if lock file is present; if not, there can definitely be no lock!
     if (!path.exists()) return false;
