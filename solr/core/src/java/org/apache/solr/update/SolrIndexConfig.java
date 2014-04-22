@@ -79,6 +79,8 @@ public class SolrIndexConfig {
   public final static String LOCK_TYPE_SINGLE = "single";
   public final static String LOCK_TYPE_NONE   = "none";
 
+  public final boolean checkIntegrityAtMerge;
+
   /**
    * Internal constructor for setting defaults based on Lucene Version
    */
@@ -98,6 +100,7 @@ public class SolrIndexConfig {
     mergeSchedulerInfo = null;
     defaultMergePolicyClassName = TieredMergePolicy.class.getName();
     mergedSegmentWarmerInfo = null;
+    checkIntegrityAtMerge = false;
   }
   
   /**
@@ -176,6 +179,8 @@ public class SolrIndexConfig {
     if (mergedSegmentWarmerInfo != null && solrConfig.nrtMode == false) {
       throw new IllegalArgumentException("Supplying a mergedSegmentWarmer will do nothing since nrtMode is false");
     }
+
+    checkIntegrityAtMerge = solrConfig.getBool(prefix + "/checkIntegrityAtMerge", def.checkIntegrityAtMerge);
   }
 
   /*
@@ -238,6 +243,8 @@ public class SolrIndexConfig {
                                                                         new Object[] { iwc.getInfoStream() });
       iwc.setMergedSegmentWarmer(warmer);
     }
+
+    iwc.setCheckIntegrityAtMerge(checkIntegrityAtMerge);
 
     return iwc;
   }
