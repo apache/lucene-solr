@@ -40,11 +40,12 @@ Upgrading from Solr 4.7
   use "solr.LengthFilterFactory" in all of your Analyzers.  See LUCENE-5472 for
   more details.
   
-* Solr 4.8 needs Java 7 as minimum requirement.  If you not have done already,
-  update the underlying JDK/JRE versions to at least Oracle Java 7u1 or OpenJDK
-  7u1.  Please review the list of known JVM bugs at:
+* Solr 4.8 requires Java 7 or greater, Java 8 is verified to be
+  compatible and may bring some performance improvements. When using
+  Oracle Java 7 or OpenJDK 7, be sure to not use the GA build 147 or
+  update versions u40, u45 and u51! We recommend using u55 or later.
+  An overview of known JVM bugs can be found on
   http://wiki.apache.org/lucene-java/JavaBugs
-  Solr 4.8 was also tested to work with Java 8, so give it a try!
 
 * ZooKeeper is upgraded from 3.4.5 to 3.4.6.
 
