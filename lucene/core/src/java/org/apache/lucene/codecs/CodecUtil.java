@@ -172,7 +172,7 @@ public final class CodecUtil {
    *    <li>AlgorithmID --&gt; {@link DataOutput#writeInt Uint32}. This
    *        indicates the checksum algorithm used. Currently this is always 0,
    *        for zlib-crc32.
-   *    <li>Checksum --&gt; {@link DataOutput#writeLong Uint32}. The
+   *    <li>Checksum --&gt; {@link DataOutput#writeLong Uint64}. The
    *        actual checksum value for all previous bytes in the stream, including
    *        the bytes from Magic and AlgorithmID.
    * </ul>
