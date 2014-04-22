@@ -304,6 +304,9 @@ Bug fixes
   you may see write.lock hanging around from time to time: its harmless.  
   (Uwe Schindler, Mike McCandless, Robert Muir)
 
+* LUCENE-5624: Ensure NativeFSLockFactory does not leak file handles if it is unable
+  to obtain the lock. (Uwe Schindler, Robert Muir)
+
 Test Framework
 
 * LUCENE-5592: Incorrectly reported uncloseable files. (Dawid Weiss)
@@ -331,9 +334,7 @@ Build
   by adding a workaround for the Ant bug.  (Uwe Schindler)
 
 * LUCENE-5612: Add a new Ant target in lucene/core to test LockFactory
-  implementations: "ant test-lock-factory". By default it is ran
-  after the core testsuite on NativeFSLockFactory. To test another one,
-  pass -Dlock.factory.impl to Ant.  (Uwe Schindler, Mike McCandless,
+  implementations: "ant test-lock-factory".  (Uwe Schindler, Mike McCandless,
   Robert Muir)
 
 Documentation

@@ -148,6 +148,8 @@
   
   <macrodef name="startLockStressTestClient">
     <attribute name="clientId"/>
+    <attribute name="lockFactoryImpl"/>
+    <attribute name="lockFactoryDir"/>
     <sequential>
       <local name="lockverifyserver.port"/>
       <groovy><![CDATA[
@@ -157,15 +159,39 @@
         }
         properties["lockverifyserver.port"] = port;
       ]]></groovy>
-      <java taskname="LockStressTest@{clientId}" fork="true" classpathref="test-lock.classpath" classname="org.apache.lucene.store.LockStressTest" failOnError="true"> 
+      <java taskname="lockStressTest@{clientId}" fork="true" classpathref="test-lock.classpath" classname="org.apache.lucene.store.LockStressTest" failOnError="true"> 
         <arg value="@{clientId}"/>
         <arg value="${lockverifyserver.host}"/>
         <arg value="${lockverifyserver.port}"/>
-        <arg value="${lock.factory.impl}"/>
-        <arg value="${lock.factory.dir}"/>
+        <arg value="@{lockFactoryImpl}"/>
+        <arg value="@{lockFactoryDir}"/>
         <arg value="${lockverify.delay}"/>
         <arg value="${lockverify.count}"/>
       </java>
+    </sequential>
+  </macrodef>
+  
+  <macrodef name="testLockFactory">
+    <attribute name="lockFactoryImpl"/>
+    <attribute name="lockFactoryDir"/>
+    <sequential>
+      <echo taskname="testLockFactory" message="Testing @{lockFactoryImpl}..."/>
+      <mkdir dir="@{lockFactoryDir}"/>
+      <parallel threadCount="3" failonany="false">
+        <sequential>
+          <!-- the server runs in-process, so we can wait for the sysproperty -->
+          <java taskname="lockVerifyServer" fork="false" classpathref="test-lock.classpath" classname="org.apache.lucene.store.LockVerifyServer" failOnError="true">
+            <arg value="${lockverifyserver.host}"/>
+            <arg value="2"/>
+          </java>
+        </sequential>
+        <sequential>
+          <startLockStressTestClient clientId="1" lockFactoryImpl="@{lockFactoryImpl}" lockFactoryDir="@{lockFactoryDir}" />
+        </sequential>
+        <sequential>
+          <startLockStressTestClient clientId="2" lockFactoryImpl="@{lockFactoryImpl}" lockFactoryDir="@{lockFactoryDir}" />
+        </sequential>
+      </parallel>
     </sequential>
   </macrodef>
   
@@ -180,21 +206,19 @@
   <target name="test-lock-factory" depends="resolve-groovy,compile-core" unless="-ignore-test-lock-factory"
     description="Run LockStressTest with multiple JVMs">
     <property name="lockverifyserver.host" value="127.0.0.1"/>
-    <property name="lock.factory.impl" value="org.apache.lucene.store.NativeFSLockFactory"/>
-    <property name="lock.factory.dir" location="${build.dir}/lockfactorytest"/>
     <property name="lockverify.delay" value="1"/>
-    <groovy taskname="LockVerifySetup"><![CDATA[
+    <groovy taskname="lockVerifySetup"><![CDATA[
       System.clearProperty("lockverifyserver.port"); // make sure it is undefined
       
       if (!properties["lockverify.count"]) {
         int count = Boolean.parseBoolean(properties["tests.nightly"]) ?
-          20000 : 2000;
+          30000 : 2000;
         count *= Integer.parseInt(properties["tests.multiplier"]);
         properties["lockverify.count"] = count;
       }
       
       task.log("Configuration properties:");
-      ["lock.factory.impl", "lockverify.delay", "lockverify.count"].each {
+      ["lockverify.delay", "lockverify.count"].each {
         k -> task.log(" " + k + "=" + properties[k]);
       }
     ]]></groovy>
@@ -202,22 +226,8 @@
       <path refid="classpath"/>
       <pathelement location="${build.dir}/classes/java"/>
     </path>
-    <mkdir dir="${lock.factory.dir}"/>
-    <parallel threadCount="3" failonany="false">
-      <sequential>
-        <!-- the server runs in-process, so we can wait for the sysproperty -->
-        <java taskname="LockVerifyServer" fork="false" classpathref="test-lock.classpath" classname="org.apache.lucene.store.LockVerifyServer" failOnError="true">
-          <arg value="${lockverifyserver.host}"/>
-          <arg value="2"/>
-        </java>
-      </sequential>
-      <sequential>
-        <startLockStressTestClient clientId="1"/>
-      </sequential>
-      <sequential>
-        <startLockStressTestClient clientId="2"/>
-      </sequential>
-    </parallel>
+    <testLockFactory lockFactoryImpl="org.apache.lucene.store.NativeFSLockFactory" lockFactoryDir="${build.dir}/lockfactorytest/native" />
+    <testLockFactory lockFactoryImpl="org.apache.lucene.store.SimpleFSLockFactory" lockFactoryDir="${build.dir}/lockfactorytest/simple" />
   </target>
   
   <target name="test" depends="common.test, test-lock-factory"/>
