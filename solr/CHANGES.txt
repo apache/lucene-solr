@@ -101,6 +101,12 @@ Upgrading from Solr 4.8
 Detailed Change List
 ----------------------
 
+New Features
+----------------------
+
+* SOLR-5999: Add checkIntegrityAtMerge support to solrconfig.xml.
+  (Varun Thacker via Ryan Ernst)
+
 Bug Fixes
 ----------------------
 
