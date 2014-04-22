@@ -17,7 +17,6 @@
 
 package org.apache.solr.core;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexDeletionPolicy;
@@ -89,6 +88,7 @@ import org.apache.solr.update.processor.RunUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.IOUtils;
 import org.apache.solr.util.PropertiesInputStream;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
@@ -418,8 +418,8 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       ParserConfigurationException, SAXException {
     
     solrCoreState.increfSolrCoreState();
-    
-    if (!getNewIndexDir().equals(getIndexDir())) {
+    boolean indexDirChange = !getNewIndexDir().equals(getIndexDir());
+    if (indexDirChange || !coreConfig.getSolrConfig().nrtMode) {
       // the directory is changing, don't pass on state
       prev = null;
     }
@@ -428,6 +428,8 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
         coreConfig.getIndexSchema(), coreDescriptor, updateHandler, this.solrDelPolicy, prev);
     core.solrDelPolicy = this.solrDelPolicy;
     
+
+    // we open a new indexwriter to pick up the latest config
     core.getUpdateHandler().getSolrCoreState().newIndexWriter(core, false);
     
     core.getSearcher(true, false, null, true);
@@ -518,7 +520,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
         SolrIndexWriter writer = SolrIndexWriter.create("SolrCore.initIndex", indexDir, getDirectoryFactory(), true, 
                                                         getLatestSchema(), solrConfig.indexConfig, solrDelPolicy, codec);
-        writer.close();
+        writer.shutdown();
       }
 
  
@@ -854,7 +856,15 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       if (e instanceof OutOfMemoryError) {
         throw (OutOfMemoryError)e;
       }
-      close();
+      
+      try {
+       this.close();
+      } catch (Throwable t) {
+        if (t instanceof OutOfMemoryError) {
+          throw (OutOfMemoryError)t;
+        }
+        log.error("Error while closing", t);
+      }
       
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
                               e.getMessage(), e);
