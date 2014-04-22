@@ -21,7 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 
-import org.apache.http.impl.conn.BasicClientConnectionManager;
+import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
@@ -130,7 +130,7 @@ public class HttpReplicatorTest extends ReplicatorTestCase {
   public void testServerErrors() throws Exception {
     // tests the behaviour of the client when the server sends an error
     // must use BasicClientConnectionManager to test whether the client is closed correctly
-    BasicClientConnectionManager conMgr = new BasicClientConnectionManager();
+    BasicHttpClientConnectionManager conMgr = new BasicHttpClientConnectionManager();
     Replicator replicator = new HttpReplicator(host, port, ReplicationService.REPLICATION_CONTEXT + "/s1", conMgr);
     ReplicationClient client = new ReplicationClient(replicator, new IndexReplicationHandler(handlerIndexDir, null), 
         new PerSessionDirectoryFactory(clientWorkDir));

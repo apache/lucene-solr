@@ -141,6 +141,7 @@ public class IndexAndTaxonomyRevisionTest extends ReplicatorTestCase {
       Revision rev = new IndexAndTaxonomyRevision(indexWriter, taxoWriter);
       for (Entry<String,List<RevisionFile>> e : rev.getSourceFiles().entrySet()) {
         String source = e.getKey();
+        @SuppressWarnings("resource") // silly, both directories are closed in the end
         Directory dir = source.equals(IndexAndTaxonomyRevision.INDEX_SOURCE) ? indexDir : taxoDir;
         for (RevisionFile file : e.getValue()) {
           IndexInput src = dir.openInput(file.fileName, IOContext.READONCE);
