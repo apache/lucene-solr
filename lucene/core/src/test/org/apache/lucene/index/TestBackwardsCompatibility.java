@@ -61,6 +61,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.StringHelper;
@@ -213,7 +214,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     switch (choice) {
       case 0: return new IndexUpgrader(dir, TEST_VERSION_CURRENT);
       case 1: return new IndexUpgrader(dir, TEST_VERSION_CURRENT, 
-                                       streamType ? null : System.err, false);
+                                       streamType ? null : InfoStream.NO_OUTPUT, false);
       case 2: return new IndexUpgrader(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null), false);
       default: fail("case statement didn't get updated when random bounds changed");
     }
@@ -876,47 +877,53 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
   public void testCommandLineArgs() throws Exception {
 
-    for (String name : oldIndexDirs.keySet()) {
-      File dir = createTempDir(name);
-      File dataFile = new File(TestBackwardsCompatibility.class.getResource("index." + name + ".zip").toURI());
-      TestUtil.unzip(dataFile, dir);
-
-      String path = dir.getAbsolutePath();
-      
-      List<String> args = new ArrayList<>();
-      if (random().nextBoolean()) {
-        args.add("-verbose");
+    PrintStream savedSystemOut = System.out;
+    System.setOut(new PrintStream(new ByteArrayOutputStream(), false, "UTF-8"));
+    try {
+      for (String name : oldIndexDirs.keySet()) {
+        File dir = createTempDir(name);
+        File dataFile = new File(TestBackwardsCompatibility.class.getResource("index." + name + ".zip").toURI());
+        TestUtil.unzip(dataFile, dir);
+        
+        String path = dir.getAbsolutePath();
+        
+        List<String> args = new ArrayList<>();
+        if (random().nextBoolean()) {
+          args.add("-verbose");
+        }
+        if (random().nextBoolean()) {
+          args.add("-delete-prior-commits");
+        }
+        if (random().nextBoolean()) {
+          // TODO: need to better randomize this, but ...
+          //  - LuceneTestCase.FS_DIRECTORIES is private
+          //  - newFSDirectory returns BaseDirectoryWrapper
+          //  - BaseDirectoryWrapper doesn't expose delegate
+          Class<? extends FSDirectory> dirImpl = random().nextBoolean() ?
+              SimpleFSDirectory.class : NIOFSDirectory.class;
+          
+          args.add("-dir-impl");
+          args.add(dirImpl.getName());
+        }
+        args.add(path);
+        
+        IndexUpgrader upgrader = null;
+        try {
+          upgrader = IndexUpgrader.parseArgs(args.toArray(new String[0]));
+        } catch (Exception e) {
+          throw new AssertionError("unable to parse args: " + args, e);
+        }
+        upgrader.upgrade();
+        
+        Directory upgradedDir = newFSDirectory(dir);
+        try {
+          checkAllSegmentsUpgraded(upgradedDir);
+        } finally {
+          upgradedDir.close();
+        }
       }
-      if (random().nextBoolean()) {
-        args.add("-delete-prior-commits");
-      }
-      if (random().nextBoolean()) {
-        // TODO: need to better randomize this, but ...
-        //  - LuceneTestCase.FS_DIRECTORIES is private
-        //  - newFSDirectory returns BaseDirectoryWrapper
-        //  - BaseDirectoryWrapper doesn't expose delegate
-        Class<? extends FSDirectory> dirImpl = random().nextBoolean() ?
-          SimpleFSDirectory.class : NIOFSDirectory.class;
-
-        args.add("-dir-impl");
-        args.add(dirImpl.getName());
-      }
-      args.add(path);
-
-      IndexUpgrader upgrader = null;
-      try {
-        upgrader = IndexUpgrader.parseArgs(args.toArray(new String[0]));
-      } catch (Exception e) {
-        throw new AssertionError("unable to parse args: " + args, e);
-      }
-      upgrader.upgrade();
-      
-      Directory upgradedDir = newFSDirectory(dir);
-      try {
-        checkAllSegmentsUpgraded(upgradedDir);
-      } finally {
-        upgradedDir.close();
-      }
+    } finally {
+      System.setOut(savedSystemOut);
     }
   }
 

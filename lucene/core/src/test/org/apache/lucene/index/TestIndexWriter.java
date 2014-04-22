@@ -17,8 +17,11 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.StringReader;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -990,6 +993,8 @@ public class TestIndexWriter extends LuceneTestCase {
     volatile boolean allowInterrupt = false;
     final Random random;
     final Directory adder;
+    final ByteArrayOutputStream bytesLog = new ByteArrayOutputStream();
+    final PrintStream log = new PrintStream(bytesLog, true, IOUtils.UTF_8);
     
     IndexerThreadInterrupt() throws IOException {
       this.random = new Random(random().nextLong());
@@ -1126,27 +1131,27 @@ public class TestIndexWriter extends LuceneTestCase {
           // on!!  This test doesn't repro easily so when
           // Jenkins hits a fail we need to study where the
           // interrupts struck!
-          System.out.println("TEST: got interrupt");
-          re.printStackTrace(System.out);
+          log.println("TEST: got interrupt");
+          re.printStackTrace(log);
           Throwable e = re.getCause();
           assertTrue(e instanceof InterruptedException);
           if (finish) {
             break;
           }
         } catch (Throwable t) {
-          System.out.println("FAILED; unexpected exception");
-          t.printStackTrace(System.out);
+          log.println("FAILED; unexpected exception");
+          t.printStackTrace(log);
           failed = true;
           break;
         }
       }
 
       if (VERBOSE) {
-        System.out.println("TEST: now finish failed=" + failed);
+        log.println("TEST: now finish failed=" + failed);
       }
       if (!failed) {
         if (VERBOSE) {
-          System.out.println("TEST: now rollback");
+          log.println("TEST: now rollback");
         }
         // clear interrupt state:
         Thread.interrupted();
@@ -1162,8 +1167,8 @@ public class TestIndexWriter extends LuceneTestCase {
           TestUtil.checkIndex(dir);
         } catch (Exception e) {
           failed = true;
-          System.out.println("CheckIndex FAILED: unexpected exception");
-          e.printStackTrace(System.out);
+          log.println("CheckIndex FAILED: unexpected exception");
+          e.printStackTrace(log);
         }
         try {
           IndexReader r = DirectoryReader.open(dir);
@@ -1171,8 +1176,8 @@ public class TestIndexWriter extends LuceneTestCase {
           r.close();
         } catch (Exception e) {
           failed = true;
-          System.out.println("DirectoryReader.open FAILED: unexpected exception");
-          e.printStackTrace(System.out);
+          log.println("DirectoryReader.open FAILED: unexpected exception");
+          e.printStackTrace(log);
         }
       }
       try {
@@ -1216,7 +1221,9 @@ public class TestIndexWriter extends LuceneTestCase {
     }
     t.finish = true;
     t.join();
-    assertFalse(t.failed);
+    if (t.failed) {
+      fail(new String(t.bytesLog.toString("UTF-8")));
+    }
   }
   
   /** testThreadInterruptDeadlock but with 2 indexer threads */
@@ -2499,7 +2506,9 @@ public class TestIndexWriter extends LuceneTestCase {
       fail("didn't hit exception");
     } catch (RuntimeException re) {
       // expected
-      System.out.println("GOT: " + re.getMessage());
+      if (VERBOSE) {
+        System.out.println("GOT: " + re.getMessage());
+      }
       assertTrue(re.getMessage().contains("this writer is closed, but some pending changes or running merges were discarded"));
     }
     w.rollback();
