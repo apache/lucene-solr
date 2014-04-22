@@ -281,6 +281,10 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       fail("didn't hit expected exception");
     } catch (IllegalArgumentException expected) {
       // expected
+      if (VERBOSE) {
+        System.out.println("hit exc:");
+        expected.printStackTrace(System.out);
+      }
     }
     
     iwriter.close();
