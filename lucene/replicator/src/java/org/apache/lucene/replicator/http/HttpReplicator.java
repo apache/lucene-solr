@@ -23,7 +23,7 @@ import java.io.InputStream;
 import java.util.concurrent.Callable;
 
 import org.apache.http.HttpResponse;
-import org.apache.http.conn.ClientConnectionManager;
+import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.lucene.replicator.Replicator;
 import org.apache.lucene.replicator.Revision;
 import org.apache.lucene.replicator.SessionToken;
@@ -38,8 +38,8 @@ import org.apache.lucene.replicator.http.ReplicationService.ReplicationAction;
 public class HttpReplicator extends HttpClientBase implements Replicator {
   
   /** Construct with specified connection manager. */
-  public HttpReplicator(String host, int port, String path, ClientConnectionManager conMgr) {
-    super(host, port, path, conMgr);
+  public HttpReplicator(String host, int port, String path, HttpClientConnectionManager conMgr) {
+    super(host, port, path, conMgr, null);
   }
   
   @Override
