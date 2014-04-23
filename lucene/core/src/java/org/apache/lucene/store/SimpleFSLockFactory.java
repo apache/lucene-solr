@@ -132,7 +132,17 @@ class SimpleFSLock extends Lock {
       throw new IOException("Found regular file where directory expected: " + 
                             lockDir.getAbsolutePath());
     }
-    return lockFile.createNewFile();
+    
+    try {
+      return lockFile.createNewFile();
+    } catch (IOException ioe) {
+      // On Windows, on concurrent createNewFile, the 2nd process gets "access denied".
+      // In that case, the lock was not aquired successfully, so return false.
+      // We record the failure reason here; the obtain with timeout (usually the
+      // one calling us) will use this as "root cause" if it fails to get the lock.
+      failureReason = ioe;
+      return false;
+    }
   }
 
   @Override
