@@ -49,7 +49,7 @@ public class SolrIndexWriter extends IndexWriter {
    *  System.currentTimeMillis() when commit was called. */
   public static final String COMMIT_TIME_MSEC_KEY = "commitTimeMSec";
 
-  private static final Object CLOSE_LOCK = new Object();
+  private final Object CLOSE_LOCK = new Object();
   
   String name;
   private DirectoryFactory directoryFactory;
