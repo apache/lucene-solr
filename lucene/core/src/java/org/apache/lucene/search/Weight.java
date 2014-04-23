@@ -170,7 +170,11 @@ public abstract class Weight {
         return scoreRange(collector, scorer, doc, max);
       }
     }
-    
+
+    /** Specialized method to bulk-score a range of hits; we
+     *  separate this from {@link #scoreAll} to help out
+     *  hotspot.
+     *  See <a href="https://issues.apache.org/jira/browse/LUCENE-5487">LUCENE-5487</a> */
     static boolean scoreRange(LeafCollector collector, Scorer scorer, int currentDoc, int end) throws IOException {
       while (currentDoc < end) {
         collector.collect(currentDoc);
@@ -179,6 +183,10 @@ public abstract class Weight {
       return currentDoc != DocIdSetIterator.NO_MORE_DOCS;
     }
     
+    /** Specialized method to bulk-score all hits; we
+     *  separate this from {@link #scoreRange} to help out
+     *  hotspot.
+     *  See <a href="https://issues.apache.org/jira/browse/LUCENE-5487">LUCENE-5487</a> */
     static void scoreAll(LeafCollector collector, Scorer scorer) throws IOException {
       int doc;
       while ((doc = scorer.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
