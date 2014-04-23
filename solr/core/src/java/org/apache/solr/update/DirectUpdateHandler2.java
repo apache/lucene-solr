@@ -786,7 +786,13 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         }
       }
 
-      if (writer != null) writer.close();
+      if (writer != null) {
+        try {
+          writer.waitForMerges();
+        } finally {
+          writer.close();
+        }
+      }
 
     } finally {
       solrCoreState.getCommitLock().unlock();
