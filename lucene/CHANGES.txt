@@ -319,6 +319,10 @@ Bug fixes
 * LUCENE-5624: Ensure NativeFSLockFactory does not leak file handles if it is unable
   to obtain the lock. (Uwe Schindler, Robert Muir)
 
+* SOLR-6011: ComplexPhraseQueryParser produced Query objects that did not correctly
+  implement hashCode and equals (inOrder was ignored), causing issues for any
+  system using Query objects as keys. (yonik)
+
 Test Framework
 
 * LUCENE-5592: Incorrectly reported uncloseable files. (Dawid Weiss)
