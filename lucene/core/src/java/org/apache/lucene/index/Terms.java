@@ -120,14 +120,16 @@ public abstract class Terms {
   
   /** Returns the smallest term (in lexicographic order) in the field. 
    *  Note that, just like other term measures, this measure does not 
-   *  take deleted documents into account. */
+   *  take deleted documents into account.  This returns
+   *  null when there are no terms. */
   public BytesRef getMin() throws IOException {
     return iterator(null).next();
   }
 
   /** Returns the largest term (in lexicographic order) in the field. 
    *  Note that, just like other term measures, this measure does not 
-   *  take deleted documents into account. */
+   *  take deleted documents into account.  This returns
+   *  null when there are no terms. */
   @SuppressWarnings("fallthrough")
   public BytesRef getMax() throws IOException {
     long size = size();
