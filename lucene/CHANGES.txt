@@ -319,10 +319,6 @@ Bug fixes
   concurrently. This error is now handled the same way like in NativeFSLockFactory
   by returning false.  (Uwe Schindler, Robert Muir, Dawid Weiss)
 
-* SOLR-6011: ComplexPhraseQueryParser produced Query objects that did not correctly
-  implement hashCode and equals (inOrder was ignored), causing issues for any
-  system using Query objects as keys. (yonik)
-
 Test Framework
 
 * LUCENE-5592: Incorrectly reported uncloseable files. (Dawid Weiss)
