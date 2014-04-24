@@ -118,7 +118,7 @@
   <property name="tests.verbose" value="false"/>
   <property name="tests.infostream" value="${tests.verbose}"/>
   <property name="tests.filterstacks" value="true"/>
-  
+
   <condition property="tests.heapsize" value="768M">
     <isset property="run.clover"/>
   </condition>
@@ -1008,6 +1008,7 @@
                 <propertyref prefix="tests.leavetmpdir" />
                 <propertyref prefix="tests.leaveTemporary" />
                 <propertyref prefix="tests.leavetemporary" />
+            	<propertyref prefix="tests.sysouts" />
                 <propertyref prefix="solr.test.leavetmpdir" />
             </syspropertyset>
 

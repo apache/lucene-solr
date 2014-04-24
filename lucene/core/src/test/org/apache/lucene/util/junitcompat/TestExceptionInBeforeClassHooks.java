@@ -106,7 +106,7 @@ public class TestExceptionInBeforeClassHooks extends WithNestedTests {
   @Test
   public void testExceptionInBeforeClassFailsTheTest() {
     Result runClasses = JUnitCore.runClasses(Nested1.class);
-    Assert.assertEquals(1, runClasses.getFailureCount());
+    assertFailureCount(1, runClasses);
     Assert.assertEquals(1, runClasses.getRunCount());
     Assert.assertTrue(runClasses.getFailures().get(0).getTrace().contains("foobar"));
   }
@@ -114,7 +114,7 @@ public class TestExceptionInBeforeClassHooks extends WithNestedTests {
   @Test
   public void testExceptionWithinTestFailsTheTest() {
     Result runClasses = JUnitCore.runClasses(Nested2.class);
-    Assert.assertEquals(3, runClasses.getFailureCount());
+    assertFailureCount(3, runClasses);
     Assert.assertEquals(3, runClasses.getRunCount());
     
     ArrayList<String> foobars = new ArrayList<>();
@@ -133,7 +133,7 @@ public class TestExceptionInBeforeClassHooks extends WithNestedTests {
   @Test
   public void testExceptionWithinBefore() {
     Result runClasses = JUnitCore.runClasses(Nested3.class);
-    Assert.assertEquals(1, runClasses.getFailureCount());
+    assertFailureCount(1, runClasses);
     Assert.assertEquals(1, runClasses.getRunCount());
     Assert.assertTrue(runClasses.getFailures().get(0).getTrace().contains("foobar"));
   }  

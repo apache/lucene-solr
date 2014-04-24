@@ -3,6 +3,7 @@ package org.apache.lucene.util.junitcompat;
 import java.util.*;
 
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.junit.*;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
@@ -42,6 +43,7 @@ public class TestSameRandomnessLocalePassedOrNot extends WithNestedTests {
     super(true);
   }
   
+  @SuppressSysoutChecks(bugUrl = "Expected.")
   public static class Nested extends WithNestedTests.AbstractNestedTest {
     public static String pickString;
     public static Locale defaultLocale;

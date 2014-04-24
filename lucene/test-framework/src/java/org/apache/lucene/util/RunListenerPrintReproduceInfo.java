@@ -154,6 +154,9 @@ public final class RunListenerPrintReproduceInfo extends RunListener {
     addVmOpt(b, "testcase", RandomizedContext.current().getTargetClass().getSimpleName());
     addVmOpt(b, "tests.method", testName);
     addVmOpt(b, "tests.seed", RandomizedContext.current().getRunnerSeedAsString());
+    
+    // Misc switches.
+    addVmOpt(b, SYSPROP_SYSOUTS, System.getProperty(SYSPROP_SYSOUTS));
 
     // Test groups and multipliers.
     if (RANDOM_MULTIPLIER > 1) addVmOpt(b, "tests.multiplier", RANDOM_MULTIPLIER);

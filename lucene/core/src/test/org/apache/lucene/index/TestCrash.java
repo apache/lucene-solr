@@ -93,9 +93,13 @@ public class TestCrash extends LuceneTestCase {
     // This test relies on being able to open a reader before any commit
     // happened, so we must create an initial commit just to allow that, but
     // before any documents were added.
-    System.out.println("TEST: initIndex");
+    if (VERBOSE) {
+      System.out.println("TEST: initIndex");
+    }
     IndexWriter writer = initIndex(random(), true);
-    System.out.println("TEST: done initIndex");
+    if (VERBOSE) {
+      System.out.println("TEST: done initIndex");
+    }
     MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
 
     // We create leftover files because merging could be
@@ -103,7 +107,9 @@ public class TestCrash extends LuceneTestCase {
     dir.setAssertNoUnrefencedFilesOnClose(false);
 
     dir.setPreventDoubleWrite(false);
-    System.out.println("TEST: now crash");
+    if (VERBOSE) {
+      System.out.println("TEST: now crash");
+    }
     crash(writer);
     writer = initIndex(random(), dir, false);
     writer.shutdown();

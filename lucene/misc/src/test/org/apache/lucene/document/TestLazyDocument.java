@@ -17,9 +17,6 @@
 package org.apache.lucene.document;
 
 import java.util.Arrays;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.Map;
@@ -28,7 +25,6 @@ import java.io.IOException;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.*;
-import org.apache.lucene.document.*;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
@@ -118,7 +114,7 @@ public class TestLazyDocument extends LuceneTestCase {
           assertFalse(f.name() + " is loaded", lf.hasBeenLoaded());
         }
       }
-      System.out.println("numFieldValues == " + numFieldValues);
+      if (VERBOSE) System.out.println("numFieldValues == " + numFieldValues);
       assertEquals("numFieldValues", 1 + (NUM_VALUES * FIELDS.length), 
                    numFieldValues);
         
