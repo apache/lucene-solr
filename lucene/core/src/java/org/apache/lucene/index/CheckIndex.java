@@ -784,8 +784,8 @@ public class CheckIndex {
         minTerm = BytesRef.deepCopyOf(bb);
       } else {
         minTerm = null;
-
       }
+
       BytesRef maxTerm;
       bb = terms.getMax();
       if (bb != null) {
