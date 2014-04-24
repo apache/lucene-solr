@@ -211,6 +211,11 @@ Bug fixes
 * LUCENE-5624: Ensure NativeFSLockFactory does not leak file handles if it is unable
   to obtain the lock. (Uwe Schindler, Robert Muir)
 
+* LUCENE-5626: Fix bug in SimpleFSLockFactory's obtain() that sometimes throwed
+  IOException (ERROR_ACESS_DENIED) on Windows if the lock file was created
+  concurrently. This error is now handled the same way like in NativeFSLockFactory
+  by returning false.  (Uwe Schindler, Robert Muir, Dawid Weiss)
+
 Test Framework
 
 * LUCENE-5592: Incorrectly reported uncloseable files. (Dawid Weiss)
