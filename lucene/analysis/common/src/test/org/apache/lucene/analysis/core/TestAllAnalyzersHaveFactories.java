@@ -130,6 +130,7 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
         || crazyComponents.contains(c)
         || oddlyNamedComponents.contains(c)
         || deprecatedDuplicatedComponents.contains(c)
+        || c.isAnnotationPresent(Deprecated.class) // deprecated ones are typically back compat hacks
         || !(Tokenizer.class.isAssignableFrom(c) || TokenFilter.class.isAssignableFrom(c) || CharFilter.class.isAssignableFrom(c))
       ) {
         continue;
@@ -151,7 +152,7 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
           }
           assertSame(c, instance.create(new StringReader("")).getClass());
         } catch (IllegalArgumentException e) {
-          if (!e.getMessage().contains("SPI")) {
+          if (!e.getMessage().contains("SPI") || e.getMessage().contains("does not exist")) {
             throw e;
           }
           // TODO: For now pass because some factories have not yet a default config that always works
@@ -173,7 +174,7 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
             assertSame(c, createdClazz);
           }
         } catch (IllegalArgumentException e) {
-          if (!e.getMessage().contains("SPI")) {
+          if (!e.getMessage().contains("SPI") || e.getMessage().contains("does not exist")) {
             throw e;
           }
           // TODO: For now pass because some factories have not yet a default config that always works
@@ -195,7 +196,7 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
             assertSame(c, createdClazz);
           }
         } catch (IllegalArgumentException e) {
-          if (!e.getMessage().contains("SPI")) {
+          if (!e.getMessage().contains("SPI") || e.getMessage().contains("does not exist")) {
             throw e;
           }
           // TODO: For now pass because some factories have not yet a default config that always works
