@@ -5,6 +5,13 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 4.9.0 =======================
 
+New Features
+
+* LUCENE-5610: Add Terms.getMin and Terms.getMax to get the lowest and
+  highest terms, and NumericUtils.get{Min/Max}{Int/Long} to get the
+  minimum numeric values from the provided Terms.  (Robert Muir, Mike
+  McCandless)
+
 API Changes
 
 * LUCENE-5582: Deprecate IndexOutput.length (just use
@@ -21,7 +28,7 @@ Optimizations
   
 * LUCENE-5599: HttpReplicator did not properly delegate bulk read() to wrapped
   InputStream. (Christoph Kaser via Shai Erera)
-  
+
 Bug fixes
 
 * LUCENE-5600: HttpClientBase did not properly consume a connection if a server
