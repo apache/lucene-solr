@@ -53,6 +53,10 @@ public class TestTerms extends LuceneTestCase {
   }
 
   public void testTermMinMaxRandom() throws Exception {
+    // NOTE: don't use @SuppressCodecs("Lucene3x") on the entire test
+    // class, so that we still run the other test methods
+    // with Lucene3x.  This is important, to have some
+    // testing of Terms.getMin/Max on older indices.
     assumeFalse("test writes binary terms", Codec.getDefault() instanceof Lucene3xCodec);
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
