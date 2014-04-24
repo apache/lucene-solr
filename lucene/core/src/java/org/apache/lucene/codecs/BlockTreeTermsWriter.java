@@ -115,11 +115,12 @@ import org.apache.lucene.util.packed.PackedInts;
  *    <li>InnerNode --&gt; EntryCount, SuffixLength[,Sub?], Byte<sup>SuffixLength</sup>, StatsLength, &lt; TermStats ? &gt;<sup>EntryCount</sup>, MetaLength, &lt;<i>TermMetadata ? </i>&gt;<sup>EntryCount</sup></li>
  *    <li>TermStats --&gt; DocFreq, TotalTermFreq </li>
  *    <li>FieldSummary --&gt; NumFields, &lt;FieldNumber, NumTerms, RootCodeLength, Byte<sup>RootCodeLength</sup>,
- *                            SumTotalTermFreq?, SumDocFreq, DocCount&gt;<sup>NumFields</sup></li>
+ *                            SumTotalTermFreq?, SumDocFreq, DocCount, LongsSize, MinTerm, MaxTerm&gt;<sup>NumFields</sup></li>
  *    <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  *    <li>DirOffset --&gt; {@link DataOutput#writeLong Uint64}</li>
+ *    <li>MinTerm,MaxTerm --&gt; {@link DataOutput#writeVInt VInt} length followed by the byte[]</li>
  *    <li>EntryCount,SuffixLength,StatsLength,DocFreq,MetaLength,NumFields,
- *        FieldNumber,RootCodeLength,DocCount --&gt; {@link DataOutput#writeVInt VInt}</li>
+ *        FieldNumber,RootCodeLength,DocCount,LongsSize --&gt; {@link DataOutput#writeVInt VInt}</li>
  *    <li>TotalTermFreq,NumTerms,SumTotalTermFreq,SumDocFreq --&gt; 
  *        {@link DataOutput#writeVLong VLong}</li>
  *    <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
@@ -138,6 +139,9 @@ import org.apache.lucene.util.packed.PackedInts;
  *    <li>SumDocFreq is the total number of postings, the number of term-document pairs across
  *        the entire field.</li>
  *    <li>DocCount is the number of documents that have at least one posting for this field.</li>
+ *    <li>LongsSize records how many long values the postings writer/reader record per term
+ *        (e.g., to hold freq/prox/doc file offsets).
+ *    <li>MinTerm, MaxTerm are the lowest and highest term in this field.</li>
  *    <li>PostingsHeader and TermMetadata are plugged into by the specific postings implementation:
  *        these contain arbitrary per-file data (such as parameters or versioning information) 
  *        and per-term data (such as pointers to inverted files).</li>
@@ -216,8 +220,11 @@ public class BlockTreeTermsWriter extends FieldsConsumer implements Closeable {
   /** checksums */
   public static final int VERSION_CHECKSUM = 3;
 
+  /** min/max term */
+  public static final int VERSION_MIN_MAX_TERMS = 4;
+
   /** Current terms format. */
-  public static final int VERSION_CURRENT = VERSION_CHECKSUM;
+  public static final int VERSION_CURRENT = VERSION_MIN_MAX_TERMS;
 
   /** Extension of terms index file */
   static final String TERMS_INDEX_EXTENSION = "tip";
@@ -241,8 +248,11 @@ public class BlockTreeTermsWriter extends FieldsConsumer implements Closeable {
     public final long sumDocFreq;
     public final int docCount;
     private final int longsSize;
+    public final BytesRef minTerm;
+    public final BytesRef maxTerm;
 
-    public FieldMetaData(FieldInfo fieldInfo, BytesRef rootCode, long numTerms, long indexStartFP, long sumTotalTermFreq, long sumDocFreq, int docCount, int longsSize) {
+    public FieldMetaData(FieldInfo fieldInfo, BytesRef rootCode, long numTerms, long indexStartFP, long sumTotalTermFreq, long sumDocFreq, int docCount, int longsSize,
+                         BytesRef minTerm, BytesRef maxTerm) {
       assert numTerms > 0;
       this.fieldInfo = fieldInfo;
       assert rootCode != null: "field=" + fieldInfo.name + " numTerms=" + numTerms;
@@ -253,6 +263,8 @@ public class BlockTreeTermsWriter extends FieldsConsumer implements Closeable {
       this.sumDocFreq = sumDocFreq;
       this.docCount = docCount;
       this.longsSize = longsSize;
+      this.minTerm = minTerm;
+      this.maxTerm = maxTerm;
     }
   }
 
@@ -354,16 +366,21 @@ public class BlockTreeTermsWriter extends FieldsConsumer implements Closeable {
         TermsEnum termsEnum = terms.iterator(null);
 
         TermsWriter termsWriter = new TermsWriter(fieldInfos.fieldInfo(field));
-
+        BytesRef minTerm = null;
+        BytesRef maxTerm = new BytesRef();
         while (true) {
           BytesRef term = termsEnum.next();
           if (term == null) {
             break;
           }
+          if (minTerm == null) {
+            minTerm = BytesRef.deepCopyOf(term);
+          }
+          maxTerm.copyBytes(term);
           termsWriter.write(term, termsEnum);
         }
 
-        termsWriter.finish();
+        termsWriter.finish(minTerm, minTerm == null ? null : maxTerm);
       }
       success = true;
     } finally {
@@ -1065,7 +1082,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer implements Closeable {
     }
 
     // Finishes all terms in this field
-    public void finish() throws IOException {
+    public void finish(BytesRef minTerm, BytesRef maxTerm) throws IOException {
       if (numTerms > 0) {
         blockBuilder.finish();
 
@@ -1095,7 +1112,8 @@ public class BlockTreeTermsWriter extends FieldsConsumer implements Closeable {
                                      sumTotalTermFreq,
                                      sumDocFreq,
                                      docsSeen.cardinality(),
-                                     longsSize));
+                                     longsSize,
+                                     minTerm, maxTerm));
       } else {
         assert sumTotalTermFreq == 0 || fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY && sumTotalTermFreq == -1;
         assert sumDocFreq == 0;
@@ -1123,6 +1141,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer implements Closeable {
       for(FieldMetaData field : fields) {
         //System.out.println("  field " + field.fieldInfo.name + " " + field.numTerms + " terms");
         out.writeVInt(field.fieldInfo.number);
+        assert field.numTerms > 0;
         out.writeVLong(field.numTerms);
         out.writeVInt(field.rootCode.length);
         out.writeBytes(field.rootCode.bytes, field.rootCode.offset, field.rootCode.length);
@@ -1133,6 +1152,8 @@ public class BlockTreeTermsWriter extends FieldsConsumer implements Closeable {
         out.writeVInt(field.docCount);
         out.writeVInt(field.longsSize);
         indexOut.writeVLong(field.indexStartFP);
+        writeBytesRef(out, field.minTerm);
+        writeBytesRef(out, field.maxTerm);
       }
       writeTrailer(out, dirStart);
       CodecUtil.writeFooter(out);
@@ -1143,5 +1164,10 @@ public class BlockTreeTermsWriter extends FieldsConsumer implements Closeable {
     } finally {
       IOUtils.closeWhileHandlingException(ioe, out, indexOut, postingsWriter);
     }
+  }
+
+  private static void writeBytesRef(IndexOutput out, BytesRef bytes) throws IOException {
+    out.writeVInt(bytes.length);
+    out.writeBytes(bytes.bytes, bytes.offset, bytes.length);
   }
 }

@@ -36,11 +36,14 @@ import org.apache.lucene.util.Bits;
  */
 public abstract class FilteredTermsEnum extends TermsEnum {
 
-  private BytesRef initialSeekTerm = null;
+  private BytesRef initialSeekTerm;
   private boolean doSeek;
-  private BytesRef actualTerm = null;
 
-  private final TermsEnum tenum;
+  /** Which term the enum is currently positioned to. */
+  protected BytesRef actualTerm;
+
+  /** The delegate {@link TermsEnum}. */
+  protected final TermsEnum tenum;
 
   /** Return value, if term should be accepted or the iteration should
    * {@code END}. The {@code *_SEEK} values denote, that after handling the current term
@@ -246,6 +249,7 @@ public abstract class FilteredTermsEnum extends TermsEnum {
         case END:
           // we are supposed to end the enum
           return null;
+        // NO: we just fall through and iterate again
       }
     }
   }

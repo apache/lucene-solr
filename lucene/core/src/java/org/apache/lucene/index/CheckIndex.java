@@ -756,6 +756,14 @@ public class CheckIndex {
       final boolean hasPositions = terms.hasPositions();
       final boolean hasPayloads = terms.hasPayloads();
       final boolean hasOffsets = terms.hasOffsets();
+      
+      BytesRef bb = terms.getMin();
+      assert bb.isValid();
+      final BytesRef minTerm = bb == null ? null : BytesRef.deepCopyOf(bb);
+      
+      bb = terms.getMax();
+      assert bb.isValid();
+      final BytesRef maxTerm = bb == null ? null : BytesRef.deepCopyOf(bb);
 
       // term vectors cannot omit TF:
       final boolean expectedHasFreqs = (isVectors || fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0);
@@ -815,6 +823,14 @@ public class CheckIndex {
             throw new RuntimeException("terms out of order: lastTerm=" + lastTerm + " term=" + term);
           }
           lastTerm.copyBytes(term);
+        }
+        
+        if (term.compareTo(minTerm) < 0) {
+          throw new RuntimeException("invalid term: term=" + term + ", minTerm=" + minTerm);
+        }
+        
+        if (term.compareTo(maxTerm) > 0) {
+          throw new RuntimeException("invalid term: term=" + term + ", maxTerm=" + maxTerm);
         }
         
         final int docFreq = termsEnum.docFreq();

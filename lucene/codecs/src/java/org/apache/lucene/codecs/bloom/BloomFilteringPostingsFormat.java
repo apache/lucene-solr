@@ -293,6 +293,16 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       public boolean hasPayloads() {
         return delegateTerms.hasPayloads();
       }
+
+      @Override
+      public BytesRef getMin() throws IOException {
+        return delegateTerms.getMin();
+      }
+
+      @Override
+      public BytesRef getMax() throws IOException {
+        return delegateTerms.getMax();
+      }
     }
     
     final class BloomFilteredTermsEnum extends TermsEnum {
