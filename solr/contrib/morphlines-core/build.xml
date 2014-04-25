@@ -23,8 +23,6 @@
     Solr Morphlines commands.
   </description>
 
-  <property name="test.lib.dir" location="test-lib"/>
-
   <import file="../contrib-build.xml"/>
   
   <solr-contrib-uptodate name="extraction" 
@@ -91,14 +89,6 @@
     <ant dir="${common-solr.dir}/contrib/extraction" target="javadocs" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
-  </target>
-
-  <target name="resolve" depends="ivy-availability-check,ivy-fail,ivy-configure">
-    <sequential>
-      <ivy:retrieve conf="compile" type="jar,bundle" sync="${ivy.sync}" log="download-only"/>
-      <ivy:retrieve conf="test,test.DfsMiniCluster" type="jar,bundle,test" sync="${ivy.sync}" log="download-only"
-                    pattern="${test.lib.dir}/[artifact]-[revision](-[classifier]).[ext]"/>
-    </sequential>
   </target>
 
   <target name="compile-core" depends="resolve-extraction-libs, compile-solr-extraction, solr-contrib-build.compile-core"/>

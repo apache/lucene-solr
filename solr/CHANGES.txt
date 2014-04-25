@@ -75,6 +75,13 @@ Other Changes
 * SOLR-5974: Remove ShardDoc.score and use parent's ScoreDoc.score.
   (Tomás Fernández Löbbe via Ryan Ernst)
 
+Build
+---------------------
+
+* SOLR-6006: Separate test and compile scope dependencies in the Solrj and
+  Solr contrib ivy.xml files, so that the derived Maven dependencies get
+  filled out properly in the corresponding POMs. (Steven Scott, Steve Rowe)
+
 ==================  4.8.0 ==================
 
 Versions of Major Components

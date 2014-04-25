@@ -16,7 +16,7 @@
    specific language governing permissions and limitations
    under the License.    
 -->
-<ivy-module version="2.0" xmlns:maven="http://ant.apache.org/ivy/maven">
+<ivy-module version="2.0">
   <info organisation="org.apache.solr" module="morphlines-cell" />
   <configurations>
     <conf name="compile" transitive="false" />
@@ -29,7 +29,9 @@
     <dependency org="org.kitesdk" name="kite-morphlines-tika-decompress" rev="${/org.kitesdk/kite-morphlines-tika-decompress}" conf="compile->*" />
     <dependency org="org.kitesdk" name="kite-morphlines-json" rev="${/org.kitesdk/kite-morphlines-json}" conf="compile->*" />
     <dependency org="org.kitesdk" name="kite-morphlines-twitter" rev="${/org.kitesdk/kite-morphlines-twitter}" conf="compile->*" />
-    
+
+    <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="test->*"/>
+
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}" />
 
   </dependencies>
