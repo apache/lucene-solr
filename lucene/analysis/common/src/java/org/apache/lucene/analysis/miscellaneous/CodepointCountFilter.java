@@ -46,6 +46,12 @@ public final class CodepointCountFilter extends FilteringTokenFilter {
    */
   public CodepointCountFilter(Version version, TokenStream in, int min, int max) {
     super(version, in);
+    if (min < 0) {
+      throw new IllegalArgumentException("minimum length must be greater than or equal to zero");
+    }
+    if (min > max) {
+      throw new IllegalArgumentException("maximum length must not be greater than minimum length");
+    }
     this.min = min;
     this.max = max;
   }
