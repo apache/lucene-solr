@@ -35,19 +35,22 @@
     <dependency org="commons-lang" name="commons-lang" rev="${/commons-lang/commons-lang}" conf="compile->*"/>
     <dependency org="com.google.guava" name="guava" rev="${/com.google.guava/guava}" conf="compile->*"/>
     <dependency org="com.spatial4j" name="spatial4j" rev="${/com.spatial4j/spatial4j}" conf="compile->*"/>
-    <dependency org="org.antlr" name="antlr-runtime" rev="${/org.antlr/antlr-runtime}" transitive="false"/>
-    <dependency org="org.ow2.asm" name="asm" rev="${/org.ow2.asm/asm}" transitive="false"/>
-    <dependency org="org.ow2.asm" name="asm-commons" rev="${/org.ow2.asm/asm-commons}" transitive="false"/>
+    <dependency org="org.antlr" name="antlr-runtime" rev="${/org.antlr/antlr-runtime}" conf="compile->*"/>
+    <dependency org="org.ow2.asm" name="asm" rev="${/org.ow2.asm/asm}" conf="compile->*"/>
+    <dependency org="org.ow2.asm" name="asm-commons" rev="${/org.ow2.asm/asm-commons}" conf="compile->*"/>
     <dependency org="org.restlet.jee" name="org.restlet" rev="${/org.restlet.jee/org.restlet}" conf="compile->*"/>
     <dependency org="org.restlet.jee" name="org.restlet.ext.servlet" rev="${/org.restlet.jee/org.restlet.ext.servlet}" conf="compile->*"/>
     <dependency org="joda-time" name="joda-time" rev="${/joda-time/joda-time}" conf="compile->*"/>
-    <dependency org="dom4j" name="dom4j" rev="${/dom4j/dom4j}" transitive="false"/>
-    <dependency org="com.carrotsearch" name="hppc" rev="${/com.carrotsearch/hppc}"/>
+    <dependency org="dom4j" name="dom4j" rev="${/dom4j/dom4j}" conf="compile->*"/>
+    <dependency org="com.carrotsearch" name="hppc" rev="${/com.carrotsearch/hppc}" conf="compile->*"/>
+    <dependency org="log4j" name="log4j" rev="${/log4j/log4j}" conf="compile->*"/>
+    <dependency org="org.slf4j" name="slf4j-log4j12" rev="${/org.slf4j/slf4j-log4j12}" conf="compile->*"/>
 
     <dependency org="javax.servlet" name="javax.servlet-api" rev="${/javax.servlet/javax.servlet-api}" conf="test->*"/>
     <dependency org="org.easymock" name="easymock" rev="${/org.easymock/easymock}" conf="test->*"/>
     <dependency org="cglib" name="cglib-nodep" rev="${/cglib/cglib-nodep}" conf="test->*"/>
     <dependency org="org.objenesis" name="objenesis" rev="${/org.objenesis/objenesis}" conf="test->*"/>
+    <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="test->*"/>
 
     <dependency org="org.apache.hadoop" name="hadoop-common" rev="${/org.apache.hadoop/hadoop-common}" conf="compile.hadoop->*"/>
     <!--

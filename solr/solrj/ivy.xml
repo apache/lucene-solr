@@ -17,36 +17,28 @@
    under the License.    
 -->
 <ivy-module version="2.0">
-    <info organisation="org.apache.solr" module="solrj"/>
+  <info organisation="org.apache.solr" module="solrj"/>
 
-    <dependencies>
-      <dependency org="org.apache.zookeeper" name="zookeeper" rev="${/org.apache.zookeeper/zookeeper}" transitive="false"/>
-      <dependency org="org.apache.httpcomponents" name="httpclient" rev="${/org.apache.httpcomponents/httpclient}" transitive="false"/>
-      <!--
-        The httpmime rev should be kept in sync with the httpclient rev, since both the
-        httpclient and the httpmime modules are sub-modules of the httpcomponents-client
-        module, and both sub-modules draw their version from the httpcomponents-client
-        parent POM.
-       -->
-      <dependency org="org.apache.httpcomponents" name="httpmime" rev="${/org.apache.httpcomponents/httpmime}" transitive="false"/>
-      <!--
-        The httpcore rev should be drawn from the httpcomponents-client POM (the parent POM
-        of the httpclient POM - see the comment above) - the httpclient version and the httpcore
-        version are NOT always in sync with each other.
+  <configurations>
+    <!-- artifacts in the "compile" configuration will go into solr/solrj/lib/ -->
+    <conf name="compile" transitive="false"/>
+    <!-- artifacts in the "test" configuration will go into solr/solrj/test-lib/ -->
+    <conf name="test" transitive="false"/>
+  </configurations>
 
-        E.g. httpclient v4.2.3 depends on httpcore v4.2.2 - see the httpcomponents-client POM
-        - look for <httpcore.version> under <properties>:
-        https://svn.apache.org/repos/asf/httpcomponents/httpclient/tags/4.2.3/pom.xml
-       -->
-      <dependency org="org.apache.httpcomponents" name="httpcore" rev="${/org.apache.httpcomponents/httpcore}" transitive="false"/>
-      <dependency org="commons-io" name="commons-io" rev="${/commons-io/commons-io}" transitive="false"/>
-      <dependency org="org.codehaus.woodstox" name="wstx-asl" rev="${/org.codehaus.woodstox/wstx-asl}" transitive="false"/>
-      <dependency org="org.noggit" name="noggit" rev="${/org.noggit/noggit}" transitive="false"/>
-      <dependency org="log4j" name="log4j" rev="${/log4j/log4j}" transitive="false"/>
-      <dependency org="org.slf4j" name="slf4j-api" rev="${/org.slf4j/slf4j-api}" transitive="false"/>
-      <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" transitive="false"/>
-      <dependency org="org.slf4j" name="jul-to-slf4j" rev="${/org.slf4j/jul-to-slf4j}" transitive="false"/> 
-      <dependency org="org.slf4j" name="slf4j-log4j12" rev="${/org.slf4j/slf4j-log4j12}" transitive="false"/> 
-      <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
-    </dependencies>
+  <dependencies>
+    <dependency org="org.apache.zookeeper" name="zookeeper" rev="${/org.apache.zookeeper/zookeeper}" conf="compile->*"/>
+    <dependency org="org.apache.httpcomponents" name="httpclient" rev="${/org.apache.httpcomponents/httpclient}" conf="compile->*"/>
+    <dependency org="org.apache.httpcomponents" name="httpmime" rev="${/org.apache.httpcomponents/httpmime}" conf="compile->*"/>
+    <dependency org="org.apache.httpcomponents" name="httpcore" rev="${/org.apache.httpcomponents/httpcore}" conf="compile->*"/>
+    <dependency org="commons-io" name="commons-io" rev="${/commons-io/commons-io}" conf="compile->*"/>
+    <dependency org="org.codehaus.woodstox" name="wstx-asl" rev="${/org.codehaus.woodstox/wstx-asl}" conf="compile->*"/>
+    <dependency org="org.noggit" name="noggit" rev="${/org.noggit/noggit}" conf="compile->*"/>
+    <dependency org="org.slf4j" name="slf4j-api" rev="${/org.slf4j/slf4j-api}" conf="compile->*"/>
+
+    <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="test->*"/>
+    <dependency org="org.slf4j" name="slf4j-log4j12" rev="${/org.slf4j/slf4j-log4j12}" conf="test->*"/>
+
+    <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
+  </dependencies>
 </ivy-module>
