@@ -121,6 +121,9 @@ Bug Fixes
   rollback as well as how SolrIndexWriter manages it's ref counted directory
   instance. (Mark Miller, Gregory Chanan)
 
+* SOLR-6017: Fix SimpleQParser to use query analyzer instead of index analyzer.
+  (Ryan Ernst)
+
 Other Changes
 ---------------------
 

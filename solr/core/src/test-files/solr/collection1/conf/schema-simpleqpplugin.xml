@@ -38,6 +38,18 @@
         <tokenizer class="solr.MockTokenizerFactory" pattern="keyword"/>
       </analyzer>
     </fieldtype>
+
+    <!-- basic text field: except it will use the keyword analyzer -->
+    <fieldtype name="text-query" class="solr.TextField">
+      <analyzer type="index">
+        <tokenizer class="solr.MockTokenizerFactory" pattern="whitespace"/>
+      </analyzer>
+      <!-- only lower case at query time, so we can check the query analyzer is used -->
+      <analyzer type="query">
+        <tokenizer class="solr.MockTokenizerFactory" pattern="whitespace"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+      </analyzer>
+    </fieldtype>
   </types>
 
   <fields>
@@ -45,6 +57,7 @@
     <field name="text0" type="text" indexed="true" stored="true"/>
     <field name="text1" type="text" indexed="true" stored="true"/>
     <field name="text-keyword0" type="text-keyword" indexed="true" stored="true"/>
+    <field name="text-query0" type="text-query" indexed="true" stored="true"/>
   </fields>
 
   <defaultSearchField>text0</defaultSearchField>
