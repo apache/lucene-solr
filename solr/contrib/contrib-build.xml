@@ -17,9 +17,11 @@
     limitations under the License.
  -->
 
-<project name="solr-contrib-build">
+<project name="solr-contrib-build" xmlns:ivy="antlib:org.apache.ivy.ant">
   <dirname file="${ant.file.solr-contrib-build}" property="solr-contrib.dir"/>
   <property name="build.dir" location="${solr-contrib.dir}/../build/contrib/${ant.project.name}"/>
+
+  <property name="test.lib.dir" location="test-lib"/>
 
   <import file="../common-build.xml"/>
 
@@ -43,5 +45,13 @@
     <copy todir="${dest}/contrib-lucene-libs-to-package/contrib/${contrib.dir}">
       <fileset dir="${build.dir}" includes="lucene-libs/**"/>
     </copy>
+  </target>
+
+  <target name="resolve" depends="ivy-availability-check,ivy-fail,ivy-configure">
+    <sequential>
+      <ivy:retrieve conf="compile" type="jar,bundle" sync="${ivy.sync}" log="download-only"/>
+      <ivy:retrieve conf="test" type="jar,bundle,test" sync="${ivy.sync}" log="download-only"
+                    pattern="${test.lib.dir}/[artifact]-[revision](-[classifier]).[ext]"/>
+    </sequential>
   </target>
 </project>

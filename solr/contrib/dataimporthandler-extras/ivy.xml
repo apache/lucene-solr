@@ -26,5 +26,11 @@
         
         https://issues.apache.org/jira/browse/SOLR-3848
     -->
-
+  <configurations>
+    <conf name="compile" transitive="false"/>
+    <conf name="test" transitive="false"/>
+  </configurations>
+  <dependencies>
+    <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="test->*"/>
+  </dependencies>
 </ivy-module>

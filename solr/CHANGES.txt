@@ -138,9 +138,9 @@ Other Changes
 Build
 ---------------------
 
-* SOLR-6006: Separate test and compile scope dependencies in the Solrj ivy.xml
-  file, so that the derived Maven dependencies get filled out properly in the
-  Solrj POM. (Steven Scott, Steve Rowe)
+* SOLR-6006: Separate test and compile scope dependencies in the Solrj and
+  Solr contrib ivy.xml files, so that the derived Maven dependencies get
+  filled out properly in the corresponding POMs. (Steven Scott, Steve Rowe)
 
 ==================  4.8.0 ==================
 
