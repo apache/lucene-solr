@@ -546,14 +546,17 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       if (doFail) {
         StackTraceElement[] trace = new Exception().getStackTrace();
         boolean sawFlush = false;
+        boolean sawFinishDocument = false;
         for (int i = 0; i < trace.length; i++) {
           if ("flush".equals(trace[i].getMethodName())) {
             sawFlush = true;
-            break;
+          }
+          if ("finishDocument".equals(trace[i].getMethodName())) {
+            sawFinishDocument = true;
           }
         }
 
-        if (sawFlush && count++ >= 30) {
+        if (sawFlush && sawFinishDocument == false && count++ >= 30) {
           doFail = false;
           throw new IOException("now failing during flush");
         }
