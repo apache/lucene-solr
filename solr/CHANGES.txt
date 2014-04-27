@@ -75,6 +75,9 @@ Other Changes
 * SOLR-5974: Remove ShardDoc.score and use parent's ScoreDoc.score.
   (Tomás Fernández Löbbe via Ryan Ernst)
 
+* SOLR-6025: Replace mentions of CommonsHttpSolrServer with HttpSolrServer and
+  StreamingUpdateSolrServer with ConcurrentUpdateSolrServer. (Ahmet Arslan via shalin)
+
 Build
 ---------------------
 

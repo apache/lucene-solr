@@ -34,7 +34,7 @@
     size and searching performance, set "index" to false for all general
     text fields, use copyField to copy them to the catchall "text"
     field, and use that for searching. - For maximum indexing
-    performance, use the StreamingUpdateSolrServer java client. -
+    performance, use the ConcurrentUpdateSolrServer java client. -
     Remember to run the JVM in server mode, and use a higher logging
     level that avoids logging every request
   -->

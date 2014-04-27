@@ -86,7 +86,7 @@ public class LBHttpSolrServer extends SolrServer {
   }
 
   // keys to the maps are currently of the form "http://localhost:8983/solr"
-  // which should be equivalent to CommonsHttpSolrServer.getBaseURL()
+  // which should be equivalent to HttpSolrServer.getBaseURL()
   private final Map<String, ServerWrapper> aliveServers = new LinkedHashMap<>();
   // access to aliveServers should be synchronized on itself
   
