@@ -70,7 +70,8 @@ public class MockLockFactoryWrapper extends LockFactory {
     @Override
     public boolean obtain() throws IOException {
       if (delegateLock.obtain()) {
-        dir.openLocks.add(name);
+        assert (delegate instanceof NoLockFactory) || dir.openLocks.containsKey(name) == false;
+        dir.openLocks.put(name, new RuntimeException("lock \"" + name + "\" was not released"));
         return true;
       } else {
         return false;

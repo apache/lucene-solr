@@ -79,7 +79,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   private Set<String> unSyncedFiles;
   private Set<String> createdFiles;
   private Set<String> openFilesForWrite = new HashSet<>();
-  Set<String> openLocks = Collections.synchronizedSet(new HashSet<String>());
+  Map<String,Exception> openLocks = Collections.synchronizedMap(new HashMap<String,Exception>());
   volatile boolean crashed;
   private ThrottledIndexOutput throttledOutput;
   private Throttling throttling = Throttling.SOMETIMES;
@@ -655,14 +655,20 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       // print the first one as its very verbose otherwise
       Exception cause = null;
       Iterator<Exception> stacktraces = openFileHandles.values().iterator();
-      if (stacktraces.hasNext())
+      if (stacktraces.hasNext()) {
         cause = stacktraces.next();
+      }
       // RuntimeException instead of IOException because
       // super() does not throw IOException currently:
       throw new RuntimeException("MockDirectoryWrapper: cannot close: there are still open files: " + openFiles, cause);
     }
     if (openLocks.size() > 0) {
-      throw new RuntimeException("MockDirectoryWrapper: cannot close: there are still open locks: " + openLocks);
+      Exception cause = null;
+      Iterator<Exception> stacktraces = openLocks.values().iterator();
+      if (stacktraces.hasNext()) {
+        cause = stacktraces.next();
+      }
+      throw new RuntimeException("MockDirectoryWrapper: cannot close: there are still open locks: " + openLocks, cause);
     }
 
     isOpen = false;
