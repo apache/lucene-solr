@@ -544,15 +544,7 @@ final class DefaultIndexingChain extends DocConsumer {
       try (TokenStream stream = field.tokenStream(docState.analyzer)) {
         // reset the TokenStream to the first token
         stream.reset();
-
-        if (invertState.attributeSource != stream) {
-          // EmptyTokenStream gets angry otherwise:
-          invertState.termAttribute = stream.getAttribute(TermToBytesRefAttribute.class);
-          invertState.posIncrAttribute = stream.addAttribute(PositionIncrementAttribute.class);
-          invertState.offsetAttribute = stream.addAttribute(OffsetAttribute.class);
-          invertState.payloadAttribute = stream.getAttribute(PayloadAttribute.class);
-          invertState.attributeSource = stream;
-        }
+        invertState.setAttributeSource(stream);
 
         termsHashPerField.start(field, first);
 

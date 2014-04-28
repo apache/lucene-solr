@@ -75,6 +75,20 @@ public final class FieldInvertState {
     uniqueTermCount = 0;
     boost = 1.0f;
   }
+  
+  // TODO: better name?
+  /**
+   * Sets attributeSource to a new instance.
+   */
+  void setAttributeSource(AttributeSource attributeSource) {
+    if (this.attributeSource != attributeSource) {
+      this.attributeSource = attributeSource;
+      termAttribute = attributeSource.getAttribute(TermToBytesRefAttribute.class);
+      posIncrAttribute = attributeSource.addAttribute(PositionIncrementAttribute.class);
+      offsetAttribute = attributeSource.addAttribute(OffsetAttribute.class);
+      payloadAttribute = attributeSource.getAttribute(PayloadAttribute.class);
+    }
+  }
 
   /**
    * Get the last processed term position.
