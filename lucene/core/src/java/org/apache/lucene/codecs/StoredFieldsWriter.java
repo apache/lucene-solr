@@ -32,7 +32,7 @@ import org.apache.lucene.index.AtomicReader;
  * <p>
  * <ol>
  *   <li>For every document, {@link #startDocument()} is called,
- *       informing the Codec how many fields will be written.
+ *       informing the Codec that a new document has started.
  *   <li>{@link #writeField(FieldInfo, StorableField)} is called for 
  *       each field in the document.
  *   <li>After all documents have been written, {@link #finish(FieldInfos, int)} 
