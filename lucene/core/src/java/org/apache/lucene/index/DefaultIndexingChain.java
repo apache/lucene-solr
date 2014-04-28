@@ -547,18 +547,10 @@ final class DefaultIndexingChain extends DocConsumer {
 
         if (invertState.attributeSource != stream) {
           // EmptyTokenStream gets angry otherwise:
-          if (stream.hasAttribute(TermToBytesRefAttribute.class)) {
-            invertState.termAttribute = stream.getAttribute(TermToBytesRefAttribute.class);
-          } else {
-            invertState.termAttribute = null;
-          }
+          invertState.termAttribute = stream.getAttribute(TermToBytesRefAttribute.class);
           invertState.posIncrAttribute = stream.addAttribute(PositionIncrementAttribute.class);
           invertState.offsetAttribute = stream.addAttribute(OffsetAttribute.class);
-          if (stream.hasAttribute(PayloadAttribute.class)) {
-            invertState.payloadAttribute = stream.getAttribute(PayloadAttribute.class);
-          } else {
-            invertState.payloadAttribute = null;
-          }
+          invertState.payloadAttribute = stream.getAttribute(PayloadAttribute.class);
           invertState.attributeSource = stream;
         }
 

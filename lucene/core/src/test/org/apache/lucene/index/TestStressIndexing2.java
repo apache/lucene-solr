@@ -639,8 +639,8 @@ public class TestStressIndexing2 extends LuceneTestCase {
           int freq1 = dpEnum1.freq();
           int freq2 = dpEnum2.freq();
           assertEquals(freq1, freq2);
-          OffsetAttribute offsetAtt1 = dpEnum1.attributes().hasAttribute(OffsetAttribute.class) ? dpEnum1.attributes().getAttribute(OffsetAttribute.class) : null;
-          OffsetAttribute offsetAtt2 = dpEnum2.attributes().hasAttribute(OffsetAttribute.class) ? dpEnum2.attributes().getAttribute(OffsetAttribute.class) : null;
+          OffsetAttribute offsetAtt1 = dpEnum1.attributes().getAttribute(OffsetAttribute.class);
+          OffsetAttribute offsetAtt2 = dpEnum2.attributes().getAttribute(OffsetAttribute.class);
 
           if (offsetAtt1 != null) {
             assertNotNull(offsetAtt2);

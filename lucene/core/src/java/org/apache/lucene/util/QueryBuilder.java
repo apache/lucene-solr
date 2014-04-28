@@ -207,12 +207,8 @@ public class QueryBuilder {
       buffer = new CachingTokenFilter(source);
       buffer.reset();
 
-      if (buffer.hasAttribute(TermToBytesRefAttribute.class)) {
-        termAtt = buffer.getAttribute(TermToBytesRefAttribute.class);
-      }
-      if (buffer.hasAttribute(PositionIncrementAttribute.class)) {
-        posIncrAtt = buffer.getAttribute(PositionIncrementAttribute.class);
-      }
+      termAtt = buffer.getAttribute(TermToBytesRefAttribute.class);
+      posIncrAtt = buffer.getAttribute(PositionIncrementAttribute.class);
 
       if (termAtt != null) {
         try {
