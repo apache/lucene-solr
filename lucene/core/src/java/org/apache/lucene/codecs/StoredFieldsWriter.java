@@ -31,7 +31,7 @@ import org.apache.lucene.index.AtomicReader;
  * Codec API for writing stored fields:
  * <p>
  * <ol>
- *   <li>For every document, {@link #startDocument(int)} is called,
+ *   <li>For every document, {@link #startDocument()} is called,
  *       informing the Codec how many fields will be written.
  *   <li>{@link #writeField(FieldInfo, StorableField)} is called for 
  *       each field in the document.
@@ -51,10 +51,9 @@ public abstract class StoredFieldsWriter implements Closeable {
 
   /** Called before writing the stored fields of the document.
    *  {@link #writeField(FieldInfo, StorableField)} will be called
-   *  <code>numStoredFields</code> times. Note that this is
-   *  called even if the document has no stored fields, in
-   *  this case <code>numStoredFields</code> will be zero. */
-  public abstract void startDocument(int numStoredFields) throws IOException;
+   *  for each stored field. Note that this is
+   *  called even if the document has no stored fields. */
+  public abstract void startDocument() throws IOException;
 
   /** Called when a document and all its fields have been added. */
   public void finishDocument() throws IOException {}
@@ -69,14 +68,14 @@ public abstract class StoredFieldsWriter implements Closeable {
   /** Called before {@link #close()}, passing in the number
    *  of documents that were written. Note that this is 
    *  intentionally redundant (equivalent to the number of
-   *  calls to {@link #startDocument(int)}, but a Codec should
+   *  calls to {@link #startDocument()}, but a Codec should
    *  check that this is the case to detect the JRE bug described 
    *  in LUCENE-1282. */
   public abstract void finish(FieldInfos fis, int numDocs) throws IOException;
   
   /** Merges in the stored fields from the readers in 
    *  <code>mergeState</code>. The default implementation skips
-   *  over deleted documents, and uses {@link #startDocument(int)},
+   *  over deleted documents, and uses {@link #startDocument()},
    *  {@link #writeField(FieldInfo, StorableField)}, and {@link #finish(FieldInfos, int)},
    *  returning the number of documents that were written.
    *  Implementations can override this method for more sophisticated
@@ -109,12 +108,7 @@ public abstract class StoredFieldsWriter implements Closeable {
   
   /** sugar method for startDocument() + writeField() for every stored field in the document */
   protected final void addDocument(Iterable<? extends StorableField> doc, FieldInfos fieldInfos) throws IOException {
-    int storedCount = 0;
-    for (StorableField field : doc) {
-      storedCount++;
-    }
-    
-    startDocument(storedCount);
+    startDocument();
 
     for (StorableField field : doc) {
       writeField(fieldInfos.fieldInfo(field.name()), field);

@@ -36,6 +36,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -85,6 +86,7 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
   private final String segment;
   private IndexOutput fieldsStream;
   private IndexOutput indexStream;
+  private final RAMOutputStream fieldsBuffer = new RAMOutputStream();
 
   /** Sole constructor. */
   public Lucene40StoredFieldsWriter(Directory directory, String segment, IOContext context) throws IOException {
@@ -109,14 +111,23 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
     }
   }
 
+  int numStoredFields;
+
   // Writes the contents of buffer into the fields stream
   // and adds a new entry for this document into the index
   // stream.  This assumes the buffer was already written
   // in the correct fields format.
   @Override
-  public void startDocument(int numStoredFields) throws IOException {
+  public void startDocument() throws IOException {
     indexStream.writeLong(fieldsStream.getFilePointer());
+  }
+
+  @Override
+  public void finishDocument() throws IOException {
     fieldsStream.writeVInt(numStoredFields);
+    fieldsBuffer.writeTo(fieldsStream);
+    fieldsBuffer.reset();
+    numStoredFields = 0;
   }
 
   @Override
@@ -140,7 +151,9 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
 
   @Override
   public void writeField(FieldInfo info, StorableField field) throws IOException {
-    fieldsStream.writeVInt(info.number);
+    numStoredFields++;
+
+    fieldsBuffer.writeVInt(info.number);
     int bits = 0;
     final BytesRef bytes;
     final String string;
@@ -177,22 +190,22 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
       }
     }
 
-    fieldsStream.writeByte((byte) bits);
+    fieldsBuffer.writeByte((byte) bits);
 
     if (bytes != null) {
-      fieldsStream.writeVInt(bytes.length);
-      fieldsStream.writeBytes(bytes.bytes, bytes.offset, bytes.length);
+      fieldsBuffer.writeVInt(bytes.length);
+      fieldsBuffer.writeBytes(bytes.bytes, bytes.offset, bytes.length);
     } else if (string != null) {
-      fieldsStream.writeString(field.stringValue());
+      fieldsBuffer.writeString(field.stringValue());
     } else {
       if (number instanceof Byte || number instanceof Short || number instanceof Integer) {
-        fieldsStream.writeInt(number.intValue());
+        fieldsBuffer.writeInt(number.intValue());
       } else if (number instanceof Long) {
-        fieldsStream.writeLong(number.longValue());
+        fieldsBuffer.writeLong(number.longValue());
       } else if (number instanceof Float) {
-        fieldsStream.writeInt(Float.floatToIntBits(number.floatValue()));
+        fieldsBuffer.writeInt(Float.floatToIntBits(number.floatValue()));
       } else if (number instanceof Double) {
-        fieldsStream.writeLong(Double.doubleToLongBits(number.doubleValue()));
+        fieldsBuffer.writeLong(Double.doubleToLongBits(number.doubleValue()));
       } else {
         throw new AssertionError("Cannot get here");
       }

@@ -139,10 +139,6 @@ class SortedDocValuesWriter extends DocValuesWriter {
                               });
   }
 
-  @Override
-  public void abort() {
-  }
-  
   // iterates over the unique values we have in ram
   private class ValuesIterator implements Iterator<BytesRef> {
     final int sortedValues[];

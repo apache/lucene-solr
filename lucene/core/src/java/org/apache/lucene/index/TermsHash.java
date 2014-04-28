@@ -22,21 +22,17 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.util.ByteBlockPool;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IntBlockPool;
 
-/** This class implements {@link InvertedDocConsumer}, which
- *  is passed each token produced by the analyzer on each
- *  field.  It stores these tokens in a hash table, and
- *  allocates separate byte streams per token.  Consumers of
- *  this class, eg {@link FreqProxTermsWriter} and {@link
- *  TermVectorsConsumer}, write their own byte streams
- *  under each term.
- */
-final class TermsHash extends InvertedDocConsumer {
+/** This class is passed each token produced by the analyzer
+ *  on each field during indexing, and it stores these
+ *  tokens in a hash table, and allocates separate byte
+ *  streams per token.  Consumers of this class, eg {@link
+ *  FreqProxTermsWriter} and {@link TermVectorsConsumer},
+ *  write their own byte streams under each term. */
+abstract class TermsHash {
 
-  final TermsHashConsumer consumer;
   final TermsHash nextTermsHash;
 
   final IntBlockPool intPool;
@@ -44,21 +40,12 @@ final class TermsHash extends InvertedDocConsumer {
   ByteBlockPool termBytePool;
   final Counter bytesUsed;
 
-  final boolean primary;
   final DocumentsWriterPerThread.DocState docState;
-
-  // Used when comparing postings via termRefComp, in TermsHashPerField
-  final BytesRef tr1 = new BytesRef();
-  final BytesRef tr2 = new BytesRef();
-
-  // Used by perField to obtain terms from the analysis chain
-  final BytesRef termBytesRef = new BytesRef(10);
 
   final boolean trackAllocations;
 
-  public TermsHash(final DocumentsWriterPerThread docWriter, final TermsHashConsumer consumer, boolean trackAllocations, final TermsHash nextTermsHash) {
+  TermsHash(final DocumentsWriterPerThread docWriter, boolean trackAllocations, TermsHash nextTermsHash) {
     this.docState = docWriter.docState;
-    this.consumer = consumer;
     this.trackAllocations = trackAllocations; 
     this.nextTermsHash = nextTermsHash;
     this.bytesUsed = trackAllocations ? docWriter.bytesUsed : Counter.newCounter();
@@ -67,19 +54,14 @@ final class TermsHash extends InvertedDocConsumer {
 
     if (nextTermsHash != null) {
       // We are primary
-      primary = true;
       termBytePool = bytePool;
       nextTermsHash.termBytePool = bytePool;
-    } else {
-      primary = false;
     }
   }
 
-  @Override
   public void abort() {
-    reset();
     try {
-      consumer.abort();
+      reset();
     } finally {
       if (nextTermsHash != null) {
         nextTermsHash.abort();
@@ -94,50 +76,27 @@ final class TermsHash extends InvertedDocConsumer {
     bytePool.reset(false, false);
   }
 
-  @Override
-  void flush(Map<String,InvertedDocConsumerPerField> fieldsToFlush, final SegmentWriteState state) throws IOException {
-    Map<String,TermsHashConsumerPerField> childFields = new HashMap<>();
-    Map<String,InvertedDocConsumerPerField> nextChildFields;
-
+  void flush(Map<String,TermsHashPerField> fieldsToFlush, final SegmentWriteState state) throws IOException {
     if (nextTermsHash != null) {
-      nextChildFields = new HashMap<>();
-    } else {
-      nextChildFields = null;
-    }
-
-    for (final Map.Entry<String,InvertedDocConsumerPerField> entry : fieldsToFlush.entrySet()) {
-      TermsHashPerField perField = (TermsHashPerField) entry.getValue();
-      childFields.put(entry.getKey(), perField.consumer);
-      if (nextTermsHash != null) {
-        nextChildFields.put(entry.getKey(), perField.nextPerField);
+      Map<String,TermsHashPerField> nextChildFields = new HashMap<>();
+      for (final Map.Entry<String,TermsHashPerField> entry : fieldsToFlush.entrySet()) {
+        nextChildFields.put(entry.getKey(), entry.getValue().nextPerField);
       }
-    }
-
-    consumer.flush(childFields, state);
-
-    if (nextTermsHash != null) {
       nextTermsHash.flush(nextChildFields, state);
     }
   }
 
-  @Override
-  InvertedDocConsumerPerField addField(DocInverterPerField docInverterPerField, final FieldInfo fieldInfo) {
-    return new TermsHashPerField(docInverterPerField, this, nextTermsHash, fieldInfo);
-  }
+  abstract TermsHashPerField addField(FieldInvertState fieldInvertState, final FieldInfo fieldInfo);
 
-  @Override
   void finishDocument() throws IOException {
-    consumer.finishDocument(this);
     if (nextTermsHash != null) {
-      nextTermsHash.consumer.finishDocument(nextTermsHash);
+      nextTermsHash.finishDocument();
     }
   }
 
-  @Override
   void startDocument() throws IOException {
-    consumer.startDocument();
     if (nextTermsHash != null) {
-      nextTermsHash.consumer.startDocument();
+      nextTermsHash.startDocument();
     }
   }
 }

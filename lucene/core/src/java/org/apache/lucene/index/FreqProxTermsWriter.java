@@ -23,13 +23,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CollectionUtil;
 
-final class FreqProxTermsWriter extends TermsHashConsumer {
+final class FreqProxTermsWriter extends TermsHash {
 
-  @Override
-  void abort() {}
+  public FreqProxTermsWriter(DocumentsWriterPerThread docWriter, TermsHash termVectors) {
+    super(docWriter, true, termVectors);
+  }
 
   private void applyDeletes(SegmentWriteState state, Fields fields) throws IOException {
     // Process any pending Term deletes for this newly
@@ -77,21 +77,16 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
     }
   }
 
-  // TODO: would be nice to factor out more of this, eg the
-  // FreqProxFieldMergeState, and code to visit all Fields
-  // under the same FieldInfo together, up into TermsHash*.
-  // Other writers would presumably share alot of this...
-
   @Override
-  public void flush(Map<String,TermsHashConsumerPerField> fieldsToFlush, final SegmentWriteState state) throws IOException {
+  public void flush(Map<String,TermsHashPerField> fieldsToFlush, final SegmentWriteState state) throws IOException {
+    super.flush(fieldsToFlush, state);
 
-    // Gather all FieldData's that have postings, across all
-    // ThreadStates
+    // Gather all fields that saw any postings:
     List<FreqProxTermsWriterPerField> allFields = new ArrayList<>();
 
-    for (TermsHashConsumerPerField f : fieldsToFlush.values()) {
+    for (TermsHashPerField f : fieldsToFlush.values()) {
       final FreqProxTermsWriterPerField perField = (FreqProxTermsWriterPerField) f;
-      if (perField.termsHashPerField.bytesHash.size() > 0) {
+      if (perField.bytesHash.size() > 0) {
         perField.sortPostings();
         assert perField.fieldInfo.isIndexed();
         allFields.add(perField);
@@ -108,18 +103,8 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
     state.segmentInfo.getCodec().postingsFormat().fieldsConsumer(state).write(fields);
   }
 
-  BytesRef payload;
-
   @Override
-  public TermsHashConsumerPerField addField(TermsHashPerField termsHashPerField, FieldInfo fieldInfo) {
-    return new FreqProxTermsWriterPerField(termsHashPerField, this, fieldInfo);
-  }
-
-  @Override
-  void finishDocument(TermsHash termsHash) {
-  }
-
-  @Override
-  void startDocument() {
+  public TermsHashPerField addField(FieldInvertState invertState, FieldInfo fieldInfo) {
+    return new FreqProxTermsWriterPerField(invertState, this, fieldInfo, nextTermsHash.addField(invertState, fieldInfo));
   }
 }
