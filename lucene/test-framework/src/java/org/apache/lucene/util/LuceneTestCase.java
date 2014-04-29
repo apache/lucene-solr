@@ -603,8 +603,7 @@ public abstract class LuceneTestCase extends Assert {
     .around(new TestRuleFieldCacheSanity())
     .around(parentChainCallRule);
 
-  private static final Map<String,FieldType> fieldTermVectorOptions = new HashMap<String,FieldType>();
-  private static final Set<String> fieldNamesSeen = Collections.newSetFromMap(new ConcurrentHashMap<String,Boolean>());
+  private static final Map<String,FieldType> fieldToType = new HashMap<String,FieldType>();
 
   // -----------------------------------------------------------------
   // Suite and test case setup/ cleanup.
@@ -624,8 +623,7 @@ public abstract class LuceneTestCase extends Assert {
   @After
   public void tearDown() throws Exception {
     parentChainCallRule.teardownCalled = true;
-    fieldTermVectorOptions.clear();
-    fieldNamesSeen.clear();
+    fieldToType.clear();
   }
 
 
@@ -1176,11 +1174,42 @@ public abstract class LuceneTestCase extends Assert {
     return newField(random(), name, value, type);
   }
 
-  public static Field newField(Random random, String name, String value, FieldType type) {
+  /** Returns a FieldType derived from newType but whose
+   *  term vector options match the old type */
+  private static FieldType mergeTermVectorOptions(FieldType newType, FieldType oldType) {
+    if (newType.indexed() && oldType.storeTermVectors() == true && newType.storeTermVectors() == false) {
+      newType = new FieldType(newType);
+      newType.setStoreTermVectors(oldType.storeTermVectors());
+      newType.setStoreTermVectorPositions(oldType.storeTermVectorPositions());
+      newType.setStoreTermVectorOffsets(oldType.storeTermVectorOffsets());
+      newType.setStoreTermVectorPayloads(oldType.storeTermVectorPayloads());
+      newType.freeze();
+    }
+
+    return newType;
+  }
+
+  // TODO: if we can pull out the "make term vector options
+  // consistent across all instances of the same field name"
+  // write-once schema sort of helper class then we can
+  // remove the sync here.  We can also fold the random
+  // "enable norms" (now commented out, below) into that:
+  public synchronized static Field newField(Random random, String name, String value, FieldType type) {
+
+    // Defeat any consumers that illegally rely on intern'd
+    // strings (we removed this from Lucene a while back):
     name = new String(name);
-    if (usually(random) || !type.indexed()) {
+
+    FieldType prevType = fieldToType.get(name);
+
+    if (usually(random) || !type.indexed() || prevType != null) {
       // most of the time, don't modify the params
-      fieldNamesSeen.add(name);
+      if (prevType == null) {
+        fieldToType.put(name, new FieldType(type));
+      } else {
+        type = mergeTermVectorOptions(type, prevType);
+      }
+
       return new Field(name, value, type);
     }
 
@@ -1195,37 +1224,27 @@ public abstract class LuceneTestCase extends Assert {
 
     // Randomly turn on term vector options, but always do
     // so consistently for the same field name:
-    if (!newType.storeTermVectors() && fieldNamesSeen.contains(name) == false && random.nextBoolean()) {
-      FieldType prev;
-      synchronized(fieldTermVectorOptions) {
-        prev = fieldTermVectorOptions.get(name);
-        if (prev == null) {
-          newType.setStoreTermVectors(true);
-          if (!newType.storeTermVectorPositions()) {
-            newType.setStoreTermVectorPositions(random.nextBoolean());
+    if (!newType.storeTermVectors() && random.nextBoolean()) {
+      newType.setStoreTermVectors(true);
+      if (!newType.storeTermVectorPositions()) {
+        newType.setStoreTermVectorPositions(random.nextBoolean());
         
-            if (newType.storeTermVectorPositions()) {
-              if (!newType.storeTermVectorPayloads()) {
-                newType.setStoreTermVectorPayloads(random.nextBoolean());
-              }
-              if (!newType.storeTermVectorOffsets()) {
-                newType.setStoreTermVectorOffsets(random.nextBoolean());
-              }
-            }
+        if (newType.storeTermVectorPositions()) {
+          if (!newType.storeTermVectorPayloads()) {
+            newType.setStoreTermVectorPayloads(random.nextBoolean());
           }
-          fieldTermVectorOptions.put(name, prev);
+          if (!newType.storeTermVectorOffsets()) {
+            newType.setStoreTermVectorOffsets(random.nextBoolean());
+          }
         }
       }
 
-      if (prev != null) {
-        newType.setStoreTermVectors(prev.storeTermVectors());
-        newType.setStoreTermVectorOffsets(prev.storeTermVectorOffsets());
-        newType.setStoreTermVectorPositions(prev.storeTermVectorPositions());
-        newType.setStoreTermVectorPayloads(prev.storeTermVectorPayloads());
+      if (VERBOSE) {
+        System.out.println("NOTE: LuceneTestCase: upgrade name=" + name + " type=" + newType);
       }
-      System.out.println("  LTC: upgrade name=" + name + " type=" + newType);
     }
     newType.freeze();
+    fieldToType.put(name, newType);
 
     // TODO: we need to do this, but smarter, ie, most of
     // the time we set the same value for a given field but
