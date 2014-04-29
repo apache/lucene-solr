@@ -317,14 +317,13 @@ final class DefaultIndexingChain extends DocConsumer {
           indexDocValue(fp, dvType, field);
         }
       }
+      storedFieldsWriter.finishDocument();
       success = true;
     } finally {
       if (success == false) {
         // We must abort, on the possibility that the
         // stored fields file is now corrupt:
         docWriter.setAborting();
-      } else {
-        storedFieldsWriter.finishDocument();
       }
     }
   }
