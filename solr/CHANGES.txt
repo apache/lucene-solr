@@ -124,7 +124,7 @@ Bug Fixes
 * SOLR-6017: Fix SimpleQParser to use query analyzer instead of index analyzer.
   (Ryan Ernst)
 
-* SOLR_6029: CollapsingQParserPlugin throws ArrayIndexOutOfBoundsException
+* SOLR-6029: CollapsingQParserPlugin throws ArrayIndexOutOfBoundsException
   if elevated doc has been deleted from a segment. (Greg Harris, Joel Bernstein)
 
 Other Changes
