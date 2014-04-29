@@ -53,7 +53,6 @@ public class SimpleTextStoredFieldsWriter extends StoredFieldsWriter {
 
   final static BytesRef END      = new BytesRef("END");
   final static BytesRef DOC      = new BytesRef("doc ");
-  final static BytesRef NUM      = new BytesRef("  numfields ");
   final static BytesRef FIELD    = new BytesRef("  field ");
   final static BytesRef NAME     = new BytesRef("    name ");
   final static BytesRef TYPE     = new BytesRef("    type ");
@@ -76,13 +75,9 @@ public class SimpleTextStoredFieldsWriter extends StoredFieldsWriter {
   }
 
   @Override
-  public void startDocument(int numStoredFields) throws IOException {
+  public void startDocument() throws IOException {
     write(DOC);
     write(Integer.toString(numDocsWritten));
-    newLine();
-    
-    write(NUM);
-    write(Integer.toString(numStoredFields));
     newLine();
     
     numDocsWritten++;

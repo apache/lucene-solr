@@ -80,8 +80,7 @@ public final class BytesRefHash {
   /**
    * Creates a new {@link BytesRefHash}
    */
-  public BytesRefHash(ByteBlockPool pool, int capacity,
-      BytesStartArray bytesStartArray) {
+  public BytesRefHash(ByteBlockPool pool, int capacity, BytesStartArray bytesStartArray) {
     hashSize = capacity;
     hashHalfSize = hashSize >> 1;
     hashMask = hashSize - 1;

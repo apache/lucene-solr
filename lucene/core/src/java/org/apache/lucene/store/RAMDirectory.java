@@ -173,7 +173,7 @@ public class RAMDirectory extends BaseDirectory {
       existing.directory = null;
     }
     fileMap.put(name, file);
-    return new RAMOutputStream(file);
+    return new RAMOutputStream(file, true);
   }
 
   /**

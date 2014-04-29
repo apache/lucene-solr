@@ -230,10 +230,10 @@ public class JsonPreAnalyzedParser implements PreAnalyzedParser {
         Map<String,Object> tok = new TreeMap<>();
         while (it.hasNext()) {
           Class<? extends Attribute> cl = it.next();
-          if (!ts.hasAttribute(cl)) {
+          Attribute att = ts.getAttribute(cl);
+          if (att == null) {
             continue;
           }
-          Attribute att = ts.getAttribute(cl);
           if (cl.isAssignableFrom(CharTermAttribute.class)) {
             CharTermAttribute catt = (CharTermAttribute)att;
             cTerm = new String(catt.buffer(), 0, catt.length());

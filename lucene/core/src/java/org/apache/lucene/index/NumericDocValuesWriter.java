@@ -97,10 +97,6 @@ class NumericDocValuesWriter extends DocValuesWriter {
                                });
   }
 
-  @Override
-  public void abort() {
-  }
-  
   // iterates over the values we have in ram
   private class NumericIterator implements Iterator<Number> {
     final AppendingDeltaPackedLongBuffer.Iterator iter = pending.iterator();

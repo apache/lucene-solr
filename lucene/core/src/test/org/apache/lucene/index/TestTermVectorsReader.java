@@ -30,6 +30,7 @@ import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -110,6 +111,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
       }
       else if (!testFieldsStorePos[i] && testFieldsStoreOff[i]) {
         customType.setStoreTermVectors(true);
+        customType.setStoreTermVectorPositions(true);
         customType.setStoreTermVectorOffsets(true);
       }
       else {
@@ -334,7 +336,9 @@ public class TestTermVectorsReader extends LuceneTestCase {
 
   public void testIllegalIndexableField() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    MockAnalyzer a = new MockAnalyzer(random());
+    a.setEnableChecks(false);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, a);
     FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
     ft.setStoreTermVectors(true);
     ft.setStoreTermVectorPayloads(true);
@@ -387,8 +391,68 @@ public class TestTermVectorsReader extends LuceneTestCase {
       assertEquals("cannot index term vector payloads when term vectors are not indexed (field=\"field\")", iae.getMessage());
     }
 
+    ft = new FieldType(TextField.TYPE_NOT_STORED);
+    ft.setStoreTermVectors(true);
+    ft.setStoreTermVectorPayloads(true);
+    doc = new Document();
+    doc.add(new Field("field", "value", ft));
+    try {
+      w.addDocument(doc);
+      fail("did not hit exception");
+    } catch (IllegalArgumentException iae) {
+      // Expected
+      assertEquals("cannot index term vector payloads without term vector positions (field=\"field\")", iae.getMessage());
+    }
+
+    ft = new FieldType(StoredField.TYPE);
+    ft.setStoreTermVectors(true);
+    doc = new Document();
+    doc.add(new Field("field", "value", ft));
+    try {
+      w.addDocument(doc);
+      fail("did not hit exception");
+    } catch (IllegalArgumentException iae) {
+      // Expected
+      assertEquals("cannot store term vectors for a field that is not indexed (field=\"field\")", iae.getMessage());
+    }
+
+    ft = new FieldType(StoredField.TYPE);
+    ft.setStoreTermVectorPositions(true);
+    doc = new Document();
+    doc.add(new Field("field", "value", ft));
+    try {
+      w.addDocument(doc);
+      fail("did not hit exception");
+    } catch (IllegalArgumentException iae) {
+      // Expected
+      assertEquals("cannot store term vector positions for a field that is not indexed (field=\"field\")", iae.getMessage());
+    }
+
+    ft = new FieldType(StoredField.TYPE);
+    ft.setStoreTermVectorOffsets(true);
+    doc = new Document();
+    doc.add(new Field("field", "value", ft));
+    try {
+      w.addDocument(doc);
+      fail("did not hit exception");
+    } catch (IllegalArgumentException iae) {
+      // Expected
+      assertEquals("cannot store term vector offsets for a field that is not indexed (field=\"field\")", iae.getMessage());
+    }
+
+    ft = new FieldType(StoredField.TYPE);
+    ft.setStoreTermVectorPayloads(true);
+    doc = new Document();
+    doc.add(new Field("field", "value", ft));
+    try {
+      w.addDocument(doc);
+      fail("did not hit exception");
+    } catch (IllegalArgumentException iae) {
+      // Expected
+      assertEquals("cannot store term vector payloads for a field that is not indexed (field=\"field\")", iae.getMessage());
+    }
+
     w.close();
-    
     dir.close();
   }
 }

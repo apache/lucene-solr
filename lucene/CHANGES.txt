@@ -5,6 +5,13 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 4.9.0 =======================
 
+Changes in Runtime Behavior
+
+* LUCENE-5611: Changing the term vector options for multiple field
+  instances by the same name in one document is not longer accepted;
+  IndexWriter will now throw IllegalArgumentException.  (Robert Muir,
+  Mike McCandless)
+
 New Features
 
 * LUCENE-5610: Add Terms.getMin and Terms.getMax to get the lowest and
@@ -20,6 +27,13 @@ API Changes
 
 * LUCENE-5621: Deprecate IndexOutput.flush: this is not used by Lucene.
   (Robert Muir)
+
+* LUCENE-5611: Simplified Lucene's default indexing chain / APIs.
+  AttributeSource/TokenStream.getAttribute now returns null if the
+  attribute is not present (previously it threw
+  IllegalArgumentException).  StoredFieldsWriter.startDocument no
+  longer receives the number of fields that will be added (Robert
+  Muir, Mike McCandless)
 
 Optimizations
 
