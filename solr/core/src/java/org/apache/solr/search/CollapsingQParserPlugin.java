@@ -266,7 +266,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             if(termsEnum.seekExact(ref)) {
               docsEnum = termsEnum.docs(liveDocs, docsEnum);
               int doc = docsEnum.nextDoc();
-              if(doc != -1) {
+              if(doc != DocsEnum.NO_MORE_DOCS) {
                 //Found the document.
                 boostDocs.add(doc+docBase);
                 it.remove();
