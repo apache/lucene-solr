@@ -61,6 +61,9 @@ Bug Fixes
   rollback as well as how SolrIndexWriter manages it's ref counted directory
   instance. (Mark Miller, Gregory Chanan)
 
+* SOLR_6029: CollapsingQParserPlugin throws ArrayIndexOutOfBoundsException
+  if elevated doc has been deleted from a segment. (Greg Harris, Joel Bernstein)
+
 Other Changes
 ---------------------
 
