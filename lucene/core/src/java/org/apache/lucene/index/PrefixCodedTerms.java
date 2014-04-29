@@ -97,7 +97,7 @@ class PrefixCodedTerms implements Iterable<Term> {
   /** Builds a PrefixCodedTerms: call add repeatedly, then finish. */
   public static class Builder {
     private RAMFile buffer = new RAMFile();
-    private RAMOutputStream output = new RAMOutputStream(buffer);
+    private RAMOutputStream output = new RAMOutputStream(buffer, false);
     private Term lastTerm = new Term("");
 
     /** add a term */

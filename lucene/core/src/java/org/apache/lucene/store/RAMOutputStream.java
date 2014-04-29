@@ -38,20 +38,25 @@ public class RAMOutputStream extends IndexOutput {
   private long bufferStart;
   private int bufferLength;
   
-  private Checksum crc = new BufferedChecksum(new CRC32());
+  private final Checksum crc;
 
   /** Construct an empty output buffer. */
   public RAMOutputStream() {
-    this(new RAMFile());
+    this(new RAMFile(), false);
   }
 
-  public RAMOutputStream(RAMFile f) {
+  public RAMOutputStream(RAMFile f, boolean checksum) {
     file = f;
 
     // make sure that we switch to the
     // first needed buffer lazily
     currentBufferIndex = -1;
     currentBuffer = null;
+    if (checksum) {
+      crc = new BufferedChecksum(new CRC32());
+    } else {
+      crc = null;
+    }
   }
 
   /** Copy the current contents of this buffer to the named output. */
@@ -99,7 +104,9 @@ public class RAMOutputStream extends IndexOutput {
     bufferStart = 0;
     bufferLength = 0;
     file.setLength(0);
-    crc.reset();
+    if (crc != null) {
+      crc.reset();
+    }
   }
 
   @Override
@@ -113,14 +120,18 @@ public class RAMOutputStream extends IndexOutput {
       currentBufferIndex++;
       switchCurrentBuffer();
     }
-    crc.update(b);
+    if (crc != null) {
+      crc.update(b);
+    }
     currentBuffer[bufferPosition++] = b;
   }
 
   @Override
   public void writeBytes(byte[] b, int offset, int len) throws IOException {
     assert b != null;
-    crc.update(b, offset, len);
+    if (crc != null) {
+      crc.update(b, offset, len);
+    }
     while (len > 0) {
       if (bufferPosition ==  bufferLength) {
         currentBufferIndex++;
@@ -171,6 +182,10 @@ public class RAMOutputStream extends IndexOutput {
 
   @Override
   public long getChecksum() throws IOException {
-    return crc.getValue();
+    if (crc == null) {
+      throw new IllegalStateException("internal RAMOutputStream created with checksum disabled");
+    } else {
+      return crc.getValue();
+    }
   }
 }

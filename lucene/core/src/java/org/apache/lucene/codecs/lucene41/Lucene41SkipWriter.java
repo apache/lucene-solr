@@ -88,20 +88,43 @@ final class Lucene41SkipWriter extends MultiLevelSkipListWriter {
     this.fieldHasOffsets = fieldHasOffsets;
     this.fieldHasPayloads = fieldHasPayloads;
   }
+  
+  // tricky: we only skip data for blocks (terms with more than 128 docs), but re-init'ing the skipper 
+  // is pretty slow for rare terms in large segments as we have to fill O(log #docs in segment) of junk.
+  // this is the vast majority of terms (worst case: ID field or similar).  so in resetSkip() we save 
+  // away the previous pointers, and lazy-init only if we need to buffer skip data for the term.
+  private boolean initialized;
+  long lastDocFP;
+  long lastPosFP;
+  long lastPayFP;
 
   @Override
   public void resetSkip() {
-    super.resetSkip();
-    Arrays.fill(lastSkipDoc, 0);
-    Arrays.fill(lastSkipDocPointer, docOut.getFilePointer());
+    lastDocFP = docOut.getFilePointer();
     if (fieldHasPositions) {
-      Arrays.fill(lastSkipPosPointer, posOut.getFilePointer());
-      if (fieldHasPayloads) {
-        Arrays.fill(lastPayloadByteUpto, 0);
-      }
+      lastPosFP = posOut.getFilePointer();
       if (fieldHasOffsets || fieldHasPayloads) {
-        Arrays.fill(lastSkipPayPointer, payOut.getFilePointer());
+        lastPayFP = payOut.getFilePointer();
       }
+    }
+    initialized = false;
+  }
+  
+  public void initSkip() {
+    if (!initialized) {
+      super.resetSkip();
+      Arrays.fill(lastSkipDoc, 0);
+      Arrays.fill(lastSkipDocPointer, lastDocFP);
+      if (fieldHasPositions) {
+        Arrays.fill(lastSkipPosPointer, lastPosFP);
+        if (fieldHasPayloads) {
+          Arrays.fill(lastPayloadByteUpto, 0);
+        }
+        if (fieldHasOffsets || fieldHasPayloads) {
+          Arrays.fill(lastSkipPayPointer, lastPayFP);
+        }
+      }
+      initialized = true;
     }
   }
 
@@ -109,6 +132,7 @@ final class Lucene41SkipWriter extends MultiLevelSkipListWriter {
    * Sets the values for the current skip data. 
    */
   public void bufferSkip(int doc, int numDocs, long posFP, long payFP, int posBufferUpto, int payloadByteUpto) throws IOException {
+    initSkip();
     this.curDoc = doc;
     this.curDocPointer = docOut.getFilePointer();
     this.curPosPointer = posFP;

@@ -54,7 +54,7 @@ public class TestHugeRamFile extends LuceneTestCase {
   public void testHugeFile() throws IOException {
     DenseRAMFile f = new DenseRAMFile();
     // output part
-    RAMOutputStream out = new RAMOutputStream(f);
+    RAMOutputStream out = new RAMOutputStream(f, true);
     byte b1[] = new byte[RAMOutputStream.BUFFER_SIZE];
     byte b2[] = new byte[RAMOutputStream.BUFFER_SIZE / 3];
     for (int i = 0; i < b1.length; i++) {
