@@ -279,21 +279,14 @@ public class TestDocumentWriter extends LuceneTestCase {
 
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random())));
-    writer.addDocument(doc);
+    try {
+      writer.addDocument(doc);
+      fail("did not hit exception");
+    } catch (IllegalArgumentException iae) {
+      assertEquals("all instances of a given field name must have the same term vectors settings (storeTermVectors changed for field=\"f1\")",
+                   iae.getMessage());
+    }
     writer.shutdown();
-
-    TestUtil.checkIndex(dir);
-
-    IndexReader reader = DirectoryReader.open(dir);
-    // f1
-    Terms tfv1 = reader.getTermVectors(0).terms("f1");
-    assertNotNull(tfv1);
-    assertEquals("the 'with_tv' setting should rule!",2,tfv1.size());
-    // f2
-    Terms tfv2 = reader.getTermVectors(0).terms("f2");
-    assertNotNull(tfv2);
-    assertEquals("the 'with_tv' setting should rule!",2,tfv2.size());
-    reader.close();
   }
 
   /**

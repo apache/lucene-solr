@@ -90,7 +90,6 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
   static class AssertingStoredFieldsWriter extends StoredFieldsWriter {
     private final StoredFieldsWriter in;
     private int numWritten;
-    private int fieldCount;
     private Status docStatus;
     
     AssertingStoredFieldsWriter(StoredFieldsWriter in) {
@@ -99,11 +98,9 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
     }
 
     @Override
-    public void startDocument(int numStoredFields) throws IOException {
+    public void startDocument() throws IOException {
       assert docStatus != Status.STARTED;
-      in.startDocument(numStoredFields);
-      assert fieldCount == 0;
-      fieldCount = numStoredFields;
+      in.startDocument();
       numWritten++;
       docStatus = Status.STARTED;
     }
@@ -111,7 +108,6 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
     @Override
     public void finishDocument() throws IOException {
       assert docStatus == Status.STARTED;
-      assert fieldCount == 0;
       in.finishDocument();
       docStatus = Status.FINISHED;
     }
@@ -120,8 +116,6 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
     public void writeField(FieldInfo info, StorableField field) throws IOException {
       assert docStatus == Status.STARTED;
       in.writeField(info, field);
-      assert fieldCount > 0;
-      fieldCount--;
     }
 
     @Override
@@ -133,7 +127,6 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
     public void finish(FieldInfos fis, int numDocs) throws IOException {
       assert docStatus == (numDocs > 0 ? Status.FINISHED : Status.UNDEFINED);
       in.finish(fis, numDocs);
-      assert fieldCount == 0;
       assert numDocs == numWritten;
     }
 

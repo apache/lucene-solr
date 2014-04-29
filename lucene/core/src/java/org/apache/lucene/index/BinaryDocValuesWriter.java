@@ -121,10 +121,6 @@ class BinaryDocValuesWriter extends DocValuesWriter {
                               });
   }
 
-  @Override
-  public void abort() {
-  }
-  
   // iterates over the values we have in ram
   private class BytesIterator implements Iterator<BytesRef> {
     final BytesRef value = new BytesRef();

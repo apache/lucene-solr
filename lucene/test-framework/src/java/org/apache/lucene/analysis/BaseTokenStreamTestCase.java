@@ -685,11 +685,11 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     int remainder = random.nextInt(10);
     Reader reader = new StringReader(text);
     TokenStream ts = a.tokenStream("dummy", useCharFilter ? new MockCharFilter(reader, remainder) : reader);
-    CharTermAttribute termAtt = ts.hasAttribute(CharTermAttribute.class) ? ts.getAttribute(CharTermAttribute.class) : null;
-    OffsetAttribute offsetAtt = ts.hasAttribute(OffsetAttribute.class) ? ts.getAttribute(OffsetAttribute.class) : null;
-    PositionIncrementAttribute posIncAtt = ts.hasAttribute(PositionIncrementAttribute.class) ? ts.getAttribute(PositionIncrementAttribute.class) : null;
-    PositionLengthAttribute posLengthAtt = ts.hasAttribute(PositionLengthAttribute.class) ? ts.getAttribute(PositionLengthAttribute.class) : null;
-    TypeAttribute typeAtt = ts.hasAttribute(TypeAttribute.class) ? ts.getAttribute(TypeAttribute.class) : null;
+    CharTermAttribute termAtt = ts.getAttribute(CharTermAttribute.class);
+    OffsetAttribute offsetAtt = ts.getAttribute(OffsetAttribute.class);
+    PositionIncrementAttribute posIncAtt = ts.getAttribute(PositionIncrementAttribute.class);
+    PositionLengthAttribute posLengthAtt = ts.getAttribute(PositionLengthAttribute.class);
+    TypeAttribute typeAtt = ts.getAttribute(TypeAttribute.class);
     List<String> tokens = new ArrayList<>();
     List<String> types = new ArrayList<>();
     List<Integer> positions = new ArrayList<>();

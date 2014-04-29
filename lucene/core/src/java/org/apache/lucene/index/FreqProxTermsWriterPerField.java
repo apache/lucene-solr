@@ -17,6 +17,8 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
@@ -26,16 +28,13 @@ import org.apache.lucene.util.RamUsageEstimator;
 // TODO: break into separate freq and prox writers as
 // codecs; make separate container (tii/tis/skip/*) that can
 // be configured as any number of files 1..N
-final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implements Comparable<FreqProxTermsWriterPerField> {
+final class FreqProxTermsWriterPerField extends TermsHashPerField {
 
-  final FreqProxTermsWriter parent;
-  final TermsHashPerField termsHashPerField;
-  final FieldInfo fieldInfo;
-  final DocumentsWriterPerThread.DocState docState;
-  final FieldInvertState fieldState;
-  boolean hasFreq;
-  boolean hasProx;
-  boolean hasOffsets;
+  private FreqProxPostingsArray freqProxPostingsArray;
+
+  final boolean hasFreq;
+  final boolean hasProx;
+  final boolean hasOffsets;
   PayloadAttribute payloadAttribute;
   OffsetAttribute offsetAttribute;
   long sumTotalTermFreq;
@@ -44,111 +43,67 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
   // How many docs have this field:
   int docCount;
 
-  public FreqProxTermsWriterPerField(TermsHashPerField termsHashPerField, FreqProxTermsWriter parent, FieldInfo fieldInfo) {
-    this.termsHashPerField = termsHashPerField;
-    this.parent = parent;
-    this.fieldInfo = fieldInfo;
-    docState = termsHashPerField.docState;
-    fieldState = termsHashPerField.fieldState;
-    setIndexOptions(fieldInfo.getIndexOptions());
+  /** Set to true if any token had a payload in the current
+   *  segment. */
+  boolean sawPayloads;
+
+  public FreqProxTermsWriterPerField(FieldInvertState invertState, TermsHash termsHash, FieldInfo fieldInfo, TermsHashPerField nextPerField) {
+    super(fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 ? 2 : 1, invertState, termsHash, nextPerField, fieldInfo);
+    IndexOptions indexOptions = fieldInfo.getIndexOptions();
+    assert indexOptions != null;
+    hasFreq = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
+    hasProx = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+    hasOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
   }
 
   @Override
-  int getStreamCount() {
-    if (!hasProx) {
-      return 1;
-    } else {
-      return 2;
-    }
-  }
-
-  @Override
-  void finish() {
+  void finish() throws IOException {
+    super.finish();
     sumDocFreq += fieldState.uniqueTermCount;
     sumTotalTermFreq += fieldState.length;
     if (fieldState.length > 0) {
       docCount++;
     }
 
-    if (hasPayloads) {
+    if (sawPayloads) {
       fieldInfo.setStorePayloads();
     }
   }
 
-  boolean hasPayloads;
-
   @Override
-  void skippingLongTerm() {}
-
-  @Override
-  public int compareTo(FreqProxTermsWriterPerField other) {
-    return fieldInfo.name.compareTo(other.fieldInfo.name);
-  }
-
-  private void setIndexOptions(IndexOptions indexOptions) {
-    if (indexOptions == null) {
-      // field could later be updated with indexed=true, so set everything on
-      hasFreq = hasProx = hasOffsets = true;
-    } else {
-      hasFreq = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
-      hasProx = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
-      hasOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
-    }
-  }
-
-  @Override
-  boolean start(IndexableField[] fields, int count) {
+  boolean start(IndexableField f, boolean first) {
+    super.start(f, first);
+    payloadAttribute = fieldState.payloadAttribute;
+    offsetAttribute = fieldState.offsetAttribute;
     return true;
   }
 
-  @Override
-  void start(IndexableField f) {
-    if (fieldState.attributeSource.hasAttribute(PayloadAttribute.class)) {
-      payloadAttribute = fieldState.attributeSource.getAttribute(PayloadAttribute.class);
-    } else {
-      payloadAttribute = null;
-    }
-    if (hasOffsets) {
-      offsetAttribute = fieldState.attributeSource.addAttribute(OffsetAttribute.class);
-    } else {
-      offsetAttribute = null;
-    }
-  }
-
-  void writeProx(final int termID, int proxCode) {
-    //System.out.println("writeProx termID=" + termID + " proxCode=" + proxCode);
-    assert hasProx;
-    final BytesRef payload;
+  void writeProx(int termID, int proxCode) {
     if (payloadAttribute == null) {
-      payload = null;
+      writeVInt(1, proxCode<<1);
     } else {
-      payload = payloadAttribute.getPayload();
+      BytesRef payload = payloadAttribute.getPayload();
+      if (payload != null && payload.length > 0) {
+        writeVInt(1, (proxCode<<1)|1);
+        writeVInt(1, payload.length);
+        writeBytes(1, payload.bytes, payload.offset, payload.length);
+        sawPayloads = true;
+      } else {
+        writeVInt(1, proxCode<<1);
+      }
     }
 
-    if (payload != null && payload.length > 0) {
-      termsHashPerField.writeVInt(1, (proxCode<<1)|1);
-      termsHashPerField.writeVInt(1, payload.length);
-      termsHashPerField.writeBytes(1, payload.bytes, payload.offset, payload.length);
-      hasPayloads = true;
-    } else {
-      termsHashPerField.writeVInt(1, proxCode<<1);
-    }
-
-    FreqProxPostingsArray postings = (FreqProxPostingsArray) termsHashPerField.postingsArray;
-    postings.lastPositions[termID] = fieldState.position;
+    assert postingsArray == freqProxPostingsArray;
+    freqProxPostingsArray.lastPositions[termID] = fieldState.position;
   }
 
-  void writeOffsets(final int termID, int offsetAccum) {
-    assert hasOffsets;
+  void writeOffsets(int termID, int offsetAccum) {
     final int startOffset = offsetAccum + offsetAttribute.startOffset();
     final int endOffset = offsetAccum + offsetAttribute.endOffset();
-    //System.out.println("writeOffsets termID=" + termID + " prevOffset=" + prevOffset + " startOff=" + startOffset + " endOff=" + endOffset);
-    FreqProxPostingsArray postings = (FreqProxPostingsArray) termsHashPerField.postingsArray;
-    assert startOffset - postings.lastOffsets[termID] >= 0;
-    termsHashPerField.writeVInt(1, startOffset - postings.lastOffsets[termID]);
-    termsHashPerField.writeVInt(1, endOffset - startOffset);
-
-    postings.lastOffsets[termID] = startOffset;
+    assert startOffset - freqProxPostingsArray.lastOffsets[termID] >= 0;
+    writeVInt(1, startOffset - freqProxPostingsArray.lastOffsets[termID]);
+    writeVInt(1, endOffset - startOffset);
+    freqProxPostingsArray.lastOffsets[termID] = startOffset;
   }
 
   @Override
@@ -157,9 +112,11 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     // flush
     assert docState.testPoint("FreqProxTermsWriterPerField.newTerm start");
 
-    FreqProxPostingsArray postings = (FreqProxPostingsArray) termsHashPerField.postingsArray;
+    final FreqProxPostingsArray postings = freqProxPostingsArray;
+
     postings.lastDocIDs[termID] = docState.docID;
     if (!hasFreq) {
+      assert postings.termFreqs == null;
       postings.lastDocCodes[termID] = docState.docID;
     } else {
       postings.lastDocCodes[termID] = docState.docID << 1;
@@ -182,15 +139,16 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
 
     assert docState.testPoint("FreqProxTermsWriterPerField.addTerm start");
 
-    FreqProxPostingsArray postings = (FreqProxPostingsArray) termsHashPerField.postingsArray;
+    final FreqProxPostingsArray postings = freqProxPostingsArray;
 
     assert !hasFreq || postings.termFreqs[termID] > 0;
 
     if (!hasFreq) {
       assert postings.termFreqs == null;
       if (docState.docID != postings.lastDocIDs[termID]) {
+        // New document; now encode docCode for previous doc:
         assert docState.docID > postings.lastDocIDs[termID];
-        termsHashPerField.writeVInt(0, postings.lastDocCodes[termID]);
+        writeVInt(0, postings.lastDocCodes[termID]);
         postings.lastDocCodes[termID] = docState.docID - postings.lastDocIDs[termID];
         postings.lastDocIDs[termID] = docState.docID;
         fieldState.uniqueTermCount++;
@@ -203,11 +161,13 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
       // Now that we know doc freq for previous doc,
       // write it & lastDocCode
       if (1 == postings.termFreqs[termID]) {
-        termsHashPerField.writeVInt(0, postings.lastDocCodes[termID]|1);
+        writeVInt(0, postings.lastDocCodes[termID]|1);
       } else {
-        termsHashPerField.writeVInt(0, postings.lastDocCodes[termID]);
-        termsHashPerField.writeVInt(0, postings.termFreqs[termID]);
+        writeVInt(0, postings.lastDocCodes[termID]);
+        writeVInt(0, postings.termFreqs[termID]);
       }
+
+      // Init freq for the current document
       postings.termFreqs[termID] = 1;
       fieldState.maxTermFrequency = Math.max(1, fieldState.maxTermFrequency);
       postings.lastDocCodes[termID] = (docState.docID - postings.lastDocIDs[termID]) << 1;
@@ -226,15 +186,25 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
       fieldState.maxTermFrequency = Math.max(fieldState.maxTermFrequency, ++postings.termFreqs[termID]);
       if (hasProx) {
         writeProx(termID, fieldState.position-postings.lastPositions[termID]);
-      }
-      if (hasOffsets) {
-        writeOffsets(termID, fieldState.offset);
+        if (hasOffsets) {
+          writeOffsets(termID, fieldState.offset);
+        }
       }
     }
   }
 
   @Override
+  public void newPostingsArray() {
+    freqProxPostingsArray = (FreqProxPostingsArray) postingsArray;
+  }
+
+  @Override
   ParallelPostingsArray createPostingsArray(int size) {
+    IndexOptions indexOptions = fieldInfo.getIndexOptions();
+    assert indexOptions != null;
+    boolean hasFreq = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
+    boolean hasProx = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+    boolean hasOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
     return new FreqProxPostingsArray(size, hasFreq, hasProx, hasOffsets);
   }
 
@@ -306,16 +276,5 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
 
       return bytes;
     }
-  }
-
-  public void abort() {}
-
-  BytesRef payload;
-
-  int[] sortedTermIDs;
-
-  void sortPostings() {
-    assert sortedTermIDs == null;
-    sortedTermIDs = termsHashPerField.sortPostings();
   }
 }

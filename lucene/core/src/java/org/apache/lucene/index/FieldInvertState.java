@@ -17,6 +17,10 @@
 package org.apache.lucene.index;
 
 import org.apache.lucene.analysis.TokenStream; // javadocs
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.util.AttributeSource;
 
 /**
@@ -36,6 +40,11 @@ public final class FieldInvertState {
   int uniqueTermCount;
   float boost;
   AttributeSource attributeSource;
+
+  OffsetAttribute offsetAttribute;
+  PositionIncrementAttribute posIncrAttribute;
+  PayloadAttribute payloadAttribute;
+  TermToBytesRefAttribute termAttribute;
 
   /** Creates {code FieldInvertState} for the specified
    *  field name. */
@@ -65,7 +74,20 @@ public final class FieldInvertState {
     maxTermFrequency = 0;
     uniqueTermCount = 0;
     boost = 1.0f;
-    attributeSource = null;
+  }
+  
+  // TODO: better name?
+  /**
+   * Sets attributeSource to a new instance.
+   */
+  void setAttributeSource(AttributeSource attributeSource) {
+    if (this.attributeSource != attributeSource) {
+      this.attributeSource = attributeSource;
+      termAttribute = attributeSource.getAttribute(TermToBytesRefAttribute.class);
+      posIncrAttribute = attributeSource.addAttribute(PositionIncrementAttribute.class);
+      offsetAttribute = attributeSource.addAttribute(OffsetAttribute.class);
+      payloadAttribute = attributeSource.getAttribute(PayloadAttribute.class);
+    }
   }
 
   /**

@@ -131,7 +131,7 @@ public class TestDocument extends LuceneTestCase {
     assertEquals(0, doc.getFields().size());
   }
 
-  public void testConstructorExceptions() {
+  public void testConstructorExceptions() throws Exception {
     FieldType ft = new FieldType();
     ft.setStored(true);
     new Field("name", "value", ft); // okay
@@ -142,16 +142,23 @@ public class TestDocument extends LuceneTestCase {
     } catch (IllegalArgumentException e) {
       // expected exception
     }
+
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     new Field("name", "value", ft); // okay
+    Document doc = new Document();
+    FieldType ft2 = new FieldType();
+    ft2.setStored(true);
+    ft2.setStoreTermVectors(true);
+    doc.add(new Field("name", "value", ft2));
     try {
-      FieldType ft2 = new FieldType();
-      ft2.setStored(true);
-      ft2.setStoreTermVectors(true);
-      new Field("name", "value", ft2);
+      w.addDocument(doc);
       fail();
     } catch (IllegalArgumentException e) {
       // expected exception
     }
+    w.close();
+    dir.close();
   }
 
   public void testClearDocument() {

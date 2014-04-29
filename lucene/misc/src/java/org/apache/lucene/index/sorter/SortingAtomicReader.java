@@ -582,7 +582,7 @@ public class SortingAtomicReader extends FilterAtomicReader {
         file = new RAMFile();
         sorter = new DocOffsetSorter(maxDoc);
       }
-      final IndexOutput out = new RAMOutputStream(file);
+      final IndexOutput out = new RAMOutputStream(file, false);
       int doc;
       int i = 0;
       while ((doc = in.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {

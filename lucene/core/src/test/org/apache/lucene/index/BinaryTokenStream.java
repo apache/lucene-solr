@@ -31,11 +31,10 @@ import org.apache.lucene.analysis.CannedBinaryTokenStream; // javadocs
  */
 public final class BinaryTokenStream extends TokenStream {
   private final ByteTermAttribute bytesAtt = addAttribute(ByteTermAttribute.class);
-  private final BytesRef bytes;
   private boolean available = true;
   
   public BinaryTokenStream(BytesRef bytes) {
-    this.bytes = bytes;
+    bytesAtt.setBytesRef(bytes);
   }
   
   @Override
@@ -43,7 +42,6 @@ public final class BinaryTokenStream extends TokenStream {
     if (available) {
       clearAttributes();
       available = false;
-      bytesAtt.setBytesRef(bytes);
       return true;
     }
     return false;

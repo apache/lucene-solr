@@ -639,8 +639,8 @@ public class TestStressIndexing2 extends LuceneTestCase {
           int freq1 = dpEnum1.freq();
           int freq2 = dpEnum2.freq();
           assertEquals(freq1, freq2);
-          OffsetAttribute offsetAtt1 = dpEnum1.attributes().hasAttribute(OffsetAttribute.class) ? dpEnum1.attributes().getAttribute(OffsetAttribute.class) : null;
-          OffsetAttribute offsetAtt2 = dpEnum2.attributes().hasAttribute(OffsetAttribute.class) ? dpEnum2.attributes().getAttribute(OffsetAttribute.class) : null;
+          OffsetAttribute offsetAtt1 = dpEnum1.attributes().getAttribute(OffsetAttribute.class);
+          OffsetAttribute offsetAtt2 = dpEnum2.attributes().getAttribute(OffsetAttribute.class);
 
           if (offsetAtt1 != null) {
             assertNotNull(offsetAtt2);
@@ -773,24 +773,39 @@ public class TestStressIndexing2 extends LuceneTestCase {
       Field idField =  newField("id", idString, customType1);
       fields.add(idField);
 
+      Map<String,FieldType> tvTypes = new HashMap<>();
+
       int nFields = nextInt(maxFields);
       for (int i=0; i<nFields; i++) {
 
-        FieldType customType = new FieldType();
-        switch (nextInt(4)) {
-        case 0:
-          break;
-        case 1:
-          customType.setStoreTermVectors(true);
-          break;
-        case 2:
-          customType.setStoreTermVectors(true);
-          customType.setStoreTermVectorPositions(true);
-          break;
-        case 3:
-          customType.setStoreTermVectors(true);
-          customType.setStoreTermVectorOffsets(true);
-          break;
+        String fieldName = "f" + nextInt(100);
+        FieldType customType;
+
+        // Use the same term vector settings if we already
+        // added this field to the doc:
+        FieldType oldTVType = tvTypes.get(fieldName);
+        if (oldTVType != null) {
+          customType = new FieldType(oldTVType);
+        } else {
+          customType = new FieldType();
+          switch (nextInt(4)) {
+          case 0:
+            break;
+          case 1:
+            customType.setStoreTermVectors(true);
+            break;
+          case 2:
+            customType.setStoreTermVectors(true);
+            customType.setStoreTermVectorPositions(true);
+            break;
+          case 3:
+            customType.setStoreTermVectors(true);
+            customType.setStoreTermVectorOffsets(true);
+            break;
+          }
+          FieldType newType = new FieldType(customType);
+          newType.freeze();
+          tvTypes.put(fieldName, newType);
         }
         
         switch (nextInt(4)) {
@@ -798,26 +813,30 @@ public class TestStressIndexing2 extends LuceneTestCase {
             customType.setStored(true);
             customType.setOmitNorms(true);
             customType.setIndexed(true);
-            fields.add(newField("f" + nextInt(100), getString(1), customType));
+            customType.freeze();
+            fields.add(newField(fieldName, getString(1), customType));
             break;
           case 1:
             customType.setIndexed(true);
             customType.setTokenized(true);
-            fields.add(newField("f" + nextInt(100), getString(0), customType));
+            customType.freeze();
+            fields.add(newField(fieldName, getString(0), customType));
             break;
           case 2:
             customType.setStored(true);
             customType.setStoreTermVectors(false);
             customType.setStoreTermVectorOffsets(false);
             customType.setStoreTermVectorPositions(false);
-            fields.add(newField("f" + nextInt(100), getString(0), customType));
+            customType.freeze();
+            fields.add(newField(fieldName, getString(0), customType));
             break;
           case 3:
             customType.setStored(true);
             customType.setIndexed(true);
             customType.setTokenized(true);
-            fields.add(newField("f" + nextInt(100), getString(bigFieldSize), customType));
-            break;          
+            customType.freeze();
+            fields.add(newField(fieldName, getString(bigFieldSize), customType));
+            break;
         }
       }
 
@@ -872,8 +891,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
           }
         }
       } catch (Throwable e) {
-        e.printStackTrace();
-        Assert.fail(e.toString());
+        throw new RuntimeException(e);
       }
 
       synchronized (this) {
