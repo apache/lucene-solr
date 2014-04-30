@@ -23,10 +23,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosWriter;
@@ -322,24 +318,26 @@ final class DefaultIndexingChain extends DocConsumer {
         // We must abort, on the possibility that the
         // stored fields file is now corrupt:
         docWriter.setAborting();
-      } if (success == false) {
-        // Non-aborting exception; we have to call
-        // storedFieldsWriter.finishDocument in this case:
-        try {
-          abort = true;
-          storedFieldsWriter.finishDocument();
-          abort = false;
-        } finally {
-          if (abort) {
-            docWriter.setAborting();
+      } else {
+        if (success == false) {
+          // Non-aborting exception; we have to call
+          // storedFieldsWriter.finishDocument in this case:
+          try {
+            abort = true;
+            storedFieldsWriter.finishDocument();
+            abort = false;
+          } finally {
+            if (abort) {
+              docWriter.setAborting();
+            }
           }
         }
-      }
-    }
 
-    // Finish each indexed field name seen in the document:
-    for (int i=0;i<fieldCount;i++) {
-      fields[i].finish();
+        // Finish each indexed field name seen in the document:
+        for (int i=0;i<fieldCount;i++) {
+          fields[i].finish();
+        }
+      }
     }
 
     success = false;
