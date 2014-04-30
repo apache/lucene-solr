@@ -263,7 +263,7 @@ sb.append("(group_name=").append(tg.getName()).append(")");
 
   private Map<String,Object> getReplicaProps(ZkController zkController, SolrCore core) {
     final String collection = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
-    Replica replica = zkController.getClusterState().getCachedReplica(collection, core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
+    Replica replica = zkController.getClusterState().getReplica(collection, core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
     if(replica!=null) {
       return replica.getProperties();
     }

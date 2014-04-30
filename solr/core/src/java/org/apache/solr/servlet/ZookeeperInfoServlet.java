@@ -112,7 +112,7 @@ public final class ZookeeperInfoServlet extends HttpServlet {
     printer.dump = dump;
 
     try {
-      printer.print(path, all);
+      printer.print(path);
     } finally {
       printer.close();
     }
@@ -195,7 +195,7 @@ public final class ZookeeperInfoServlet extends HttpServlet {
     }
 
     // main entry point
-    void print(String path, boolean all) throws IOException {
+    void print(String path) throws IOException {
       if (zkClient == null) {
         return;
       }
@@ -225,7 +225,7 @@ public final class ZookeeperInfoServlet extends HttpServlet {
       json.startObject();
 
       if (detail) {
-        if (!printZnode(json, path,all)) {
+        if (!printZnode(json, path)) {
           return;
         }
         json.writeValueSeparator();
@@ -296,7 +296,7 @@ public final class ZookeeperInfoServlet extends HttpServlet {
 
         if (dump) {
           json.writeValueSeparator();
-          printZnode(json, path, false);
+          printZnode(json, path);
         }
 
       } catch (IllegalArgumentException e) {
@@ -370,7 +370,7 @@ public final class ZookeeperInfoServlet extends HttpServlet {
     }
 
     @SuppressWarnings("unchecked")
-    boolean printZnode(JSONWriter json, String path, boolean all) throws IOException {
+    boolean printZnode(JSONWriter json, String path) throws IOException {
       try {
         Stat stat = new Stat();
         // Trickily, the call to zkClient.getData fills in the stat variable
@@ -383,48 +383,6 @@ public final class ZookeeperInfoServlet extends HttpServlet {
             dataStr = (new BytesRef(data)).utf8ToString();
           } catch (Exception e) {
             dataStrErr = "data is not parsable as a utf8 String: " + e.toString();
-          }
-        }
-
-        // pull in external collections too
-        if ("/clusterstate.json".equals(path) && all) {
-          SortedMap<String,Object> collectionStates = null;
-          List<String> children = zkClient.getChildren("/collections", null, true);
-          java.util.Collections.sort(children);
-          for (String collection : children) {
-            String collStatePath = String.format(Locale.ROOT, "/collections/%s/state", collection);
-            String childDataStr = null;
-            try {
-              byte[] childData = zkClient.getData(collStatePath, null, null, true);
-              if (childData != null) {
-                childDataStr = (new BytesRef(childData)).utf8ToString();
-              }
-            } catch (NoNodeException nne) {
-              // safe to ignore
-            } catch (Exception childErr) {
-              log.error("Failed to get "+collStatePath+" due to: "+childErr);
-            }
-
-            if (childDataStr != null) {
-              if (collectionStates == null) {
-                // initialize lazily as there may not be any external collections
-                collectionStates = new TreeMap<String,Object>();
-
-                // add the internal collections
-                if (dataStr != null)
-                  collectionStates.putAll((Map<String,Object>)ObjectBuilder.fromJSON(dataStr));
-              }
-
-              // now add in the external collections
-              Map<String,Object> extColl = (Map<String,Object>)ObjectBuilder.fromJSON(childDataStr);
-              collectionStates.put(collection, extColl.get(collection));
-            }
-          }
-
-          if (collectionStates != null) {
-            CharArr out = new CharArr();
-            new JSONWriter(out, 2).write(collectionStates);
-            dataStr = out.toString();
           }
         }
 

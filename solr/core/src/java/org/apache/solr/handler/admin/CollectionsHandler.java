@@ -466,7 +466,6 @@ public class CollectionsHandler extends RequestHandlerBase {
          MAX_SHARDS_PER_NODE,
         CREATE_NODE_SET ,
         SHARDS_PROP,
-        DocCollection.STATE_FORMAT,
         ASYNC,
         "router.");
 

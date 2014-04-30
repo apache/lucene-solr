@@ -337,19 +337,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return createJettys(numJettys, false);
   }
 
-  protected int defaultStateFormat = 1 + random().nextInt(2);
-
-  protected int getStateFormat()  {
-    String stateFormat = System.getProperty("tests.solr.stateFormat", null);
-    if (stateFormat != null)  {
-      if ("2".equals(stateFormat)) {
-        return defaultStateFormat = 2;
-      } else if ("1".equals(stateFormat))  {
-        return defaultStateFormat = 1;
-      }
-    }
-    return defaultStateFormat; // random
-  }
 
   /**
    * @param checkCreatedVsState
@@ -361,17 +348,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     List<JettySolrRunner> jettys = new ArrayList<>();
     List<SolrServer> clients = new ArrayList<>();
     StringBuilder sb = new StringBuilder();
-
-    if(getStateFormat() == 2) {
-      log.info("Creating collection1 with stateFormat=2");
-      SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT);
-      Overseer.getInQueue(zkClient).offer(ZkStateReader.toJSON(ZkNodeProps.makeMap(
-          Overseer.QUEUE_OPERATION, OverseerCollectionProcessor.CREATECOLLECTION,
-          "name", DEFAULT_COLLECTION,
-          "numShards", String.valueOf(sliceCount),
-          DocCollection.STATE_FORMAT, getStateFormat())));
-      zkClient.close();
-    }
 
     for (int i = 1; i <= numJettys; i++) {
       if (sb.length() > 0) sb.append(',');
@@ -1512,10 +1488,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       collectionInfos.put(collectionName, list);
     }
     params.set("name", collectionName);
-    if (useExternalCollections()) {
-      log.info("Creating external collection: " + collectionName);
-      params.set(DocCollection.STATE_FORMAT, "2");
-    }
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
@@ -1534,10 +1506,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return res;
   }
 
-
-  public boolean useExternalCollections() {
-    return getStateFormat() == 2;
-  }
 
   protected CollectionAdminResponse createCollection(Map<String,List<Integer>> collectionInfos,
       String collectionName, int numShards, int replicationFactor, int maxShardsPerNode, SolrServer client, String createNodeSetStr) throws SolrServerException, IOException {

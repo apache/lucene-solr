@@ -324,7 +324,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
             String coreUrl = getRemotCoreUrl(cores, corename, origCorename);
             // don't proxy for internal update requests
             SolrParams queryParams = SolrRequestParsers.parseQueryString(req.getQueryString());
-            checkStateIsValid(cores, queryParams.get(CloudSolrServer.STATE_VERSION));
             if (coreUrl != null
                 && queryParams
                     .get(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM) == null) {
@@ -380,7 +379,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
               if( "/select".equals( path ) || "/select/".equals( path ) ) {
                 solrReq = parser.parse( core, path, req );
 
-                checkStateIsValid(cores,solrReq.getParams().get(CloudSolrServer.STATE_VERSION));
                 String qt = solrReq.getParams().get( CommonParams.QT );
                 handler = core.getRequestHandler( qt );
                 if( handler == null ) {
@@ -467,23 +465,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     chain.doFilter(request, response);
   }
 
-  private void checkStateIsValid(CoreContainer cores, String stateVer) {
-    if(stateVer != null && !stateVer.isEmpty() && cores.isZooKeeperAware() ){
-      // many have multiple collections separated by |
-      String[] pairs = StringUtils.split(stateVer, '|');
-      for (String pair : pairs) {
-        String[] pcs = StringUtils.split(pair, ':');
-        if(pcs.length == 2 &&  !pcs[0].isEmpty() && !pcs[1].isEmpty()){
-          Boolean status = cores.getZkController().getZkStateReader().checkValid(pcs[0],Integer.parseInt(pcs[1]));
 
-          if(Boolean.TRUE != status){
-            throw new SolrException(ErrorCode.INVALID_STATE, "STATE STALE: " + pair+ "valid : "+status);
-          }
-        }
-      }
-    }
-  }
-  
   private void processAliases(SolrQueryRequest solrReq, Aliases aliases,
       List<String> collectionsList) {
     String collection = solrReq.getParams().get("collection");

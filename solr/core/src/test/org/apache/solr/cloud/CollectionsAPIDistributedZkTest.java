@@ -579,8 +579,8 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
   private void testNoCollectionSpecified() throws Exception {
     
     cloudClient.getZkStateReader().updateClusterState(true);
-    assertFalse(cloudClient.getZkStateReader().getAllCollections().contains("corewithnocollection"));
-    assertFalse(cloudClient.getZkStateReader().getAllCollections().contains("corewithnocollection2"));
+    assertFalse(cloudClient.getZkStateReader().getClusterState().hasCollection("corewithnocollection"));
+    assertFalse(cloudClient.getZkStateReader().getClusterState().hasCollection("corewithnocollection2"));
     
     // try and create a SolrCore with no collection name
     Create createCmd = new Create();
@@ -605,8 +605,8 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     
     // in both cases, the collection should have default to the core name
     cloudClient.getZkStateReader().updateClusterState(true);
-    assertTrue(cloudClient.getZkStateReader().getAllCollections().contains("corewithnocollection"));
-    assertTrue(cloudClient.getZkStateReader().getAllCollections().contains("corewithnocollection2"));
+    assertTrue( cloudClient.getZkStateReader().getClusterState().hasCollection("corewithnocollection"));
+    assertTrue(cloudClient.getZkStateReader().getClusterState().hasCollection("corewithnocollection2"));
   }
 
   private void testNodesUsedByCreate() throws Exception {

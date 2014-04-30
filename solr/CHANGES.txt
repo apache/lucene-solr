@@ -76,10 +76,6 @@ Other Changes
 * SOLR-5936: Removed deprecated non-Trie-based numeric & date field types.
   (Steve Rowe)
 
-* SOLR-5473: Make one state.json per collection (Noble Paul)
-
-* SOLR-5474: Have a new mode for SolrJ to support stateFormat=2 (Noble Paul, Tim Potter)
-
 * SOLR-5868: HttpClient should be configured to use ALLOW_ALL_HOSTNAME hostname
   verifier to simplify SSL setup. (Steve Davids via Mark Miller)
 

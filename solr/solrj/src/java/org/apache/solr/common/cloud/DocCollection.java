@@ -33,14 +33,12 @@ import java.util.Map;
 public class DocCollection extends ZkNodeProps {
   public static final String DOC_ROUTER = "router";
   public static final String SHARDS = "shards";
-  public static final String STATE_FORMAT = "stateFormat";
   private int version;
 
   private final String name;
   private final Map<String, Slice> slices;
   private final Map<String, Slice> activeSlices;
   private final DocRouter router;
-  private final boolean external;
 
   public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
     this(name, slices, props, router, -1);
@@ -67,7 +65,6 @@ public class DocCollection extends ZkNodeProps {
         this.activeSlices.put(slice.getKey(), slice.getValue());
     }
     this.router = router;
-    external = getInt(STATE_FORMAT,1)>1;
 
     assert name != null && slices != null;
   }
@@ -116,10 +113,6 @@ public class DocCollection extends ZkNodeProps {
   public int getVersion(){
     return version;
 
-  }
-
-  public boolean isExternal(){
-    return external;
   }
 
 

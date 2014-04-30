@@ -105,9 +105,7 @@ public class Overseer {
     private boolean isClosed = false;
 
 
-    private final Map<String, Object> updateNodes = new LinkedHashMap<String,Object>();
-    private boolean isClusterStateModified = false;
-    
+
     public ClusterStateUpdater(final ZkStateReader reader, final String myId, Stats zkStats) {
       this.zkClient = reader.getZkClient();
       this.zkStats = zkStats;
@@ -119,7 +117,6 @@ public class Overseer {
       this.myId = myId;
       this.reader = reader;
       clusterProps = reader.getClusterProps();
-      reader.ephemeralCollectionData = Collections.unmodifiableMap(updateNodes);
     }
 
     public Stats getStateUpdateQueueStats() {
@@ -260,7 +257,6 @@ public class Overseer {
                 stateUpdateQueue.poll();
 
                 if (isClosed || System.nanoTime() - lastUpdatedTime > TimeUnit.NANOSECONDS.convert(STATE_UPDATE_DELAY, TimeUnit.MILLISECONDS)) break;
-                if(!updateNodes.isEmpty()) break;
                 // if an event comes in the next 100ms batch it together
                 head = stateUpdateQueue.peek(100);
               }
@@ -297,28 +293,9 @@ public class Overseer {
     }
 
     private void updateZkStates(ClusterState clusterState) throws KeeperException, InterruptedException {
-      if(!updateNodes.isEmpty()) {
-        for (Entry<String, Object> e : updateNodes.entrySet()) {
-          if (e.getValue() == null) {
-            if (zkClient.exists(e.getKey(), true)) zkClient.delete(e.getKey(), 0, true);
-          } else {
-            if (zkClient.exists(e.getKey(), true)) {
-              log.info("going to update_collection", e.getKey());
-              zkClient.setData(e.getKey(), ZkStateReader.toJSON(e.getValue()), true);
-            } else {
-              log.info("going to create_collection {}", e.getValue());
-              zkClient.create(e.getKey(), ZkStateReader.toJSON(e.getValue()), CreateMode.PERSISTENT, true);
-            }
-          }
-        }
-        updateNodes.clear();
-      }
+      lastUpdatedTime = System.nanoTime();
+      zkClient.setData(ZkStateReader.CLUSTER_STATE, ZkStateReader.toJSON(clusterState), true);
 
-      if(isClusterStateModified) {
-        lastUpdatedTime = System.nanoTime();
-        zkClient.setData(ZkStateReader.CLUSTER_STATE, ZkStateReader.toJSON(clusterState), true);
-        isClusterStateModified = false;
-      }
     }
 
     private void checkIfIamStillLeader() {
@@ -862,14 +839,6 @@ public class Overseer {
 
         if(message.getStr("fromApi") == null) collectionProps.put("autoCreated","true");
         DocCollection newCollection = new DocCollection(collectionName, newSlices, collectionProps, router);
-        isClusterStateModified = true;
-        log.info("_extern {} {}", collectionName, newCollection.isExternal());
-        if (newCollection.isExternal()) {
-          updateNodes.put(ZkStateReader.getCollectionPath(collectionName),
-              new ClusterState(-1, Collections.<String>emptySet(), singletonMap(newCollection.getName(), newCollection), state.getStateReader()));
-          return state;
-        }
-
         return newState(state, singletonMap(newCollection.getName(), newCollection));
       }
 
@@ -995,23 +964,7 @@ public class Overseer {
       }
 
       private ClusterState newState(ClusterState state, Map<String, DocCollection> colls) {
-        for (Entry<String, DocCollection> e : colls.entrySet()) {
-          DocCollection c = e.getValue();
-          if (c == null) {
-            isClusterStateModified = true;
-            state = state.copyWith(singletonMap(e.getKey(), (DocCollection) null));
-            continue;
-          }
-
-          if (c.isExternal()) {
-            state.getStateReader().updateExternCollection(c);
-            updateNodes.put(ZkStateReader.getCollectionPath(c.getName()), new ClusterState(-1, Collections.<String>emptySet(), singletonMap(c.getName(), c), state.getStateReader()));
-          } else {
-            isClusterStateModified = true;
-            state = state.copyWith(singletonMap(e.getKey(), c));
-          }
-        }
-        return state;
+        return state.copyWith(colls);
       }
 
       /*
@@ -1022,19 +975,7 @@ public class Overseer {
         if (!checkKeyExistence(message, "name")) return clusterState;
         DocCollection coll = clusterState.getCollectionOrNull(collection);
         if(coll !=null) {
-          isClusterStateModified = true;
-          if(coll.isExternal()){
-            try {
-              log.info("Deleting state for collection : {}", collection);
-              zkClient.delete(ZkStateReader.getCollectionPath(collection),-1,true);
-            } catch (Exception e) {
-              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Unable to remove collection state :"+collection);
-
-            }
-            return clusterState;
-          } else{
-            return clusterState.copyWith(singletonMap(collection,(DocCollection)null));
-          }
+          return clusterState.copyWith(singletonMap(collection,(DocCollection)null));
         }
         return clusterState;
       }

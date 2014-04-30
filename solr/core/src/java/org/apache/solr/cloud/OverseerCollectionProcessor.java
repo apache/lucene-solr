@@ -143,9 +143,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   public static final Map<String,Object> COLL_PROPS = ZkNodeProps.makeMap(
       ROUTER, DocRouter.DEFAULT_NAME,
       REPLICATION_FACTOR, "1",
-      MAX_SHARDS_PER_NODE, "1",
-      "external",null ,
-      DocCollection.STATE_FORMAT , null);
+      MAX_SHARDS_PER_NODE, "1" );
 
 
   // TODO: use from Overseer?
@@ -609,13 +607,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       Set<String> collections = clusterState.getCollections();
       for (String name : collections) {
         Map<String, Object> collectionStatus = null;
-        if (clusterState.hasExternalCollection(name)) {
-          bytes = ZkStateReader.toJSON(clusterState.getCollection(name));
-          Map<String, Object> docCollection = (Map<String, Object>) ZkStateReader.fromJSON(bytes);
-          collectionStatus = getCollectionStatus(docCollection, name, shard);
-        } else  {
-          collectionStatus = getCollectionStatus((Map<String, Object>) stateMap.get(name), name, shard);
-        }
+        collectionStatus = getCollectionStatus((Map<String, Object>) stateMap.get(name), name, shard);
         if (collectionVsAliases.containsKey(name) && !collectionVsAliases.get(name).isEmpty())  {
           collectionStatus.put("aliases", collectionVsAliases.get(name));
         }
@@ -624,12 +616,8 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     } else {
       String routeKey = message.getStr(ShardParams._ROUTE_);
       Map<String, Object> docCollection = null;
-      if (clusterState.hasExternalCollection(collection)) {
-        bytes = ZkStateReader.toJSON(clusterState.getCollection(collection));
-        docCollection = (Map<String, Object>) ZkStateReader.fromJSON(bytes);
-      } else  {
-        docCollection = (Map<String, Object>) stateMap.get(collection);
-      }
+
+      docCollection = (Map<String, Object>) stateMap.get(collection);
       if (routeKey == null) {
         Map<String, Object> collectionStatus = getCollectionStatus(docCollection, collection, shard);
         if (collectionVsAliases.containsKey(collection) && !collectionVsAliases.get(collection).isEmpty())  {
