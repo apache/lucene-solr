@@ -24,5 +24,4 @@ public class TestFastCompressionMode extends AbstractTestLZ4CompressionMode {
     super.setUp();
     mode = CompressionMode.FAST;
   }
-
 }

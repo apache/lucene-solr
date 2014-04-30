@@ -229,6 +229,7 @@ import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAs
 @ThreadLeakFilters(defaultFilters = true, filters = {
     QuickPatchThreadsFilter.class
 })
+@TestRuleLimitSysouts.Limit(bytes = TestRuleLimitSysouts.DEFAULT_SYSOUT_BYTES_THRESHOLD)
 public abstract class LuceneTestCase extends Assert {
 
   // --------------------------------------------------------------------
@@ -347,6 +348,21 @@ public abstract class LuceneTestCase extends Assert {
     public String bugUrl() default "None";
   }
 
+  /**
+   * Ignore {@link TestRuleLimitSysouts} for any suite which is known to print 
+   * over the default limit of bytes to {@link System#out} or {@link System#err}.
+   * 
+   * @see TestRuleLimitSysouts
+   */
+  @Documented
+  @Inherited
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.TYPE)
+  public @interface SuppressSysoutChecks {
+    /** Point to JIRA entry. */
+    public String bugUrl();
+  }
+
   // -----------------------------------------------------------------
   // Truly immutable fields and constants, initialized once and valid 
   // for all suites ever since.
@@ -361,11 +377,13 @@ public abstract class LuceneTestCase extends Assert {
 
   /**
    * True if and only if tests are run in verbose mode. If this flag is false
-   * tests are not expected to print any messages.
+   * tests are not expected to print any messages. Enforced with {@link TestRuleLimitSysouts}.
    */
   public static final boolean VERBOSE = systemPropertyAsBoolean("tests.verbose", false);
 
-  /** TODO: javadoc? */
+  /**
+   * Enables or disables dumping of {@link InfoStream} messages. 
+   */
   public static final boolean INFOSTREAM = systemPropertyAsBoolean("tests.infostream", VERBOSE);
 
   /**
@@ -486,7 +504,7 @@ public abstract class LuceneTestCase extends Assert {
   /**
    * Suite failure marker (any error in the test or suite scope).
    */
-  public static TestRuleMarkFailure suiteFailureMarker;
+  private static TestRuleMarkFailure suiteFailureMarker;
 
   /**
    * Ignore tests after hitting a designated number of initial failures. This
@@ -518,6 +536,15 @@ public abstract class LuceneTestCase extends Assert {
         new AtomicReference<>(
             new TestRuleIgnoreAfterMaxFailures(maxFailures));
     ignoreAfterMaxFailures = TestRuleDelegate.of(ignoreAfterMaxFailuresDelegate);
+  }
+  
+  /**
+   * Try to capture streams early so that other classes don't have a chance to steal references
+   * to them (as is the case with ju.logging handlers).
+   */
+  static {
+    TestRuleLimitSysouts.checkCaptureStreams();
+    Logger.getGlobal().getHandlers();
   }
 
   /**
@@ -553,6 +580,7 @@ public abstract class LuceneTestCase extends Assert {
     .around(ignoreAfterMaxFailures)
     .around(suiteFailureMarker = new TestRuleMarkFailure())
     .around(new TestRuleAssertionsRequired())
+    .around(new TestRuleLimitSysouts(suiteFailureMarker))
     .around(new TemporaryFilesCleanupRule())
     .around(new StaticFieldsInvariantRule(STATIC_LEAK_THRESHOLD, true) {
       @Override
@@ -2438,6 +2466,12 @@ public abstract class LuceneTestCase extends Assert {
     }
   }
 
+  /**
+   * Checks and cleans up temporary files.
+   * 
+   * @see LuceneTestCase#createTempDir()
+   * @see LuceneTestCase#createTempFile()
+   */
   private static class TemporaryFilesCleanupRule extends TestRuleAdapter {
     @Override
     protected void before() throws Throwable {

@@ -26,6 +26,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 
 import java.io.BufferedReader;
 import java.io.File;

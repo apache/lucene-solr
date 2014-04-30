@@ -18,6 +18,7 @@ package org.apache.lucene.util.junitcompat;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.JUnitCore;
@@ -53,7 +54,7 @@ public class TestSeedFromUncaught extends WithNestedTests {
   @Test
   public void testUncaughtDumpsSeed() {
     Result result = JUnitCore.runClasses(ThrowInUncaught.class);
-    Assert.assertEquals(1, result.getFailureCount());
+    assertFailureCount(1, result);
     Failure f = result.getFailures().get(0);
     String trace = f.getTrace();
     Assert.assertTrue(trace.contains("SeedInfo.seed("));

@@ -19,6 +19,7 @@ package org.apache.lucene.analysis.uima;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

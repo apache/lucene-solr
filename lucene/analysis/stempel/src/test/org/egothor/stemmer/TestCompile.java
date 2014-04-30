@@ -70,7 +70,7 @@ import java.util.Locale;
 import java.util.StringTokenizer;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 
 public class TestCompile extends LuceneTestCase {
   
