@@ -37,9 +37,7 @@ import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
-
-import com.carrotsearch.randomizedtesting.RandomizedTest;
+import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 
 import conf.ConfLoader;
 
@@ -52,8 +50,7 @@ public class TestPerfTasksParse extends LuceneTestCase {
   // properties in effect in all tests here
   static final String propPart = 
     INDENT + "directory=RAMDirectory" + NEW_LINE +
-    INDENT + "print.props=false" + NEW_LINE
-  ;
+    INDENT + "print.props=false" + NEW_LINE;
 
   /** Test the repetiotion parsing for parallel tasks */
   public void testParseParallelTaskSequenceRepetition() throws Exception {

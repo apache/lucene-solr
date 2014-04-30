@@ -58,6 +58,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.util.ClientUtils;
@@ -118,6 +119,7 @@ import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
     SolrIgnoredThreadsFilter.class,
     QuickPatchThreadsFilter.class
 })
+@SuppressSysoutChecks(bugUrl = "Solr dumps tons of logs to console.")
 public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   private static String coreName = ConfigSolrXmlOld.DEFAULT_DEFAULT_CORE_NAME;
   public static int DEFAULT_CONNECTION_TIMEOUT = 60000;  // default socket connection timeout in ms

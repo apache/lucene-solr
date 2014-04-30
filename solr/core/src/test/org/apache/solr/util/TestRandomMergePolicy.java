@@ -19,6 +19,7 @@ package org.apache.solr.util;
 
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -28,8 +29,8 @@ import java.lang.reflect.InvocationTargetException;
  * A "test the test" sanity check using reflection to ensure that 
  * {@linke RandomMergePolicy} is working as expected
  */
+@SuppressSysoutChecks(bugUrl = "Logs to JUL")
 public class TestRandomMergePolicy extends LuceneTestCase {  
-
   /**
    * Ensure every MP method is overridden by RMP 
    * (future proof ourselves against new methods being added to MP)

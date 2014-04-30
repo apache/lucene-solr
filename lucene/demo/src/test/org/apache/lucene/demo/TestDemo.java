@@ -23,7 +23,7 @@ import java.io.PrintStream;
 import java.nio.charset.Charset;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 
 public class TestDemo extends LuceneTestCase {
 

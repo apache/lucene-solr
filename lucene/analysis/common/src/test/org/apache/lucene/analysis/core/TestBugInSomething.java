@@ -219,7 +219,7 @@ public class TestBugInSomething extends BaseTokenStreamTestCase {
     @Override
     public boolean incrementToken() throws IOException {
       if (input.incrementToken()) {
-        System.out.println(input.getClass().getSimpleName() + "->" + this.reflectAsString(false));
+        if (VERBOSE) System.out.println(input.getClass().getSimpleName() + "->" + this.reflectAsString(false));
         return true;
       } else {
         return false;
@@ -229,19 +229,19 @@ public class TestBugInSomething extends BaseTokenStreamTestCase {
     @Override
     public void end() throws IOException {
       super.end();
-      System.out.println(input.getClass().getSimpleName() + ".end()");
+      if (VERBOSE) System.out.println(input.getClass().getSimpleName() + ".end()");
     }
 
     @Override
     public void close() throws IOException {
       super.close();
-      System.out.println(input.getClass().getSimpleName() + ".close()");
+      if (VERBOSE) System.out.println(input.getClass().getSimpleName() + ".close()");
     }
 
     @Override
     public void reset() throws IOException {
       super.reset();
-      System.out.println(input.getClass().getSimpleName() + ".reset()");
+      if (VERBOSE) System.out.println(input.getClass().getSimpleName() + ".reset()");
     }
   }
   

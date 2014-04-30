@@ -29,6 +29,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestRuleIgnoreAfterMaxFailures;
 import org.apache.lucene.util.TestRuleIgnoreTestSuites;
 import org.apache.lucene.util.TestRuleMarkFailure;
+import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Assume;
@@ -37,6 +38,8 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
+import org.junit.runner.Result;
+import org.junit.runner.notification.Failure;
 
 import com.carrotsearch.randomizedtesting.RandomizedRunner;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
@@ -57,6 +60,7 @@ import com.carrotsearch.randomizedtesting.rules.TestRuleAdapter;
  * cause havoc (static fields).
  */
 public abstract class WithNestedTests {
+  @SuppressSysoutChecks(bugUrl = "WithNestedTests has its own stream capture.")
   public static abstract class AbstractNestedTest extends LuceneTestCase 
     implements TestRuleIgnoreTestSuites.NestedTestSuite {
     protected static boolean isRunningNested() {
@@ -161,6 +165,20 @@ public abstract class WithNestedTests {
 
       System.setOut(prevSysOut);
       System.setErr(prevSysErr);
+    }
+  }
+
+  protected void assertFailureCount(int expected, Result result) {
+    if (result.getFailureCount() != expected) {
+      StringBuilder b = new StringBuilder();
+      for (Failure f : result.getFailures()) {
+        b.append("\n\n");
+        b.append(f.getMessage());
+        b.append("\n");
+        b.append(f.getTrace());
+      }
+      RandomizedTest.assertFalse("Expected failures: " + expected + " but was " + 
+          result.getFailureCount() + ", failures below: " + b.toString(), true);
     }
   }
 

@@ -62,6 +62,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 
 /**
  * Test very simply that perf tasks - simple algorithms - are doing what they should.

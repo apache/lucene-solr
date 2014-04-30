@@ -118,7 +118,7 @@
   <property name="tests.verbose" value="false"/>
   <property name="tests.infostream" value="${tests.verbose}"/>
   <property name="tests.filterstacks" value="true"/>
-  
+
   <condition property="tests.heapsize" value="768M">
     <isset property="run.clover"/>
   </condition>

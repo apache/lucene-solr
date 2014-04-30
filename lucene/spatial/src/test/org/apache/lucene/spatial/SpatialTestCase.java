@@ -35,6 +35,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
+import org.apache.lucene.util.TestRuleLimitSysouts.Limit;
 import org.junit.After;
 import org.junit.Before;
 
@@ -47,6 +49,7 @@ import static com.carrotsearch.randomizedtesting.RandomizedTest.randomGaussian;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
 
 /** A base test class for spatial lucene. It's mostly Lucene generic. */
+@SuppressSysoutChecks(bugUrl = "These tests use JUL extensively.")
 public abstract class SpatialTestCase extends LuceneTestCase {
 
   private DirectoryReader indexReader;

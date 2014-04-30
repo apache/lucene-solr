@@ -26,7 +26,7 @@ import java.io.StringReader;
 
 import org.apache.lucene.benchmark.byTask.Benchmark;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
