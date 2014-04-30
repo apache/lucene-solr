@@ -192,8 +192,8 @@ public class TestRuleLimitSysouts extends TestRuleAdapter {
   }
 
   /**
-   * We're only interested in failing the suite if it was successful. Otherwise
-   * just propagate the original problem and don't bother.
+   * We're only interested in failing the suite if it was successful (otherwise
+   * just propagate the original problem and don't bother doing anything else).
    */
   @Override
   protected void afterIfSuccessful() throws Throwable {
@@ -219,9 +219,6 @@ public class TestRuleLimitSysouts extends TestRuleAdapter {
     }
   }
 
-  /**
-   * Restore original streams.
-   */
   @Override
   protected void afterAlways(List<Throwable> errors) throws Throwable {
     resetCaptureState();
