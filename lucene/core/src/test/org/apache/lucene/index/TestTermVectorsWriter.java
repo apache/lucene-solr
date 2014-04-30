@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -581,6 +582,91 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     iw.commit();
     iw.forceMerge(1);
 
+    iw.close();
+    dir.close();
+  }
+  
+  /** 
+   * In a single doc, for the same field, mix the term vectors up 
+   */
+  public void testInconsistentTermVectorOptions() throws IOException {
+    FieldType a, b;
+    
+    // no vectors + vectors
+    a = new FieldType(TextField.TYPE_NOT_STORED);   
+    b = new FieldType(TextField.TYPE_NOT_STORED);
+    b.setStoreTermVectors(true);
+    doTestMixup(a, b);
+    
+    // vectors + vectors with pos
+    a = new FieldType(TextField.TYPE_NOT_STORED);   
+    a.setStoreTermVectors(true);
+    b = new FieldType(TextField.TYPE_NOT_STORED);
+    b.setStoreTermVectors(true);
+    b.setStoreTermVectorPositions(true);
+    doTestMixup(a, b);
+    
+    // vectors + vectors with off
+    a = new FieldType(TextField.TYPE_NOT_STORED);   
+    a.setStoreTermVectors(true);
+    b = new FieldType(TextField.TYPE_NOT_STORED);
+    b.setStoreTermVectors(true);
+    b.setStoreTermVectorOffsets(true);
+    doTestMixup(a, b);
+    
+    // vectors with pos + vectors with pos + off
+    a = new FieldType(TextField.TYPE_NOT_STORED);   
+    a.setStoreTermVectors(true);
+    a.setStoreTermVectorPositions(true);
+    b = new FieldType(TextField.TYPE_NOT_STORED);
+    b.setStoreTermVectors(true);
+    b.setStoreTermVectorPositions(true);
+    b.setStoreTermVectorOffsets(true);
+    doTestMixup(a, b);
+    
+    // vectors with pos + vectors with pos + pay
+    if (!"Lucene3x".equals(Codec.getDefault().getName())) {
+      a = new FieldType(TextField.TYPE_NOT_STORED);   
+      a.setStoreTermVectors(true);
+      a.setStoreTermVectorPositions(true);
+      b = new FieldType(TextField.TYPE_NOT_STORED);
+      b.setStoreTermVectors(true);
+      b.setStoreTermVectorPositions(true);
+      b.setStoreTermVectorPayloads(true);
+      doTestMixup(a, b);
+    }
+  }
+  
+  private void doTestMixup(FieldType ft1, FieldType ft2) throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    
+    // add 3 good docs
+    for (int i = 0; i < 3; i++) {
+      Document doc = new Document();
+      doc.add(new StringField("id", Integer.toString(i), Field.Store.NO));
+      iw.addDocument(doc);
+    }
+    
+    // add broken doc
+    Document doc = new Document();
+    doc.add(new Field("field", "value1", ft1));
+    doc.add(new Field("field", "value2", ft2));
+    
+    // ensure broken doc hits exception
+    try {
+      iw.addDocument(doc);
+      fail("didn't hit expected exception");
+    } catch (IllegalArgumentException iae) {
+      assertNotNull(iae.getMessage());
+      assertTrue(iae.getMessage().startsWith("all instances of a given field name must have the same term vectors settings"));
+    }
+    
+    // ensure good docs are still ok
+    IndexReader ir = iw.getReader();
+    assertEquals(3, ir.numDocs());
+    
+    ir.close();
     iw.close();
     dir.close();
   }
