@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.apache.lucene.index.NumericDocValuesFieldUpdates;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.packed.PagedGrowableWriter;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -30,6 +31,8 @@ import org.apache.lucene.search.DocIdSetIterator;
  */
 abstract class DocValuesFieldUpdates {
   
+  protected static final int PAGE_SIZE = 1024;
+
   static enum Type { NUMERIC, BINARY }
   
   /**
@@ -86,6 +89,17 @@ abstract class DocValuesFieldUpdates {
       return numericDVUpdates.size() + binaryDVUpdates.size();
     }
     
+    long ramBytesPerDoc() {
+      long ramBytesPerDoc = 0;
+      for (NumericDocValuesFieldUpdates updates : numericDVUpdates.values()) {
+        ramBytesPerDoc += updates.ramBytesPerDoc();
+      }
+      for (BinaryDocValuesFieldUpdates updates : binaryDVUpdates.values()) {
+        ramBytesPerDoc += updates.ramBytesPerDoc();
+      }
+      return ramBytesPerDoc;
+    }
+    
     DocValuesFieldUpdates getUpdates(String field, Type type) {
       switch (type) {
         case NUMERIC:
@@ -129,6 +143,14 @@ abstract class DocValuesFieldUpdates {
   }
   
   /**
+   * Returns the estimated capacity of a {@link PagedGrowableWriter} given the
+   * actual number of stored elements.
+   */
+  protected static int estimateCapacity(int size) {
+    return (int) Math.ceil((double) size / PAGE_SIZE) * PAGE_SIZE;
+  }
+  
+  /**
    * Add an update to a document. For unsetting a value you should pass
    * {@code null}.
    */
@@ -147,8 +169,10 @@ abstract class DocValuesFieldUpdates {
    */
   public abstract void merge(DocValuesFieldUpdates other);
 
-  /** Returns true if this instance contains any updates. 
-   * @return TODO*/
+  /** Returns true if this instance contains any updates. */
   public abstract boolean any();
   
+  /** Returns approximate RAM bytes used per document. */
+  public abstract long ramBytesPerDoc();
+
 }
