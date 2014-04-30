@@ -51,48 +51,15 @@ class DocumentsWriterPerThread {
    * documents.
    */
   abstract static class IndexingChain {
-    abstract DocConsumer getChain(DocumentsWriterPerThread documentsWriterPerThread);
+    abstract DocConsumer getChain(DocumentsWriterPerThread documentsWriterPerThread) throws IOException;
   }
   
 
   static final IndexingChain defaultIndexingChain = new IndexingChain() {
 
     @Override
-    DocConsumer getChain(DocumentsWriterPerThread documentsWriterPerThread) {
-      /*
-      This is the current indexing chain:
-
-      DocConsumer / DocConsumerPerThread
-        --> code: DocFieldProcessor
-          --> DocFieldConsumer / DocFieldConsumerPerField
-            --> code: DocFieldConsumers / DocFieldConsumersPerField
-              --> code: DocInverter / DocInverterPerField
-                --> InvertedDocConsumer / InvertedDocConsumerPerField
-                  --> code: TermsHash / TermsHashPerField
-                    --> TermsHashConsumer / TermsHashConsumerPerField
-                      --> code: FreqProxTermsWriter / FreqProxTermsWriterPerField
-                      --> code: TermVectorsTermsWriter / TermVectorsTermsWriterPerField
-                --> InvertedDocEndConsumer / InvertedDocConsumerPerField
-                  --> code: NormsConsumer / NormsConsumerPerField
-          --> StoredFieldsConsumer
-            --> TwoStoredFieldConsumers
-              -> code: StoredFieldsProcessor
-              -> code: DocValuesProcessor
-    */
-
-    // Build up indexing chain:
-
-      final TermsHashConsumer termVectorsWriter = new TermVectorsConsumer(documentsWriterPerThread);
-      final TermsHashConsumer freqProxWriter = new FreqProxTermsWriter();
-
-      final InvertedDocConsumer termsHash = new TermsHash(documentsWriterPerThread, freqProxWriter, true,
-                                                          new TermsHash(documentsWriterPerThread, termVectorsWriter, false, null));
-      final NormsConsumer normsWriter = new NormsConsumer();
-      final DocInverter docInverter = new DocInverter(documentsWriterPerThread.docState, termsHash, normsWriter);
-      final StoredFieldsConsumer storedFields = new TwoStoredFieldsConsumers(
-                                                      new StoredFieldsProcessor(documentsWriterPerThread),
-                                                      new DocValuesProcessor(documentsWriterPerThread.bytesUsed));
-      return new DocFieldProcessor(documentsWriterPerThread, docInverter, storedFields);
+    DocConsumer getChain(DocumentsWriterPerThread documentsWriterPerThread) throws IOException {
+      return new DefaultIndexingChain(documentsWriterPerThread);
     }
   };
 
@@ -103,7 +70,6 @@ class DocumentsWriterPerThread {
     Similarity similarity;
     int docID;
     IndexDocument doc;
-    String maxTermPrefix;
 
     DocState(DocumentsWriterPerThread docWriter, InfoStream infoStream) {
       this.docWriter = docWriter;
@@ -180,7 +146,7 @@ class DocumentsWriterPerThread {
   boolean aborting = false;   // True if an abort is pending
   boolean hasAborted = false; // True if the last exception throws by #updateDocument was aborting
 
-  private FieldInfos.Builder fieldInfos;
+  private final FieldInfos.Builder fieldInfos;
   private final InfoStream infoStream;
   private int numDocsInRAM;
   final DocumentsWriterDeleteQueue deleteQueue;
@@ -192,7 +158,7 @@ class DocumentsWriterPerThread {
 
   
   public DocumentsWriterPerThread(String segmentName, Directory directory, LiveIndexWriterConfig indexWriterConfig, InfoStream infoStream, DocumentsWriterDeleteQueue deleteQueue,
-      FieldInfos.Builder fieldInfos) {
+      FieldInfos.Builder fieldInfos) throws IOException {
     this.directoryOrig = directory;
     this.directory = new TrackingDirectoryWrapper(directory);
     this.fieldInfos = fieldInfos;
@@ -218,11 +184,14 @@ class DocumentsWriterPerThread {
     // this should be the last call in the ctor 
     // it really sucks that we need to pull this within the ctor and pass this ref to the chain!
     consumer = indexWriterConfig.getIndexingChain().getChain(this);
-
   }
   
   void setAborting() {
     aborting = true;
+  }
+
+  public FieldInfos.Builder getFieldInfosBuilder() {
+    return fieldInfos;
   }
 
   boolean checkAndResetHasAborted() {
@@ -250,7 +219,7 @@ class DocumentsWriterPerThread {
     boolean success = false;
     try {
       try {
-        consumer.processDocument(fieldInfos);
+        consumer.processDocument();
       } finally {
         docState.clear();
       }
@@ -264,15 +233,6 @@ class DocumentsWriterPerThread {
         } else {
           abort(filesToDelete);
         }
-      }
-    }
-    success = false;
-    try {
-      consumer.finishDocument();
-      success = true;
-    } finally {
-      if (!success) {
-        abort(filesToDelete);
       }
     }
     finishDocument(delTerm);
@@ -296,7 +256,7 @@ class DocumentsWriterPerThread {
 
         boolean success = false;
         try {
-          consumer.processDocument(fieldInfos);
+          consumer.processDocument();
           success = true;
         } finally {
           if (!success) {
@@ -310,16 +270,6 @@ class DocumentsWriterPerThread {
             }
           }
         }
-        success = false;
-        try {
-          consumer.finishDocument();
-          success = true;
-        } finally {
-          if (!success) {
-            abort(filesToDelete);
-          }
-        }
-
         finishDocument(null);
       }
       allDocsIndexed = true;

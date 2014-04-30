@@ -163,6 +163,14 @@ public class BlockTreeTermsReader extends FieldsProducer {
         final long sumDocFreq = in.readVLong();
         final int docCount = in.readVInt();
         final int longsSize = version >= BlockTreeTermsWriter.VERSION_META_ARRAY ? in.readVInt() : 0;
+
+        BytesRef minTerm, maxTerm;
+        if (version >= BlockTreeTermsWriter.VERSION_MIN_MAX_TERMS) {
+          minTerm = readBytesRef(in);
+          maxTerm = readBytesRef(in);
+        } else {
+          minTerm = maxTerm = null;
+        }
         if (docCount < 0 || docCount > info.getDocCount()) { // #docs with field must be <= #docs
           throw new CorruptIndexException("invalid docCount: " + docCount + " maxDoc: " + info.getDocCount() + " (resource=" + in + ")");
         }
@@ -173,7 +181,9 @@ public class BlockTreeTermsReader extends FieldsProducer {
           throw new CorruptIndexException("invalid sumTotalTermFreq: " + sumTotalTermFreq + " sumDocFreq: " + sumDocFreq + " (resource=" + in + ")");
         }
         final long indexStartFP = indexIn.readVLong();
-        FieldReader previous = fields.put(fieldInfo.name, new FieldReader(fieldInfo, numTerms, rootCode, sumTotalTermFreq, sumDocFreq, docCount, indexStartFP, longsSize, indexIn));
+        FieldReader previous = fields.put(fieldInfo.name,       
+                                          new FieldReader(fieldInfo, numTerms, rootCode, sumTotalTermFreq, sumDocFreq, docCount,
+                                                          indexStartFP, longsSize, indexIn, minTerm, maxTerm));
         if (previous != null) {
           throw new CorruptIndexException("duplicate field: " + fieldInfo.name + " (resource=" + in + ")");
         }
@@ -187,6 +197,14 @@ public class BlockTreeTermsReader extends FieldsProducer {
         IOUtils.closeWhileHandlingException(indexIn, this);
       }
     }
+  }
+
+  private static BytesRef readBytesRef(IndexInput in) throws IOException {
+    BytesRef bytes = new BytesRef();
+    bytes.length = in.readVInt();
+    bytes.bytes = new byte[bytes.length];
+    in.readBytes(bytes.bytes, 0, bytes.length);
+    return bytes;
   }
 
   /** Reads terms file header. */
@@ -456,12 +474,15 @@ public class BlockTreeTermsReader extends FieldsProducer {
     final long indexStartFP;
     final long rootBlockFP;
     final BytesRef rootCode;
+    final BytesRef minTerm;
+    final BytesRef maxTerm;
     final int longsSize;
 
     private final FST<BytesRef> index;
     //private boolean DEBUG;
 
-    FieldReader(FieldInfo fieldInfo, long numTerms, BytesRef rootCode, long sumTotalTermFreq, long sumDocFreq, int docCount, long indexStartFP, int longsSize, IndexInput indexIn) throws IOException {
+    FieldReader(FieldInfo fieldInfo, long numTerms, BytesRef rootCode, long sumTotalTermFreq, long sumDocFreq, int docCount,
+                long indexStartFP, int longsSize, IndexInput indexIn, BytesRef minTerm, BytesRef maxTerm) throws IOException {
       assert numTerms > 0;
       this.fieldInfo = fieldInfo;
       //DEBUG = BlockTreeTermsReader.DEBUG && fieldInfo.name.equals("id");
@@ -472,6 +493,8 @@ public class BlockTreeTermsReader extends FieldsProducer {
       this.indexStartFP = indexStartFP;
       this.rootCode = rootCode;
       this.longsSize = longsSize;
+      this.minTerm = minTerm;
+      this.maxTerm = maxTerm;
       // if (DEBUG) {
       //   System.out.println("BTTR: seg=" + segment + " field=" + fieldInfo.name + " rootBlockCode=" + rootCode + " divisor=" + indexDivisor);
       // }
@@ -495,6 +518,26 @@ public class BlockTreeTermsReader extends FieldsProducer {
         */
       } else {
         index = null;
+      }
+    }
+
+    @Override
+    public BytesRef getMin() throws IOException {
+      if (minTerm == null) {
+        // Older index that didn't store min/maxTerm
+        return super.getMin();
+      } else {
+        return minTerm;
+      }
+    }
+
+    @Override
+    public BytesRef getMax() throws IOException {
+      if (maxTerm == null) {
+        // Older index that didn't store min/maxTerm
+        return super.getMax();
+      } else {
+        return maxTerm;
       }
     }
 

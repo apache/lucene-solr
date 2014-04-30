@@ -94,7 +94,7 @@ public class StopableIndexingThread extends AbstractFullDistribZkTestBase.Stopab
             System.err.println("ROOT CAUSE for id=" + deleteId);
             ((SolrServerException) e).getRootCause().printStackTrace();
           }
-          deleteFails.add(id);
+          deleteFails.add(deleteId);
         }
       }
       

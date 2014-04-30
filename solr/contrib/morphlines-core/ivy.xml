@@ -114,6 +114,8 @@
     <dependency org="com.sun.jersey" name="jersey-core" rev="${/com.sun.jersey/jersey-core}" conf="test->*" />
 
     <dependency org="commons-collections" name="commons-collections" rev="${/commons-collections/commons-collections}" conf="test->*" />
+    <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="test->*"/>
+
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}" />
 
   </dependencies>

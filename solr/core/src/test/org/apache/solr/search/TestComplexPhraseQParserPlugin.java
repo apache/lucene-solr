@@ -30,7 +30,7 @@ public class TestComplexPhraseQParserPlugin extends AbstractSolrTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-query-parser-init.xml","schema-complex-phrase.xml");
+    initCore("solrconfig.xml","schema15.xml");
   }
 
   @Override
@@ -54,43 +54,43 @@ public class TestComplexPhraseQParserPlugin extends AbstractSolrTestCase {
 
     assertQ(req("q", "{!complexphrase} \"john smith\"")
             , "//result[@numFound='1']"
-            , "//doc[./int[@name='id']='1']"
+            , "//doc[./str[@name='id']='1']"
     );
 
     assertQ(req("q", "{!complexphrase} \"j* smyth~\"")
             , "//result[@numFound='2']"
-            , "//doc[./int[@name='id']='1']"
-            , "//doc[./int[@name='id']='2']"
+            , "//doc[./str[@name='id']='1']"
+            , "//doc[./str[@name='id']='2']"
     );
 
     assertQ(req("q", "{!complexphrase} \"(jo* -john) smith\"")
             , "//result[@numFound='1']"
-            , "//doc[./int[@name='id']='2']"
+            , "//doc[./str[@name='id']='2']"
     );
 
     assertQ(req("q", "{!complexphrase} \"jo* smith\"~2")
             , "//result[@numFound='3']"
-            , "//doc[./int[@name='id']='1']"
-            , "//doc[./int[@name='id']='2']"
-            , "//doc[./int[@name='id']='3']"
+            , "//doc[./str[@name='id']='1']"
+            , "//doc[./str[@name='id']='2']"
+            , "//doc[./str[@name='id']='3']"
     );
 
     assertQ(req("q", "{!complexphrase} \"jo* [sma TO smz]\"")
             , "//result[@numFound='2']"
-            , "//doc[./int[@name='id']='1']"
-            , "//doc[./int[@name='id']='2']"
+            , "//doc[./str[@name='id']='1']"
+            , "//doc[./str[@name='id']='2']"
     );
 
     assertQ(req("q", "{!complexphrase} \"john\"")
             , "//result[@numFound='2']"
-            , "//doc[./int[@name='id']='1']"
-            , "//doc[./int[@name='id']='3']"
+            , "//doc[./str[@name='id']='1']"
+            , "//doc[./str[@name='id']='3']"
     );
 
     assertQ(req("q", "{!complexphrase} \"(john johathon) smith\"")
             , "//result[@numFound='2']"
-            , "//doc[./int[@name='id']='1']"
-            , "//doc[./int[@name='id']='2']"
+            , "//doc[./str[@name='id']='1']"
+            , "//doc[./str[@name='id']='2']"
     );
 
   }
@@ -113,55 +113,55 @@ public class TestComplexPhraseQParserPlugin extends AbstractSolrTestCase {
 
     assertQ("Simple multi-term still works",
             sumLRF.makeRequest("name:\"john smith\""),
-            "//doc[./int[@name='id']='1']",
+            "//doc[./str[@name='id']='1']",
             "//result[@numFound='1']"
     );
 
     assertQ(req("q", "{!complexphrase} name:\"john smith\""),
-            "//doc[./int[@name='id']='1']",
+            "//doc[./str[@name='id']='1']",
             "//result[@numFound='1']"
     );
 
 
     assertQ("wildcards and fuzzies are OK in phrases",
             sumLRF.makeRequest("name:\"j* smyth~\""),
-            "//doc[./int[@name='id']='1']",
-            "//doc[./int[@name='id']='2']",
+            "//doc[./str[@name='id']='1']",
+            "//doc[./str[@name='id']='2']",
             "//result[@numFound='2']"
     );
 
     assertQ("boolean logic works",
             sumLRF.makeRequest("name:\"(jo* -john) smith\""),
-            "//doc[./int[@name='id']='2']",
+            "//doc[./str[@name='id']='2']",
             "//result[@numFound='1']"
     );
 
     assertQ("position logic works",
             sumLRF.makeRequest("name:\"jo*  smith\"~2"),
-            "//doc[./int[@name='id']='1']",
-            "//doc[./int[@name='id']='2']",
-            "//doc[./int[@name='id']='3']",
+            "//doc[./str[@name='id']='1']",
+            "//doc[./str[@name='id']='2']",
+            "//doc[./str[@name='id']='3']",
             "//result[@numFound='3']"
     );
 
     assertQ("range queries supported",
             sumLRF.makeRequest("name:\"jo* [sma TO smz]\""),
-            "//doc[./int[@name='id']='1']",
-            "//doc[./int[@name='id']='2']",
+            "//doc[./str[@name='id']='1']",
+            "//doc[./str[@name='id']='2']",
             "//result[@numFound='2']"
     );
 
     assertQ("Simple single-term still works",
             sumLRF.makeRequest("name:\"john\""),
-            "//doc[./int[@name='id']='1']",
-            "//doc[./int[@name='id']='3']",
+            "//doc[./str[@name='id']='1']",
+            "//doc[./str[@name='id']='3']",
             "//result[@numFound='2']"
     );
 
     assertQ("OR inside phrase works",
             sumLRF.makeRequest("name:\"(john johathon) smith\""),
-            "//doc[./int[@name='id']='1']",
-            "//doc[./int[@name='id']='2']",
+            "//doc[./str[@name='id']='1']",
+            "//doc[./str[@name='id']='2']",
             "//result[@numFound='2']"
     );
 
@@ -192,9 +192,9 @@ public class TestComplexPhraseQParserPlugin extends AbstractSolrTestCase {
 
     assertQ("range queries supported",
             sumLRF.makeRequest("name:[sma TO smz]"),
-            "//doc[./int[@name='id']='1']",
-            "//doc[./int[@name='id']='2']",
-            "//doc[./int[@name='id']='3']",
+            "//doc[./str[@name='id']='1']",
+            "//doc[./str[@name='id']='2']",
+            "//doc[./str[@name='id']='3']",
             "//result[@numFound='3']"
     );
 
@@ -246,29 +246,29 @@ public class TestComplexPhraseQParserPlugin extends AbstractSolrTestCase {
 
     assertQ(req("q", "{!complexphrase} name:\"protein digest\" AND text:\"dna rules\"")
         , "//result[@numFound='1']"
-        , "//doc[./int[@name='id']='3']"
+        , "//doc[./str[@name='id']='3']"
     );
 
     assertQ(req("q", "{!complexphrase} name:\"prot* dige*\" AND text:\"d* r*\"")
         , "//result[@numFound='1']"
-        , "//doc[./int[@name='id']='3']"
+        , "//doc[./str[@name='id']='3']"
     );
 
     assertQ(req("q", "{!complexphrase inOrder=\"false\"} name:\"dna* rule*\" AND text:\"prot* diges*\"")
         , "//result[@numFound='1']"
-        , "//doc[./int[@name='id']='1']"
+        , "//doc[./str[@name='id']='1']"
     );
 
-    assertQ(req("q", "{!unorderedcomplexphrase} name:\"protein digest\" AND text:\"dna rules\"~2")
+    assertQ(req("q", "{!complexphrase inOrder=false} name:\"protein digest\" AND text:\"dna rules\"~2")
         , "//result[@numFound='2']"
-        , "//doc[./int[@name='id']='3']"
-        , "//doc[./int[@name='id']='4']"
+        , "//doc[./str[@name='id']='3']"
+        , "//doc[./str[@name='id']='4']"
     );
 
 
-    assertQ(req("q", "{!unorderedcomplexphrase inOrder=\"true\"} name:\"protein digest\" AND text:\"dna rules\"")
+    assertQ(req("q", "{!complexphrase inOrder=\"true\"} name:\"protein digest\" AND text:\"dna rules\"")
         , "//result[@numFound='1']"
-        , "//doc[./int[@name='id']='3']"
+        , "//doc[./str[@name='id']='3']"
     );
 
   }
@@ -290,49 +290,49 @@ public class TestComplexPhraseQParserPlugin extends AbstractSolrTestCase {
      */
     assertQ(req("q", "{!complexphrase} \"protein digest\"")
             , "//result[@numFound='1']"
-            , "//doc[./int[@name='id']='1']"
+            , "//doc[./str[@name='id']='1']"
     );
 
     assertQ(req("q", "{!complexphrase} \"pro* di*\"")
             , "//result[@numFound='1']"
-            , "//doc[./int[@name='id']='1']"
+            , "//doc[./str[@name='id']='1']"
     );
 
     assertQ(req("q", "{!complexphrase} name:\"protein digest\"")
             , "//result[@numFound='1']"
-            , "//doc[./int[@name='id']='3']"
+            , "//doc[./str[@name='id']='3']"
     );
 
     assertQ(req("q", "{!complexphrase} name:\"pro* di*\"")
             , "//result[@numFound='1']"
-            , "//doc[./int[@name='id']='3']"
+            , "//doc[./str[@name='id']='3']"
     );
 
     /**
      * unordered phrase query returns two documents.
      */
-    assertQ(req("q", "{!unorderedcomplexphrase} \"digest protein\"")
+    assertQ(req("q", "{!complexphrase inOrder=false} \"digest protein\"")
             , "//result[@numFound='2']"
-            , "//doc[./int[@name='id']='1']"
-            , "//doc[./int[@name='id']='2']"
+            , "//doc[./str[@name='id']='1']"
+            , "//doc[./str[@name='id']='2']"
     );
 
-    assertQ(req("q", "{!unorderedcomplexphrase} \"di* pro*\"")
+    assertQ(req("q", "{!complexphrase inOrder=false} \"di* pro*\"")
             , "//result[@numFound='2']"
-            , "//doc[./int[@name='id']='1']"
-            , "//doc[./int[@name='id']='2']"
+            , "//doc[./str[@name='id']='1']"
+            , "//doc[./str[@name='id']='2']"
     );
 
-    assertQ(req("q", "{!unorderedcomplexphrase} name:\"digest protein\"")
+    assertQ(req("q", "{!complexphrase inOrder=false} name:\"digest protein\"")
             , "//result[@numFound='2']"
-            , "//doc[./int[@name='id']='3']"
-            , "//doc[./int[@name='id']='4']"
+            , "//doc[./str[@name='id']='3']"
+            , "//doc[./str[@name='id']='4']"
     );
 
-    assertQ(req("q", "{!unorderedcomplexphrase} name:\"di* pro*\"")
+    assertQ(req("q", "{!complexphrase inOrder=false} name:\"di* pro*\"")
             , "//result[@numFound='2']"
-            , "//doc[./int[@name='id']='3']"
-            , "//doc[./int[@name='id']='4']"
+            , "//doc[./str[@name='id']='3']"
+            , "//doc[./str[@name='id']='4']"
     );
 
     /**
@@ -340,8 +340,13 @@ public class TestComplexPhraseQParserPlugin extends AbstractSolrTestCase {
      */
     assertQ(req("q", "{!complexphrase inOrder=false} \"di* pro*\"")
         , "//result[@numFound='2']"
-        , "//doc[./int[@name='id']='1']"
-        , "//doc[./int[@name='id']='2']"
+        , "//doc[./str[@name='id']='1']"
+        , "//doc[./str[@name='id']='2']"
+    );
+
+
+    assertQ(req("q", "{!complexphrase inOrder=true} \"di* pro*\"")
+          , "//result[@numFound='1']"
     );
 
     /**
@@ -349,8 +354,8 @@ public class TestComplexPhraseQParserPlugin extends AbstractSolrTestCase {
      */
     assertQ(req("q", "{!complexphrase inOrder=false df=name} \"di* pro*\"")
         , "//result[@numFound='2']"
-        , "//doc[./int[@name='id']='3']"
-        , "//doc[./int[@name='id']='4']"
+        , "//doc[./str[@name='id']='3']"
+        , "//doc[./str[@name='id']='4']"
     );
   }
   /**
@@ -369,14 +374,13 @@ public class TestComplexPhraseQParserPlugin extends AbstractSolrTestCase {
 
     assertQ(req("q", "{!complexphrase} \"sulfur-reducing bacteria\"")
             , "//result[@numFound='2']"
-            , "//doc[./int[@name='id']='1']"
-            , "//doc[./int[@name='id']='2']"
+            , "//doc[./str[@name='id']='1']"
+            , "//doc[./str[@name='id']='2']"
     );
 
+    // the analysis for "name" currently does not break on "-" (only whitespace) and thus only matches one doc
     assertQ(req("q", "{!complexphrase} name:\"sulfur-reducing bacteria\"")
-            , "//result[@numFound='2']"
-            , "//doc[./int[@name='id']='3']"
-            , "//doc[./int[@name='id']='4']"
+            , "//result[@numFound='1']"
     );
   }
 }

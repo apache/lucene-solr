@@ -77,6 +77,20 @@ Other
 
 ======================= Lucene 4.9.0 =======================
 
+Changes in Runtime Behavior
+
+* LUCENE-5611: Changing the term vector options for multiple field
+  instances by the same name in one document is not longer accepted;
+  IndexWriter will now throw IllegalArgumentException.  (Robert Muir,
+  Mike McCandless)
+
+New Features
+
+* LUCENE-5610: Add Terms.getMin and Terms.getMax to get the lowest and
+  highest terms, and NumericUtils.get{Min/Max}{Int/Long} to get the
+  minimum numeric values from the provided Terms.  (Robert Muir, Mike
+  McCandless)
+
 API Changes
 
 * LUCENE-5582: Deprecate IndexOutput.length (just use
@@ -86,6 +100,13 @@ API Changes
 * LUCENE-5621: Deprecate IndexOutput.flush: this is not used by Lucene.
   (Robert Muir)
 
+* LUCENE-5611: Simplified Lucene's default indexing chain / APIs.
+  AttributeSource/TokenStream.getAttribute now returns null if the
+  attribute is not present (previously it threw
+  IllegalArgumentException).  StoredFieldsWriter.startDocument no
+  longer receives the number of fields that will be added (Robert
+  Muir, Mike McCandless)
+
 Optimizations
 
 * LUCENE-5603: hunspell stemmer more efficiently strips prefixes
@@ -93,11 +114,14 @@ Optimizations
   
 * LUCENE-5599: HttpReplicator did not properly delegate bulk read() to wrapped
   InputStream. (Christoph Kaser via Shai Erera)
-  
+
 Bug fixes
 
 * LUCENE-5600: HttpClientBase did not properly consume a connection if a server
   error occurred. (Christoph Kaser via Shai Erera)
+
+* LUCENE-5559: Add additional argument validation for CapitalizationFilter
+  and CodepointCountFilter. (Ahmet Arslan via Robert Muir)
 
 ======================= Lucene 4.8.0 =======================
 
@@ -304,6 +328,22 @@ Bug fixes
   you may see write.lock hanging around from time to time: its harmless.  
   (Uwe Schindler, Mike McCandless, Robert Muir)
 
+* LUCENE-5624: Ensure NativeFSLockFactory does not leak file handles if it is unable
+  to obtain the lock. (Uwe Schindler, Robert Muir)
+
+* LUCENE-5626: Fix bug in SimpleFSLockFactory's obtain() that sometimes throwed
+  IOException (ERROR_ACESS_DENIED) on Windows if the lock file was created
+  concurrently. This error is now handled the same way like in NativeFSLockFactory
+  by returning false.  (Uwe Schindler, Robert Muir, Dawid Weiss)
+
+* LUCENE-5630: Add missing META-INF entry for UpperCaseFilterFactory.
+  (Robert Muir)
+
+Tests
+  
+* LUCENE-5630: Fix TestAllAnalyzersHaveFactories to correctly check for existence
+  of class and corresponding Map<String,String> ctor.  (Uwe Schindler, Robert Muir)
+
 Test Framework
 
 * LUCENE-5592: Incorrectly reported uncloseable files. (Dawid Weiss)
@@ -331,9 +371,7 @@ Build
   by adding a workaround for the Ant bug.  (Uwe Schindler)
 
 * LUCENE-5612: Add a new Ant target in lucene/core to test LockFactory
-  implementations: "ant test-lock-factory". By default it is ran
-  after the core testsuite on NativeFSLockFactory. To test another one,
-  pass -Dlock.factory.impl to Ant.  (Uwe Schindler, Mike McCandless,
+  implementations: "ant test-lock-factory".  (Uwe Schindler, Mike McCandless,
   Robert Muir)
 
 Documentation

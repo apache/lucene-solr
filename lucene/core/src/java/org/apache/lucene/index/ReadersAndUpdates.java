@@ -484,7 +484,7 @@ class ReadersAndUpdates {
       success = true;
     } finally {
       if (!success) {
-        // Advance only the nextWriteDocValuesGen so that a 2nd
+        // Advance only the nextWriteFieldInfosGen so that a 2nd
         // attempt to write will write to a new file
         info.advanceNextWriteFieldInfosGen();
         

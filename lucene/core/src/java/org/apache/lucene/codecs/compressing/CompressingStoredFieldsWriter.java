@@ -145,20 +145,23 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     }
   }
 
+  private int numStoredFieldsInDoc;
+
   @Override
-  public void startDocument(int numStoredFields) throws IOException {
+  public void startDocument() throws IOException {
+  }
+
+  @Override
+  public void finishDocument() throws IOException {
     if (numBufferedDocs == this.numStoredFields.length) {
       final int newLength = ArrayUtil.oversize(numBufferedDocs + 1, 4);
       this.numStoredFields = Arrays.copyOf(this.numStoredFields, newLength);
       endOffsets = Arrays.copyOf(endOffsets, newLength);
     }
-    this.numStoredFields[numBufferedDocs] = numStoredFields;
+    this.numStoredFields[numBufferedDocs] = numStoredFieldsInDoc;
+    numStoredFieldsInDoc = 0;
+    endOffsets[numBufferedDocs] = bufferedDocs.length;
     ++numBufferedDocs;
-  }
-
-  @Override
-  public void finishDocument() throws IOException {
-    endOffsets[numBufferedDocs - 1] = bufferedDocs.length;
     if (triggerFlush()) {
       flush();
     }
@@ -242,6 +245,9 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   @Override
   public void writeField(FieldInfo info, StorableField field)
       throws IOException {
+
+    ++numStoredFieldsInDoc;
+
     int bits = 0;
     final BytesRef bytes;
     final String string;
@@ -391,8 +397,9 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
               // copy non-deleted docs
               for (; docID < it.docBase + it.chunkDocs; docID = nextLiveDoc(docID + 1, liveDocs, maxDoc)) {
                 final int diff = docID - it.docBase;
-                startDocument(it.numStoredFields[diff]);
+                startDocument();
                 bufferedDocs.writeBytes(it.bytes.bytes, it.bytes.offset + startOffsets[diff], it.lengths[diff]);
+                numStoredFieldsInDoc = it.numStoredFields[diff];
                 finishDocument();
                 ++docCount;
                 mergeState.checkAbort.work(300);

@@ -745,7 +745,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
       try {
         if (tryToCommit) {
-
+          log.info("Committing on IndexWriter close.");
           CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);
           cmd.openSearcher = false;
           cmd.waitSearcher = false;
@@ -786,7 +786,13 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         }
       }
 
-      if (writer != null) writer.shutdown();
+      if (writer != null) {
+        try {
+          writer.waitForMerges();
+        } finally {
+          writer.close();
+        }
+      }
 
     } finally {
       solrCoreState.getCommitLock().unlock();

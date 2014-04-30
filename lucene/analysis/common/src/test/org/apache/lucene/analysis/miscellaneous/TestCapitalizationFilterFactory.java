@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.miscellaneous;
 import java.io.Reader;
 import java.io.StringReader;
 
-import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 
@@ -270,6 +269,29 @@ public class TestCapitalizationFilterFactory extends BaseTokenStreamFactoryTestC
       fail();
     } catch (IllegalArgumentException expected) {
       assertTrue(expected.getMessage().contains("Unknown parameters"));
+    }
+  }
+
+  /**
+   * Test that invalid arguments result in exception
+   */
+  public void testInvalidArguments() throws Exception {
+    for (final String arg : new String[]{"minWordLength", "maxTokenLength", "maxWordCount"}) {
+      try {
+        Reader reader = new StringReader("foo foobar super-duper-trooper");
+        TokenStream stream = whitespaceMockTokenizer(reader);
+
+        tokenFilterFactory("Capitalization",
+            "keep", "and the it BIG",
+            "onlyFirstWord", "false",
+            arg, "-3",
+            "okPrefix", "McK",
+            "forceFirstLetter", "true").create(stream);
+        fail();
+      } catch (IllegalArgumentException expected) {
+        assertTrue(expected.getMessage().contains(arg + " must be greater than or equal to zero")
+            || expected.getMessage().contains(arg + " must be greater than zero"));
+      }
     }
   }
 }

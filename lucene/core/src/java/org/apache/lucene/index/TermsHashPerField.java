@@ -26,18 +26,15 @@ import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IntBlockPool;
 import org.apache.lucene.util.BytesRefHash.BytesStartArray;
-import org.apache.lucene.util.BytesRefHash.MaxBytesLengthExceededException;
 
-final class TermsHashPerField extends InvertedDocConsumerPerField {
+abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
   private static final int HASH_INIT_SIZE = 4;
-
-  final TermsHashConsumerPerField consumer;
 
   final TermsHash termsHash;
 
   final TermsHashPerField nextPerField;
-  final DocumentsWriterPerThread.DocState docState;
-  final FieldInvertState fieldState;
+  protected final DocumentsWriterPerThread.DocState docState;
+  protected final FieldInvertState fieldState;
   TermToBytesRefAttribute termAtt;
   BytesRef termBytesRef;
 
@@ -49,44 +46,37 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
   final int streamCount;
   final int numPostingInt;
 
-  final FieldInfo fieldInfo;
+  protected final FieldInfo fieldInfo;
 
   final BytesRefHash bytesHash;
 
   ParallelPostingsArray postingsArray;
   private final Counter bytesUsed;
 
-  public TermsHashPerField(DocInverterPerField docInverterPerField, final TermsHash termsHash, final TermsHash nextTermsHash, final FieldInfo fieldInfo) {
+  /** streamCount: how many streams this field stores per term.
+   * E.g. doc(+freq) is 1 stream, prox+offset is a second. */
+
+  public TermsHashPerField(int streamCount, FieldInvertState fieldState, TermsHash termsHash, TermsHashPerField nextPerField, FieldInfo fieldInfo) {
     intPool = termsHash.intPool;
     bytePool = termsHash.bytePool;
     termBytePool = termsHash.termBytePool;
     docState = termsHash.docState;
     this.termsHash = termsHash;
     bytesUsed = termsHash.bytesUsed;
-    fieldState = docInverterPerField.fieldState;
-    this.consumer = termsHash.consumer.addField(this, fieldInfo);
-    PostingsBytesStartArray byteStarts = new PostingsBytesStartArray(this, bytesUsed);
-    bytesHash = new BytesRefHash(termBytePool, HASH_INIT_SIZE, byteStarts);
-    streamCount = consumer.getStreamCount();
+    this.fieldState = fieldState;
+    this.streamCount = streamCount;
     numPostingInt = 2*streamCount;
     this.fieldInfo = fieldInfo;
-    if (nextTermsHash != null)
-      nextPerField = (TermsHashPerField) nextTermsHash.addField(docInverterPerField, fieldInfo);
-    else
-      nextPerField = null;
+    this.nextPerField = nextPerField;
+    PostingsBytesStartArray byteStarts = new PostingsBytesStartArray(this, bytesUsed);
+    bytesHash = new BytesRefHash(termBytePool, HASH_INIT_SIZE, byteStarts);
   }
 
   void reset() {
     bytesHash.clear(false);
-    if (nextPerField != null)
+    if (nextPerField != null) {
       nextPerField.reset();
-  }
-
-  @Override
-  public void abort() {
-    reset();
-    if (nextPerField != null)
-      nextPerField.abort();
+    }
   }
 
   public void initReader(ByteSliceReader reader, int termID, int stream) {
@@ -99,33 +89,16 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
                 ints[upto+stream]);
   }
 
-  /** Collapse the hash table & sort in-place. */
+  int[] sortedTermIDs;
+
+  /** Collapse the hash table & sort in-place; also sets
+   * this.sortedTermIDs to the results */
   public int[] sortPostings() {
-    return bytesHash.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
+    sortedTermIDs = bytesHash.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
+    return sortedTermIDs;
   }
 
-  private boolean doCall;
   private boolean doNextCall;
-
-  @Override
-  void start(IndexableField f) {
-    termAtt = fieldState.attributeSource.getAttribute(TermToBytesRefAttribute.class);
-    termBytesRef = termAtt.getBytesRef();
-    consumer.start(f);
-    if (nextPerField != null) {
-      nextPerField.start(f);
-    }
-  }
-
-  @Override
-  boolean start(IndexableField[] fields, int count) throws IOException {
-    doCall = consumer.start(fields, count);
-    bytesHash.reinit();
-    if (nextPerField != null) {
-      doNextCall = nextPerField.start(fields, count);
-    }
-    return doCall || doNextCall;
-  }
 
   // Secondary entry point (for 2nd & subsequent TermsHash),
   // because token text has already been "interned" into
@@ -137,8 +110,9 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
       // First time we are seeing this token since we last
       // flushed the hash.
       // Init stream slices
-      if (numPostingInt + intPool.intUpto > IntBlockPool.INT_BLOCK_SIZE)
+      if (numPostingInt + intPool.intUpto > IntBlockPool.INT_BLOCK_SIZE) {
         intPool.nextBuffer();
+      }
 
       if (ByteBlockPool.BYTE_BLOCK_SIZE - bytePool.byteUpto < numPostingInt*ByteBlockPool.FIRST_LEVEL_SIZE) {
         bytePool.nextBuffer();
@@ -156,20 +130,20 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
       }
       postingsArray.byteStarts[termID] = intUptos[intUptoStart];
 
-      consumer.newTerm(termID);
+      newTerm(termID);
 
     } else {
       termID = (-termID)-1;
       int intStart = postingsArray.intStarts[termID];
       intUptos = intPool.buffers[intStart >> IntBlockPool.INT_BLOCK_SHIFT];
       intUptoStart = intStart & IntBlockPool.INT_BLOCK_MASK;
-      consumer.addTerm(termID);
+      addTerm(termID);
     }
   }
 
-  // Primary entry point (for first TermsHash); postings use
-  // this API.
-  @Override
+  /** Called once per inverted token.  This is the primary
+   *  entry point (for first TermsHash); postings use this
+   *  API. */
   void add() throws IOException {
 
     termAtt.fillBytesRef();
@@ -177,27 +151,10 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
     // We are first in the chain so we must "intern" the
     // term text into textStart address
     // Get the text & hash of this term.
-    int termID;
-    try {
-      termID = bytesHash.add(termBytesRef);
-    } catch (MaxBytesLengthExceededException e) {
-      // Term is too large; record this here (can't throw an
-      // exc because DocInverterPerField will then abort the
-      // entire segment) and then throw an exc later in
-      // DocInverterPerField.java.  LengthFilter can always be
-      // used to prune the term before indexing:
-      if (docState.maxTermPrefix == null) {
-        final int saved = termBytesRef.length;
-        try {
-          termBytesRef.length = Math.min(30, DocumentsWriterPerThread.MAX_TERM_LENGTH_UTF8);
-          docState.maxTermPrefix = termBytesRef.toString();
-        } finally {
-          termBytesRef.length = saved;
-        }
-      }
-      consumer.skippingLongTerm();
-      return;
-    }
+    int termID = bytesHash.add(termBytesRef);
+      
+    //System.out.println("add term=" + termBytesRef.utf8ToString() + " doc=" + docState.docID + " termID=" + termID);
+
     if (termID >= 0) {// New posting
       bytesHash.byteStart(termID);
       // Init stream slices
@@ -221,18 +178,19 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
       }
       postingsArray.byteStarts[termID] = intUptos[intUptoStart];
 
-      consumer.newTerm(termID);
+      newTerm(termID);
 
     } else {
       termID = (-termID)-1;
-      final int intStart = postingsArray.intStarts[termID];
+      int intStart = postingsArray.intStarts[termID];
       intUptos = intPool.buffers[intStart >> IntBlockPool.INT_BLOCK_SHIFT];
       intUptoStart = intStart & IntBlockPool.INT_BLOCK_MASK;
-      consumer.addTerm(termID);
+      addTerm(termID);
     }
 
-    if (doNextCall)
+    if (doNextCall) {
       nextPerField.add(postingsArray.textStarts[termID]);
+    }
   }
 
   int[] intUptos;
@@ -269,13 +227,6 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
     writeByte(stream, (byte) i);
   }
 
-  @Override
-  void finish() throws IOException {
-    consumer.finish();
-    if (nextPerField != null)
-      nextPerField.finish();
-  }
-
   private static final class PostingsBytesStartArray extends BytesStartArray {
 
     private final TermsHashPerField perField;
@@ -290,7 +241,8 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
     @Override
     public int[] init() {
       if (perField.postingsArray == null) {
-        perField.postingsArray = perField.consumer.createPostingsArray(2);
+        perField.postingsArray = perField.createPostingsArray(2);
+        perField.newPostingsArray();
         bytesUsed.addAndGet(perField.postingsArray.size * perField.postingsArray.bytesPerPosting());
       }
       return perField.postingsArray.textStarts;
@@ -301,15 +253,17 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
       ParallelPostingsArray postingsArray = perField.postingsArray;
       final int oldSize = perField.postingsArray.size;
       postingsArray = perField.postingsArray = postingsArray.grow();
+      perField.newPostingsArray();
       bytesUsed.addAndGet((postingsArray.bytesPerPosting() * (postingsArray.size - oldSize)));
       return postingsArray.textStarts;
     }
 
     @Override
     public int[] clear() {
-      if(perField.postingsArray != null) {
+      if (perField.postingsArray != null) {
         bytesUsed.addAndGet(-(perField.postingsArray.size * perField.postingsArray.bytesPerPosting()));
         perField.postingsArray = null;
+        perField.newPostingsArray();
       }
       return null;
     }
@@ -318,7 +272,47 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
     public Counter bytesUsed() {
       return bytesUsed;
     }
-
   }
 
+  @Override
+  public int compareTo(TermsHashPerField other) {
+    return fieldInfo.name.compareTo(other.fieldInfo.name);
+  }
+
+  /** Finish adding all instances of this field to the
+   *  current document. */
+  void finish() throws IOException {
+    if (nextPerField != null) {
+      nextPerField.finish();
+    }
+  }
+
+  /** Start adding a new field instance; first is true if
+   *  this is the first time this field name was seen in the
+   *  document. */
+  boolean start(IndexableField field, boolean first) {
+    termAtt = fieldState.termAttribute;
+    // EmptyTokenStream can have null term att
+    if (termAtt != null) {
+      termBytesRef = termAtt.getBytesRef();
+    }
+    if (nextPerField != null) {
+      doNextCall = nextPerField.start(field, first);
+    }
+
+    return true;
+  }
+
+  /** Called when a term is seen for the first time. */
+  abstract void newTerm(int termID) throws IOException;
+
+  /** Called when a previously seen term is seen again. */
+  abstract void addTerm(int termID) throws IOException;
+
+  /** Called when the postings array is initialized or
+   *  resized. */
+  abstract void newPostingsArray();
+
+  /** Creates a new postings array of the specified size. */
+  abstract ParallelPostingsArray createPostingsArray(int size);
 }

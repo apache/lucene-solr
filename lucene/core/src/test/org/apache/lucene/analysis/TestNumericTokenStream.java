@@ -31,10 +31,12 @@ public class TestNumericTokenStream extends BaseTokenStreamTestCase {
 
   public void testLongStream() throws Exception {
     final NumericTokenStream stream=new NumericTokenStream().setLongValue(lvalue);
-    // use getAttribute to test if attributes really exist, if not an IAE will be throwed
     final TermToBytesRefAttribute bytesAtt = stream.getAttribute(TermToBytesRefAttribute.class);
+    assertNotNull(bytesAtt);
     final TypeAttribute typeAtt = stream.getAttribute(TypeAttribute.class);
+    assertNotNull(typeAtt);
     final NumericTokenStream.NumericTermAttribute numericAtt = stream.getAttribute(NumericTokenStream.NumericTermAttribute.class);
+    assertNotNull(numericAtt);
     final BytesRef bytes = bytesAtt.getBytesRef();
     stream.reset();
     assertEquals(64, numericAtt.getValueSize());
@@ -53,10 +55,12 @@ public class TestNumericTokenStream extends BaseTokenStreamTestCase {
 
   public void testIntStream() throws Exception {
     final NumericTokenStream stream=new NumericTokenStream().setIntValue(ivalue);
-    // use getAttribute to test if attributes really exist, if not an IAE will be throwed
     final TermToBytesRefAttribute bytesAtt = stream.getAttribute(TermToBytesRefAttribute.class);
+    assertNotNull(bytesAtt);
     final TypeAttribute typeAtt = stream.getAttribute(TypeAttribute.class);
+    assertNotNull(typeAtt);
     final NumericTokenStream.NumericTermAttribute numericAtt = stream.getAttribute(NumericTokenStream.NumericTermAttribute.class);
+    assertNotNull(numericAtt);
     final BytesRef bytes = bytesAtt.getBytesRef();
     stream.reset();
     assertEquals(32, numericAtt.getValueSize());

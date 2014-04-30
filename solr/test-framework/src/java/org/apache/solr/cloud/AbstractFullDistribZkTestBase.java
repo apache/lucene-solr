@@ -672,7 +672,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     // random.nextInt(sliceCount-1));
     // }
     //
-    // CommonsHttpSolrServer client = (CommonsHttpSolrServer)
+    // HttpSolrServer client = (HttpSolrServer)
     // clients.get(which);
     
     UpdateRequest ureq = new UpdateRequest();

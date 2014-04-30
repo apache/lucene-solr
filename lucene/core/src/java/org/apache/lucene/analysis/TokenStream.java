@@ -171,8 +171,9 @@ public abstract class TokenStream extends AttributeSource implements Closeable {
    */
   public void end() throws IOException {
     clearAttributes(); // LUCENE-3849: don't consume dirty atts
-    if (hasAttribute(PositionIncrementAttribute.class)) {
-      getAttribute(PositionIncrementAttribute.class).setPositionIncrement(0);
+    PositionIncrementAttribute posIncAtt = getAttribute(PositionIncrementAttribute.class);
+    if (posIncAtt != null) {
+      posIncAtt.setPositionIncrement(0);
     }
   }
 

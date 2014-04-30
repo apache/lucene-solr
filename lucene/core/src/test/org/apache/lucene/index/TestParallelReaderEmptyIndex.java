@@ -98,7 +98,7 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
       doc.add(newField("test", "", customType));
       idField.setStringValue("1");
       iw.addDocument(doc);
-      doc.add(newTextField("test", "", Field.Store.NO));
+      doc.add(newField("test", "", customType));
       idField.setStringValue("2");
       iw.addDocument(doc);
       iw.shutdown();

@@ -49,6 +49,8 @@ public class TestSimpleQParserPlugin extends SolrTestCaseJ4 {
     assertU(adoc("id", "55", "text0", "whitespace", "text1", "whitespace", "text-keyword0", " "));
     assertU(adoc("id", "56", "text0", "whitespace", "text1", "whitespace", "text-keyword0", "\n"));
     assertU(adoc("id", "57", "text0", "foobar", "text1", "foo bar", "text-keyword0", "fb"));
+    assertU(adoc("id", "58", "text-query0", "HELLO"));
+    assertU(adoc("id", "59", "text-query0", "hello"));
     assertU(commit());
   }
 
@@ -216,5 +218,11 @@ public class TestSimpleQParserPlugin extends SolrTestCaseJ4 {
     assertJQ(req("defType", "simple", "qf", "text0", "q", "Fóóbar*"), "/response/numFound==1");
     assertJQ(req("defType", "simple", "qf", "text0", "q", "FOO*"), "/response/numFound==1");
     assertJQ(req("defType", "simple", "qf", "text0", "q", "BAR*"), "/response/numFound==0");
+  }
+
+  public void testQueryAnalyzerIsUsed() throws Exception {
+    // this should only match one doc, which was lower cased before being added
+    assertJQ(req("defType", "simple", "qf", "text-query0", "q", "HELLO"),
+             "/response/numFound==1");
   }
 }

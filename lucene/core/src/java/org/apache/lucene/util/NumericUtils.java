@@ -17,12 +17,16 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.analysis.NumericTokenStream;
 import org.apache.lucene.document.DoubleField; // javadocs
 import org.apache.lucene.document.FloatField; // javadocs
 import org.apache.lucene.document.IntField; // javadocs
 import org.apache.lucene.document.LongField; // javadocs
+import org.apache.lucene.index.FilterAtomicReader;
 import org.apache.lucene.index.FilteredTermsEnum;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.NumericRangeFilter;
 import org.apache.lucene.search.NumericRangeQuery; // for javadocs
@@ -464,14 +468,15 @@ public final class NumericUtils {
    *         terms with a shift value of <tt>0</tt>.
    */
   public static TermsEnum filterPrefixCodedLongs(TermsEnum termsEnum) {
-    return new FilteredTermsEnum(termsEnum, false) {
+    return new SeekingNumericFilteredTermsEnum(termsEnum) {
+
       @Override
       protected AcceptStatus accept(BytesRef term) {
         return NumericUtils.getPrefixCodedLongShift(term) == 0 ? AcceptStatus.YES : AcceptStatus.END;
       }
     };
   }
-  
+
   /**
    * Filters the given {@link TermsEnum} by accepting only prefix coded 32 bit
    * terms with a shift value of <tt>0</tt>.
@@ -482,13 +487,93 @@ public final class NumericUtils {
    *         terms with a shift value of <tt>0</tt>.
    */
   public static TermsEnum filterPrefixCodedInts(TermsEnum termsEnum) {
-    return new FilteredTermsEnum(termsEnum, false) {
+    return new SeekingNumericFilteredTermsEnum(termsEnum) {
       
       @Override
       protected AcceptStatus accept(BytesRef term) {
         return NumericUtils.getPrefixCodedIntShift(term) == 0 ? AcceptStatus.YES : AcceptStatus.END;
       }
     };
+  }
+
+  /** Just like FilteredTermsEnum, except it adds a limited
+   *  seekCeil implementation that only works with {@link
+   *  #filterPrefixCodedInts} and {@link
+   *  #filterPrefixCodedLongs}. */
+  private static abstract class SeekingNumericFilteredTermsEnum extends FilteredTermsEnum {
+    public SeekingNumericFilteredTermsEnum(final TermsEnum tenum) {
+      super(tenum, false);
+    }
+
+    @Override
+    @SuppressWarnings("fallthrough")
+    public SeekStatus seekCeil(BytesRef term) throws IOException {
+
+      // NOTE: This is not general!!  It only handles YES
+      // and END, because that's all we need for the numeric
+      // case here
+
+      SeekStatus status = tenum.seekCeil(term);
+      if (status == SeekStatus.END) {
+        return SeekStatus.END;
+      }
+
+      actualTerm = tenum.term();
+
+      if (accept(actualTerm) == AcceptStatus.YES) {
+        return status;
+      } else {
+        return SeekStatus.END;
+      }
+    }
+  }
+
+  private static Terms intTerms(Terms terms) {
+    return new FilterAtomicReader.FilterTerms(terms) {
+        @Override
+        public TermsEnum iterator(TermsEnum reuse) throws IOException {
+          return filterPrefixCodedInts(in.iterator(reuse));
+        }
+      };
+  }
+
+  private static Terms longTerms(Terms terms) {
+    return new FilterAtomicReader.FilterTerms(terms) {
+        @Override
+        public TermsEnum iterator(TermsEnum reuse) throws IOException {
+          return filterPrefixCodedLongs(in.iterator(reuse));
+        }
+      };
+  }
+    
+  /** Returns the minimum int value indexed into this
+   *  numeric field. */
+  public static int getMinInt(Terms terms) throws IOException {
+    // All shift=0 terms are sorted first, so we don't need
+    // to filter the incoming terms; we can just get the
+    // min: 
+    return NumericUtils.prefixCodedToInt(terms.getMin());
+  }
+
+  /** Returns the maximum int value indexed into this
+   *  numeric field. */
+  public static int getMaxInt(Terms terms) throws IOException {
+    return NumericUtils.prefixCodedToInt(intTerms(terms).getMax());
+  }
+
+  /** Returns the minimum long value indexed into this
+   *  numeric field. */
+  public static long getMinLong(Terms terms) throws IOException {
+    // All shift=0 terms are sorted first, so we don't need
+    // to filter the incoming terms; we can just get the
+    // min: 
+    return NumericUtils.prefixCodedToLong(terms.getMin());
+  }
+
+  /** Returns the maximum long value indexed into this
+   *  numeric field. */
+  public static long getMaxLong(Terms terms) throws IOException {
+    return NumericUtils.prefixCodedToLong(longTerms(terms).getMax());
   }
   
 }

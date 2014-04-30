@@ -280,6 +280,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
   // to allow users to query an IndexWriter settings.
   private final LiveIndexWriterConfig config;
 
+  /** System.nanoTime() when commit started; used to write
+   *  an infoStream message about how long commit took. */
+  private long startCommitTime;
+
   DirectoryReader getReader() throws IOException {
     return getReader(true);
   }
@@ -2743,6 +2747,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
   }
 
   private void prepareCommitInternal() throws IOException {
+    startCommitTime = System.nanoTime();
     synchronized(commitLock) {
       ensureOpen(false);
       if (infoStream.isEnabled("IW")) {
@@ -2968,6 +2973,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
         notifyAll();
       }
 
+      if (infoStream.isEnabled("IW")) {
+        infoStream.message("IW", String.format(Locale.ROOT, "commit: took %.1f msec", (System.nanoTime()-startCommitTime)/1000000.0));
+      }
+      
     } else {
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "commit: pendingCommit == null; skip");

@@ -29,6 +29,7 @@ org.apache.lucene.analysis.compound.HyphenationCompoundWordTokenFilterFactory
 org.apache.lucene.analysis.core.LowerCaseFilterFactory
 org.apache.lucene.analysis.core.StopFilterFactory
 org.apache.lucene.analysis.core.TypeTokenFilterFactory
+org.apache.lucene.analysis.core.UpperCaseFilterFactory
 org.apache.lucene.analysis.cz.CzechStemFilterFactory
 org.apache.lucene.analysis.de.GermanLightStemFilterFactory
 org.apache.lucene.analysis.de.GermanMinimalStemFilterFactory

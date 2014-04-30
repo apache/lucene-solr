@@ -91,6 +91,20 @@ public class AssertingAtomicReader extends FilterAtomicReader {
     }
 
     @Override
+    public BytesRef getMin() throws IOException {
+      BytesRef v = in.getMin();
+      assert v == null || v.isValid();
+      return v;
+    }
+
+    @Override
+    public BytesRef getMax() throws IOException {
+      BytesRef v = in.getMax();
+      assert v == null || v.isValid();
+      return v;
+    }
+
+    @Override
     public TermsEnum iterator(TermsEnum reuse) throws IOException {
       // TODO: should we give this thing a random to be super-evil,
       // and randomly *not* unwrap?

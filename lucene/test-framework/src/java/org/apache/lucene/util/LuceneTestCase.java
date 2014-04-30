@@ -17,9 +17,6 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsBoolean;
-import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsInt;
-
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -40,14 +37,17 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -56,8 +56,8 @@ import java.util.logging.Logger;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
@@ -76,8 +76,8 @@ import org.apache.lucene.index.FieldFilterAtomicReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.ReaderClosedListener;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.LogDocMergePolicy;
@@ -98,25 +98,25 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.AssertingIndexSearcher;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
+import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.QueryUtils.FCInvisibleMultiReader;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FlushInfo;
-import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IOContext.Context;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.MergeInfo;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.store.RateLimitedDirectoryWrapper;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
@@ -134,7 +134,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
-
 import com.carrotsearch.randomizedtesting.JUnit4MethodProvider;
 import com.carrotsearch.randomizedtesting.LifecycleScope;
 import com.carrotsearch.randomizedtesting.MixWithSuiteName;
@@ -145,16 +144,16 @@ import com.carrotsearch.randomizedtesting.annotations.Listeners;
 import com.carrotsearch.randomizedtesting.annotations.SeedDecorators;
 import com.carrotsearch.randomizedtesting.annotations.TestGroup;
 import com.carrotsearch.randomizedtesting.annotations.TestMethodProviders;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction.Action;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakGroup;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakGroup.Group;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakGroup;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies.Consequence;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies;
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import com.carrotsearch.randomizedtesting.rules.NoClassHooksShadowingRule;
@@ -162,6 +161,9 @@ import com.carrotsearch.randomizedtesting.rules.NoInstanceHooksOverridesRule;
 import com.carrotsearch.randomizedtesting.rules.StaticFieldsInvariantRule;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesInvariantRule;
 import com.carrotsearch.randomizedtesting.rules.TestRuleAdapter;
+
+import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsBoolean;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsInt;
 
 /**
  * Base class for all Lucene unit tests, Junit3 or Junit4 variant.
@@ -250,7 +252,7 @@ public abstract class LuceneTestCase extends Assert {
   /**
    * If true, enables assertions on writing to system streams.
    * 
-   * @see TestRuleDisallowSysouts
+   * @see TestRuleLimitSysouts
    */
   public static final String SYSPROP_SYSOUTS = "tests.sysouts";
 
@@ -357,7 +359,7 @@ public abstract class LuceneTestCase extends Assert {
    * Marks any suite which is known to print to {@link System#out} or {@link System#err},
    * even when {@link #VERBOSE} is disabled.
    * 
-   * @see TestRuleDisallowSysouts
+   * @see TestRuleLimitSysouts
    */
   @Documented
   @Inherited
@@ -382,7 +384,7 @@ public abstract class LuceneTestCase extends Assert {
 
   /**
    * True if and only if tests are run in verbose mode. If this flag is false
-   * tests are not expected to print any messages. Enforced with {@link TestRuleDisallowSysouts}.
+   * tests are not expected to print any messages. Enforced with {@link TestRuleLimitSysouts}.
    */
   public static final boolean VERBOSE = systemPropertyAsBoolean("tests.verbose", false);
 
@@ -541,7 +543,7 @@ public abstract class LuceneTestCase extends Assert {
    * to them (as is the case with ju.logging handlers).
    */
   static {
-    TestRuleDisallowSysouts.checkCaptureStreams();
+    TestRuleLimitSysouts.checkCaptureStreams();
     Logger.getGlobal().getHandlers();
   }
 
@@ -578,7 +580,7 @@ public abstract class LuceneTestCase extends Assert {
     .around(ignoreAfterMaxFailures)
     .around(suiteFailureMarker = new TestRuleMarkFailure())
     .around(new TestRuleAssertionsRequired())
-    .around(new TestRuleDisallowSysouts(suiteFailureMarker))
+    .around(new TestRuleLimitSysouts(suiteFailureMarker))
     .around(new TemporaryFilesCleanupRule())
     .around(new StaticFieldsInvariantRule(STATIC_LEAK_THRESHOLD, true) {
       @Override
@@ -635,6 +637,8 @@ public abstract class LuceneTestCase extends Assert {
     .around(new TestRuleFieldCacheSanity())
     .around(parentChainCallRule);
 
+  private static final Map<String,FieldType> fieldToType = new HashMap<String,FieldType>();
+
   // -----------------------------------------------------------------
   // Suite and test case setup/ cleanup.
   // -----------------------------------------------------------------
@@ -653,6 +657,7 @@ public abstract class LuceneTestCase extends Assert {
   @After
   public void tearDown() throws Exception {
     parentChainCallRule.teardownCalled = true;
+    fieldToType.clear();
   }
 
 
@@ -1202,11 +1207,43 @@ public abstract class LuceneTestCase extends Assert {
   public static Field newField(String name, String value, FieldType type) {
     return newField(random(), name, value, type);
   }
-  
-  public static Field newField(Random random, String name, String value, FieldType type) {
+
+  /** Returns a FieldType derived from newType but whose
+   *  term vector options match the old type */
+  private static FieldType mergeTermVectorOptions(FieldType newType, FieldType oldType) {
+    if (newType.indexed() && oldType.storeTermVectors() == true && newType.storeTermVectors() == false) {
+      newType = new FieldType(newType);
+      newType.setStoreTermVectors(oldType.storeTermVectors());
+      newType.setStoreTermVectorPositions(oldType.storeTermVectorPositions());
+      newType.setStoreTermVectorOffsets(oldType.storeTermVectorOffsets());
+      newType.setStoreTermVectorPayloads(oldType.storeTermVectorPayloads());
+      newType.freeze();
+    }
+
+    return newType;
+  }
+
+  // TODO: if we can pull out the "make term vector options
+  // consistent across all instances of the same field name"
+  // write-once schema sort of helper class then we can
+  // remove the sync here.  We can also fold the random
+  // "enable norms" (now commented out, below) into that:
+  public synchronized static Field newField(Random random, String name, String value, FieldType type) {
+
+    // Defeat any consumers that illegally rely on intern'd
+    // strings (we removed this from Lucene a while back):
     name = new String(name);
-    if (usually(random) || !type.indexed()) {
+
+    FieldType prevType = fieldToType.get(name);
+
+    if (usually(random) || !type.indexed() || prevType != null) {
       // most of the time, don't modify the params
+      if (prevType == null) {
+        fieldToType.put(name, new FieldType(type));
+      } else {
+        type = mergeTermVectorOptions(type, prevType);
+      }
+
       return new Field(name, value, type);
     }
 
@@ -1219,19 +1256,29 @@ public abstract class LuceneTestCase extends Assert {
       newType.setStored(true); // randomly store it
     }
 
+    // Randomly turn on term vector options, but always do
+    // so consistently for the same field name:
     if (!newType.storeTermVectors() && random.nextBoolean()) {
       newType.setStoreTermVectors(true);
-      if (!newType.storeTermVectorOffsets()) {
-        newType.setStoreTermVectorOffsets(random.nextBoolean());
-      }
       if (!newType.storeTermVectorPositions()) {
         newType.setStoreTermVectorPositions(random.nextBoolean());
         
-        if (newType.storeTermVectorPositions() && !newType.storeTermVectorPayloads()) {
-          newType.setStoreTermVectorPayloads(random.nextBoolean());
+        if (newType.storeTermVectorPositions()) {
+          if (!newType.storeTermVectorPayloads()) {
+            newType.setStoreTermVectorPayloads(random.nextBoolean());
+          }
+          if (!newType.storeTermVectorOffsets()) {
+            newType.setStoreTermVectorOffsets(random.nextBoolean());
+          }
         }
       }
+
+      if (VERBOSE) {
+        System.out.println("NOTE: LuceneTestCase: upgrade name=" + name + " type=" + newType);
+      }
     }
+    newType.freeze();
+    fieldToType.put(name, newType);
 
     // TODO: we need to do this, but smarter, ie, most of
     // the time we set the same value for a given field but

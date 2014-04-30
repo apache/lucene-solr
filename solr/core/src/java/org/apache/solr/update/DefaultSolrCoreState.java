@@ -68,7 +68,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
         closer.closeWriter(indexWriter);
       } else if (indexWriter != null) {
         log.info("closing IndexWriter...");
-        indexWriter.close();
+        indexWriter.shutdown();
       }
       indexWriter = null;
     } catch (Exception e) {
@@ -161,7 +161,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
           if (!rollback) {
             try {
               log.info("Closing old IndexWriter... core=" + coreName);
-              indexWriter.close();
+              indexWriter.shutdown();
             } catch (Exception e) {
               SolrException.log(log, "Error closing old IndexWriter. core="
                   + coreName, e);

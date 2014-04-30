@@ -756,6 +756,30 @@ public class CheckIndex {
       final boolean hasPositions = terms.hasPositions();
       final boolean hasPayloads = terms.hasPayloads();
       final boolean hasOffsets = terms.hasOffsets();
+      
+      BytesRef bb = terms.getMin();
+      BytesRef minTerm;
+      if (bb != null) {
+        assert bb.isValid();
+        minTerm = BytesRef.deepCopyOf(bb);
+      } else {
+        minTerm = null;
+      }
+
+      BytesRef maxTerm;
+      bb = terms.getMax();
+      if (bb != null) {
+        assert bb.isValid();
+        maxTerm = BytesRef.deepCopyOf(bb);
+        if (minTerm == null) {
+          throw new RuntimeException("field \"" + field + "\" has null minTerm but non-null maxTerm");
+        }
+      } else {
+        maxTerm = null;
+        if (minTerm != null) {
+          throw new RuntimeException("field \"" + field + "\" has non-null minTerm but null maxTerm");
+        }
+      }
 
       // term vectors cannot omit TF:
       final boolean expectedHasFreqs = (isVectors || fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0);
@@ -815,6 +839,20 @@ public class CheckIndex {
             throw new RuntimeException("terms out of order: lastTerm=" + lastTerm + " term=" + term);
           }
           lastTerm.copyBytes(term);
+        }
+        
+        if (minTerm == null) {
+          // We checked this above:
+          assert maxTerm == null;
+          throw new RuntimeException("field=\"" + field + "\": invalid term: term=" + term + ", minTerm=" + minTerm);
+        }
+        
+        if (term.compareTo(minTerm) < 0) {
+          throw new RuntimeException("field=\"" + field + "\": invalid term: term=" + term + ", minTerm=" + minTerm);
+        }
+        
+        if (term.compareTo(maxTerm) > 0) {
+          throw new RuntimeException("field=\"" + field + "\": invalid term: term=" + term + ", maxTerm=" + maxTerm);
         }
         
         final int docFreq = termsEnum.docFreq();
@@ -1064,6 +1102,10 @@ public class CheckIndex {
         }
       }
       
+      if (minTerm != null && status.termCount + status.delTermCount == 0) {
+        throw new RuntimeException("field=\"" + field + "\": minTerm is non-null yet we saw no terms: " + minTerm);
+      }
+
       final Terms fieldTerms = fields.terms(field);
       if (fieldTerms == null) {
         // Unusual: the FieldsEnum returned a field but

@@ -244,11 +244,6 @@ public class Field implements IndexableField, StorableField {
       throw new IllegalArgumentException("it doesn't make sense to have a field that "
         + "is neither indexed nor stored");
     }
-    if (!type.indexed() && (type.storeTermVectors())) {
-      throw new IllegalArgumentException("cannot store term vector information "
-          + "for a field that is not indexed");
-    }
-    
     this.type = type;
     this.name = name;
     this.fieldsData = value;

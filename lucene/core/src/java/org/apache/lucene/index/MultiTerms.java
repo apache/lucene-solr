@@ -84,6 +84,32 @@ public final class MultiTerms extends Terms {
       return TermsEnum.EMPTY;
     }
   }
+  
+  @Override
+  public BytesRef getMin() throws IOException {
+    BytesRef minTerm = null;
+    for(Terms terms : subs) {
+      BytesRef term = terms.getMin();
+      if (minTerm == null || term.compareTo(minTerm) < 0) {
+        minTerm = term;
+      }
+    }
+
+    return minTerm;
+  }
+
+  @Override
+  public BytesRef getMax() throws IOException {
+    BytesRef maxTerm = null;
+    for(Terms terms : subs) {
+      BytesRef term = terms.getMax();
+      if (maxTerm == null || term.compareTo(maxTerm) > 0) {
+        maxTerm = term;
+      }
+    }
+
+    return maxTerm;
+  }
 
   @Override
   public TermsEnum iterator(TermsEnum reuse) throws IOException {

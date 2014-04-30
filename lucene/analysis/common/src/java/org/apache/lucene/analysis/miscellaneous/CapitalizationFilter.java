@@ -78,6 +78,15 @@ public final class CapitalizationFilter extends TokenFilter {
     this.keep = keep;
     this.forceFirstLetter = forceFirstLetter;
     this.okPrefix = okPrefix;
+    if (minWordLength < 0) {
+      throw new IllegalArgumentException("minWordLength must be greater than or equal to zero");
+    }
+    if (maxWordCount < 1) {
+      throw new IllegalArgumentException("maxWordCount must be greater than zero");
+    }
+    if (maxTokenLength < 1) {
+      throw new IllegalArgumentException("maxTokenLength must be greater than zero");
+    }
     this.minWordLength = minWordLength;
     this.maxWordCount = maxWordCount;
     this.maxTokenLength = maxTokenLength;

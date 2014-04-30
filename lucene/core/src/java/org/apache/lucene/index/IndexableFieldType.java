@@ -39,6 +39,8 @@ public interface IndexableFieldType {
    * <p>
    * This has no effect if {@link #indexed()} returns false.
    */
+  // TODO: shouldn't we remove this?  Whether/how a field is
+  // tokenized is an impl detail under Field?
   public boolean tokenized();
 
   /** 

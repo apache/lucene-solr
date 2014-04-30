@@ -534,6 +534,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
 
     FieldType customType = new FieldType(StringField.TYPE_NOT_STORED);
     customType.setStoreTermVectors(true);
+    document = new Document();
     document.add(newField("tvtest", "a b c", customType));
     iw.addDocument(document);
     // Make 2nd segment
@@ -567,6 +568,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     FieldType customType2 = new FieldType(StringField.TYPE_NOT_STORED);
     customType2.setStoreTermVectors(true);
     document.add(newField("tvtest", "a b c", customType2));
+    document = new Document();
     iw.addDocument(document);
     // Make 2nd segment
     iw.commit();

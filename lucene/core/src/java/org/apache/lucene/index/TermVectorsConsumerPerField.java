@@ -22,149 +22,69 @@ import java.io.IOException;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.codecs.TermVectorsWriter;
-import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
 
-final class TermVectorsConsumerPerField extends TermsHashConsumerPerField {
+final class TermVectorsConsumerPerField extends TermsHashPerField {
 
-  final TermsHashPerField termsHashPerField;
+  private TermVectorsPostingsArray termVectorsPostingsArray;
+
   final TermVectorsConsumer termsWriter;
-  final FieldInfo fieldInfo;
-  final DocumentsWriterPerThread.DocState docState;
-  final FieldInvertState fieldState;
 
   boolean doVectors;
   boolean doVectorPositions;
   boolean doVectorOffsets;
   boolean doVectorPayloads;
 
-  int maxNumPostings;
   OffsetAttribute offsetAttribute;
   PayloadAttribute payloadAttribute;
   boolean hasPayloads; // if enabled, and we actually saw any for this field
 
-  public TermVectorsConsumerPerField(TermsHashPerField termsHashPerField, TermVectorsConsumer termsWriter, FieldInfo fieldInfo) {
-    this.termsHashPerField = termsHashPerField;
+  public TermVectorsConsumerPerField(FieldInvertState invertState, TermVectorsConsumer termsWriter, FieldInfo fieldInfo) {
+    super(2, invertState, termsWriter, null, fieldInfo);
     this.termsWriter = termsWriter;
-    this.fieldInfo = fieldInfo;
-    docState = termsHashPerField.docState;
-    fieldState = termsHashPerField.fieldState;
   }
-
-  @Override
-  int getStreamCount() {
-    return 2;
-  }
-
-  @Override
-  boolean start(IndexableField[] fields, int count) {
-    doVectors = false;
-    doVectorPositions = false;
-    doVectorOffsets = false;
-    doVectorPayloads = false;
-    hasPayloads = false;
-
-    for(int i=0;i<count;i++) {
-      IndexableField field = fields[i];
-      if (field.fieldType().indexed()) {
-        if (field.fieldType().storeTermVectors()) {
-          doVectors = true;
-          doVectorPositions |= field.fieldType().storeTermVectorPositions();
-          doVectorOffsets |= field.fieldType().storeTermVectorOffsets();
-          if (doVectorPositions) {
-            doVectorPayloads |= field.fieldType().storeTermVectorPayloads();
-          } else if (field.fieldType().storeTermVectorPayloads()) {
-            // TODO: move this check somewhere else, and impl the other missing ones
-            throw new IllegalArgumentException("cannot index term vector payloads without term vector positions (field=\"" + field.name() + "\")");
-          }
-        } else {
-          if (field.fieldType().storeTermVectorOffsets()) {
-            throw new IllegalArgumentException("cannot index term vector offsets when term vectors are not indexed (field=\"" + field.name() + "\")");
-          }
-          if (field.fieldType().storeTermVectorPositions()) {
-            throw new IllegalArgumentException("cannot index term vector positions when term vectors are not indexed (field=\"" + field.name() + "\")");
-          }
-          if (field.fieldType().storeTermVectorPayloads()) {
-            throw new IllegalArgumentException("cannot index term vector payloads when term vectors are not indexed (field=\"" + field.name() + "\")");
-          }
-        }
-      } else {
-        if (field.fieldType().storeTermVectors()) {
-          throw new IllegalArgumentException("cannot index term vectors when field is not indexed (field=\"" + field.name() + "\")");
-        }
-        if (field.fieldType().storeTermVectorOffsets()) {
-          throw new IllegalArgumentException("cannot index term vector offsets when field is not indexed (field=\"" + field.name() + "\")");
-        }
-        if (field.fieldType().storeTermVectorPositions()) {
-          throw new IllegalArgumentException("cannot index term vector positions when field is not indexed (field=\"" + field.name() + "\")");
-        }
-        if (field.fieldType().storeTermVectorPayloads()) {
-          throw new IllegalArgumentException("cannot index term vector payloads when field is not indexed (field=\"" + field.name() + "\")");
-        }
-      }
-    }
-
-    if (doVectors) {
-      termsWriter.hasVectors = true;
-      if (termsHashPerField.bytesHash.size() != 0) {
-        // Only necessary if previous doc hit a
-        // non-aborting exception while writing vectors in
-        // this field:
-        termsHashPerField.reset();
-      }
-    }
-
-    // TODO: only if needed for performance
-    //perThread.postingsCount = 0;
-
-    return doVectors;
-  }
-
-  public void abort() {}
 
   /** Called once per field per document if term vectors
    *  are enabled, to write the vectors to
    *  RAMOutputStream, which is then quickly flushed to
    *  the real term vectors files in the Directory. */  @Override
   void finish() {
-    if (!doVectors || termsHashPerField.bytesHash.size() == 0) {
+    if (!doVectors || bytesHash.size() == 0) {
       return;
     }
-
     termsWriter.addFieldToFlush(this);
   }
 
   void finishDocument() throws IOException {
+    if (doVectors == false) {
+      return;
+    }
+
+    doVectors = false;
+
     assert docState.testPoint("TermVectorsTermsWriterPerField.finish start");
 
-    final int numPostings = termsHashPerField.bytesHash.size();
+    final int numPostings = bytesHash.size();
 
     final BytesRef flushTerm = termsWriter.flushTerm;
 
     assert numPostings >= 0;
 
-    if (numPostings > maxNumPostings)
-      maxNumPostings = numPostings;
-
     // This is called once, after inverting all occurrences
     // of a given field in the doc.  At this point we flush
     // our hash into the DocWriter.
 
-    assert termsWriter.vectorFieldsInOrder(fieldInfo);
-
-    TermVectorsPostingsArray postings = (TermVectorsPostingsArray) termsHashPerField.postingsArray;
+    TermVectorsPostingsArray postings = termVectorsPostingsArray;
     final TermVectorsWriter tv = termsWriter.writer;
 
-    final int[] termIDs = termsHashPerField.sortPostings();
+    final int[] termIDs = sortPostings();
 
     tv.startField(fieldInfo, numPostings, doVectorPositions, doVectorOffsets, hasPayloads);
     
     final ByteSliceReader posReader = doVectorPositions ? termsWriter.vectorSliceReaderPos : null;
     final ByteSliceReader offReader = doVectorOffsets ? termsWriter.vectorSliceReaderOff : null;
     
-    final ByteBlockPool termBytePool = termsHashPerField.termBytePool;
-
     for(int j=0;j<numPostings;j++) {
       final int termID = termIDs[j];
       final int freq = postings.freqs[termID];
@@ -175,10 +95,10 @@ final class TermVectorsConsumerPerField extends TermsHashConsumerPerField {
       
       if (doVectorPositions || doVectorOffsets) {
         if (posReader != null) {
-          termsHashPerField.initReader(posReader, termID, 0);
+          initReader(posReader, termID, 0);
         }
         if (offReader != null) {
-          termsHashPerField.initReader(offReader, termID, 1);
+          initReader(offReader, termID, 1);
         }
         tv.addProx(freq, posReader, offReader);
       }
@@ -186,23 +106,91 @@ final class TermVectorsConsumerPerField extends TermsHashConsumerPerField {
     }
     tv.finishField();
 
-    termsHashPerField.reset();
+    reset();
 
     fieldInfo.setStoreTermVectors();
   }
 
   @Override
-  void start(IndexableField f) {
-    if (doVectorOffsets) {
-      offsetAttribute = fieldState.attributeSource.addAttribute(OffsetAttribute.class);
+  boolean start(IndexableField field, boolean first) {
+    assert field.fieldType().indexed();
+
+    if (first) {
+
+      if (bytesHash.size() != 0) {
+        // Only necessary if previous doc hit a
+        // non-aborting exception while writing vectors in
+        // this field:
+        reset();
+      }
+
+      bytesHash.reinit();
+
+      hasPayloads = false;
+
+      doVectors = field.fieldType().storeTermVectors();
+
+      if (doVectors) {
+
+        termsWriter.hasVectors = true;
+
+        doVectorPositions = field.fieldType().storeTermVectorPositions();
+
+        // Somewhat confusingly, unlike postings, you are
+        // allowed to index TV offsets without TV positions:
+        doVectorOffsets = field.fieldType().storeTermVectorOffsets();
+
+        if (doVectorPositions) {
+          doVectorPayloads = field.fieldType().storeTermVectorPayloads();
+        } else {
+          doVectorPayloads = false;
+          if (field.fieldType().storeTermVectorPayloads()) {
+            // TODO: move this check somewhere else, and impl the other missing ones
+            throw new IllegalArgumentException("cannot index term vector payloads without term vector positions (field=\"" + field.name() + "\")");
+          }
+        }
+        
+      } else {
+        if (field.fieldType().storeTermVectorOffsets()) {
+          throw new IllegalArgumentException("cannot index term vector offsets when term vectors are not indexed (field=\"" + field.name() + "\")");
+        }
+        if (field.fieldType().storeTermVectorPositions()) {
+          throw new IllegalArgumentException("cannot index term vector positions when term vectors are not indexed (field=\"" + field.name() + "\")");
+        }
+        if (field.fieldType().storeTermVectorPayloads()) {
+          throw new IllegalArgumentException("cannot index term vector payloads when term vectors are not indexed (field=\"" + field.name() + "\")");
+        }
+      }
     } else {
-      offsetAttribute = null;
+      if (doVectors != field.fieldType().storeTermVectors()) {
+        throw new IllegalArgumentException("all instances of a given field name must have the same term vectors settings (storeTermVectors changed for field=\"" + field.name() + "\")");
+      }
+      if (doVectorPositions != field.fieldType().storeTermVectorPositions()) {
+        throw new IllegalArgumentException("all instances of a given field name must have the same term vectors settings (storeTermVectorPositions changed for field=\"" + field.name() + "\")");
+      }
+      if (doVectorOffsets != field.fieldType().storeTermVectorOffsets()) {
+        throw new IllegalArgumentException("all instances of a given field name must have the same term vectors settings (storeTermVectorOffsets changed for field=\"" + field.name() + "\")");
+      }
+      if (doVectorPayloads != field.fieldType().storeTermVectorPayloads()) {
+        throw new IllegalArgumentException("all instances of a given field name must have the same term vectors settings (storeTermVectorPayloads changed for field=\"" + field.name() + "\")");
+      }
     }
-    if (doVectorPayloads && fieldState.attributeSource.hasAttribute(PayloadAttribute.class)) {
-      payloadAttribute = fieldState.attributeSource.getAttribute(PayloadAttribute.class);
-    } else {
-      payloadAttribute = null;
+
+    if (doVectors) {
+      if (doVectorOffsets) {
+        offsetAttribute = fieldState.offsetAttribute;
+        assert offsetAttribute != null;
+      }
+
+      if (doVectorPayloads) {
+        // Can be null:
+        payloadAttribute = fieldState.payloadAttribute;
+      } else {
+        payloadAttribute = null;
+      }
     }
+
+    return doVectors;
   }
   
   void writeProx(TermVectorsPostingsArray postings, int termID) {    
@@ -210,8 +198,8 @@ final class TermVectorsConsumerPerField extends TermsHashConsumerPerField {
       int startOffset = fieldState.offset + offsetAttribute.startOffset();
       int endOffset = fieldState.offset + offsetAttribute.endOffset();
 
-      termsHashPerField.writeVInt(1, startOffset - postings.lastOffsets[termID]);
-      termsHashPerField.writeVInt(1, endOffset - startOffset);
+      writeVInt(1, startOffset - postings.lastOffsets[termID]);
+      writeVInt(1, endOffset - startOffset);
       postings.lastOffsets[termID] = endOffset;
     }
 
@@ -225,12 +213,12 @@ final class TermVectorsConsumerPerField extends TermsHashConsumerPerField {
       
       final int pos = fieldState.position - postings.lastPositions[termID];
       if (payload != null && payload.length > 0) {
-        termsHashPerField.writeVInt(0, (pos<<1)|1);
-        termsHashPerField.writeVInt(0, payload.length);
-        termsHashPerField.writeBytes(0, payload.bytes, payload.offset, payload.length);
+        writeVInt(0, (pos<<1)|1);
+        writeVInt(0, payload.length);
+        writeBytes(0, payload.bytes, payload.offset, payload.length);
         hasPayloads = true;
       } else {
-        termsHashPerField.writeVInt(0, pos<<1);
+        writeVInt(0, pos<<1);
       }
       postings.lastPositions[termID] = fieldState.position;
     }
@@ -239,7 +227,7 @@ final class TermVectorsConsumerPerField extends TermsHashConsumerPerField {
   @Override
   void newTerm(final int termID) {
     assert docState.testPoint("TermVectorsTermsWriterPerField.newTerm start");
-    TermVectorsPostingsArray postings = (TermVectorsPostingsArray) termsHashPerField.postingsArray;
+    TermVectorsPostingsArray postings = termVectorsPostingsArray;
 
     postings.freqs[termID] = 1;
     postings.lastOffsets[termID] = 0;
@@ -251,7 +239,7 @@ final class TermVectorsConsumerPerField extends TermsHashConsumerPerField {
   @Override
   void addTerm(final int termID) {
     assert docState.testPoint("TermVectorsTermsWriterPerField.addTerm start");
-    TermVectorsPostingsArray postings = (TermVectorsPostingsArray) termsHashPerField.postingsArray;
+    TermVectorsPostingsArray postings = termVectorsPostingsArray;
 
     postings.freqs[termID]++;
 
@@ -259,7 +247,9 @@ final class TermVectorsConsumerPerField extends TermsHashConsumerPerField {
   }
 
   @Override
-  void skippingLongTerm() {}
+  public void newPostingsArray() {
+    termVectorsPostingsArray = (TermVectorsPostingsArray) postingsArray;
+  }
 
   @Override
   ParallelPostingsArray createPostingsArray(int size) {

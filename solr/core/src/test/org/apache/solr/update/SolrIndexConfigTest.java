@@ -17,19 +17,21 @@ package org.apache.solr.update;
  * limitations under the License.
  */
 
-import java.io.File;
-
-import org.apache.solr.core.TestMergePolicyConfig;
-
+import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.SimpleMergedSegmentWarmer;
 import org.apache.lucene.index.TieredMergePolicy;
-import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrConfig;
+import org.apache.solr.core.TestMergePolicyConfig;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.junit.Test;
+import org.xml.sax.SAXException;
+
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.File;
+import java.io.IOException;
 
 /**
  * Testcase for {@link SolrIndexConfig}
@@ -75,7 +77,19 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     assertEquals("ms.maxThreadCount", 42, ms.getMaxThreadCount());
 
   }
-  
+
+  @Test
+  public void testCheckIntegrityAtMerge() throws Exception {
+    SolrConfig solrConfig = new SolrConfig("solr" + File.separator
+        + "collection1", "solrconfig-indexconfig.xml", null);
+    SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null, null);
+    assertNotNull(solrIndexConfig.checkIntegrityAtMerge);
+    assertTrue(solrIndexConfig.checkIntegrityAtMerge);
+    IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema("schema.xml", solrConfig);
+    IndexWriterConfig iwc = solrIndexConfig.toIndexWriterConfig(indexSchema);
+    assertTrue(iwc.getCheckIntegrityAtMerge());
+  }
+
   public void testMergedSegmentWarmerIndexConfigCreation() throws Exception {
     SolrConfig solrConfig = new SolrConfig("solr" + File.separator
         + "collection1", "solrconfig-warmer.xml", null);

@@ -181,7 +181,7 @@ def push(version, root, rev, rcNum, username):
   run('ssh %s@people.apache.org "chmod -R a+rX-w public_html/staging_area/%s"' % (username, dir))
 
   print('  done!')
-  url = 'https://people.apache.org/~%s/staging_area/%s' % (username, dir)
+  url = 'http://people.apache.org/~%s/staging_area/%s' % (username, dir)
   return url
 
 def pushLocal(version, root, rev, rcNum, localDir):
@@ -202,8 +202,6 @@ def pushLocal(version, root, rev, rcNum, localDir):
   print('    unzip...')
   run('tar xjf "%s/lucene/dist/lucene.tar.bz2"' % root)
   os.remove('%s/lucene/dist/lucene.tar.bz2' % root)
-  print('    copy changes...')
-  run('cp -r "%s/lucene/build/docs/changes" changes-%s' % (root, version))
 
   print('  Solr')
   os.chdir('%s/solr/package' % root)

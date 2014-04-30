@@ -126,7 +126,7 @@ class FreqProxFields extends Fields {
   
     @Override
     public boolean hasPayloads() {
-      return terms.hasPayloads;
+      return terms.sawPayloads;
     }
   }
 
@@ -140,10 +140,10 @@ class FreqProxFields extends Fields {
 
     public FreqProxTermsEnum(FreqProxTermsWriterPerField terms) {
       this.terms = terms;
-      this.numTerms = terms.termsHashPerField.bytesHash.size();
+      this.numTerms = terms.bytesHash.size();
       sortedTermIDs = terms.sortedTermIDs;
       assert sortedTermIDs != null;
-      postingsArray = (FreqProxPostingsArray) terms.termsHashPerField.postingsArray;
+      postingsArray = (FreqProxPostingsArray) terms.postingsArray;
     }
 
     public void reset() {
@@ -161,7 +161,7 @@ class FreqProxFields extends Fields {
       while (hi >= lo) {
         int mid = (lo + hi) >>> 1;
         int textStart = postingsArray.textStarts[sortedTermIDs[mid]];
-        terms.termsHashPerField.bytePool.setBytesRef(scratch, textStart);
+        terms.bytePool.setBytesRef(scratch, textStart);
         int cmp = scratch.compareTo(text);
         if (cmp < 0) {
           lo = mid + 1;
@@ -186,7 +186,7 @@ class FreqProxFields extends Fields {
     public void seekExact(long ord) {
       this.ord = (int) ord;
       int textStart = postingsArray.textStarts[sortedTermIDs[this.ord]];
-      terms.termsHashPerField.bytePool.setBytesRef(scratch, textStart);
+      terms.bytePool.setBytesRef(scratch, textStart);
     }
 
     @Override
@@ -196,7 +196,7 @@ class FreqProxFields extends Fields {
         return null;
       } else {
         int textStart = postingsArray.textStarts[sortedTermIDs[ord]];
-        terms.termsHashPerField.bytePool.setBytesRef(scratch, textStart);
+        terms.bytePool.setBytesRef(scratch, textStart);
         return scratch;
       }
     }
@@ -324,7 +324,7 @@ class FreqProxFields extends Fields {
 
     public void reset(int termID) {
       this.termID = termID;
-      terms.termsHashPerField.initReader(reader, termID, 0);
+      terms.initReader(reader, termID, 0);
       ended = false;
       docID = 0;
     }
@@ -415,8 +415,8 @@ class FreqProxFields extends Fields {
 
     public void reset(int termID) {
       this.termID = termID;
-      terms.termsHashPerField.initReader(reader, termID, 0);
-      terms.termsHashPerField.initReader(posReader, termID, 1);
+      terms.initReader(reader, termID, 0);
+      terms.initReader(posReader, termID, 1);
       ended = false;
       docID = 0;
       posLeft = 0;

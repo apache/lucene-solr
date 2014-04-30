@@ -18,7 +18,6 @@
 package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,6 +30,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.junit.Test;
 
 import static org.apache.lucene.analysis.miscellaneous.CapitalizationFilter.*;
 
@@ -148,5 +148,21 @@ public class TestCapitalizationFilter extends BaseTokenStreamTestCase {
       }
     };
     checkOneTerm(a, "", "");
+  }
+
+  /**
+   * checking the validity of constructor arguments
+   */
+  @Test(expected = IllegalArgumentException.class)
+  public void testIllegalArguments() throws Exception {
+    new CapitalizationFilter(whitespaceMockTokenizer("accept only valid arguments"),true, null, true, null, -1 , DEFAULT_MAX_WORD_COUNT, DEFAULT_MAX_TOKEN_LENGTH);
+  }
+  @Test(expected = IllegalArgumentException.class)
+  public void testIllegalArguments1() throws Exception {
+    new CapitalizationFilter(whitespaceMockTokenizer("accept only valid arguments"),true, null, true, null, 0 , -10, DEFAULT_MAX_TOKEN_LENGTH);
+  }
+  @Test(expected = IllegalArgumentException.class)
+  public void testIllegalArguments2() throws Exception {
+    new CapitalizationFilter(whitespaceMockTokenizer("accept only valid arguments"),true, null, true, null, 0 , DEFAULT_MAX_WORD_COUNT, -50);
   }
 }
