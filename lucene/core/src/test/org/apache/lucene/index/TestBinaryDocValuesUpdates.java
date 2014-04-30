@@ -27,12 +27,14 @@ import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
+import org.junit.Test;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
@@ -54,6 +56,7 @@ import com.carrotsearch.randomizedtesting.generators.RandomPicks;
  */
 
 @SuppressCodecs({"Lucene40","Lucene41","Lucene42","Lucene45"})
+@SuppressWarnings("resource")
 public class TestBinaryDocValuesUpdates extends LuceneTestCase {
 
   static long getValue(BinaryDocValues bdv, int idx, BytesRef scratch) {
@@ -1448,6 +1451,32 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     reader.close();
     
     dir.close();
+  }
+
+  @Test
+  public void testIOContext() throws Exception {
+    // LUCENE-5591: make sure we pass an IOContext with an approximate
+    // segmentSize in FlushInfo
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    // we want a single large enough segment so that a doc-values update writes a large file
+    conf.setMergePolicy(NoMergePolicy.INSTANCE);
+    conf.setMaxBufferedDocs(Integer.MAX_VALUE); // manually flush
+    conf.setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
+    IndexWriter writer = new IndexWriter(dir, conf.clone());
+    for (int i = 0; i < 100; i++) {
+      writer.addDocument(doc(i));
+    }
+    writer.commit();
+    writer.close();
+    
+    NRTCachingDirectory cachingDir = new NRTCachingDirectory(dir, 100, 1/(1024.*1024.));
+    writer = new IndexWriter(cachingDir, conf.clone());
+    writer.updateBinaryDocValue(new Term("id", "doc-0"), "val", toBytes(100L));
+    DirectoryReader reader = DirectoryReader.open(writer, true); // flush
+    assertEquals(0, cachingDir.listCachedFiles().length);
+    
+    IOUtils.close(reader, writer, cachingDir);
   }
   
 }

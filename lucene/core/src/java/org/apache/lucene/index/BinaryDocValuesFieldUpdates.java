@@ -3,6 +3,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.index.DocValuesUpdate.BinaryDocValuesUpdate;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.InPlaceMergeSorter;
@@ -110,13 +111,15 @@ class BinaryDocValuesFieldUpdates extends DocValuesFieldUpdates {
   private PagedGrowableWriter offsets, lengths;
   private BytesRef values;
   private int size;
+  private final int bitsPerValue;
   
   public BinaryDocValuesFieldUpdates(String field, int maxDoc) {
     super(field, Type.BINARY);
     docsWithField = new FixedBitSet(64);
-    docs = new PagedMutable(1, 1024, PackedInts.bitsRequired(maxDoc - 1), PackedInts.COMPACT);
-    offsets = new PagedGrowableWriter(1, 1024, 1, PackedInts.FAST);
-    lengths = new PagedGrowableWriter(1, 1024, 1, PackedInts.FAST);
+    bitsPerValue = PackedInts.bitsRequired(maxDoc - 1);
+    docs = new PagedMutable(1, PAGE_SIZE, bitsPerValue, PackedInts.COMPACT);
+    offsets = new PagedGrowableWriter(1, PAGE_SIZE, 1, PackedInts.FAST);
+    lengths = new PagedGrowableWriter(1, PAGE_SIZE, 1, PackedInts.FAST);
     values = new BytesRef(16); // start small
     size = 0;
   }
@@ -222,12 +225,27 @@ class BinaryDocValuesFieldUpdates extends DocValuesFieldUpdates {
       lengths.set(size, otherUpdates.lengths.get(i));
       ++size;
     }
-    values.append(otherUpdates.values);
+    int newLen = values.length + otherUpdates.values.length;
+    if (values.bytes.length < newLen) {
+      values.bytes = ArrayUtil.grow(values.bytes, newLen);
+    }
+    System.arraycopy(otherUpdates.values.bytes, otherUpdates.values.offset, values.bytes, values.length, otherUpdates.values.length);
+    values.length = newLen;
   }
 
   @Override
   public boolean any() {
     return size > 0;
   }
-  
+
+  @Override
+  public long ramBytesPerDoc() {
+    long bytesPerDoc = (long) Math.ceil((double) (bitsPerValue + 1 /* docsWithField */) / 8); // docs
+    final int capacity = estimateCapacity(size);
+    bytesPerDoc += (long) Math.ceil((double) offsets.ramBytesUsed() / capacity); // offsets
+    bytesPerDoc += (long) Math.ceil((double) lengths.ramBytesUsed() / capacity); // lengths
+    bytesPerDoc += (long) Math.ceil((double) values.length / size); // values
+    return bytesPerDoc;
+  }
+
 }

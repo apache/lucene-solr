@@ -124,6 +124,9 @@ Optimizations
   
 * LUCENE-5599: HttpReplicator did not properly delegate bulk read() to wrapped
   InputStream. (Christoph Kaser via Shai Erera)
+  
+* LUCENE-5591: pass an IOContext with estimated flush size when applying DV
+  updates. (Shai Erera)
 
 Bug fixes
 

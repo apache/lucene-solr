@@ -88,6 +88,7 @@ class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
     }
   }
 
+  private final int bitsPerValue;
   private FixedBitSet docsWithField;
   private PagedMutable docs;
   private PagedGrowableWriter values;
@@ -96,8 +97,9 @@ class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
   public NumericDocValuesFieldUpdates(String field, int maxDoc) {
     super(field, Type.NUMERIC);
     docsWithField = new FixedBitSet(64);
-    docs = new PagedMutable(1, 1024, PackedInts.bitsRequired(maxDoc - 1), PackedInts.COMPACT);
-    values = new PagedGrowableWriter(1, 1024, 1, PackedInts.FAST);
+    bitsPerValue = PackedInts.bitsRequired(maxDoc - 1);
+    docs = new PagedMutable(1, PAGE_SIZE, bitsPerValue, PackedInts.COMPACT);
+    values = new PagedGrowableWriter(1, PAGE_SIZE, 1, PackedInts.FAST);
     size = 0;
   }
   
@@ -198,4 +200,12 @@ class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
     return size > 0;
   }
 
+  @Override
+  public long ramBytesPerDoc() {
+    long bytesPerDoc = (long) Math.ceil((double) (bitsPerValue + 1 /* docsWithField */) / 8);
+    final int capacity = estimateCapacity(size);
+    bytesPerDoc += (long) Math.ceil((double) values.ramBytesUsed() / capacity); // values
+    return bytesPerDoc;
+  }
+  
 }

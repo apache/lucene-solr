@@ -33,6 +33,7 @@ import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.Bits;
@@ -342,7 +343,9 @@ class ReadersAndUpdates {
         fieldInfos = builder.finish();
         final long nextFieldInfosGen = info.getNextFieldInfosGen();
         final String segmentSuffix = Long.toString(nextFieldInfosGen, Character.MAX_RADIX);
-        final SegmentWriteState state = new SegmentWriteState(null, trackingDir, info.info, fieldInfos, null, IOContext.DEFAULT, segmentSuffix);
+        final long estUpdatesSize = dvUpdates.ramBytesPerDoc() * info.info.getDocCount();
+        final IOContext updatesContext = new IOContext(new FlushInfo(info.info.getDocCount(), estUpdatesSize));
+        final SegmentWriteState state = new SegmentWriteState(null, trackingDir, info.info, fieldInfos, null, updatesContext, segmentSuffix);
         final DocValuesFormat docValuesFormat = codec.docValuesFormat();
         final DocValuesConsumer fieldsConsumer = docValuesFormat.fieldsConsumer(state);
         boolean fieldsConsumerSuccess = false;
@@ -464,9 +467,14 @@ class ReadersAndUpdates {
             }
           });
         }
-
-          codec.fieldInfosFormat().getFieldInfosWriter().write(trackingDir, info.info.name, segmentSuffix, fieldInfos, IOContext.DEFAULT);
-          fieldsConsumerSuccess = true;
+        
+        // we write approximately that many bytes (based on Lucene46DVF):
+        // HEADER + FOOTER: 40
+        // 90 bytes per-field (over estimating long name and attributes map)
+        final long estInfosSize = 40 + 90 * fieldInfos.size();
+        final IOContext infosContext = new IOContext(new FlushInfo(info.info.getDocCount(), estInfosSize));
+        codec.fieldInfosFormat().getFieldInfosWriter().write(trackingDir, info.info.name, segmentSuffix, fieldInfos, infosContext);
+        fieldsConsumerSuccess = true;
         } finally {
           if (fieldsConsumerSuccess) {
             fieldsConsumer.close();
