@@ -678,10 +678,9 @@ public class Server {
 
   /** Command-line entry. */
   public static void main(String[] args) throws Exception {
-    File stateDir = null;
-
     int port = 4000;
     int maxHTTPThreadCount = 2*Runtime.getRuntime().availableProcessors();
+    File stateDir = new File(System.getProperty("user.home") + File.separator + "lucene" + File.separator + "server");
     for(int i=0;i<args.length;i++) {
       if (args[i].equals("-port")) {
         if (args.length == i+1) {
