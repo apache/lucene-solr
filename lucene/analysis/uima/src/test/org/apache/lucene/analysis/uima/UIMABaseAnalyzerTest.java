@@ -42,7 +42,6 @@ import java.util.Map;
 /**
  * Testcase for {@link UIMABaseAnalyzer}
  */
-@SuppressSysoutChecks(bugUrl = "UIMA logs via ju.logging")
 public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
 
   private UIMABaseAnalyzer analyzer;

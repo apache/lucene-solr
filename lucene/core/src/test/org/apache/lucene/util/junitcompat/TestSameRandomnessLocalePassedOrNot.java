@@ -43,7 +43,6 @@ public class TestSameRandomnessLocalePassedOrNot extends WithNestedTests {
     super(true);
   }
   
-  @SuppressSysoutChecks(bugUrl = "Expected.")
   public static class Nested extends WithNestedTests.AbstractNestedTest {
     public static String pickString;
     public static Locale defaultLocale;

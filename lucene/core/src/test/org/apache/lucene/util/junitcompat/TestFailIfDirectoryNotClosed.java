@@ -18,7 +18,6 @@ package org.apache.lucene.util.junitcompat;
  */
 
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.JUnitCore;
@@ -30,8 +29,7 @@ public class TestFailIfDirectoryNotClosed extends WithNestedTests {
   public TestFailIfDirectoryNotClosed() {
     super(true);
   }
-  
-  @SuppressSysoutChecks(bugUrl = "Expected.")
+
   public static class Nested1 extends WithNestedTests.AbstractNestedTest {
     public void testDummy() throws Exception {
       Directory dir = newDirectory();

@@ -25,7 +25,6 @@ import java.nio.charset.Charset;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 
-@SuppressSysoutChecks(bugUrl = "Output expected.")
 public class TestDemo extends LuceneTestCase {
 
   private void testOneSearch(File indexPath, String query, int expectedHitCount) throws Exception {

@@ -230,6 +230,7 @@ import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAs
 @ThreadLeakFilters(defaultFilters = true, filters = {
     QuickPatchThreadsFilter.class
 })
+@TestRuleLimitSysouts.Limit(bytes = TestRuleLimitSysouts.DEFAULT_SYSOUT_BYTES_THRESHOLD)
 public abstract class LuceneTestCase extends Assert {
 
   // --------------------------------------------------------------------
@@ -248,13 +249,6 @@ public abstract class LuceneTestCase extends Assert {
 
   /** @see #ignoreAfterMaxFailures*/
   public static final String SYSPROP_FAILFAST = "tests.failfast";
-  
-  /**
-   * If true, enables assertions on writing to system streams.
-   * 
-   * @see TestRuleLimitSysouts
-   */
-  public static final String SYSPROP_SYSOUTS = "tests.sysouts";
 
   /**
    * Annotation for tests that should only be run during nightly builds.
@@ -356,8 +350,8 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /**
-   * Marks any suite which is known to print to {@link System#out} or {@link System#err},
-   * even when {@link #VERBOSE} is disabled.
+   * Ignore {@link TestRuleLimitSysouts} for any suite which is known to print 
+   * over the default limit of bytes to {@link System#out} or {@link System#err}.
    * 
    * @see TestRuleLimitSysouts
    */
@@ -369,7 +363,7 @@ public abstract class LuceneTestCase extends Assert {
     /** Point to JIRA entry. */
     public String bugUrl();
   }
-  
+
   // -----------------------------------------------------------------
   // Truly immutable fields and constants, initialized once and valid 
   // for all suites ever since.

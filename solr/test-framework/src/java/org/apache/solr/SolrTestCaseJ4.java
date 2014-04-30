@@ -119,7 +119,7 @@ import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
     SolrIgnoredThreadsFilter.class,
     QuickPatchThreadsFilter.class
 })
-@SuppressSysoutChecks(bugUrl = "Solr dumps logs to console.")
+@SuppressSysoutChecks(bugUrl = "Solr dumps tons of logs to console.")
 public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   private static String coreName = ConfigSolrXmlOld.DEFAULT_DEFAULT_CORE_NAME;
   public static int DEFAULT_CONNECTION_TIMEOUT = 60000;  // default socket connection timeout in ms

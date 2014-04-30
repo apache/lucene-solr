@@ -72,7 +72,6 @@ import java.util.StringTokenizer;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 
-@SuppressSysoutChecks(bugUrl = "External tool.")
 public class TestCompile extends LuceneTestCase {
   
   public void testCompile() throws Exception {

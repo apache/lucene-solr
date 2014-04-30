@@ -27,7 +27,6 @@ import org.junit.Test;
 /**
  * Testcase for {@link UIMATypeAwareAnalyzer}
  */
-@SuppressSysoutChecks(bugUrl = "UIMA logs via ju.logging")
 public class UIMATypeAwareAnalyzerTest extends BaseTokenStreamTestCase {
 
   private UIMATypeAwareAnalyzer analyzer;

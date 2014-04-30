@@ -24,7 +24,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 
-@SuppressSysoutChecks(bugUrl = "Output expected (external tool).")
 public class TestMultiPassIndexSplitter extends LuceneTestCase {
   IndexReader input;
   int NUM_DOCS = 11;

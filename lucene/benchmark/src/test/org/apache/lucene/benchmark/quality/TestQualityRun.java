@@ -44,7 +44,6 @@ import java.nio.charset.StandardCharsets;
  * this test will not work correctly, as it does not dynamically
  * generate its test trec topics/qrels!
  */
-@SuppressSysoutChecks(bugUrl = "Output expected.")
 public class TestQualityRun extends BenchmarkTestCase {
   
   @Override

@@ -31,7 +31,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /** Base class for all Benchmark unit tests. */
-@SuppressSysoutChecks(bugUrl = "Output expected.")
 public abstract class BenchmarkTestCase extends LuceneTestCase {
   private static File WORKDIR;
   

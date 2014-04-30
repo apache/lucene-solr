@@ -30,7 +30,6 @@ import org.junit.runner.notification.Failure;
  * console. 
  */
 public class TestSeedFromUncaught extends WithNestedTests {
-  @SuppressSysoutChecks(bugUrl = "Expected.")
   public static class ThrowInUncaught extends AbstractNestedTest {
     @Test
     public void testFoo() throws Exception {

@@ -67,7 +67,6 @@ import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 /**
  * Test very simply that perf tasks - simple algorithms - are doing what they should.
  */
-@SuppressSysoutChecks(bugUrl = "Output expected.")
 public class TestPerfTasksLogic extends BenchmarkTestCase {
 
   @Override
