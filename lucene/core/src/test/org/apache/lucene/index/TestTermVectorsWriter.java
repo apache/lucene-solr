@@ -577,4 +577,87 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     iw.shutdown();
     dir.close();
   }
+  
+  /** 
+   * In a single doc, for the same field, mix the term vectors up 
+   */
+  public void testInconsistentTermVectorOptions() throws IOException {
+    FieldType a, b;
+    
+    // no vectors + vectors
+    a = new FieldType(TextField.TYPE_NOT_STORED);   
+    b = new FieldType(TextField.TYPE_NOT_STORED);
+    b.setStoreTermVectors(true);
+    doTestMixup(a, b);
+    
+    // vectors + vectors with pos
+    a = new FieldType(TextField.TYPE_NOT_STORED);   
+    a.setStoreTermVectors(true);
+    b = new FieldType(TextField.TYPE_NOT_STORED);
+    b.setStoreTermVectors(true);
+    b.setStoreTermVectorPositions(true);
+    doTestMixup(a, b);
+    
+    // vectors + vectors with off
+    a = new FieldType(TextField.TYPE_NOT_STORED);   
+    a.setStoreTermVectors(true);
+    b = new FieldType(TextField.TYPE_NOT_STORED);
+    b.setStoreTermVectors(true);
+    b.setStoreTermVectorOffsets(true);
+    doTestMixup(a, b);
+    
+    // vectors with pos + vectors with pos + off
+    a = new FieldType(TextField.TYPE_NOT_STORED);   
+    a.setStoreTermVectors(true);
+    a.setStoreTermVectorPositions(true);
+    b = new FieldType(TextField.TYPE_NOT_STORED);
+    b.setStoreTermVectors(true);
+    b.setStoreTermVectorPositions(true);
+    b.setStoreTermVectorOffsets(true);
+    doTestMixup(a, b);
+    
+    // vectors with pos + vectors with pos + pay
+    a = new FieldType(TextField.TYPE_NOT_STORED);   
+    a.setStoreTermVectors(true);
+    a.setStoreTermVectorPositions(true);
+    b = new FieldType(TextField.TYPE_NOT_STORED);
+    b.setStoreTermVectors(true);
+    b.setStoreTermVectorPositions(true);
+    b.setStoreTermVectorPayloads(true);
+    doTestMixup(a, b);
+  }
+  
+  private void doTestMixup(FieldType ft1, FieldType ft2) throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    
+    // add 3 good docs
+    for (int i = 0; i < 3; i++) {
+      Document doc = new Document();
+      doc.add(new StringField("id", Integer.toString(i), Field.Store.NO));
+      iw.addDocument(doc);
+    }
+    
+    // add broken doc
+    Document doc = new Document();
+    doc.add(new Field("field", "value1", ft1));
+    doc.add(new Field("field", "value2", ft2));
+    
+    // ensure broken doc hits exception
+    try {
+      iw.addDocument(doc);
+      fail("didn't hit expected exception");
+    } catch (IllegalArgumentException iae) {
+      assertNotNull(iae.getMessage());
+      assertTrue(iae.getMessage().startsWith("all instances of a given field name must have the same term vectors settings"));
+    }
+    
+    // ensure good docs are still ok
+    IndexReader ir = iw.getReader();
+    assertEquals(3, ir.numDocs());
+    
+    ir.close();
+    iw.close();
+    dir.close();
+  }
 }

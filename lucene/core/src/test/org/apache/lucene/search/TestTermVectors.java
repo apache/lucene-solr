@@ -82,45 +82,6 @@ public class TestTermVectors extends LuceneTestCase {
     directory = null;
   }
 
-  // In a single doc, for the same field, mix the term
-  // vectors up
-  public void testMixedVectrosVectors() throws IOException {
-    RandomIndexWriter writer = new RandomIndexWriter(random(), directory, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, 
-        new MockAnalyzer(random(), MockTokenizer.SIMPLE, true)).setOpenMode(OpenMode.CREATE));
-    Document doc = new Document();
-    
-    FieldType ft2 = new FieldType(TextField.TYPE_STORED);
-    ft2.setStoreTermVectors(true);
-    
-    FieldType ft3 = new FieldType(TextField.TYPE_STORED);
-    ft3.setStoreTermVectors(true);
-    ft3.setStoreTermVectorPositions(true);
-    
-    FieldType ft4 = new FieldType(TextField.TYPE_STORED);
-    ft4.setStoreTermVectors(true);
-    ft4.setStoreTermVectorOffsets(true);
-    
-    FieldType ft5 = new FieldType(TextField.TYPE_STORED);
-    ft5.setStoreTermVectors(true);
-    ft5.setStoreTermVectorOffsets(true);
-    ft5.setStoreTermVectorPositions(true);
-    
-    doc.add(newTextField("field", "one", Field.Store.YES));
-    doc.add(newField("field", "one", ft2));
-    doc.add(newField("field", "one", ft3));
-    doc.add(newField("field", "one", ft4));
-    doc.add(newField("field", "one", ft5));
-    try {
-      writer.addDocument(doc);
-      fail("should have hit exception");
-    } catch (IllegalArgumentException iae) {
-      assertEquals("all instances of a given field name must have the same term vectors settings (storeTermVectors changed for field=\"field\")",
-                   iae.getMessage());
-    }
-    writer.shutdown();
-  }
-
   private IndexWriter createWriter(Directory dir) throws IOException {
     return new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random())).setMaxBufferedDocs(2));
