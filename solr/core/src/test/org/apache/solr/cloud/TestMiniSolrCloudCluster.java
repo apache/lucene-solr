@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -58,6 +59,7 @@ import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
  * MiniSolrCloudCluster is designed to be used outside of the Lucene test
  * hierarchy.
  */
+@SuppressSysoutChecks(bugUrl = "Solr logs to JUL")
 public class TestMiniSolrCloudCluster extends LuceneTestCase {
 
   private static Logger log = LoggerFactory.getLogger(MiniSolrCloudCluster.class);

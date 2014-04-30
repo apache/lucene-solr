@@ -40,10 +40,18 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
+
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 public class HttpReplicatorTest extends ReplicatorTestCase {
-  
+  @Rule
+  public TestRule testRules = 
+    RuleChain.outerRule(new SystemPropertiesRestoreRule());
+
   private File clientWorkDir;
   private Replicator serverReplicator;
   private IndexWriter writer;
@@ -69,7 +77,9 @@ public class HttpReplicatorTest extends ReplicatorTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    System.setProperty("org.eclipse.jetty.LEVEL", "DEBUG"); // sets stderr logging to DEBUG level
+    if (VERBOSE) {
+      System.setProperty("org.eclipse.jetty.LEVEL", "DEBUG"); // sets stderr logging to DEBUG level
+    }
     clientWorkDir = createTempDir("httpReplicatorTest");
     handlerIndexDir = newDirectory();
     serverIndexDir = newDirectory();
@@ -87,7 +97,6 @@ public class HttpReplicatorTest extends ReplicatorTestCase {
     stopHttpServer(server);
     writer.rollback();
     IOUtils.close(reader, handlerIndexDir, serverIndexDir);
-    System.clearProperty("org.eclipse.jetty.LEVEL");
     super.tearDown();
   }
   
