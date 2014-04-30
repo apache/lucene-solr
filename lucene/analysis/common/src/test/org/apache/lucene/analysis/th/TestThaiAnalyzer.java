@@ -62,7 +62,7 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
   }
 
   public void testBackwardsStopWords() throws Exception {
-     assertAnalyzesTo(new ThaiAnalyzer(Version.LUCENE_35), "การที่ได้ต้องแสดงว่างานดี",
+     assertAnalyzesTo(new ThaiAnalyzer(Version.LUCENE_3_5), "การที่ได้ต้องแสดงว่างานดี",
           new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี" },
           new int[] { 0, 3, 6, 9, 13, 17, 20, 23 },
           new int[] { 3, 6, 9, 13, 17, 20, 23, 25 });
@@ -74,7 +74,7 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
     */
   @Deprecated
   public void testBuggyTokenType30() throws Exception {
-    assertAnalyzesTo(new ThaiAnalyzer(Version.LUCENE_30), "การที่ได้ต้องแสดงว่างานดี ๑๒๓",
+    assertAnalyzesTo(new ThaiAnalyzer(Version.LUCENE_3_0), "การที่ได้ต้องแสดงว่างานดี ๑๒๓",
                          new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี", "๑๒๓" },
                          new String[] { "<ALPHANUM>", "<ALPHANUM>", "<ALPHANUM>", 
                                         "<ALPHANUM>", "<ALPHANUM>", "<ALPHANUM>", 
@@ -84,7 +84,7 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
   /** @deprecated (3.1) testing backwards behavior */
   @Deprecated
     public void testAnalyzer30() throws Exception {
-        ThaiAnalyzer analyzer = new ThaiAnalyzer(Version.LUCENE_30);
+        ThaiAnalyzer analyzer = new ThaiAnalyzer(Version.LUCENE_3_0);
 
     assertAnalyzesTo(analyzer, "", new String[] {});
 
@@ -143,7 +143,7 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
   /** @deprecated (3.1) for version back compat */
   @Deprecated
   public void testReusableTokenStream30() throws Exception {
-      ThaiAnalyzer analyzer = new ThaiAnalyzer(Version.LUCENE_30);
+      ThaiAnalyzer analyzer = new ThaiAnalyzer(Version.LUCENE_3_0);
       assertAnalyzesTo(analyzer, "", new String[] {});
 
       assertAnalyzesTo(
@@ -170,7 +170,7 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
   
   // LUCENE-3044
   public void testAttributeReuse() throws Exception {
-    ThaiAnalyzer analyzer = new ThaiAnalyzer(Version.LUCENE_30);
+    ThaiAnalyzer analyzer = new ThaiAnalyzer(Version.LUCENE_3_0);
     // just consume
     TokenStream ts = analyzer.tokenStream("dummy", "ภาษาไทย");
     assertTokenStreamContents(ts, new String[] { "ภาษา", "ไทย" });

@@ -157,7 +157,7 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
       int startOff = CompoundWordTokenFilterBase.this.offsetAtt.startOffset();
       int endOff = CompoundWordTokenFilterBase.this.offsetAtt.endOffset();
       
-      if (matchVersion.onOrAfter(Version.LUCENE_44) ||
+      if (matchVersion.onOrAfter(Version.LUCENE_4_4) ||
           endOff - startOff != CompoundWordTokenFilterBase.this.termAtt.length()) {
         // if length by start + end offsets doesn't match the term text then assume
         // this is a synonym and don't adjust the offsets.

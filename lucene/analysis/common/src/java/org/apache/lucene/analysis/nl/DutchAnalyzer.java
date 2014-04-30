@@ -133,7 +133,7 @@ public final class DutchAnalyzer extends Analyzer {
     // historically, this ctor never the stem dict!!!!!
     // so we populate it only for >= 3.6
     this(matchVersion, stopwords, CharArraySet.EMPTY_SET, 
-        matchVersion.onOrAfter(Version.LUCENE_36) 
+        matchVersion.onOrAfter(Version.LUCENE_3_6) 
         ? DefaultSetHolder.DEFAULT_STEM_DICT 
         : CharArrayMap.<String>emptyMap());
   }
@@ -142,7 +142,7 @@ public final class DutchAnalyzer extends Analyzer {
     // historically, this ctor never the stem dict!!!!!
     // so we populate it only for >= 3.6
     this(matchVersion, stopwords, stemExclusionTable,
-        matchVersion.onOrAfter(Version.LUCENE_36)
+        matchVersion.onOrAfter(Version.LUCENE_3_6)
         ? DefaultSetHolder.DEFAULT_STEM_DICT
         : CharArrayMap.<String>emptyMap());
   }
@@ -151,7 +151,7 @@ public final class DutchAnalyzer extends Analyzer {
     this.matchVersion = matchVersion;
     this.stoptable = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stopwords));
     this.excltable = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stemExclusionTable));
-    if (stemOverrideDict.isEmpty() || !matchVersion.onOrAfter(Version.LUCENE_31)) {
+    if (stemOverrideDict.isEmpty() || !matchVersion.onOrAfter(Version.LUCENE_3_1)) {
       this.stemdict = null;
       this.origStemdict = CharArrayMap.unmodifiableMap(CharArrayMap.copy(matchVersion, stemOverrideDict));
     } else {
@@ -185,7 +185,7 @@ public final class DutchAnalyzer extends Analyzer {
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
       Reader aReader) {
-    if (matchVersion.onOrAfter(Version.LUCENE_31)) {
+    if (matchVersion.onOrAfter(Version.LUCENE_3_1)) {
       final Tokenizer source = new StandardTokenizer(matchVersion, aReader);
       TokenStream result = new StandardFilter(matchVersion, source);
       result = new LowerCaseFilter(matchVersion, result);

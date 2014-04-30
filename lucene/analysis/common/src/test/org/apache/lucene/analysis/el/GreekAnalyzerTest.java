@@ -56,7 +56,7 @@ public class GreekAnalyzerTest extends BaseTokenStreamTestCase {
    */
   @Deprecated
   public void testAnalyzerBWCompat() throws Exception {
-    Analyzer a = new GreekAnalyzer(Version.LUCENE_30);
+    Analyzer a = new GreekAnalyzer(Version.LUCENE_3_0);
     // Verify the correct analysis of capitals and small accented letters
     assertAnalyzesTo(a, "Μία εξαιρετικά καλή και πλούσια σειρά χαρακτήρων της Ελληνικής γλώσσας",
         new String[] { "μια", "εξαιρετικα", "καλη", "πλουσια", "σειρα", "χαρακτηρων",

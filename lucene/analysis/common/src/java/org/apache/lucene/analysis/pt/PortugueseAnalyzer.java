@@ -133,7 +133,7 @@ public final class PortugueseAnalyzer extends StopwordAnalyzerBase {
     result = new StopFilter(matchVersion, result, stopwords);
     if(!stemExclusionSet.isEmpty())
       result = new SetKeywordMarkerFilter(result, stemExclusionSet);
-    if (matchVersion.onOrAfter(Version.LUCENE_36)) {
+    if (matchVersion.onOrAfter(Version.LUCENE_3_6)) {
       result = new PortugueseLightStemFilter(result);
     } else {
       result = new SnowballFilter(result, new PortugueseStemmer());

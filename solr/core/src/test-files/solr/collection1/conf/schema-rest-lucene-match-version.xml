@@ -20,8 +20,8 @@
     <fieldtype name="explicitLuceneMatchVersions" class="org.apache.solr.schema.TextField">
       <analyzer>
         <charFilter class="org.apache.solr.analysis.MockCharFilterFactory" luceneMatchVersion="LUCENE_40" remainder="0"/>
-        <tokenizer class="org.apache.solr.analysis.MockTokenizerFactory" luceneMatchVersion="LUCENE_40" />
-        <filter class="org.apache.solr.analysis.MockTokenFilterFactory" luceneMatchVersion="LUCENE_40" stopset="empty"/>
+        <tokenizer class="org.apache.solr.analysis.MockTokenizerFactory" luceneMatchVersion="LUCENE_4_0" />
+        <filter class="org.apache.solr.analysis.MockTokenFilterFactory" luceneMatchVersion="4.0" stopset="empty"/>
       </analyzer>
     </fieldtype>
     <fieldtype name="noLuceneMatchVersions" class="org.apache.solr.schema.TextField">

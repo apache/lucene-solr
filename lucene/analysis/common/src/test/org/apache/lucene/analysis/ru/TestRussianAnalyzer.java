@@ -40,7 +40,7 @@ public class TestRussianAnalyzer extends BaseTokenStreamTestCase {
     /** @deprecated (3.1) remove this test in Lucene 5.0: stopwords changed */
     @Deprecated
     public void testReusableTokenStream30() throws Exception {
-      Analyzer a = new RussianAnalyzer(Version.LUCENE_30);
+      Analyzer a = new RussianAnalyzer(Version.LUCENE_3_0);
       assertAnalyzesTo(a, "Вместе с тем о силе электромагнитной энергии имели представление еще",
           new String[] { "вмест", "сил", "электромагнитн", "энерг", "имел", "представлен" });
       assertAnalyzesTo(a, "Но знание это хранилось в тайне",

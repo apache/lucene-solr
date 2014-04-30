@@ -108,7 +108,7 @@ public final class RussianAnalyzer extends StopwordAnalyzerBase
 
     public RussianAnalyzer(Version matchVersion) {
       this(matchVersion,
-        matchVersion.onOrAfter(Version.LUCENE_31) ? DefaultSetHolder.DEFAULT_STOP_SET
+        matchVersion.onOrAfter(Version.LUCENE_3_1) ? DefaultSetHolder.DEFAULT_STOP_SET
             : DefaultSetHolder.DEFAULT_STOP_SET_30);
     }
   
@@ -152,7 +152,7 @@ public final class RussianAnalyzer extends StopwordAnalyzerBase
     @Override
     protected TokenStreamComponents createComponents(String fieldName,
         Reader reader) {
-      if (matchVersion.onOrAfter(Version.LUCENE_31)) {
+      if (matchVersion.onOrAfter(Version.LUCENE_3_1)) {
         final Tokenizer source = new StandardTokenizer(matchVersion, reader);
         TokenStream result = new StandardFilter(matchVersion, source);
         result = new LowerCaseFilter(matchVersion, result);

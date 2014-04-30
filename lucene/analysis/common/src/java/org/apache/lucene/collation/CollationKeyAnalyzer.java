@@ -105,13 +105,13 @@ public final class CollationKeyAnalyzer extends Analyzer {
    */
   @Deprecated
   public CollationKeyAnalyzer(Collator collator) {
-    this(Version.LUCENE_31, collator);
+    this(Version.LUCENE_3_1, collator);
   }
 
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
-    if (matchVersion.onOrAfter(Version.LUCENE_40)) {
+    if (matchVersion.onOrAfter(Version.LUCENE_4_0)) {
       KeywordTokenizer tokenizer = new KeywordTokenizer(factory, reader, KeywordTokenizer.DEFAULT_BUFFER_SIZE);
       return new TokenStreamComponents(tokenizer, tokenizer);
     } else {

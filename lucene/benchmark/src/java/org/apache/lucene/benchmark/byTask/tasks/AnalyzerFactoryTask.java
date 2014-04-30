@@ -68,7 +68,7 @@ import java.util.regex.Pattern;
  *                      positionIncrementGap:100,
  *                      HTMLStripCharFilter,
  *                      MappingCharFilter(mapping:'mapping-FoldToASCII.txt'),
- *                      WhitespaceTokenizer(luceneMatchVersion:LUCENE_43),
+ *                      WhitespaceTokenizer(luceneMatchVersion:LUCENE_4_3),
  *                      TokenLimitFilter(maxTokenCount:10000, consumeAllTokens:false))
  *     [...]
  *     -NewAnalyzer('strip html, fold to ascii, whitespace tokenize, max 10k tokens')

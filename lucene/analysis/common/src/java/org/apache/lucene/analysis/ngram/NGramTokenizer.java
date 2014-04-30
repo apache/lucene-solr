@@ -120,10 +120,10 @@ public class NGramTokenizer extends Tokenizer {
   }
 
   private void init(Version version, int minGram, int maxGram, boolean edgesOnly) {
-    if (!version.onOrAfter(Version.LUCENE_44)) {
+    if (!version.onOrAfter(Version.LUCENE_4_4)) {
       throw new IllegalArgumentException("This class only works with Lucene 4.4+. To emulate the old (broken) behavior of NGramTokenizer, use Lucene43NGramTokenizer/Lucene43EdgeNGramTokenizer");
     }
-    charUtils = version.onOrAfter(Version.LUCENE_44)
+    charUtils = version.onOrAfter(Version.LUCENE_4_4)
         ? CharacterUtils.getInstance(version)
         : CharacterUtils.getJava4Instance();
     if (minGram < 1) {

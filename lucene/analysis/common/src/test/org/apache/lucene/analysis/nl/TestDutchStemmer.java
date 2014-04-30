@@ -118,7 +118,7 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
    */
   @Deprecated
   public void testOldBuggyStemmer() throws Exception {
-    Analyzer a = new DutchAnalyzer(Version.LUCENE_30);
+    Analyzer a = new DutchAnalyzer(Version.LUCENE_3_0);
     checkOneTerm(a, "opheffen", "ophef"); // versus snowball 'opheff'
     checkOneTerm(a, "opheffende", "ophef"); // versus snowball 'opheff'
     checkOneTerm(a, "opheffing", "ophef"); // versus snowball 'opheff'
@@ -140,7 +140,7 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
   }
   
   public void testExclusionTableViaCtor() throws IOException {
-    CharArraySet set = new CharArraySet(Version.LUCENE_30, 1, true);
+    CharArraySet set = new CharArraySet(Version.LUCENE_3_0, 1, true);
     set.add("lichamelijk");
     DutchAnalyzer a = new DutchAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET, set);
     assertAnalyzesTo(a, "lichamelijk lichamelijke", new String[] { "lichamelijk", "licham" });
@@ -164,9 +164,9 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
    */
   @Deprecated
   public void test30StemOverrides() throws IOException {
-    DutchAnalyzer a = new DutchAnalyzer(Version.LUCENE_30);
+    DutchAnalyzer a = new DutchAnalyzer(Version.LUCENE_3_0);
     checkOneTerm(a, "fiets", "fiets");
-    a = new DutchAnalyzer(Version.LUCENE_30, CharArraySet.EMPTY_SET);
+    a = new DutchAnalyzer(Version.LUCENE_3_0, CharArraySet.EMPTY_SET);
     checkOneTerm(a, "fiets", "fiet"); // only the default ctor populates the dict
   }
 
@@ -183,7 +183,7 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
    */
   @Deprecated
   public void testBuggyStemOverrides() throws IOException {
-    DutchAnalyzer a = new DutchAnalyzer(Version.LUCENE_35, CharArraySet.EMPTY_SET);
+    DutchAnalyzer a = new DutchAnalyzer(Version.LUCENE_3_5, CharArraySet.EMPTY_SET);
     checkOneTerm(a, "fiets", "fiet");
   }
   
@@ -194,7 +194,7 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
    */
   @Deprecated
   public void testBuggyStopwordsCasing() throws IOException {
-    DutchAnalyzer a = new DutchAnalyzer(Version.LUCENE_30);
+    DutchAnalyzer a = new DutchAnalyzer(Version.LUCENE_3_0);
     assertAnalyzesTo(a, "Zelf", new String[] { "zelf" });
   }
   
@@ -202,7 +202,7 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
    * Test that stopwords are not case sensitive
    */
   public void testStopwordsCasing() throws IOException {
-    DutchAnalyzer a = new DutchAnalyzer(Version.LUCENE_31);
+    DutchAnalyzer a = new DutchAnalyzer(Version.LUCENE_3_1);
     assertAnalyzesTo(a, "Zelf", new String[] { });
   }
   

@@ -173,7 +173,7 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
   }
 
   public void testLucene43() throws IOException {
-    NGramTokenFilter filter = new NGramTokenFilter(Version.LUCENE_43, input, 2, 3);
+    NGramTokenFilter filter = new NGramTokenFilter(Version.LUCENE_4_3, input, 2, 3);
     assertTokenStreamContents(filter,
         new String[]{"ab","bc","cd","de","abc","bcd","cde"},
         new int[]{0,1,2,3,0,1,2},

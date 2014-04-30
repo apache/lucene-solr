@@ -44,7 +44,7 @@ public final class EnglishPossessiveFilter extends TokenFilter {
    */
   @Deprecated
   public EnglishPossessiveFilter(TokenStream input) {
-    this(Version.LUCENE_35, input);
+    this(Version.LUCENE_3_5, input);
   }
 
   public EnglishPossessiveFilter(Version version, TokenStream input) {
@@ -63,7 +63,7 @@ public final class EnglishPossessiveFilter extends TokenFilter {
     
     if (bufferLength >= 2 && 
         (buffer[bufferLength-2] == '\'' || 
-         (matchVersion.onOrAfter(Version.LUCENE_36) && (buffer[bufferLength-2] == '\u2019' || buffer[bufferLength-2] == '\uFF07'))) &&
+         (matchVersion.onOrAfter(Version.LUCENE_3_6) && (buffer[bufferLength-2] == '\u2019' || buffer[bufferLength-2] == '\uFF07'))) &&
         (buffer[bufferLength-1] == 's' || buffer[bufferLength-1] == 'S')) {
       termAtt.setLength(bufferLength - 2); // Strip last 2 characters off
     }

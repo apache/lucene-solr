@@ -140,14 +140,14 @@ public final class ItalianAnalyzer extends StopwordAnalyzerBase {
       Reader reader) {
     final Tokenizer source = new StandardTokenizer(matchVersion, reader);
     TokenStream result = new StandardFilter(matchVersion, source);
-    if (matchVersion.onOrAfter(Version.LUCENE_32)) {
+    if (matchVersion.onOrAfter(Version.LUCENE_3_2)) {
       result = new ElisionFilter(result, DEFAULT_ARTICLES);
     }
     result = new LowerCaseFilter(matchVersion, result);
     result = new StopFilter(matchVersion, result, stopwords);
     if(!stemExclusionSet.isEmpty())
       result = new SetKeywordMarkerFilter(result, stemExclusionSet);
-    if (matchVersion.onOrAfter(Version.LUCENE_36)) {
+    if (matchVersion.onOrAfter(Version.LUCENE_3_6)) {
       result = new ItalianLightStemFilter(result);
     } else {
       result = new SnowballFilter(result, new ItalianStemmer());

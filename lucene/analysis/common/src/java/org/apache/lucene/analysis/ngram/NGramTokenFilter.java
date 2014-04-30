@@ -41,7 +41,7 @@ import org.apache.lucene.util.Version;
  * increasing length (meaning that "abc" will give "a", "ab", "abc", "b", "bc",
  * "c").</li></ul>
  * <p>You can make this filter use the old behavior by providing a version &lt;
- * {@link Version#LUCENE_44} in the constructor but this is not recommended as
+ * {@link Version#LUCENE_4_4} in the constructor but this is not recommended as
  * it will lead to broken {@link TokenStream}s that will cause highlighting
  * bugs.
  * <p>If you were using this {@link TokenFilter} to perform partial highlighting,
@@ -83,7 +83,7 @@ public final class NGramTokenFilter extends TokenFilter {
   public NGramTokenFilter(Version version, TokenStream input, int minGram, int maxGram) {
     super(new CodepointCountFilter(version, input, minGram, Integer.MAX_VALUE));
     this.version = version;
-    this.charUtils = version.onOrAfter(Version.LUCENE_44)
+    this.charUtils = version.onOrAfter(Version.LUCENE_4_4)
         ? CharacterUtils.getInstance(version)
         : CharacterUtils.getJava4Instance();
     if (minGram < 1) {
@@ -94,7 +94,7 @@ public final class NGramTokenFilter extends TokenFilter {
     }
     this.minGram = minGram;
     this.maxGram = maxGram;
-    if (version.onOrAfter(Version.LUCENE_44)) {
+    if (version.onOrAfter(Version.LUCENE_4_4)) {
       posIncAtt = addAttribute(PositionIncrementAttribute.class);
       posLenAtt = addAttribute(PositionLengthAttribute.class);
     } else {
@@ -149,7 +149,7 @@ public final class NGramTokenFilter extends TokenFilter {
           hasIllegalOffsets = (tokStart + curTermLength) != tokEnd;
         }
       }
-      if (version.onOrAfter(Version.LUCENE_44)) {
+      if (version.onOrAfter(Version.LUCENE_4_4)) {
         if (curGramSize > maxGram || (curPos + curGramSize) > curCodePointCount) {
           ++curPos;
           curGramSize = minGram;

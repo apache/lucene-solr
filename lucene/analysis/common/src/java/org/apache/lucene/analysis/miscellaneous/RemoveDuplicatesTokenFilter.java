@@ -35,7 +35,7 @@ public final class RemoveDuplicatesTokenFilter extends TokenFilter {
   private final PositionIncrementAttribute posIncAttribute =  addAttribute(PositionIncrementAttribute.class);
   
   // use a fixed version, as we don't care about case sensitivity.
-  private final CharArraySet previous = new CharArraySet(Version.LUCENE_31, 8, false);
+  private final CharArraySet previous = new CharArraySet(Version.LUCENE_3_1, 8, false);
 
   /**
    * Creates a new RemoveDuplicatesTokenFilter

@@ -138,7 +138,7 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
 
     // 2.4 should not show the bug. But, alas, it's also obsolete,
     // so we check latest released (Robert's gonna break this on 4.0 soon :) )
-    a2 = new ClassicAnalyzer(Version.LUCENE_31);
+    a2 = new ClassicAnalyzer(Version.LUCENE_3_1);
     assertAnalyzesTo(a2, "www.nutch.org.", new String[]{ "www.nutch.org" }, new String[] { "<HOST>" });
   }
 
@@ -245,7 +245,7 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
   }
 
   public void testJava14BWCompatibility() throws Exception {
-    ClassicAnalyzer sa = new ClassicAnalyzer(Version.LUCENE_30);
+    ClassicAnalyzer sa = new ClassicAnalyzer(Version.LUCENE_3_0);
     assertAnalyzesTo(sa, "test\u02C6test", new String[] { "test", "test" });
   }
 

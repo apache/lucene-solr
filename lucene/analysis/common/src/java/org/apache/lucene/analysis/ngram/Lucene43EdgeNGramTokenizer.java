@@ -182,7 +182,7 @@ public final class Lucene43EdgeNGramTokenizer extends Tokenizer {
       throw new IllegalArgumentException("minGram must not be greater than maxGram");
     }
 
-    if (version.onOrAfter(Version.LUCENE_44)) {
+    if (version.onOrAfter(Version.LUCENE_4_4)) {
       if (side == Side.BACK) {
         throw new IllegalArgumentException("Side.BACK is not supported anymore as of Lucene 4.4");
       }

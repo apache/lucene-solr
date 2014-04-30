@@ -45,13 +45,13 @@ public class TestSerializedLuceneMatchVersion extends RestTestBase {
             "count(/response/lst[@name='fieldType']) = 1",
         
             "//lst[str[@name='class'][.='org.apache.solr.analysis.MockCharFilterFactory']]"
-           +"     [str[@name='luceneMatchVersion'][.='LUCENE_40']]",
+           +"     [str[@name='luceneMatchVersion'][.='LUCENE_4_0']]",
         
             "//lst[str[@name='class'][.='org.apache.solr.analysis.MockTokenizerFactory']]"
-           +"     [str[@name='luceneMatchVersion'][.='LUCENE_40']]",
+           +"     [str[@name='luceneMatchVersion'][.='LUCENE_4_0']]",
         
             "//lst[str[@name='class'][.='org.apache.solr.analysis.MockTokenFilterFactory']]"
-           +"     [str[@name='luceneMatchVersion'][.='LUCENE_40']]");
+           +"     [str[@name='luceneMatchVersion'][.='LUCENE_4_0']]");
   }
 
   @Test

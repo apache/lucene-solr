@@ -123,7 +123,7 @@ public final class TurkishAnalyzer extends StopwordAnalyzerBase {
       Reader reader) {
     final Tokenizer source = new StandardTokenizer(matchVersion, reader);
     TokenStream result = new StandardFilter(matchVersion, source);
-    if(matchVersion.onOrAfter(Version.LUCENE_48))
+    if(matchVersion.onOrAfter(Version.LUCENE_4_8))
       result = new ApostropheFilter(result);
     result = new TurkishLowerCaseFilter(result);
     result = new StopFilter(matchVersion, result, stopwords);

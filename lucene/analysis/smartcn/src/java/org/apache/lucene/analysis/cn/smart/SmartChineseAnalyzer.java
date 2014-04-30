@@ -138,7 +138,7 @@ public final class SmartChineseAnalyzer extends Analyzer {
   public TokenStreamComponents createComponents(String fieldName, Reader reader) {
     final Tokenizer tokenizer;
     TokenStream result;
-    if (matchVersion.onOrAfter(Version.LUCENE_48)) {
+    if (matchVersion.onOrAfter(Version.LUCENE_4_8)) {
       tokenizer = new HMMChineseTokenizer(reader);
       result = tokenizer;
     } else {

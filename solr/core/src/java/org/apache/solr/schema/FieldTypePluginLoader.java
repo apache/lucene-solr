@@ -407,7 +407,7 @@ public final class FieldTypePluginLoader
     Version version = (configuredVersion != null) ?
             Config.parseLuceneVersionString(configuredVersion) : schema.getDefaultLuceneMatchVersion();
 
-    if (!version.onOrAfter(Version.LUCENE_40)) {
+    if (!version.onOrAfter(Version.LUCENE_4_0)) {
       log.warn(pluginClassName + " is using deprecated " + version +
         " emulation. You should at some point declare and reindex to at least 4.0, because " +
         "3.x emulation is deprecated and will be removed in 5.0");

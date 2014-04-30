@@ -510,7 +510,7 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
       protected TokenStreamComponents createComponents
         (String fieldName, Reader reader) {
 
-        Tokenizer tokenizer = new UAX29URLEmailTokenizer(Version.LUCENE_31, reader);
+        Tokenizer tokenizer = new UAX29URLEmailTokenizer(Version.LUCENE_3_1, reader);
         return new TokenStreamComponents(tokenizer);
       }
     };
@@ -527,7 +527,7 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new UAX29URLEmailTokenizer(Version.LUCENE_34, reader);
+        Tokenizer tokenizer = new UAX29URLEmailTokenizer(Version.LUCENE_3_4, reader);
         return new TokenStreamComponents(tokenizer);
       }
     };
@@ -541,7 +541,7 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new UAX29URLEmailTokenizer(Version.LUCENE_36, reader);
+        Tokenizer tokenizer = new UAX29URLEmailTokenizer(Version.LUCENE_3_6, reader);
         return new TokenStreamComponents(tokenizer);
       }
     };
@@ -555,7 +555,7 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new UAX29URLEmailTokenizer(Version.LUCENE_40, reader);
+        Tokenizer tokenizer = new UAX29URLEmailTokenizer(Version.LUCENE_4_0, reader);
         return new TokenStreamComponents(tokenizer);
       }
     };

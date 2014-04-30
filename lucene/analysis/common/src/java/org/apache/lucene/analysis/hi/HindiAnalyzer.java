@@ -127,7 +127,7 @@ public final class HindiAnalyzer extends StopwordAnalyzerBase {
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
     final Tokenizer source;
-    if (matchVersion.onOrAfter(Version.LUCENE_36)) {
+    if (matchVersion.onOrAfter(Version.LUCENE_3_6)) {
       source = new StandardTokenizer(matchVersion, reader);
     } else {
       source = new IndicTokenizer(matchVersion, reader);

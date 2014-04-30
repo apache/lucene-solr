@@ -127,7 +127,7 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
    */
   public GermanAnalyzer(Version matchVersion) {
     this(matchVersion,
-        matchVersion.onOrAfter(Version.LUCENE_31) ? DefaultSetHolder.DEFAULT_SET
+        matchVersion.onOrAfter(Version.LUCENE_3_1) ? DefaultSetHolder.DEFAULT_SET
             : DefaultSetHolder.DEFAULT_SET_30);
   }
   
@@ -177,10 +177,10 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
     result = new LowerCaseFilter(matchVersion, result);
     result = new StopFilter( matchVersion, result, stopwords);
     result = new SetKeywordMarkerFilter(result, exclusionSet);
-    if (matchVersion.onOrAfter(Version.LUCENE_36)) {
+    if (matchVersion.onOrAfter(Version.LUCENE_3_6)) {
       result = new GermanNormalizationFilter(result);
       result = new GermanLightStemFilter(result);
-    } else if (matchVersion.onOrAfter(Version.LUCENE_31)) {
+    } else if (matchVersion.onOrAfter(Version.LUCENE_3_1)) {
       result = new SnowballFilter(result, new German2Stemmer());
     } else {
       result = new GermanStemFilter(result);

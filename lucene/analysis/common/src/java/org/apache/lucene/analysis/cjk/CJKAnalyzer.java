@@ -89,7 +89,7 @@ public final class CJKAnalyzer extends StopwordAnalyzerBase {
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
-    if (matchVersion.onOrAfter(Version.LUCENE_36)) {
+    if (matchVersion.onOrAfter(Version.LUCENE_3_6)) {
       final Tokenizer source = new StandardTokenizer(matchVersion, reader);
       // run the widthfilter first before bigramming, it sometimes combines characters.
       TokenStream result = new CJKWidthFilter(source);

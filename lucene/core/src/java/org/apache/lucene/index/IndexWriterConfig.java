@@ -159,7 +159,7 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
    * Creates a new config that with defaults that match the specified
    * {@link Version} as well as the default {@link
    * Analyzer}. If matchVersion is >= {@link
-   * Version#LUCENE_32}, {@link TieredMergePolicy} is used
+   * Version#LUCENE_3_2}, {@link TieredMergePolicy} is used
    * for merging; else {@link LogByteSizeMergePolicy}.
    * Note that {@link TieredMergePolicy} is free to select
    * non-contiguous merges, which means docIDs may not

@@ -68,7 +68,7 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
   public SynonymFilterFactory(Map<String,String> args) {
     super(args);
     assureMatchVersion();
-    if (luceneMatchVersion.onOrAfter(Version.LUCENE_34)) {
+    if (luceneMatchVersion.onOrAfter(Version.LUCENE_3_4)) {
       delegator = new FSTSynonymFilterFactory(new HashMap<>(getOriginalArgs()));
     } else {
       // check if you use the new optional arg "format". this makes no sense for the old one, 

@@ -71,11 +71,11 @@ public final class SnowballAnalyzer extends Analyzer {
     Tokenizer tokenizer = new StandardTokenizer(matchVersion, reader);
     TokenStream result = new StandardFilter(matchVersion, tokenizer);
     // remove the possessive 's for english stemmers
-    if (matchVersion.onOrAfter(Version.LUCENE_31) && 
+    if (matchVersion.onOrAfter(Version.LUCENE_3_1) && 
         (name.equals("English") || name.equals("Porter") || name.equals("Lovins")))
       result = new EnglishPossessiveFilter(result);
     // Use a special lowercase filter for turkish, the stemmer expects it.
-    if (matchVersion.onOrAfter(Version.LUCENE_31) && name.equals("Turkish"))
+    if (matchVersion.onOrAfter(Version.LUCENE_3_1) && name.equals("Turkish"))
       result = new TurkishLowerCaseFilter(result);
     else
       result = new LowerCaseFilter(matchVersion, result);

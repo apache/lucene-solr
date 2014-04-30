@@ -166,7 +166,7 @@ public class TestUAX29URLEmailTokenizerFactory extends BaseTokenStreamFactoryTes
         new String[] {"ざ"});
     
     reader = new StringReader("ざ");
-    stream = tokenizerFactory("UAX29URLEmail", Version.LUCENE_31, new ClasspathResourceLoader(getClass())).create(reader);
+    stream = tokenizerFactory("UAX29URLEmail", Version.LUCENE_3_1, new ClasspathResourceLoader(getClass())).create(reader);
     assertTokenStreamContents(stream, 
         new String[] {"さ"}); // old broken behavior
   }

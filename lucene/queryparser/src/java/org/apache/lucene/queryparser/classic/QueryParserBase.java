@@ -97,7 +97,7 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
   public void init(Version matchVersion, String f, Analyzer a) {
     setAnalyzer(a);
     field = f;
-    if (matchVersion.onOrAfter(Version.LUCENE_31)) {
+    if (matchVersion.onOrAfter(Version.LUCENE_3_1)) {
       setAutoGeneratePhraseQueries(false);
     } else {
       setAutoGeneratePhraseQueries(true);

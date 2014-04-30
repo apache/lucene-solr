@@ -40,7 +40,7 @@ public class TestRussianLetterTokenizer extends BaseTokenStreamTestCase {
   
   public void testRussianLetterTokenizerBWCompat() throws IOException {
     StringReader reader = new StringReader("1234567890 Вместе \ud801\udc1ctest");
-    RussianLetterTokenizer tokenizer = new RussianLetterTokenizer(Version.LUCENE_30,
+    RussianLetterTokenizer tokenizer = new RussianLetterTokenizer(Version.LUCENE_3_0,
         reader);
     assertTokenStreamContents(tokenizer, new String[] {"1234567890", "Вместе", "test"});
   }

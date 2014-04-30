@@ -102,7 +102,7 @@ public class TestNGramFilters extends BaseTokenStreamFactoryTestCase {
    */
   public void testEdgeNGramTokenizer3() throws Exception {
     Reader reader = new StringReader("ready");
-    TokenStream stream = tokenizerFactory("EdgeNGram", Version.LUCENE_43,
+    TokenStream stream = tokenizerFactory("EdgeNGram", Version.LUCENE_4_3,
         "side", "back").create(reader);
     assertTokenStreamContents(stream, 
         new String[] { "y" });
@@ -138,7 +138,7 @@ public class TestNGramFilters extends BaseTokenStreamFactoryTestCase {
   public void testEdgeNGramFilter3() throws Exception {
     Reader reader = new StringReader("ready");
     TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-    stream = tokenFilterFactory("EdgeNGram", Version.LUCENE_43,
+    stream = tokenFilterFactory("EdgeNGram", Version.LUCENE_4_3,
         "side", "back").create(stream);
     assertTokenStreamContents(stream, 
         new String[] { "y" });

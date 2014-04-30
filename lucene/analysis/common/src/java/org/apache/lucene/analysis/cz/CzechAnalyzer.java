@@ -127,8 +127,8 @@ public final class CzechAnalyzer extends StopwordAnalyzerBase {
    * @return {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    *         built from a {@link StandardTokenizer} filtered with
    *         {@link StandardFilter}, {@link LowerCaseFilter}, {@link StopFilter}
-   *         , and {@link CzechStemFilter} (only if version is >= LUCENE_31). If
-   *         a version is >= LUCENE_31 and a stem exclusion set is provided via
+   *         , and {@link CzechStemFilter} (only if version is >= LUCENE_3_1). If
+   *         a version is >= LUCENE_3_1 and a stem exclusion set is provided via
    *         {@link #CzechAnalyzer(Version, CharArraySet, CharArraySet)} a
    *         {@link SetKeywordMarkerFilter} is added before
    *         {@link CzechStemFilter}.
@@ -140,7 +140,7 @@ public final class CzechAnalyzer extends StopwordAnalyzerBase {
     TokenStream result = new StandardFilter(matchVersion, source);
     result = new LowerCaseFilter(matchVersion, result);
     result = new StopFilter( matchVersion, result, stopwords);
-    if (matchVersion.onOrAfter(Version.LUCENE_31)) {
+    if (matchVersion.onOrAfter(Version.LUCENE_3_1)) {
       if(!this.stemExclusionTable.isEmpty())
         result = new SetKeywordMarkerFilter(result, stemExclusionTable);
       result = new CzechStemFilter(result);

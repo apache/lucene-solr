@@ -36,7 +36,7 @@ public class TestCzechAnalyzer extends BaseTokenStreamTestCase {
    */
   @Deprecated
   public void testStopWordLegacy() throws Exception {
-    assertAnalyzesTo(new CzechAnalyzer(Version.LUCENE_30), "Pokud mluvime o volnem", 
+    assertAnalyzesTo(new CzechAnalyzer(Version.LUCENE_3_0), "Pokud mluvime o volnem", 
         new String[] { "mluvime", "volnem" });
   }
   
@@ -50,7 +50,7 @@ public class TestCzechAnalyzer extends BaseTokenStreamTestCase {
    */
   @Deprecated
   public void testReusableTokenStreamLegacy() throws Exception {
-    Analyzer analyzer = new CzechAnalyzer(Version.LUCENE_30);
+    Analyzer analyzer = new CzechAnalyzer(Version.LUCENE_3_0);
     assertAnalyzesTo(analyzer, "Pokud mluvime o volnem", new String[] { "mluvime", "volnem" });
     assertAnalyzesTo(analyzer, "Česká Republika", new String[] { "česká", "republika" });
   }

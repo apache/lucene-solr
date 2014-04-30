@@ -63,7 +63,7 @@ public class TestReverseStringFilter extends BaseTokenStreamTestCase {
    */
   @Deprecated
   public void testBackCompat() throws Exception {
-    assertEquals("\uDF05\uD866\uDF05\uD866", ReverseStringFilter.reverse(Version.LUCENE_30, "𩬅𩬅"));
+    assertEquals("\uDF05\uD866\uDF05\uD866", ReverseStringFilter.reverse(Version.LUCENE_3_0, "𩬅𩬅"));
   }
   
   public void testReverseSupplementary() throws Exception {

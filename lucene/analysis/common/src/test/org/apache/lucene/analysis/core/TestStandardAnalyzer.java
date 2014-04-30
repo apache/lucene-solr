@@ -282,7 +282,7 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
   /** @deprecated remove this and sophisticated backwards layer in 5.0 */
   @Deprecated
   public void testCombiningMarksBackwards() throws Exception {
-    Analyzer a = new StandardAnalyzer(Version.LUCENE_33);
+    Analyzer a = new StandardAnalyzer(Version.LUCENE_3_3);
     checkOneTerm(a, "ざ", "さ"); // hiragana Bug
     checkOneTerm(a, "ザ", "ザ"); // katakana Works
     checkOneTerm(a, "壹゙", "壹"); // ideographic Bug
@@ -295,7 +295,7 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new StandardTokenizer(Version.LUCENE_36, reader);
+        Tokenizer tokenizer = new StandardTokenizer(Version.LUCENE_3_6, reader);
         return new TokenStreamComponents(tokenizer);
       }
     };
@@ -309,7 +309,7 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new StandardTokenizer(Version.LUCENE_40, reader);
+        Tokenizer tokenizer = new StandardTokenizer(Version.LUCENE_4_0, reader);
         return new TokenStreamComponents(tokenizer);
       }
     };

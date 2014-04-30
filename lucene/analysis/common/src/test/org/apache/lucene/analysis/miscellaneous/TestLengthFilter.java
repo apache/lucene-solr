@@ -38,7 +38,7 @@ public class TestLengthFilter extends BaseTokenStreamTestCase {
   public void testFilterNoPosIncr() throws Exception {
     TokenStream stream = new MockTokenizer(
         new StringReader("short toolong evenmuchlongertext a ab toolong foo"), MockTokenizer.WHITESPACE, false);
-    LengthFilter filter = new LengthFilter(Version.LUCENE_43, false, stream, 2, 6);
+    LengthFilter filter = new LengthFilter(Version.LUCENE_4_3, false, stream, 2, 6);
     assertTokenStreamContents(filter,
       new String[]{"short", "ab", "foo"},
       new int[]{1, 1, 1}

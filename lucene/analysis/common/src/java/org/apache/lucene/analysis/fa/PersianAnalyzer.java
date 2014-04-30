@@ -118,7 +118,7 @@ public final class PersianAnalyzer extends StopwordAnalyzerBase {
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
     final Tokenizer source;
-    if (matchVersion.onOrAfter(Version.LUCENE_31)) {
+    if (matchVersion.onOrAfter(Version.LUCENE_3_1)) {
       source = new StandardTokenizer(matchVersion, reader);
     } else {
       source = new ArabicLetterTokenizer(matchVersion, reader);
@@ -139,7 +139,7 @@ public final class PersianAnalyzer extends StopwordAnalyzerBase {
    */
   @Override
   protected Reader initReader(String fieldName, Reader reader) {
-    return matchVersion.onOrAfter(Version.LUCENE_31) ? 
+    return matchVersion.onOrAfter(Version.LUCENE_3_1) ? 
        new PersianCharFilter(reader) :
        reader;
   }

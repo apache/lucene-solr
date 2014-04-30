@@ -208,7 +208,7 @@ public final class WordDelimiterFilter extends TokenFilter {
    */
   public WordDelimiterFilter(Version matchVersion, TokenStream in, byte[] charTypeTable, int configurationFlags, CharArraySet protWords) {
     super(in);
-    if (!matchVersion.onOrAfter(Version.LUCENE_48)) {
+    if (!matchVersion.onOrAfter(Version.LUCENE_4_8)) {
       throw new IllegalArgumentException("This class only works with Lucene 4.8+. To emulate the old (broken) behavior of WordDelimiterFilter, use Lucene47WordDelimiterFilter");
     }
     this.flags = configurationFlags;

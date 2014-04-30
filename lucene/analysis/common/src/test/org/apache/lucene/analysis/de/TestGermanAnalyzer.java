@@ -59,7 +59,7 @@ public class TestGermanAnalyzer extends BaseTokenStreamTestCase {
     checkOneTerm(a, "Schaltflächen", "schaltflach");
     checkOneTerm(a, "Schaltflaechen", "schaltflach");
     // here they are with the old stemmer
-    a = new GermanAnalyzer(Version.LUCENE_30);
+    a = new GermanAnalyzer(Version.LUCENE_3_0);
     checkOneTerm(a, "Schaltflächen", "schaltflach");
     checkOneTerm(a, "Schaltflaechen", "schaltflaech");
   }

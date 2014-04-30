@@ -66,7 +66,7 @@ public class TestItalianAnalyzer extends BaseTokenStreamTestCase {
   
   /** test that we don't enable this before 3.2*/
   public void testContractionsBackwards() throws IOException {
-    Analyzer a = new ItalianAnalyzer(Version.LUCENE_31);
+    Analyzer a = new ItalianAnalyzer(Version.LUCENE_3_1);
     assertAnalyzesTo(a, "dell'Italia", new String[] { "dell'ital" });
     assertAnalyzesTo(a, "l'Italiano", new String[] { "l'ital" });
   }

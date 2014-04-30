@@ -36,7 +36,7 @@ import org.apache.lucene.util.Version;
 public abstract class FilteringTokenFilter extends TokenFilter {
 
   private static void checkPositionIncrement(Version version, boolean enablePositionIncrements) {
-    if (!enablePositionIncrements && version.onOrAfter(Version.LUCENE_44)) {
+    if (!enablePositionIncrements && version.onOrAfter(Version.LUCENE_4_4)) {
       throw new IllegalArgumentException("enablePositionIncrements=false is not supported anymore as of Lucene 4.4 as it can create broken token streams");
     }
   }

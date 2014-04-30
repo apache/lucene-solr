@@ -79,7 +79,7 @@ public class EdgeNGramTokenizerTest extends BaseTokenStreamTestCase {
   }
 
   public void testBackUnigram() throws Exception {
-    Tokenizer tokenizer = new Lucene43EdgeNGramTokenizer(Version.LUCENE_43, input, Lucene43EdgeNGramTokenizer.Side.BACK, 1, 1);
+    Tokenizer tokenizer = new Lucene43EdgeNGramTokenizer(Version.LUCENE_4_3, input, Lucene43EdgeNGramTokenizer.Side.BACK, 1, 1);
     assertTokenStreamContents(tokenizer, new String[]{"e"}, new int[]{4}, new int[]{5}, 5 /* abcde */);
   }
 
@@ -94,7 +94,7 @@ public class EdgeNGramTokenizerTest extends BaseTokenStreamTestCase {
   }
 
   public void testBackRangeOfNgrams() throws Exception {
-    Tokenizer tokenizer = new Lucene43EdgeNGramTokenizer(Version.LUCENE_43, input, Lucene43EdgeNGramTokenizer.Side.BACK, 1, 3);
+    Tokenizer tokenizer = new Lucene43EdgeNGramTokenizer(Version.LUCENE_4_3, input, Lucene43EdgeNGramTokenizer.Side.BACK, 1, 3);
     assertTokenStreamContents(tokenizer, new String[]{"e","de","cde"}, new int[]{4,3,2}, new int[]{5,5,5}, null, null, null, 5 /* abcde */, false);
   }
   
@@ -125,7 +125,7 @@ public class EdgeNGramTokenizerTest extends BaseTokenStreamTestCase {
     Analyzer b = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new Lucene43EdgeNGramTokenizer(Version.LUCENE_43, reader, Lucene43EdgeNGramTokenizer.Side.BACK, 2, 4);
+        Tokenizer tokenizer = new Lucene43EdgeNGramTokenizer(Version.LUCENE_4_3, reader, Lucene43EdgeNGramTokenizer.Side.BACK, 2, 4);
         return new TokenStreamComponents(tokenizer, tokenizer);
       }    
     };
@@ -134,7 +134,7 @@ public class EdgeNGramTokenizerTest extends BaseTokenStreamTestCase {
   }
 
   public void testTokenizerPositions() throws Exception {
-    Tokenizer tokenizer = new Lucene43EdgeNGramTokenizer(Version.LUCENE_43, input, Lucene43EdgeNGramTokenizer.Side.FRONT, 1, 3);
+    Tokenizer tokenizer = new Lucene43EdgeNGramTokenizer(Version.LUCENE_4_3, input, Lucene43EdgeNGramTokenizer.Side.FRONT, 1, 3);
     assertTokenStreamContents(tokenizer,
                               new String[]{"a","ab","abc"},
                               new int[]{0,0,0},

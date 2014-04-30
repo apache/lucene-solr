@@ -110,7 +110,7 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
       throw new IllegalArgumentException("version must not be null");
     }
 
-    if (version.onOrAfter(Version.LUCENE_44) && side == Side.BACK) {
+    if (version.onOrAfter(Version.LUCENE_4_4) && side == Side.BACK) {
       throw new IllegalArgumentException("Side.BACK is not supported anymore as of Lucene 4.4, use ReverseStringFilter up-front and afterward");
     }
 
@@ -127,7 +127,7 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
     }
 
     this.version = version;
-    this.charUtils = version.onOrAfter(Version.LUCENE_44)
+    this.charUtils = version.onOrAfter(Version.LUCENE_4_4)
         ? CharacterUtils.getInstance(version)
         : CharacterUtils.getJava4Instance();
     this.minGram = minGram;
@@ -174,7 +174,7 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
           curGramSize = minGram;
           tokStart = offsetAtt.startOffset();
           tokEnd = offsetAtt.endOffset();
-          if (version.onOrAfter(Version.LUCENE_44)) {
+          if (version.onOrAfter(Version.LUCENE_4_4)) {
             // Never update offsets
             updateOffsets = false;
           } else {

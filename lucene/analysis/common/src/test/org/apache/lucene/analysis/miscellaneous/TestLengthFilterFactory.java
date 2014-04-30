@@ -32,7 +32,7 @@ public class TestLengthFilterFactory extends BaseTokenStreamFactoryTestCase {
     Reader reader = new StringReader("foo foobar super-duper-trooper");
     TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
     stream = tokenFilterFactory("Length",
-        Version.LUCENE_43, new ClasspathResourceLoader(getClass()),
+        Version.LUCENE_4_3, new ClasspathResourceLoader(getClass()),
         "min", "4",
         "max", "10",
         "enablePositionIncrements", "false").create(stream);

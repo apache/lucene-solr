@@ -71,11 +71,11 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
     CharArraySet stopSet = StopFilter.makeStopSet(TEST_VERSION_CURRENT, stopWords);
     // with increments
     StringReader reader = new StringReader(sb.toString());
-    StopFilter stpf = new StopFilter(Version.LUCENE_40, new MockTokenizer(reader, MockTokenizer.WHITESPACE, false), stopSet);
+    StopFilter stpf = new StopFilter(Version.LUCENE_4_0, new MockTokenizer(reader, MockTokenizer.WHITESPACE, false), stopSet);
     doTestStopPositons(stpf,true);
     // without increments
     reader = new StringReader(sb.toString());
-    stpf = new StopFilter(Version.LUCENE_43, new MockTokenizer(reader, MockTokenizer.WHITESPACE, false), stopSet);
+    stpf = new StopFilter(Version.LUCENE_4_3, new MockTokenizer(reader, MockTokenizer.WHITESPACE, false), stopSet);
     doTestStopPositons(stpf,false);
     // with increments, concatenating two stop filters
     ArrayList<String> a0 = new ArrayList<>();
@@ -182,7 +182,7 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
         TokenFilter filter = new MockSynonymFilter(tokenizer);
-        StopFilter stopfilter = new StopFilter(Version.LUCENE_43, filter, StopAnalyzer.ENGLISH_STOP_WORDS_SET);
+        StopFilter stopfilter = new StopFilter(Version.LUCENE_4_3, filter, StopAnalyzer.ENGLISH_STOP_WORDS_SET);
         stopfilter.setEnablePositionIncrements(false);
         return new TokenStreamComponents(tokenizer, stopfilter);
       }

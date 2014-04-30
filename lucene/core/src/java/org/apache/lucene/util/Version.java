@@ -35,114 +35,114 @@ public enum Version {
    * @deprecated (4.0) Use latest
    */
   @Deprecated
-  LUCENE_30,
+  LUCENE_3_0,
 
   /**
    * Match settings and bugs in Lucene's 3.1 release.
    * @deprecated (4.0) Use latest
    */
   @Deprecated
-  LUCENE_31,
+  LUCENE_3_1,
   
   /**
    * Match settings and bugs in Lucene's 3.2 release.
    * @deprecated (4.0) Use latest
    */
   @Deprecated
-  LUCENE_32,
+  LUCENE_3_2,
   
   /**
    * Match settings and bugs in Lucene's 3.3 release.
    * @deprecated (4.0) Use latest
    */
   @Deprecated
-  LUCENE_33,
+  LUCENE_3_3,
   
   /**
    * Match settings and bugs in Lucene's 3.4 release.
    * @deprecated (4.0) Use latest
    */
   @Deprecated
-  LUCENE_34,
+  LUCENE_3_4,
   
   /**
    * Match settings and bugs in Lucene's 3.5 release.
    * @deprecated (4.0) Use latest
    */
   @Deprecated
-  LUCENE_35,
+  LUCENE_3_5,
   
   /**
    * Match settings and bugs in Lucene's 3.6 release.
    * @deprecated (4.0) Use latest
    */
   @Deprecated
-  LUCENE_36,
+  LUCENE_3_6,
   
   /**
-   * Match settings and bugs in Lucene's 3.6 release.
+   * Match settings and bugs in Lucene's 4.0 release.
    * @deprecated (4.1) Use latest
    */
   @Deprecated
-  LUCENE_40,
+  LUCENE_4_0,
 
   /** Match settings and bugs in Lucene's 4.1 release.
    * @deprecated (4.2) Use latest
    */
   @Deprecated
-  LUCENE_41,
+  LUCENE_4_1,
 
   /** Match settings and bugs in Lucene's 4.2 release.
    * @deprecated (4.3) Use latest
    */
   @Deprecated
-  LUCENE_42,
+  LUCENE_4_2,
 
   /** Match settings and bugs in Lucene's 4.3 release.
    * @deprecated (4.4) Use latest
    */
   @Deprecated
-  LUCENE_43,
+  LUCENE_4_3,
 
   /** Match settings and bugs in Lucene's 4.4 release.
    * @deprecated (4.5) Use latest
    */
   @Deprecated
-  LUCENE_44,
+  LUCENE_4_4,
 
   /**
    * Match settings and bugs in Lucene's 4.5 release.
    * @deprecated (4.6) Use latest
    */
   @Deprecated
-  LUCENE_45,
+  LUCENE_4_5,
 
   /**
    * Match settings and bugs in Lucene's 4.6 release.
    * @deprecated (4.7) Use latest
    */
   @Deprecated
-  LUCENE_46,
+  LUCENE_4_6,
 
   /** Match settings and bugs in Lucene's 4.7 release.
    * @deprecated (4.8) Use latest
    */
   @Deprecated
-  LUCENE_47,
+  LUCENE_4_7,
 
   /**
    * Match settings and bugs in Lucene's 4.8 release.
    * @deprecated (4.9) Use latest
    */
   @Deprecated
-  LUCENE_48,
+  LUCENE_4_8,
 
   /** Match settings and bugs in Lucene's 4.9 release.
    *  <p>
    *  Use this to get the latest &amp; greatest settings, bug
    *  fixes, etc, for Lucene.
    */
-  LUCENE_49,
+  LUCENE_4_9,
 
   /* Add new constants for later versions **here** to respect order! */
 
@@ -165,12 +165,88 @@ public enum Version {
   @Deprecated
   LUCENE_CURRENT;
 
+  
+  // Deprecated old version constants, just for backwards compatibility:
+  // Those are no longer enum constants and don't work in switch statements,
+  // but should fix most uses.
+  // TODO: Do not update them anymore, deprecated in 4.9, so LUCENE_49 is not needed!
+  // Remove in 5.0!
+  
+  /** @deprecated Bad naming of constant; use {@link #LUCENE_3_0} instead. */
+  @Deprecated
+  public static final Version LUCENE_30 = LUCENE_3_0;
+  
+  /** @deprecated Bad naming of constant; use {@link #LUCENE_3_1} instead. */
+  @Deprecated
+  public static final Version LUCENE_31 = LUCENE_3_1;
+  
+  /** @deprecated Bad naming of constant; use {@link #LUCENE_3_2} instead. */
+  @Deprecated
+  public static final Version LUCENE_32 = LUCENE_3_2;
+  
+  /** @deprecated Bad naming of constant; use {@link #LUCENE_3_3} instead. */
+  @Deprecated
+  public static final Version LUCENE_33 = LUCENE_3_3;
+  
+  /** @deprecated Bad naming of constant; use {@link #LUCENE_3_4} instead. */
+  @Deprecated
+  public static final Version LUCENE_34 = LUCENE_3_4;
+  
+  /** @deprecated Bad naming of constant; use {@link #LUCENE_3_5} instead. */
+  @Deprecated
+  public static final Version LUCENE_35 = LUCENE_3_5;
+  
+  /** @deprecated Bad naming of constant; use {@link #LUCENE_3_6} instead. */
+  @Deprecated
+  public static final Version LUCENE_36 = LUCENE_3_6;
+  
+  /** @deprecated Bad naming of constant; use {@link #LUCENE_4_0} instead. */
+  @Deprecated
+  public static final Version LUCENE_40 = LUCENE_4_0;
+  
+  /** @deprecated Bad naming of constant; use {@link #LUCENE_4_1} instead. */
+  @Deprecated
+  public static final Version LUCENE_41 = LUCENE_4_1;
+
+  /** @deprecated Bad naming of constant; use {@link #LUCENE_4_2} instead. */
+  @Deprecated
+  public static final Version LUCENE_42 = LUCENE_4_2;
+
+  /** @deprecated Bad naming of constant; use {@link #LUCENE_4_3} instead. */
+  @Deprecated
+  public static final Version LUCENE_43 = LUCENE_4_3;
+
+  /** @deprecated Bad naming of constant; use {@link #LUCENE_4_4} instead. */
+  @Deprecated
+  public static final Version LUCENE_44 = LUCENE_4_4;
+
+  /** @deprecated Bad naming of constant; use {@link #LUCENE_4_5} instead. */
+  @Deprecated
+  public static final Version LUCENE_45 = LUCENE_4_5;
+
+  /** @deprecated Bad naming of constant; use {@link #LUCENE_4_6} instead. */
+  @Deprecated
+  public static final Version LUCENE_46 = LUCENE_4_6;
+
+  /** @deprecated Bad naming of constant; use {@link #LUCENE_4_7} instead. */
+  @Deprecated
+  public static final Version LUCENE_47 = LUCENE_4_7;
+
+  /** @deprecated Bad naming of constant; use {@link #LUCENE_4_8} instead. */
+  @Deprecated
+  public static final Version LUCENE_48 = LUCENE_4_8;
+  
+  // End: Deprecated version constants -> Remove in 5.0
+
   public boolean onOrAfter(Version other) {
     return compareTo(other) >= 0;
   }
   
   public static Version parseLeniently(String version) {
-    String parsedMatchVersion = version.toUpperCase(Locale.ROOT);
-    return Version.valueOf(parsedMatchVersion.replaceFirst("^(\\d)\\.(\\d)$", "LUCENE_$1$2"));
+    final String parsedMatchVersion = version
+        .toUpperCase(Locale.ROOT)
+        .replaceFirst("^(\\d+)\\.(\\d+)$", "LUCENE_$1_$2")
+        .replaceFirst("^LUCENE_(\\d)(\\d)$", "LUCENE_$1_$2");
+    return Version.valueOf(parsedMatchVersion);
   }
 }

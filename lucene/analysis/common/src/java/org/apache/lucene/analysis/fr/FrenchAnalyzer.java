@@ -141,7 +141,7 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
    */
   public FrenchAnalyzer(Version matchVersion) {
     this(matchVersion,
-        matchVersion.onOrAfter(Version.LUCENE_31) ? DefaultSetHolder.DEFAULT_STOP_SET
+        matchVersion.onOrAfter(Version.LUCENE_3_1) ? DefaultSetHolder.DEFAULT_STOP_SET
             : DefaultSetHolder.DEFAULT_STOP_SET_30);
   }
   
@@ -189,7 +189,7 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
-    if (matchVersion.onOrAfter(Version.LUCENE_31)) {
+    if (matchVersion.onOrAfter(Version.LUCENE_3_1)) {
       final Tokenizer source = new StandardTokenizer(matchVersion, reader);
       TokenStream result = new StandardFilter(matchVersion, source);
       result = new ElisionFilter(result, DEFAULT_ARTICLES);
@@ -197,7 +197,7 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
       result = new StopFilter(matchVersion, result, stopwords);
       if(!excltable.isEmpty())
         result = new SetKeywordMarkerFilter(result, excltable);
-      if (matchVersion.onOrAfter(Version.LUCENE_36)) {
+      if (matchVersion.onOrAfter(Version.LUCENE_3_6)) {
         result = new FrenchLightStemFilter(result);
       } else {
         result = new SnowballFilter(result, new org.tartarus.snowball.ext.FrenchStemmer());

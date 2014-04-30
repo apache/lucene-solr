@@ -38,7 +38,7 @@
     </analyzer>
   </fieldtype>
   <fieldtype name="textStandardAnalyzer40" class="solr.TextField">
-    <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer" luceneMatchVersion="LUCENE_40"/>
+    <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer" luceneMatchVersion="LUCENE_4_0"/>
   </fieldtype>
   <fieldtype name="textStandardAnalyzerDefault" class="solr.TextField">
     <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>

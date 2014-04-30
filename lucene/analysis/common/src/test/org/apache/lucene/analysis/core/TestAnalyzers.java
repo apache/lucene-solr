@@ -217,7 +217,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
   @Deprecated
   public void testLowerCaseTokenizerBWCompat() throws IOException {
     StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
-    LowerCaseTokenizer tokenizer = new LowerCaseTokenizer(Version.LUCENE_30,
+    LowerCaseTokenizer tokenizer = new LowerCaseTokenizer(Version.LUCENE_3_0,
         reader);
     assertTokenStreamContents(tokenizer, new String[] { "tokenizer", "test" });
   }
@@ -234,7 +234,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
   @Deprecated
   public void testWhitespaceTokenizerBWCompat() throws IOException {
     StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
-    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(Version.LUCENE_30,
+    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(Version.LUCENE_3_0,
         reader);
     assertTokenStreamContents(tokenizer, new String[] { "Tokenizer",
         "\ud801\udc1ctest" });

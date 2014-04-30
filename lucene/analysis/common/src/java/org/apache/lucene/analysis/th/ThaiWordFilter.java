@@ -69,11 +69,11 @@ public final class ThaiWordFilter extends TokenFilter {
 
   /** Creates a new ThaiWordFilter with the specified match version. */
   public ThaiWordFilter(Version matchVersion, TokenStream input) {
-    super(matchVersion.onOrAfter(Version.LUCENE_31) ?
+    super(matchVersion.onOrAfter(Version.LUCENE_3_1) ?
       input : new LowerCaseFilter(matchVersion, input));
     if (!DBBI_AVAILABLE)
       throw new UnsupportedOperationException("This JRE does not have support for Thai segmentation");
-    handlePosIncr = matchVersion.onOrAfter(Version.LUCENE_31);
+    handlePosIncr = matchVersion.onOrAfter(Version.LUCENE_3_1);
   }
   
   @Override

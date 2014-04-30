@@ -46,7 +46,7 @@ public final class TrimFilter extends TokenFilter {
   @Deprecated
   public TrimFilter(Version version, TokenStream in, boolean updateOffsets) {
     super(in);
-    if (updateOffsets && version.onOrAfter(Version.LUCENE_44)) {
+    if (updateOffsets && version.onOrAfter(Version.LUCENE_4_4)) {
       throw new IllegalArgumentException("updateOffsets=true is not supported anymore as of Lucene 4.4");
     }
     this.updateOffsets = updateOffsets;

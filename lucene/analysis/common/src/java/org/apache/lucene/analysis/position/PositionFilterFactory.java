@@ -51,7 +51,7 @@ public class PositionFilterFactory extends TokenFilterFactory {
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
-    if (luceneMatchVersion != null && luceneMatchVersion.onOrAfter(Version.LUCENE_44)) {
+    if (luceneMatchVersion != null && luceneMatchVersion.onOrAfter(Version.LUCENE_4_4)) {
       throw new IllegalArgumentException("PositionFilter is deprecated as of Lucene 4.4. You should either fix your code to not use it or use Lucene 4.3 version compatibility");
     }
   }

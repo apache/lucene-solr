@@ -176,7 +176,7 @@ public final class ReverseStringFilter extends TokenFilter {
    */
   public static void reverse(Version matchVersion, final char[] buffer,
       final int start, final int len) {
-    if (!matchVersion.onOrAfter(Version.LUCENE_31)) {
+    if (!matchVersion.onOrAfter(Version.LUCENE_3_1)) {
       reverseUnicode3(buffer, start, len);
       return;
     }

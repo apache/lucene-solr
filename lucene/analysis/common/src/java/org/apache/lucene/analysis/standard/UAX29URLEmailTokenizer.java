@@ -124,13 +124,13 @@ public final class UAX29URLEmailTokenizer extends Tokenizer {
 
   private StandardTokenizerInterface getScannerFor(Version matchVersion) {
     // best effort NPE if you dont call reset
-    if (matchVersion.onOrAfter(Version.LUCENE_47)) {
+    if (matchVersion.onOrAfter(Version.LUCENE_4_7)) {
       return new UAX29URLEmailTokenizerImpl(input);
-    } else if (matchVersion.onOrAfter(Version.LUCENE_40)) {
+    } else if (matchVersion.onOrAfter(Version.LUCENE_4_0)) {
       return new UAX29URLEmailTokenizerImpl40(input);
-    } else if (matchVersion.onOrAfter(Version.LUCENE_36)) {
+    } else if (matchVersion.onOrAfter(Version.LUCENE_3_6)) {
       return new UAX29URLEmailTokenizerImpl36(input);
-    } else if (matchVersion.onOrAfter(Version.LUCENE_34)) {
+    } else if (matchVersion.onOrAfter(Version.LUCENE_3_4)) {
       return new UAX29URLEmailTokenizerImpl34(input);
     } else {
       return new UAX29URLEmailTokenizerImpl31(input);

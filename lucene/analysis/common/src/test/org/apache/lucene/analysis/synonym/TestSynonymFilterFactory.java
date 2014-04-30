@@ -66,7 +66,7 @@ public class TestSynonymFilterFactory extends BaseTokenStreamFactoryTestCase {
   public void testSynonymsOld() throws Exception {
     Reader reader = new StringReader("GB");
     TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-    stream = tokenFilterFactory("Synonym", Version.LUCENE_33, new ClasspathResourceLoader(getClass()),
+    stream = tokenFilterFactory("Synonym", Version.LUCENE_3_3, new ClasspathResourceLoader(getClass()),
         "synonyms", "synonyms.txt").create(stream);
     assertTrue(stream instanceof SlowSynonymFilter);
     assertTokenStreamContents(stream, 
@@ -80,7 +80,7 @@ public class TestSynonymFilterFactory extends BaseTokenStreamFactoryTestCase {
   public void testMultiwordOffsetsOld() throws Exception {
     Reader reader = new StringReader("national hockey league");
     TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
-    stream = tokenFilterFactory("Synonym", Version.LUCENE_33, new StringMockResourceLoader("national hockey league, nhl"),
+    stream = tokenFilterFactory("Synonym", Version.LUCENE_3_3, new StringMockResourceLoader("national hockey league, nhl"),
         "synonyms", "synonyms.txt").create(stream);
     // WTF?
     assertTokenStreamContents(stream, 
@@ -127,11 +127,11 @@ public class TestSynonymFilterFactory extends BaseTokenStreamFactoryTestCase {
   public void testTokenizerFactoryArguments() throws Exception {
     // diff versions produce diff delegator behavior,
     // all should be (mostly) equivilent for our test purposes.
-    doTestTokenizerFactoryArguments(Version.LUCENE_33, 
+    doTestTokenizerFactoryArguments(Version.LUCENE_3_3, 
                                     SlowSynonymFilterFactory.class);
-    doTestTokenizerFactoryArguments(Version.LUCENE_34, 
+    doTestTokenizerFactoryArguments(Version.LUCENE_3_4, 
                                     FSTSynonymFilterFactory.class);
-    doTestTokenizerFactoryArguments(Version.LUCENE_35, 
+    doTestTokenizerFactoryArguments(Version.LUCENE_3_5, 
                                     FSTSynonymFilterFactory.class);
 
     doTestTokenizerFactoryArguments(Version.LUCENE_CURRENT, 

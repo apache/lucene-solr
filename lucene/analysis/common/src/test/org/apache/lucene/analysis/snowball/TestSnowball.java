@@ -61,7 +61,7 @@ public class TestSnowball extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a, "cryogenic", new String[] { "cryogen" });
     assertAnalyzesTo(a, "CRYOGENIC", new String[] { "cryogen" });
     
-    Analyzer b = new SnowballAnalyzer(Version.LUCENE_30, "English");
+    Analyzer b = new SnowballAnalyzer(Version.LUCENE_3_0, "English");
     assertAnalyzesTo(b, "cryogenic", new String[] { "cryogen" });
     assertAnalyzesTo(b, "CRYOGENIC", new String[] { "cryogen" });
   }
@@ -82,7 +82,7 @@ public class TestSnowball extends BaseTokenStreamTestCase {
    */
   @Deprecated
   public void testTurkishBWComp() throws Exception {
-    Analyzer a = new SnowballAnalyzer(Version.LUCENE_30, "Turkish");
+    Analyzer a = new SnowballAnalyzer(Version.LUCENE_3_0, "Turkish");
     // AĞACI in turkish lowercases to ağacı, but with lowercase filter ağaci.
     // this fails due to wrong casing, because the stemmer
     // will only remove -ı, not -i

@@ -120,7 +120,7 @@ public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
    */
   @Deprecated
   public void testAnalyzer30() throws Exception {
-      FrenchAnalyzer fa = new FrenchAnalyzer(Version.LUCENE_30);
+      FrenchAnalyzer fa = new FrenchAnalyzer(Version.LUCENE_3_0);
 
       assertAnalyzesTo(fa, "", new String[] {
       });
@@ -249,7 +249,7 @@ public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
    */
   @Deprecated
   public void testBuggyStopwordsCasing() throws IOException {
-    FrenchAnalyzer a = new FrenchAnalyzer(Version.LUCENE_30);
+    FrenchAnalyzer a = new FrenchAnalyzer(Version.LUCENE_3_0);
     assertAnalyzesTo(a, "Votre", new String[] { "votr" });
   }
   
@@ -257,7 +257,7 @@ public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
    * Test that stopwords are not case sensitive
    */
   public void testStopwordsCasing() throws IOException {
-    FrenchAnalyzer a = new FrenchAnalyzer(Version.LUCENE_31);
+    FrenchAnalyzer a = new FrenchAnalyzer(Version.LUCENE_3_1);
     assertAnalyzesTo(a, "Votre", new String[] { });
   }
   

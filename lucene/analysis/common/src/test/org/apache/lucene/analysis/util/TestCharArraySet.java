@@ -264,7 +264,7 @@ public class TestCharArraySet extends LuceneTestCase {
         "\ud801\udc1c\ud801\udc1cCDE", "A\ud801\udc1cB"};
     String[] lowerArr = new String[] {"abc\ud801\udc44",
         "\ud801\udc44\ud801\udc44cde", "a\ud801\udc44b"};
-    CharArraySet set = new CharArraySet(Version.LUCENE_30, Arrays.asList(TEST_STOP_WORDS), true);
+    CharArraySet set = new CharArraySet(Version.LUCENE_3_0, Arrays.asList(TEST_STOP_WORDS), true);
     for (String upper : upperArr) {
       set.add(upper);
     }
@@ -272,7 +272,7 @@ public class TestCharArraySet extends LuceneTestCase {
       assertTrue(String.format(Locale.ROOT, missing, upperArr[i]), set.contains(upperArr[i]));
       assertFalse(String.format(Locale.ROOT, falsePos, lowerArr[i]), set.contains(lowerArr[i]));
     }
-    set = new CharArraySet(Version.LUCENE_30, Arrays.asList(TEST_STOP_WORDS), false);
+    set = new CharArraySet(Version.LUCENE_3_0, Arrays.asList(TEST_STOP_WORDS), false);
     for (String upper : upperArr) {
       set.add(upper);
     }
@@ -295,7 +295,7 @@ public class TestCharArraySet extends LuceneTestCase {
 
     String[] lowerArr = new String[] { "abc\uD800", "abc\uD800efg",
         "\uD800efg", "\uD800\ud801\udc44b" };
-    CharArraySet set = new CharArraySet(Version.LUCENE_30, Arrays
+    CharArraySet set = new CharArraySet(Version.LUCENE_3_0, Arrays
         .asList(TEST_STOP_WORDS), true);
     for (String upper : upperArr) {
       set.add(upper);
@@ -309,7 +309,7 @@ public class TestCharArraySet extends LuceneTestCase {
         assertTrue(String.format(Locale.ROOT, missing, lowerArr[i]), set
             .contains(lowerArr[i]));
     }
-    set = new CharArraySet(Version.LUCENE_30, Arrays.asList(TEST_STOP_WORDS),
+    set = new CharArraySet(Version.LUCENE_3_0, Arrays.asList(TEST_STOP_WORDS),
         false);
     for (String upper : upperArr) {
       set.add(upper);
@@ -500,7 +500,7 @@ public class TestCharArraySet extends LuceneTestCase {
     set.add("test2");
     assertTrue(set.toString().contains(", "));
     
-    set = CharArraySet.copy(Version.LUCENE_30, Collections.singleton("test"));
+    set = CharArraySet.copy(Version.LUCENE_3_0, Collections.singleton("test"));
     assertEquals("[test]", set.toString());
     set.add("test2");
     assertTrue(set.toString().contains(", "));

@@ -65,7 +65,7 @@ public class TestTypeTokenFilter extends BaseTokenStreamTestCase {
 
     // without increments
     reader = new StringReader(sb.toString());
-    typeTokenFilter = new TypeTokenFilter(Version.LUCENE_43, false, new StandardTokenizer(TEST_VERSION_CURRENT, reader), stopSet);
+    typeTokenFilter = new TypeTokenFilter(Version.LUCENE_4_3, false, new StandardTokenizer(TEST_VERSION_CURRENT, reader), stopSet);
     testPositons(typeTokenFilter);
 
   }

@@ -84,7 +84,7 @@ public final class ThaiAnalyzer extends StopwordAnalyzerBase {
    * @param matchVersion lucene compatibility version
    */
   public ThaiAnalyzer(Version matchVersion) {
-    this(matchVersion, matchVersion.onOrAfter(Version.LUCENE_36) ? DefaultSetHolder.DEFAULT_STOP_SET : StopAnalyzer.ENGLISH_STOP_WORDS_SET);
+    this(matchVersion, matchVersion.onOrAfter(Version.LUCENE_3_6) ? DefaultSetHolder.DEFAULT_STOP_SET : StopAnalyzer.ENGLISH_STOP_WORDS_SET);
   }
   
   /**
@@ -110,7 +110,7 @@ public final class ThaiAnalyzer extends StopwordAnalyzerBase {
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
-    if (matchVersion.onOrAfter(Version.LUCENE_48)) {
+    if (matchVersion.onOrAfter(Version.LUCENE_4_8)) {
       final Tokenizer source = new ThaiTokenizer(reader);
       TokenStream result = new LowerCaseFilter(matchVersion, source);
       result = new StopFilter(matchVersion, result, stopwords);
@@ -118,7 +118,7 @@ public final class ThaiAnalyzer extends StopwordAnalyzerBase {
     } else {
       final Tokenizer source = new StandardTokenizer(matchVersion, reader);
       TokenStream result = new StandardFilter(matchVersion, source);
-      if (matchVersion.onOrAfter(Version.LUCENE_31))
+      if (matchVersion.onOrAfter(Version.LUCENE_3_1))
         result = new LowerCaseFilter(matchVersion, result);
       result = new ThaiWordFilter(matchVersion, result);
       return new TokenStreamComponents(source, new StopFilter(matchVersion,

@@ -32,7 +32,7 @@ public class TestArabicLetterTokenizer extends BaseTokenStreamTestCase {
   
   public void testArabicLetterTokenizer() throws IOException {
     StringReader reader = new StringReader("1234567890 Tokenizer \ud801\udc1c\u0300test");
-    ArabicLetterTokenizer tokenizer = new ArabicLetterTokenizer(Version.LUCENE_31,
+    ArabicLetterTokenizer tokenizer = new ArabicLetterTokenizer(Version.LUCENE_3_1,
         reader);
     assertTokenStreamContents(tokenizer, new String[] {"Tokenizer",
         "\ud801\udc1c\u0300test"});
@@ -40,7 +40,7 @@ public class TestArabicLetterTokenizer extends BaseTokenStreamTestCase {
   
   public void testArabicLetterTokenizerBWCompat() throws IOException {
     StringReader reader = new StringReader("1234567890 Tokenizer \ud801\udc1c\u0300test");
-    ArabicLetterTokenizer tokenizer = new ArabicLetterTokenizer(Version.LUCENE_30,
+    ArabicLetterTokenizer tokenizer = new ArabicLetterTokenizer(Version.LUCENE_3_0,
         reader);
     assertTokenStreamContents(tokenizer, new String[] {"Tokenizer", "\u0300test"});
   }
