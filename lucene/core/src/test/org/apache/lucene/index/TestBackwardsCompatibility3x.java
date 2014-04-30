@@ -579,9 +579,7 @@ public class TestBackwardsCompatibility3x extends LuceneTestCase {
       addNoProxDoc(writer);
       writer.close();
 
-      writer = new IndexWriter(dir,
-        conf.setMergePolicy(doCFS ? NoMergePolicy.COMPOUND_FILES : NoMergePolicy.NO_COMPOUND_FILES)
-      );
+      writer = new IndexWriter(dir, conf.setMergePolicy(NoMergePolicy.INSTANCE));
       Term searchTerm = new Term("id", "7");
       writer.deleteDocuments(searchTerm);
       writer.close();
