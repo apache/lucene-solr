@@ -286,7 +286,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
         random(),
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT,
-            new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.COMPOUND_FILES));
+            new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE));
     boolean useDv = false;
 
     // Cannot assert this since we use NoMergePolicy:

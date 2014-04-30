@@ -104,7 +104,7 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
       iw.shutdown();
 
       IndexWriterConfig dontMergeConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
-        .setMergePolicy(NoMergePolicy.COMPOUND_FILES);
+        .setMergePolicy(NoMergePolicy.INSTANCE);
       if (VERBOSE) {
         System.out.println("\nTEST: make 2nd writer");
       }

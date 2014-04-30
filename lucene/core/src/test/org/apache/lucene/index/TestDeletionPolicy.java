@@ -652,7 +652,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
         writer.shutdown();
         conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
           .setIndexDeletionPolicy(policy)
-          .setMergePolicy(NoMergePolicy.COMPOUND_FILES);
+          .setMergePolicy(NoMergePolicy.INSTANCE);
         writer = new IndexWriter(dir, conf);
         policy = (KeepLastNDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
         writer.deleteDocuments(new Term("id", "" + (i*(N+1)+3)));

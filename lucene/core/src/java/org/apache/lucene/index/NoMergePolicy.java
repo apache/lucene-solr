@@ -22,34 +22,16 @@ import java.util.Map;
 
 
 /**
- * A {@link MergePolicy} which never returns merges to execute (hence it's
- * name). It is also a singleton and can be accessed through
- * {@link NoMergePolicy#NO_COMPOUND_FILES} if you want to indicate the index
- * does not use compound files, or through {@link NoMergePolicy#COMPOUND_FILES}
- * otherwise. Use it if you want to prevent an {@link IndexWriter} from ever
- * executing merges, without going through the hassle of tweaking a merge
- * policy's settings to achieve that, such as changing its merge factor.
+ * A {@link MergePolicy} which never returns merges to execute. Use it if you
+ * want to prevent segment merges.
  */
 public final class NoMergePolicy extends MergePolicy {
 
-  /**
-   * A singleton {@link NoMergePolicy} which indicates the index does not use
-   * compound files.
-   */
-  public static final MergePolicy NO_COMPOUND_FILES = new NoMergePolicy(false);
+  /** Singleton instance. */
+  public static final MergePolicy INSTANCE = new NoMergePolicy();
 
-  /**
-   * A singleton {@link NoMergePolicy} which indicates the index uses compound
-   * files.
-   */
-  public static final MergePolicy COMPOUND_FILES = new NoMergePolicy(true);
-
-  private final boolean useCompoundFile;
-  
-  private NoMergePolicy(boolean useCompoundFile) {
-    super(useCompoundFile ? 1.0 : 0.0, 0);
-    // prevent instantiation
-    this.useCompoundFile = useCompoundFile;
+  private NoMergePolicy() {
+    super();
   }
 
   @Override
@@ -66,14 +48,16 @@ public final class NoMergePolicy extends MergePolicy {
   public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos) { return null; }
 
   @Override
-  public boolean useCompoundFile(SegmentInfos segments, SegmentCommitInfo newSegment) { return useCompoundFile; }
+  public boolean useCompoundFile(SegmentInfos segments, SegmentCommitInfo newSegment) {
+    return newSegment.info.getUseCompoundFile();
+  }
 
   @Override
   public void setIndexWriter(IndexWriter writer) {}
   
   @Override
   protected long size(SegmentCommitInfo info) throws IOException {
-      return Long.MAX_VALUE;
+    return Long.MAX_VALUE;
   }
 
   @Override

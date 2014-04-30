@@ -65,7 +65,7 @@ public class TestBlockJoin extends LuceneTestCase {
   public void testEmptyChildFilter() throws Exception {
     final Directory dir = newDirectory();
     final IndexWriterConfig config = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    config.setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES);
+    config.setMergePolicy(NoMergePolicy.INSTANCE);
     // we don't want to merge - since we rely on certain segment setup
     final IndexWriter w = new IndexWriter(dir, config);
 
@@ -387,7 +387,7 @@ public class TestBlockJoin extends LuceneTestCase {
         random(),
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT,
-            new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.COMPOUND_FILES));
+            new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE));
 
     // Cannot assert this since we use NoMergePolicy:
     w.setDoRandomForceMergeAssert(false);

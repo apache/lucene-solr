@@ -651,7 +651,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     Directory taxoDir = newDirectory();
     
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    iwc.setMergePolicy(NoMergePolicy.COMPOUND_FILES); // prevent merges
+    iwc.setMergePolicy(NoMergePolicy.INSTANCE); // prevent merges
     IndexWriter indexWriter = new IndexWriter(indexDir, iwc);
 
     TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);

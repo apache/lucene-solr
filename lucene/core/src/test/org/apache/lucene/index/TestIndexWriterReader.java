@@ -124,11 +124,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
       iwc.setMaxBufferedDocs(20);
     }
     // no merging
-    if (random().nextBoolean()) {
-      iwc.setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES);
-    } else {
-      iwc.setMergePolicy(NoMergePolicy.COMPOUND_FILES);
-    }
+    iwc.setMergePolicy(NoMergePolicy.INSTANCE);
     if (VERBOSE) {
       System.out.println("TEST: make index");
     }
@@ -238,11 +234,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
       iwc.setMaxBufferedDocs(20);
     }
     // no merging
-    if (random().nextBoolean()) {
-      iwc.setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES);
-    } else {
-      iwc.setMergePolicy(NoMergePolicy.COMPOUND_FILES);
-    }
+    iwc.setMergePolicy(NoMergePolicy.INSTANCE);
     IndexWriter writer = new IndexWriter(dir1, iwc);
 
     // create the index
@@ -1084,7 +1076,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     });
     
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    conf.setMergePolicy(NoMergePolicy.COMPOUND_FILES); // prevent merges from getting in the way
+    conf.setMergePolicy(NoMergePolicy.INSTANCE); // prevent merges from getting in the way
     IndexWriter writer = new IndexWriter(dir, conf);
     
     // create a segment and open an NRT reader

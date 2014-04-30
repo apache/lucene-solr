@@ -54,8 +54,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -708,9 +708,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       {
         final IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
             TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(-1)
-            .setMergePolicy(
-                random().nextBoolean() ? NoMergePolicy.COMPOUND_FILES
-                    : NoMergePolicy.NO_COMPOUND_FILES));
+            .setMergePolicy(NoMergePolicy.INSTANCE));
         // don't use a merge policy here they depend on the DWPThreadPool and its max thread states etc.
         final int finalI = i;
 

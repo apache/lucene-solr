@@ -127,7 +127,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     conf.setMaxBufferedDocs(2); // generate few segments
-    conf.setMergePolicy(NoMergePolicy.COMPOUND_FILES); // prevent merges for this test
+    conf.setMergePolicy(NoMergePolicy.INSTANCE); // prevent merges for this test
     IndexWriter writer = new IndexWriter(dir, conf);
     int numDocs = 10;
     long[] expectedValues = new long[numDocs];
@@ -212,7 +212,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     conf.setMaxBufferedDocs(10); // control segment flushing
-    conf.setMergePolicy(NoMergePolicy.COMPOUND_FILES); // prevent merges for this test
+    conf.setMergePolicy(NoMergePolicy.INSTANCE); // prevent merges for this test
     IndexWriter writer = new IndexWriter(dir, conf);
     
     for (int i = 0; i < 6; i++) {
@@ -830,7 +830,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     // prevent merges, otherwise by the time updates are applied
     // (writer.shutdown()), the segments might have merged and that update becomes
     // legit.
-    conf.setMergePolicy(NoMergePolicy.COMPOUND_FILES);
+    conf.setMergePolicy(NoMergePolicy.INSTANCE);
     IndexWriter writer = new IndexWriter(dir, conf);
     
     // first segment with NDV
@@ -884,7 +884,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     // prevent merges, otherwise by the time updates are applied
     // (writer.shutdown()), the segments might have merged and that update becomes
     // legit.
-    conf.setMergePolicy(NoMergePolicy.COMPOUND_FILES);
+    conf.setMergePolicy(NoMergePolicy.INSTANCE);
     IndexWriter writer = new IndexWriter(dir, conf);
     
     // first segment with NDV
@@ -1152,7 +1152,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
   public void testChangeCodec() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    conf.setMergePolicy(NoMergePolicy.COMPOUND_FILES); // disable merges to simplify test assertions.
+    conf.setMergePolicy(NoMergePolicy.INSTANCE); // disable merges to simplify test assertions.
     conf.setCodec(new Lucene46Codec() {
       @Override
       public DocValuesFormat getDocValuesFormatForField(String field) {

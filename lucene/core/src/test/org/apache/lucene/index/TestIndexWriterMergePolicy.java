@@ -196,7 +196,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     writer = new IndexWriter(
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
-            setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES)
+            setMergePolicy(NoMergePolicy.INSTANCE)
     );
     writer.deleteDocuments(new Term("content", "aaa"));
     writer.shutdown();
