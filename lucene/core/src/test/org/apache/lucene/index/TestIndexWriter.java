@@ -2431,7 +2431,7 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     // If version is < 50 IW.close should throw an exception
     // on uncommitted changes:
-    IndexWriterConfig iwc = newIndexWriterConfig(Version.LUCENE_48, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = newIndexWriterConfig(Version.LUCENE_4_8, new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
     doc.add(new SortedDocValuesField("dv", new BytesRef("foo!")));
@@ -2455,7 +2455,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
     // If version is < 50 IW.close should throw an exception
     // on still-running merges:
-    IndexWriterConfig iwc = newIndexWriterConfig(Version.LUCENE_48, new MockAnalyzer(random()));
+    IndexWriterConfig iwc = newIndexWriterConfig(Version.LUCENE_4_8, new MockAnalyzer(random()));
     LogDocMergePolicy mp = new LogDocMergePolicy();
     mp.setMergeFactor(2);
     iwc.setMergePolicy(mp);

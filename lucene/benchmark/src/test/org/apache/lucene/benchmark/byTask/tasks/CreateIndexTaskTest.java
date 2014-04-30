@@ -38,7 +38,7 @@ public class CreateIndexTaskTest extends BenchmarkTestCase {
   private PerfRunData createPerfRunData(String infoStreamValue) throws Exception {
     Properties props = new Properties();
     // :Post-Release-Update-Version.LUCENE_XY:
-    props.setProperty("writer.version", Version.LUCENE_50.toString());
+    props.setProperty("writer.version", Version.LUCENE_5_0.toString());
     props.setProperty("print.props", "false"); // don't print anything
     props.setProperty("directory", "RAMDirectory");
     if (infoStreamValue != null) {

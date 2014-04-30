@@ -43,14 +43,14 @@ public class TestNonDefinedSimilarityFactory extends BaseSimilarityTestCase {
   }
 
   public void test47() throws Exception {
-    System.setProperty("tests.luceneMatchVersion", Version.LUCENE_47.toString());
+    System.setProperty("tests.luceneMatchVersion", Version.LUCENE_4_7.toString());
     initCore("solrconfig-basic.xml","schema-tiny.xml");
     DefaultSimilarity sim = getSimilarity("text", DefaultSimilarity.class);
     assertEquals(true, sim.getDiscountOverlaps());
   }
 
   public void test46() throws Exception {
-    System.setProperty("tests.luceneMatchVersion", Version.LUCENE_46.toString());
+    System.setProperty("tests.luceneMatchVersion", Version.LUCENE_4_6.toString());
     initCore("solrconfig-basic.xml","schema-tiny.xml");
     DefaultSimilarity sim = getSimilarity("text", DefaultSimilarity.class);
     assertEquals(false, sim.getDiscountOverlaps());

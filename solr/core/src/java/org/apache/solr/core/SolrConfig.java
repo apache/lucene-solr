@@ -163,19 +163,19 @@ public class SolrConfig extends Config {
     luceneMatchVersion = getLuceneVersion("luceneMatchVersion");
     String indexConfigPrefix;
 
-    // Old indexDefaults and mainIndex sections are deprecated and fails fast for luceneMatchVersion=>LUCENE_40.
+    // Old indexDefaults and mainIndex sections are deprecated and fails fast for luceneMatchVersion=>LUCENE_4_0.
     // For older solrconfig.xml's we allow the old sections, but never mixed with the new <indexConfig>
     boolean hasDeprecatedIndexConfig = (getNode("indexDefaults", false) != null) || (getNode("mainIndex", false) != null);
     boolean hasNewIndexConfig = getNode("indexConfig", false) != null;
     if(hasDeprecatedIndexConfig){
-      if(luceneMatchVersion.onOrAfter(Version.LUCENE_40)) {
+      if(luceneMatchVersion.onOrAfter(Version.LUCENE_4_0)) {
         throw new SolrException(ErrorCode.FORBIDDEN, "<indexDefaults> and <mainIndex> configuration sections are discontinued. Use <indexConfig> instead.");
       } else {
         // Still allow the old sections for older LuceneMatchVersion's
         if(hasNewIndexConfig) {
           throw new SolrException(ErrorCode.FORBIDDEN, "Cannot specify both <indexDefaults>, <mainIndex> and <indexConfig> at the same time. Please use <indexConfig> only.");
         }
-        log.warn("<indexDefaults> and <mainIndex> configuration sections are deprecated and will fail for luceneMatchVersion=LUCENE_40 and later. Please use <indexConfig> instead.");
+        log.warn("<indexDefaults> and <mainIndex> configuration sections are deprecated and will fail for luceneMatchVersion=LUCENE_4_0 and later. Please use <indexConfig> instead.");
         defaultIndexConfig = new SolrIndexConfig(this, "indexDefaults", null);
         mainIndexConfig = new SolrIndexConfig(this, "mainIndex", defaultIndexConfig);
         indexConfigPrefix = "mainIndex";

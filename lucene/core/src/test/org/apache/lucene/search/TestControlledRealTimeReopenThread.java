@@ -475,7 +475,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
 
     final SnapshotDeletionPolicy sdp = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
     final Directory dir = new NRTCachingDirectory(newFSDirectory(createTempDir("nrt")), 5, 128);
-    IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_46,
+    IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_4_6,
                                                      new MockAnalyzer(random()));
     config.setIndexDeletionPolicy(sdp);
     config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);

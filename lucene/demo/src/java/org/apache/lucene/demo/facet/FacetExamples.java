@@ -28,6 +28,6 @@ public interface FacetExamples {
 
   // :Post-Release-Update-Version.LUCENE_XY:
   /** The Lucene {@link Version} used by the example code. */
-  public static final Version EXAMPLES_VER = Version.LUCENE_50;
+  public static final Version EXAMPLES_VER = Version.LUCENE_5_0;
 
 }

@@ -107,6 +107,13 @@ API Changes
   longer receives the number of fields that will be added (Robert
   Muir, Mike McCandless)
 
+* LUCENE-5632: In preparation for coming Lucene versions, the Version
+  enum constants were renamed to make them better readable. The constant
+  for Lucene 4.9 is now "LUCENE_4_9". Version.parseLeniently() is still
+  able to parse the old strings ("LUCENE_49"). The old identifiers got
+  deprecated and will be removed in Lucene 5.0.  (Uwe Schindler,
+  Robert Muir)
+
 Optimizations
 
 * LUCENE-5603: hunspell stemmer more efficiently strips prefixes

@@ -73,7 +73,7 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
     StringReader reader = new StringReader(sb.toString());
     final MockTokenizer in = new MockTokenizer(MockTokenizer.WHITESPACE, false);
     in.setReader(reader);
-    StopFilter stpf = new StopFilter(Version.LUCENE_40, in, stopSet);
+    StopFilter stpf = new StopFilter(Version.LUCENE_4_0, in, stopSet);
     doTestStopPositons(stpf);
     // with increments, concatenating two stop filters
     ArrayList<String> a0 = new ArrayList<>();

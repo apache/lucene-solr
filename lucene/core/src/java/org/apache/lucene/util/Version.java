@@ -38,77 +38,77 @@ public enum Version {
    * @deprecated (5.0) Use latest
    */
   @Deprecated
-  LUCENE_40,
+  LUCENE_4_0,
   
   /**
    * Match settings and bugs in Lucene's 4.1 release.
    * @deprecated (5.0) Use latest
    */
   @Deprecated
-  LUCENE_41,
+  LUCENE_4_1,
 
   /**
    * Match settings and bugs in Lucene's 4.2 release.
    * @deprecated (5.0) Use latest
    */
   @Deprecated
-  LUCENE_42,
+  LUCENE_4_2,
 
   /**
    * Match settings and bugs in Lucene's 4.3 release.
    * @deprecated (5.0) Use latest
    */
   @Deprecated
-  LUCENE_43,
+  LUCENE_4_3,
 
   /**
    * Match settings and bugs in Lucene's 4.4 release.
    * @deprecated (5.0) Use latest
    */
   @Deprecated
-  LUCENE_44,
+  LUCENE_4_4,
 
   /**
    * Match settings and bugs in Lucene's 4.5 release.
    * @deprecated (5.0) Use latest
    */
   @Deprecated
-  LUCENE_45,
+  LUCENE_4_5,
 
   /**
    * Match settings and bugs in Lucene's 4.6 release.
    * @deprecated (5.0) Use latest
    */
   @Deprecated
-  LUCENE_46,
+  LUCENE_4_6,
   
   /**
    * Match settings and bugs in Lucene's 4.7 release.
    * @deprecated (5.0) Use latest
    */
   @Deprecated
-  LUCENE_47,
+  LUCENE_4_7,
   
   /**
    * Match settings and bugs in Lucene's 4.8 release.
    * @deprecated (5.0) Use latest
    */
   @Deprecated
-  LUCENE_48,
+  LUCENE_4_8,
 
   /**
    * Match settings and bugs in Lucene's 4.9 release.
    * @deprecated (5.0) Use latest
    */
   @Deprecated
-  LUCENE_49,
+  LUCENE_4_9,
 
   /** Match settings and bugs in Lucene's 5.0 release.
    *  <p>
    *  Use this to get the latest &amp; greatest settings, bug
    *  fixes, etc, for Lucene.
    */
-  LUCENE_50,
+  LUCENE_5_0,
   
   /* Add new constants for later versions **here** to respect order! */
 
@@ -136,7 +136,10 @@ public enum Version {
   }
   
   public static Version parseLeniently(String version) {
-    String parsedMatchVersion = version.toUpperCase(Locale.ROOT);
-    return Version.valueOf(parsedMatchVersion.replaceFirst("^(\\d)\\.(\\d)$", "LUCENE_$1$2"));
+    final String parsedMatchVersion = version
+        .toUpperCase(Locale.ROOT)
+        .replaceFirst("^(\\d+)\\.(\\d+)$", "LUCENE_$1_$2")
+        .replaceFirst("^LUCENE_(\\d)(\\d)$", "LUCENE_$1_$2");
+    return Version.valueOf(parsedMatchVersion);
   }
 }

@@ -79,7 +79,7 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
       throw new IllegalArgumentException("minGram must not be greater than maxGram");
     }
 
-    this.charUtils = version.onOrAfter(Version.LUCENE_44)
+    this.charUtils = version.onOrAfter(Version.LUCENE_4_4)
         ? CharacterUtils.getInstance(version)
         : CharacterUtils.getJava4Instance();
     this.minGram = minGram;

@@ -908,7 +908,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
    * If there are running merges or uncommitted
    * changes:
    * <ul>
-   *   <li> If config.matchVersion >= LUCENE_50 then the
+   *   <li> If config.matchVersion >= LUCENE_5_0 then the
    *        changes are silently discarded.
    *   <li> Otherwise, a RuntimeException is thrown to
    *        indicate what was lost, but the IndexWriter is
@@ -921,7 +921,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
    * @throws IOException if there is a low-level IO error
    *   (the IndexWriter will still be closed)
    * @throws RuntimeException if config.matchVersion <
-   *   LUCENE_50 and there were pending changes that were
+   *   LUCENE_5_0 and there were pending changes that were
    *   lost (the IndexWriter will still be closed)
    */
   @Override
@@ -934,7 +934,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     boolean lostChanges = false;
 
     // Only check for lost changes if the version earlier than 5.0:
-    if (config.getMatchVersion().onOrAfter(Version.LUCENE_50) == false) {
+    if (config.getMatchVersion().onOrAfter(Version.LUCENE_5_0) == false) {
       lostChanges = hasUncommittedChanges();
       if (lostChanges == false) {
         synchronized(this) {

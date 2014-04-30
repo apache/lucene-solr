@@ -52,7 +52,7 @@ public class NGramTokenizerFactory extends TokenizerFactory {
   /** Creates the {@link TokenStream} of n-grams from the given {@link Reader} and {@link AttributeFactory}. */
   @Override
   public Tokenizer create(AttributeFactory factory) {
-    if (luceneMatchVersion.onOrAfter(Version.LUCENE_44)) {
+    if (luceneMatchVersion.onOrAfter(Version.LUCENE_4_4)) {
       return new NGramTokenizer(luceneMatchVersion, factory, minGramSize, maxGramSize);
     } else {
       return new Lucene43NGramTokenizer(factory, minGramSize, maxGramSize);

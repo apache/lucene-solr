@@ -21,7 +21,7 @@
      discovery-based core configuration. Trying a minimal configuration to cut down the setup time.
      use in conjunction with schema-minimal.xml perhaps? -->
 <config>
-  <luceneMatchVersion>LUCENE_41</luceneMatchVersion>
+  <luceneMatchVersion>LUCENE_4_1</luceneMatchVersion>
 
   <dataDir>${solr.data.dir:}</dataDir>
 
