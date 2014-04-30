@@ -48,7 +48,7 @@ public class TestSizeBoundedForceMerge extends LuceneTestCase {
     conf.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
     conf.setRAMBufferSizeMB(IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB);
     // prevent any merges by default.
-    conf.setMergePolicy(NoMergePolicy.COMPOUND_FILES);
+    conf.setMergePolicy(NoMergePolicy.INSTANCE);
     return conf;
   }
   

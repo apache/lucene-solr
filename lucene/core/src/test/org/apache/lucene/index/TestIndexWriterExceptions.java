@@ -717,9 +717,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       {
         final IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
             TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(-1)
-            .setMergePolicy(
-                random().nextBoolean() ? NoMergePolicy.COMPOUND_FILES
-                    : NoMergePolicy.NO_COMPOUND_FILES));
+            .setMergePolicy(NoMergePolicy.INSTANCE));
         // don't use a merge policy here they depend on the DWPThreadPool and its max thread states etc.
         final int finalI = i;
 

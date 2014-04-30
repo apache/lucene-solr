@@ -138,8 +138,9 @@ public class CreateIndexTask extends PerfTask {
     final String mergePolicy = config.get("merge.policy",
                                           "org.apache.lucene.index.LogByteSizeMergePolicy");
     boolean isCompound = config.get("compound", true);
+    iwConf.setUseCompoundFile(isCompound);
     if (mergePolicy.equals(NoMergePolicy.class.getName())) {
-      iwConf.setMergePolicy(isCompound ? NoMergePolicy.COMPOUND_FILES : NoMergePolicy.NO_COMPOUND_FILES);
+      iwConf.setMergePolicy(NoMergePolicy.INSTANCE);
     } else {
       try {
         iwConf.setMergePolicy(Class.forName(mergePolicy).asSubclass(MergePolicy.class).newInstance());
@@ -147,7 +148,7 @@ public class CreateIndexTask extends PerfTask {
         throw new RuntimeException("unable to instantiate class '" + mergePolicy + "' as merge policy", e);
       }
       iwConf.getMergePolicy().setNoCFSRatio(isCompound ? 1.0 : 0.0);
-      if(iwConf.getMergePolicy() instanceof LogMergePolicy) {
+      if (iwConf.getMergePolicy() instanceof LogMergePolicy) {
         LogMergePolicy logMergePolicy = (LogMergePolicy) iwConf.getMergePolicy();
         logMergePolicy.setMergeFactor(config.get("merge.factor",OpenIndexTask.DEFAULT_MERGE_PFACTOR));
       }

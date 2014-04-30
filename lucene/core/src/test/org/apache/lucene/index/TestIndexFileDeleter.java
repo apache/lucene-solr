@@ -72,7 +72,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     writer = new IndexWriter(
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
-            setMergePolicy(NoMergePolicy.NO_COMPOUND_FILES).setUseCompoundFile(true)
+            setMergePolicy(NoMergePolicy.INSTANCE).setUseCompoundFile(true)
     );
     Term searchTerm = new Term("id", "7");
     writer.deleteDocuments(searchTerm);

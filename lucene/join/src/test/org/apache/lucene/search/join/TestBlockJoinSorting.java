@@ -53,7 +53,7 @@ public class TestBlockJoinSorting extends LuceneTestCase {
   public void testNestedSorting() throws Exception {
     final Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig(TEST_VERSION_CURRENT,
-        new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.COMPOUND_FILES));
+        new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE));
 
     List<Document> docs = new ArrayList<>();
     Document document = new Document();

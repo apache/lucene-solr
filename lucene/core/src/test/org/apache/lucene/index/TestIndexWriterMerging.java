@@ -154,7 +154,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     ir.close();
 
     IndexWriterConfig dontMergeConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
-      .setMergePolicy(NoMergePolicy.COMPOUND_FILES);
+      .setMergePolicy(NoMergePolicy.INSTANCE);
     writer = new IndexWriter(dir, dontMergeConfig);
     writer.deleteDocuments(new Term("id", "0"));
     writer.deleteDocuments(new Term("id", "7"));
@@ -217,7 +217,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     ir.close();
     
     IndexWriterConfig dontMergeConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
-      .setMergePolicy(NoMergePolicy.COMPOUND_FILES);
+      .setMergePolicy(NoMergePolicy.INSTANCE);
     writer = new IndexWriter(dir, dontMergeConfig);
     for(int i=0;i<98;i+=2) {
       writer.deleteDocuments(new Term("id", "" + i));
@@ -283,7 +283,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     ir.close();
     
     IndexWriterConfig dontMergeConfig = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
-      .setMergePolicy(NoMergePolicy.COMPOUND_FILES);
+      .setMergePolicy(NoMergePolicy.INSTANCE);
     writer = new IndexWriter(dir, dontMergeConfig);
     for(int i=0;i<98;i+=2) {
       writer.deleteDocuments(new Term("id", "" + i));

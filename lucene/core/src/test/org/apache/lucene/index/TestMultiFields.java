@@ -36,7 +36,7 @@ public class TestMultiFields extends LuceneTestCase {
 
       Directory dir = newDirectory();
 
-      IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.COMPOUND_FILES));
+      IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE));
       // we can do this because we use NoMergePolicy (and dont merge to "nothing")
       w.setKeepFullyDeletedSegments(true);
 
