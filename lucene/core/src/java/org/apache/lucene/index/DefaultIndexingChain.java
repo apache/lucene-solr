@@ -23,10 +23,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosWriter;
@@ -265,21 +261,23 @@ final class DefaultIndexingChain extends DocConsumer {
     termsHash.startDocument();
 
     // Invert indexed fields:
-    for (IndexableField field : docState.doc.indexableFields()) {
-      IndexableFieldType fieldType = field.fieldType();
-      PerField fp = getOrAddField(field.name(), fieldType, true);
-      boolean first = fp.fieldGen != fieldGen;
-      fp.invert(field, first);
+    try {
+      for (IndexableField field : docState.doc.indexableFields()) {
+        IndexableFieldType fieldType = field.fieldType();
+        PerField fp = getOrAddField(field.name(), fieldType, true);
+        boolean first = fp.fieldGen != fieldGen;
+        fp.invert(field, first);
 
-      if (first) {
-        fields[fieldCount++] = fp;
-        fp.fieldGen = fieldGen;
+        if (first) {
+          fields[fieldCount++] = fp;
+          fp.fieldGen = fieldGen;
+        }
       }
-    }
-
-    // Finish each field name seen in the document:
-    for (int i=0;i<fieldCount;i++) {
-      fields[i].finish();
+    } finally {
+      // Finish each field name seen in the document:
+      for (int i=0;i<fieldCount;i++) {
+        fields[i].finish();
+      }
     }
 
     boolean success = false;
