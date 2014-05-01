@@ -261,35 +261,6 @@ public class TestDocumentWriter extends LuceneTestCase {
   }
 
   /**
-   * Test adding two fields with the same name, but 
-   * with different term vector setting (LUCENE-766).
-   */
-  public void testMixedTermVectorSettingsSameField() throws Exception {
-    Document doc = new Document();
-    // f1 first without tv then with tv
-    doc.add(newStringField("f1", "v1", Field.Store.YES));
-    FieldType customType2 = new FieldType(StringField.TYPE_STORED);
-    customType2.setStoreTermVectors(true);
-    customType2.setStoreTermVectorOffsets(true);
-    customType2.setStoreTermVectorPositions(true);
-    doc.add(newField("f1", "v2", customType2));
-    // f2 first with tv then without tv
-    doc.add(newField("f2", "v1", customType2));
-    doc.add(newStringField("f2", "v2", Field.Store.YES));
-
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(random())));
-    try {
-      writer.addDocument(doc);
-      fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
-      assertEquals("all instances of a given field name must have the same term vectors settings (storeTermVectors changed for field=\"f1\")",
-                   iae.getMessage());
-    }
-    writer.shutdown();
-  }
-
-  /**
    * Test adding two fields with the same name, one indexed
    * the other stored only. The omitNorms and omitTermFreqAndPositions setting
    * of the stored field should not affect the indexed one (LUCENE-1590)
