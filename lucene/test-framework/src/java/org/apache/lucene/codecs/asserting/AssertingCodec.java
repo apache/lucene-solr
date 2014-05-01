@@ -64,4 +64,9 @@ public final class AssertingCodec extends FilterCodec {
   public NormsFormat normsFormat() {
     return norms;
   }
+
+  @Override
+  public String toString() {
+    return "Asserting(" + delegate + ")";
+  }
 }

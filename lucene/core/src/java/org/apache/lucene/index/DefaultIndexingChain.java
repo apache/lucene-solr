@@ -161,7 +161,6 @@ final class DefaultIndexingChain extends DocConsumer {
   private void fillStoredFields(int docID) throws IOException {
     while (lastStoredDocID < docID) {
       startStoredFields();
-      lastStoredDocID++;
       finishStoredFields();
     }
   }
@@ -254,6 +253,7 @@ final class DefaultIndexingChain extends DocConsumer {
         docWriter.setAborting();        
       }
     }
+    lastStoredDocID++;
   }
 
   /** Calls StoredFieldsWriter.finishDocument, aborting the
@@ -290,7 +290,6 @@ final class DefaultIndexingChain extends DocConsumer {
 
     fillStoredFields(docState.docID);
     startStoredFields();
-    lastStoredDocID++;
 
     try {
       for (IndexableField field : docState.doc) {
