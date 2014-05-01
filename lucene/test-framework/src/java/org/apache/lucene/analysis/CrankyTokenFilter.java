@@ -26,7 +26,7 @@ import java.util.Random;
  * This can be used to simulate a buggy analyzer in IndexWriter,
  * where we must delete the document but not abort everything in the buffer.
  */
-public class CrankyTokenFilter extends TokenFilter {
+public final class CrankyTokenFilter extends TokenFilter {
   final Random random;
   int thingToDo;
   

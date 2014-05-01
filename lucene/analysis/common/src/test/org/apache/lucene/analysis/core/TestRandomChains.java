@@ -47,6 +47,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.CharFilter;
+import org.apache.lucene.analysis.CrankyTokenFilter;
 import org.apache.lucene.analysis.MockGraphTokenFilter;
 import org.apache.lucene.analysis.MockRandomLookaheadTokenFilter;
 import org.apache.lucene.analysis.MockTokenFilter;
@@ -141,6 +142,8 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           // offsets offenders?
           // doesn't actual reset itself!
           CachingTokenFilter.class,
+          // Not broken, simulates brokenness:
+          CrankyTokenFilter.class,
           // Not broken: we forcefully add this, so we shouldn't
           // also randomly pick it:
           ValidatingTokenFilter.class)) {
