@@ -84,4 +84,9 @@ public class CrankyCodec extends FilterCodec {
   public TermVectorsFormat termVectorsFormat() {
     return new CrankyTermVectorsFormat(delegate.termVectorsFormat(), random);
   }
+
+  @Override
+  public String toString() {
+    return "Cranky(" + delegate + ")";
+  }
 }

@@ -66,6 +66,7 @@ class CrankyPostingsFormat extends PostingsFormat {
       if (random.nextInt(1000) == 0) {
         throw new IOException("Fake IOException from FieldsConsumer.write()");
       }  
+      delegate.write(fields);
     }
   }
 }
