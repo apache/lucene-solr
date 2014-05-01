@@ -58,7 +58,7 @@ class CrankySegmentInfoFormat extends SegmentInfoFormat {
     
     @Override
     public void write(Directory dir, SegmentInfo info, FieldInfos fis, IOContext ioContext) throws IOException {
-      if (random.nextInt(1000) == 0) {
+      if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException from SegmentInfoWriter.write()");
       }
       delegate.write(dir, info, fis, ioContext);

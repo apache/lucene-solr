@@ -48,7 +48,7 @@ class CrankyTermVectorsFormat extends TermVectorsFormat {
 
   @Override
   public TermVectorsWriter vectorsWriter(Directory directory, SegmentInfo segmentInfo, IOContext context) throws IOException {
-    if (random.nextInt(1000) == 0) {
+    if (random.nextInt(100) == 0) {
       throw new IOException("Fake IOException from TermVectorsFormat.vectorsWriter()");
     }
     return new CrankyTermVectorsWriter(delegate.vectorsWriter(directory, segmentInfo, context), random);
@@ -70,7 +70,7 @@ class CrankyTermVectorsFormat extends TermVectorsFormat {
     
     @Override
     public int merge(MergeState mergeState) throws IOException {
-      if (random.nextInt(1000) == 0) {
+      if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException from TermVectorsWriter.merge()");
       }
       return super.merge(mergeState);
@@ -78,7 +78,7 @@ class CrankyTermVectorsFormat extends TermVectorsFormat {
 
     @Override
     public void finish(FieldInfos fis, int numDocs) throws IOException {
-      if (random.nextInt(1000) == 0) {
+      if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException from TermVectorsWriter.finish()");
       }
       delegate.finish(fis, numDocs);
@@ -87,7 +87,7 @@ class CrankyTermVectorsFormat extends TermVectorsFormat {
     @Override
     public void close() throws IOException {
       delegate.close();
-      if (random.nextInt(1000) == 0) {
+      if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException from TermVectorsWriter.close()");
       }
     }
@@ -96,7 +96,7 @@ class CrankyTermVectorsFormat extends TermVectorsFormat {
 
     @Override
     public void startDocument(int numVectorFields) throws IOException {
-      if (random.nextInt(1000000) == 0) {
+      if (random.nextInt(10000) == 0) {
         throw new IOException("Fake IOException from TermVectorsWriter.startDocument()");
       }
       delegate.startDocument(numVectorFields);
@@ -104,7 +104,7 @@ class CrankyTermVectorsFormat extends TermVectorsFormat {
     
     @Override
     public void finishDocument() throws IOException {
-      if (random.nextInt(1000000) == 0) {
+      if (random.nextInt(10000) == 0) {
         throw new IOException("Fake IOException from TermVectorsWriter.finishDocument()");
       }
       delegate.finishDocument();
@@ -112,7 +112,7 @@ class CrankyTermVectorsFormat extends TermVectorsFormat {
     
     @Override
     public void startField(FieldInfo info, int numTerms, boolean positions, boolean offsets, boolean payloads) throws IOException {
-      if (random.nextInt(1000000) == 0) {
+      if (random.nextInt(10000) == 0) {
         throw new IOException("Fake IOException from TermVectorsWriter.startField()");
       }
       delegate.startField(info, numTerms, positions, offsets, payloads);
@@ -120,7 +120,7 @@ class CrankyTermVectorsFormat extends TermVectorsFormat {
 
     @Override
     public void finishField() throws IOException {
-      if (random.nextInt(1000000) == 0) {
+      if (random.nextInt(10000) == 0) {
         throw new IOException("Fake IOException from TermVectorsWriter.finishField()");
       }
       delegate.finishField();
@@ -128,7 +128,7 @@ class CrankyTermVectorsFormat extends TermVectorsFormat {
     
     @Override
     public void startTerm(BytesRef term, int freq) throws IOException {
-      if (random.nextInt(1000000) == 0) {
+      if (random.nextInt(10000) == 0) {
         throw new IOException("Fake IOException from TermVectorsWriter.startTerm()");
       }
       delegate.startTerm(term, freq);
@@ -136,7 +136,7 @@ class CrankyTermVectorsFormat extends TermVectorsFormat {
 
     @Override
     public void finishTerm() throws IOException {
-      if (random.nextInt(1000000) == 0) {
+      if (random.nextInt(10000) == 0) {
         throw new IOException("Fake IOException from TermVectorsWriter.finishTerm()");
       }
       delegate.finishTerm();
@@ -144,7 +144,7 @@ class CrankyTermVectorsFormat extends TermVectorsFormat {
     
     @Override
     public void addPosition(int position, int startOffset, int endOffset, BytesRef payload) throws IOException {
-      if (random.nextInt(1000000) == 0) {
+      if (random.nextInt(10000) == 0) {
         throw new IOException("Fake IOException from TermVectorsWriter.addPosition()");
       }
       delegate.addPosition(position, startOffset, endOffset, payload);
@@ -152,7 +152,7 @@ class CrankyTermVectorsFormat extends TermVectorsFormat {
 
     @Override
     public void addProx(int numProx, DataInput positions, DataInput offsets) throws IOException {
-      if (random.nextInt(1000000) == 0) {
+      if (random.nextInt(10000) == 0) {
         throw new IOException("Fake IOException from TermVectorsWriter.addProx()");
       }
       super.addProx(numProx, positions, offsets);

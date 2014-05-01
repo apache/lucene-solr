@@ -37,7 +37,7 @@ class CrankyNormsFormat extends NormsFormat {
 
   @Override
   public DocValuesConsumer normsConsumer(SegmentWriteState state) throws IOException {
-    if (random.nextInt(1000) == 0) {
+    if (random.nextInt(100) == 0) {
       throw new IOException("Fake IOException from NormsFormat.fieldsConsumer()");
     }
     return new CrankyDocValuesFormat.CrankyDocValuesConsumer(delegate.normsConsumer(state), random);

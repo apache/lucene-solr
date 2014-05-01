@@ -43,7 +43,6 @@ import org.apache.lucene.util.Rethrow;
  */
 // TODO: not sure which fails are test bugs or real bugs yet...
 // also sometimes when it fails, the exception-stream printing doesnt seem to be working yet
-// ant test  -Dtestcase=TestIndexWriterExceptions2 -Dtests.method=testSimple -Dtests.seed=A6FF4AD6F371A22E -Dtests.locale=tr_TR -Dtests.timezone=America/Cancun -Dtests.file.encoding=US-ASCII
 // 
 @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-5635")
 public class TestIndexWriterExceptions2 extends LuceneTestCase {

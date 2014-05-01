@@ -42,7 +42,7 @@ class CrankyDocValuesFormat extends DocValuesFormat {
 
   @Override
   public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    if (random.nextInt(1000) == 0) {
+    if (random.nextInt(100) == 0) {
       throw new IOException("Fake IOException from DocValuesFormat.fieldsConsumer()");
     }
     return new CrankyDocValuesConsumer(delegate.fieldsConsumer(state), random);
@@ -65,14 +65,14 @@ class CrankyDocValuesFormat extends DocValuesFormat {
     @Override
     public void close() throws IOException {
       delegate.close();
-      if (random.nextInt(1000) == 0) {
+      if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException from DocValuesConsumer.close()");
       }
     }
 
     @Override
     public void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
-      if (random.nextInt(1000) == 0) {
+      if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException from DocValuesConsumer.addNumericField()");
       }
       delegate.addNumericField(field, values);
@@ -80,7 +80,7 @@ class CrankyDocValuesFormat extends DocValuesFormat {
 
     @Override
     public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
-      if (random.nextInt(1000) == 0) {
+      if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException from DocValuesConsumer.addBinaryField()");
       }
       delegate.addBinaryField(field, values);
@@ -88,7 +88,7 @@ class CrankyDocValuesFormat extends DocValuesFormat {
 
     @Override
     public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
-      if (random.nextInt(1000) == 0) {
+      if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException from DocValuesConsumer.addSortedField()");
       }
       delegate.addSortedField(field, values, docToOrd);
@@ -96,7 +96,7 @@ class CrankyDocValuesFormat extends DocValuesFormat {
 
     @Override
     public void addSortedSetField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrdCount, Iterable<Number> ords) throws IOException {
-      if (random.nextInt(1000) == 0) {
+      if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException from DocValuesConsumer.addSortedSetField()");
       }
       delegate.addSortedSetField(field, values, docToOrdCount, ords);

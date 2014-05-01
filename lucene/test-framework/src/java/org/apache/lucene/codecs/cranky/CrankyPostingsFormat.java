@@ -41,7 +41,7 @@ class CrankyPostingsFormat extends PostingsFormat {
   
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    if (random.nextInt(1000) == 0) {
+    if (random.nextInt(100) == 0) {
       throw new IOException("Fake IOException from PostingsFormat.fieldsConsumer()");
     }  
     return new CrankyFieldsConsumer(delegate.fieldsConsumer(state), random);
@@ -63,7 +63,7 @@ class CrankyPostingsFormat extends PostingsFormat {
     
     @Override
     public void write(Fields fields) throws IOException {
-      if (random.nextInt(1000) == 0) {
+      if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException from FieldsConsumer.write()");
       }  
       delegate.write(fields);

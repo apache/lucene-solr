@@ -54,7 +54,7 @@ class CrankyLiveDocsFormat extends LiveDocsFormat {
 
   @Override
   public void writeLiveDocs(MutableBits bits, Directory dir, SegmentCommitInfo info, int newDelCount, IOContext context) throws IOException {
-    if (random.nextInt(1000) == 0) {
+    if (random.nextInt(100) == 0) {
       throw new IOException("Fake IOException from LiveDocsFormat.writeLiveDocs()");
     }
     delegate.writeLiveDocs(bits, dir, info, newDelCount, context);

@@ -47,7 +47,7 @@ class CrankyStoredFieldsFormat extends StoredFieldsFormat {
 
   @Override
   public StoredFieldsWriter fieldsWriter(Directory directory, SegmentInfo si, IOContext context) throws IOException {
-    if (random.nextInt(1000) == 0) {
+    if (random.nextInt(100) == 0) {
       throw new IOException("Fake IOException from StoredFieldsFormat.fieldsWriter()");
     }
     return new CrankyStoredFieldsWriter(delegate.fieldsWriter(directory, si, context), random);
@@ -70,7 +70,7 @@ class CrankyStoredFieldsFormat extends StoredFieldsFormat {
 
     @Override
     public void finish(FieldInfos fis, int numDocs) throws IOException {
-      if (random.nextInt(1000) == 0) {
+      if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException from StoredFieldsWriter.finish()");
       }
       delegate.finish(fis, numDocs);
@@ -78,7 +78,7 @@ class CrankyStoredFieldsFormat extends StoredFieldsFormat {
 
     @Override
     public int merge(MergeState mergeState) throws IOException {
-      if (random.nextInt(1000) == 0) {
+      if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException from StoredFieldsWriter.merge()");
       }
       return super.merge(mergeState);
@@ -96,7 +96,7 @@ class CrankyStoredFieldsFormat extends StoredFieldsFormat {
 
     @Override
     public void startDocument() throws IOException {
-      if (random.nextInt(1000000) == 0) {
+      if (random.nextInt(10000) == 0) {
         throw new IOException("Fake IOException from StoredFieldsWriter.startDocument()");
       }
       delegate.startDocument();
@@ -104,7 +104,7 @@ class CrankyStoredFieldsFormat extends StoredFieldsFormat {
     
     @Override
     public void finishDocument() throws IOException {
-      if (random.nextInt(1000000) == 0) {
+      if (random.nextInt(10000) == 0) {
         throw new IOException("Fake IOException from StoredFieldsWriter.finishDocument()");
       }
       delegate.finishDocument();
@@ -112,7 +112,7 @@ class CrankyStoredFieldsFormat extends StoredFieldsFormat {
 
     @Override
     public void writeField(FieldInfo info, StorableField field) throws IOException {
-      if (random.nextInt(1000000) == 0) {
+      if (random.nextInt(10000) == 0) {
         throw new IOException("Fake IOException from StoredFieldsWriter.writeField()");
       }
       delegate.writeField(info, field);

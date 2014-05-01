@@ -43,7 +43,7 @@ class CrankyFieldInfosFormat extends FieldInfosFormat {
 
   @Override
   public FieldInfosWriter getFieldInfosWriter() throws IOException {
-    if (random.nextInt(1000) == 0) {
+    if (random.nextInt(100) == 0) {
       throw new IOException("Fake IOException from FieldInfosFormat.getFieldInfosWriter()");
     }
     return new CrankyFieldInfosWriter(delegate.getFieldInfosWriter(), random);
@@ -60,7 +60,7 @@ class CrankyFieldInfosFormat extends FieldInfosFormat {
 
     @Override
     public void write(Directory directory, String segmentName, String segmentSuffix, FieldInfos infos, IOContext context) throws IOException {
-      if (random.nextInt(1000) == 0) {
+      if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException from FieldInfosWriter.write()");
       }
       delegate.write(directory, segmentName, segmentSuffix, infos, context);
