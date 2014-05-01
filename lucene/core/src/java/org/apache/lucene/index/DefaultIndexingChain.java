@@ -293,34 +293,63 @@ final class DefaultIndexingChain extends DocConsumer {
     }
 
     // Add stored fields:
+    // TODO: if these hit exc today ->>> corrumption!
     fillStoredFields(docState.docID);
     storedFieldsWriter.startDocument();
     lastStoredDocID++;
 
-    success = false;
-    try {
-      for (StorableField field : docState.doc.storableFields()) {
-        final String fieldName = field.name();
-        IndexableFieldType fieldType = field.fieldType();
-
+    // TODO: clean up this looop, its complicated because dv exceptions are non-aborting,
+    // but storedfields are. Its also bogus that docvalues are treated as stored fields...
+    for (StorableField field : docState.doc.storableFields()) {
+      final String fieldName = field.name();
+      IndexableFieldType fieldType = field.fieldType();
+      PerField fp = null;
+      
+      success = false;
+      try {
+        // TODO: make this non-aborting and change the test to confirm that!!!
         verifyFieldType(fieldName, fieldType);
-
-        PerField fp = getOrAddField(fieldName, fieldType, false);
+        
+        fp = getOrAddField(fieldName, fieldType, false);
         if (fieldType.stored()) {
           storedFieldsWriter.writeField(fp.fieldInfo, field);
         }
-
+        success = true;
+      } finally {
+        if (!success) {
+          docWriter.setAborting();
+        }
+      }
+      
+      success = false;
+      try {
         DocValuesType dvType = fieldType.docValueType();
         if (dvType != null) {
           indexDocValue(fp, dvType, field);
         }
+        success = true;
+      } finally {
+        if (!success) {
+          // dv failed: so just try to bail on the current doc by calling finishDocument()...
+          success = false;
+          try {
+            storedFieldsWriter.finishDocument();
+            success = true;
+          } finally {
+            if (!success) {
+              docWriter.setAborting();
+            }
+          }
+        }
       }
+    }
+    
+    success = false;
+    try {
       storedFieldsWriter.finishDocument();
       success = true;
     } finally {
-      if (success == false) {
-        // We must abort, on the possibility that the
-        // stored fields file is now corrupt:
+      if (!success) {
         docWriter.setAborting();
       }
     }
