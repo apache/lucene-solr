@@ -264,79 +264,41 @@ final class DefaultIndexingChain extends DocConsumer {
     storedFieldsWriter.startDocument();
     lastStoredDocID++;
 
-    boolean abort = false;
     boolean success = false;
     try {
       for (IndexableField field : docState.doc) {
-        String fieldName = field.name();
-        IndexableFieldType fieldType = field.fieldType();
-
-        PerField fp = null;
-
-        // Invert indexed fields:
-        if (fieldType.indexed()) {
-          fp = getOrAddField(fieldName, fieldType, true);
-          boolean first = fp.fieldGen != fieldGen;
-          fp.invert(field, first);
-
-          if (first) {
-            fields[fieldCount++] = fp;
-            fp.fieldGen = fieldGen;
-          }
-        } else {
-          verifyUnIndexedFieldType(fieldName, fieldType);
-        }
-
-        // Add stored fields:
-        if (fieldType.stored()) {
-          if (fp == null) {
-            fp = getOrAddField(fieldName, fieldType, false);
-          }
-          if (fieldType.stored()) {
-            abort = true;
-            storedFieldsWriter.writeField(fp.fieldInfo, field);
-            abort = false;
-          }
-        }
-
-        DocValuesType dvType = fieldType.docValueType();
-        if (dvType != null) {
-          if (fp == null) {
-            fp = getOrAddField(fieldName, fieldType, false);
-          }
-          indexDocValue(fp, dvType, field);
-        }
+        fieldCount = processField(field, fieldGen, fieldCount);
       }
 
-      abort = true;
-      storedFieldsWriter.finishDocument();
-      abort = false;
+      boolean success2 = false;
+      try {
+        storedFieldsWriter.finishDocument();
+        success2 = true;
+      } finally {
+        if (!success2) {
+          docWriter.setAborting();
+        }
+      }
+      
       success = true;
-
     } finally {
-      if (abort) {
-        // We must abort, on the possibility that the
-        // stored fields file is now corrupt:
-        docWriter.setAborting();
-      } else {
-        if (success == false) {
-          // Non-aborting exception; we have to call
-          // storedFieldsWriter.finishDocument in this case:
-          try {
-            abort = true;
-            storedFieldsWriter.finishDocument();
-            abort = false;
-          } finally {
-            if (abort) {
-              docWriter.setAborting();
-            }
+      if (success == false && !docWriter.aborting) {
+        // Non-aborting exception; we have to call
+        // storedFieldsWriter.finishDocument in this case:
+        boolean success3 = false;
+        try {
+          storedFieldsWriter.finishDocument();
+          success3 = true;
+        } finally {
+          if (!success3) {
+            docWriter.setAborting();
           }
         }
-
-        // Finish each indexed field name seen in the document:
-        for (int i=0;i<fieldCount;i++) {
-          fields[i].finish();
-        }
+      }
+      
+      // Finish each indexed field name seen in the document:
+      for (int i=0;i<fieldCount;i++) {
+        fields[i].finish();
       }
     }
 
@@ -351,6 +313,55 @@ final class DefaultIndexingChain extends DocConsumer {
         docWriter.setAborting();
       }
     }
+  }
+  
+  private int processField(IndexableField field, long fieldGen, int fieldCount) throws IOException {
+    String fieldName = field.name();
+    IndexableFieldType fieldType = field.fieldType();
+
+    PerField fp = null;
+
+    // Invert indexed fields:
+    if (fieldType.indexed()) {
+      fp = getOrAddField(fieldName, fieldType, true);
+      boolean first = fp.fieldGen != fieldGen;
+      fp.invert(field, first);
+
+      if (first) {
+        fields[fieldCount++] = fp;
+        fp.fieldGen = fieldGen;
+      }
+    } else {
+      verifyUnIndexedFieldType(fieldName, fieldType);
+    }
+
+    boolean success = false;
+    try {
+      // Add stored fields:
+      if (fieldType.stored()) {
+        if (fp == null) {
+          fp = getOrAddField(fieldName, fieldType, false);
+        }
+        if (fieldType.stored()) {
+          storedFieldsWriter.writeField(fp.fieldInfo, field);
+        }
+      }
+      success = true;
+    } finally {
+      if (!success) {
+        docWriter.setAborting();
+      }
+    }
+
+    DocValuesType dvType = fieldType.docValueType();
+    if (dvType != null) {
+      if (fp == null) {
+        fp = getOrAddField(fieldName, fieldType, false);
+      }
+      indexDocValue(fp, dvType, field);
+    }
+    
+    return fieldCount;
   }
 
   private static void verifyUnIndexedFieldType(String name, IndexableFieldType ft) {
