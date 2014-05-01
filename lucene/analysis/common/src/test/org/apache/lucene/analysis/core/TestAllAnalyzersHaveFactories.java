@@ -30,6 +30,7 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.CharFilter;
+import org.apache.lucene.analysis.CrankyTokenFilter;
 import org.apache.lucene.analysis.MockCharFilter;
 import org.apache.lucene.analysis.MockFixedLengthPayloadFilter;
 import org.apache.lucene.analysis.MockGraphTokenFilter;
@@ -76,7 +77,8 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
       MockRandomLookaheadTokenFilter.class,
       MockTokenFilter.class,
       MockVariableLengthPayloadFilter.class,
-      ValidatingTokenFilter.class
+      ValidatingTokenFilter.class,
+      CrankyTokenFilter.class
     );
   }
   

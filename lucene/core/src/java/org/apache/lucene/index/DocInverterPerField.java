@@ -101,10 +101,11 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
         boolean succeededInProcessingField = false;
 
         final TokenStream stream = field.tokenStream(docState.analyzer);
-        // reset the TokenStream to the first token
-        stream.reset();
-
+        
         try {
+          // reset the TokenStream to the first token
+          stream.reset();
+
           boolean hasMoreTokens = stream.incrementToken();
 
           fieldState.attributeSource = stream;
