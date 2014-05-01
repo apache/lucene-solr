@@ -425,13 +425,14 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
   
   @Override
   public void finish(FieldInfos fis, int numDocs) {
-    if (HEADER_LENGTH_INDEX+((long) numDocs)*16 != tvx.getFilePointer())
+    long indexFP = tvx.getFilePointer();
+    if (HEADER_LENGTH_INDEX+((long) numDocs)*16 != indexFP)
       // This is most likely a bug in Sun JRE 1.6.0_04/_05;
       // we detect that the bug has struck, here, and
       // throw an exception to prevent the corruption from
       // entering the index.  See LUCENE-1282 for
       // details.
-      throw new RuntimeException("tvx size mismatch: mergedDocs is " + numDocs + " but tvx size is " + tvx.getFilePointer() + " file=" + tvx.toString() + "; now aborting this merge to prevent index corruption");
+      throw new RuntimeException("tvx size mismatch: mergedDocs is " + numDocs + " but tvx size is " + indexFP + " (wrote numDocs=" + ((indexFP - HEADER_LENGTH_INDEX)/16.0) + " file=" + tvx.toString() + "; now aborting this merge to prevent index corruption");
   }
 
   /** Close all streams. */

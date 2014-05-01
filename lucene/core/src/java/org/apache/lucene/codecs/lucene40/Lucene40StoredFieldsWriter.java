@@ -230,13 +230,14 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
 
   @Override
   public void finish(FieldInfos fis, int numDocs) {
-    if (HEADER_LENGTH_IDX+((long) numDocs)*8 != indexStream.getFilePointer())
+    long indexFP = indexStream.getFilePointer();
+    if (HEADER_LENGTH_IDX+((long) numDocs)*8 != indexFP)
       // This is most likely a bug in Sun JRE 1.6.0_04/_05;
       // we detect that the bug has struck, here, and
       // throw an exception to prevent the corruption from
       // entering the index.  See LUCENE-1282 for
       // details.
-      throw new RuntimeException("fdx size mismatch: docCount is " + numDocs + " but fdx file size is " + indexStream.getFilePointer() + " file=" + indexStream.toString() + "; now aborting this merge to prevent index corruption");
+      throw new RuntimeException("fdx size mismatch: docCount is " + numDocs + " but fdx file size is " + indexFP + " (wrote numDocs=" + ((indexFP-HEADER_LENGTH_IDX)/8.0) + " file=" + indexStream.toString() + "; now aborting this merge to prevent index corruption");
   }
   
   @Override

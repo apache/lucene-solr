@@ -160,9 +160,8 @@ final class DefaultIndexingChain extends DocConsumer {
    *  stored fields. */
   private void fillStoredFields(int docID) throws IOException {
     while (lastStoredDocID < docID) {
-      storedFieldsWriter.startDocument();
-      lastStoredDocID++;
-      storedFieldsWriter.finishDocument();
+      startStoredFields();
+      finishStoredFields();
     }
   }
 
@@ -242,6 +241,35 @@ final class DefaultIndexingChain extends DocConsumer {
     hashMask = newHashMask;
   }
 
+  /** Calls StoredFieldsWriter.startDocument, aborting the
+   *  segment if it hits any exception. */
+  private void startStoredFields() throws IOException {
+    boolean success = false;
+    try {
+      storedFieldsWriter.startDocument();
+      success = true;
+    } finally {
+      if (success == false) {
+        docWriter.setAborting();        
+      }
+    }
+    lastStoredDocID++;
+  }
+
+  /** Calls StoredFieldsWriter.finishDocument, aborting the
+   *  segment if it hits any exception. */
+  private void finishStoredFields() throws IOException {
+    boolean success = false;
+    try {
+      storedFieldsWriter.finishDocument();
+      success = true;
+    } finally {
+      if (success == false) {
+        docWriter.setAborting();        
+      }
+    }
+  }
+
   @Override
   public void processDocument() throws IOException {
 
@@ -295,10 +323,9 @@ final class DefaultIndexingChain extends DocConsumer {
     // Add stored fields:
     // TODO: if these hit exc today ->>> corrumption!
     fillStoredFields(docState.docID);
-    storedFieldsWriter.startDocument();
-    lastStoredDocID++;
+    startStoredFields();
 
-    // TODO: clean up this looop, its complicated because dv exceptions are non-aborting,
+    // TODO: clean up this loop, it's complicated because dv exceptions are non-aborting,
     // but storedfields are. Its also bogus that docvalues are treated as stored fields...
     for (StorableField field : docState.doc.storableFields()) {
       final String fieldName = field.name();
@@ -331,28 +358,12 @@ final class DefaultIndexingChain extends DocConsumer {
       } finally {
         if (!success) {
           // dv failed: so just try to bail on the current doc by calling finishDocument()...
-          success = false;
-          try {
-            storedFieldsWriter.finishDocument();
-            success = true;
-          } finally {
-            if (!success) {
-              docWriter.setAborting();
-            }
-          }
+          finishStoredFields();
         }
       }
     }
-    
-    success = false;
-    try {
-      storedFieldsWriter.finishDocument();
-      success = true;
-    } finally {
-      if (!success) {
-        docWriter.setAborting();
-      }
-    }
+
+    finishStoredFields();
   }
 
   private static void verifyFieldType(String name, IndexableFieldType ft) {
