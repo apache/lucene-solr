@@ -27,7 +27,9 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -73,12 +75,12 @@ import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.jboss.netty.handler.codec.http.HttpVersion;
 import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 import org.jboss.netty.util.CharsetUtil;
+
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONStyleIdent;
 import net.minidev.json.parser.ContainerFactory;
 import net.minidev.json.parser.JSONParser;
 import net.minidev.json.parser.ParseException;
-
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 //import static org.jboss.netty.handler.codec.http.HttpHeaders.*;
@@ -302,7 +304,9 @@ public class Server {
         try {
           handler = globalState.getHandler(command);
         } catch (IllegalArgumentException iae) {
-          throw new IllegalArgumentException("unrecognized method \"" + command + "\"");
+          params = new HashMap<String, List<String>>(params);
+          params.put("message", Arrays.asList(new String[] { iae.getMessage() }));
+          handler = globalState.getHandler("help");
         }
 
         if (handler.doStream()) {
@@ -636,6 +640,7 @@ public class Server {
       globalState.addHandler("deleteAllDocuments", new DeleteAllDocumentsHandler(globalState));
       globalState.addHandler("deleteIndex", new DeleteIndexHandler(globalState));
       globalState.addHandler("deleteDocuments", new DeleteDocumentsHandler(globalState));
+      globalState.addHandler("help", new HelpHandler(globalState));
       globalState.addHandler("liveSettings", new LiveSettingsHandler(globalState));
       globalState.addHandler("liveValues", new LiveValuesHandler(globalState));
       globalState.addHandler("registerFields", new RegisterFieldHandler(globalState));
