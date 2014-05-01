@@ -55,7 +55,7 @@ public final class CrankyTokenFilter extends TokenFilter {
   @Override
   public void reset() throws IOException {
     super.reset();
-    thingToDo = random.nextInt(10);
+    thingToDo = random.nextInt(100);
     if (thingToDo == 2 && random.nextBoolean()) {
       throw new IOException("Fake IOException from TokenStream.reset()");
     }
