@@ -143,6 +143,9 @@ Other Changes
 * SOLR-6025: Replace mentions of CommonsHttpSolrServer with HttpSolrServer and
   StreamingUpdateSolrServer with ConcurrentUpdateSolrServer. (Ahmet Arslan via shalin)
 
+* SOLR-6013: Fix method visibility of Evaluator, refactor DateFormatEvaluator for
+  extensibility. (Aaron LaBella via shalin)
+
 Build
 ---------------------
 

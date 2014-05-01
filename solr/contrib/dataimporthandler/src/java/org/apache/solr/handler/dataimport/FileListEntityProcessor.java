@@ -24,6 +24,8 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.solr.util.DateMathParser;
+
 /**
  * <p>
  * An {@link EntityProcessor} instance which can stream file names found in a given base
@@ -157,7 +159,7 @@ public class FileListEntityProcessor extends EntityProcessorBase {
       String expr = null;
       expr = m.group(1).replaceAll("NOW", "");
       try {
-        return DateFormatEvaluator.getDateMathParser(Locale.ROOT, TimeZone.getDefault()).parseMath(expr);
+        return new DateMathParser(TimeZone.getDefault(), Locale.ROOT).parseMath(expr);
       } catch (ParseException exp) {
         throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
                 "Invalid expression for date", exp);
