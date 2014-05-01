@@ -123,6 +123,9 @@ Bug Fixes
 * SOLR-6029: CollapsingQParserPlugin throws ArrayIndexOutOfBoundsException
   if elevated doc has been deleted from a segment. (Greg Harris, Joel Bernstein)
 
+* SOLR-6030: Use System.nanoTime() instead of currentTimeInMills() in LRUCache.warm.
+  (Tomás Fernández Löbbe via shalin)
+
 Other Changes
 ---------------------
 
