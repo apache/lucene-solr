@@ -160,9 +160,9 @@ final class DefaultIndexingChain extends DocConsumer {
    *  stored fields. */
   private void fillStoredFields(int docID) throws IOException {
     while (lastStoredDocID < docID) {
-      storedFieldsWriter.startDocument();
+      startStoredFields();
       lastStoredDocID++;
-      storedFieldsWriter.finishDocument();
+      finishStoredFields();
     }
   }
 
@@ -242,6 +242,34 @@ final class DefaultIndexingChain extends DocConsumer {
     hashMask = newHashMask;
   }
 
+  /** Calls StoredFieldsWriter.startDocument, aborting the
+   *  segment if it hits any exception. */
+  private void startStoredFields() throws IOException {
+    boolean success = false;
+    try {
+      storedFieldsWriter.startDocument();
+      success = true;
+    } finally {
+      if (success == false) {
+        docWriter.setAborting();        
+      }
+    }
+  }
+
+  /** Calls StoredFieldsWriter.finishDocument, aborting the
+   *  segment if it hits any exception. */
+  private void finishStoredFields() throws IOException {
+    boolean success = false;
+    try {
+      storedFieldsWriter.finishDocument();
+      success = true;
+    } finally {
+      if (success == false) {
+        docWriter.setAborting();        
+      }
+    }
+  }
+
   @Override
   public void processDocument() throws IOException {
 
@@ -261,48 +289,24 @@ final class DefaultIndexingChain extends DocConsumer {
     termsHash.startDocument();
 
     fillStoredFields(docState.docID);
-    storedFieldsWriter.startDocument();
+    startStoredFields();
     lastStoredDocID++;
 
-    boolean success = false;
     try {
       for (IndexableField field : docState.doc) {
         fieldCount = processField(field, fieldGen, fieldCount);
       }
-
-      boolean success2 = false;
-      try {
-        storedFieldsWriter.finishDocument();
-        success2 = true;
-      } finally {
-        if (!success2) {
-          docWriter.setAborting();
-        }
-      }
-      
-      success = true;
     } finally {
-      if (success == false && !docWriter.aborting) {
-        // Non-aborting exception; we have to call
-        // storedFieldsWriter.finishDocument in this case:
-        boolean success3 = false;
-        try {
-          storedFieldsWriter.finishDocument();
-          success3 = true;
-        } finally {
-          if (!success3) {
-            docWriter.setAborting();
-          }
+      if (docWriter.aborting == false) {
+        // Finish each indexed field name seen in the document:
+        for (int i=0;i<fieldCount;i++) {
+          fields[i].finish();
         }
-      }
-      
-      // Finish each indexed field name seen in the document:
-      for (int i=0;i<fieldCount;i++) {
-        fields[i].finish();
+        finishStoredFields();
       }
     }
 
-    success = false;
+    boolean success = false;
     try {
       termsHash.finishDocument();
       success = true;
