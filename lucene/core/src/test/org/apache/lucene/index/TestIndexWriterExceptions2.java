@@ -24,15 +24,23 @@ import java.util.Random;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CrankyTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.MockVariableLengthPayloadFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.cranky.CrankyCodec;
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedSetDocValuesField;
+import org.apache.lucene.document.StoredField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -65,7 +73,12 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
       protected TokenStreamComponents createComponents(String fieldName) {
         MockTokenizer tokenizer = new MockTokenizer(MockTokenizer.SIMPLE, false);
         tokenizer.setEnableChecks(false); // TODO: can we turn this on? our filter is probably too evil
-        TokenStream stream = new CrankyTokenFilter(tokenizer, new Random(analyzerSeed));
+        TokenStream stream = tokenizer;
+        // emit some payloads
+        if (fieldName.contains("payloads")) {
+          stream = new MockVariableLengthPayloadFilter(new Random(analyzerSeed), stream);
+        }
+        stream = new CrankyTokenFilter(stream, new Random(analyzerSeed));
         return new TokenStreamComponents(tokenizer, stream);
       }
     };
@@ -80,7 +93,7 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
     conf.setMergeScheduler(new SerialMergeScheduler());
     conf.setCodec(codec);
     
-    int numDocs = atLeast(2500);
+    int numDocs = atLeast(2000);
     
     IndexWriter iw = new IndexWriter(dir, conf);
     try {
@@ -89,15 +102,33 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
         Document doc = new Document();
         doc.add(newStringField("id", Integer.toString(i), Field.Store.NO));
         doc.add(new NumericDocValuesField("dv", i));
+        doc.add(new BinaryDocValuesField("dv2", new BytesRef(Integer.toString(i))));
+        doc.add(new SortedDocValuesField("dv3", new BytesRef(Integer.toString(i))));
+        if (defaultCodecSupportsSortedSet()) {
+          doc.add(new SortedSetDocValuesField("dv4", new BytesRef(Integer.toString(i))));
+          doc.add(new SortedSetDocValuesField("dv4", new BytesRef(Integer.toString(i-1))));
+        }
         doc.add(newTextField("text1", TestUtil.randomAnalysisString(random(), 20, true), Field.Store.NO));
+        // ensure we store something
+        doc.add(new StoredField("stored1", "foo"));
+        doc.add(new StoredField("stored1", "bar"));    
+        // ensure we get some payloads
+        doc.add(newTextField("text_payloads", TestUtil.randomAnalysisString(random(), 6, true), Field.Store.NO));
+        // ensure we get some vectors
+        FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
+        ft.setStoreTermVectors(true);
+        doc.add(newField("text_vectors", TestUtil.randomAnalysisString(random(), 6, true), ft));
+        
         try {
           iw.addDocument(doc);
           // we made it, sometimes delete our doc, or update a dv
           int thingToDo = random().nextInt(4);
           if (thingToDo == 0) {
             iw.deleteDocuments(new Term("id", Integer.toString(i)));
-          } else if (thingToDo == 1 && defaultCodecSupportsFieldUpdates()){
+          } else if (thingToDo == 1 && defaultCodecSupportsFieldUpdates()) {
             iw.updateNumericDocValue(new Term("id", Integer.toString(i)), "dv", i+1L);
+          } else if (thingToDo == 2 && defaultCodecSupportsFieldUpdates()) {
+            iw.updateBinaryDocValue(new Term("id", Integer.toString(i)), "dv2", new BytesRef(Integer.toString(i+1)));
           }
         } catch (Exception e) {
           if (e.getMessage() != null && e.getMessage().startsWith("Fake IOException")) {
