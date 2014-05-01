@@ -26,11 +26,13 @@ import org.apache.lucene.analysis.CrankyTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.cranky.CrankyCodec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -40,15 +42,16 @@ import org.apache.lucene.util.Rethrow;
  * Causes a bunch of non-aborting and aborting exceptions and checks that
  * no index corruption is ever created
  */
-// TODO: not sure which fails are test bugs or real bugs yet...
-// reproduce with: ant test  -Dtestcase=TestIndexWriterExceptions2 -Dtests.method=testSimple -Dtests.seed=9D05AC6DFF3CC9A4 -Dtests.multiplier=10 -Dtests.locale=fi_FI -Dtests.timezone=Canada/Pacific -Dtests.file.encoding=ISO-8859-1
-// also sometimes when it fails, the exception-stream printing doesnt seem to be working yet
-// 
 public class TestIndexWriterExceptions2 extends LuceneTestCase {
   
   // just one thread, serial merge policy, hopefully debuggable
   public void testBasics() throws Exception {
+    // disable slow things: we don't rely upon sleeps here.
     Directory dir = newDirectory();
+    if (dir instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
+      ((MockDirectoryWrapper)dir).setUseSlowOpenClosers(false);
+    }
     
     // log all exceptions we hit, in case we fail (for debugging)
     ByteArrayOutputStream exceptionLog = new ByteArrayOutputStream();
@@ -68,15 +71,16 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
     };
     
     // create lots of aborting exceptions with a broken codec
-    Codec codec = new CrankyCodec(Codec.getDefault(), new Random(random().nextLong()));
+    // we don't need a random codec, as we aren't trying to find bugs in the codec here.
+    Codec inner = RANDOM_MULTIPLIER > 1 ? Codec.getDefault() : new AssertingCodec();
+    Codec codec = new CrankyCodec(inner, new Random(random().nextLong()));
     
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
     // just for now, try to keep this test reproducible
     conf.setMergeScheduler(new SerialMergeScheduler());
     conf.setCodec(codec);
     
-    // TODO: too much?
-    int numDocs = RANDOM_MULTIPLIER * 1000;
+    int numDocs = atLeast(2500);
     
     IndexWriter iw = new IndexWriter(dir, conf);
     try {
