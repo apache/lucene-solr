@@ -90,12 +90,14 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
         doc.add(newStringField("id", Integer.toString(i), Field.Store.NO));
         doc.add(new NumericDocValuesField("dv", i));
         doc.add(newTextField("text1", TestUtil.randomAnalysisString(random(), 20, true), Field.Store.NO));
-        // TODO: sometimes update dv
         try {
           iw.addDocument(doc);
-          // we made it, sometimes delete our doc
-          if (random().nextInt(4) == 0) {
+          // we made it, sometimes delete our doc, or update a dv
+          int thingToDo = random().nextInt(4);
+          if (thingToDo == 0) {
             iw.deleteDocuments(new Term("id", Integer.toString(i)));
+          } else if (thingToDo == 1 && defaultCodecSupportsFieldUpdates()){
+            iw.updateNumericDocValue(new Term("id", Integer.toString(i)), "dv", i+1L);
           }
         } catch (Exception e) {
           if (e.getMessage() != null && e.getMessage().startsWith("Fake IOException")) {
