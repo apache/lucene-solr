@@ -32,6 +32,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
@@ -91,6 +92,10 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
         // TODO: sometimes update dv
         try {
           iw.addDocument(doc);
+          // we made it, sometimes delete our doc
+          if (random().nextInt(4) == 0) {
+            iw.deleteDocuments(new Term("id", Integer.toString(i)));
+          }
         } catch (Exception e) {
           if (e.getMessage() != null && e.getMessage().startsWith("Fake IOException")) {
             exceptionStream.println("\nTEST: got expected fake exc:" + e.getMessage());
@@ -100,9 +105,19 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
           }
         }
         if (random().nextInt(10) == 0) {
-          // trigger flush: TODO: sometimes reopen
+          // trigger flush:
           try {
-            iw.commit();
+            if (random().nextBoolean()) {
+              DirectoryReader ir = null;
+              try {
+                ir = DirectoryReader.open(iw, random().nextBoolean());
+                TestUtil.checkReader(ir);
+              } finally {
+                IOUtils.closeWhileHandlingException(ir);
+              }
+            } else {
+              iw.commit();
+            }
             if (DirectoryReader.indexExists(dir)) {
               TestUtil.checkIndex(dir);
             }
