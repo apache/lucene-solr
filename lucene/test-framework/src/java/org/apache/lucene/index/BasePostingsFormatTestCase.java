@@ -32,8 +32,8 @@ import java.util.Random;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
@@ -55,6 +55,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -694,7 +695,18 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
 
     Fields seedFields = new SeedFields(fields, newFieldInfos, maxAllowed, allowPayloads);
 
-    codec.postingsFormat().fieldsConsumer(writeState).write(seedFields);
+    FieldsConsumer consumer = codec.postingsFormat().fieldsConsumer(writeState);
+    boolean success = false;
+    try {
+      consumer.write(seedFields);
+      success = true;
+    } finally {
+      if (success) {
+        IOUtils.close(consumer);
+      } else {
+        IOUtils.closeWhileHandlingException(consumer);
+      }
+    }
 
     if (VERBOSE) {
       System.out.println("TEST: after indexing: files=");
@@ -1525,6 +1537,11 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
                         assertTrue(totalTermFreq <= termFreqs.get(term).totalTermFreq);
                       }
                     }
+                  }
+
+                  @Override
+                  public void close() throws IOException {
+                    fieldsConsumer.close();
                   }
                 };
               }

@@ -134,37 +134,27 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
   @Override
   public void write(Fields fields) throws IOException {
 
-    boolean success = false;
-    try {
-      for(String field : fields) {
+    for(String field : fields) {
 
-        Terms terms = fields.terms(field);
-        if (terms == null) {
-          continue;
+      Terms terms = fields.terms(field);
+      if (terms == null) {
+        continue;
+      }
+
+      TermsEnum termsEnum = terms.iterator(null);
+
+      TermsWriter termsWriter = addField(fieldInfos.fieldInfo(field));
+
+      while (true) {
+        BytesRef term = termsEnum.next();
+        if (term == null) {
+          break;
         }
 
-        TermsEnum termsEnum = terms.iterator(null);
-
-        TermsWriter termsWriter = addField(fieldInfos.fieldInfo(field));
-
-        while (true) {
-          BytesRef term = termsEnum.next();
-          if (term == null) {
-            break;
-          }
-
-          termsWriter.write(term, termsEnum);
-        }
-
-        termsWriter.finish();
+        termsWriter.write(term, termsEnum);
       }
-      success = true;
-    } finally {
-      if (success) {
-        IOUtils.close(this);
-      } else {
-        IOUtils.closeWhileHandlingException(this);
-      }
+
+      termsWriter.finish();
     }
   }
 
@@ -176,6 +166,7 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
     return new TermsWriter(fieldIndexWriter, field, postingsWriter);
   }
 
+  @Override
   public void close() throws IOException {
     if (out != null) {
       try {

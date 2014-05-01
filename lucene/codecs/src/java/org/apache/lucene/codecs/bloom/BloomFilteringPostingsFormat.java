@@ -436,45 +436,45 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       // afterwards:
       delegateFieldsConsumer.write(fields);
 
-      try {
-        for(String field : fields) {
-          Terms terms = fields.terms(field);
-          if (terms == null) {
-            continue;
+      for(String field : fields) {
+        Terms terms = fields.terms(field);
+        if (terms == null) {
+          continue;
+        }
+        FieldInfo fieldInfo = state.fieldInfos.fieldInfo(field);
+        TermsEnum termsEnum = terms.iterator(null);
+
+        FuzzySet bloomFilter = null;
+
+        DocsEnum docsEnum = null;
+        while (true) {
+          BytesRef term = termsEnum.next();
+          if (term == null) {
+            break;
           }
-          FieldInfo fieldInfo = state.fieldInfos.fieldInfo(field);
-          TermsEnum termsEnum = terms.iterator(null);
-
-          FuzzySet bloomFilter = null;
-
-          DocsEnum docsEnum = null;
-          while (true) {
-            BytesRef term = termsEnum.next();
-            if (term == null) {
+          if (bloomFilter == null) {
+            bloomFilter = bloomFilterFactory.getSetForField(state, fieldInfo);
+            if (bloomFilter == null) {
+              // Field not bloom'd
               break;
             }
-            if (bloomFilter == null) {
-              bloomFilter = bloomFilterFactory.getSetForField(state, fieldInfo);
-              if (bloomFilter == null) {
-                // Field not bloom'd
-                break;
-              }
-              assert bloomFilters.containsKey(field) == false;
-              bloomFilters.put(fieldInfo, bloomFilter);
-            }
-            // Make sure there's at least one doc for this term:
-            docsEnum = termsEnum.docs(null, docsEnum, 0);
-            if (docsEnum.nextDoc() != DocsEnum.NO_MORE_DOCS) {
-              bloomFilter.addValue(term);
-            }
+            assert bloomFilters.containsKey(field) == false;
+            bloomFilters.put(fieldInfo, bloomFilter);
+          }
+          // Make sure there's at least one doc for this term:
+          docsEnum = termsEnum.docs(null, docsEnum, 0);
+          if (docsEnum.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+            bloomFilter.addValue(term);
           }
         }
-      } finally {
-        close();
       }
     }
 
+    @Override
     public void close() throws IOException {
+
+      delegateFieldsConsumer.close();
+
       // Now we are done accumulating values for these fields
       List<Entry<FieldInfo,FuzzySet>> nonSaturatedBlooms = new ArrayList<>();
       

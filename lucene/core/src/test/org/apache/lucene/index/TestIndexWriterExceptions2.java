@@ -32,7 +32,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Rethrow;
 
@@ -44,16 +43,16 @@ import org.apache.lucene.util.Rethrow;
 // reproduce with: ant test  -Dtestcase=TestIndexWriterExceptions2 -Dtests.method=testSimple -Dtests.seed=9D05AC6DFF3CC9A4 -Dtests.multiplier=10 -Dtests.locale=fi_FI -Dtests.timezone=Canada/Pacific -Dtests.file.encoding=ISO-8859-1
 // also sometimes when it fails, the exception-stream printing doesnt seem to be working yet
 // 
-@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-5635")
 public class TestIndexWriterExceptions2 extends LuceneTestCase {
   
   // just one thread, serial merge policy, hopefully debuggable
-  public void testSimple() throws Exception {
+  public void testBasics() throws Exception {
     Directory dir = newDirectory();
     
     // log all exceptions we hit, in case we fail (for debugging)
     ByteArrayOutputStream exceptionLog = new ByteArrayOutputStream();
     PrintStream exceptionStream = new PrintStream(exceptionLog, true, "UTF-8");
+    //PrintStream exceptionStream = System.out;
     
     // create lots of non-aborting exceptions with a broken analyzer
     final long analyzerSeed = random().nextLong();
@@ -91,7 +90,7 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
           iw.addDocument(doc);
         } catch (Exception e) {
           if (e.getMessage() != null && e.getMessage().startsWith("Fake IOException")) {
-            System.out.println("\nTEST: got expected fake exc:" + e.getMessage());
+            exceptionStream.println("\nTEST: got expected fake exc:" + e.getMessage());
             e.printStackTrace(exceptionStream);
           } else {
             Rethrow.rethrow(e);
@@ -106,7 +105,7 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
             }
           } catch (Exception e) {
             if (e.getMessage() != null && e.getMessage().startsWith("Fake IOException")) {
-              System.out.println("\nTEST: got expected fake exc:" + e.getMessage());
+              exceptionStream.println("\nTEST: got expected fake exc:" + e.getMessage());
               e.printStackTrace(exceptionStream);
             } else {
               Rethrow.rethrow(e);

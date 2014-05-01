@@ -17,7 +17,6 @@ package org.apache.lucene.codecs;
  * limitations under the License.
  */
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -184,7 +183,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * @see BlockTreeTermsReader
  * @lucene.experimental
  */
-public class BlockTreeTermsWriter extends FieldsConsumer implements Closeable {
+public class BlockTreeTermsWriter extends FieldsConsumer {
 
   /** Suggested default value for the {@code
    *  minItemsInBlock} parameter to {@link
@@ -351,44 +350,34 @@ public class BlockTreeTermsWriter extends FieldsConsumer implements Closeable {
   @Override
   public void write(Fields fields) throws IOException {
 
-    boolean success = false;
-    try {
-      String lastField = null;
-      for(String field : fields) {
-        assert lastField == null || lastField.compareTo(field) < 0;
-        lastField = field;
+    String lastField = null;
+    for(String field : fields) {
+      assert lastField == null || lastField.compareTo(field) < 0;
+      lastField = field;
 
-        Terms terms = fields.terms(field);
-        if (terms == null) {
-          continue;
-        }
-
-        TermsEnum termsEnum = terms.iterator(null);
-
-        TermsWriter termsWriter = new TermsWriter(fieldInfos.fieldInfo(field));
-        BytesRef minTerm = null;
-        BytesRef maxTerm = new BytesRef();
-        while (true) {
-          BytesRef term = termsEnum.next();
-          if (term == null) {
-            break;
-          }
-          if (minTerm == null) {
-            minTerm = BytesRef.deepCopyOf(term);
-          }
-          maxTerm.copyBytes(term);
-          termsWriter.write(term, termsEnum);
-        }
-
-        termsWriter.finish(minTerm, minTerm == null ? null : maxTerm);
+      Terms terms = fields.terms(field);
+      if (terms == null) {
+        continue;
       }
-      success = true;
-    } finally {
-      if (success) {
-        IOUtils.close(this);
-      } else {
-        IOUtils.closeWhileHandlingException(this);
+
+      TermsEnum termsEnum = terms.iterator(null);
+
+      TermsWriter termsWriter = new TermsWriter(fieldInfos.fieldInfo(field));
+      BytesRef minTerm = null;
+      BytesRef maxTerm = new BytesRef();
+      while (true) {
+        BytesRef term = termsEnum.next();
+        if (term == null) {
+          break;
+        }
+        if (minTerm == null) {
+          minTerm = BytesRef.deepCopyOf(term);
+        }
+        maxTerm.copyBytes(term);
+        termsWriter.write(term, termsEnum);
       }
+
+      termsWriter.finish(minTerm, minTerm == null ? null : maxTerm);
     }
   }
   

@@ -17,10 +17,13 @@ package org.apache.lucene.codecs.perfield;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader; // javadocs
 import java.util.Set;
@@ -101,6 +104,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
   
   private class FieldsWriter extends FieldsConsumer {
     final SegmentWriteState writeState;
+    final List<Closeable> toClose = new ArrayList<Closeable>();
 
     public FieldsWriter(SegmentWriteState writeState) {
       this.writeState = writeState;
@@ -163,20 +167,35 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       }
 
       // Second pass: write postings
-      for(Map.Entry<PostingsFormat,FieldsGroup> ent : formatToGroups.entrySet()) {
-        PostingsFormat format = ent.getKey();
-        final FieldsGroup group = ent.getValue();
+      boolean success = false;
+      try {
+        for(Map.Entry<PostingsFormat,FieldsGroup> ent : formatToGroups.entrySet()) {
+          PostingsFormat format = ent.getKey();
+          final FieldsGroup group = ent.getValue();
 
-        // Exposes only the fields from this group:
-        Fields maskedFields = new FilterFields(fields) {
-            @Override
-            public Iterator<String> iterator() {
-              return group.fields.iterator();
-            }
-          };
+          // Exposes only the fields from this group:
+          Fields maskedFields = new FilterFields(fields) {
+              @Override
+              public Iterator<String> iterator() {
+                return group.fields.iterator();
+              }
+            };
 
-        format.fieldsConsumer(group.state).write(maskedFields);
+          FieldsConsumer consumer = format.fieldsConsumer(group.state);
+          toClose.add(consumer);
+          consumer.write(maskedFields);
+        }
+        success = true;
+      } finally {
+        if (success == false) {
+          IOUtils.closeWhileHandlingException(toClose);
+        }
       }
+    }
+
+    @Override
+    public void close() throws IOException {
+      IOUtils.close(toClose);
     }
   }
 

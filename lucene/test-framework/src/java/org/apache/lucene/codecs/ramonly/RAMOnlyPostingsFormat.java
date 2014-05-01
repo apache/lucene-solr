@@ -333,6 +333,10 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
         termsConsumer.finish(sumTotalTermFreq, sumDocFreq, docsSeen.cardinality());
       }
     }
+
+    @Override
+    public void close() throws IOException {
+    }
   }
 
   private static class RAMTermsConsumer {

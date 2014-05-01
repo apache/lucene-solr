@@ -209,5 +209,10 @@ public final class AssertingPostingsFormat extends PostingsFormat {
         }
       }
     }
+
+    @Override
+    public void close() throws IOException {
+      in.close();
+    }
   }
 }

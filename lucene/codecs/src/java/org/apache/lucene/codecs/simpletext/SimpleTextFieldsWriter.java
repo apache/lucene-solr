@@ -17,7 +17,6 @@ package org.apache.lucene.codecs.simpletext;
  * limitations under the License.
  */
 
-import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.FieldsConsumer;
@@ -31,9 +30,8 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IOUtils;
 
-class SimpleTextFieldsWriter extends FieldsConsumer implements Closeable {
+class SimpleTextFieldsWriter extends FieldsConsumer {
   
   private IndexOutput out;
   private final BytesRef scratch = new BytesRef(10);
@@ -57,17 +55,7 @@ class SimpleTextFieldsWriter extends FieldsConsumer implements Closeable {
 
   @Override
   public void write(Fields fields) throws IOException {
-    boolean success = false;
-    try {
-      write(writeState.fieldInfos, fields);
-      success = true;
-    } finally {
-      if (success) {
-        IOUtils.close(this);
-      } else {
-        IOUtils.closeWhileHandlingException(this);
-      }
-    }
+    write(writeState.fieldInfos, fields);
   }
 
   public void write(FieldInfos fieldInfos, Fields fields) throws IOException {

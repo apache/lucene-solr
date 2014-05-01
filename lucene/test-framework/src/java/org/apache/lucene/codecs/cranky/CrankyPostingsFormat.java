@@ -68,5 +68,13 @@ class CrankyPostingsFormat extends PostingsFormat {
       }  
       delegate.write(fields);
     }
+
+    @Override
+    public void close() throws IOException {
+      delegate.close();
+      if (random.nextInt(100) == 0) {
+        throw new IOException("Fake IOException from FieldsConsumer.close()");
+      }  
+    }
   }
 }

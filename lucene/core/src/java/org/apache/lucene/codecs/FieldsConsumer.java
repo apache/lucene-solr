@@ -17,6 +17,7 @@ package org.apache.lucene.codecs;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.lucene.index.FieldInfo; // javadocs
@@ -32,7 +33,7 @@ import org.apache.lucene.index.SegmentWriteState; // javadocs
  * @lucene.experimental
  */
 
-public abstract class FieldsConsumer {
+public abstract class FieldsConsumer implements Closeable {
 
   /** Sole constructor. (For invocation by subclass 
    *  constructors, typically implicit.) */
@@ -72,4 +73,8 @@ public abstract class FieldsConsumer {
    *  </ul>
    */
   public abstract void write(Fields fields) throws IOException;
+
+  // NOTE: strange but necessary so javadocs linting is happy:
+  @Override
+  public abstract void close() throws IOException;
 }

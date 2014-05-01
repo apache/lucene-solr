@@ -17,7 +17,6 @@ package org.apache.lucene.codecs.memory;
  * limitations under the License.
  */
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Iterator;
@@ -277,7 +276,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
   private static final int VERSION_START = 0;
   private static final int VERSION_CURRENT = VERSION_START;
 
-  private class MemoryFieldsConsumer extends FieldsConsumer implements Closeable {
+  private class MemoryFieldsConsumer extends FieldsConsumer {
     private final SegmentWriteState state;
     private final IndexOutput out;
 
@@ -298,117 +297,107 @@ public final class MemoryPostingsFormat extends PostingsFormat {
 
     @Override
     public void write(Fields fields) throws IOException {
-      boolean success = false;
-      try {
-        for(String field : fields) {
+      for(String field : fields) {
 
-          Terms terms = fields.terms(field);
-          if (terms == null) {
-            continue;
-          }
+        Terms terms = fields.terms(field);
+        if (terms == null) {
+          continue;
+        }
 
-          TermsEnum termsEnum = terms.iterator(null);
+        TermsEnum termsEnum = terms.iterator(null);
 
-          FieldInfo fieldInfo = state.fieldInfos.fieldInfo(field);
-          TermsWriter termsWriter = new TermsWriter(out, fieldInfo,
-                                                    doPackFST, acceptableOverheadRatio);
+        FieldInfo fieldInfo = state.fieldInfos.fieldInfo(field);
+        TermsWriter termsWriter = new TermsWriter(out, fieldInfo,
+                                                  doPackFST, acceptableOverheadRatio);
 
-          FixedBitSet docsSeen = new FixedBitSet(state.segmentInfo.getDocCount());
-          long sumTotalTermFreq = 0;
-          long sumDocFreq = 0;
-          DocsEnum docsEnum = null;
-          DocsAndPositionsEnum posEnum = null;
-          int enumFlags;
+        FixedBitSet docsSeen = new FixedBitSet(state.segmentInfo.getDocCount());
+        long sumTotalTermFreq = 0;
+        long sumDocFreq = 0;
+        DocsEnum docsEnum = null;
+        DocsAndPositionsEnum posEnum = null;
+        int enumFlags;
 
-          IndexOptions indexOptions = fieldInfo.getIndexOptions();
-          boolean writeFreqs = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
-          boolean writePositions = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
-          boolean writeOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;        
-          boolean writePayloads = fieldInfo.hasPayloads();
+        IndexOptions indexOptions = fieldInfo.getIndexOptions();
+        boolean writeFreqs = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
+        boolean writePositions = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+        boolean writeOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;        
+        boolean writePayloads = fieldInfo.hasPayloads();
 
-          if (writeFreqs == false) {
-            enumFlags = 0;
-          } else if (writePositions == false) {
-            enumFlags = DocsEnum.FLAG_FREQS;
-          } else if (writeOffsets == false) {
-            if (writePayloads) {
-              enumFlags = DocsAndPositionsEnum.FLAG_PAYLOADS;
-            } else {
-              enumFlags = 0;
-            }
+        if (writeFreqs == false) {
+          enumFlags = 0;
+        } else if (writePositions == false) {
+          enumFlags = DocsEnum.FLAG_FREQS;
+        } else if (writeOffsets == false) {
+          if (writePayloads) {
+            enumFlags = DocsAndPositionsEnum.FLAG_PAYLOADS;
           } else {
-            if (writePayloads) {
-              enumFlags = DocsAndPositionsEnum.FLAG_PAYLOADS | DocsAndPositionsEnum.FLAG_OFFSETS;
-            } else {
-              enumFlags = DocsAndPositionsEnum.FLAG_OFFSETS;
-            }
+            enumFlags = 0;
+          }
+        } else {
+          if (writePayloads) {
+            enumFlags = DocsAndPositionsEnum.FLAG_PAYLOADS | DocsAndPositionsEnum.FLAG_OFFSETS;
+          } else {
+            enumFlags = DocsAndPositionsEnum.FLAG_OFFSETS;
+          }
+        }
+
+        while (true) {
+          BytesRef term = termsEnum.next();
+          if (term == null) {
+            break;
+          }
+          termsWriter.postingsWriter.reset();
+
+          if (writePositions) {
+            posEnum = termsEnum.docsAndPositions(null, posEnum, enumFlags);
+            docsEnum = posEnum;
+          } else {
+            docsEnum = termsEnum.docs(null, docsEnum, enumFlags);
+            posEnum = null;
           }
 
+          int docFreq = 0;
+          long totalTermFreq = 0;
           while (true) {
-            BytesRef term = termsEnum.next();
-            if (term == null) {
+            int docID = docsEnum.nextDoc();
+            if (docID == DocsEnum.NO_MORE_DOCS) {
               break;
             }
-            termsWriter.postingsWriter.reset();
+            docsSeen.set(docID);
+            docFreq++;
 
-            if (writePositions) {
-              posEnum = termsEnum.docsAndPositions(null, posEnum, enumFlags);
-              docsEnum = posEnum;
+            int freq;
+            if (writeFreqs) {
+              freq = docsEnum.freq();
+              totalTermFreq += freq;
             } else {
-              docsEnum = termsEnum.docs(null, docsEnum, enumFlags);
-              posEnum = null;
+              freq = -1;
             }
 
-            int docFreq = 0;
-            long totalTermFreq = 0;
-            while (true) {
-              int docID = docsEnum.nextDoc();
-              if (docID == DocsEnum.NO_MORE_DOCS) {
-                break;
-              }
-              docsSeen.set(docID);
-              docFreq++;
-
-              int freq;
-              if (writeFreqs) {
-                freq = docsEnum.freq();
-                totalTermFreq += freq;
-              } else {
-                freq = -1;
-              }
-
-              termsWriter.postingsWriter.startDoc(docID, freq);
-              if (writePositions) {
-                for (int i=0;i<freq;i++) {
-                  int pos = posEnum.nextPosition();
-                  BytesRef payload = writePayloads ? posEnum.getPayload() : null;
-                  int startOffset;
-                  int endOffset;
-                  if (writeOffsets) {
-                    startOffset = posEnum.startOffset();
-                    endOffset = posEnum.endOffset();
-                  } else {
-                    startOffset = -1;
-                    endOffset = -1;
-                  }
-                  termsWriter.postingsWriter.addPosition(pos, payload, startOffset, endOffset);
+            termsWriter.postingsWriter.startDoc(docID, freq);
+            if (writePositions) {
+              for (int i=0;i<freq;i++) {
+                int pos = posEnum.nextPosition();
+                BytesRef payload = writePayloads ? posEnum.getPayload() : null;
+                int startOffset;
+                int endOffset;
+                if (writeOffsets) {
+                  startOffset = posEnum.startOffset();
+                  endOffset = posEnum.endOffset();
+                } else {
+                  startOffset = -1;
+                  endOffset = -1;
                 }
+                termsWriter.postingsWriter.addPosition(pos, payload, startOffset, endOffset);
               }
             }
-            termsWriter.finishTerm(term, new TermStats(docFreq, totalTermFreq));
-            sumDocFreq += docFreq;
-            sumTotalTermFreq += totalTermFreq;
           }
+          termsWriter.finishTerm(term, new TermStats(docFreq, totalTermFreq));
+          sumDocFreq += docFreq;
+          sumTotalTermFreq += totalTermFreq;
+        }
 
-          termsWriter.finish(sumTotalTermFreq, sumDocFreq, docsSeen.cardinality());
-        }
-        success = true;
-      } finally {
-        if (success) {
-          IOUtils.close(this);
-        } else {
-          IOUtils.closeWhileHandlingException(this);
-        }
+        termsWriter.finish(sumTotalTermFreq, sumDocFreq, docsSeen.cardinality());
       }
     }
 

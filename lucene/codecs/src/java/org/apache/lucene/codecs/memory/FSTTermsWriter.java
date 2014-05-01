@@ -163,42 +163,39 @@ public class FSTTermsWriter extends FieldsConsumer {
 
   @Override
   public void write(Fields fields) throws IOException {
-    try {
-      for(String field : fields) {
-        Terms terms = fields.terms(field);
-        if (terms == null) {
-          continue;
-        }
-        FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
-        boolean hasFreq = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
-        TermsEnum termsEnum = terms.iterator(null);
-        TermsWriter termsWriter = termsWriter = new TermsWriter(fieldInfo);
-
-        long sumTotalTermFreq = 0;
-        long sumDocFreq = 0;
-        FixedBitSet docsSeen = new FixedBitSet(maxDoc);
-
-        while (true) {
-          BytesRef term = termsEnum.next();
-          if (term == null) {
-            break;
-          }
-            
-          BlockTermState termState = postingsWriter.writeTerm(term, termsEnum, docsSeen);
-          if (termState != null) {
-            termsWriter.finishTerm(term, termState);
-            sumTotalTermFreq += termState.totalTermFreq;
-            sumDocFreq += termState.docFreq;
-          }
-        }
-
-        termsWriter.finish(hasFreq ? sumTotalTermFreq : -1, sumDocFreq, docsSeen.cardinality());
+    for(String field : fields) {
+      Terms terms = fields.terms(field);
+      if (terms == null) {
+        continue;
       }
-    } finally {
-      close();
+      FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
+      boolean hasFreq = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
+      TermsEnum termsEnum = terms.iterator(null);
+      TermsWriter termsWriter = termsWriter = new TermsWriter(fieldInfo);
+
+      long sumTotalTermFreq = 0;
+      long sumDocFreq = 0;
+      FixedBitSet docsSeen = new FixedBitSet(maxDoc);
+
+      while (true) {
+        BytesRef term = termsEnum.next();
+        if (term == null) {
+          break;
+        }
+            
+        BlockTermState termState = postingsWriter.writeTerm(term, termsEnum, docsSeen);
+        if (termState != null) {
+          termsWriter.finishTerm(term, termState);
+          sumTotalTermFreq += termState.totalTermFreq;
+          sumDocFreq += termState.docFreq;
+        }
+      }
+
+      termsWriter.finish(hasFreq ? sumTotalTermFreq : -1, sumDocFreq, docsSeen.cardinality());
     }
   }
 
+  @Override
   public void close() throws IOException {
     if (out != null) {
       IOException ioe = null;

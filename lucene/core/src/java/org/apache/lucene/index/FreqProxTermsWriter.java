@@ -23,7 +23,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.util.CollectionUtil;
+import org.apache.lucene.util.IOUtils;
 
 final class FreqProxTermsWriter extends TermsHash {
 
@@ -100,7 +102,19 @@ final class FreqProxTermsWriter extends TermsHash {
 
     applyDeletes(state, fields);
 
-    state.segmentInfo.getCodec().postingsFormat().fieldsConsumer(state).write(fields);
+    FieldsConsumer consumer = state.segmentInfo.getCodec().postingsFormat().fieldsConsumer(state);
+    boolean success = false;
+    try {
+      consumer.write(fields);
+      success = true;
+    } finally {
+      if (success) {
+        IOUtils.close(consumer);
+      } else {
+        IOUtils.closeWhileHandlingException(consumer);
+      }
+    }
+
   }
 
   @Override
