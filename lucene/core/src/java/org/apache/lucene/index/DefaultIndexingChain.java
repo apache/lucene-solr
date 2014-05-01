@@ -321,49 +321,37 @@ final class DefaultIndexingChain extends DocConsumer {
     }
 
     // Add stored fields:
-    // TODO: if these hit exc today ->>> corrumption!
     fillStoredFields(docState.docID);
     startStoredFields();
 
-    // TODO: clean up this loop, it's complicated because dv exceptions are non-aborting,
-    // but storedfields are. Its also bogus that docvalues are treated as stored fields...
-    for (StorableField field : docState.doc.storableFields()) {
-      final String fieldName = field.name();
-      IndexableFieldType fieldType = field.fieldType();
-      PerField fp = null;
+    // TODO: clean up this loop, it's bogus that docvalues are treated as stored fields...
+    boolean abort = false;
+    try {
+      for (StorableField field : docState.doc.storableFields()) {
+        String fieldName = field.name();
+        IndexableFieldType fieldType = field.fieldType();
       
-      success = false;
-      try {
-        // TODO: make this non-aborting and change the test to confirm that!!!
         verifyFieldType(fieldName, fieldType);
         
-        fp = getOrAddField(fieldName, fieldType, false);
+        PerField fp = getOrAddField(fieldName, fieldType, false);
         if (fieldType.stored()) {
+          abort = true;
           storedFieldsWriter.writeField(fp.fieldInfo, field);
+          abort = false;
         }
-        success = true;
-      } finally {
-        if (!success) {
-          docWriter.setAborting();
-        }
-      }
-      
-      success = false;
-      try {
+
         DocValuesType dvType = fieldType.docValueType();
         if (dvType != null) {
           indexDocValue(fp, dvType, field);
         }
-        success = true;
-      } finally {
-        if (!success) {
-          // dv failed: so just try to bail on the current doc by calling finishDocument()...
-          finishStoredFields();
-        }
+      }
+    } finally {
+      if (abort) {
+        docWriter.setAborting();
+      } else {
+        finishStoredFields();
       }
     }
-
-    finishStoredFields();
   }
 
   private static void verifyFieldType(String name, IndexableFieldType ft) {

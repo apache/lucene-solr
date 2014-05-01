@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -27,6 +28,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -658,6 +660,34 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     
     ir.close();
     iw.close();
+    dir.close();
+  }
+
+  // LUCENE-5611: don't abort segment when term vector settings are wrong
+  public void testNoAbortOnBadTVSettings() throws Exception {
+    Directory dir = newDirectory();
+    // Don't use RandomIndexWriter because we want to be sure both docs go to 1 seg:
+    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriter iw = new IndexWriter(dir, iwc);
+
+    Document doc = new Document();
+    iw.addDocument(doc);
+    FieldType ft = new FieldType(StoredField.TYPE);
+    ft.setStoreTermVectors(true);
+    ft.freeze();
+    doc.add(new Field("field", "value", ft));
+    try {
+      iw.addDocument(doc);
+      fail("should have hit exc");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    IndexReader r = DirectoryReader.open(iw, true);
+
+    // Make sure the exc didn't lose our first document:
+    assertEquals(1, r.numDocs());
+    iw.close();
+    r.close();
     dir.close();
   }
 }
