@@ -92,7 +92,7 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
           iw.addDocument(doc);
         } catch (Exception e) {
           if (e.getMessage() != null && e.getMessage().startsWith("Fake IOException")) {
-            System.out.println("\nTEST: got expected fake exc:");
+            System.out.println("\nTEST: got expected fake exc:" + e.getMessage());
             e.printStackTrace(exceptionStream);
           } else {
             Rethrow.rethrow(e);
@@ -107,7 +107,7 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
             }
           } catch (Exception e) {
             if (e.getMessage() != null && e.getMessage().startsWith("Fake IOException")) {
-              System.out.println("\nTEST: got expected fake exc:");
+              System.out.println("\nTEST: got expected fake exc:" + e.getMessage());
               e.printStackTrace(exceptionStream);
             } else {
               Rethrow.rethrow(e);
