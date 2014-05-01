@@ -1,12 +1,10 @@
 package org.apache.lucene.server.handlers;
 
-import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import net.minidev.json.JSONObject;
-import net.minidev.json.JSONStyle;
 import net.minidev.json.JSONStyleIdent;
 
 import org.apache.lucene.server.FinishRequest;
@@ -63,7 +61,7 @@ public class HelpHandler extends Handler {
       Map<String,String> paramInfo = new LinkedHashMap<String,String>();
       for(Map.Entry<String,Param> paramEntry : handler.getType().params.entrySet()) {
         Param param = paramEntry.getValue();
-        paramInfo.put(paramEntry.getKey(), param.name + " (" + param.type.getClass().getSimpleName() + ")");
+        paramInfo.put(paramEntry.getKey(), param.desc + " (" + param.type.getClass().getSimpleName() + ")");
       }
       JSONObject handlerJson = new JSONObject();
       handlerJson.put("description", handlerDesc);
