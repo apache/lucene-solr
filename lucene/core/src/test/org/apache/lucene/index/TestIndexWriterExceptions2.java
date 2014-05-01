@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.nio.charset.Charset;
 import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -42,6 +41,7 @@ import org.apache.lucene.util.Rethrow;
  * no index corruption is ever created
  */
 // TODO: not sure which fails are test bugs or real bugs yet...
+// reproduce with: ant test  -Dtestcase=TestIndexWriterExceptions2 -Dtests.method=testSimple -Dtests.seed=9D05AC6DFF3CC9A4 -Dtests.multiplier=10 -Dtests.locale=fi_FI -Dtests.timezone=Canada/Pacific -Dtests.file.encoding=ISO-8859-1
 // also sometimes when it fails, the exception-stream printing doesnt seem to be working yet
 // 
 @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-5635")
@@ -115,7 +115,19 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
         }
       }
       
-      iw.close();
+      try {
+        iw.shutdown();
+      } catch (Exception e) {
+        if (e.getMessage() != null && e.getMessage().startsWith("Fake IOException")) {
+          System.out.println("\nTEST: got expected fake exc:" + e.getMessage());
+          e.printStackTrace(exceptionStream);
+          try {
+            iw.rollback();
+          } catch (Throwable t) {}
+        } else {
+          Rethrow.rethrow(e);
+        }
+      }
       dir.close();
     } catch (Throwable t) {
       System.out.println("Unexpected exception: dumping fake-exception-log:...");
