@@ -45,6 +45,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
  * 
  */
 @SuppressCodecs("Lucene3x")
+// TODO: fix all tests in here to ensure dv exceptions are non-aborting
 public class TestDocValuesIndexing extends LuceneTestCase {
   /*
    * - add test for multi segment case with deletes
@@ -94,9 +95,13 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
     Document doc = new Document();
     Field f = new NumericDocValuesField("field", 17);
+    doc.add(f);
+    
+    // add the doc
+    w.addDocument(doc);
+    
     // Index doc values are single-valued so we should not
     // be able to add same field more than once:
-    doc.add(f);
     doc.add(f);
     try {
       w.addDocument(doc);
@@ -105,10 +110,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       // expected
     }
 
-    doc = new Document();
-    doc.add(f);
-    w.addDocument(doc);
-    w.forceMerge(1);
     DirectoryReader r = w.getReader();
     w.close();
     assertEquals(17, FieldCache.DEFAULT.getInts(getOnlySegmentReader(r), "field", false).get(0));
