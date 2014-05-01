@@ -338,21 +338,21 @@ final class DefaultIndexingChain extends DocConsumer {
       verifyUnIndexedFieldType(fieldName, fieldType);
     }
 
-    boolean success = false;
-    try {
-      // Add stored fields:
-      if (fieldType.stored()) {
-        if (fp == null) {
-          fp = getOrAddField(fieldName, fieldType, false);
-        }
-        if (fieldType.stored()) {
-          storedFieldsWriter.writeField(fp.fieldInfo, field);
-        }
+    // Add stored fields:
+    if (fieldType.stored()) {
+      if (fp == null) {
+        fp = getOrAddField(fieldName, fieldType, false);
       }
-      success = true;
-    } finally {
-      if (!success) {
-        docWriter.setAborting();
+      if (fieldType.stored()) {
+        boolean success = false;
+        try {
+          storedFieldsWriter.writeField(fp.fieldInfo, field);
+          success = true;
+        } finally {
+          if (!success) {
+            docWriter.setAborting();
+          }
+        }
       }
     }
 
