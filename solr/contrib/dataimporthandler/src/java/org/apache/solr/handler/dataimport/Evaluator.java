@@ -55,7 +55,7 @@ public abstract class Evaluator {
    * @return the value of the given expression evaluated using the resolver
    */
   public abstract String evaluate(String expression, Context context);
-  
+
   /**
    * Parses a string of expression into separate params. The values are separated by commas. each value will be
    * translated into one of the following:
@@ -70,7 +70,7 @@ public abstract class Evaluator {
    *
    * @return a List of objects which can either be a string, number or a variable wrapper
    */
-  List<Object> parseParams(String expression, VariableResolver vr) {
+  protected List<Object> parseParams(String expression, VariableResolver vr) {
     List<Object> result = new ArrayList<>();
     expression = expression.trim();
     String[] ss = expression.split(",");
@@ -102,16 +102,20 @@ public abstract class Evaluator {
             }
           }
         } else {
-          result.add(new VariableWrapper(ss[i], vr));
+          result.add(getVariableWrapper(ss[i], vr));
         }
       }
     }
     return result;
   }
 
-  static class VariableWrapper {
-    String varName;
-    VariableResolver vr;
+  protected VariableWrapper getVariableWrapper(String s, VariableResolver vr) {
+    return new VariableWrapper(s,vr);
+  }
+
+  static protected class VariableWrapper {
+    public final String varName;
+    public final VariableResolver vr;
 
     public VariableWrapper(String s, VariableResolver vr) {
       this.varName = s;
@@ -120,7 +124,6 @@ public abstract class Evaluator {
 
     public Object resolve() {
       return vr.resolve(varName);
-
     }
 
     @Override

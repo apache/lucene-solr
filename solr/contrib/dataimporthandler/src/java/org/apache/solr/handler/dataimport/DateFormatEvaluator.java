@@ -52,11 +52,14 @@ import org.apache.solr.util.DateMathParser;
 public class DateFormatEvaluator extends Evaluator {
   
   public static final String DEFAULT_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
-  Map<DateFormatCacheKey, SimpleDateFormat> cache = new WeakHashMap<>();
-  Map<String, Locale> availableLocales = new HashMap<>();
-  Set<String> availableTimezones = new HashSet<>();
-  
-  class DateFormatCacheKey {
+  protected Map<DateFormatCacheKey, SimpleDateFormat> cache = new WeakHashMap<>();
+  protected Map<String, Locale> availableLocales = new HashMap<>();
+  protected Set<String> availableTimezones = new HashSet<>();
+
+  /**
+   * Used to wrap cache keys containing a Locale, TimeZone and date format String
+   */
+  static protected class DateFormatCacheKey {
     DateFormatCacheKey(Locale l, TimeZone tz, String df) {
       this.locale = l;
       this.timezone = tz;
@@ -99,13 +102,13 @@ public class DateFormatEvaluator extends Evaluator {
       VariableWrapper wrapper = (VariableWrapper) format;
       o = wrapper.resolve();
       format = o.toString();
-    }    
+    }
     Locale locale = Locale.ROOT;
     if(l.size()>2) {
       Object localeObj = l.get(2);
       String localeStr = null;
       if (localeObj  instanceof VariableWrapper) {
-        localeStr = ((VariableWrapper) localeObj).resolve().toString();        
+        localeStr = ((VariableWrapper) localeObj).resolve().toString();
       } else {
         localeStr = localeObj.toString();
       }
@@ -119,7 +122,7 @@ public class DateFormatEvaluator extends Evaluator {
       Object tzObj = l.get(3);
       String tzStr = null;
       if (tzObj  instanceof VariableWrapper) {
-        tzStr = ((VariableWrapper) tzObj).resolve().toString();        
+        tzStr = ((VariableWrapper) tzObj).resolve().toString();
       } else {
         tzStr = tzObj.toString();
       }
@@ -133,30 +136,75 @@ public class DateFormatEvaluator extends Evaluator {
     SimpleDateFormat fmt = getDateFormat(dateFmt, tz, locale);
     Date date = null;
     if (o instanceof VariableWrapper) {
-      VariableWrapper variableWrapper = (VariableWrapper) o;
-      Object variableval = variableWrapper.resolve();
-      if (variableval instanceof Date) {
-        date = (Date) variableval;
-      } else {
-        String s = variableval.toString();
-        try {
-          date = getDateFormat(DEFAULT_DATE_FORMAT, tz, locale).parse(s);
-        } catch (ParseException exp) {
-          wrapAndThrow(SEVERE, exp, "Invalid expression for date");
-        }
-      }
+      date = evaluateWrapper((VariableWrapper) o, locale, tz);
     } else {
-      String datemathfmt = o.toString();
-      datemathfmt = datemathfmt.replaceAll("NOW", "");
-      try {
-        date = getDateMathParser(locale, tz).parseMath(datemathfmt);
-      } catch (ParseException e) {
-        wrapAndThrow(SEVERE, e, "Invalid expression for date");
-      }
+      date = evaluateString(o.toString(), locale, tz);
     }
     return fmt.format(date);
   }
-  static DateMathParser getDateMathParser(Locale l, TimeZone tz) {
+
+  /**
+   * NOTE: declared as a method to allow for extensibility
+   *
+   * @lucene.experimental this API is experimental and subject to change
+   * @return the result of evaluating a string
+   */
+  protected Date evaluateWrapper(VariableWrapper variableWrapper, Locale locale, TimeZone tz) {
+    Date date = null;
+    Object variableval = resolveWrapper(variableWrapper,locale,tz);
+    if (variableval instanceof Date) {
+      date = (Date) variableval;
+    } else {
+      String s = variableval.toString();
+      try {
+        date = getDateFormat(DEFAULT_DATE_FORMAT, tz, locale).parse(s);
+      } catch (ParseException exp) {
+        wrapAndThrow(SEVERE, exp, "Invalid expression for date");
+      }
+    }
+    return date;
+  }
+
+  /**
+   * NOTE: declared as a method to allow for extensibility
+   * @lucene.experimental
+   * @return the result of evaluating a string
+   */
+  protected Date evaluateString(String datemathfmt, Locale locale, TimeZone tz) {
+    Date date = null;
+    datemathfmt = datemathfmt.replaceAll("NOW", "");
+    try {
+      DateMathParser parser = getDateMathParser(locale, tz);
+      date = parseMathString(parser,datemathfmt);
+    } catch (ParseException e) {
+      wrapAndThrow(SEVERE, e, "Invalid expression for date");
+    }
+    return date;
+  }
+
+  /**
+   * NOTE: declared as a method to allow for extensibility
+   * @lucene.experimental
+   * @return the result of resolving the variable wrapper
+   */
+  protected Date parseMathString(DateMathParser parser, String datemathfmt) throws ParseException {
+    return parser.parseMath(datemathfmt);
+  }
+
+  /**
+   * NOTE: declared as a method to allow for extensibility
+   * @lucene.experimental
+   * @return the result of resolving the variable wrapper
+   */
+  protected Object resolveWrapper(VariableWrapper variableWrapper, Locale locale, TimeZone tz) {
+    return variableWrapper.resolve();
+  }
+
+  /**
+   * @lucene.experimental
+   * @return a DateMathParser
+   */
+  protected DateMathParser getDateMathParser(Locale l, TimeZone tz) {
     return new DateMathParser(tz, l) {
       @Override
       public Date getNow() {

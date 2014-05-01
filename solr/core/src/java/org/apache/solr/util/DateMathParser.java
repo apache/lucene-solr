@@ -207,8 +207,9 @@ public class DateMathParser  {
       c.clear(Calendar.MILLISECOND);
       break;
     default:
-      throw new IllegalStateException
-        ("No logic for rounding value ("+u+") " + unit);
+      throw new IllegalStateException(
+        "No logic for rounding value ("+u+") " + unit
+      );
     }
 
   }
@@ -246,6 +247,20 @@ public class DateMathParser  {
       tz = (null != reqInfo) ? reqInfo.getClientTimeZone() : DEFAULT_MATH_TZ;
     }
     zone = (null != tz) ? tz : DEFAULT_MATH_TZ;
+  }
+
+  /**
+   * @return the time zone
+   */
+  public TimeZone getTimeZone() {
+    return this.zone;
+  }
+
+  /**
+   * @return the locale
+   */
+  public Locale getLocale() {
+    return this.loc;
   }
 
   /** 
