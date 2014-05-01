@@ -1261,10 +1261,11 @@ public abstract class LuceneTestCase extends Assert {
           if (!newType.storeTermVectorPayloads()) {
             newType.setStoreTermVectorPayloads(random.nextBoolean());
           }
-          if (!newType.storeTermVectorOffsets()) {
-            newType.setStoreTermVectorOffsets(random.nextBoolean());
-          }
         }
+      }
+      
+      if (!newType.storeTermVectorOffsets()) {
+        newType.setStoreTermVectorOffsets(random.nextBoolean());
       }
 
       if (VERBOSE) {
