@@ -145,6 +145,9 @@ Bug fixes
 * LUCENE-5559: Add additional argument validation for CapitalizationFilter
   and CodepointCountFilter. (Ahmet Arslan via Robert Muir)
 
+* LUCENE-5639: Fix PositionLengthAttribute implementation in Token class.
+  (Uwe Schindler, Robert Muir)
+
 Test Framework
 
 * LUCENE-5622: Fail tests if they print over the given limit of bytes to 
