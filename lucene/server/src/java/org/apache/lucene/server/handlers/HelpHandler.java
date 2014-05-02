@@ -50,9 +50,9 @@ public class HelpHandler extends Handler {
   public FinishRequest handle(IndexState state, Request request,
       Map<String,List<String>> params) throws Exception {
     final JSONObject result = new JSONObject();
-    if(params.get("message")!=null) {
-      result.put("message", params.get("message"));
-    }
+    if(request.hasParam("message")) {
+      result.put("message", request.getString("message"));
+    } 
     Map<String,JSONObject> handlerInfo = new LinkedHashMap<String,JSONObject>();
     for(Map.Entry<String,Handler> entry : globalState.getHandlers().entrySet()) {
       String handlerName = entry.getKey();
