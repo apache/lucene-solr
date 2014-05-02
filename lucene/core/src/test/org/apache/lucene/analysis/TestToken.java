@@ -253,6 +253,7 @@ public class TestToken extends LuceneTestCase {
           put(OffsetAttribute.class.getName() + "#startOffset", 6);
           put(OffsetAttribute.class.getName() + "#endOffset", 22);
           put(PositionIncrementAttribute.class.getName() + "#positionIncrement", 1);
+          put(PositionLengthAttribute.class.getName() + "#positionLength", 1);
           put(PayloadAttribute.class.getName() + "#payload", null);
           put(TypeAttribute.class.getName() + "#type", TypeAttribute.DEFAULT_TYPE);
           put(FlagsAttribute.class.getName() + "#flags", 8);
