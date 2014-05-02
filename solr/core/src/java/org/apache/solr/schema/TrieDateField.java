@@ -347,8 +347,6 @@ public class TrieDateField extends PrimitiveFieldType implements DateValueFieldT
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
     wrappedField.init(schema, args);
-    analyzer = wrappedField.analyzer;
-    queryAnalyzer = wrappedField.queryAnalyzer;
   }
 
   @Override

@@ -51,7 +51,6 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.ArrayList;
@@ -128,7 +127,7 @@ public class IndexSchema {
   protected volatile DynamicField[] dynamicFields;
   public DynamicField[] getDynamicFields() { return dynamicFields; }
 
-  private Analyzer analyzer;
+  private Analyzer indexAnalyzer;
   private Analyzer queryAnalyzer;
 
   protected List<SchemaAware> schemaAware = new ArrayList<>();
@@ -276,7 +275,7 @@ public class IndexSchema {
    * a field specific Analyzer based on the field type.
    * </p>
    */
-  public Analyzer getAnalyzer() { return analyzer; }
+  public Analyzer getIndexAnalyzer() { return indexAnalyzer; }
 
   /**
    * Returns the Analyzer used when searching this index
@@ -355,7 +354,7 @@ public class IndexSchema {
    * @since solr 1.3
    */
   public void refreshAnalyzers() {
-    analyzer = new SolrIndexAnalyzer();
+    indexAnalyzer = new SolrIndexAnalyzer();
     queryAnalyzer = new SolrQueryAnalyzer();
   }
 
@@ -388,7 +387,7 @@ public class IndexSchema {
     protected HashMap<String, Analyzer> analyzerCache() {
       HashMap<String, Analyzer> cache = new HashMap<>();
       for (SchemaField f : getFields().values()) {
-        Analyzer analyzer = f.getType().getAnalyzer();
+        Analyzer analyzer = f.getType().getIndexAnalyzer();
         cache.put(f.getName(), analyzer);
       }
       return cache;
@@ -397,7 +396,7 @@ public class IndexSchema {
     @Override
     protected Analyzer getWrappedAnalyzer(String fieldName) {
       Analyzer analyzer = analyzers.get(fieldName);
-      return analyzer != null ? analyzer : getDynamicFieldType(fieldName).getAnalyzer();
+      return analyzer != null ? analyzer : getDynamicFieldType(fieldName).getIndexAnalyzer();
     }
 
   }

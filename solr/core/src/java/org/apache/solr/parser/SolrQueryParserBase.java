@@ -677,7 +677,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
       return fac;
     }
 
-    Analyzer a = fieldType.getAnalyzer();
+    Analyzer a = fieldType.getIndexAnalyzer();
     if (a instanceof TokenizerChain) {
       // examine the indexing analysis chain if it supports leading wildcards
       TokenizerChain tc = (TokenizerChain)a;

@@ -48,6 +48,9 @@ Upgrading from Solr 4.x
   corresponding Trie-based field type and then re-index.  See SOLR-5936 for more
   information.
 
+* getAnalyzer() in IndexSchema and FieldType that was deprecated in Solr 4.9 has
+  been removed.  Use getIndexAnalyzer() instead. See SOLR-6022 for more information.
+
 Detailed Change List
 ----------------------
 
@@ -148,6 +151,10 @@ Other Changes
 
 * SOLR-6013: Fix method visibility of Evaluator, refactor DateFormatEvaluator for
   extensibility. (Aaron LaBella via shalin)
+
+* SOLR-6022: Deprecate getAnalyzer() in IndexField and FieldType, and add getIndexAnalyzer().
+  (Ryan Ernst)
+
 
 Build
 ---------------------

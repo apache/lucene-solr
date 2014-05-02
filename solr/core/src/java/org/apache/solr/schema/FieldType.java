@@ -58,7 +58,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -167,7 +166,7 @@ public abstract class FieldType extends FieldProperties {
 
     String positionInc = initArgs.get(POSITION_INCREMENT_GAP);
     if (positionInc != null) {
-      Analyzer analyzer = getAnalyzer();
+      Analyzer analyzer = getIndexAnalyzer();
       if (analyzer instanceof SolrAnalyzer) {
         ((SolrAnalyzer)analyzer).setPositionIncrementGap(Integer.parseInt(positionInc));
       } else {
@@ -214,7 +213,7 @@ public abstract class FieldType extends FieldProperties {
   public String toString() {
     return typeName + "{class=" + this.getClass().getName()
 //            + propertiesToString(properties)
-            + (analyzer != null ? ",analyzer=" + analyzer.getClass().getName() : "")
+            + (indexAnalyzer != null ? ",analyzer=" + indexAnalyzer.getClass().getName() : "")
             + ",args=" + args
             +"}";
   }
@@ -481,23 +480,9 @@ public abstract class FieldType extends FieldProperties {
     }
   }
 
-  /**
-   * Analyzer set by schema for text types to use when indexing fields
-   * of this type, subclasses can set analyzer themselves or override
-   * getAnalyzer()
-   * @see #getAnalyzer
-   * @see #setAnalyzer
-   */
-  protected Analyzer analyzer=new DefaultAnalyzer(256);
+  private Analyzer indexAnalyzer = new DefaultAnalyzer(256);
 
-  /**
-   * Analyzer set by schema for text types to use when searching fields
-   * of this type, subclasses can set analyzer themselves or override
-   * getAnalyzer()
-   * @see #getQueryAnalyzer
-   * @see #setQueryAnalyzer
-   */
-  protected Analyzer queryAnalyzer=analyzer;
+  private Analyzer queryAnalyzer = indexAnalyzer;
 
   /**
    * Returns the Analyzer to be used when indexing fields of this type.
@@ -506,8 +491,8 @@ public abstract class FieldType extends FieldProperties {
    * </p>
    * @see #getQueryAnalyzer
    */
-  public Analyzer getAnalyzer() {
-    return analyzer;
+  public Analyzer getIndexAnalyzer() {
+    return indexAnalyzer;
   }
 
   /**
@@ -515,10 +500,17 @@ public abstract class FieldType extends FieldProperties {
    * <p>
    * This method may be called many times, at any time.
    * </p>
-   * @see #getAnalyzer
+   * @see #getIndexAnalyzer
    */
   public Analyzer getQueryAnalyzer() {
     return queryAnalyzer;
+  }
+
+  /**
+   * Returns true if this type supports index and query analyzers, false otherwise.
+   */
+  protected boolean supportsAnalyzers() {
+    return false;
   }
 
 
@@ -526,40 +518,46 @@ public abstract class FieldType extends FieldProperties {
    * Sets the Analyzer to be used when indexing fields of this type.
    *
    * <p>
-   * The default implementation throws a SolrException.  
-   * Subclasses that override this method need to ensure the behavior 
-   * of the analyzer is consistent with the implementation of toInternal.
+   * Subclasses should override {@link #supportsAnalyzers()} to
+   * enable this function.
    * </p>
-   * 
-   * @see #toInternal
+   *
+   * @see #supportsAnalyzers()
    * @see #setQueryAnalyzer
-   * @see #getAnalyzer
+   * @see #getIndexAnalyzer
    */
-  public void setAnalyzer(Analyzer analyzer) {
-    throw new SolrException
-      (ErrorCode.SERVER_ERROR,
-       "FieldType: " + this.getClass().getSimpleName() + 
-       " (" + typeName + ") does not support specifying an analyzer");
+  public final void setIndexAnalyzer(Analyzer analyzer) {
+    if (supportsAnalyzers()) {
+      indexAnalyzer = analyzer;
+    } else {
+      throw new SolrException
+        (ErrorCode.SERVER_ERROR,
+         "FieldType: " + this.getClass().getSimpleName() +
+         " (" + typeName + ") does not support specifying an analyzer");
+    }
   }
 
   /**
    * Sets the Analyzer to be used when querying fields of this type.
    *
    * <p>
-   * The default implementation throws a SolrException.  
-   * Subclasses that override this method need to ensure the behavior 
-   * of the analyzer is consistent with the implementation of toInternal.
+   * Subclasses should override {@link #supportsAnalyzers()} to
+   * enable this function.
    * </p>
-   * 
-   * @see #toInternal
-   * @see #setAnalyzer
+   *
+   * @see #supportsAnalyzers()
+   * @see #setIndexAnalyzer
    * @see #getQueryAnalyzer
    */
-  public void setQueryAnalyzer(Analyzer analyzer) {
-    throw new SolrException
-      (ErrorCode.SERVER_ERROR,
-       "FieldType: " + this.getClass().getSimpleName() +
-       " (" + typeName + ") does not support specifying an analyzer");
+  public final void setQueryAnalyzer(Analyzer analyzer) {
+    if (supportsAnalyzers()) {
+      queryAnalyzer = analyzer;
+    } else {
+      throw new SolrException
+        (ErrorCode.SERVER_ERROR,
+         "FieldType: " + this.getClass().getSimpleName() +
+         " (" + typeName + ") does not support specifying an analyzer");
+    }
   }
 
   /** @lucene.internal */
@@ -845,7 +843,7 @@ public abstract class FieldType extends FieldProperties {
     
     if (isExplicitAnalyzer()) {
       String analyzerProperty = isExplicitQueryAnalyzer() ? INDEX_ANALYZER : ANALYZER;
-      namedPropertyValues.add(analyzerProperty, getAnalyzerProperties(getAnalyzer()));
+      namedPropertyValues.add(analyzerProperty, getAnalyzerProperties(getIndexAnalyzer()));
     } 
     if (isExplicitQueryAnalyzer()) {
       String analyzerProperty = isExplicitAnalyzer() ? QUERY_ANALYZER : ANALYZER;

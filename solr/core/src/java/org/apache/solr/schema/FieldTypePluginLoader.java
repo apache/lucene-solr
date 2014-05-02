@@ -116,7 +116,7 @@ public final class FieldTypePluginLoader
     }
 
     if (null != analyzer) {
-      ft.setAnalyzer(analyzer);
+      ft.setIndexAnalyzer(analyzer);
       ft.setQueryAnalyzer(queryAnalyzer);
       if (ft instanceof TextField) {
         if (null == multiAnalyzer) {

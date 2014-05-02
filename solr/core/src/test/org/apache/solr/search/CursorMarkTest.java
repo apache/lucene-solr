@@ -26,7 +26,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.CursorPagingTest;
@@ -35,7 +34,6 @@ import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Collection;
 import java.util.Collections;
@@ -265,7 +263,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
 
   private static Object getRandomCollation(SchemaField sf) throws IOException {
     Object val;
-    Analyzer analyzer = sf.getType().getAnalyzer();
+    Analyzer analyzer = sf.getType().getIndexAnalyzer();
     String term = TestUtil.randomRealisticUnicodeString(random());
     try (TokenStream ts = analyzer.tokenStream("fake", term)) {
       TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);

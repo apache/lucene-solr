@@ -79,7 +79,7 @@ public final class TokenizeTextBuilder implements CommandBuilder {
       if (fieldType == null) {
         throw new MorphlineCompilationException("Missing Solr field type in schema.xml for name: " + solrFieldType, config);
       }
-      this.analyzer = fieldType.getAnalyzer();
+      this.analyzer = fieldType.getIndexAnalyzer();
       Preconditions.checkNotNull(analyzer);
       try { // register CharTermAttribute for later (implicit) reuse
         this.token = analyzer.tokenStream("content", reader).addAttribute(CharTermAttribute.class);

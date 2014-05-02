@@ -41,7 +41,7 @@ public class TextField extends FieldType {
   /**
    * Analyzer set by schema for text types to use when searching fields
    * of this type, subclasses can set analyzer themselves or override
-   * getAnalyzer()
+   * getIndexAnalyzer()
    * This analyzer is used to process wildcard, prefix, regex and other multiterm queries. It
    * assembles a list of tokenizer +filters that "make sense" for this, primarily accent folding and
    * lowercasing filters, and charfilters.
@@ -76,7 +76,7 @@ public class TextField extends FieldType {
    * <p>
    * This method may be called many times, at any time.
    * </p>
-   * @see #getAnalyzer
+   * @see #getIndexAnalyzer
    */
   public Analyzer getMultiTermAnalyzer() {
     return multiTermAnalyzer;
@@ -112,15 +112,9 @@ public class TextField extends FieldType {
   }
 
   @Override
-  public void setAnalyzer(Analyzer analyzer) {
-    this.analyzer = analyzer;
+  protected boolean supportsAnalyzers() {
+    return true;
   }
-
-  @Override
-  public void setQueryAnalyzer(Analyzer analyzer) {
-    this.queryAnalyzer = analyzer;
-  }
-
 
   @Override
   public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {

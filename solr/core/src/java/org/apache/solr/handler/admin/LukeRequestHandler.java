@@ -26,14 +26,12 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
-import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.PriorityQueue;
@@ -426,7 +424,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       field.add("fields", typeusemap.get( ft.getTypeName() ) );
       field.add("tokenized", ft.isTokenized() );
       field.add("className", ft.getClass().getName());
-      field.add("indexAnalyzer", getAnalyzerInfo(ft.getAnalyzer()));
+      field.add("indexAnalyzer", getAnalyzerInfo(ft.getIndexAnalyzer()));
       field.add("queryAnalyzer", getAnalyzerInfo(ft.getQueryAnalyzer()));
       field.add("similarity", getSimilarityInfo(ft.getSimilarity()));
       types.add( ft.getTypeName(), field );
@@ -521,8 +519,8 @@ public class LukeRequestHandler extends RequestHandlerBase
     if (f == uniqueField){
       field.add("uniqueKey", true);
     }
-    if (ft.getAnalyzer().getPositionIncrementGap(f.getName()) != 0) {
-      field.add("positionIncrementGap", ft.getAnalyzer().getPositionIncrementGap(f.getName()));
+    if (ft.getIndexAnalyzer().getPositionIncrementGap(f.getName()) != 0) {
+      field.add("positionIncrementGap", ft.getIndexAnalyzer().getPositionIncrementGap(f.getName()));
     }
     field.add("copyDests", toListOfStringDests(schema.getCopyFieldsList(f.getName())));
     field.add("copySources", schema.getCopySources(f.getName()));

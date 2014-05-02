@@ -20,8 +20,6 @@ import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.Query;
@@ -639,7 +637,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   private TokenStream createAnalyzerTStream(IndexSchema schema, String fieldName, String docText) throws IOException {
 
     TokenStream tstream;
-    TokenStream ts = schema.getAnalyzer().tokenStream(fieldName, docText);
+    TokenStream ts = schema.getIndexAnalyzer().tokenStream(fieldName, docText);
     ts.reset();
     tstream = new TokenOrderingFilter(ts, 10);
     return tstream;

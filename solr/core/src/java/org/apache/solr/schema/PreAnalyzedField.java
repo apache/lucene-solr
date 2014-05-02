@@ -83,7 +83,7 @@ public class PreAnalyzedField extends FieldType {
   }
 
   @Override
-  public Analyzer getAnalyzer() {
+  public Analyzer getIndexAnalyzer() {
     return new SolrAnalyzer() {
       
       @Override
@@ -96,7 +96,7 @@ public class PreAnalyzedField extends FieldType {
   
   @Override
   public Analyzer getQueryAnalyzer() {
-    return getAnalyzer();
+    return getIndexAnalyzer();
   }
 
   @Override

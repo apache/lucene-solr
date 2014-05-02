@@ -51,7 +51,7 @@ public class MultiTermTest extends SolrTestCaseJ4 {
       assertTrue((factory instanceof ASCIIFoldingFilterFactory) || (factory instanceof LowerCaseFilterFactory));
     }
 
-    analyzer = field.getType().getAnalyzer();
+    analyzer = field.getType().getIndexAnalyzer();
     assertTrue(analyzer instanceof TokenizerChain);
     assertTrue(((TokenizerChain) analyzer).getTokenizerFactory() instanceof WhitespaceTokenizerFactory);
     tc = (TokenizerChain) analyzer;

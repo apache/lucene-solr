@@ -296,7 +296,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       
       this.mlt = new MoreLikeThis( reader ); // TODO -- after LUCENE-896, we can use , searcher.getSimilarity() );
       mlt.setFieldNames(fields);
-      mlt.setAnalyzer( searcher.getSchema().getAnalyzer() );
+      mlt.setAnalyzer( searcher.getSchema().getIndexAnalyzer() );
       
       // configurable params
       

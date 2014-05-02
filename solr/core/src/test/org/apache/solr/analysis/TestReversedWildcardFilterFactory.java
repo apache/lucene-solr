@@ -18,14 +18,12 @@ package org.apache.solr.analysis;
 
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.lang.reflect.Field;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.Query;
@@ -82,7 +80,7 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
   
   @Test
   public void testIndexingAnalysis() throws Exception {
-    Analyzer a = schema.getAnalyzer();
+    Analyzer a = schema.getIndexAnalyzer();
     String text = "one two three si\uD834\uDD1Ex";
 
     // field one

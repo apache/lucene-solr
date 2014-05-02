@@ -98,7 +98,7 @@ public class BoolField extends PrimitiveFieldType {
 
 
   @Override
-  public Analyzer getAnalyzer() {
+  public Analyzer getIndexAnalyzer() {
     return boolAnalyzer;
   }
 
