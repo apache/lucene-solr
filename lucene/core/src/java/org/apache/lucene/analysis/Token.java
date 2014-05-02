@@ -360,14 +360,14 @@ public class Token extends CharTermAttributeImpl
     this.payload = payload;
   }
   
-  /** Resets the term text, payload, flags, and positionIncrement,
+  /** Resets the term text, payload, flags, positionIncrement, positionLength,
    * startOffset, endOffset and token type to default.
    */
   @Override
   public void clear() {
     super.clear();
     payload = null;
-    positionIncrement = 1;
+    positionIncrement = positionLength = 1;
     flags = 0;
     startOffset = endOffset = 0;
     type = DEFAULT_TYPE;
@@ -391,6 +391,7 @@ public class Token extends CharTermAttributeImpl
   public Token clone(char[] newTermBuffer, int newTermOffset, int newTermLength, int newStartOffset, int newEndOffset) {
     final Token t = new Token(newTermBuffer, newTermOffset, newTermLength, newStartOffset, newEndOffset);
     t.positionIncrement = positionIncrement;
+    t.positionLength = positionLength;
     t.flags = flags;
     t.type = type;
     if (payload != null)
@@ -409,6 +410,7 @@ public class Token extends CharTermAttributeImpl
           endOffset == other.endOffset && 
           flags == other.flags &&
           positionIncrement == other.positionIncrement &&
+          positionLength == other.positionLength &&
           (type == null ? other.type == null : type.equals(other.type)) &&
           (payload == null ? other.payload == null : payload.equals(other.payload)) &&
           super.equals(obj)
@@ -424,6 +426,7 @@ public class Token extends CharTermAttributeImpl
     code = code * 31 + endOffset;
     code = code * 31 + flags;
     code = code * 31 + positionIncrement;
+    code = code * 31 + positionLength;
     if (type != null)
       code = code * 31 + type.hashCode();
     if (payload != null)
@@ -434,7 +437,7 @@ public class Token extends CharTermAttributeImpl
   // like clear() but doesn't clear termBuffer/text
   private void clearNoTermBuffer() {
     payload = null;
-    positionIncrement = 1;
+    positionIncrement = positionLength = 1;
     flags = 0;
     startOffset = endOffset = 0;
     type = DEFAULT_TYPE;
@@ -450,7 +453,7 @@ public class Token extends CharTermAttributeImpl
     clearNoTermBuffer();
     copyBuffer(newTermBuffer, newTermOffset, newTermLength);
     payload = null;
-    positionIncrement = 1;
+    positionIncrement = positionLength = 1;
     startOffset = newStartOffset;
     endOffset = newEndOffset;
     type = newType;
@@ -539,6 +542,7 @@ public class Token extends CharTermAttributeImpl
   public void reinit(Token prototype) {
     copyBuffer(prototype.buffer(), 0, prototype.length());
     positionIncrement = prototype.positionIncrement;
+    positionLength = prototype.positionLength;
     flags = prototype.flags;
     startOffset = prototype.startOffset;
     endOffset = prototype.endOffset;
@@ -554,6 +558,7 @@ public class Token extends CharTermAttributeImpl
   public void reinit(Token prototype, String newTerm) {
     setEmpty().append(newTerm);
     positionIncrement = prototype.positionIncrement;
+    positionLength = prototype.positionLength;
     flags = prototype.flags;
     startOffset = prototype.startOffset;
     endOffset = prototype.endOffset;
@@ -571,6 +576,7 @@ public class Token extends CharTermAttributeImpl
   public void reinit(Token prototype, char[] newTermBuffer, int offset, int length) {
     copyBuffer(newTermBuffer, offset, length);
     positionIncrement = prototype.positionIncrement;
+    positionLength = prototype.positionLength;
     flags = prototype.flags;
     startOffset = prototype.startOffset;
     endOffset = prototype.endOffset;
@@ -591,6 +597,7 @@ public class Token extends CharTermAttributeImpl
       super.copyTo(target);
       ((OffsetAttribute) target).setOffset(startOffset, endOffset);
       ((PositionIncrementAttribute) target).setPositionIncrement(positionIncrement);
+      ((PositionLengthAttribute) target).setPositionLength(positionLength);
       ((PayloadAttribute) target).setPayload((payload == null) ? null : payload.clone());
       ((FlagsAttribute) target).setFlags(flags);
       ((TypeAttribute) target).setType(type);
@@ -603,6 +610,7 @@ public class Token extends CharTermAttributeImpl
     reflector.reflect(OffsetAttribute.class, "startOffset", startOffset);
     reflector.reflect(OffsetAttribute.class, "endOffset", endOffset);
     reflector.reflect(PositionIncrementAttribute.class, "positionIncrement", positionIncrement);
+    reflector.reflect(PositionLengthAttribute.class, "positionLength", positionLength);
     reflector.reflect(PayloadAttribute.class, "payload", payload);
     reflector.reflect(FlagsAttribute.class, "flags", flags);
     reflector.reflect(TypeAttribute.class, "type", type);
