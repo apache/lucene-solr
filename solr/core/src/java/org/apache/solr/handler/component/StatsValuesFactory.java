@@ -390,7 +390,7 @@ class EnumStatsValues extends AbstractStatsValues<EnumFieldValue> {
  */
 class DateStatsValues extends AbstractStatsValues<Date> {
 
-  private long sum = -1;
+  private long sum = 0;
   double sumOfSquares = 0;
 
   public DateStatsValues(SchemaField sf, boolean calcDistinct) {
@@ -433,10 +433,10 @@ class DateStatsValues extends AbstractStatsValues<Date> {
    */
   @Override
   protected void updateMinMax(Date min, Date max) {
-    if(this.min==null || this.min.after(min)) {
+    if(null != min && (this.min==null || this.min.after(min))) {
       this.min = min;
     }
-    if(this.max==null || this.max.before(min)) {
+    if(null != max && (this.max==null || this.max.before(max))) {
       this.max = max;
     }
   }
