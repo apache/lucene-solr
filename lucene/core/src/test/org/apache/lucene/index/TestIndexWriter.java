@@ -2188,7 +2188,6 @@ public class TestIndexWriter extends LuceneTestCase {
     IOUtils.close(reader, dir);
   }
   
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-5611")
   public void testIterableThrowsException2() throws IOException {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(

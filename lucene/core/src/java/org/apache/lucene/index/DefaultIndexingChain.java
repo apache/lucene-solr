@@ -51,7 +51,8 @@ final class DefaultIndexingChain extends DocConsumer {
   // Writes postings and term vectors:
   final TermsHash termsHash;
 
-  final StoredFieldsWriter storedFieldsWriter;
+  // lazy init:
+  private StoredFieldsWriter storedFieldsWriter;
   private int lastStoredDocID; 
 
   // NOTE: I tried using Hash Map<String,PerField>
@@ -75,11 +76,15 @@ final class DefaultIndexingChain extends DocConsumer {
     this.docState = docWriter.docState;
     this.bytesUsed = docWriter.bytesUsed;
 
-    // Writes stored fields:
-    storedFieldsWriter = docWriter.codec.storedFieldsFormat().fieldsWriter(docWriter.directory, docWriter.getSegmentInfo(), IOContext.DEFAULT);
-
     TermsHash termVectorsWriter = new TermVectorsConsumer(docWriter);
     termsHash = new FreqProxTermsWriter(docWriter, termVectorsWriter);
+  }
+  
+  // TODO: can we remove this lazy-init / make cleaner / do it another way...? 
+  private void initStoredFieldsWriter() throws IOException {
+    if (storedFieldsWriter == null) {
+      storedFieldsWriter = docWriter.codec.storedFieldsFormat().fieldsWriter(docWriter.directory, docWriter.getSegmentInfo(), IOContext.DEFAULT);
+    }
   }
 
   @Override
@@ -92,6 +97,8 @@ final class DefaultIndexingChain extends DocConsumer {
     writeNorms(state);
     writeDocValues(state);
     
+    // its possible all docs hit non-aborting exceptions...
+    initStoredFieldsWriter();
     fillStoredFields(numDocs);
     storedFieldsWriter.finish(state.fieldInfos, numDocs);
     storedFieldsWriter.close();
@@ -246,6 +253,7 @@ final class DefaultIndexingChain extends DocConsumer {
   private void startStoredFields() throws IOException {
     boolean success = false;
     try {
+      initStoredFieldsWriter();
       storedFieldsWriter.startDocument();
       success = true;
     } finally {
