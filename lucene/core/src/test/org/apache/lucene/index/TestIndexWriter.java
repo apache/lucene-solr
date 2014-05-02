@@ -74,6 +74,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SetOnce;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.ThreadInterruptedException;
+import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
@@ -2237,6 +2238,40 @@ public class TestIndexWriter extends LuceneTestCase {
     }
     assertTrue(liveIds.isEmpty());
     IOUtils.close(reader, w, dir);
+  }
+  
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-5611")
+  public void testIterableThrowsException2() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
+        TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    try {
+      w.addDocuments(new Iterable<Document>() {
+        @Override
+        public Iterator<Document> iterator() {
+          return new Iterator<Document>() {
+
+            @Override
+            public boolean hasNext() {
+              return true;
+            }
+
+            @Override
+            public Document next() {
+              throw new RuntimeException("boom");
+            }
+
+            @Override
+            public void remove() { assert false; }
+          };
+        }
+      });
+    } catch (Exception e) {
+      assertNotNull(e.getMessage());
+      assertEquals("boom", e.getMessage());
+    }
+    w.close();
+    IOUtils.close(dir);
   }
 
   private static class RandomFailingFieldIterable implements Iterable<Iterable<IndexableField>> {
