@@ -82,7 +82,7 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
   
   @Test
   public void testIndexingAnalysis() throws Exception {
-    Analyzer a = schema.getAnalyzer();
+    Analyzer a = schema.getIndexAnalyzer();
     String text = "one two three si\uD834\uDD1Ex";
 
     // field one

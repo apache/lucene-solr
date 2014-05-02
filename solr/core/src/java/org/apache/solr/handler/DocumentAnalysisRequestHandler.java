@@ -237,7 +237,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
           }
         }
 
-        Analyzer analyzer = fieldType.getAnalyzer();
+        Analyzer analyzer = fieldType.getIndexAnalyzer();
         AnalysisContext analysisContext = new AnalysisContext(fieldType, analyzer, termsToMatch);
         Collection<Object> fieldValues = document.getFieldValues(name);
         NamedList<NamedList<? extends Object>> indexTokens 

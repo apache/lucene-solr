@@ -23,7 +23,6 @@ import java.io.IOException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.analyzing.AnalyzingInfixSuggester;
-import org.apache.lucene.search.suggest.analyzing.AnalyzingSuggester;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -76,7 +75,7 @@ public class AnalyzingInfixLookupFactory extends LookupFactory {
     if (ft == null) {
       throw new IllegalArgumentException("Error in configuration: " + fieldTypeName.toString() + " is not defined in the schema");
     }
-    Analyzer indexAnalyzer = ft.getAnalyzer();
+    Analyzer indexAnalyzer = ft.getIndexAnalyzer();
     Analyzer queryAnalyzer = ft.getQueryAnalyzer();
     
     // optional parameters

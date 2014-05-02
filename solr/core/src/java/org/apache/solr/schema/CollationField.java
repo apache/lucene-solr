@@ -201,7 +201,7 @@ public class CollationField extends FieldType {
   }
 
   @Override
-  public Analyzer getAnalyzer() {
+  public Analyzer getIndexAnalyzer() {
     return analyzer;
   }
 

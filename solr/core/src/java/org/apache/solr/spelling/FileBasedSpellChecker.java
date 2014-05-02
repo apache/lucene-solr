@@ -96,7 +96,7 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
 
         IndexWriter writer = new IndexWriter(
             ramDir,
-            new IndexWriterConfig(core.getSolrConfig().luceneMatchVersion, fieldType.getAnalyzer()).
+            new IndexWriterConfig(core.getSolrConfig().luceneMatchVersion, fieldType.getIndexAnalyzer()).
                 setMaxBufferedDocs(150).
                 setMergePolicy(mp).
                 setOpenMode(IndexWriterConfig.OpenMode.CREATE)

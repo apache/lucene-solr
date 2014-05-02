@@ -264,7 +264,7 @@ public class SolrConfig extends Config {
      // TODO: WTF is up with queryConverter???
      // it aparently *only* works as a singleton? - SOLR-4304
      // and even then -- only if there is a single SpellCheckComponent
-     // because of queryConverter.setAnalyzer
+     // because of queryConverter.setIndexAnalyzer
      loadPluginInfo(QueryConverter.class,"queryConverter",
                     REQUIRE_NAME, REQUIRE_CLASS);
 

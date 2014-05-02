@@ -64,7 +64,7 @@ public class FreeTextLookupFactory extends LookupFactory {
       throw new IllegalArgumentException("Error in configuration: " + fieldTypeName.toString() + " is not defined in the schema");
     }
     
-    Analyzer indexAnalyzer = ft.getAnalyzer();
+    Analyzer indexAnalyzer = ft.getIndexAnalyzer();
     Analyzer queryAnalyzer = ft.getQueryAnalyzer();
     
     int grams = (params.get(NGRAMS) != null) 

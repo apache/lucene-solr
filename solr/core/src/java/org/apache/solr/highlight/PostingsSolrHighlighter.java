@@ -187,7 +187,7 @@ public class PostingsSolrHighlighter extends SolrHighlighter implements PluginIn
         @Override
         protected Analyzer getIndexAnalyzer(String field) {
           if (params.getFieldBool(field, HighlightParams.HIGHLIGHT_MULTI_TERM, false)) {
-            return schema.getAnalyzer();
+            return schema.getIndexAnalyzer();
           } else {
             return null;
           }

@@ -88,7 +88,7 @@ public class SolrStopwordsCarrot2LexicalDataFactory implements ILexicalDataFacto
     // of this class are not used by multiple threads at a time.
     if (!solrStopWords.containsKey(fieldName)) {
       final Analyzer fieldAnalyzer = core.getLatestSchema().getFieldType(fieldName)
-          .getAnalyzer();
+          .getIndexAnalyzer();
       if (fieldAnalyzer instanceof TokenizerChain) {
         final TokenFilterFactory[] filterFactories = ((TokenizerChain) fieldAnalyzer)
             .getTokenFilterFactories();

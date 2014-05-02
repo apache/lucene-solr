@@ -217,7 +217,7 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
 
     NamedList<NamedList> analyzeResults = new SimpleOrderedMap<>();
     if (analysisRequest.getFieldValue() != null) {
-      AnalysisContext context = new AnalysisContext(fieldName, fieldType, fieldType.getAnalyzer(), termsToMatch);
+      AnalysisContext context = new AnalysisContext(fieldName, fieldType, fieldType.getIndexAnalyzer(), termsToMatch);
       NamedList analyzedTokens = analyzeValue(analysisRequest.getFieldValue(), context);
       analyzeResults.add("index", analyzedTokens);
     }

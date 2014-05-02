@@ -303,7 +303,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
 
   private static Object getRandomCollation(SchemaField sf) throws IOException {
     Object val;
-    Analyzer analyzer = sf.getType().getAnalyzer();
+    Analyzer analyzer = sf.getType().getIndexAnalyzer();
     String term = TestUtil.randomRealisticUnicodeString(random());
     try (TokenStream ts = analyzer.tokenStream("fake", term)) {
       TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);

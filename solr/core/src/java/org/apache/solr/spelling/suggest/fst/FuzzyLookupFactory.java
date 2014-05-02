@@ -81,7 +81,7 @@ public class FuzzyLookupFactory extends LookupFactory {
     if (ft == null) {
       throw new IllegalArgumentException("Error in configuration: " + fieldTypeName.toString() + " is not defined in the schema");
     }
-    Analyzer indexAnalyzer = ft.getAnalyzer();
+    Analyzer indexAnalyzer = ft.getIndexAnalyzer();
     Analyzer queryAnalyzer = ft.getQueryAnalyzer();
     
     // optional parameters

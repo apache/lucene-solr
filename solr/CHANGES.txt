@@ -90,6 +90,10 @@ Other Changes
 * SOLR-6013: Fix method visibility of Evaluator, refactor DateFormatEvaluator for
   extensibility. (Aaron LaBella via shalin)
 
+* SOLR-6022: Deprecate getAnalyzer() in IndexField and FieldType, and add getIndexAnalyzer().
+  (Ryan Ernst)
+
+
 Build
 ---------------------
 

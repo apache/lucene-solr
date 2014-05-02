@@ -1230,7 +1230,7 @@ public class ExtendedDismaxQParser extends QParser {
       }
       
       TokenizerChain tcq = (TokenizerChain) qa;
-      Analyzer ia = ft.getAnalyzer();
+      Analyzer ia = ft.getIndexAnalyzer();
       if (ia == qa || !(ia instanceof TokenizerChain)) {
         return qa;
       }
