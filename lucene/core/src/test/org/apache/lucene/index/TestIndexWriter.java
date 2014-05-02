@@ -2187,6 +2187,40 @@ public class TestIndexWriter extends LuceneTestCase {
     w.shutdown();
     IOUtils.close(reader, dir);
   }
+  
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-5611")
+  public void testIterableThrowsException2() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
+        TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    try {
+      w.addDocuments(new Iterable<Document>() {
+        @Override
+        public Iterator<Document> iterator() {
+          return new Iterator<Document>() {
+
+            @Override
+            public boolean hasNext() {
+              return true;
+            }
+
+            @Override
+            public Document next() {
+              throw new RuntimeException("boom");
+            }
+
+            @Override
+            public void remove() { assert false; }
+          };
+        }
+      });
+    } catch (Exception e) {
+      assertNotNull(e.getMessage());
+      assertEquals("boom", e.getMessage());
+    }
+    w.shutdown();
+    IOUtils.close(dir);
+  }
 
   private static class RandomFailingFieldIterable implements Iterable<IndexDocument> {
     private final List<? extends IndexDocument> docList;

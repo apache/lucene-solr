@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.Arrays;
 import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -119,25 +120,52 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
         ft.setStoreTermVectors(true);
         doc.add(newField("text_vectors", TestUtil.randomAnalysisString(random(), 6, true), ft));
         
-        try {
-          iw.addDocument(doc);
-          // we made it, sometimes delete our doc, or update a dv
-          int thingToDo = random().nextInt(4);
-          if (thingToDo == 0) {
-            iw.deleteDocuments(new Term("id", Integer.toString(i)));
-          } else if (thingToDo == 1 && defaultCodecSupportsFieldUpdates()) {
-            iw.updateNumericDocValue(new Term("id", Integer.toString(i)), "dv", i+1L);
-          } else if (thingToDo == 2 && defaultCodecSupportsFieldUpdates()) {
-            iw.updateBinaryDocValue(new Term("id", Integer.toString(i)), "dv2", new BytesRef(Integer.toString(i+1)));
+        if (random().nextInt(10) > 0) {
+          // single doc
+          try {
+            iw.addDocument(doc);
+            // we made it, sometimes delete our doc, or update a dv
+            int thingToDo = random().nextInt(4);
+            if (thingToDo == 0) {
+              iw.deleteDocuments(new Term("id", Integer.toString(i)));
+            } else if (thingToDo == 1 && defaultCodecSupportsFieldUpdates()) {
+              iw.updateNumericDocValue(new Term("id", Integer.toString(i)), "dv", i+1L);
+            } else if (thingToDo == 2 && defaultCodecSupportsFieldUpdates()) {
+              iw.updateBinaryDocValue(new Term("id", Integer.toString(i)), "dv2", new BytesRef(Integer.toString(i+1)));
+            }
+          } catch (Exception e) {
+            if (e.getMessage() != null && e.getMessage().startsWith("Fake IOException")) {
+              exceptionStream.println("\nTEST: got expected fake exc:" + e.getMessage());
+              e.printStackTrace(exceptionStream);
+            } else {
+              Rethrow.rethrow(e);
+            }
           }
-        } catch (Exception e) {
-          if (e.getMessage() != null && e.getMessage().startsWith("Fake IOException")) {
-            exceptionStream.println("\nTEST: got expected fake exc:" + e.getMessage());
-            e.printStackTrace(exceptionStream);
-          } else {
-            Rethrow.rethrow(e);
+        } else {
+          // block docs
+          Document doc2 = new Document();
+          doc2.add(newStringField("id", Integer.toString(-i), Field.Store.NO));
+          doc2.add(newTextField("text1", TestUtil.randomAnalysisString(random(), 20, true), Field.Store.NO));
+          doc2.add(new StoredField("stored1", "foo"));
+          doc2.add(new StoredField("stored1", "bar"));
+          doc2.add(newField("text_vectors", TestUtil.randomAnalysisString(random(), 6, true), ft));
+          
+          try {
+            iw.addDocuments(Arrays.asList(doc, doc2));
+            // we made it, sometimes delete our docs
+            if (random().nextBoolean()) {
+              iw.deleteDocuments(new Term("id", Integer.toString(i)), new Term("id", Integer.toString(-i)));
+            }
+          } catch (Exception e) {
+            if (e.getMessage() != null && e.getMessage().startsWith("Fake IOException")) {
+              exceptionStream.println("\nTEST: got expected fake exc:" + e.getMessage());
+              e.printStackTrace(exceptionStream);
+            } else {
+              Rethrow.rethrow(e);
+            }
           }
         }
+
         if (random().nextInt(10) == 0) {
           // trigger flush:
           try {
