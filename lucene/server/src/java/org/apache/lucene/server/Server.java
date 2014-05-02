@@ -361,6 +361,14 @@ public class Server {
             //System.out.println("cp cap: " + cb.capacity() + " readable=" + cb.readableBytes() + " chunked=" + request.isChunked());
             // nocommit must get encoding, not assume UTF-8:
             data = request.getContent().toString(CharsetUtil.UTF_8);
+          } else if(request.getMethod() == HttpMethod.GET){
+            List<String> json = params.remove("json");
+            if(json==null || json.isEmpty()) {
+              data = convertGetParametersToJson(params);
+              params.clear();
+            } else {
+              data = json.iterator().next();
+            }
           } else {
             data = null;
           }
@@ -431,7 +439,20 @@ public class Server {
 
       super.messageReceived(ctx, e);
     }
-
+    
+    private String convertGetParametersToJson(Map<String, List<String>> params) {
+      JSONObject json = new JSONObject();
+      for(Map.Entry<String,List<String>> entry : params.entrySet()) {
+        List<String> values = entry.getValue();
+        if(values.size()==1) {
+          json.put(entry.getKey(), values.iterator().next());
+        } else {
+          json.put(entry.getKey(), values);
+        }
+      }
+      return json.toString();
+    }
+    
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
       //System.out.println("SVR.exceptionCaught: " + e);
