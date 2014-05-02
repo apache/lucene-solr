@@ -155,7 +155,7 @@ public class SimpleQParserPlugin extends QParserPlugin {
 
       // Create a SimpleQueryParser using the analyzer from the schema.
       final IndexSchema schema = req.getSchema();
-      parser = new SolrSimpleQueryParser(req.getSchema().getAnalyzer(), queryFields, enabledOps, this, schema);
+      parser = new SolrSimpleQueryParser(req.getSchema().getQueryAnalyzer(), queryFields, enabledOps, this, schema);
 
       // Set the default operator to be either 'AND' or 'OR' for the query.
       QueryParser.Operator defaultOp = QueryParsing.getQueryParserDefaultOperator(req.getSchema(), defaultParams.get(QueryParsing.OP));
