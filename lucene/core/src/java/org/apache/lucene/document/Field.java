@@ -74,8 +74,6 @@ public class Field implements IndexableField, StorableField {
    * customize how it's tokenized */
   protected TokenStream tokenStream;
 
-  private transient TokenStream internalTokenStream;
-
   /**
    * Field's boost
    * @see #boost()
@@ -494,19 +492,19 @@ public class Field implements IndexableField, StorableField {
   }
 
   @Override
-  public TokenStream tokenStream(Analyzer analyzer) throws IOException {
+  public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) throws IOException {
     if (!fieldType().indexed()) {
       return null;
     }
 
     final NumericType numericType = fieldType().numericType();
     if (numericType != null) {
-      if (!(internalTokenStream instanceof NumericTokenStream)) {
+      if (!(reuse instanceof NumericTokenStream && ((NumericTokenStream)reuse).getPrecisionStep() == type.numericPrecisionStep())) {
         // lazy init the TokenStream as it is heavy to instantiate
         // (attributes,...) if not needed (stored field loading)
-        internalTokenStream = new NumericTokenStream(type.numericPrecisionStep());
+        reuse = new NumericTokenStream(type.numericPrecisionStep());
       }
-      final NumericTokenStream nts = (NumericTokenStream) internalTokenStream;
+      final NumericTokenStream nts = (NumericTokenStream) reuse;
       // initialize value in TokenStream
       final Number val = (Number) fieldsData;
       switch (numericType) {
@@ -525,20 +523,20 @@ public class Field implements IndexableField, StorableField {
       default:
         throw new AssertionError("Should never get here");
       }
-      return internalTokenStream;
+      return reuse;
     }
 
     if (!fieldType().tokenized()) {
       if (stringValue() == null) {
         throw new IllegalArgumentException("Non-Tokenized Fields must have a String value");
       }
-      if (!(internalTokenStream instanceof StringTokenStream)) {
+      if (!(reuse instanceof StringTokenStream)) {
         // lazy init the TokenStream as it is heavy to instantiate
         // (attributes,...) if not needed (stored field loading)
-        internalTokenStream = new StringTokenStream();
+        reuse = new StringTokenStream();
       }
-      ((StringTokenStream) internalTokenStream).setValue(stringValue());
-      return internalTokenStream;
+      ((StringTokenStream) reuse).setValue(stringValue());
+      return reuse;
     }
 
     if (tokenStream != null) {

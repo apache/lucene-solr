@@ -154,7 +154,7 @@ public class TestIndexableField extends LuceneTestCase {
     }
 
     @Override
-    public TokenStream tokenStream(Analyzer analyzer) throws IOException {
+    public TokenStream tokenStream(Analyzer analyzer, TokenStream previous) throws IOException {
       return readerValue() != null ? analyzer.tokenStream(name(), readerValue()) :
         analyzer.tokenStream(name(), new StringReader(stringValue()));
     }

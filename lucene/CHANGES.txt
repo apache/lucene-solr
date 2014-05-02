@@ -91,6 +91,12 @@ New Features
   minimum numeric values from the provided Terms.  (Robert Muir, Mike
   McCandless)
 
+Changes in Backwards Compatibility Policy
+
+* LUCENE-5634: Add reuse argument to IndexableField.tokenStream. This
+  can be used by custom fieldtypes, which don't use the Analyzer, but
+  implement their own TokenStream.  (Uwe Schindler, Robert Muir)
+
 API Changes
 
 * LUCENE-5582: Deprecate IndexOutput.length (just use
@@ -127,6 +133,9 @@ Optimizations
   
 * LUCENE-5591: pass an IOContext with estimated flush size when applying DV
   updates. (Shai Erera)
+
+* LUCENE-5634: IndexWriter reuses TokenStream instances for String and Numeric
+  fields by default. (Uwe Schindler, Shay Banon, Mike McCandless, Robert Muir)
 
 Bug fixes
 

@@ -511,6 +511,9 @@ final class DefaultIndexingChain extends DocConsumer {
 
     // Lazy init'd:
     NumericDocValuesWriter norms;
+    
+    // reused
+    TokenStream tokenStream;
 
     public PerField(FieldInfo fieldInfo, boolean invert) {
       this.fieldInfo = fieldInfo;
@@ -574,7 +577,7 @@ final class DefaultIndexingChain extends DocConsumer {
        */
       boolean aborting = false;
       boolean succeededInProcessingField = false;
-      try (TokenStream stream = field.tokenStream(docState.analyzer)) {
+      try (TokenStream stream = tokenStream = field.tokenStream(docState.analyzer, tokenStream)) {
         // reset the TokenStream to the first token
         stream.reset();
         invertState.setAttributeSource(stream);
