@@ -191,8 +191,8 @@ public class LazyDocument {
     }
 
     @Override
-    public TokenStream tokenStream(Analyzer analyzer) throws IOException {
-      return getRealValue().tokenStream(analyzer);
+    public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) throws IOException {
+      return getRealValue().tokenStream(analyzer, reuse);
     }
   }
 }
