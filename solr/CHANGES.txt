@@ -70,6 +70,9 @@ Bug Fixes
 * SOLR-6037: Fixed incorrect max/sum/stddev for Date fields in StatsComponent
   (Brett Lucey, hossman)
 
+* SOLR-6023: FieldAnalysisRequestHandler throws NPE if no parameters are supplied.
+  (shalin)
+
 Other Changes
 ---------------------
 
