@@ -39,6 +39,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
@@ -933,5 +934,18 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     mockTokenizer.setReader(new StringReader(input));
     return mockTokenizer;
   }
-
+  
+  /** Returns a new AttributeFactory impl */
+  public static AttributeFactory newAttributeFactory(Random random) {
+    if (random.nextBoolean()) {
+      return Token.TOKEN_ATTRIBUTE_FACTORY;
+    } else {
+      return AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY;
+    }
+  }
+  
+  /** Returns a new AttributeFactory impl */
+  public static AttributeFactory newAttributeFactory() {
+    return newAttributeFactory(random());
+  }
 }

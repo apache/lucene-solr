@@ -355,6 +355,11 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         return TEST_VERSION_CURRENT;
       }
     });
+    put(AttributeFactory.class, new ArgProducer() {
+      @Override public Object create(Random random) {
+        return newAttributeFactory(random);
+      }
+    });
     put(Set.class, new ArgProducer() {
       @Override public Object create(Random random) {
         // TypeTokenFilter
@@ -582,10 +587,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     Object[] args = new Object[paramTypes.length];
     for (int i = 0; i < args.length; i++) {
       Class<?> paramType = paramTypes[i];
-      if (paramType == AttributeFactory.class) {
-        // TODO: maybe the collator one...???
-        args[i] = AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY;
-      } else if (paramType == AttributeSource.class) {
+      if (paramType == AttributeSource.class) {
         // TODO: args[i] = new AttributeSource();
         // this is currently too scary to deal with!
         args[i] = null; // force IAE

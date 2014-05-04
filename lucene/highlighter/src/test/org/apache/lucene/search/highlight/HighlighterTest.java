@@ -2013,7 +2013,8 @@ final class SynonymTokenizer extends TokenStream {
       }
       st = new StringTokenizer(expansions, ",");
       if (st.hasMoreTokens()) {
-        currentRealToken = new Token(realOffsetAtt.startOffset(), realOffsetAtt.endOffset());
+        currentRealToken = new Token();
+        currentRealToken.setOffset(realOffsetAtt.startOffset(), realOffsetAtt.endOffset());
         currentRealToken.copyBuffer(realTermAtt.buffer(), 0, realTermAtt.length());
       }
       

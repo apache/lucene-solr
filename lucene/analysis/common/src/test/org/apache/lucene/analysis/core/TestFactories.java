@@ -179,7 +179,7 @@ public class TestFactories extends BaseTokenStreamTestCase {
 
     @Override
     protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tf = tokenizer.create();
+      Tokenizer tf = tokenizer.create(newAttributeFactory());
       if (tokenfilter != null) {
         return new TokenStreamComponents(tf, tokenfilter.create(tf));
       } else {

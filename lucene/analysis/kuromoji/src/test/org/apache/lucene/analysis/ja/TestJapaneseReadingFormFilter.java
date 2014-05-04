@@ -35,7 +35,7 @@ public class TestJapaneseReadingFormFilter extends BaseTokenStreamTestCase {
   private Analyzer katakanaAnalyzer = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new JapaneseTokenizer(null, true, JapaneseTokenizer.Mode.SEARCH);
+      Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), null, true, JapaneseTokenizer.Mode.SEARCH);
       return new TokenStreamComponents(tokenizer, new JapaneseReadingFormFilter(tokenizer, false));
     }
   };
@@ -43,7 +43,7 @@ public class TestJapaneseReadingFormFilter extends BaseTokenStreamTestCase {
   private Analyzer romajiAnalyzer = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new JapaneseTokenizer(null, true, JapaneseTokenizer.Mode.SEARCH);
+      Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), null, true, JapaneseTokenizer.Mode.SEARCH);
       return new TokenStreamComponents(tokenizer, new JapaneseReadingFormFilter(tokenizer, true));
     }
   };
@@ -59,7 +59,7 @@ public class TestJapaneseReadingFormFilter extends BaseTokenStreamTestCase {
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new JapaneseTokenizer(null, true, JapaneseTokenizer.Mode.SEARCH);
+        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), null, true, JapaneseTokenizer.Mode.SEARCH);
         TokenStream stream = new CJKWidthFilter(tokenizer);
         return new TokenStreamComponents(tokenizer, new JapaneseReadingFormFilter(stream, false));
       }
@@ -79,7 +79,7 @@ public class TestJapaneseReadingFormFilter extends BaseTokenStreamTestCase {
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new JapaneseTokenizer(null, true, JapaneseTokenizer.Mode.SEARCH);
+        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), null, true, JapaneseTokenizer.Mode.SEARCH);
         TokenStream stream = new CJKWidthFilter(tokenizer);
         return new TokenStreamComponents(tokenizer, new JapaneseReadingFormFilter(stream, true));
       }

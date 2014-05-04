@@ -30,7 +30,7 @@ public class TestICUTokenizerCJK extends BaseTokenStreamTestCase {
   Analyzer a = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName) {
-      return new TokenStreamComponents(new ICUTokenizer());
+      return new TokenStreamComponents(new ICUTokenizer(newAttributeFactory(), new DefaultICUTokenizerConfig(true)));
     }
   };
   

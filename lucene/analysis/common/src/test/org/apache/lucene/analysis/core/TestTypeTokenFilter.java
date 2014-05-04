@@ -36,7 +36,7 @@ public class TestTypeTokenFilter extends BaseTokenStreamTestCase {
   public void testTypeFilter() throws IOException {
     StringReader reader = new StringReader("121 is palindrome, while 123 is not");
     Set<String> stopTypes = asSet("<NUM>");
-    final StandardTokenizer input = new StandardTokenizer(TEST_VERSION_CURRENT);
+    final StandardTokenizer input = new StandardTokenizer(TEST_VERSION_CURRENT, newAttributeFactory());
     input.setReader(reader);
     TokenStream stream = new TypeTokenFilter(TEST_VERSION_CURRENT, input, stopTypes);
     assertTokenStreamContents(stream, new String[]{"is", "palindrome", "while", "is", "not"});
@@ -85,7 +85,7 @@ public class TestTypeTokenFilter extends BaseTokenStreamTestCase {
   public void testTypeFilterWhitelist() throws IOException {
     StringReader reader = new StringReader("121 is palindrome, while 123 is not");
     Set<String> stopTypes = Collections.singleton("<NUM>");
-    final StandardTokenizer input = new StandardTokenizer(TEST_VERSION_CURRENT);
+    final StandardTokenizer input = new StandardTokenizer(TEST_VERSION_CURRENT, newAttributeFactory());
     input.setReader(reader);
     TokenStream stream = new TypeTokenFilter(TEST_VERSION_CURRENT, input, stopTypes, true);
     assertTokenStreamContents(stream, new String[]{"121", "123"});

@@ -32,7 +32,7 @@ public class TestJapaneseBaseFormFilterFactory extends BaseTokenStreamTestCase {
   public void testBasics() throws IOException {
     JapaneseTokenizerFactory tokenizerFactory = new JapaneseTokenizerFactory(new HashMap<String,String>());
     tokenizerFactory.inform(new StringMockResourceLoader(""));
-    TokenStream ts = tokenizerFactory.create();
+    TokenStream ts = tokenizerFactory.create(newAttributeFactory());
     ((Tokenizer)ts).setReader(new StringReader("それはまだ実験段階にあります"));
     JapaneseBaseFormFilterFactory factory = new JapaneseBaseFormFilterFactory(new HashMap<String,String>());
     ts = factory.create(ts);

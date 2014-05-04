@@ -34,7 +34,7 @@ public class TestSearchMode extends BaseTokenStreamTestCase {
   private final Analyzer analyzer = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new JapaneseTokenizer(null, true, Mode.SEARCH);
+      Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), null, true, Mode.SEARCH);
       return new TokenStreamComponents(tokenizer, tokenizer);
     }
   };

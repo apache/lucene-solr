@@ -140,7 +140,7 @@ public class TestSegmentingTokenizerBase extends BaseTokenStreamTestCase {
     private OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
     
     public WholeSentenceTokenizer() {
-      super(BreakIterator.getSentenceInstance(Locale.ROOT));
+      super(newAttributeFactory(), BreakIterator.getSentenceInstance(Locale.ROOT));
     }
 
     @Override
@@ -178,7 +178,7 @@ public class TestSegmentingTokenizerBase extends BaseTokenStreamTestCase {
     private PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
     
     public SentenceAndWordTokenizer() {
-      super(BreakIterator.getSentenceInstance(Locale.ROOT));
+      super(newAttributeFactory(), BreakIterator.getSentenceInstance(Locale.ROOT));
     }
 
     @Override

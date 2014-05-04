@@ -42,7 +42,7 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
     sb.append(whitespace);
     sb.append("testing 1234");
     String input = sb.toString();
-    ICUTokenizer tokenizer = new ICUTokenizer(new DefaultICUTokenizerConfig(false));
+    ICUTokenizer tokenizer = new ICUTokenizer(newAttributeFactory(), new DefaultICUTokenizerConfig(false));
     tokenizer.setReader(new StringReader(input));
     assertTokenStreamContents(tokenizer, new String[] { "testing", "1234" });
   }
@@ -53,7 +53,7 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
       sb.append('a');
     }
     String input = sb.toString();
-    ICUTokenizer tokenizer = new ICUTokenizer(new DefaultICUTokenizerConfig(false));
+    ICUTokenizer tokenizer = new ICUTokenizer(newAttributeFactory(), new DefaultICUTokenizerConfig(false));
     tokenizer.setReader(new StringReader(input));
     char token[] = new char[4096];
     Arrays.fill(token, 'a');
@@ -70,7 +70,7 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
   private Analyzer a = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new ICUTokenizer(new DefaultICUTokenizerConfig(false));
+      Tokenizer tokenizer = new ICUTokenizer(newAttributeFactory(), new DefaultICUTokenizerConfig(false));
       TokenFilter filter = new ICUNormalizer2Filter(tokenizer);
       return new TokenStreamComponents(tokenizer, filter);
     }

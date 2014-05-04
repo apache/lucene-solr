@@ -31,7 +31,7 @@ public class TestThaiTokenizerFactory extends BaseTokenStreamFactoryTestCase {
    */
   public void testWordBreak() throws Exception {
     assumeTrue("JRE does not support Thai dictionary-based BreakIterator", ThaiTokenizer.DBBI_AVAILABLE);
-    Tokenizer tokenizer = tokenizerFactory("Thai").create();
+    Tokenizer tokenizer = tokenizerFactory("Thai").create(newAttributeFactory());
     tokenizer.setReader(new StringReader("การที่ได้ต้องแสดงว่างานดี"));
     assertTokenStreamContents(tokenizer, new String[] {"การ", "ที่", "ได้",
         "ต้อง", "แสดง", "ว่า", "งาน", "ดี"});

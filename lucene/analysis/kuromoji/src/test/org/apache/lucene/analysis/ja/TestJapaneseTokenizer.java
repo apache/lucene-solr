@@ -62,7 +62,7 @@ public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
   private Analyzer analyzer = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new JapaneseTokenizer(readDict(), false, Mode.SEARCH);
+      Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), readDict(), false, Mode.SEARCH);
       return new TokenStreamComponents(tokenizer, tokenizer);
     }
   };
@@ -70,7 +70,7 @@ public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
   private Analyzer analyzerNormal = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new JapaneseTokenizer(readDict(), false, Mode.NORMAL);
+      Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), readDict(), false, Mode.NORMAL);
       return new TokenStreamComponents(tokenizer, tokenizer);
     }
   };
@@ -78,7 +78,7 @@ public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
   private Analyzer analyzerNoPunct = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new JapaneseTokenizer(readDict(), true, Mode.SEARCH);
+      Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), readDict(), true, Mode.SEARCH);
       return new TokenStreamComponents(tokenizer, tokenizer);
     }
   };
@@ -86,7 +86,7 @@ public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
   private Analyzer extendedModeAnalyzerNoPunct = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new JapaneseTokenizer(readDict(), true, Mode.EXTENDED);
+      Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), readDict(), true, Mode.EXTENDED);
       return new TokenStreamComponents(tokenizer, tokenizer);
     }
   };
@@ -202,7 +202,7 @@ public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
                     new Analyzer() {
                       @Override
                       protected TokenStreamComponents createComponents(String fieldName) {
-                        Tokenizer tokenizer = new JapaneseTokenizer(readDict(), false, Mode.SEARCH);
+                        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), readDict(), false, Mode.SEARCH);
                         TokenStream graph = new MockGraphTokenFilter(random(), tokenizer);
                         return new TokenStreamComponents(tokenizer, graph);
                       }
@@ -352,7 +352,7 @@ public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
     final Analyzer analyzer = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
-        JapaneseTokenizer tokenizer = new JapaneseTokenizer(readDict(), false, Mode.SEARCH);
+        JapaneseTokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), readDict(), false, Mode.SEARCH);
         tokenizer.setGraphvizFormatter(gv2);
         return new TokenStreamComponents(tokenizer, tokenizer);
       }

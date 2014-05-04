@@ -33,7 +33,7 @@ public class TestICUTokenizerFactory extends BaseTokenStreamTestCase {
     Reader reader = new StringReader("การที่ได้ต้องแสดงว่างานดี  This is a test ກວ່າດອກ");
     ICUTokenizerFactory factory = new ICUTokenizerFactory(new HashMap<String,String>());
     factory.inform(new ClasspathResourceLoader(getClass()));
-    Tokenizer stream = factory.create();
+    Tokenizer stream = factory.create(newAttributeFactory());
     stream.setReader(reader);
     assertTokenStreamContents(stream,
         new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี",
@@ -48,7 +48,7 @@ public class TestICUTokenizerFactory extends BaseTokenStreamTestCase {
     args.put(ICUTokenizerFactory.RULEFILES, "Latn:Latin-break-only-on-whitespace.rbbi");
     ICUTokenizerFactory factory = new ICUTokenizerFactory(args);
     factory.inform(new ClasspathResourceLoader(this.getClass()));
-    Tokenizer stream = factory.create();
+    Tokenizer stream = factory.create(newAttributeFactory());
     stream.setReader(reader);
     assertTokenStreamContents(stream,
         new String[] { "Don't,break.at?/(punct)!", "\u201Cnice\u201D", "85_At:all;", "`really\"",  "+2=3$5,&813", "!@#%$^)(*@#$" },
@@ -62,7 +62,7 @@ public class TestICUTokenizerFactory extends BaseTokenStreamTestCase {
     args.put(ICUTokenizerFactory.RULEFILES, "Latn:Latin-dont-break-on-hyphens.rbbi");
     ICUTokenizerFactory factory = new ICUTokenizerFactory(args);
     factory.inform(new ClasspathResourceLoader(getClass()));
-    Tokenizer stream = factory.create();
+    Tokenizer stream = factory.create(newAttributeFactory());
     stream.setReader(reader);
     assertTokenStreamContents(stream,
         new String[] { "One-two", "punch",
@@ -82,7 +82,7 @@ public class TestICUTokenizerFactory extends BaseTokenStreamTestCase {
     args.put(ICUTokenizerFactory.RULEFILES, "Cyrl:KeywordTokenizer.rbbi,Thai:KeywordTokenizer.rbbi");
     ICUTokenizerFactory factory = new ICUTokenizerFactory(args);
     factory.inform(new ClasspathResourceLoader(getClass()));
-    Tokenizer stream = factory.create();
+    Tokenizer stream = factory.create(newAttributeFactory());
     stream.setReader(reader);
     assertTokenStreamContents(stream, new String[] { "Some", "English",
         "Немного русский.  ",

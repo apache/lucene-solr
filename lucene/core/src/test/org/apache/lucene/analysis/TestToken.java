@@ -40,16 +40,9 @@ public class TestToken extends LuceneTestCase {
     assertEquals("word", t.type());
     assertEquals(0, t.getFlags());
 
-    t = new Token(6, 22);
-    t.copyBuffer(content, 0, content.length);
-    assertEquals("hello", t.toString());
-    assertEquals("hello", t.toString());
-    assertEquals(6, t.startOffset());
-    assertEquals(22, t.endOffset());
-    assertEquals("word", t.type());
-    assertEquals(0, t.getFlags());
-
-    t = new Token(6, 22, 7);
+    t = new Token();
+    t.setOffset(6, 22);
+    t.setFlags(7);
     t.copyBuffer(content, 0, content.length);
     assertEquals("hello", t.toString());
     assertEquals("hello", t.toString());
@@ -58,7 +51,9 @@ public class TestToken extends LuceneTestCase {
     assertEquals("word", t.type());
     assertEquals(7, t.getFlags());
 
-    t = new Token(6, 22, "junk");
+    t = new Token();
+    t.setOffset(6, 22);
+    t.setType("junk");
     t.copyBuffer(content, 0, content.length);
     assertEquals("hello", t.toString());
     assertEquals("hello", t.toString());
@@ -174,7 +169,8 @@ public class TestToken extends LuceneTestCase {
   }
   
   public void testClone() throws Exception {
-    Token t = new Token(0, 5);
+    Token t = new Token();
+    t.setOffset(0, 5);
     char[] content = "hello".toCharArray();
     t.copyBuffer(content, 0, 5);
     char[] buf = t.buffer();
@@ -195,7 +191,8 @@ public class TestToken extends LuceneTestCase {
     assertEquals("", t.toString());
     assertEquals("", copy.toString());
 
-    t = new Token(0, 5);
+    t = new Token();
+    t.setOffset(0, 5);
     char[] content = "hello".toCharArray();
     t.copyBuffer(content, 0, 5);
     char[] buf = t.buffer();
@@ -245,7 +242,8 @@ public class TestToken extends LuceneTestCase {
   }
 
   public void testAttributeReflection() throws Exception {
-    Token t = new Token("foobar", 6, 22, 8);
+    Token t = new Token("foobar", 6, 22);
+    t.setFlags(8);
     TestUtil.assertAttributeReflection(t,
         new HashMap<String, Object>() {{
           put(CharTermAttribute.class.getName() + "#term", "foobar");

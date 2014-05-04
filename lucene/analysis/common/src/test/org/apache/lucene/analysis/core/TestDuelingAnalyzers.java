@@ -22,6 +22,7 @@ import java.io.StringReader;
 import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockReaderWrapper;
 import org.apache.lucene.analysis.TokenStream;
@@ -29,7 +30,6 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.BasicOperations;
@@ -44,7 +44,7 @@ import org.apache.lucene.util.automaton.Transition;
  * Any tests here need to probably consider unicode version of the JRE (it could
  * cause false fails).
  */
-public class TestDuelingAnalyzers extends LuceneTestCase {
+public class TestDuelingAnalyzers extends BaseTokenStreamTestCase {
   private CharacterRunAutomaton jvmLetter;
   
   @Override
@@ -71,7 +71,7 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
     Analyzer right = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT);
+        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT, newAttributeFactory());
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
@@ -91,7 +91,7 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
     Analyzer right = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT);
+        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT, newAttributeFactory());
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
@@ -109,7 +109,7 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
     Analyzer right = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT);
+        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT, newAttributeFactory());
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
@@ -128,7 +128,7 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
     Analyzer right = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT);
+        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT, newAttributeFactory());
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
@@ -146,7 +146,7 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
     Analyzer right = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT);
+        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT, newAttributeFactory());
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
@@ -165,7 +165,7 @@ public class TestDuelingAnalyzers extends LuceneTestCase {
     Analyzer right = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT);
+        Tokenizer tokenizer = new LetterTokenizer(TEST_VERSION_CURRENT, newAttributeFactory());
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };

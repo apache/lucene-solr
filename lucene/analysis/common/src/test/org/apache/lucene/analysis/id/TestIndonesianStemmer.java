@@ -22,6 +22,7 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 
@@ -33,7 +34,7 @@ public class TestIndonesianStemmer extends BaseTokenStreamTestCase {
   Analyzer a = new Analyzer() {
     @Override
     public TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new KeywordTokenizer();
+      Tokenizer tokenizer = new MockTokenizer(MockTokenizer.KEYWORD, false);
       return new TokenStreamComponents(tokenizer, new IndonesianStemFilter(tokenizer));
     }
   };
@@ -114,7 +115,7 @@ public class TestIndonesianStemmer extends BaseTokenStreamTestCase {
   Analyzer b = new Analyzer() {
     @Override
     public TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new KeywordTokenizer();
+      Tokenizer tokenizer = new MockTokenizer(MockTokenizer.KEYWORD, false);
       return new TokenStreamComponents(tokenizer, new IndonesianStemFilter(tokenizer, false));
     }
   };

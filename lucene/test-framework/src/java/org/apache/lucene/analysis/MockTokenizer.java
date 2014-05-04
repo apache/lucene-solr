@@ -98,7 +98,7 @@ public class MockTokenizer extends Tokenizer {
   }
 
   public MockTokenizer(CharacterRunAutomaton runAutomaton, boolean lowerCase, int maxTokenLength) {
-    this(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, runAutomaton, lowerCase, maxTokenLength);
+    this(BaseTokenStreamTestCase.newAttributeFactory(), runAutomaton, lowerCase, maxTokenLength);
   }
 
   public MockTokenizer(CharacterRunAutomaton runAutomaton, boolean lowerCase) {

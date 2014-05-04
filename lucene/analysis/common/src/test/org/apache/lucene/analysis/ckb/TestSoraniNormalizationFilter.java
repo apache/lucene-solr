@@ -22,6 +22,7 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 
@@ -32,7 +33,7 @@ public class TestSoraniNormalizationFilter extends BaseTokenStreamTestCase {
   Analyzer a = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new KeywordTokenizer();
+      Tokenizer tokenizer = new MockTokenizer(MockTokenizer.KEYWORD, false);
       return new TokenStreamComponents(tokenizer, new SoraniNormalizationFilter(tokenizer));
     }
   };
@@ -87,6 +88,13 @@ public class TestSoraniNormalizationFilter extends BaseTokenStreamTestCase {
   }
   
   public void testEmptyTerm() throws IOException {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KeywordTokenizer();
+        return new TokenStreamComponents(tokenizer, new SoraniNormalizationFilter(tokenizer));
+      }
+    };
     checkOneTerm(a, "", "");
   }
 }

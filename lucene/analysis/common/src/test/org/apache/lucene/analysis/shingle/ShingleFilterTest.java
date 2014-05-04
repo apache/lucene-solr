@@ -1096,7 +1096,8 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
   private static Token createToken
     (String term, int start, int offset, int positionIncrement)
   {
-    Token token = new Token(start, offset);
+    Token token = new Token();
+    token.setOffset(start, offset);
     token.copyBuffer(term.toCharArray(), 0, term.length());
     token.setPositionIncrement(positionIncrement);
     return token;

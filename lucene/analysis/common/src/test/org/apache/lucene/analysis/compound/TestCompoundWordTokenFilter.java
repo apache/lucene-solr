@@ -180,7 +180,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
   public void testTokenEndingWithWordComponentOfMinimumLength() throws Exception {
     CharArraySet dict = makeDictionary("ab", "cd", "ef");
 
-    Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT);
+    Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
     tokenizer.setReader(new StringReader("abcdef"));
     DictionaryCompoundWordTokenFilter tf = new DictionaryCompoundWordTokenFilter(TEST_VERSION_CURRENT,
       tokenizer,
@@ -200,7 +200,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
   public void testWordComponentWithLessThanMinimumLength() throws Exception {
     CharArraySet dict = makeDictionary("abc", "d", "efg");
 
-    Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT);
+    Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
     tokenizer.setReader(new StringReader("abcdefg"));
     DictionaryCompoundWordTokenFilter tf = new DictionaryCompoundWordTokenFilter(TEST_VERSION_CURRENT,
       tokenizer,
@@ -222,7 +222,8 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
     CharArraySet dict = makeDictionary("Rind", "Fleisch", "Draht", "Schere", "Gesetz",
         "Aufgabe", "Überwachung");
 
-    Tokenizer wsTokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT);
+    MockTokenizer wsTokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    wsTokenizer.setEnableChecks(false); // we will reset in a strange place
     wsTokenizer.setReader(new StringReader("Rindfleischüberwachungsgesetz"));
     DictionaryCompoundWordTokenFilter tf = new DictionaryCompoundWordTokenFilter(TEST_VERSION_CURRENT,
         wsTokenizer, dict,
@@ -246,7 +247,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
 
   public void testRetainMockAttribute() throws Exception {
     CharArraySet dict = makeDictionary("abc", "d", "efg");
-    Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT);
+    Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
     tokenizer.setReader(new StringReader("abcdefg"));
     TokenStream stream = new MockRetainAttributeFilter(tokenizer);
     stream = new DictionaryCompoundWordTokenFilter(

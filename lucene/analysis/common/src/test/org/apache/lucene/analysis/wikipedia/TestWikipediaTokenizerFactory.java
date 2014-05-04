@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.wikipedia.WikipediaTokenizer;
 public class TestWikipediaTokenizerFactory extends BaseTokenStreamFactoryTestCase {
   public void testTokenizer() throws Exception {
     Reader reader = new StringReader("This is a [[Category:foo]]");
-    Tokenizer tokenizer = tokenizerFactory("Wikipedia").create();
+    Tokenizer tokenizer = tokenizerFactory("Wikipedia").create(newAttributeFactory());
     tokenizer.setReader(reader);
     assertTokenStreamContents(tokenizer,
         new String[] { "This", "is", "a", "foo" },

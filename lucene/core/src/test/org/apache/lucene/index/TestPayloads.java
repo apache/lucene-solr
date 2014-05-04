@@ -591,7 +591,6 @@ public class TestPayloads extends LuceneTestCase {
     Field field = new TextField("field", "", Field.Store.NO);
     TokenStream ts = new MockTokenizer(MockTokenizer.WHITESPACE, true);
     ((Tokenizer)ts).setReader(new StringReader("here we go"));
-    assertFalse(ts.hasAttribute(PayloadAttribute.class));
     field.setTokenStream(ts);
     doc.add(field);
     writer.addDocument(doc);
@@ -603,7 +602,6 @@ public class TestPayloads extends LuceneTestCase {
     writer.addDocument(doc);
     ts = new MockTokenizer(MockTokenizer.WHITESPACE, true);
     ((Tokenizer)ts).setReader(new StringReader("another"));
-    assertFalse(ts.hasAttribute(PayloadAttribute.class));
     field.setTokenStream(ts);
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
@@ -625,7 +623,6 @@ public class TestPayloads extends LuceneTestCase {
     Field field = new TextField("field", "", Field.Store.NO);
     TokenStream ts = new MockTokenizer(MockTokenizer.WHITESPACE, true);
     ((Tokenizer)ts).setReader(new StringReader("here we go"));
-    assertFalse(ts.hasAttribute(PayloadAttribute.class));
     field.setTokenStream(ts);
     doc.add(field);
     Field field2 = new TextField("field", "", Field.Store.NO);
@@ -638,8 +635,6 @@ public class TestPayloads extends LuceneTestCase {
     Field field3 = new TextField("field", "", Field.Store.NO);
     ts = new MockTokenizer(MockTokenizer.WHITESPACE, true);
     ((Tokenizer)ts).setReader(new StringReader("nopayload"));
-
-    assertFalse(ts.hasAttribute(PayloadAttribute.class));
     field3.setTokenStream(ts);
     doc.add(field3);
     writer.addDocument(doc);

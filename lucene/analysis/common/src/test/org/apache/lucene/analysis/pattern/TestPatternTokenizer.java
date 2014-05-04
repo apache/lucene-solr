@@ -53,7 +53,7 @@ public class TestPatternTokenizer extends BaseTokenStreamTestCase
     };
     
     for( String[] test : tests ) {     
-      TokenStream stream = new PatternTokenizer(Pattern.compile(test[1]), Integer.parseInt(test[0]));
+      TokenStream stream = new PatternTokenizer(newAttributeFactory(), Pattern.compile(test[1]), Integer.parseInt(test[0]));
       ((Tokenizer)stream).setReader(new StringReader(test[2]));
       String out = tsToString( stream );
       // System.out.println( test[2] + " ==> " + out );
@@ -86,7 +86,7 @@ public class TestPatternTokenizer extends BaseTokenStreamTestCase
     CharFilter charStream = new MappingCharFilter( normMap, new StringReader( INPUT ) );
 
     // create PatternTokenizer
-    Tokenizer stream = new PatternTokenizer(Pattern.compile("[,;/\\s]+"), -1);
+    Tokenizer stream = new PatternTokenizer(newAttributeFactory(), Pattern.compile("[,;/\\s]+"), -1);
     stream.setReader(charStream);
     assertTokenStreamContents(stream,
         new String[] { "Günther", "Günther", "is", "here" },
@@ -95,7 +95,7 @@ public class TestPatternTokenizer extends BaseTokenStreamTestCase
         INPUT.length());
     
     charStream = new MappingCharFilter( normMap, new StringReader( INPUT ) );
-    stream = new PatternTokenizer(Pattern.compile("Günther"), 0);
+    stream = new PatternTokenizer(newAttributeFactory(), Pattern.compile("Günther"), 0);
     stream.setReader(charStream);
     assertTokenStreamContents(stream,
         new String[] { "Günther", "Günther" },
@@ -132,7 +132,7 @@ public class TestPatternTokenizer extends BaseTokenStreamTestCase
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new PatternTokenizer(Pattern.compile("a"), -1);
+        Tokenizer tokenizer = new PatternTokenizer(newAttributeFactory(), Pattern.compile("a"), -1);
         return new TokenStreamComponents(tokenizer);
       }    
     };
@@ -141,7 +141,7 @@ public class TestPatternTokenizer extends BaseTokenStreamTestCase
     Analyzer b = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new PatternTokenizer(Pattern.compile("a"), 0);
+        Tokenizer tokenizer = new PatternTokenizer(newAttributeFactory(), Pattern.compile("a"), 0);
         return new TokenStreamComponents(tokenizer);
       }    
     };

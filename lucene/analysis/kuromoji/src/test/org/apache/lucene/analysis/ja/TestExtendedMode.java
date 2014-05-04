@@ -36,7 +36,7 @@ public class TestExtendedMode extends BaseTokenStreamTestCase {
     
     @Override
     protected TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new JapaneseTokenizer(null, true, Mode.EXTENDED);
+      Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), null, true, Mode.EXTENDED);
       return new TokenStreamComponents(tokenizer, tokenizer);
     }
   };

@@ -34,7 +34,7 @@ public class TestStandardFactories extends BaseTokenStreamFactoryTestCase {
    */
   public void testStandardTokenizer() throws Exception {
     Reader reader = new StringReader("Wha\u0301t's this thing do?");
-    Tokenizer stream = tokenizerFactory("Standard").create();
+    Tokenizer stream = tokenizerFactory("Standard").create(newAttributeFactory());
     stream.setReader(reader);
     assertTokenStreamContents(stream,
         new String[]{"Wha\u0301t's", "this", "thing", "do"});
@@ -49,7 +49,7 @@ public class TestStandardFactories extends BaseTokenStreamFactoryTestCase {
     String content = "one two three " + longWord + " four five six";
     Reader reader = new StringReader(content);
     Tokenizer stream = tokenizerFactory("Standard",
-        "maxTokenLength", "1000").create();
+        "maxTokenLength", "1000").create(newAttributeFactory());
     stream.setReader(reader);
     assertTokenStreamContents(stream,
         new String[]{"one", "two", "three", longWord, "four", "five", "six"});
@@ -60,7 +60,7 @@ public class TestStandardFactories extends BaseTokenStreamFactoryTestCase {
    */
   public void testClassicTokenizer() throws Exception {
     Reader reader = new StringReader("What's this thing do?");
-    Tokenizer stream = tokenizerFactory("Classic").create();
+    Tokenizer stream = tokenizerFactory("Classic").create(newAttributeFactory());
     stream.setReader(reader);
     assertTokenStreamContents(stream,
         new String[]{"What's", "this", "thing", "do"});
@@ -75,7 +75,7 @@ public class TestStandardFactories extends BaseTokenStreamFactoryTestCase {
     String content = "one two three " + longWord + " four five six";
     Reader reader = new StringReader(content);
     Tokenizer stream = tokenizerFactory("Classic",
-        "maxTokenLength", "1000").create();
+        "maxTokenLength", "1000").create(newAttributeFactory());
     stream.setReader(reader);
     assertTokenStreamContents(stream,
         new String[]{"one", "two", "three", longWord, "four", "five", "six"});
@@ -86,7 +86,7 @@ public class TestStandardFactories extends BaseTokenStreamFactoryTestCase {
    */
   public void testStandardFilter() throws Exception {
     Reader reader = new StringReader("What's this thing do?");
-    Tokenizer tokenizer = tokenizerFactory("Classic").create();
+    Tokenizer tokenizer = tokenizerFactory("Classic").create(newAttributeFactory());
     tokenizer.setReader(reader);
     TokenStream stream = tokenFilterFactory("Classic").create(tokenizer);
     assertTokenStreamContents(stream, 
@@ -109,7 +109,7 @@ public class TestStandardFactories extends BaseTokenStreamFactoryTestCase {
    */
   public void testWhitespaceTokenizer() throws Exception {
     Reader reader = new StringReader("What's this thing do?");
-    Tokenizer stream = tokenizerFactory("Whitespace").create();
+    Tokenizer stream = tokenizerFactory("Whitespace").create(newAttributeFactory());
     stream.setReader(reader);
     assertTokenStreamContents(stream, 
         new String[] { "What's", "this", "thing", "do?" });
@@ -120,7 +120,7 @@ public class TestStandardFactories extends BaseTokenStreamFactoryTestCase {
    */
   public void testLetterTokenizer() throws Exception {
     Reader reader = new StringReader("What's this thing do?");
-    Tokenizer stream = tokenizerFactory("Letter").create();
+    Tokenizer stream = tokenizerFactory("Letter").create(newAttributeFactory());
     stream.setReader(reader);
     assertTokenStreamContents(stream, 
         new String[] { "What", "s", "this", "thing", "do" });
@@ -131,7 +131,7 @@ public class TestStandardFactories extends BaseTokenStreamFactoryTestCase {
    */
   public void testLowerCaseTokenizer() throws Exception {
     Reader reader = new StringReader("What's this thing do?");
-    Tokenizer stream = tokenizerFactory("LowerCase").create();
+    Tokenizer stream = tokenizerFactory("LowerCase").create(newAttributeFactory());
     stream.setReader(reader);
     assertTokenStreamContents(stream, 
         new String[] { "what", "s", "this", "thing", "do" });

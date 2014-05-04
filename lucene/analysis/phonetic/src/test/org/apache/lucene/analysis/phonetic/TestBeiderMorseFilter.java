@@ -110,7 +110,7 @@ public class TestBeiderMorseFilter extends BaseTokenStreamTestCase {
   }
   
   public void testCustomAttribute() throws IOException {
-    TokenStream stream = new KeywordTokenizer();
+    TokenStream stream = new MockTokenizer(MockTokenizer.KEYWORD, false);
     ((Tokenizer)stream).setReader(new StringReader("D'Angelo"));
     stream = new PatternKeywordMarkerFilter(stream, Pattern.compile(".*"));
     stream = new BeiderMorseFilter(stream, new PhoneticEngine(NameType.GENERIC, RuleType.EXACT, true));
