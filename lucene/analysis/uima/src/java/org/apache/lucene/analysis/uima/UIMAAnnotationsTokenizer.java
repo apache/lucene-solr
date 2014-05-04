@@ -17,6 +17,7 @@ package org.apache.lucene.analysis.uima;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -43,7 +44,7 @@ public final class UIMAAnnotationsTokenizer extends BaseUIMATokenizer {
   private int finalOffset = 0;
 
   public UIMAAnnotationsTokenizer(String descriptorPath, String tokenType, Map<String, Object> configurationParameters) {
-    this(descriptorPath, tokenType, configurationParameters, AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY);
+    this(descriptorPath, tokenType, configurationParameters, Token.TOKEN_ATTRIBUTE_FACTORY);
   }
 
   public UIMAAnnotationsTokenizer(String descriptorPath, String tokenType, Map<String, Object> configurationParameters, 

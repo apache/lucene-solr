@@ -137,6 +137,10 @@ Optimizations
 * LUCENE-5634: IndexWriter reuses TokenStream instances for String and Numeric
   fields by default. (Uwe Schindler, Shay Banon, Mike McCandless, Robert Muir)
 
+* LUCENE-5638: TokenStream uses a more performant AttributeFactory by default,
+  that packs the core attributes into one impl, for faster clearAttributes(),
+  saveState(), and restoreState().  (Uwe Schindler, Robert Muir)
+
 Bug fixes
 
 * LUCENE-5600: HttpClientBase did not properly consume a connection if a server

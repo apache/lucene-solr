@@ -17,6 +17,7 @@ package org.apache.lucene.collation;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.Token;
 import org.apache.lucene.collation.tokenattributes.ICUCollatedTermAttributeImpl;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
@@ -68,12 +69,12 @@ public class ICUCollationAttributeFactory extends AttributeSource.AttributeFacto
   
   /**
    * Create an ICUCollationAttributeFactory, using 
-   * {@link org.apache.lucene.util.AttributeSource.AttributeFactory#DEFAULT_ATTRIBUTE_FACTORY} as the
+   * {@link org.apache.lucene.analysis.Token#TOKEN_ATTRIBUTE_FACTORY} as the
    * factory for all other attributes.
    * @param collator CollationKey generator
    */
   public ICUCollationAttributeFactory(Collator collator) {
-    this(AttributeSource.AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, collator);
+    this(Token.TOKEN_ATTRIBUTE_FACTORY, collator);
   }
   
   /**

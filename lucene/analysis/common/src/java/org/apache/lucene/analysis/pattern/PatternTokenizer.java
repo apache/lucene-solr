@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -65,7 +67,7 @@ public final class PatternTokenizer extends Tokenizer {
 
   /** creates a new PatternTokenizer returning tokens from group (-1 for split functionality) */
   public PatternTokenizer(Pattern pattern, int group) {
-    this(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, pattern, group);
+    this(Token.TOKEN_ATTRIBUTE_FACTORY, pattern, group);
   }
 
   /** creates a new PatternTokenizer returning tokens from group (-1 for split functionality) */

@@ -22,6 +22,7 @@ import java.io.Reader;
 
 import java.text.BreakIterator;
 
+import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 
@@ -62,7 +63,7 @@ public abstract class SegmentingTokenizerBase extends Tokenizer {
    * be provided to this constructor.
    */
   public SegmentingTokenizerBase(BreakIterator iterator) {
-    this(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, iterator);
+    this(Token.TOKEN_ATTRIBUTE_FACTORY, iterator);
   }
   
   /**

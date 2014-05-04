@@ -195,7 +195,7 @@ public final class JapaneseTokenizer extends Tokenizer {
    * @param mode tokenization mode.
    */
   public JapaneseTokenizer(UserDictionary userDictionary, boolean discardPunctuation, Mode mode) {
-    this(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, userDictionary, discardPunctuation, mode);
+    this(org.apache.lucene.analysis.Token.TOKEN_ATTRIBUTE_FACTORY, userDictionary, discardPunctuation, mode);
   }
 
   /**

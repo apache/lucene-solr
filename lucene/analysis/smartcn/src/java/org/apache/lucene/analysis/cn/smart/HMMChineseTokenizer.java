@@ -22,6 +22,7 @@ import java.text.BreakIterator;
 import java.util.Iterator;
 import java.util.Locale;
 
+import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.cn.smart.hhmm.SegToken;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -47,7 +48,7 @@ public class HMMChineseTokenizer extends SegmentingTokenizerBase {
 
   /** Creates a new HMMChineseTokenizer */
   public HMMChineseTokenizer() {
-    this(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY);
+    this(Token.TOKEN_ATTRIBUTE_FACTORY);
   }
       
   /** Creates a new HMMChineseTokenizer, supplying the AttributeFactory */

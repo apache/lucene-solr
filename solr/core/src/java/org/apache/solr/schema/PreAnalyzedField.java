@@ -255,6 +255,8 @@ public class PreAnalyzedField extends FieldType {
     private PreAnalyzedParser parser;
     
     public PreAnalyzedTokenizer(PreAnalyzedParser parser) {
+      // we don't pack attributes: since we are used for (de)serialization and dont want bloat.
+      super(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY);
       this.parser = parser;
     }
     
