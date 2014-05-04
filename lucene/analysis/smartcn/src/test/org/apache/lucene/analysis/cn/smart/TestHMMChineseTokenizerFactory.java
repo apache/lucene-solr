@@ -34,8 +34,7 @@ public class TestHMMChineseTokenizerFactory extends BaseTokenStreamTestCase {
   public void testSimple() throws Exception {
     Reader reader = new StringReader("我购买了道具和服装。");
     TokenizerFactory factory = new HMMChineseTokenizerFactory(new HashMap<String,String>());
-    Tokenizer tokenizer = factory.create(reader);
-    tokenizer.setReader(reader);
+    Tokenizer tokenizer = factory.create(newAttributeFactory(), reader);
     // TODO: fix smart chinese to not emit punctuation tokens
     // at the moment: you have to clean up with WDF, or use the stoplist, etc
     assertTokenStreamContents(tokenizer, 

@@ -182,6 +182,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
   public void testTokenEndingWithWordComponentOfMinimumLength() throws Exception {
     CharArraySet dict = makeDictionary("ab", "cd", "ef");
 
+    Tokenizer tokenizer = new MockTokenizer(new StringReader("abcdef"), MockTokenizer.WHITESPACE, false);
     DictionaryCompoundWordTokenFilter tf = new DictionaryCompoundWordTokenFilter(TEST_VERSION_CURRENT,
       new WhitespaceTokenizer(TEST_VERSION_CURRENT,
         new StringReader(
@@ -203,6 +204,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
   public void testWordComponentWithLessThanMinimumLength() throws Exception {
     CharArraySet dict = makeDictionary("abc", "d", "efg");
 
+    Tokenizer tokenizer = new MockTokenizer(new StringReader("abcdefg"), MockTokenizer.WHITESPACE, false);
     DictionaryCompoundWordTokenFilter tf = new DictionaryCompoundWordTokenFilter(TEST_VERSION_CURRENT,
       new WhitespaceTokenizer(TEST_VERSION_CURRENT,
         new StringReader(
@@ -226,9 +228,10 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
     CharArraySet dict = makeDictionary("Rind", "Fleisch", "Draht", "Schere", "Gesetz",
         "Aufgabe", "Überwachung");
 
-    Tokenizer wsTokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(
-        "Rindfleischüberwachungsgesetz"));
-    DictionaryCompoundWordTokenFilter tf = new DictionaryCompoundWordTokenFilter(TEST_VERSION_CURRENT, 
+    MockTokenizer wsTokenizer = new MockTokenizer(new StringReader("Rindfleischüberwachungsgesetz"), MockTokenizer.WHITESPACE, false);
+    wsTokenizer.setEnableChecks(false); // we will reset in a strange place
+    wsTokenizer.setReader(new StringReader("Rindfleischüberwachungsgesetz"));
+    DictionaryCompoundWordTokenFilter tf = new DictionaryCompoundWordTokenFilter(TEST_VERSION_CURRENT,
         wsTokenizer, dict,
         CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
         CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE,
@@ -250,8 +253,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
 
   public void testRetainMockAttribute() throws Exception {
     CharArraySet dict = makeDictionary("abc", "d", "efg");
-    Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT,
-        new StringReader("abcdefg"));
+    Tokenizer tokenizer = new MockTokenizer(new StringReader("abcdefg"), MockTokenizer.WHITESPACE, false);
     TokenStream stream = new MockRetainAttributeFilter(tokenizer);
     stream = new DictionaryCompoundWordTokenFilter(
         TEST_VERSION_CURRENT, stream, dict,

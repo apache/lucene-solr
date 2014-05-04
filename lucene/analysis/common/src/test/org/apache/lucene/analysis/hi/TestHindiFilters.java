@@ -32,7 +32,7 @@ public class TestHindiFilters extends BaseTokenStreamFactoryTestCase {
    */
   public void testIndicNormalizer() throws Exception {
     Reader reader = new StringReader("ত্‍ अाैर");
-    TokenStream stream = tokenizerFactory("Standard").create(reader);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("IndicNormalization").create(stream);
     assertTokenStreamContents(stream, new String[] { "ৎ", "और" });
   }
@@ -42,7 +42,7 @@ public class TestHindiFilters extends BaseTokenStreamFactoryTestCase {
    */
   public void testHindiNormalizer() throws Exception {
     Reader reader = new StringReader("क़िताब");
-    TokenStream stream = tokenizerFactory("Standard").create(reader);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("IndicNormalization").create(stream);
     stream = tokenFilterFactory("HindiNormalization").create(stream);
     assertTokenStreamContents(stream, new String[] {"किताब"});
@@ -53,7 +53,7 @@ public class TestHindiFilters extends BaseTokenStreamFactoryTestCase {
    */
   public void testStemmer() throws Exception {
     Reader reader = new StringReader("किताबें");
-    TokenStream stream = tokenizerFactory("Standard").create(reader);
+    TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("IndicNormalization").create(stream);
     stream = tokenFilterFactory("HindiNormalization").create(stream);
     stream = tokenFilterFactory("HindiStem").create(stream);

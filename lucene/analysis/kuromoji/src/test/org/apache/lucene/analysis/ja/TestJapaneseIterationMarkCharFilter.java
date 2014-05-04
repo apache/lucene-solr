@@ -45,7 +45,7 @@ public class TestJapaneseIterationMarkCharFilter extends BaseTokenStreamTestCase
   private Analyzer japaneseAnalyzer = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer tokenizer = new JapaneseTokenizer(reader, null, false, JapaneseTokenizer.Mode.SEARCH);
+      Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), reader, null, false, JapaneseTokenizer.Mode.SEARCH);
       return new TokenStreamComponents(tokenizer, tokenizer);
     }
 

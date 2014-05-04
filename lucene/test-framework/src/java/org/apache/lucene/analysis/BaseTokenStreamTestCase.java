@@ -39,6 +39,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
@@ -907,5 +908,35 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       ret[offset++] = i;
     }
     return ret;
+  }
+
+  protected static MockTokenizer whitespaceMockTokenizer(Reader input) throws IOException {
+    return new MockTokenizer(input, MockTokenizer.WHITESPACE, false);
+  }
+
+  protected static MockTokenizer whitespaceMockTokenizer(String input) throws IOException {
+    return whitespaceMockTokenizer(new StringReader(input));
+  }
+
+  protected static MockTokenizer keywordMockTokenizer(Reader input) throws IOException {
+    return new MockTokenizer(input, MockTokenizer.KEYWORD, false);
+  }
+
+  protected static MockTokenizer keywordMockTokenizer(String input) throws IOException {
+    return keywordMockTokenizer(new StringReader(input));
+  }
+  
+  /** Returns a new AttributeFactory impl */
+  public static AttributeFactory newAttributeFactory(Random random) {
+    if (random.nextBoolean()) {
+      return Token.TOKEN_ATTRIBUTE_FACTORY;
+    } else {
+      return AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY;
+    }
+  }
+  
+  /** Returns a new AttributeFactory impl */
+  public static AttributeFactory newAttributeFactory() {
+    return newAttributeFactory(random());
   }
 }

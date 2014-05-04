@@ -32,7 +32,7 @@ public class TestJapaneseBaseFormFilter extends BaseTokenStreamTestCase {
   private Analyzer analyzer = new Analyzer() {
     @Override
     protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      Tokenizer tokenizer = new JapaneseTokenizer(reader, null, true, JapaneseTokenizer.DEFAULT_MODE);
+      Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), reader, null, true, JapaneseTokenizer.DEFAULT_MODE);
       return new TokenStreamComponents(tokenizer, new JapaneseBaseFormFilter(tokenizer));
     }
   };
@@ -48,7 +48,7 @@ public class TestJapaneseBaseFormFilter extends BaseTokenStreamTestCase {
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer source = new JapaneseTokenizer(reader, null, true, JapaneseTokenizer.DEFAULT_MODE);
+        Tokenizer source = new JapaneseTokenizer(newAttributeFactory(), reader, null, true, JapaneseTokenizer.DEFAULT_MODE);
         TokenStream sink = new SetKeywordMarkerFilter(source, exclusionSet);
         return new TokenStreamComponents(source, new JapaneseBaseFormFilter(sink));
       }

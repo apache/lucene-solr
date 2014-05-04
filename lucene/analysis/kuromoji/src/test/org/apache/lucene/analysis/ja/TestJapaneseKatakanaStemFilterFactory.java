@@ -31,7 +31,7 @@ public class TestJapaneseKatakanaStemFilterFactory extends BaseTokenStreamTestCa
   public void testKatakanaStemming() throws IOException {
     JapaneseTokenizerFactory tokenizerFactory = new JapaneseTokenizerFactory(new HashMap<String,String>());
     tokenizerFactory.inform(new StringMockResourceLoader(""));
-    TokenStream tokenStream = tokenizerFactory.create(
+    TokenStream tokenStream = tokenizerFactory.create(newAttributeFactory(), 
         new StringReader("明後日パーティーに行く予定がある。図書館で資料をコピーしました。")
     );
     JapaneseKatakanaStemFilterFactory filterFactory = new JapaneseKatakanaStemFilterFactory(new HashMap<String,String>());;

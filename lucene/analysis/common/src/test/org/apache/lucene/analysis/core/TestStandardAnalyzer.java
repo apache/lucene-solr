@@ -50,7 +50,7 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
     protected TokenStreamComponents createComponents
       (String fieldName, Reader reader) {
 
-      Tokenizer tokenizer = new StandardTokenizer(TEST_VERSION_CURRENT, reader);
+      Tokenizer tokenizer = new StandardTokenizer(TEST_VERSION_CURRENT, newAttributeFactory(), reader);
       return new TokenStreamComponents(tokenizer);
     }
   };
@@ -337,7 +337,7 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
                     new Analyzer() {
                       @Override
                       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-                        Tokenizer tokenizer = new StandardTokenizer(TEST_VERSION_CURRENT, reader);
+                        Tokenizer tokenizer = new StandardTokenizer(TEST_VERSION_CURRENT, newAttributeFactory(), reader);
                         TokenStream tokenStream = new MockGraphTokenFilter(random(), tokenizer);
                         return new TokenStreamComponents(tokenizer, tokenStream);
                       }

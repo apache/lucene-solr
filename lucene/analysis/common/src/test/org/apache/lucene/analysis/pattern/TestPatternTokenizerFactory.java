@@ -28,7 +28,7 @@ public class TestPatternTokenizerFactory extends BaseTokenStreamFactoryTestCase 
   public void testFactory() throws Exception {
     final Reader reader = new StringReader("Günther Günther is here");
     // create PatternTokenizer
-    TokenStream stream = tokenizerFactory("Pattern", "pattern", "[,;/\\s]+").create(reader);
+    TokenStream stream = tokenizerFactory("Pattern", "pattern", "[,;/\\s]+").create(newAttributeFactory(), reader);
     assertTokenStreamContents(stream,
         new String[] { "Günther", "Günther", "is", "here" });
   }

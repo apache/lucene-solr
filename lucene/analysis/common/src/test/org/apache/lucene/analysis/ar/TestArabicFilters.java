@@ -44,7 +44,7 @@ public class TestArabicFilters extends BaseTokenStreamFactoryTestCase {
    */
   public void testNormalizer() throws Exception {
     Reader reader = new StringReader("الذين مَلكت أيمانكم");
-    Tokenizer tokenizer = tokenizerFactory("Standard").create(reader);
+    Tokenizer tokenizer = whitespaceMockTokenizer(reader);
     TokenStream stream = tokenFilterFactory("ArabicNormalization").create(tokenizer);
     assertTokenStreamContents(stream, new String[] {"الذين", "ملكت", "ايمانكم"});
   }
@@ -54,7 +54,7 @@ public class TestArabicFilters extends BaseTokenStreamFactoryTestCase {
    */
   public void testStemmer() throws Exception {
     Reader reader = new StringReader("الذين مَلكت أيمانكم");
-    Tokenizer tokenizer = tokenizerFactory("Standard").create(reader);
+    Tokenizer tokenizer = whitespaceMockTokenizer(reader);
     TokenStream stream = tokenFilterFactory("ArabicNormalization").create(tokenizer);
     stream = tokenFilterFactory("ArabicStem").create(stream);
     assertTokenStreamContents(stream, new String[] {"ذين", "ملكت", "ايمانكم"});
@@ -65,7 +65,7 @@ public class TestArabicFilters extends BaseTokenStreamFactoryTestCase {
    */
   public void testPersianCharFilter() throws Exception {
     Reader reader = charFilterFactory("Persian").create(new StringReader("می‌خورد"));
-    Tokenizer tokenizer = tokenizerFactory("Standard").create(reader);
+    Tokenizer tokenizer = whitespaceMockTokenizer(reader);
     assertTokenStreamContents(tokenizer, new String[] { "می", "خورد" });
   }
   

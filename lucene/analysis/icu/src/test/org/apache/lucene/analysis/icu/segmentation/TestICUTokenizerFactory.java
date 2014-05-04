@@ -32,7 +32,7 @@ public class TestICUTokenizerFactory extends BaseTokenStreamTestCase {
     Reader reader = new StringReader("การที่ได้ต้องแสดงว่างานดี  This is a test ກວ່າດອກ");
     ICUTokenizerFactory factory = new ICUTokenizerFactory(new HashMap<String,String>());
     factory.inform(new ClasspathResourceLoader(getClass()));
-    TokenStream stream = factory.create(reader);
+    TokenStream stream = factory.create(newAttributeFactory(), reader);
     assertTokenStreamContents(stream,
         new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี",
         "This", "is", "a", "test", "ກວ່າ", "ດອກ"});
@@ -46,7 +46,7 @@ public class TestICUTokenizerFactory extends BaseTokenStreamTestCase {
     args.put(ICUTokenizerFactory.RULEFILES, "Latn:Latin-break-only-on-whitespace.rbbi");
     ICUTokenizerFactory factory = new ICUTokenizerFactory(args);
     factory.inform(new ClasspathResourceLoader(this.getClass()));
-    TokenStream stream = factory.create(reader);
+    TokenStream stream = factory.create(newAttributeFactory(), reader);
     assertTokenStreamContents(stream,
         new String[] { "Don't,break.at?/(punct)!", "\u201Cnice\u201D", "85_At:all;", "`really\"",  "+2=3$5,&813", "!@#%$^)(*@#$" },
         new String[] { "<ALPHANUM>",               "<ALPHANUM>",       "<ALPHANUM>", "<ALPHANUM>", "<NUM>",       "<OTHER>" });
@@ -59,7 +59,7 @@ public class TestICUTokenizerFactory extends BaseTokenStreamTestCase {
     args.put(ICUTokenizerFactory.RULEFILES, "Latn:Latin-dont-break-on-hyphens.rbbi");
     ICUTokenizerFactory factory = new ICUTokenizerFactory(args);
     factory.inform(new ClasspathResourceLoader(getClass()));
-    TokenStream stream = factory.create(reader);
+    TokenStream stream = factory.create(newAttributeFactory(), reader);
     assertTokenStreamContents(stream,
         new String[] { "One-two", "punch",
             "Brang", "not", "brung-it",
@@ -78,7 +78,7 @@ public class TestICUTokenizerFactory extends BaseTokenStreamTestCase {
     args.put(ICUTokenizerFactory.RULEFILES, "Cyrl:KeywordTokenizer.rbbi,Thai:KeywordTokenizer.rbbi");
     ICUTokenizerFactory factory = new ICUTokenizerFactory(args);
     factory.inform(new ClasspathResourceLoader(getClass()));
-    TokenStream stream = factory.create(reader);
+    TokenStream stream = factory.create(newAttributeFactory(), reader);
     assertTokenStreamContents(stream, new String[] { "Some", "English",
         "Немного русский.  ",
         "ข้อความภาษาไทยเล็ก ๆ น้อย ๆ  ",

@@ -48,7 +48,7 @@ public class TestJapaneseIterationMarkCharFilterFactory extends BaseTokenStreamT
     CharFilter filter = filterFactory.create(
         new StringReader("時々馬鹿々々しいところゞゝゝミスヾ")
     );
-    TokenStream tokenStream = tokenizerFactory.create(filter);
+    TokenStream tokenStream = tokenizerFactory.create(newAttributeFactory(), filter);
     assertTokenStreamContents(tokenStream, new String[]{"時時", "馬鹿馬鹿しい", "ところどころ", "ミ", "スズ"});
   }
 
@@ -64,7 +64,7 @@ public class TestJapaneseIterationMarkCharFilterFactory extends BaseTokenStreamT
     CharFilter filter = filterFactory.create(
         new StringReader("時々馬鹿々々しいところゞゝゝミスヾ")
     );
-    TokenStream tokenStream = tokenizerFactory.create(filter);
+    TokenStream tokenStream = tokenizerFactory.create(newAttributeFactory(), filter);
     assertTokenStreamContents(tokenStream, new String[]{"時時", "馬鹿馬鹿しい", "ところ", "ゞ", "ゝ", "ゝ", "ミス", "ヾ"});
   }
 
@@ -80,7 +80,7 @@ public class TestJapaneseIterationMarkCharFilterFactory extends BaseTokenStreamT
     CharFilter filter = filterFactory.create(
         new StringReader("時々馬鹿々々しいところゞゝゝミスヾ")
     );
-    TokenStream tokenStream = tokenizerFactory.create(filter);
+    TokenStream tokenStream = tokenizerFactory.create(newAttributeFactory(), filter);
     assertTokenStreamContents(tokenStream, new String[]{"時々", "馬鹿", "々", "々", "しい", "ところどころ", "ミ", "スズ"});
   }
   

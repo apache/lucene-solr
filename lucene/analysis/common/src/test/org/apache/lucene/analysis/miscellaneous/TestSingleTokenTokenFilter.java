@@ -37,7 +37,8 @@ public class TestSingleTokenTokenFilter extends LuceneTestCase {
     assertEquals(token, tokenAtt);
     assertFalse(ts.incrementToken());
     
-    token = new Token("hallo", 10, 20, "someType");
+    token = new Token("hallo", 10, 20);
+    token.setType("someType");
     ts.setToken(token);
     ts.reset();
 

@@ -40,7 +40,7 @@ public class TestElision extends BaseTokenStreamTestCase {
 
   public void testElision() throws Exception {
     String test = "Plop, juste pour voir l'embrouille avec O'brian. M'enfin.";
-    Tokenizer tokenizer = new StandardTokenizer(TEST_VERSION_CURRENT, new StringReader(test));
+    Tokenizer tokenizer = new StandardTokenizer(TEST_VERSION_CURRENT, newAttributeFactory(), new StringReader(test));
     CharArraySet articles = new CharArraySet(TEST_VERSION_CURRENT, asSet("l", "M"), false);
     TokenFilter filter = new ElisionFilter(tokenizer, articles);
     List<String> tas = filter(filter);

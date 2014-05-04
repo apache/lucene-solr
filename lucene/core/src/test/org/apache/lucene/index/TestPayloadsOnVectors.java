@@ -51,7 +51,6 @@ public class TestPayloadsOnVectors extends LuceneTestCase {
     customType.setStoreTermVectorOffsets(random().nextBoolean());
     Field field = new Field("field", "", customType);
     TokenStream ts = new MockTokenizer(new StringReader("here we go"), MockTokenizer.WHITESPACE, true);
-    assertFalse(ts.hasAttribute(PayloadAttribute.class));
     field.setTokenStream(ts);
     doc.add(field);
     writer.addDocument(doc);
@@ -64,7 +63,6 @@ public class TestPayloadsOnVectors extends LuceneTestCase {
     writer.addDocument(doc);
     
     ts = new MockTokenizer(new StringReader("another"), MockTokenizer.WHITESPACE, true);
-    assertFalse(ts.hasAttribute(PayloadAttribute.class));
     field.setTokenStream(ts);
     writer.addDocument(doc);
     
@@ -94,7 +92,6 @@ public class TestPayloadsOnVectors extends LuceneTestCase {
     customType.setStoreTermVectorOffsets(random().nextBoolean());
     Field field = new Field("field", "", customType);
     TokenStream ts = new MockTokenizer(new StringReader("here we go"), MockTokenizer.WHITESPACE, true);
-    assertFalse(ts.hasAttribute(PayloadAttribute.class));
     field.setTokenStream(ts);
     doc.add(field);
     Field field2 = new Field("field", "", customType);
@@ -106,7 +103,6 @@ public class TestPayloadsOnVectors extends LuceneTestCase {
     doc.add(field2);
     Field field3 = new Field("field", "", customType);
     ts = new MockTokenizer(new StringReader("nopayload"), MockTokenizer.WHITESPACE, true);
-    assertFalse(ts.hasAttribute(PayloadAttribute.class));
     field3.setTokenStream(ts);
     doc.add(field3);
     writer.addDocument(doc);

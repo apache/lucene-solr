@@ -33,14 +33,14 @@ public class TestUAX29URLEmailTokenizerFactory extends BaseTokenStreamFactoryTes
 
   public void testUAX29URLEmailTokenizer() throws Exception {
     Reader reader = new StringReader("Wha\u0301t's this thing do?");
-    TokenStream stream = tokenizerFactory("UAX29URLEmail").create(reader);
+    TokenStream stream = tokenizerFactory("UAX29URLEmail").create(newAttributeFactory(), reader);
     assertTokenStreamContents(stream, 
         new String[] { "Wha\u0301t's", "this", "thing", "do" });
   }
   
   public void testArabic() throws Exception {
     Reader reader = new StringReader("الفيلم الوثائقي الأول عن ويكيبيديا يسمى \"الحقيقة بالأرقام: قصة ويكيبيديا\" (بالإنجليزية: Truth in Numbers: The Wikipedia Story)، سيتم إطلاقه في 2008.");
-    TokenStream stream = tokenizerFactory("UAX29URLEmail").create(reader);
+    TokenStream stream = tokenizerFactory("UAX29URLEmail").create(newAttributeFactory(), reader);
     assertTokenStreamContents(stream, 
         new String[] { "الفيلم", "الوثائقي", "الأول", "عن", "ويكيبيديا", "يسمى", "الحقيقة", "بالأرقام", "قصة", "ويكيبيديا",
         "بالإنجليزية", "Truth", "in", "Numbers", "The", "Wikipedia", "Story", "سيتم", "إطلاقه", "في", "2008"  });
@@ -48,21 +48,21 @@ public class TestUAX29URLEmailTokenizerFactory extends BaseTokenStreamFactoryTes
   
   public void testChinese() throws Exception {
     Reader reader = new StringReader("我是中国人。 １２３４ Ｔｅｓｔｓ ");
-    TokenStream stream = tokenizerFactory("UAX29URLEmail").create(reader);
+    TokenStream stream = tokenizerFactory("UAX29URLEmail").create(newAttributeFactory(), reader);
     assertTokenStreamContents(stream, 
         new String[] { "我", "是", "中", "国", "人", "１２３４", "Ｔｅｓｔｓ" });
   }
 
   public void testKorean() throws Exception {
     Reader reader = new StringReader("안녕하세요 한글입니다");
-    TokenStream stream = tokenizerFactory("UAX29URLEmail").create(reader);
+    TokenStream stream = tokenizerFactory("UAX29URLEmail").create(newAttributeFactory(), reader);
     assertTokenStreamContents(stream, 
         new String[] { "안녕하세요", "한글입니다" });
   }
     
   public void testHyphen() throws Exception {
     Reader reader = new StringReader("some-dashed-phrase");
-    TokenStream stream = tokenizerFactory("UAX29URLEmail").create(reader);
+    TokenStream stream = tokenizerFactory("UAX29URLEmail").create(newAttributeFactory(), reader);
     assertTokenStreamContents(stream, 
         new String[] { "some", "dashed", "phrase" });
   }
@@ -84,7 +84,7 @@ public class TestUAX29URLEmailTokenizerFactory extends BaseTokenStreamFactoryTes
         + " blah Sirrah woof "
         + "http://[a42:a7b6::]/qSmxSUU4z/%52qVl4\n";
     Reader reader = new StringReader(textWithURLs);
-    TokenStream stream = tokenizerFactory("UAX29URLEmail").create(reader);
+    TokenStream stream = tokenizerFactory("UAX29URLEmail").create(newAttributeFactory(), reader);
     assertTokenStreamContents(stream, 
         new String[] { 
           "http://johno.jsmf.net/knowhow/ngrams/index.php?table=en-dickens-word-2gram&paragraphs=50&length=200&no-ads=on",
@@ -122,7 +122,7 @@ public class TestUAX29URLEmailTokenizerFactory extends BaseTokenStreamFactoryTes
          + "lMahAA.j/5.RqUjS745.DtkcYdi@d2-4gb-l6.ae\n"
          + "lv'p@tqk.vj5s0tgl.0dlu7su3iyiaz.dqso.494.3hb76.XN--MGBAAM7A8H\n";
     Reader reader = new StringReader(textWithEmails);
-    TokenStream stream = tokenizerFactory("UAX29URLEmail").create(reader);
+    TokenStream stream = tokenizerFactory("UAX29URLEmail").create(newAttributeFactory(), reader);
     assertTokenStreamContents(stream, 
         new String[] { 
           "some", "extra", "Words", "thrown", "in", "here",
@@ -152,7 +152,7 @@ public class TestUAX29URLEmailTokenizerFactory extends BaseTokenStreamFactoryTes
     String content = "one two three " + longWord + " four five six";
     Reader reader = new StringReader(content);
     TokenStream stream = tokenizerFactory("UAX29URLEmail",
-        "maxTokenLength", "1000").create(reader);
+        "maxTokenLength", "1000").create(newAttributeFactory(), reader);
     assertTokenStreamContents(stream, 
         new String[] {"one", "two", "three", longWord, "four", "five", "six" });
   }

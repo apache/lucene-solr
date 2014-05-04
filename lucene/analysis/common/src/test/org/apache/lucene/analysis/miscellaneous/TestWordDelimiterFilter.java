@@ -360,7 +360,8 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
           return new TokenStreamComponents(tokenizer, new WordDelimiterFilter(TEST_VERSION_CURRENT, tokenizer, flags, protectedWords));
         }
       };
-      checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
+      // TODO: properly support positionLengthAttribute
+      checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER, 20, false, false);
     }
   }
   
@@ -384,7 +385,8 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
           return new TokenStreamComponents(tokenizer, new WordDelimiterFilter(TEST_VERSION_CURRENT, tokenizer, flags, protectedWords));
         }
       };
-      checkRandomData(random(), a, 100*RANDOM_MULTIPLIER, 8192);
+      // TODO: properly support positionLengthAttribute
+      checkRandomData(random(), a, 100*RANDOM_MULTIPLIER, 8192, false, false);
     }
   }
   

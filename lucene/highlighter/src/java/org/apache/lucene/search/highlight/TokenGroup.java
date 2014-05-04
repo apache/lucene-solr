@@ -67,7 +67,8 @@ public class TokenGroup {
           tot += score;
         }
       }
-      Token token = new Token(termStartOffset, termEndOffset);
+      Token token = new Token();
+      token.setOffset(termStartOffset, termEndOffset);
       token.setEmpty().append(termAtt);
       tokens[numTokens] = token;
       scores[numTokens] = score;
