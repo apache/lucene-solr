@@ -80,6 +80,12 @@ Bug fixes
 * LUCENE-5639: Fix PositionLengthAttribute implementation in Token class.
   (Uwe Schindler, Robert Muir)
 
+* LUCENE-5628: Change getFiniteStrings to iterative not recursive
+  implementation, so that building suggesters on a long suggestion
+  doesn't risk overflowing the stack; previously it consumed one Java
+  stack frame per character in the expanded suggestion (Robert Muir,
+  Simon Willnauer, Mike McCandless).
+
 Test Framework
 
 * LUCENE-5622: Fail tests if they print over the given limit of bytes to 

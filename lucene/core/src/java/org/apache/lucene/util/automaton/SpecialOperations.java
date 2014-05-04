@@ -30,12 +30,16 @@
 package org.apache.lucene.util.automaton;
 
 import java.util.BitSet;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Set;
 
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.fst.Util;
 
 /**
@@ -212,57 +216,159 @@ final public class SpecialOperations {
     return accept;
   }
 
+  private static class PathNode {
+
+    /** Which state the path node ends on, whose
+     *  transitions we are enumerating. */
+    public State state;
+
+    /** Which state the current transition leads to. */
+    public State to;
+
+    /** Which transition we are on. */
+    public int transition;
+
+    /** Which label we are on, in the min-max range of the
+     *  current Transition */
+    public int label;
+
+    public void resetState(State state) {
+      assert state.numTransitions() != 0;
+      this.state = state;
+      transition = 0;
+      Transition t = state.transitionsArray[transition];
+      label = t.min;
+      to = t.to;
+    }
+
+    /** Returns next label of current transition, or
+     *  advances to next transition and returns its first
+     *  label, if current one is exhausted.  If there are
+     *  no more transitions, returns -1. */
+    public int nextLabel() {
+      if (label > state.transitionsArray[transition].max) {
+        // We've exhaused the current transition's labels;
+        // move to next transitions:
+        transition++;
+        if (transition >= state.numTransitions()) {
+          // We're done iterating transitions leaving this state
+          return -1;
+        }
+        Transition t = state.transitionsArray[transition];
+        label = t.min;
+        to = t.to;
+      }
+      return label++;
+    }
+  }
+
+  private static PathNode getNode(PathNode[] nodes, int index) {
+    assert index < nodes.length;
+    if (nodes[index] == null) {
+      nodes[index] = new PathNode();
+    }
+    return nodes[index];
+  }
+
   // TODO: this is a dangerous method ... Automaton could be
   // huge ... and it's better in general for caller to
   // enumerate & process in a single walk:
 
-  /**
-   * Returns the set of accepted strings, assuming that at most
-   * <code>limit</code> strings are accepted. If more than <code>limit</code> 
-   * strings are accepted, the first limit strings found are returned. If <code>limit</code>&lt;0, then 
-   * the limit is infinite.
-   */
+  /** Returns the set of accepted strings, up to at most
+   *  <code>limit</code> strings. If more than <code>limit</code> 
+   *  strings are accepted, the first limit strings found are returned. If <code>limit</code> == -1, then 
+   *  the limit is infinite.  If the {@link Automaton} has
+   *  cycles then this method might throw {@code
+   *  IllegalArgumentException} but that is not guaranteed
+   *  when the limit is set. */
   public static Set<IntsRef> getFiniteStrings(Automaton a, int limit) {
-    HashSet<IntsRef> strings = new HashSet<>();
-    if (a.isSingleton()) {
-      if (limit > 0) {
-        strings.add(Util.toUTF32(a.singleton, new IntsRef()));
-      }
-    } else if (!getFiniteStrings(a.initial, new HashSet<State>(), strings, new IntsRef(), limit)) {
-      return strings;
+    Set<IntsRef> results = new HashSet<>();
+
+    if (limit == -1 || limit > 0) {
+      // OK
+    } else {
+      throw new IllegalArgumentException("limit must be -1 (which means no limit), or > 0; got: " + limit);
     }
-    return strings;
-  }
-  
-  /**
-   * Returns the strings that can be produced from the given state, or
-   * false if more than <code>limit</code> strings are found. 
-   * <code>limit</code>&lt;0 means "infinite".
-   */
-  private static boolean getFiniteStrings(State s, HashSet<State> pathstates, 
-      HashSet<IntsRef> strings, IntsRef path, int limit) {
-    pathstates.add(s);
-    for (Transition t : s.getTransitions()) {
-      if (pathstates.contains(t.to)) {
-        return false;
+
+    if (a.isSingleton()) {
+      // Easy case: automaton accepts only 1 string
+      results.add(Util.toUTF32(a.singleton, new IntsRef()));
+    } else {
+
+      if (a.initial.accept) {
+        // Special case the empty string, as usual:
+        results.add(new IntsRef());
       }
-      for (int n = t.min; n <= t.max; n++) {
-        path.grow(path.length+1);
-        path.ints[path.length] = n;
-        path.length++;
-        if (t.to.accept) {
-          strings.add(IntsRef.deepCopyOf(path));
-          if (limit >= 0 && strings.size() > limit) {
-            return false;
+
+      if (a.initial.numTransitions() > 0 && (limit == -1 || results.size() < limit)) {
+
+        // TODO: we could use state numbers here and just
+        // alloc array, but asking for states array can be
+        // costly (it's lazily computed):
+
+        // Tracks which states are in the current path, for
+        // cycle detection:
+        Set<State> pathStates = Collections.newSetFromMap(new IdentityHashMap<State,Boolean>());
+
+        // Stack to hold our current state in the
+        // recursion/iteration:
+        PathNode[] nodes = new PathNode[4];
+
+        pathStates.add(a.initial);
+        PathNode root = getNode(nodes, 0);
+        root.resetState(a.initial);
+
+        IntsRef string = new IntsRef(1);
+        string.length = 1;
+
+        while (string.length > 0) {
+
+          PathNode node = nodes[string.length-1];
+
+          // Get next label leaving the current node:
+          int label = node.nextLabel();
+
+          if (label != -1) {
+            string.ints[string.length-1] = label;
+
+            if (node.to.accept) {
+              // This transition leads to an accept state,
+              // so we save the current string:
+              results.add(IntsRef.deepCopyOf(string));
+              if (results.size() == limit) {
+                break;
+              }
+            }
+
+            if (node.to.numTransitions() != 0) {
+              // Now recurse: the destination of this transition has
+              // outgoing transitions:
+              if (pathStates.contains(node.to)) {
+                throw new IllegalArgumentException("automaton has cycles");
+              }
+              pathStates.add(node.to);
+
+              // Push node onto stack:
+              if (nodes.length == string.length) {
+                PathNode[] newNodes = new PathNode[ArrayUtil.oversize(nodes.length+1, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+                System.arraycopy(nodes, 0, newNodes, 0, nodes.length);
+                nodes = newNodes;
+              }
+              getNode(nodes, string.length).resetState(node.to);
+              string.length++;
+              string.grow(string.length);
+            }
+          } else {
+            // No more transitions leaving this state,
+            // pop/return back to previous state:
+            assert pathStates.contains(node.state);
+            pathStates.remove(node.state);
+            string.length--;
           }
         }
-        if (!getFiniteStrings(t.to, pathstates, strings, path, limit)) {
-          return false;
-        }
-        path.length--;
       }
     }
-    pathstates.remove(s);
-    return true;
+
+    return results;
   }
 }
