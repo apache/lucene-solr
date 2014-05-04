@@ -32,6 +32,7 @@ import org.apache.lucene.search.TimeLimitingCollector.TimerThread;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
@@ -39,6 +40,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * correctness (regardless of timeout), (2) expected timeout behavior,
  * and (3) a sanity test with multiple searching threads.
  */
+@SuppressSysoutChecks(bugUrl = "http://test.is.timing.sensitive.so.it.prints.instead.of.failing")
 public class TestTimeLimitingCollector extends LuceneTestCase {
   private static final int SLOW_DOWN = 3;
   private static final long TIME_ALLOWED = 17 * SLOW_DOWN; // so searches can find about 17 docs.
