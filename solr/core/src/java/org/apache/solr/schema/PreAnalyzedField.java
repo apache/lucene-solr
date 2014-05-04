@@ -256,7 +256,8 @@ public class PreAnalyzedField extends FieldType {
     private Reader input; // hides original input since we replay saved states (and dont reuse)
     
     public PreAnalyzedTokenizer(Reader reader, PreAnalyzedParser parser) {
-      super(reader);
+      // we don't pack attributes: since we are used for (de)serialization and dont want bloat.
+      super(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, reader);
       this.input = reader;
       this.parser = parser;
     }

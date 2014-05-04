@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.icu.segmentation;
 import java.io.IOException;
 import java.io.Reader;
 
+import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.icu.tokenattributes.ScriptAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -81,7 +82,7 @@ public final class ICUTokenizer extends Tokenizer {
    * @param config Tailored BreakIterator configuration 
    */
   public ICUTokenizer(Reader input, ICUTokenizerConfig config) {
-    this(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, input, config);
+    this(Token.TOKEN_ATTRIBUTE_FACTORY, input, config);
   }
 
   /**

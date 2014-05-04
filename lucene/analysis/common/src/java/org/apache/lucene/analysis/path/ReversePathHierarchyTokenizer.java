@@ -21,6 +21,7 @@ import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -81,7 +82,7 @@ public class ReversePathHierarchyTokenizer extends Tokenizer {
   }
 
   public ReversePathHierarchyTokenizer(Reader input, int bufferSize, char delimiter, char replacement, int skip) {
-    this(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, input, bufferSize, delimiter, replacement, skip);
+    this(Token.TOKEN_ATTRIBUTE_FACTORY, input, bufferSize, delimiter, replacement, skip);
   }
   public ReversePathHierarchyTokenizer
       (AttributeFactory factory, Reader input, int bufferSize, char delimiter, char replacement, int skip) {

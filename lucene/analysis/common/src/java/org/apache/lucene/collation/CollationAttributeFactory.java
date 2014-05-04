@@ -19,6 +19,7 @@ package org.apache.lucene.collation;
 
 import java.text.Collator;
 
+import org.apache.lucene.analysis.Token;
 import org.apache.lucene.collation.tokenattributes.CollatedTermAttributeImpl;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
@@ -74,12 +75,12 @@ public class CollationAttributeFactory extends AttributeSource.AttributeFactory 
   
   /**
    * Create a CollationAttributeFactory, using 
-   * {@link org.apache.lucene.util.AttributeSource.AttributeFactory#DEFAULT_ATTRIBUTE_FACTORY} as the
+   * {@link org.apache.lucene.analysis.Token#TOKEN_ATTRIBUTE_FACTORY} as the
    * factory for all other attributes.
    * @param collator CollationKey generator
    */
   public CollationAttributeFactory(Collator collator) {
-    this(AttributeSource.AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, collator);
+    this(Token.TOKEN_ATTRIBUTE_FACTORY, collator);
   }
   
   /**

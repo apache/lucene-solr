@@ -89,7 +89,7 @@ public abstract class TokenStream extends AttributeSource implements Closeable {
    * A TokenStream using the default attribute factory.
    */
   protected TokenStream() {
-    super();
+    super(Token.TOKEN_ATTRIBUTE_FACTORY);
     assert assertFinal();
   }
   
