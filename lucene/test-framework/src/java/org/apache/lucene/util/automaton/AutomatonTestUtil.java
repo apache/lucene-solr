@@ -28,8 +28,10 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.UnicodeUtil;
+import org.apache.lucene.util.fst.Util;
 
 /**
  * Utilities for testing automata.
@@ -385,6 +387,62 @@ public class AutomatonTestUtil {
     a.deterministic = true;
     a.clearNumberedStates();
     a.removeDeadTransitions();
+  }
+
+  /**
+   * Simple, original implementation of getFiniteStrings.
+   *
+   * <p>Returns the set of accepted strings, assuming that at most
+   * <code>limit</code> strings are accepted. If more than <code>limit</code> 
+   * strings are accepted, the first limit strings found are returned. If <code>limit</code>&lt;0, then 
+   * the limit is infinite.
+   *
+   * <p>This implementation is recursive: it uses one stack
+   * frame for each digit in the returned strings (ie, max
+   * is the max length returned string).
+   */
+  public static Set<IntsRef> getFiniteStringsRecursive(Automaton a, int limit) {
+    HashSet<IntsRef> strings = new HashSet<>();
+    if (a.isSingleton()) {
+      if (limit > 0) {
+        strings.add(Util.toUTF32(a.singleton, new IntsRef()));
+      }
+    } else if (!getFiniteStrings(a.initial, new HashSet<State>(), strings, new IntsRef(), limit)) {
+      return strings;
+    }
+    return strings;
+  }
+
+  /**
+   * Returns the strings that can be produced from the given state, or
+   * false if more than <code>limit</code> strings are found. 
+   * <code>limit</code>&lt;0 means "infinite".
+   */
+  private static boolean getFiniteStrings(State s, HashSet<State> pathstates, 
+      HashSet<IntsRef> strings, IntsRef path, int limit) {
+    pathstates.add(s);
+    for (Transition t : s.getTransitions()) {
+      if (pathstates.contains(t.to)) {
+        return false;
+      }
+      for (int n = t.min; n <= t.max; n++) {
+        path.grow(path.length+1);
+        path.ints[path.length] = n;
+        path.length++;
+        if (t.to.accept) {
+          strings.add(IntsRef.deepCopyOf(path));
+          if (limit >= 0 && strings.size() > limit) {
+            return false;
+          }
+        }
+        if (!getFiniteStrings(t.to, pathstates, strings, path, limit)) {
+          return false;
+        }
+        path.length--;
+      }
+    }
+    pathstates.remove(s);
+    return true;
   }
 
   /**
