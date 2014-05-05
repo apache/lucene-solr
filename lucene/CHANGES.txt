@@ -165,6 +165,12 @@ Bug fixes
 * LUCENE-5641: SimpleRateLimiter would silently rate limit at 8 MB/sec
   even if you asked for higher rates.  (Mike McCandless)
 
+* LUCENE-5644: IndexWriter clears which threads use which internal
+  thread states on flush, so that if an application reduces how many
+  threads it uses for indexing, that results in a reduction of how
+  many segments are flushed on a full-flush (e.g. to obtain a
+  near-real-time reader).  (Simon Willnauer, Mike McCandless)
+
 Test Framework
 
 * LUCENE-5622: Fail tests if they print over the given limit of bytes to 
