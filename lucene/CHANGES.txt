@@ -162,6 +162,9 @@ Bug fixes
   stack frame per character in the expanded suggestion (Robert Muir,
   Simon Willnauer, Mike McCandless).
 
+* LUCENE-5641: SimpleRateLimiter would silently rate limit at 8 MB/sec
+  even if you asked for higher rates.  (Mike McCandless)
+
 Test Framework
 
 * LUCENE-5622: Fail tests if they print over the given limit of bytes to 

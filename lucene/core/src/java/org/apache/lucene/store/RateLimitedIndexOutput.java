@@ -28,6 +28,9 @@ final class RateLimitedIndexOutput extends BufferedIndexOutput {
   private final BufferedIndexOutput bufferedDelegate;
   private final RateLimiter rateLimiter;
 
+  /** How many bytes we've written since we last called rateLimiter.pause. */
+  private long bytesSinceLastPause;
+
   RateLimitedIndexOutput(final RateLimiter rateLimiter, final IndexOutput delegate) {
     // TODO should we make buffer size configurable
     if (delegate instanceof BufferedIndexOutput) {
@@ -42,7 +45,11 @@ final class RateLimitedIndexOutput extends BufferedIndexOutput {
   
   @Override
   protected void flushBuffer(byte[] b, int offset, int len) throws IOException {
-    rateLimiter.pause(len);
+    bytesSinceLastPause += len;
+    if (bytesSinceLastPause > rateLimiter.getMinPauseCheckBytes()) {
+      rateLimiter.pause(bytesSinceLastPause);
+      bytesSinceLastPause = 0;
+    }
     if (bufferedDelegate != null) {
       bufferedDelegate.flushBuffer(b, offset, len);
     } else {
