@@ -22,14 +22,15 @@ import org.apache.lucene.util.ThreadInterruptedException;
 /** Abstract base class to rate limit IO.  Typically implementations are
  *  shared across multiple IndexInputs or IndexOutputs (for example
  *  those involved all merging).  Those IndexInputs and
- *  IndexOutputs would call {@link #pause} whenever they
- *  want to read bytes or write bytes. */
+ *  IndexOutputs would call {@link #pause} whenever the have read
+ *  or written more than {@link #getMinPauseCheckBytes} bytes. */
 public abstract class RateLimiter {
 
   /**
    * Sets an updated mb per second rate limit.
    */
   public abstract void setMbPerSec(double mbPerSec);
+
   /**
    * The current mb per second rate limit.
    */
@@ -44,13 +45,19 @@ public abstract class RateLimiter {
    * */
   public abstract long pause(long bytes);
   
+  /** How many bytes caller should add up itself before invoking {@link #pause}. */
+  public abstract long getMinPauseCheckBytes();
+
   /**
    * Simple class to rate limit IO.
    */
   public static class SimpleRateLimiter extends RateLimiter {
+
+    private final static int MIN_PAUSE_CHECK_MSEC = 5;
+
     private volatile double mbPerSec;
-    private volatile double nsPerByte;
-    private volatile long lastNS;
+    private volatile long minPauseCheckBytes;
+    private long lastNS;
 
     // TODO: we could also allow eg a sub class to dynamically
     // determine the allowed rate, eg if an app wants to
@@ -67,8 +74,12 @@ public abstract class RateLimiter {
     @Override
     public void setMbPerSec(double mbPerSec) {
       this.mbPerSec = mbPerSec;
-      nsPerByte = 1000000000. / (1024*1024*mbPerSec);
-      
+      minPauseCheckBytes = (long) ((MIN_PAUSE_CHECK_MSEC / 1000.0) * mbPerSec * 1024 * 1024);
+    }
+
+    @Override
+    public long getMinPauseCheckBytes() {
+      return minPauseCheckBytes;
     }
 
     /**
@@ -80,35 +91,52 @@ public abstract class RateLimiter {
     }
     
     /** Pauses, if necessary, to keep the instantaneous IO
-     *  rate at or below the target. NOTE: multiple threads
-     *  may safely use this, however the implementation is
-     *  not perfectly thread safe but likely in practice this
-     *  is harmless (just means in some rare cases the rate
-     *  might exceed the target).  It's best to call this
-     *  with a biggish count, not one byte at a time.
-     *  @return the pause time in nano seconds 
-     * */
+     *  rate at or below the target.  Be sure to only call
+     *  this method when bytes > {@link #getMinPauseCheckBytes},
+     *  otherwise it will pause way too long!
+     *
+     *  @return the pause time in nano seconds */  
     @Override
     public long pause(long bytes) {
-      if (bytes == 1) {
-        return 0;
+
+      long startNS = System.nanoTime();
+
+      double secondsToPause = (bytes/1024./1024.) / mbPerSec;
+
+      long targetNS;
+
+      // Sync'd to read + write lastNS:
+      synchronized (this) {
+
+        // Time we should sleep until; this is purely instantaneous
+        // rate (just adds seconds onto the last time we had paused to);
+        // maybe we should also offer decayed recent history one?
+        targetNS = lastNS + (long) (1000000000 * secondsToPause);
+
+        if (startNS >= targetNS) {
+          // OK, current time is already beyond the target sleep time,
+          // no pausing to do.
+
+          // Set to startNS, not targetNS, to enforce the instant rate, not
+          // the "averaaged over all history" rate:
+          lastNS = startNS;
+          return 0;
+        }
+
+        lastNS = targetNS;
       }
 
-      // TODO: this is purely instantaneous rate; maybe we
-      // should also offer decayed recent history one?
-      final long targetNS = lastNS = lastNS + ((long) (bytes * nsPerByte));
-      final long startNS;
-      long curNS = startNS = System.nanoTime();
-      if (lastNS < curNS) {
-        lastNS = curNS;
-      }
+      long curNS = startNS;
 
       // While loop because Thread.sleep doesn't always sleep
       // enough:
-      while(true) {
+      while (true) {
         final long pauseNS = targetNS - curNS;
         if (pauseNS > 0) {
           try {
+            // NOTE: except maybe on real-time JVMs, minimum realistic sleep time
+            // is 1 msec; if you pass just 1 nsec the default impl rounds
+            // this up to 1 msec:
             Thread.sleep((int) (pauseNS/1000000), (int) (pauseNS % 1000000));
           } catch (InterruptedException ie) {
             throw new ThreadInterruptedException(ie);
@@ -118,6 +146,7 @@ public abstract class RateLimiter {
         }
         break;
       }
+
       return curNS - startNS;
     }
   }

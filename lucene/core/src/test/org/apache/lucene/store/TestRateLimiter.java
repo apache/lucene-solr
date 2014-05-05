@@ -16,10 +16,17 @@ package org.apache.lucene.store;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.util.Locale;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.store.RateLimiter.SimpleRateLimiter;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
  * Simple testcase for RateLimiter.SimpleRateLimiter
@@ -36,5 +43,51 @@ public final class TestRateLimiter extends LuceneTestCase {
     final long convert = TimeUnit.MILLISECONDS.convert(pause, TimeUnit.NANOSECONDS);
     assertTrue("we should sleep less than 2 seconds but did: " + convert + " millis", convert < 2000l); 
     assertTrue("we should sleep at least 1 second but did only: " + convert + " millis", convert > 1000l); 
+  }
+
+  public void testThreads() throws Exception {
+
+    double targetMBPerSec = 10.0 + 20 * random().nextDouble();
+    final SimpleRateLimiter limiter = new SimpleRateLimiter(targetMBPerSec);
+
+    final CountDownLatch startingGun = new CountDownLatch(1);
+
+    Thread[] threads = new Thread[TestUtil.nextInt(random(), 3, 6)];
+    final AtomicLong totBytes = new AtomicLong();
+    for(int i=0;i<threads.length;i++) {
+      threads[i] = new Thread() {
+          @Override
+          public void run() {
+            try {
+              startingGun.await();
+            } catch (InterruptedException ie) {
+              throw new ThreadInterruptedException(ie);
+            }
+            long bytesSinceLastPause = 0;
+            for(int i=0;i<500;i++) {
+              long numBytes = TestUtil.nextInt(random(), 1000, 10000);
+              totBytes.addAndGet(numBytes);
+              bytesSinceLastPause += numBytes;
+              if (bytesSinceLastPause > limiter.getMinPauseCheckBytes()) {
+                limiter.pause(bytesSinceLastPause);
+                bytesSinceLastPause = 0;
+              }
+            }
+          }
+        };
+      threads[i].start();
+    }
+
+    long startNS = System.nanoTime();
+    startingGun.countDown();
+    for(Thread thread : threads) {
+      thread.join();
+    }
+    long endNS = System.nanoTime();
+    double actualMBPerSec = (totBytes.get()/1024/1024.)/((endNS-startNS)/1000000000.0);
+
+    // TODO: this may false trip .... could be we can only assert that it never exceeds the max, so slow jenkins doesn't trip:
+    double ratio = actualMBPerSec/targetMBPerSec;
+    assertTrue("targetMBPerSec=" + targetMBPerSec + " actualMBPerSec=" + actualMBPerSec, ratio >= 0.9 && ratio <= 1.1);
   }
 }
