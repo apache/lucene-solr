@@ -17,6 +17,7 @@
 package org.apache.solr.handler.dataimport;
 
 import static org.apache.solr.handler.dataimport.DataImporter.IMPORT_CMD;
+
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
@@ -43,6 +44,8 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 
 import java.util.*;
 import java.io.StringReader;
+import java.lang.reflect.Constructor;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
@@ -76,6 +79,9 @@ public class DataImportHandler extends RequestHandlerBase implements
 
   private String myName = "dataimport";
 
+  private static final String PARAM_WRITER_IMPL = "writerImpl";
+  private static final String DEFAULT_WRITER_NAME = "SolrWriter";
+  
   @Override
   @SuppressWarnings("unchecked")
   public void init(NamedList args) {
@@ -171,7 +177,7 @@ public class DataImportHandler extends RequestHandlerBase implements
                 req.getCore().getUpdateProcessingChain(params.get(UpdateParams.UPDATE_CHAIN));
         UpdateRequestProcessor processor = processorChain.createProcessor(req, rsp);
         SolrResourceLoader loader = req.getCore().getResourceLoader();
-        SolrWriter sw = getSolrWriter(processor, loader, requestParams, req);
+        DIHWriter sw = getSolrWriter(processor, loader, requestParams, req);
         
         if (requestParams.isDebug()) {
           if (debugEnabled) {
@@ -224,23 +230,44 @@ public class DataImportHandler extends RequestHandlerBase implements
     return result;
   }
 
-  private SolrWriter getSolrWriter(final UpdateRequestProcessor processor,
-                                   final SolrResourceLoader loader, final RequestInfo requestParams, SolrQueryRequest req) {
-
-    return new SolrWriter(processor, req) {
-
-      @Override
-      public boolean upload(SolrInputDocument document) {
-        try {
-          return super.upload(document);
-        } catch (RuntimeException e) {
-          LOG.error( "Exception while adding: " + document, e);
-          return false;
-        }
+  private DIHWriter getSolrWriter(final UpdateRequestProcessor processor,
+      final SolrResourceLoader loader, final RequestInfo requestParams,
+      SolrQueryRequest req) {
+    SolrParams reqParams = req.getParams();
+    String writerClassStr = null;
+    if (reqParams != null && reqParams.get(PARAM_WRITER_IMPL) != null) {
+      writerClassStr = (String) reqParams.get(PARAM_WRITER_IMPL);
+    }
+    DIHWriter writer;
+    if (writerClassStr != null
+        && !writerClassStr.equals(DEFAULT_WRITER_NAME)
+        && !writerClassStr.equals(DocBuilder.class.getPackage().getName() + "."
+            + DEFAULT_WRITER_NAME)) {
+      try {
+        @SuppressWarnings("unchecked")
+        Class<DIHWriter> writerClass = DocBuilder.loadClass(writerClassStr, req.getCore());
+        Constructor<DIHWriter> cnstr = writerClass.getConstructor(new Class[] {
+            UpdateRequestProcessor.class, SolrQueryRequest.class});
+        return cnstr.newInstance((Object) processor, (Object) req);
+      } catch (Exception e) {
+        throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
+            "Unable to load Writer implementation:" + writerClassStr, e);
       }
-    };
+    } else {
+      return new SolrWriter(processor, req) {
+        @Override
+        public boolean upload(SolrInputDocument document) {
+          try {
+            return super.upload(document);
+          } catch (RuntimeException e) {
+            LOG.error("Exception while adding: " + document, e);
+            return false;
+          }
+        }
+      };
+    }
   }
-
+  
   @Override
   @SuppressWarnings("unchecked")
   public NamedList getStatistics() {

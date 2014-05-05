@@ -399,7 +399,7 @@ public class DataImporter {
     return importLock.isLocked();
   }
 
-  public void doFullImport(SolrWriter writer, RequestInfo requestParams) {
+  public void doFullImport(DIHWriter writer, RequestInfo requestParams) {
     LOG.info("Starting Full Import");
     setStatus(Status.RUNNING_FULL_DUMP);
     boolean success = false;
@@ -425,14 +425,14 @@ public class DataImporter {
 
   }
 
-  private void checkWritablePersistFile(SolrWriter writer, DIHProperties dihPropWriter) {
+  private void checkWritablePersistFile(DIHWriter writer, DIHProperties dihPropWriter) {
    if (isDeltaImportSupported && !dihPropWriter.isWritable()) {
       throw new DataImportHandlerException(SEVERE,
           "Properties is not writable. Delta imports are supported by data config but will not work.");
     }
   }
 
-  public void doDeltaImport(SolrWriter writer, RequestInfo requestParams) {
+  public void doDeltaImport(DIHWriter writer, RequestInfo requestParams) {
     LOG.info("Starting Delta Import");
     setStatus(Status.RUNNING_DELTA_DUMP);
     boolean success = false;
@@ -457,7 +457,7 @@ public class DataImporter {
 
   }
 
-  public void runAsync(final RequestInfo reqParams, final SolrWriter sw) {
+  public void runAsync(final RequestInfo reqParams, final DIHWriter sw) {
     new Thread() {
       @Override
       public void run() {
@@ -466,7 +466,7 @@ public class DataImporter {
     }.start();
   }
 
-  void runCmd(RequestInfo reqParams, SolrWriter sw) {
+  void runCmd(RequestInfo reqParams, DIHWriter sw) {
     String command = reqParams.getCommand();
     if (command.equals(ABORT_CMD)) {
       if (docBuilder != null) {

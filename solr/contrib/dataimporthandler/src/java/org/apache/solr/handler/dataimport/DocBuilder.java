@@ -80,13 +80,10 @@ public class DocBuilder {
   private Map<String, Object> persistedProperties;
   
   private DIHProperties propWriter;
-  private static final String PARAM_WRITER_IMPL = "writerImpl";
-  private static final String DEFAULT_WRITER_NAME = "SolrWriter";
   private DebugLogger debugLogger;
   private final RequestInfo reqParams;
   
-  @SuppressWarnings("unchecked")
-  public DocBuilder(DataImporter dataImporter, SolrWriter solrWriter, DIHProperties propWriter, RequestInfo reqParams) {
+  public DocBuilder(DataImporter dataImporter, DIHWriter solrWriter, DIHProperties propWriter, RequestInfo reqParams) {
     INSTANCE.set(this);
     this.dataImporter = dataImporter;
     this.reqParams = reqParams;
@@ -95,20 +92,7 @@ public class DocBuilder {
     verboseDebug = reqParams.isDebug() && reqParams.getDebugInfo().verbose;
     persistedProperties = propWriter.readIndexerProperties();
      
-    String writerClassStr = null;
-    if(reqParams!=null && reqParams.getRawParams() != null) {
-      writerClassStr = (String) reqParams.getRawParams().get(PARAM_WRITER_IMPL);
-    }
-    if(writerClassStr != null && !writerClassStr.equals(DEFAULT_WRITER_NAME) && !writerClassStr.equals(DocBuilder.class.getPackage().getName() + "." + DEFAULT_WRITER_NAME)) {
-      try {
-        Class<DIHWriter> writerClass = loadClass(writerClassStr, dataImporter.getCore());
-        this.writer = writerClass.newInstance();
-      } catch (Exception e) {
-        throw new DataImportHandlerException(DataImportHandlerException.SEVERE, "Unable to load Writer implementation:" + writerClassStr, e);
-      }
-     } else {
-      writer = solrWriter;
-    }
+    writer = solrWriter;
     ContextImpl ctx = new ContextImpl(null, null, null, null, reqParams.getRawParams(), null, this);
     writer.init(ctx);
   }
@@ -904,9 +888,6 @@ public class DocBuilder {
   public RequestInfo getReqParams() {
     return reqParams;
   }
-
-
-
 
   @SuppressWarnings("unchecked")
   static Class loadClass(String name, SolrCore core) throws ClassNotFoundException {
