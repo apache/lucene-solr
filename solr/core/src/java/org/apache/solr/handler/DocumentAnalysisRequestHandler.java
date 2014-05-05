@@ -48,7 +48,7 @@ import java.io.InputStream;
 import java.util.*;
 
 /**
- * An analysis handler that provides a breakdown of the analysis process of provided docuemnts. This handler expects a
+ * An analysis handler that provides a breakdown of the analysis process of provided documents. This handler expects a
  * (single) content stream of the following format:
  * <p/>
  * <pre><code>
@@ -65,12 +65,12 @@ import java.util.*;
  * </code></pre>
  * <p/>
  * <em><b>Note: Each document must contain a field which serves as the unique key. This key is used in the returned
- * response to assoicate an analysis breakdown to the analyzed document.</b></em>
+ * response to associate an analysis breakdown to the analyzed document.</b></em>
  * <p/>
  * <p/>
  * <p/>
  * Like the {@link org.apache.solr.handler.FieldAnalysisRequestHandler}, this handler also supports query analysis by
- * sending either an "analysis.query" or "q" request paraemter that holds the query text to be analyzed. It also
+ * sending either an "analysis.query" or "q" request parameter that holds the query text to be analyzed. It also
  * supports the "analysis.showmatch" parameter which when set to {@code true}, all field tokens that match the query
  * tokens will be marked as a "match".
  *
