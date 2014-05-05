@@ -18,9 +18,6 @@ package org.apache.lucene.index;
 
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.apache.lucene.index.FieldInfos.FieldNumbers;
-import org.apache.lucene.util.SetOnce;
-
 /**
  * {@link DocumentsWriterPerThreadPool} controls {@link ThreadState} instances
  * and their thread assignments during indexing. Each {@link ThreadState} holds
@@ -307,9 +304,9 @@ abstract class DocumentsWriterPerThreadPool implements Cloneable {
       final ThreadState threadState = threadStates[i];
       threadState.lock();
       try {
-       if (!threadState.isActive) {
-         count++;
-       }
+        if (!threadState.isActive) {
+          count++;
+        }
       } finally {
         threadState.unlock();
       }

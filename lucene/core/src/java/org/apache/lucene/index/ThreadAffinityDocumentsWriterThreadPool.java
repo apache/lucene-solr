@@ -16,6 +16,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 import java.util.Map;
+import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState; //javadoc
@@ -48,7 +49,6 @@ class ThreadAffinityDocumentsWriterThreadPool extends DocumentsWriterPerThreadPo
       return threadState;
     }
     ThreadState minThreadState = null;
-
     
     /* TODO -- another thread could lock the minThreadState we just got while 
      we should somehow prevent this. */
@@ -68,11 +68,33 @@ class ThreadAffinityDocumentsWriterThreadPool extends DocumentsWriterPerThreadPo
          */
         minThreadState = minContendedThreadState();
       }
+    } else {
+      threadBindings.put(requestingThread, minThreadState);
     }
+
     assert minThreadState != null: "ThreadState is null";
     
     minThreadState.lock();
+
+    if (minThreadState.isInitialized() == false) {
+      // Another thread just flushed this thread state and cleared our binding; put it back:
+      threadBindings.put(requestingThread, minThreadState); // make sure we get the same state next time 
+    }
+
     return minThreadState;
+  }
+
+  @Override
+  DocumentsWriterPerThread reset(ThreadState threadState, boolean closed) {
+    // Remove all previous bindings to this ThreadState on flush:
+    Iterator<Map.Entry<Thread,ThreadState>> it = threadBindings.entrySet().iterator();
+    while (it.hasNext()) {
+      Map.Entry<Thread,ThreadState> ent = it.next();
+      if (ent.getValue() == threadState) {
+        it.remove();
+      }
+    }
+    return super.reset(threadState, closed);
   }
 
   @Override

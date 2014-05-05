@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -29,6 +30,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -71,11 +73,11 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SetOnce;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.ThreadInterruptedException;
-import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
@@ -2615,6 +2617,68 @@ public class TestIndexWriter extends LuceneTestCase {
     w.addDocument(doc);
     w.close();
     r.close();
+    dir.close();
+  }
+
+  // LUCENE-5644
+  public void testSegmentCountOnFlush() throws Exception {
+    Directory dir = newDirectory();
+    final IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    final CountDownLatch startingGun = new CountDownLatch(1);
+    final CountDownLatch startDone = new CountDownLatch(2);
+    final CountDownLatch middleGun = new CountDownLatch(1);
+    final CountDownLatch finalGun = new CountDownLatch(1);
+    Thread[] threads = new Thread[2];
+    for(int i=0;i<threads.length;i++) {
+      final int threadID = i;
+      threads[i] = new Thread() {
+          @Override
+          public void run() {
+            try {
+              startingGun.await();
+              Document doc = new Document();
+              doc.add(newTextField("field", "here is some text", Field.Store.NO));
+              w.addDocument(doc);
+              startDone.countDown();
+
+              middleGun.await();
+              if (threadID == 0) {
+                w.addDocument(doc);
+              } else {
+                finalGun.await();
+                w.addDocument(doc);
+              }
+            } catch (Exception e) {
+              throw new RuntimeException(e);
+            }
+          }
+        };
+      threads[i].start();
+    }
+
+    startingGun.countDown();
+    startDone.await();
+
+    IndexReader r = DirectoryReader.open(w, true);
+    assertEquals(2, r.numDocs());
+    int numSegments = r.leaves().size();
+    // 1 segment if the threads ran sequentially, else 2:
+    assertTrue(numSegments <= 2);
+    r.close();
+
+    middleGun.countDown();
+    threads[0].join();
+
+    finalGun.countDown();
+    threads[1].join();
+
+    r = DirectoryReader.open(w, true);
+    assertEquals(4, r.numDocs());
+    // Both threads should have shared a single thread state since they did not try to index concurrently:
+    assertEquals(1+numSegments, r.leaves().size());
+    r.close();
+
+    w.close();
     dir.close();
   }
 }
