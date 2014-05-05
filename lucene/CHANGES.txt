@@ -10,6 +10,9 @@ Bug fixes
 * LUCENE-5639: Fix PositionLengthAttribute implementation in Token class.
   (Uwe Schindler, Robert Muir)
 
+* LUCENE-5635: IndexWriter didn't properly handle IOException on TokenStream.reset(),
+  which could leave the analyzer in an inconsistent state.  (Robert Muir)
+
 ======================= Lucene 4.8.0 =======================
 
 System Requirements
