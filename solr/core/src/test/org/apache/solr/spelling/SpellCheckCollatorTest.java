@@ -463,6 +463,14 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='collation']/int[@name='hits']=1",
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='collation']/lst[@name='misspellingsAndCorrections']/str[@name='june']='jane'"
       );
+      //SOLR-5090, alternativeTermCount==0 was being evaluated, sometimes would throw NPE
+      assertQ(req("q", "teststop:(june customs)", "mm", "2", "qt",
+          "spellCheckCompRH", "indent", "true",
+          SpellCheckComponent.COMPONENT_NAME, "true",
+          SpellCheckComponent.SPELLCHECK_DICT, dictionary[i],
+          SpellCheckComponent.SPELLCHECK_COUNT, "10",
+          SpellCheckComponent.SPELLCHECK_ALTERNATIVE_TERM_COUNT, "0",
+          SpellCheckComponent.SPELLCHECK_COLLATE, "true"));
     }
   }
 

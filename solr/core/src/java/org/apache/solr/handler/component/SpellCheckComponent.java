@@ -158,7 +158,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         boolean extendedResults = params.getBool(SPELLCHECK_EXTENDED_RESULTS, false); 
         boolean collate = params.getBool(SPELLCHECK_COLLATE, false);
         float accuracy = params.getFloat(SPELLCHECK_ACCURACY, Float.MIN_VALUE);
-        Integer alternativeTermCount = params.getInt(SpellingParams.SPELLCHECK_ALTERNATIVE_TERM_COUNT); 
+        int alternativeTermCount = params.getInt(SpellingParams.SPELLCHECK_ALTERNATIVE_TERM_COUNT, 0); 
         Integer maxResultsForSuggest = params.getInt(SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST);
         ModifiableSolrParams customParams = new ModifiableSolrParams();
         for (String checkerName : getDictionaryNames(params)) {
@@ -177,7 +177,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
           SuggestMode suggestMode = SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX;
           if (onlyMorePopular) {
             suggestMode = SuggestMode.SUGGEST_MORE_POPULAR;
-          } else if (alternativeTermCount != null) {
+          } else if (alternativeTermCount > 0) {
             suggestMode = SuggestMode.SUGGEST_ALWAYS;
           }
           

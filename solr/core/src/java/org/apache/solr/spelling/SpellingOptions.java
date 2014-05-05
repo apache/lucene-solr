@@ -43,7 +43,7 @@ public class SpellingOptions {
    */
   public int count = 1;
   
-  public Integer alternativeTermCount = null;
+  public int alternativeTermCount = 0;
   
   public SuggestMode suggestMode = SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX;
   /**
@@ -95,7 +95,7 @@ public class SpellingOptions {
   }
   
   public SpellingOptions(Collection<Token> tokens, IndexReader reader,
-      int count, Integer alternativeTermCount, SuggestMode suggestMode,
+      int count, int alternativeTermCount, SuggestMode suggestMode,
       boolean extendedResults, float accuracy, SolrParams customParams) {
     this.tokens = tokens;
     this.reader = reader;
