@@ -156,17 +156,17 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
         docFreq = reader.docFreq(term);
       }
       String[] suggestions = spellChecker.suggestSimilar(tokenText,
-          ((options.alternativeTermCount == null || docFreq == 0) ? count
+          ((options.alternativeTermCount == 0 || docFreq == 0) ? count
               : options.alternativeTermCount), field != null ? reader : null, // workaround LUCENE-1295
           field, options.suggestMode, theAccuracy);
       if (suggestions.length == 1 && suggestions[0].equals(tokenText)
-          && options.alternativeTermCount == null) {
+          && options.alternativeTermCount == 0) {
         // These are spelled the same, continue on
         continue;
       }
       // If considering alternatives to "correctly-spelled" terms, then add the
       // original as a viable suggestion.
-      if (options.alternativeTermCount != null && docFreq > 0) {
+      if (options.alternativeTermCount > 0 && docFreq > 0) {
         boolean foundOriginal = false;
         String[] suggestionsWithOrig = new String[suggestions.length + 1];
         for (int i = 0; i < suggestions.length; i++) {
