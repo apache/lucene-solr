@@ -29,6 +29,9 @@ Bug fixes
 * LUCENE-5559: Add additional argument validation for CapitalizationFilter
   and CodepointCountFilter. (Ahmet Arslan via Robert Muir)
 
+* LUCENE-5641: SimpleRateLimiter would silently rate limit at 8 MB/sec
+  even if you asked for higher rates.  (Mike McCandless)
+
 ======================= Lucene 4.8.0 =======================
 
 System Requirements
