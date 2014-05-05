@@ -155,7 +155,7 @@ public final class LongField extends Field {
 
   /** Creates a stored or un-stored LongField with the provided value
    *  and default <code>precisionStep</code> {@link
-   *  NumericUtils#PRECISION_STEP_DEFAULT} (4). 
+   *  NumericUtils#PRECISION_STEP_DEFAULT} (16). 
    *  @param name field name
    *  @param value 64-bit long value
    *  @param stored Store.YES if the content should also be stored

@@ -68,7 +68,7 @@ public final class NumericRangeFilter<T extends Number> extends MultiTermQueryWr
   
   /**
    * Factory that creates a <code>NumericRangeFilter</code>, that queries a <code>long</code>
-   * range using the default <code>precisionStep</code> {@link NumericUtils#PRECISION_STEP_DEFAULT} (4).
+   * range using the default <code>precisionStep</code> {@link NumericUtils#PRECISION_STEP_DEFAULT} (16).
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
    * by setting the min or max value to <code>null</code>. By setting inclusive to false, it will
    * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
@@ -98,7 +98,7 @@ public final class NumericRangeFilter<T extends Number> extends MultiTermQueryWr
   
   /**
    * Factory that creates a <code>NumericRangeFilter</code>, that queries a <code>int</code>
-   * range using the default <code>precisionStep</code> {@link NumericUtils#PRECISION_STEP_DEFAULT} (4).
+   * range using the default <code>precisionStep</code> {@link NumericUtils#PRECISION_STEP_DEFAULT_32} (8).
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
    * by setting the min or max value to <code>null</code>. By setting inclusive to false, it will
    * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
@@ -130,7 +130,7 @@ public final class NumericRangeFilter<T extends Number> extends MultiTermQueryWr
   
   /**
    * Factory that creates a <code>NumericRangeFilter</code>, that queries a <code>double</code>
-   * range using the default <code>precisionStep</code> {@link NumericUtils#PRECISION_STEP_DEFAULT} (4).
+   * range using the default <code>precisionStep</code> {@link NumericUtils#PRECISION_STEP_DEFAULT} (16).
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
    * by setting the min or max value to <code>null</code>.
    * {@link Double#NaN} will never match a half-open range, to hit {@code NaN} use a query
@@ -164,7 +164,7 @@ public final class NumericRangeFilter<T extends Number> extends MultiTermQueryWr
 
   /**
    * Factory that creates a <code>NumericRangeFilter</code>, that queries a <code>float</code>
-   * range using the default <code>precisionStep</code> {@link NumericUtils#PRECISION_STEP_DEFAULT} (4).
+   * range using the default <code>precisionStep</code> {@link NumericUtils#PRECISION_STEP_DEFAULT_32} (8).
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
    * by setting the min or max value to <code>null</code>.
    * {@link Float#NaN} will never match a half-open range, to hit {@code NaN} use a query
