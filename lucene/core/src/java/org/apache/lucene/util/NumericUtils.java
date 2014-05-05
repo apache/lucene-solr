@@ -72,12 +72,17 @@ public final class NumericUtils {
   private NumericUtils() {} // no instance!
   
   /**
-   * The default precision step used by {@link IntField},
-   * {@link FloatField}, {@link LongField}, {@link
-   * DoubleField}, {@link NumericTokenStream}, {@link
+   * The default precision step used by {@link LongField},
+   * {@link DoubleField}, {@link NumericTokenStream}, {@link
    * NumericRangeQuery}, and {@link NumericRangeFilter}.
    */
-  public static final int PRECISION_STEP_DEFAULT = 4;
+  public static final int PRECISION_STEP_DEFAULT = 16;
+  
+  /**
+   * The default precision step used by {@link IntField} and
+   * {@link FloatField}.
+   */
+  public static final int PRECISION_STEP_DEFAULT_32 = 8;
   
   /**
    * Longs are stored at lower precision by shifting off lower bits. The shift count is

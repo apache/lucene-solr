@@ -125,6 +125,7 @@ public final class IntField extends Field {
     TYPE_NOT_STORED.setOmitNorms(true);
     TYPE_NOT_STORED.setIndexOptions(IndexOptions.DOCS_ONLY);
     TYPE_NOT_STORED.setNumericType(FieldType.NumericType.INT);
+    TYPE_NOT_STORED.setNumericPrecisionStep(NumericUtils.PRECISION_STEP_DEFAULT_32);
     TYPE_NOT_STORED.freeze();
   }
 
@@ -139,13 +140,14 @@ public final class IntField extends Field {
     TYPE_STORED.setOmitNorms(true);
     TYPE_STORED.setIndexOptions(IndexOptions.DOCS_ONLY);
     TYPE_STORED.setNumericType(FieldType.NumericType.INT);
+    TYPE_STORED.setNumericPrecisionStep(NumericUtils.PRECISION_STEP_DEFAULT_32);
     TYPE_STORED.setStored(true);
     TYPE_STORED.freeze();
   }
 
   /** Creates a stored or un-stored IntField with the provided value
    *  and default <code>precisionStep</code> {@link
-   *  NumericUtils#PRECISION_STEP_DEFAULT} (4). 
+   *  NumericUtils#PRECISION_STEP_DEFAULT_32} (8). 
    *  @param name field name
    *  @param value 32-bit integer value
    *  @param stored Store.YES if the content should also be stored

@@ -141,6 +141,10 @@ Optimizations
   that packs the core attributes into one impl, for faster clearAttributes(),
   saveState(), and restoreState().  (Uwe Schindler, Robert Muir)
 
+* LUCENE-5609: Changed the default NumericField precisionStep from 4
+  to 8 (for int/float) and 16 (for long/double), for faster indexing
+  time and smaller indices. (Robert Muir, Uwe Schindler, Mike McCandless)
+
 Bug fixes
 
 * LUCENE-5600: HttpClientBase did not properly consume a connection if a server

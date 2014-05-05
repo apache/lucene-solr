@@ -75,7 +75,7 @@ public class TestFieldReuse extends BaseTokenStreamTestCase {
     // passing null
     TokenStream ts = intField.tokenStream(null, null);
     assertTrue(ts instanceof NumericTokenStream);
-    assertEquals(NumericUtils.PRECISION_STEP_DEFAULT, ((NumericTokenStream)ts).getPrecisionStep());
+    assertEquals(NumericUtils.PRECISION_STEP_DEFAULT_32, ((NumericTokenStream)ts).getPrecisionStep());
     assertNumericContents(5, ts);
 
     // now reuse previous stream
