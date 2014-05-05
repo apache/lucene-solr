@@ -26,6 +26,9 @@ Bug fixes
   a suggester this is a nasty trap. (Robert Muir, Simon Willnauer,
   Mike McCandless).
 
+* LUCENE-5559: Add additional argument validation for CapitalizationFilter
+  and CodepointCountFilter. (Ahmet Arslan via Robert Muir)
+
 ======================= Lucene 4.8.0 =======================
 
 System Requirements

@@ -272,4 +272,27 @@ public class TestCapitalizationFilterFactory extends BaseTokenStreamFactoryTestC
       assertTrue(expected.getMessage().contains("Unknown parameters"));
     }
   }
+
+  /**
+   * Test that invalid arguments result in exception
+   */
+  public void testInvalidArguments() throws Exception {
+    for (final String arg : new String[]{"minWordLength", "maxTokenLength", "maxWordCount"}) {
+      try {
+        Reader reader = new StringReader("foo foobar super-duper-trooper");
+        TokenStream stream = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+
+        tokenFilterFactory("Capitalization",
+            "keep", "and the it BIG",
+            "onlyFirstWord", "false",
+            arg, "-3",
+            "okPrefix", "McK",
+            "forceFirstLetter", "true").create(stream);
+        fail();
+      } catch (IllegalArgumentException expected) {
+        assertTrue(expected.getMessage().contains(arg + " must be greater than or equal to zero")
+            || expected.getMessage().contains(arg + " must be greater than zero"));
+      }
+    }
+  }
 }
