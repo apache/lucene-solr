@@ -76,6 +76,10 @@ Bug Fixes
 * SOLR-5090: SpellCheckComponent sometimes throws NPE if 
   "spellcheck.alternativeTermCount" is set to zero (James Dyer).
 
+* SOLR-6039: fixed debug output when no results in response
+  (Tomás Fernández Löbbe, hossman)
+
+
 Other Changes
 ---------------------
 
