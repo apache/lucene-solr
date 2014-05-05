@@ -19,15 +19,22 @@ package org.apache.solr.handler.component;
 
 import static org.apache.solr.common.params.CommonParams.FQ;
 
-import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.params.CommonParams;
-
 import java.io.IOException;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.search.Query;
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -148,20 +155,21 @@ public class DebugComponent extends SearchComponent
       sreq.purpose |= ShardRequest.PURPOSE_GET_DEBUG;
       if (rb.isDebugAll()) {
         sreq.params.set(CommonParams.DEBUG_QUERY, "true");
-      } else if (rb.isDebug()) {
+      } else {
         if (rb.isDebugQuery()){
           sreq.params.add(CommonParams.DEBUG, CommonParams.QUERY);
-        } 
-        if (rb.isDebugTimings()){
-          sreq.params.add(CommonParams.DEBUG, CommonParams.TIMING);
-        } 
+        }
         if (rb.isDebugResults()){
           sreq.params.add(CommonParams.DEBUG, CommonParams.RESULTS);
         }
       }
     } else {
       sreq.params.set(CommonParams.DEBUG_QUERY, "false");
+      sreq.params.set(CommonParams.DEBUG, "false");
     }
+    if (rb.isDebugTimings()) {
+      sreq.params.add(CommonParams.DEBUG, CommonParams.TIMING);
+    } 
     if (rb.isDebugTrack()) {
       sreq.params.add(CommonParams.DEBUG, CommonParams.TRACK);
       sreq.params.set(CommonParams.REQUEST_ID, rb.req.getParams().get(CommonParams.REQUEST_ID));
@@ -184,30 +192,33 @@ public class DebugComponent extends SearchComponent
     }
   }
 
-  private Set<String> excludeSet = new HashSet<>(Arrays.asList("explain"));
+  private final static Set<String> EXCLUDE_SET = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("explain")));
 
   @Override
   public void finishStage(ResponseBuilder rb) {
     if (rb.isDebug() && rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
       NamedList<Object> info = rb.getDebugInfo();
-      NamedList explain = new SimpleOrderedMap();
+      NamedList<Object> explain = new SimpleOrderedMap<>();
 
       Map.Entry<String, Object>[]  arr =  new NamedList.NamedListEntry[rb.resultIds.size()];
+      // Will be set to true if there is at least one response with PURPOSE_GET_DEBUG
+      boolean hasGetDebugResponses = false;
 
       for (ShardRequest sreq : rb.finished) {
-        if ((sreq.purpose & ShardRequest.PURPOSE_GET_DEBUG) == 0) continue;
         for (ShardResponse srsp : sreq.responses) {
           NamedList sdebug = (NamedList)srsp.getSolrResponse().getResponse().get("debug");
-          info = (NamedList)merge(sdebug, info, excludeSet);
-
-          if (rb.isDebugResults()) {
-            NamedList sexplain = (NamedList)sdebug.get("explain");
-            for (int i = 0; i < sexplain.size(); i++) {
-              String id = sexplain.getName(i);
-              // TODO: lookup won't work for non-string ids... String vs Float
-              ShardDoc sdoc = rb.resultIds.get(id);
-              int idx = sdoc.positionInResponse;
-              arr[idx] = new NamedList.NamedListEntry<>(id, sexplain.getVal(i));
+          info = (NamedList)merge(sdebug, info, EXCLUDE_SET);
+          if ((sreq.purpose & ShardRequest.PURPOSE_GET_DEBUG) != 0) {
+            hasGetDebugResponses = true;
+            if (rb.isDebugResults()) {
+              NamedList sexplain = (NamedList)sdebug.get("explain");
+              for (int i = 0; i < sexplain.size(); i++) {
+                String id = sexplain.getName(i);
+                // TODO: lookup won't work for non-string ids... String vs Float
+                ShardDoc sdoc = rb.resultIds.get(id);
+                int idx = sdoc.positionInResponse;
+                arr[idx] = new NamedList.NamedListEntry<>(id, sexplain.getVal(i));
+              }
             }
           }
         }
@@ -217,9 +228,11 @@ public class DebugComponent extends SearchComponent
         explain = SolrPluginUtils.removeNulls(new SimpleOrderedMap<>(arr));
       }
 
-      if (info == null) {
+      if (!hasGetDebugResponses) {
+        if (info == null) {
+          info = new SimpleOrderedMap<>();
+        }
         // No responses were received from shards. Show local query info.
-        info = new SimpleOrderedMap<>();
         SolrPluginUtils.doStandardQueryDebug(
                 rb.req, rb.getQueryString(),  rb.getQuery(), rb.isDebugQuery(), info);
         if (rb.isDebugQuery() && rb.getQparser() != null) {
@@ -236,7 +249,7 @@ public class DebugComponent extends SearchComponent
       }
 
       rb.setDebugInfo(info);
-      rb.rsp.add("debug", rb.getDebugInfo() );      
+      rb.rsp.add("debug", rb.getDebugInfo() );
     }
     
   }
