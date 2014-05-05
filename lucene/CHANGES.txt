@@ -13,6 +13,19 @@ Bug fixes
 * LUCENE-5635: IndexWriter didn't properly handle IOException on TokenStream.reset(),
   which could leave the analyzer in an inconsistent state.  (Robert Muir)
 
+* LUCENE-5599: HttpReplicator did not properly delegate bulk read() to wrapped
+  InputStream. (Christoph Kaser via Shai Erera)
+  
+* LUCENE-5600: HttpClientBase did not properly consume a connection if a server
+  error occurred. (Christoph Kaser via Shai Erera)
+
+* LUCENE-5628: Change getFiniteStrings to iterative not recursive
+  implementation, so that building suggesters on a long suggestion
+  doesn't risk overflowing the stack; previously it consumed one Java
+  stack frame per character in the expanded suggestion.  If you are building
+  a suggester this is a nasty trap. (Robert Muir, Simon Willnauer,
+  Mike McCandless).
+
 ======================= Lucene 4.8.0 =======================
 
 System Requirements
