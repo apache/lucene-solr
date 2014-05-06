@@ -506,17 +506,6 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     }
 
     /**
-     * Copy compressed data.
-     */
-    void copyCompressedData(DataOutput out) throws IOException {
-      assert getVersion() == VERSION_CURRENT;
-      final long chunkEnd = docBase + chunkDocs == numDocs
-          ? maxPointer
-          : indexReader.getStartPointer(docBase + chunkDocs);
-      out.copyBytes(fieldsStream, chunkEnd - fieldsStream.getFilePointer());
-    }
-
-    /**
      * Check integrity of the data. The iterator is not usable after this method has been called.
      */
     void checkIntegrity() throws IOException {
