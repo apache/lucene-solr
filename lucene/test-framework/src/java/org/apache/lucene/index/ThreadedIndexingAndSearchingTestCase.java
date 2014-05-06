@@ -442,8 +442,11 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
     }
     MockAnalyzer analyzer = new MockAnalyzer(random());
     analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
-    final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, 
-        analyzer).setInfoStream(new FailOnNonBulkMergesInfoStream());
+    final IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    conf.setInfoStream(new FailOnNonBulkMergesInfoStream());
+    if (conf.getMergePolicy() instanceof MockRandomMergePolicy) {
+      ((MockRandomMergePolicy)conf.getMergePolicy()).setDoNonBulkMerges(false);
+    }
 
     if (LuceneTestCase.TEST_NIGHTLY) {
       // newIWConfig makes smallish max seg size, which
