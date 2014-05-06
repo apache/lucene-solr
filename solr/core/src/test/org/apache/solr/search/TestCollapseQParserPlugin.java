@@ -343,6 +343,23 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     params.add("group.field", "id");
     assertQ(req(params), "*[count(//doc)=2]");
 
+
+    // delete the elevated docs, confirm collapsing still works
+    assertU(delI("1"));
+    assertU(delI("2"));
+    assertU(commit());
+    params = new ModifiableSolrParams();
+    params.add("q", "YYYY");
+    params.add("fq", "{!collapse field=group_s nullPolicy=collapse}");
+    params.add("defType", "edismax");
+    params.add("bf", "field(test_ti)");
+    params.add("qf", "term_s");
+    params.add("qt", "/elevate");
+    assertQ(req(params), "*[count(//doc)=2]",
+                         "//result/doc[1]/float[@name='id'][.='3.0']",
+                         "//result/doc[2]/float[@name='id'][.='6.0']");
+
+
   }
 
   @Test
