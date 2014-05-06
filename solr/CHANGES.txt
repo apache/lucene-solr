@@ -20,6 +20,14 @@ See the tutorial at http://lucene.apache.org/solr/tutorial.html
 
 $Id$
 
+==================  4.8.1 ==================
+
+Bug Fixes
+----------------------
+
+* SOLR-6017: Fix SimpleQParser to use query analyzer
+  (Ryan Ernst)
+
 ==================  4.8.0 ==================
 
 Versions of Major Components
