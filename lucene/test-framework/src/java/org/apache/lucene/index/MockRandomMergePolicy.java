@@ -64,7 +64,7 @@ public class MockRandomMergePolicy extends MergePolicy {
       // TODO: sometimes make more than 1 merge?
       mergeSpec = new MergeSpecification();
       final int segsToMerge = TestUtil.nextInt(random, 1, numSegments);
-      mergeSpec.add(new OneMerge(segments.subList(0, segsToMerge)));
+      mergeSpec.add(new MockRandomOneMerge(segments.subList(0, segsToMerge),random.nextLong()));
     }
 
     return mergeSpec;
@@ -93,7 +93,7 @@ public class MockRandomMergePolicy extends MergePolicy {
       while(upto < eligibleSegments.size()) {
         int max = Math.min(10, eligibleSegments.size()-upto);
         int inc = max <= 2 ? max : TestUtil.nextInt(random, 2, max);
-        mergeSpec.add(new OneMerge(eligibleSegments.subList(upto, upto+inc)));
+        mergeSpec.add(new MockRandomOneMerge(eligibleSegments.subList(upto, upto+inc), random.nextLong()));
         upto += inc;
       }
     }
@@ -121,5 +121,29 @@ public class MockRandomMergePolicy extends MergePolicy {
   public boolean useCompoundFile(SegmentInfos infos, SegmentCommitInfo mergedInfo) throws IOException {
     // 80% of the time we create CFS:
     return random.nextInt(5) != 1;
+  }
+  
+  static class MockRandomOneMerge extends OneMerge {
+    final Random r;
+    ArrayList<AtomicReader> readers;
+
+    MockRandomOneMerge(List<SegmentCommitInfo> segments, long seed) {
+      super(segments);
+      r = new Random(seed);
+    }
+
+    @Override
+    public List<AtomicReader> getMergeReaders() throws IOException {
+      if (readers == null) {
+        readers = new ArrayList<AtomicReader>(super.getMergeReaders());
+        for (int i = 0; i < readers.size(); i++) {
+          // wrap it (e.g. prevent bulk merge etc)
+          if (r.nextInt(4) == 0) {
+            readers.set(i, new FilterAtomicReader(readers.get(i)));
+          }
+        }
+      }
+      return readers;
+    }
   }
 }
