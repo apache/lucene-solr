@@ -28,7 +28,7 @@ import java.util.Map;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenizerFactory;
-import org.apache.lucene.util.AttributeSource.AttributeFactory;
+import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.IOUtils;
 
 import com.ibm.icu.lang.UCharacter;

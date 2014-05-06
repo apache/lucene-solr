@@ -18,12 +18,12 @@ package org.apache.lucene.analysis;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.nio.CharBuffer;
 import java.util.Random;
 
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
 
@@ -113,7 +113,7 @@ public class MockTokenizer extends Tokenizer {
     this(factory, runAutomaton, lowerCase, DEFAULT_MAX_TOKEN_LENGTH);
   }
 
-  /** Calls {@link #MockTokenizer(org.apache.lucene.util.AttributeSource.AttributeFactory,CharacterRunAutomaton,boolean)
+  /** Calls {@link #MockTokenizer(AttributeFactory,CharacterRunAutomaton,boolean)
    *                MockTokenizer(AttributeFactory, Reader, WHITESPACE, true)} */
   public MockTokenizer(AttributeFactory factory) {
     this(factory, WHITESPACE, true);

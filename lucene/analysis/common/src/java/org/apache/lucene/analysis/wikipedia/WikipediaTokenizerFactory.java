@@ -21,7 +21,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.apache.lucene.analysis.util.TokenizerFactory;
-import org.apache.lucene.util.AttributeSource.AttributeFactory;
+import org.apache.lucene.util.AttributeFactory;
 
 /** 
  * Factory for {@link WikipediaTokenizer}.

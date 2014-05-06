@@ -31,6 +31,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.AttributeSource.State;
 import org.apache.solr.analysis.SolrAnalyzer;

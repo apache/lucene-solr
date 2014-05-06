@@ -17,15 +17,14 @@ package org.apache.lucene.analysis.path;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.util.AttributeFactory;
 
 /**
  * Tokenizer for domain-like hierarchies.
@@ -82,7 +81,7 @@ public class ReversePathHierarchyTokenizer extends Tokenizer {
   }
 
   public ReversePathHierarchyTokenizer( int bufferSize, char delimiter, char replacement, int skip) {
-    this(Token.TOKEN_ATTRIBUTE_FACTORY, bufferSize, delimiter, replacement, skip);
+    this(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, bufferSize, delimiter, replacement, skip);
   }
   public ReversePathHierarchyTokenizer
       (AttributeFactory factory, int bufferSize, char delimiter, char replacement, int skip) {

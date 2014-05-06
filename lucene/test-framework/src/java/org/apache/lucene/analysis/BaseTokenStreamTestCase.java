@@ -25,6 +25,7 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.lang.reflect.Constructor;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
@@ -38,8 +39,8 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Attribute;
+import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeImpl;
-import org.apache.lucene.util.AttributeSource.AttributeFactory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
@@ -935,16 +936,41 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     return mockTokenizer;
   }
   
-  /** Returns a new AttributeFactory impl */
-  public static AttributeFactory newAttributeFactory(Random random) {
-    if (random.nextBoolean()) {
-      return Token.TOKEN_ATTRIBUTE_FACTORY;
-    } else {
-      return AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY;
+  /**
+   * This provides the default AttributeFactory in reflective-only mode (package private)
+   * so we can test it.
+   */
+  private final static AttributeFactory REFLECTIVE_ATTRIBUTE_FACTORY;
+  static {
+    try {
+      final Constructor<? extends AttributeFactory> constr = Class
+          .forName(AttributeFactory.class.getName() + "$DefaultAttributeFactory")
+          .asSubclass(AttributeFactory.class)
+          .getDeclaredConstructor(boolean.class);
+      constr.setAccessible(true);
+      REFLECTIVE_ATTRIBUTE_FACTORY = constr.newInstance(false);
+    } catch (ReflectiveOperationException e) {
+      throw new Error("Cannot initantiate a reflective-only DefaultAttributeFactory", e);
     }
   }
   
-  /** Returns a new AttributeFactory impl */
+  /** Returns a random AttributeFactory impl */
+  public static AttributeFactory newAttributeFactory(Random random) {
+    switch (random.nextInt(4)) {
+      case 0:
+        return TokenStream.DEFAULT_TOKEN_ATTRIBUTE_FACTORY;
+      case 1:
+        return Token.TOKEN_ATTRIBUTE_FACTORY;
+      case 2:
+        return AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY;
+      case 3:
+        return REFLECTIVE_ATTRIBUTE_FACTORY;
+      default:
+        throw new AssertionError("Please fix the Random.nextInt() call above");
+    }
+  }
+  
+  /** Returns a random AttributeFactory impl */
   public static AttributeFactory newAttributeFactory() {
     return newAttributeFactory(random());
   }

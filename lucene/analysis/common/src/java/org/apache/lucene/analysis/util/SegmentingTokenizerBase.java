@@ -19,12 +19,11 @@ package org.apache.lucene.analysis.util;
 
 import java.io.IOException;
 import java.io.Reader;
-
 import java.text.BreakIterator;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.util.AttributeFactory;
 
 /**
  * Breaks text into sentences with a {@link BreakIterator} and
@@ -63,7 +62,7 @@ public abstract class SegmentingTokenizerBase extends Tokenizer {
    * be provided to this constructor.
    */
   public SegmentingTokenizerBase(BreakIterator iterator) {
-    this(Token.TOKEN_ATTRIBUTE_FACTORY, iterator);
+    this(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, iterator);
   }
   
   /**

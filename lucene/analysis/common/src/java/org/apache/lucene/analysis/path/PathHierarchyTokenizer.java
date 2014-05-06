@@ -17,13 +17,12 @@ package org.apache.lucene.analysis.path;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.util.AttributeFactory;
 
 /**
  * Tokenizer for path-like hierarchies.
@@ -69,7 +68,7 @@ public class PathHierarchyTokenizer extends Tokenizer {
   }
 
   public PathHierarchyTokenizer(int bufferSize, char delimiter, char replacement, int skip) {
-    this(Token.TOKEN_ATTRIBUTE_FACTORY, bufferSize, delimiter, replacement, skip);
+    this(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, bufferSize, delimiter, replacement, skip);
   }
 
   public PathHierarchyTokenizer

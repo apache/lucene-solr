@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.ngram;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.Version;
 
 /**
@@ -49,7 +50,7 @@ public class EdgeNGramTokenizer extends NGramTokenizer {
    * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
    *
    * @param version the Lucene match version
-   * @param factory {@link org.apache.lucene.util.AttributeSource.AttributeFactory} to use
+   * @param factory {@link org.apache.lucene.util.AttributeFactory} to use
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate
    */

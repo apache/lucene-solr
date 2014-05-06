@@ -21,6 +21,7 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.CharTokenizer;
+import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Version;
 
@@ -50,7 +51,7 @@ public final class WhitespaceTokenizer extends CharTokenizer {
 
   /**
    * Construct a new WhitespaceTokenizer using a given
-   * {@link org.apache.lucene.util.AttributeSource.AttributeFactory}.
+   * {@link org.apache.lucene.util.AttributeFactory}.
    *
    * @param
    *          matchVersion Lucene version to match See

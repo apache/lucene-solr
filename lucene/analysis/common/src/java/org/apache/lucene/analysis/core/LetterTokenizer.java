@@ -19,6 +19,7 @@ package org.apache.lucene.analysis.core;
 
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.CharTokenizer;
+import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.Version;
 
 /**
@@ -55,7 +56,7 @@ public class LetterTokenizer extends CharTokenizer {
   
   /**
    * Construct a new LetterTokenizer using a given
-   * {@link org.apache.lucene.util.AttributeSource.AttributeFactory}.
+   * {@link org.apache.lucene.util.AttributeFactory}.
    * 
    * @param matchVersion
    *          Lucene version to match See {@link <a href="#version">above</a>}

@@ -24,7 +24,9 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 /**
  * A {@link TokenStream} containing a single token.
+ * @deprecated Do not use this anymore!
  */
+@Deprecated
 public final class SingleTokenTokenStream extends TokenStream {
 
   private boolean exhausted = false;

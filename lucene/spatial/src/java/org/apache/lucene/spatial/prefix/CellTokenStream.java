@@ -22,9 +22,9 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.util.Attribute;
+import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
-import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
@@ -51,10 +51,10 @@ class CellTokenStream extends TokenStream {
   }
 
   // just a wrapper to prevent adding CTA
-  private static final class CellAttributeFactory extends AttributeSource.AttributeFactory {
-    private final AttributeSource.AttributeFactory delegate;
+  private static final class CellAttributeFactory extends AttributeFactory {
+    private final AttributeFactory delegate;
 
-    CellAttributeFactory(AttributeSource.AttributeFactory delegate) {
+    CellAttributeFactory(AttributeFactory delegate) {
       this.delegate = delegate;
     }
 

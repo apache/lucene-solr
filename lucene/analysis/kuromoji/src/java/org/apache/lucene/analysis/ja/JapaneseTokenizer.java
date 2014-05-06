@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.ja;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -40,6 +39,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.util.RollingCharBuffer;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.fst.FST;
@@ -195,7 +195,7 @@ public final class JapaneseTokenizer extends Tokenizer {
    * @param mode tokenization mode.
    */
   public JapaneseTokenizer(UserDictionary userDictionary, boolean discardPunctuation, Mode mode) {
-    this(org.apache.lucene.analysis.Token.TOKEN_ATTRIBUTE_FACTORY, userDictionary, discardPunctuation, mode);
+    this(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, userDictionary, discardPunctuation, mode);
   }
 
   /**

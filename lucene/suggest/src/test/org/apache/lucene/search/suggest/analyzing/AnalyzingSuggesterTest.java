@@ -39,9 +39,9 @@ import org.apache.lucene.analysis.CannedBinaryTokenStream.BinaryToken;
 import org.apache.lucene.analysis.CannedBinaryTokenStream;
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.MockBytesAttributeFactory;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.MockUTF16TermAttributeImpl;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -52,6 +52,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.search.suggest.Input;
 import org.apache.lucene.search.suggest.InputArrayIterator;
+import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
@@ -621,8 +622,6 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     private int numStopChars;
     private boolean preserveHoles;
 
-    private final MockBytesAttributeFactory factory = new MockBytesAttributeFactory();
-
     public MockTokenEatingAnalyzer(int numStopChars, boolean preserveHoles) {
       this.preserveHoles = preserveHoles;
       this.numStopChars = numStopChars;
@@ -630,7 +629,8 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
 
     @Override
     public TokenStreamComponents createComponents(String fieldName) {
-      MockTokenizer tokenizer = new MockTokenizer(factory, MockTokenizer.WHITESPACE, false, MockTokenizer.DEFAULT_MAX_TOKEN_LENGTH);
+      MockTokenizer tokenizer = new MockTokenizer(MockUTF16TermAttributeImpl.UTF16_TERM_ATTRIBUTE_FACTORY,
+          MockTokenizer.WHITESPACE, false, MockTokenizer.DEFAULT_MAX_TOKEN_LENGTH);
       tokenizer.setEnableChecks(true);
       TokenStream next;
       if (numStopChars != 0) {

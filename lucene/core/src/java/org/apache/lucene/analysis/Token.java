@@ -17,16 +17,12 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.tokenattributes.CharTermAttributeImpl;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
+import org.apache.lucene.analysis.tokenattributes.PackedTokenAttributeImpl;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
-import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.index.DocsAndPositionsEnum; // for javadoc
 import org.apache.lucene.util.Attribute;
-import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.BytesRef;
@@ -57,54 +53,7 @@ import org.apache.lucene.util.BytesRef;
   Even though it is not necessary to use Token anymore, with the new TokenStream API it can
   be used as convenience class that implements all {@link Attribute}s, which is especially useful
   to easily switch from the old to the new TokenStream API.
-  
-  <br><br>
-  
-  <p>Tokenizers and TokenFilters should try to re-use a Token
-  instance when possible for best performance, by
-  implementing the {@link TokenStream#incrementToken()} API.
-  Failing that, to create a new Token you should first use
-  one of the constructors that starts with null text.  To load
-  the token from a char[] use {@link #copyBuffer(char[], int, int)}.
-  To load from a String use {@link #setEmpty} followed by {@link #append(CharSequence)} or {@link #append(CharSequence, int, int)}.
-  Alternatively you can get the Token's termBuffer by calling either {@link #buffer()},
-  if you know that your text is shorter than the capacity of the termBuffer
-  or {@link #resizeBuffer(int)}, if there is any possibility
-  that you may need to grow the buffer. Fill in the characters of your term into this
-  buffer, with {@link String#getChars(int, int, char[], int)} if loading from a string,
-  or with {@link System#arraycopy(Object, int, Object, int, int)}, and finally call {@link #setLength(int)} to
-  set the length of the term text.  See <a target="_top"
-  href="https://issues.apache.org/jira/browse/LUCENE-969">LUCENE-969</a>
-  for details.</p>
-  <p>Typical Token reuse patterns:
-  <ul>
-  <li> Copying text from a string (type is reset to {@link #DEFAULT_TYPE} if not specified):<br/>
-  <pre class="prettyprint">
-    return reusableToken.reinit(string, startOffset, endOffset[, type]);
-  </pre>
-  </li>
-  <li> Copying some text from a string (type is reset to {@link #DEFAULT_TYPE} if not specified):<br/>
-  <pre class="prettyprint">
-    return reusableToken.reinit(string, 0, string.length(), startOffset, endOffset[, type]);
-  </pre>
-  </li>
-  </li>
-  <li> Copying text from char[] buffer (type is reset to {@link #DEFAULT_TYPE} if not specified):<br/>
-  <pre class="prettyprint">
-    return reusableToken.reinit(buffer, 0, buffer.length, startOffset, endOffset[, type]);
-  </pre>
-  </li>
-  <li> Copying some text from a char[] buffer (type is reset to {@link #DEFAULT_TYPE} if not specified):<br/>
-  <pre class="prettyprint">
-    return reusableToken.reinit(buffer, start, end - start, startOffset, endOffset[, type]);
-  </pre>
-  </li>
-  <li> Copying from one one Token to another (type is reset to {@link #DEFAULT_TYPE} if not specified):<br/>
-  <pre class="prettyprint">
-    return reusableToken.reinit(source.buffer(), 0, source.length(), source.startOffset(), source.endOffset()[, source.type()]);
-  </pre>
-  </li>
-  </ul>
+ 
   A few things to note:
   <ul>
   <li>clear() initializes all of the fields to default values. This was changed in contrast to Lucene 2.4, but should affect no one.</li>
@@ -118,56 +67,16 @@ import org.apache.lucene.util.BytesRef;
   {@link CharSequence} interface introduced by the interface {@link org.apache.lucene.analysis.tokenattributes.CharTermAttribute}.
   This method now only prints the term text, no additional information anymore.
   </p>
+  @deprecated This class is outdated and no longer used since Lucene 2.9. Nuke it finally!
 */
-public class Token extends CharTermAttributeImpl 
-                   implements TypeAttribute, PositionIncrementAttribute,
-                              FlagsAttribute, OffsetAttribute, PayloadAttribute, PositionLengthAttribute {
+@Deprecated
+public class Token extends PackedTokenAttributeImpl implements FlagsAttribute, PayloadAttribute {
 
-  private int startOffset,endOffset;
-  private String type = DEFAULT_TYPE;
   private int flags;
   private BytesRef payload;
-  private int positionIncrement = 1;
-  private int positionLength = 1;
 
   /** Constructs a Token will null text. */
   public Token() {
-  }
-
-  /** Constructs a Token with null text and start & end
-   *  offsets.
-   *  @param start start offset in the source text
-   *  @param end end offset in the source text */
-  public Token(int start, int end) {
-    checkOffsets(start, end);
-    startOffset = start;
-    endOffset = end;
-  }
-
-  /** Constructs a Token with null text and start & end
-   *  offsets plus the Token type.
-   *  @param start start offset in the source text
-   *  @param end end offset in the source text
-   *  @param typ the lexical type of this Token */
-  public Token(int start, int end, String typ) {
-    checkOffsets(start, end);
-    startOffset = start;
-    endOffset = end;
-    type = typ;
-  }
-
-  /**
-   * Constructs a Token with null text and start & end
-   *  offsets plus flags. NOTE: flags is EXPERIMENTAL.
-   *  @param start start offset in the source text
-   *  @param end end offset in the source text
-   *  @param flags The bits to set for this token
-   */
-  public Token(int start, int end, int flags) {
-    checkOffsets(start, end);
-    startOffset = start;
-    endOffset = end;
-    this.flags = flags;
   }
 
   /** Constructs a Token with the given term text, and start
@@ -179,149 +88,9 @@ public class Token extends CharTermAttributeImpl
    *  @param start start offset in the source text
    *  @param end end offset in the source text
    */
-  public Token(String text, int start, int end) {
-    checkOffsets(start, end);
+  public Token(CharSequence text, int start, int end) {
     append(text);
-    startOffset = start;
-    endOffset = end;
-  }
-
-  /** Constructs a Token with the given text, start and end
-   *  offsets, & type.  <b>NOTE:</b> for better indexing
-   *  speed you should instead use the char[] termBuffer
-   *  methods to set the term text.
-   *  @param text term text
-   *  @param start start offset in the source text
-   *  @param end end offset in the source text
-   *  @param typ token type
-   */
-  public Token(String text, int start, int end, String typ) {
-    checkOffsets(start, end);
-    append(text);
-    startOffset = start;
-    endOffset = end;
-    type = typ;
-  }
-
-  /**
-   *  Constructs a Token with the given text, start and end
-   *  offsets, & type.  <b>NOTE:</b> for better indexing
-   *  speed you should instead use the char[] termBuffer
-   *  methods to set the term text.
-   * @param text term text
-   * @param start start offset in the source text
-   * @param end end offset in the source text
-   * @param flags token type bits
-   */
-  public Token(String text, int start, int end, int flags) {
-    checkOffsets(start, end);
-    append(text);
-    startOffset = start;
-    endOffset = end;
-    this.flags = flags;
-  }
-
-  /**
-   *  Constructs a Token with the given term buffer (offset
-   *  & length), start and end
-   *  offsets
-   * @param startTermBuffer buffer containing term text
-   * @param termBufferOffset the index in the buffer of the first character
-   * @param termBufferLength number of valid characters in the buffer
-   * @param start start offset in the source text
-   * @param end end offset in the source text
-   */
-  public Token(char[] startTermBuffer, int termBufferOffset, int termBufferLength, int start, int end) {
-    checkOffsets(start, end);
-    copyBuffer(startTermBuffer, termBufferOffset, termBufferLength);
-    startOffset = start;
-    endOffset = end;
-  }
-
-  /**
-   * {@inheritDoc}
-   * @see PositionIncrementAttribute
-   */
-  @Override
-  public void setPositionIncrement(int positionIncrement) {
-    if (positionIncrement < 0)
-      throw new IllegalArgumentException
-        ("Increment must be zero or greater: " + positionIncrement);
-    this.positionIncrement = positionIncrement;
-  }
-
-  /**
-   * {@inheritDoc}
-   * @see PositionIncrementAttribute
-   */
-  @Override
-  public int getPositionIncrement() {
-    return positionIncrement;
-  }
-
-  /**
-   * {@inheritDoc}
-   * @see PositionLengthAttribute
-   */
-  @Override
-  public void setPositionLength(int positionLength) {
-    this.positionLength = positionLength;
-  }
-
-  /**
-   * {@inheritDoc}
-   * @see PositionLengthAttribute
-   */
-  @Override
-  public int getPositionLength() {
-    return positionLength;
-  }
-
-  /**
-   * {@inheritDoc}
-   * @see OffsetAttribute
-   */
-  @Override
-  public final int startOffset() {
-    return startOffset;
-  }
-
-  /**
-   * {@inheritDoc}
-   * @see OffsetAttribute
-   */
-  @Override
-  public final int endOffset() {
-    return endOffset;
-  }
-
-  /**
-   * {@inheritDoc}
-   * @see OffsetAttribute
-   */
-  @Override
-  public void setOffset(int startOffset, int endOffset) {
-    checkOffsets(startOffset, endOffset);
-    this.startOffset = startOffset;
-    this.endOffset = endOffset;
-  }
-
-  /**
-   * {@inheritDoc}
-   * @see TypeAttribute
-   */
-  @Override
-  public final String type() {
-    return type;
-  }
-
-  /**
-   * {@inheritDoc}
-   * @see TypeAttribute
-   */
-  @Override
-  public final void setType(String type) {
-    this.type = type;
+    setOffset(start, end);
   }
 
   /**
@@ -366,37 +135,8 @@ public class Token extends CharTermAttributeImpl
   @Override
   public void clear() {
     super.clear();
-    payload = null;
-    positionIncrement = positionLength = 1;
     flags = 0;
-    startOffset = endOffset = 0;
-    type = DEFAULT_TYPE;
-  }
-
-  @Override
-  public Token clone() {
-    Token t = (Token)super.clone();
-    // Do a deep clone
-    if (payload != null) {
-      t.payload = payload.clone();
-    }
-    return t;
-  }
-
-  /** Makes a clone, but replaces the term buffer &
-   * start/end offset in the process.  This is more
-   * efficient than doing a full clone (and then calling
-   * {@link #copyBuffer}) because it saves a wasted copy of the old
-   * termBuffer. */
-  public Token clone(char[] newTermBuffer, int newTermOffset, int newTermLength, int newStartOffset, int newEndOffset) {
-    final Token t = new Token(newTermBuffer, newTermOffset, newTermLength, newStartOffset, newEndOffset);
-    t.positionIncrement = positionIncrement;
-    t.positionLength = positionLength;
-    t.flags = flags;
-    t.type = type;
-    if (payload != null)
-      t.payload = payload.clone();
-    return t;
+    payload = null;
   }
 
   @Override
@@ -406,14 +146,10 @@ public class Token extends CharTermAttributeImpl
 
     if (obj instanceof Token) {
       final Token other = (Token) obj;
-      return (startOffset == other.startOffset &&
-          endOffset == other.endOffset && 
-          flags == other.flags &&
-          positionIncrement == other.positionIncrement &&
-          positionLength == other.positionLength &&
-          (type == null ? other.type == null : type.equals(other.type)) &&
-          (payload == null ? other.payload == null : payload.equals(other.payload)) &&
-          super.equals(obj)
+      return (
+        flags == other.flags &&
+        (payload == null ? other.payload == null : payload.equals(other.payload)) &&
+        super.equals(obj)
       );
     } else
       return false;
@@ -422,117 +158,20 @@ public class Token extends CharTermAttributeImpl
   @Override
   public int hashCode() {
     int code = super.hashCode();
-    code = code * 31 + startOffset;
-    code = code * 31 + endOffset;
     code = code * 31 + flags;
-    code = code * 31 + positionIncrement;
-    code = code * 31 + positionLength;
-    if (type != null)
-      code = code * 31 + type.hashCode();
-    if (payload != null)
+    if (payload != null) {
       code = code * 31 + payload.hashCode();
+    }
     return code;
   }
-      
-  // like clear() but doesn't clear termBuffer/text
-  private void clearNoTermBuffer() {
-    payload = null;
-    positionIncrement = positionLength = 1;
-    flags = 0;
-    startOffset = endOffset = 0;
-    type = DEFAULT_TYPE;
-  }
 
-  /** Shorthand for calling {@link #clear},
-   *  {@link #copyBuffer(char[], int, int)},
-   *  {@link #setOffset},
-   *  {@link #setType}
-   *  @return this Token instance */
-  public Token reinit(char[] newTermBuffer, int newTermOffset, int newTermLength, int newStartOffset, int newEndOffset, String newType) {
-    checkOffsets(newStartOffset, newEndOffset);
-    clearNoTermBuffer();
-    copyBuffer(newTermBuffer, newTermOffset, newTermLength);
-    payload = null;
-    positionIncrement = positionLength = 1;
-    startOffset = newStartOffset;
-    endOffset = newEndOffset;
-    type = newType;
-    return this;
-  }
-
-  /** Shorthand for calling {@link #clear},
-   *  {@link #copyBuffer(char[], int, int)},
-   *  {@link #setOffset},
-   *  {@link #setType} on Token.DEFAULT_TYPE
-   *  @return this Token instance */
-  public Token reinit(char[] newTermBuffer, int newTermOffset, int newTermLength, int newStartOffset, int newEndOffset) {
-    checkOffsets(newStartOffset, newEndOffset);
-    clearNoTermBuffer();
-    copyBuffer(newTermBuffer, newTermOffset, newTermLength);
-    startOffset = newStartOffset;
-    endOffset = newEndOffset;
-    type = DEFAULT_TYPE;
-    return this;
-  }
-
-  /** Shorthand for calling {@link #clear},
-   *  {@link #append(CharSequence)},
-   *  {@link #setOffset},
-   *  {@link #setType}
-   *  @return this Token instance */
-  public Token reinit(String newTerm, int newStartOffset, int newEndOffset, String newType) {
-    checkOffsets(newStartOffset, newEndOffset);
-    clear();
-    append(newTerm);
-    startOffset = newStartOffset;
-    endOffset = newEndOffset;
-    type = newType;
-    return this;
-  }
-
-  /** Shorthand for calling {@link #clear},
-   *  {@link #append(CharSequence, int, int)},
-   *  {@link #setOffset},
-   *  {@link #setType}
-   *  @return this Token instance */
-  public Token reinit(String newTerm, int newTermOffset, int newTermLength, int newStartOffset, int newEndOffset, String newType) {
-    checkOffsets(newStartOffset, newEndOffset);
-    clear();
-    append(newTerm, newTermOffset, newTermOffset + newTermLength);
-    startOffset = newStartOffset;
-    endOffset = newEndOffset;
-    type = newType;
-    return this;
-  }
-
-  /** Shorthand for calling {@link #clear},
-   *  {@link #append(CharSequence)},
-   *  {@link #setOffset},
-   *  {@link #setType} on Token.DEFAULT_TYPE
-   *  @return this Token instance */
-  public Token reinit(String newTerm, int newStartOffset, int newEndOffset) {
-    checkOffsets(newStartOffset, newEndOffset);
-    clear();
-    append(newTerm);
-    startOffset = newStartOffset;
-    endOffset = newEndOffset;
-    type = DEFAULT_TYPE;
-    return this;
-  }
-
-  /** Shorthand for calling {@link #clear},
-   *  {@link #append(CharSequence, int, int)},
-   *  {@link #setOffset},
-   *  {@link #setType} on Token.DEFAULT_TYPE
-   *  @return this Token instance */
-  public Token reinit(String newTerm, int newTermOffset, int newTermLength, int newStartOffset, int newEndOffset) {
-    checkOffsets(newStartOffset, newEndOffset);
-    clear();
-    append(newTerm, newTermOffset, newTermOffset + newTermLength);
-    startOffset = newStartOffset;
-    endOffset = newEndOffset;
-    type = DEFAULT_TYPE;
-    return this;
+  @Override
+  public Token clone() {
+    final Token t = (Token) super.clone();
+    if (payload != null) {
+      t.payload = payload.clone();
+    }
+    return t;
   }
 
   /**
@@ -540,87 +179,28 @@ public class Token extends CharTermAttributeImpl
    * @param prototype source Token to copy fields from
    */
   public void reinit(Token prototype) {
-    copyBuffer(prototype.buffer(), 0, prototype.length());
-    positionIncrement = prototype.positionIncrement;
-    positionLength = prototype.positionLength;
-    flags = prototype.flags;
-    startOffset = prototype.startOffset;
-    endOffset = prototype.endOffset;
-    type = prototype.type;
-    payload =  prototype.payload;
+    // this is a bad hack to emulate no cloning of payload!
+    prototype.copyToWithoutPayloadClone(this);
   }
 
-  /**
-   * Copy the prototype token's fields into this one, with a different term. Note: Payloads are shared.
-   * @param prototype existing Token
-   * @param newTerm new term text
-   */
-  public void reinit(Token prototype, String newTerm) {
-    setEmpty().append(newTerm);
-    positionIncrement = prototype.positionIncrement;
-    positionLength = prototype.positionLength;
-    flags = prototype.flags;
-    startOffset = prototype.startOffset;
-    endOffset = prototype.endOffset;
-    type = prototype.type;
-    payload =  prototype.payload;
-  }
-
-  /**
-   * Copy the prototype token's fields into this one, with a different term. Note: Payloads are shared.
-   * @param prototype existing Token
-   * @param newTermBuffer buffer containing new term text
-   * @param offset the index in the buffer of the first character
-   * @param length number of valid characters in the buffer
-   */
-  public void reinit(Token prototype, char[] newTermBuffer, int offset, int length) {
-    copyBuffer(newTermBuffer, offset, length);
-    positionIncrement = prototype.positionIncrement;
-    positionLength = prototype.positionLength;
-    flags = prototype.flags;
-    startOffset = prototype.startOffset;
-    endOffset = prototype.endOffset;
-    type = prototype.type;
-    payload =  prototype.payload;
+  private void copyToWithoutPayloadClone(AttributeImpl target) {
+    super.copyTo(target);
+    ((FlagsAttribute) target).setFlags(flags);
+    ((PayloadAttribute) target).setPayload(payload);
   }
 
   @Override
   public void copyTo(AttributeImpl target) {
-    if (target instanceof Token) {
-      final Token to = (Token) target;
-      to.reinit(this);
-      // reinit shares the payload, so clone it:
-      if (payload !=null) {
-        to.payload = payload.clone();
-      }
-    } else {
-      super.copyTo(target);
-      ((OffsetAttribute) target).setOffset(startOffset, endOffset);
-      ((PositionIncrementAttribute) target).setPositionIncrement(positionIncrement);
-      ((PositionLengthAttribute) target).setPositionLength(positionLength);
-      ((PayloadAttribute) target).setPayload((payload == null) ? null : payload.clone());
-      ((FlagsAttribute) target).setFlags(flags);
-      ((TypeAttribute) target).setType(type);
-    }
+    super.copyTo(target);
+    ((FlagsAttribute) target).setFlags(flags);
+    ((PayloadAttribute) target).setPayload((payload == null) ? null : payload.clone());
   }
 
   @Override
   public void reflectWith(AttributeReflector reflector) {
     super.reflectWith(reflector);
-    reflector.reflect(OffsetAttribute.class, "startOffset", startOffset);
-    reflector.reflect(OffsetAttribute.class, "endOffset", endOffset);
-    reflector.reflect(PositionIncrementAttribute.class, "positionIncrement", positionIncrement);
-    reflector.reflect(PositionLengthAttribute.class, "positionLength", positionLength);
-    reflector.reflect(PayloadAttribute.class, "payload", payload);
     reflector.reflect(FlagsAttribute.class, "flags", flags);
-    reflector.reflect(TypeAttribute.class, "type", type);
-  }
-  
-  private void checkOffsets(int startOffset, int endOffset) {
-    if (startOffset < 0 || endOffset < startOffset) {
-      throw new IllegalArgumentException("startOffset must be non-negative, and endOffset must be >= startOffset, "
-          + "startOffset=" + startOffset + ",endOffset=" + endOffset);
-    }
+    reflector.reflect(PayloadAttribute.class, "payload", payload);
   }
 
   /** Convenience factory that returns <code>Token</code> as implementation for the basic
@@ -628,43 +208,6 @@ public class Token extends CharTermAttributeImpl
    * attributes.
    * @since 3.0
    */
-  public static final AttributeSource.AttributeFactory TOKEN_ATTRIBUTE_FACTORY =
-    new TokenAttributeFactory(AttributeSource.AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY);
-  
-  /** <b>Expert:</b> Creates a TokenAttributeFactory returning {@link Token} as instance for the basic attributes
-   * and for all other attributes calls the given delegate factory.
-   * @since 3.0
-   */
-  public static final class TokenAttributeFactory extends AttributeSource.AttributeFactory {
-    
-    private final AttributeSource.AttributeFactory delegate;
-    
-    /** <b>Expert</b>: Creates an AttributeFactory returning {@link Token} as instance for the basic attributes
-     * and for all other attributes calls the given delegate factory. */
-    public TokenAttributeFactory(AttributeSource.AttributeFactory delegate) {
-      this.delegate = delegate;
-    }
-  
-    @Override
-    public AttributeImpl createAttributeInstance(Class<? extends Attribute> attClass) {
-      return attClass.isAssignableFrom(Token.class)
-        ? new Token() : delegate.createAttributeInstance(attClass);
-    }
-    
-    @Override
-    public boolean equals(Object other) {
-      if (this == other) return true;
-      if (other instanceof TokenAttributeFactory) {
-        final TokenAttributeFactory af = (TokenAttributeFactory) other;
-        return this.delegate.equals(af.delegate);
-      }
-      return false;
-    }
-    
-    @Override
-    public int hashCode() {
-      return delegate.hashCode() ^ 0x0a45aa31;
-    }
-  }
-
+  public static final AttributeFactory TOKEN_ATTRIBUTE_FACTORY =
+      AttributeFactory.getStaticImplementation(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, Token.class);
 }
