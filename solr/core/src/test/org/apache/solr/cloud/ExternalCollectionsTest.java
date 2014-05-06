@@ -19,7 +19,8 @@ package org.apache.solr.cloud;
 
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -27,15 +28,6 @@ import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.apache.solr.cloud.OverseerCollectionProcessor.MAX_SHARDS_PER_NODE;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
-import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
-import static org.apache.solr.common.cloud.ZkNodeProps.makeMap;
 
 public class ExternalCollectionsTest extends AbstractFullDistribZkTestBase {
   private CloudSolrServer client;
@@ -96,9 +88,11 @@ public class ExternalCollectionsTest extends AbstractFullDistribZkTestBase {
     waitForRecoveriesToFinish(collectionName, false);
     assertTrue("does not exist collection state externally", cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.getCollectionPath(collectionName), true));
     Stat stat = new Stat();
-    cloudClient.getZkStateReader().getZkClient().getData(ZkStateReader.getCollectionPath(collectionName),null,stat,true);
-    assertEquals("", cloudClient.getZkStateReader().getClusterState().getCollection(collectionName).getVersion(), stat.getVersion());
-    assertTrue("DocCllection#isExternal() must be true", cloudClient.getZkStateReader().getClusterState().getCollection(collectionName).isExternal() );
+    byte[] data = cloudClient.getZkStateReader().getZkClient().getData(ZkStateReader.getCollectionPath(collectionName), null, stat, true);
+    DocCollection c = ZkStateReader.getCollectionLive(cloudClient.getZkStateReader(), collectionName);
+    ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
+    assertEquals("The zkversion of the nodes must be same zkver:" + stat.getVersion() , stat.getVersion(),clusterState.getCollection(collectionName).getZnodeVersion() );
+    assertTrue("DocCllection#isExternal() must be true", cloudClient.getZkStateReader().getClusterState().getCollection(collectionName).getStateFormat() > 1);
 
 
     // remove collection

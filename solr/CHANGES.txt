@@ -76,9 +76,11 @@ Other Changes
 * SOLR-5936: Removed deprecated non-Trie-based numeric & date field types.
   (Steve Rowe)
 
-* SOLR-5473: Make one state.json per collection (Noble Paul)
+* SOLR-5473: Make one state.json per collection (Noble Paul, shalin, Alan Woodward)
 
-* SOLR-5474: Have a new mode for SolrJ to support stateFormat=2 (Noble Paul, Tim Potter)
+* SOLR-5474: CloudSolrServer enhancements to scale to a large no:of collections
+  where relevant collection states are cached and updated when necessary instead
+  of updating real-time (Tim Potter,Noble Paul)
 
 * SOLR-5868: HttpClient should be configured to use ALLOW_ALL_HOSTNAME hostname
   verifier to simplify SSL setup. (Steve Davids via Mark Miller)
@@ -101,12 +103,6 @@ Upgrading from Solr 4.8
 Detailed Change List
 ----------------------
 
-New Features
-----------------------
-
-* SOLR-5999: Add checkIntegrityAtMerge support to solrconfig.xml.
-  (Varun Thacker via Ryan Ernst)
-
 Bug Fixes
 ----------------------
 
@@ -116,16 +112,6 @@ Bug Fixes
 
 * SOLR-5993: ZkController can warn about shard leader conflict even after the conflict
   is resolved. (Gregory Chanan via shalin)
-
-* SOLR-6002: Fix a couple of ugly issues around SolrIndexWriter close and 
-  rollback as well as how SolrIndexWriter manages it's ref counted directory
-  instance. (Mark Miller, Gregory Chanan)
-
-* SOLR-6017: Fix SimpleQParser to use query analyzer instead of index analyzer.
-  (Ryan Ernst)
-
-* SOLR-6029: CollapsingQParserPlugin throws ArrayIndexOutOfBoundsException
-  if elevated doc has been deleted from a segment. (Greg Harris, Joel Bernstein)
 
 Other Changes
 ---------------------
@@ -140,16 +126,6 @@ Other Changes
 
 * SOLR-5974: Remove ShardDoc.score and use parent's ScoreDoc.score.
   (Tomás Fernández Löbbe via Ryan Ernst)
-
-* SOLR-6025: Replace mentions of CommonsHttpSolrServer with HttpSolrServer and
-  StreamingUpdateSolrServer with ConcurrentUpdateSolrServer. (Ahmet Arslan via shalin)
-
-Build
----------------------
-
-* SOLR-6006: Separate test and compile scope dependencies in the Solrj and
-  Solr contrib ivy.xml files, so that the derived Maven dependencies get
-  filled out properly in the corresponding POMs. (Steven Scott, Steve Rowe)
 
 ==================  4.8.0 ==================
 
@@ -171,12 +147,11 @@ Upgrading from Solr 4.7
   use "solr.LengthFilterFactory" in all of your Analyzers.  See LUCENE-5472 for
   more details.
   
-* Solr 4.8 requires Java 7 or greater, Java 8 is verified to be
-  compatible and may bring some performance improvements. When using
-  Oracle Java 7 or OpenJDK 7, be sure to not use the GA build 147 or
-  update versions u40, u45 and u51! We recommend using u55 or later.
-  An overview of known JVM bugs can be found on
+* Solr 4.8 needs Java 7 as minimum requirement.  If you not have done already,
+  update the underlying JDK/JRE versions to at least Oracle Java 7u1 or OpenJDK
+  7u1.  Please review the list of known JVM bugs at:
   http://wiki.apache.org/lucene-java/JavaBugs
+  Solr 4.8 was also tested to work with Java 8, so give it a try!
 
 * ZooKeeper is upgraded from 3.4.5 to 3.4.6.
 
@@ -281,10 +256,7 @@ Bug Fixes
 
 * SOLR-5954: Slower DataImportHandler process caused by not reusing jdbc
   connections. (Mark Miller, Paco Garcia, Raja Nagendra Kumar)
-
-* SOLR-5897: Upgraded to jQuery 1.7.2, Solr was previously using 1.4.3, the file was 
-  mistakenly named 1.7.2 (steffkes)
-
+  
 Optimizations
 ----------------------
 * SOLR-1880: Distributed Search skips GET_FIELDS stage if EXECUTE_QUERY

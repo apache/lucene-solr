@@ -1513,7 +1513,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
     params.set("name", collectionName);
     if (useExternalCollections()) {
-      log.info("Creating external collection: " + collectionName);
+      log.info("Creating collection with stateFormat=3: " + collectionName);
       params.set(DocCollection.STATE_FORMAT, "2");
     }
     SolrRequest request = new QueryRequest(params);

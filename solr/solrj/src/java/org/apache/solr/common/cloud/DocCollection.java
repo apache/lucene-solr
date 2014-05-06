@@ -21,7 +21,6 @@ import org.noggit.JSONUtil;
 import org.noggit.JSONWriter;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -40,10 +39,10 @@ public class DocCollection extends ZkNodeProps {
   private final Map<String, Slice> slices;
   private final Map<String, Slice> activeSlices;
   private final DocRouter router;
-  private final boolean external;
+  private final String znode;
 
   public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
-    this(name, slices, props, router, -1);
+    this(name, slices, props, router, -1, ZkStateReader.CLUSTER_STATE);
   }
 
   /**
@@ -51,7 +50,7 @@ public class DocCollection extends ZkNodeProps {
    * @param slices The logical shards of the collection.  This is used directly and a copy is not made.
    * @param props  The properties of the slice.  This is used directly and a copy is not made.
    */
-  public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router, int zkVersion) {
+  public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router, int zkVersion, String znode) {
     super( props==null ? props = new HashMap<String,Object>() : props);
     this.version = zkVersion;
     this.name = name;
@@ -67,9 +66,13 @@ public class DocCollection extends ZkNodeProps {
         this.activeSlices.put(slice.getKey(), slice.getValue());
     }
     this.router = router;
-    external = getInt(STATE_FORMAT,1)>1;
-
+    this.znode = znode == null? ZkStateReader.CLUSTER_STATE : znode;
     assert name != null && slices != null;
+    if("myExternColl".equals(name) && getStateFormat()==1) throw new RuntimeException("Some problem with colection creation");
+  }
+
+  public DocCollection copyWith(Map<String, Slice> slices){
+    return new DocCollection(getName(), slices, propMap, router, version,znode);
   }
 
 
@@ -113,13 +116,17 @@ public class DocCollection extends ZkNodeProps {
     return activeSlices;
   }
 
-  public int getVersion(){
+  public int getZnodeVersion(){
     return version;
 
   }
 
-  public boolean isExternal(){
-    return external;
+  public int getStateFormat(){
+    return ZkStateReader.CLUSTER_STATE.equals(znode) ? 1:2;
+  }
+
+  public String getZNode(){
+    return znode;
   }
 
 

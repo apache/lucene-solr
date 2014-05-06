@@ -143,9 +143,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   public static final Map<String,Object> COLL_PROPS = ZkNodeProps.makeMap(
       ROUTER, DocRouter.DEFAULT_NAME,
       REPLICATION_FACTOR, "1",
-      MAX_SHARDS_PER_NODE, "1",
-      "external",null ,
-      DocCollection.STATE_FORMAT , null);
+      MAX_SHARDS_PER_NODE, "1" );
 
 
   // TODO: use from Overseer?
@@ -609,7 +607,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       Set<String> collections = clusterState.getCollections();
       for (String name : collections) {
         Map<String, Object> collectionStatus = null;
-        if (clusterState.hasExternalCollection(name)) {
+        if (clusterState.getCollection(name).getStateFormat()>1) {
           bytes = ZkStateReader.toJSON(clusterState.getCollection(name));
           Map<String, Object> docCollection = (Map<String, Object>) ZkStateReader.fromJSON(bytes);
           collectionStatus = getCollectionStatus(docCollection, name, shard);
@@ -624,7 +622,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     } else {
       String routeKey = message.getStr(ShardParams._ROUTE_);
       Map<String, Object> docCollection = null;
-      if (clusterState.hasExternalCollection(collection)) {
+      if (clusterState.getCollection(collection).getStateFormat()>1 ) {
         bytes = ZkStateReader.toJSON(clusterState.getCollection(collection));
         docCollection = (Map<String, Object>) ZkStateReader.fromJSON(bytes);
       } else  {

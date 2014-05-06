@@ -31,6 +31,7 @@ import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.RefCounted;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**

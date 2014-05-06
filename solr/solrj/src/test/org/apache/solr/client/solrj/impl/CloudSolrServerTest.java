@@ -20,7 +20,6 @@ package org.apache.solr.client.solrj.impl;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -42,7 +41,6 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.AbstractZkTestCase;
-import org.apache.solr.cloud.Overseer;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -61,7 +59,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -367,11 +364,11 @@ public class CloudSolrServerTest extends AbstractFullDistribZkTestBase {
 
     log.info("should work query, result {}", httpSolrServer.query(q));
     //no problem
-    q.setParam(CloudSolrServer.STATE_VERSION, collectionName+":"+coll.getVersion());
+    q.setParam(CloudSolrServer.STATE_VERSION, collectionName+":"+coll.getZnodeVersion());
     log.info("2nd query , result {}", httpSolrServer.query(q));
     //no error yet good
 
-    q.setParam(CloudSolrServer.STATE_VERSION, collectionName+":"+ (coll.getVersion() -1)); //an older version expect error
+    q.setParam(CloudSolrServer.STATE_VERSION, collectionName+":"+ (coll.getZnodeVersion() -1)); //an older version expect error
 
     HttpSolrServer.RemoteSolrException sse = null;
     try {
@@ -405,7 +402,7 @@ public class CloudSolrServerTest extends AbstractFullDistribZkTestBase {
     assertNotNull(theNode);
     httpSolrServer = new HttpSolrServer(theNode + "/"+collectionName);
 
-    q.setParam(CloudSolrServer.STATE_VERSION, collectionName+":"+coll.getVersion());
+    q.setParam(CloudSolrServer.STATE_VERSION, collectionName+":"+coll.getZnodeVersion());
 
     try {
       httpSolrServer.query(q);

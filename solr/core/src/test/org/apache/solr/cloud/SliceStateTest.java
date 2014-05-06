@@ -52,7 +52,7 @@ public class SliceStateTest extends SolrTestCaseJ4 {
     ZkStateReader mockZkStateReader = ClusterStateTest.getMockZkStateReader(collectionStates.keySet());
     ClusterState clusterState = new ClusterState(-1,liveNodes, collectionStates, mockZkStateReader);
     byte[] bytes = ZkStateReader.toJSON(clusterState);
-    ClusterState loadedClusterState = ClusterState.load(-1, bytes, liveNodes, mockZkStateReader);
+    ClusterState loadedClusterState = ClusterState.load(-1, bytes, liveNodes, mockZkStateReader,null);
 
     assertEquals("Default state not set to active", "active", loadedClusterState.getSlice("collection1", "shard1").getState());
   }

@@ -48,27 +48,6 @@ public class ClusterState implements JSONWriter.Writable {
   private Set<String> liveNodes;
   private final ZkStateReader stateReader;
 
-
-  /**
-   * Use this constr when ClusterState is meant for publication.
-   * 
-   * hashCode and equals will only depend on liveNodes and not clusterStateVersion.
-   */
-  @Deprecated
-  public ClusterState(Set<String> liveNodes,
-      Map<String, DocCollection> collectionStates) {
-    this(null, liveNodes, collectionStates, null);
-  }
-
-  /**
-   * @deprecated prefer another constructor
-   */
-  public ClusterState(Integer zkClusterStateVersion, Set<String> liveNodes,
-                      Map<String, DocCollection> collectionStates) {
-    this(zkClusterStateVersion, liveNodes, collectionStates, null);
-
-  }
-  
   /**
    * Use this constr when ClusterState is meant for consumption.
    */
@@ -156,14 +135,14 @@ public class ClusterState implements JSONWriter.Writable {
    * @param collection the name of the collection
    * @return the {@link org.apache.solr.common.cloud.DocCollection} or null if not found
    */
-  public DocCollection getCachedCollection(String collection) {
+  private DocCollection getCachedCollection(String collection) {
     DocCollection c = collectionStates.get(collection);
     if (c != null)  return c;
     if (!stateReader.getAllCollections().contains(collection)) return null;
-    return stateReader.getExternCollection(collection, true); // return from cache
+    return stateReader.getCollection(collection, true); // return from cache
   }
 
-  /**
+  /** expert internal use only
    * Gets the replica from caches by the core name (assuming the slice is unknown) or null if replica is not found.
    * If the slice is known, do not use this method.
    * coreNodeName is the same as replicaName
@@ -187,15 +166,11 @@ public class ClusterState implements JSONWriter.Writable {
     return coll;
   }
 
-  private DocCollection loadExtDocCollection(String coll) {
-    return stateReader.getExternCollection(coll);
-  }
-
   public DocCollection getCollectionOrNull(String coll) {
     DocCollection c = collectionStates.get(coll);
     if (c != null) return c;
     if (!stateReader.getAllCollections().contains(coll)) return null;
-    return loadExtDocCollection(coll);
+    return stateReader.getCollection(coll);
   }
 
   /**
@@ -206,12 +181,11 @@ public class ClusterState implements JSONWriter.Writable {
   }
 
   /**
-   * @deprecated use #getAllCollections instead
+   * For internal use only
    * @return Map&lt;collectionName, Map&lt;sliceName,Slice&gt;&gt;
    */
-  @Deprecated
-  public Map<String, DocCollection> getCollectionStates() {
-    return Collections.unmodifiableMap(collectionStates);
+  Map<String, DocCollection> getCollectionStates() {
+    return collectionStates;
   }
 
   /**
@@ -270,7 +244,7 @@ public class ClusterState implements JSONWriter.Writable {
     Stat stat = new Stat();
     byte[] state = zkClient.getData(ZkStateReader.CLUSTER_STATE,
         null, stat, true);
-    return load(stat.getVersion(), state, liveNodes, stateReader);
+    return load(stat.getVersion(), state, liveNodes, stateReader, ZkStateReader.CLUSTER_STATE);
   }
   
  
@@ -282,9 +256,11 @@ public class ClusterState implements JSONWriter.Writable {
    * @param version zk version of the clusterstate.json file (bytes)
    * @param bytes clusterstate.json as a byte array
    * @param liveNodes list of live nodes
+   * @param stateReader The ZkStateReader for this clusterstate
+   * @param znode the znode from which this data is read from
    * @return the ClusterState
    */
-  public static ClusterState load(Integer version, byte[] bytes, Set<String> liveNodes, ZkStateReader stateReader) {
+  public static ClusterState load(Integer version, byte[] bytes, Set<String> liveNodes, ZkStateReader stateReader, String znode) {
     // System.out.println("######## ClusterState.load:" + (bytes==null ? null : new String(bytes)));
     if (bytes == null || bytes.length == 0) {
       return new ClusterState(version, liveNodes, Collections.<String, DocCollection>emptyMap(),stateReader);
@@ -293,7 +269,7 @@ public class ClusterState implements JSONWriter.Writable {
     Map<String,DocCollection> collections = new LinkedHashMap<>(stateMap.size());
     for (Entry<String, Object> entry : stateMap.entrySet()) {
       String collectionName = entry.getKey();
-      DocCollection coll = collectionFromObjects(collectionName, (Map<String,Object>)entry.getValue(), version);
+      DocCollection coll = collectionFromObjects(collectionName, (Map<String,Object>)entry.getValue(), version, znode);
       collections.put(collectionName, coll);
     }
 
@@ -302,11 +278,11 @@ public class ClusterState implements JSONWriter.Writable {
   }
 
   /**
-   * @deprecated use {@link #load(Integer, byte[], Set, ZkStateReader)}
+   * @deprecated use {@link #load(Integer, byte[], Set, ZkStateReader, String)}
    */
   @Deprecated
   public static ClusterState load(Integer version, byte[] bytes, Set<String> liveNodes){
-    return load(version == null ? -1: version, bytes, liveNodes,null);
+    return load(version == null ? -1: version, bytes, liveNodes,null,null);
   }
   
   public static Aliases load(byte[] bytes) {
@@ -318,7 +294,7 @@ public class ClusterState implements JSONWriter.Writable {
     return new Aliases(aliasMap);
   }
 
-  private static DocCollection collectionFromObjects(String name, Map<String, Object> objs, Integer version) {
+  private static DocCollection collectionFromObjects(String name, Map<String, Object> objs, Integer version, String znode) {
     Map<String,Object> props;
     Map<String,Slice> slices;
 
@@ -345,7 +321,7 @@ public class ClusterState implements JSONWriter.Writable {
       router = DocRouter.getDocRouter(routerProps.get("name"));
     }
 
-    return new DocCollection(name, slices, props, router, version);
+    return new DocCollection(name, slices, props, router, version,znode);
   }
 
   private static Map<String,Slice> makeSlices(Map<String,Object> genericSlices) {
@@ -373,7 +349,7 @@ public class ClusterState implements JSONWriter.Writable {
    * 
    * @return null if ClusterState was created for publication, not consumption
    */
-  public Integer getZkClusterStateVersion() {
+  public Integer getZnodeVersion() {
     return zkClusterStateVersion;
   }
 
@@ -403,14 +379,6 @@ public class ClusterState implements JSONWriter.Writable {
   }
 
 
-  public boolean hasExternalCollection(String coll) {
-    return stateReader.getAllCollections().contains(coll) && !collectionStates.containsKey(coll);
-
-  }
-  public Set<String> getAllInternalCollections(){
-    return Collections.unmodifiableSet(collectionStates.keySet());
-  }
-
   public ZkStateReader getStateReader(){
     return stateReader;
   }
@@ -422,9 +390,5 @@ public class ClusterState implements JSONWriter.Writable {
     this.liveNodes = liveNodes;
   }
 
-  public DocCollection getCommonCollection(String name){
-    return collectionStates.get(name);
-
-  }
 
 }

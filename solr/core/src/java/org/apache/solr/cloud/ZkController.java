@@ -1385,8 +1385,8 @@ public final class ZkController {
 
       publish(cd, ZkStateReader.DOWN, false, true);
       DocCollection collection = zkStateReader.getClusterState().getCollectionOrNull(cd.getCloudDescriptor().getCollectionName());
-      if(collection !=null && collection.isExternal()  ){
-        log.info("Registering watch for external collection {}",cd.getCloudDescriptor().getCollectionName());
+      if(collection !=null && collection.getStateFormat()>1 ){
+        log.info("Registering watch for collection state {}",cd.getCloudDescriptor().getCollectionName());
         zkStateReader.addCollectionWatch(cd.getCloudDescriptor().getCollectionName());
       }
     } catch (KeeperException e) {

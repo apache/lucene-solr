@@ -96,6 +96,8 @@ public class CloudSolrServer extends SolrServer {
   private final LBHttpSolrServer lbServer;
   private final boolean shutdownLBHttpSolrServer;
   private HttpClient myClient;
+  //no of times collection state to be reloaded if stale state error is received
+  private static final int MAX_STALE_RETRIES = 5;
   Random rand = new Random();
   
   private final boolean updatesToLeaders;
@@ -553,7 +555,7 @@ public class CloudSolrServer extends SolrServer {
   public NamedList<Object> request(SolrRequest request) throws SolrServerException, IOException {
     SolrParams reqParams = request.getParams();
     String collection = (reqParams != null) ? reqParams.get("collection", getDefaultCollection()) : getDefaultCollection();
-    return requestWithRetryOnStaleState(request, true, collection);
+    return requestWithRetryOnStaleState(request, 0, collection);
   }
 
   /**
@@ -561,7 +563,7 @@ public class CloudSolrServer extends SolrServer {
    * there's a chance that the request will fail due to cached stale state,
    * which means the state must be refreshed from ZK and retried.
    */
-  protected NamedList<Object> requestWithRetryOnStaleState(SolrRequest request, boolean retry, String collection)
+  protected NamedList<Object> requestWithRetryOnStaleState(SolrRequest request, int retryCount, String collection)
       throws SolrServerException, IOException {
 
     connect(); // important to call this before you start working with the ZkStateReader
@@ -579,8 +581,8 @@ public class CloudSolrServer extends SolrServer {
       for (String requestedCollection : requestedCollectionNames) {
         // track the version of state we're using on the client side using the _stateVer_ param
         DocCollection coll = getDocCollection(getZkStateReader().getClusterState(), requestedCollection);
-        int collVer = coll.getVersion();
-        if (coll.isExternal()) {
+        int collVer = coll.getZnodeVersion();
+        if (coll.getStateFormat()>1) {
           requestedExternalCollections.add(coll);
 
           if (stateVerParamBuilder == null) {
@@ -631,7 +633,7 @@ public class CloudSolrServer extends SolrServer {
           ((SolrException)rootCause).code() : SolrException.ErrorCode.UNKNOWN.code;
 
       log.error("Request to collection {} failed due to ("+errorCode+
-          ") {}, retry? "+retry, collection, rootCause.toString());
+          ") {}, retry? "+retryCount, collection, rootCause.toString());
 
       boolean wasCommError =
           (rootCause instanceof ConnectException ||
@@ -640,7 +642,7 @@ public class CloudSolrServer extends SolrServer {
               rootCause instanceof SocketException);
 
       boolean stateWasStale = false;
-      if (retry &&
+      if (retryCount < MAX_STALE_RETRIES  &&
           !requestedExternalCollections.isEmpty() &&
           SolrException.ErrorCode.getErrorCode(errorCode) == SolrException.ErrorCode.INVALID_STATE)
       {
@@ -656,10 +658,10 @@ public class CloudSolrServer extends SolrServer {
 
       // if we experienced a communication error, it's worth checking the state
       // with ZK just to make sure the node we're trying to hit is still part of the collection
-      if (retry && !stateWasStale && !requestedExternalCollections.isEmpty() && wasCommError) {
+      if (retryCount < MAX_STALE_RETRIES && !stateWasStale && !requestedExternalCollections.isEmpty() && wasCommError) {
         for (DocCollection ext : requestedExternalCollections) {
-          DocCollection latestStateFromZk = getZkStateReader().getExternCollection(ext.getName());
-          if (latestStateFromZk.getVersion() != ext.getVersion()) {
+          DocCollection latestStateFromZk = getZkStateReader().getCollection(ext.getName());
+          if (latestStateFromZk.getZnodeVersion() != ext.getZnodeVersion()) {
             // looks like we couldn't reach the server because the state was stale == retry
             stateWasStale = true;
             // we just pulled state from ZK, so update the cache so that the retry uses it
@@ -672,8 +674,8 @@ public class CloudSolrServer extends SolrServer {
 
       // if the state was stale, then we retry the request once with new state pulled from Zk
       if (stateWasStale) {
-        log.warn("Re-trying request to external collection(s) "+collection+" after stale state error from server.");
-        resp = requestWithRetryOnStaleState(request, false, collection);
+        log.warn("Re-trying request to  collection(s) "+collection+" after stale state error from server.");
+        resp = requestWithRetryOnStaleState(request, retryCount+1, collection);
       } else {
         if (exc instanceof SolrServerException) {
           throw (SolrServerException)exc;
