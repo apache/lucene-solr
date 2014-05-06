@@ -88,6 +88,9 @@ public final class TestRateLimiter extends LuceneTestCase {
 
     // TODO: this may false trip .... could be we can only assert that it never exceeds the max, so slow jenkins doesn't trip:
     double ratio = actualMBPerSec/targetMBPerSec;
-    assertTrue("targetMBPerSec=" + targetMBPerSec + " actualMBPerSec=" + actualMBPerSec, ratio >= 0.9 && ratio <= 1.1);
+
+    // Only enforce that it wasn't too fast; if machine is bogged down (can't schedule threads / sleep properly) then it may falsely be too slow:
+    //assertTrue("targetMBPerSec=" + targetMBPerSec + " actualMBPerSec=" + actualMBPerSec, ratio >= 0.9 && ratio <= 1.1);
+    assertTrue("targetMBPerSec=" + targetMBPerSec + " actualMBPerSec=" + actualMBPerSec, ratio <= 1.1);
   }
 }
