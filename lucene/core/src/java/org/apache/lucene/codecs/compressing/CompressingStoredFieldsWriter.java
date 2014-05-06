@@ -374,36 +374,20 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
               startOffsets[i] = startOffsets[i - 1] + it.lengths[i - 1];
             }
 
-            if (numBufferedDocs == 0 // starting a new chunk
-                && startOffsets[it.chunkDocs - 1] < chunkSize // chunk is small enough
-                && startOffsets[it.chunkDocs - 1] + it.lengths[it.chunkDocs - 1] >= chunkSize // chunk is large enough
-                && nextDeletedDoc(it.docBase, liveDocs, it.docBase + it.chunkDocs) == it.docBase + it.chunkDocs) { // no deletion in the chunk
-              assert docID == it.docBase;
-
-              // no need to decompress, just copy data
-              indexWriter.writeIndex(it.chunkDocs, fieldsStream.getFilePointer());
-              writeHeader(this.docBase, it.chunkDocs, it.numStoredFields, it.lengths);
-              it.copyCompressedData(fieldsStream);
-              this.docBase += it.chunkDocs;
-              docID = nextLiveDoc(it.docBase + it.chunkDocs, liveDocs, maxDoc);
-              docCount += it.chunkDocs;
-              mergeState.checkAbort.work(300 * it.chunkDocs);
-            } else {
-              // decompress
-              it.decompress();
-              if (startOffsets[it.chunkDocs - 1] + it.lengths[it.chunkDocs - 1] != it.bytes.length) {
-                throw new CorruptIndexException("Corrupted: expected chunk size=" + startOffsets[it.chunkDocs - 1] + it.lengths[it.chunkDocs - 1] + ", got " + it.bytes.length);
-              }
-              // copy non-deleted docs
-              for (; docID < it.docBase + it.chunkDocs; docID = nextLiveDoc(docID + 1, liveDocs, maxDoc)) {
-                final int diff = docID - it.docBase;
-                startDocument();
-                bufferedDocs.writeBytes(it.bytes.bytes, it.bytes.offset + startOffsets[diff], it.lengths[diff]);
-                numStoredFieldsInDoc = it.numStoredFields[diff];
-                finishDocument();
-                ++docCount;
-                mergeState.checkAbort.work(300);
-              }
+            // decompress
+            it.decompress();
+            if (startOffsets[it.chunkDocs - 1] + it.lengths[it.chunkDocs - 1] != it.bytes.length) {
+              throw new CorruptIndexException("Corrupted: expected chunk size=" + startOffsets[it.chunkDocs - 1] + it.lengths[it.chunkDocs - 1] + ", got " + it.bytes.length);
+            }
+            // copy non-deleted docs
+            for (; docID < it.docBase + it.chunkDocs; docID = nextLiveDoc(docID + 1, liveDocs, maxDoc)) {
+              final int diff = docID - it.docBase;
+              startDocument();
+              bufferedDocs.writeBytes(it.bytes.bytes, it.bytes.offset + startOffsets[diff], it.lengths[diff]);
+              numStoredFieldsInDoc = it.numStoredFields[diff];
+              finishDocument();
+              ++docCount;
+              mergeState.checkAbort.work(300);
             }
           } while (docID < maxDoc);
 
@@ -424,15 +408,4 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     }
     return doc;
   }
-
-  private static int nextDeletedDoc(int doc, Bits liveDocs, int maxDoc) {
-    if (liveDocs == null) {
-      return maxDoc;
-    }
-    while (doc < maxDoc && liveDocs.get(doc)) {
-      ++doc;
-    }
-    return doc;
-  }
-
 }

@@ -84,6 +84,9 @@ Changes in Runtime Behavior
   IndexWriter will now throw IllegalArgumentException.  (Robert Muir,
   Mike McCandless)
 
+* LUCENE-5646: Remove rare/undertested bulk merge algorithm in 
+  CompressingStoredFieldsWriter. (Robert Muir, Adrien Grand)
+
 New Features
 
 * LUCENE-5610: Add Terms.getMin and Terms.getMax to get the lowest and
