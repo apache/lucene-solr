@@ -139,7 +139,7 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
     }
     analysisRequest.setQuery(solrParams.get(AnalysisParams.QUERY, solrParams.get(CommonParams.Q)));
 
-    String value = solrParams.get(AnalysisParams.FIELD_VALUE);
+    String value = solrParams.required().get(AnalysisParams.FIELD_VALUE);
 
     Iterable<ContentStream> streams = req.getContentStreams();
     if (streams != null) {

@@ -1,20 +1,26 @@
 package org.apache.solr.handler.component;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.TestUtil;
+import org.apache.commons.lang.StringUtils;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -43,11 +49,6 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
   private static String shard2;
   private static File solrHome;
   
-  @BeforeClass
-  public static void beforeTest() throws Exception {
-    solrHome = createSolrHome();
-  }
-  
   private static File createSolrHome() throws Exception {
     File workDir = createTempDir();
     setupJettyTestHome(workDir, "collection1");
@@ -55,15 +56,10 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     return workDir;
   }
 
-  @AfterClass
-  public static void afterTest() throws Exception {
   
-  }
-  
-  @Before
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  @BeforeClass
+  public static void createThings() throws Exception {
+    solrHome = createSolrHome();
     createJetty(solrHome.getAbsolutePath(), null, null);
     String url = jetty.getBaseUrl().toString();
     collection1 = new HttpSolrServer(url);
@@ -92,9 +88,8 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     
   }
   
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
+  @AfterClass
+  public static void destroyThings() throws Exception {
     collection1.shutdown();
     collection2.shutdown();
     collection1 = null;
@@ -151,6 +146,249 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     assertNull(((NamedList<Object>)track.get("GET_FIELDS")).get(shard2));
   }
   
+  @Test
+  public void testRandom() throws Exception {
+    final int NUM_ITERS = atLeast(50);
+
+    for (int i = 0; i < NUM_ITERS; i++) { 
+      SolrServer client = random().nextBoolean() ? collection1 : collection2;
+      
+      SolrQuery q = new SolrQuery();
+      q.set("distrib", "true");
+      q.setFields("id", "text");
+      
+      boolean shard1Results = random().nextBoolean();
+      boolean shard2Results = random().nextBoolean();
+      
+      String qs = "_query_with_no_results_";
+      if (shard1Results) {
+        qs += " OR batman";
+      }
+      if (shard2Results) {
+        qs += " OR superman";
+      }
+      q.setQuery(qs);
+
+      Set<String> shards = new HashSet<String>(Arrays.asList(shard1, shard2));
+      if (random().nextBoolean()) {
+        shards.remove(shard1);
+        shard1Results = false;
+      } else if (random().nextBoolean()) {
+        shards.remove(shard2);
+        shard2Results = false;
+      }
+      q.set("shards", StringUtils.join(shards, ","));
+
+
+      List<String> debug = new ArrayList<String>(10);
+
+      boolean all = false;
+      final boolean timing = random().nextBoolean();
+      final boolean query = random().nextBoolean();
+      final boolean results = random().nextBoolean();
+      final boolean track = random().nextBoolean();
+
+      if (timing) { debug.add("timing"); }
+      if (query) { debug.add("query"); }
+      if (results) { debug.add("results"); }
+      if (track) { debug.add("track"); }
+      if (debug.isEmpty()) {
+        debug.add("true");
+        all = true;
+      }
+      q.set("debug", (String[])debug.toArray(new String[debug.size()]));
+
+      QueryResponse r = client.query(q);
+      try {
+        assertDebug(r, all || track, "track");
+        assertDebug(r, all || query, "rawquerystring");
+        assertDebug(r, all || query, "querystring");
+        assertDebug(r, all || query, "parsedquery");
+        assertDebug(r, all || query, "parsedquery_toString");
+        assertDebug(r, all || query, "QParser");
+        assertDebug(r, all || results, "explain");
+        assertDebug(r, all || timing, "timing");
+      } catch (AssertionError e) {
+        throw new AssertionError(q.toString() + ": " + e.getMessage(), e);
+      }
+    }
+  }
+
+  /**
+   * Asserts that the specified debug result key does or does not exist in the 
+   * response based on the expected boolean.
+   */
+  private void assertDebug(QueryResponse response, boolean expected, String key) {
+    if (expected) {
+      assertInDebug(response, key);
+    } else {
+      assertNotInDebug(response, key);
+    }
+  }
+  /**
+   * Asserts that the specified debug result key does exist in the response and is non-null
+   */
+  private void assertInDebug(QueryResponse response, String key) {
+    assertNotNull("debug map is null", response.getDebugMap());
+    assertNotNull("debug map has null for : " + key, response.getDebugMap().get(key));
+  }
+
+  /**
+   * Asserts that the specified debug result key does NOT exist in the response
+   */
+  private void assertNotInDebug(QueryResponse response, String key) {
+    assertNotNull("debug map is null", response.getDebugMap());
+    assertFalse("debug map contains: " + key, response.getDebugMap().containsKey(key));
+  }
+
+
+  @Test
+  public void testDebugSections() throws Exception {
+    SolrQuery query = new SolrQuery();
+    query.setQuery("text:_query_with_no_results_");
+    query.set("distrib", "true");
+    query.setFields("id", "text");
+    query.set("shards", shard1 + "," + shard2);
+    verifyDebugSections(query, collection1);
+    query.setQuery("id:1 OR text:_query_with_no_results_ OR id:[0 TO 300]");
+    verifyDebugSections(query, collection1);
+    
+  }
+  
+  private void verifyDebugSections(SolrQuery query, SolrServer server) throws SolrServerException {
+    query.set("debugQuery", "true");
+    query.remove("debug");
+    QueryResponse response = server.query(query);
+    assertFalse(response.getDebugMap().isEmpty());
+    assertInDebug(response, "track");
+    assertInDebug(response, "rawquerystring");
+    assertInDebug(response, "querystring");
+    assertInDebug(response, "parsedquery");
+    assertInDebug(response, "parsedquery_toString");
+    assertInDebug(response, "QParser");
+    assertInDebug(response, "explain");
+    assertInDebug(response, "timing");
+    
+    query.set("debug", "true");
+    query.remove("debugQuery");
+    response = server.query(query);
+    assertFalse(response.getDebugMap().isEmpty());
+    assertInDebug(response, "track");
+    assertInDebug(response, "rawquerystring");
+    assertInDebug(response, "querystring");
+    assertInDebug(response, "parsedquery");
+    assertInDebug(response, "parsedquery_toString");
+    assertInDebug(response, "QParser");
+    assertInDebug(response, "explain");
+    assertInDebug(response, "timing");
+    
+    query.set("debug",  "track");
+    response = server.query(query);
+    assertFalse(response.getDebugMap().isEmpty());
+    assertInDebug(response, "track");
+    assertNotInDebug(response, "rawquerystring");
+    assertNotInDebug(response, "querystring");
+    assertNotInDebug(response, "parsedquery");
+    assertNotInDebug(response, "parsedquery_toString");
+    assertNotInDebug(response, "QParser");
+    assertNotInDebug(response, "explain");
+    assertNotInDebug(response, "timing");
+    
+    query.set("debug",  "query");
+    response = server.query(query);
+    assertFalse(response.getDebugMap().isEmpty());
+    assertNotInDebug(response, "track");
+    assertInDebug(response, "rawquerystring");
+    assertInDebug(response, "querystring");
+    assertInDebug(response, "parsedquery");
+    assertInDebug(response, "parsedquery_toString");
+    assertInDebug(response, "QParser");
+    assertNotInDebug(response, "explain");
+    assertNotInDebug(response, "timing");
+    
+    query.set("debug",  "results");
+    response = server.query(query);
+    assertFalse(response.getDebugMap().isEmpty());
+    assertNotInDebug(response, "track");
+    assertNotInDebug(response, "rawquerystring");
+    assertNotInDebug(response, "querystring");
+    assertNotInDebug(response, "parsedquery");
+    assertNotInDebug(response, "parsedquery_toString");
+    assertNotInDebug(response, "QParser");
+    assertInDebug(response, "explain");
+    assertNotInDebug(response, "timing");
+    
+    query.set("debug",  "timing");
+    response = server.query(query);
+    assertFalse(response.getDebugMap().isEmpty());
+    assertNotInDebug(response, "track");
+    assertNotInDebug(response, "rawquerystring");
+    assertNotInDebug(response, "querystring");
+    assertNotInDebug(response, "parsedquery");
+    assertNotInDebug(response, "parsedquery_toString");
+    assertNotInDebug(response, "QParser");
+    assertNotInDebug(response, "explain");
+    assertInDebug(response, "timing");
+    
+    query.set("debug",  "false");
+    response = server.query(query);
+    assertNull(response.getDebugMap());
+  }
+  
+  public void testCompareWithNonDistributedRequest() throws SolrServerException {
+    SolrQuery query = new SolrQuery();
+    query.setQuery("id:1");
+    query.setFilterQueries("id:[0 TO 10]");
+    query.set("debug",  "true");
+    query.set("distrib", "true");
+    query.setFields("id", "text");
+    query.set("shards", shard1 + "," + shard2);
+    QueryResponse distribResponse = collection1.query(query);
+    
+    // same query but not distributed
+    query.set("distrib", "false");
+    query.remove("shards");
+    QueryResponse nonDistribResponse = collection1.query(query);
+    
+    assertNotNull(distribResponse.getDebugMap().get("track"));
+    assertNull(nonDistribResponse.getDebugMap().get("track"));
+    assertEquals(distribResponse.getDebugMap().size() - 1, nonDistribResponse.getDebugMap().size());
+    
+    assertSectionEquals(distribResponse, nonDistribResponse, "explain");
+    assertSectionEquals(distribResponse, nonDistribResponse, "rawquerystring");
+    assertSectionEquals(distribResponse, nonDistribResponse, "querystring");
+    assertSectionEquals(distribResponse, nonDistribResponse, "parsedquery");
+    assertSectionEquals(distribResponse, nonDistribResponse, "parsedquery_toString");
+    assertSectionEquals(distribResponse, nonDistribResponse, "QParser");
+    assertSectionEquals(distribResponse, nonDistribResponse, "filter_qieries");
+    assertSectionEquals(distribResponse, nonDistribResponse, "parsed_filter_qieries");
+    
+    // timing should have the same sections:
+    assertSameKeys((NamedList<?>)nonDistribResponse.getDebugMap().get("timing"), (NamedList<?>)distribResponse.getDebugMap().get("timing"));
+  }
+  
+  /**
+   * Compares the same section on the two query responses
+   */
+  private void assertSectionEquals(QueryResponse distrib, QueryResponse nonDistrib, String section) {
+    assertEquals(section + " debug should be equal", distrib.getDebugMap().get(section), nonDistrib.getDebugMap().get(section));
+  }
+
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  private void assertSameKeys(NamedList object, NamedList object2) {
+    Iterator<Map.Entry<String,Object>> iteratorObj2 = ((NamedList)object2).iterator();
+    for (Map.Entry<String,Object> entry:(NamedList<Object>)object) {
+      assertTrue(iteratorObj2.hasNext());
+      Map.Entry<String,Object> entry2 = iteratorObj2.next();
+      assertEquals(entry.getKey(), entry2.getKey());
+      if (entry.getValue() instanceof NamedList) {
+        assertTrue(entry2.getValue() instanceof NamedList);
+        assertSameKeys((NamedList)entry.getValue(), (NamedList)entry2.getValue());
+      }
+    }
+    assertFalse(iteratorObj2.hasNext());
+  }
+
   private void assertElementsPresent(NamedList<String> namedList, String...elements) {
     for(String element:elements) {
       String value = namedList.get(element);

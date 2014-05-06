@@ -25,8 +25,34 @@ $Id$
 Bug Fixes
 ----------------------
 
+* SOLR-5904: ElectionContext can cancel an election when it should not if there
+  was an exception while trying to register as the leader. 
+  (Mark Miller, Alan Woodward)
+
+* SOLR-5993: ZkController can warn about shard leader conflict even after the conflict
+  is resolved. (Gregory Chanan via shalin)
+
 * SOLR-6017: Fix SimpleQParser to use query analyzer
   (Ryan Ernst)
+
+* SOLR_6029: CollapsingQParserPlugin throws ArrayIndexOutOfBoundsException
+  if elevated doc has been deleted from a segment. (Greg Harris, Joel Bernstein)
+
+* SOLR-6030: Use System.nanoTime() instead of currentTimeInMills() in LRUCache.warm.
+  (Tomás Fernández Löbbe via shalin)
+
+* SOLR-6037: Fixed incorrect max/sum/stddev for Date fields in StatsComponent
+  (Brett Lucey, hossman)
+
+* SOLR-6023: FieldAnalysisRequestHandler throws NPE if no parameters are supplied.
+  (shalin)
+  
+* SOLR-5090: SpellCheckComponent sometimes throws NPE if 
+  "spellcheck.alternativeTermCount" is set to zero (James Dyer).
+
+* SOLR-6039: fixed debug output when no results in response
+  (Tomás Fernández Löbbe, hossman)
+
 
 ==================  4.8.0 ==================
 

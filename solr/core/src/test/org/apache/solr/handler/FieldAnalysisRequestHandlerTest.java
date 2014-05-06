@@ -19,6 +19,7 @@ package org.apache.solr.handler;
 
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -379,5 +380,20 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     assertToken(tokenList.get(4), new TokenInfo("a", null, "word", 12, 13, 4, new int[]{3,4,4}, null, false));
     assertToken(tokenList.get(5), new TokenInfo("test", null, "word", 14, 18, 5, new int[]{4,5,5}, null, false));
   }
-  
+
+  public void testRequiredParamHandling() throws Exception {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(CommonParams.Q, "fox brown");
+
+    SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), params);
+    try {
+      FieldAnalysisRequest request = handler.resolveAnalysisRequest(req);
+      fail("A request with no parameters should not have succeeded");
+    } catch (NullPointerException npe) {
+      fail("A request with no paramters should not result in NPE");
+    } catch (SolrException e) {
+      assertEquals("A request with no parameters should have returned a BAD_REQUEST error", e.code(),
+          SolrException.ErrorCode.BAD_REQUEST.code);
+    }
+  }
 }
