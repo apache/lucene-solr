@@ -32,11 +32,20 @@ import org.apache.lucene.util.TestUtil;
  */
 public class MockRandomMergePolicy extends MergePolicy {
   private final Random random;
+  boolean doNonBulkMerges = true;
 
   public MockRandomMergePolicy(Random random) {
     // fork a private random, since we are called
     // unpredictably from threads:
     this.random = new Random(random.nextLong());
+  }
+  
+  /** 
+   * Set to true if sometimes readers to be merged should be wrapped in a FilterReader
+   * to mixup bulk merging.
+   */
+  public void setDoNonBulkMerges(boolean v) {
+    doNonBulkMerges = v;
   }
 
   @Override
@@ -64,7 +73,11 @@ public class MockRandomMergePolicy extends MergePolicy {
       // TODO: sometimes make more than 1 merge?
       mergeSpec = new MergeSpecification();
       final int segsToMerge = TestUtil.nextInt(random, 1, numSegments);
-      mergeSpec.add(new MockRandomOneMerge(segments.subList(0, segsToMerge),random.nextLong()));
+      if (doNonBulkMerges) {
+        mergeSpec.add(new MockRandomOneMerge(segments.subList(0, segsToMerge),random.nextLong()));
+      } else {
+        mergeSpec.add(new OneMerge(segments.subList(0, segsToMerge)));
+      }
     }
 
     return mergeSpec;
@@ -93,7 +106,11 @@ public class MockRandomMergePolicy extends MergePolicy {
       while(upto < eligibleSegments.size()) {
         int max = Math.min(10, eligibleSegments.size()-upto);
         int inc = max <= 2 ? max : TestUtil.nextInt(random, 2, max);
-        mergeSpec.add(new MockRandomOneMerge(eligibleSegments.subList(upto, upto+inc), random.nextLong()));
+        if (doNonBulkMerges) {
+          mergeSpec.add(new MockRandomOneMerge(eligibleSegments.subList(upto, upto+inc), random.nextLong()));
+        } else {
+          mergeSpec.add(new OneMerge(eligibleSegments.subList(upto, upto+inc)));
+        }
         upto += inc;
       }
     }
