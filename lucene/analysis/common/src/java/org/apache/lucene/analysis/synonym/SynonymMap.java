@@ -308,9 +308,7 @@ public class SynonymMap {
      *  separates by {@link SynonymMap#WORD_SEPARATOR}.
      *  reuse and its chars must not be null. */
     public CharsRef analyze(String text, CharsRef reuse) throws IOException {
-      IOException priorException = null;
-      TokenStream ts = analyzer.tokenStream("", text);
-      try {
+      try (TokenStream ts = analyzer.tokenStream("", text)) {
         CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
         PositionIncrementAttribute posIncAtt = ts.addAttribute(PositionIncrementAttribute.class);
         ts.reset();
@@ -333,10 +331,6 @@ public class SynonymMap {
           reuse.length += length;
         }
         ts.end();
-      } catch (IOException e) {
-        priorException = e;
-      } finally {
-        IOUtils.closeWhileHandlingException(priorException, ts);
       }
       if (reuse.length == 0) {
         throw new IllegalArgumentException("term: " + text + " was completely eliminated by analyzer");

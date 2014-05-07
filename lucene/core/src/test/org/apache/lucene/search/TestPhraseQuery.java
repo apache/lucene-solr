@@ -624,9 +624,7 @@ public class TestPhraseQuery extends LuceneTestCase {
               break;
             }
           }
-          IOException priorException = null;
-          TokenStream ts = analyzer.tokenStream("ignore", term);
-          try {
+          try (TokenStream ts = analyzer.tokenStream("ignore", term)) {
             CharTermAttribute termAttr = ts.addAttribute(CharTermAttribute.class);
             ts.reset();
             while(ts.incrementToken()) {
@@ -635,10 +633,6 @@ public class TestPhraseQuery extends LuceneTestCase {
               sb.append(text).append(' ');
             }
             ts.end();
-          } catch (IOException e) {
-            priorException = e;
-          } finally {
-            IOUtils.closeWhileHandlingException(priorException, ts);
           }
         } else {
           // pick existing sub-phrase

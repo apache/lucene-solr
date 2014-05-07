@@ -49,9 +49,7 @@ public class TestLongPostings extends LuceneTestCase {
       if (other != null && s.equals(other)) {
         continue;
       }
-      IOException priorException = null;
-      TokenStream ts = a.tokenStream("foo", s);
-      try {
+      try (TokenStream ts = a.tokenStream("foo", s)) {
         final TermToBytesRefAttribute termAtt = ts.getAttribute(TermToBytesRefAttribute.class);
         final BytesRef termBytes = termAtt.getBytesRef();
         ts.reset();
@@ -74,10 +72,6 @@ public class TestLongPostings extends LuceneTestCase {
         if (!changed && count == 1) {
           return s;
         }
-      } catch (IOException e) {
-        priorException = e;
-      } finally {
-        IOUtils.closeWhileHandlingException(priorException, ts);
       }
     }
   }

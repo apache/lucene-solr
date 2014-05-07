@@ -39,9 +39,9 @@ public final class ConnectionCosts {
   private final short[][] costs; // array is backward IDs first since get is called using the same backward ID consecutively. maybe doesn't matter.
   
   private ConnectionCosts() throws IOException {
-    IOException priorE = null;
     InputStream is = null;
     short[][] costs = null;
+    boolean success = false;
     try {
       is = BinaryDictionary.getClassResource(getClass(), FILENAME_SUFFIX);
       is = new BufferedInputStream(is);
@@ -58,10 +58,13 @@ public final class ConnectionCosts {
           a[i] = (short)accum;
         }
       }
-    } catch (IOException ioe) {
-      priorE = ioe;
+      success = true;
     } finally {
-      IOUtils.closeWhileHandlingException(priorE, is);
+      if (success) {
+        IOUtils.close(is);
+      } else {
+        IOUtils.closeWhileHandlingException(is);
+      }
     }
     
     this.costs = costs;

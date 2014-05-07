@@ -62,8 +62,8 @@ public final class CharacterDefinition {
   public static final byte KANJINUMERIC = (byte) CharacterClass.KANJINUMERIC.ordinal();
   
   private CharacterDefinition() throws IOException {
-    IOException priorE = null;
     InputStream is = null;
+    boolean success = false;
     try {
       is = BinaryDictionary.getClassResource(getClass(), FILENAME_SUFFIX);
       is = new BufferedInputStream(is);
@@ -75,10 +75,13 @@ public final class CharacterDefinition {
         invokeMap[i] = (b & 0x01) != 0;
         groupMap[i] = (b & 0x02) != 0;
       }
-    } catch (IOException ioe) {
-      priorE = ioe;
+      success = true;
     } finally {
-      IOUtils.closeWhileHandlingException(priorE, is);
+      if (success) {
+        IOUtils.close(is);
+      } else {
+        IOUtils.closeWhileHandlingException(is);
+      }
     }
   }
   

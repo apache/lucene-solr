@@ -278,9 +278,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
 
     for (int i = 0; i < numTestPoints; i++) {
       String term = TestUtil.randomSimpleString(random());
-      IOException priorException = null;
-      TokenStream ts = analyzer.tokenStream("fake", term);
-      try {
+      try (TokenStream ts = analyzer.tokenStream("fake", term)) {
         TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
         BytesRef bytes = termAtt.getBytesRef();
         ts.reset();
@@ -290,10 +288,6 @@ public abstract class CollationTestBase extends LuceneTestCase {
         map.put(term, BytesRef.deepCopyOf(bytes));
         assertFalse(ts.incrementToken());
         ts.end();
-      } catch (IOException e) {
-        priorException = e;
-      } finally {
-        IOUtils.closeWhileHandlingException(priorException, ts);
       }
     }
     
@@ -306,9 +300,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
             for (Map.Entry<String,BytesRef> mapping : map.entrySet()) {
               String term = mapping.getKey();
               BytesRef expected = mapping.getValue();
-              IOException priorException = null;
-              TokenStream ts = analyzer.tokenStream("fake", term);
-              try {
+              try (TokenStream ts = analyzer.tokenStream("fake", term)) {
                 TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
                 BytesRef bytes = termAtt.getBytesRef();
                 ts.reset();
@@ -317,10 +309,6 @@ public abstract class CollationTestBase extends LuceneTestCase {
                 assertEquals(expected, bytes);
                 assertFalse(ts.incrementToken());
                 ts.end();
-              } catch (IOException e) {
-                priorException = e;
-              } finally {
-                IOUtils.closeWhileHandlingException(priorException, ts);
               }
             }
           } catch (IOException e) {

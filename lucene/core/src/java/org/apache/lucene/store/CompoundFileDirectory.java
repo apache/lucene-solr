@@ -128,13 +128,13 @@ public final class CompoundFileDirectory extends BaseDirectory {
   /** Helper method that reads CFS entries from an input stream */
   private static final Map<String, FileEntry> readEntries(
       IndexInputSlicer handle, Directory dir, String name) throws IOException {
-    IOException priorE = null;
     IndexInput stream = null; 
     ChecksumIndexInput entriesStream = null;
+    Map<String,FileEntry> mapping = null;
     // read the first VInt. If it is negative, it's the version number
     // otherwise it's the count (pre-3.1 indexes)
+    boolean success = false;
     try {
-      final Map<String,FileEntry> mapping;
       stream = handle.openFullSlice();
       final int firstInt = stream.readVInt();
       // impossible for 3.0 to have 63 files in a .cfs, CFS writer was not visible
@@ -177,14 +177,15 @@ public final class CompoundFileDirectory extends BaseDirectory {
         // TODO remove once 3.x is not supported anymore
         mapping = readLegacyEntries(stream, firstInt);
       }
-      return mapping;
-    } catch (IOException ioe) {
-      priorE = ioe;
+      success = true;
     } finally {
-      IOUtils.closeWhileHandlingException(priorE, stream, entriesStream);
+      if (success) {
+        IOUtils.close(stream, entriesStream);
+      } else {
+        IOUtils.closeWhileHandlingException(stream, entriesStream);
+      }
     }
-    // this is needed until Java 7's real try-with-resources:
-    throw new AssertionError("impossible to get here");
+    return mapping;
   }
 
   private static Map<String, FileEntry> readLegacyEntries(IndexInput stream,
