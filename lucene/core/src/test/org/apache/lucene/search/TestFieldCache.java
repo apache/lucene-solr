@@ -154,6 +154,7 @@ public class TestFieldCache extends LuceneTestCase {
       }, false);
       assertTrue(bos.toString(IOUtils.UTF_8).indexOf("WARNING") != -1);
     } finally {
+      FieldCache.DEFAULT.setInfoStream(null);
       FieldCache.DEFAULT.purgeAllCaches();
     }
   }
