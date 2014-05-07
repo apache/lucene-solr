@@ -378,14 +378,17 @@ public abstract class FSDirectory extends BaseDirectory {
       parent.onIndexOutputClosed(name);
       // only close the file if it has not been closed yet
       if (isOpen) {
-        IOException priorE = null;
+        boolean success = false;
         try {
           super.close();
-        } catch (IOException ioe) {
-          priorE = ioe;
+          success = true;
         } finally {
           isOpen = false;
-          IOUtils.closeWhileHandlingException(priorE, file);
+          if (success) {
+            IOUtils.close(file);
+          } else {
+            IOUtils.closeWhileHandlingException(file);
+          }
         }
       }
     }

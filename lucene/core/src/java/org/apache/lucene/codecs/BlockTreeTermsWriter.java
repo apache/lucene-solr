@@ -1119,7 +1119,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
   @Override
   public void close() throws IOException {
 
-    IOException ioe = null;
+    boolean success = false;
     try {
       
       final long dirStart = out.getFilePointer();
@@ -1148,10 +1148,13 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
       CodecUtil.writeFooter(out);
       writeIndexTrailer(indexOut, indexDirStart);
       CodecUtil.writeFooter(indexOut);
-    } catch (IOException ioe2) {
-      ioe = ioe2;
+      success = true;
     } finally {
-      IOUtils.closeWhileHandlingException(ioe, out, indexOut, postingsWriter);
+      if (success) {
+        IOUtils.close(out, indexOut, postingsWriter);
+      } else {
+        IOUtils.closeWhileHandlingException(out, indexOut, postingsWriter);
+      }
     }
   }
 

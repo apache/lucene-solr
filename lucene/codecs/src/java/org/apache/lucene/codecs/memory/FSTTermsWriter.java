@@ -198,7 +198,7 @@ public class FSTTermsWriter extends FieldsConsumer {
   @Override
   public void close() throws IOException {
     if (out != null) {
-      IOException ioe = null;
+      boolean success = false;
       try {
         // write field summary
         final long dirStart = out.getFilePointer();
@@ -217,10 +217,13 @@ public class FSTTermsWriter extends FieldsConsumer {
         }
         writeTrailer(out, dirStart);
         CodecUtil.writeFooter(out);
-      } catch (IOException ioe2) {
-        ioe = ioe2;
+        success = true;
       } finally {
-        IOUtils.closeWhileHandlingException(ioe, out, postingsWriter);
+        if (success) {
+          IOUtils.close(out, postingsWriter);
+        } else {
+          IOUtils.closeWhileHandlingException(out, postingsWriter);
+        }
         out = null;
       }
     }

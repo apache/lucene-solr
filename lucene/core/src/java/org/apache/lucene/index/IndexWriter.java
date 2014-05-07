@@ -4498,29 +4498,25 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     // Now merge all added files
     Collection<String> files = info.files();
     CompoundFileDirectory cfsDir = new CompoundFileDirectory(directory, fileName, context, true);
-    IOException prior = null;
+    boolean success = false;
     try {
       for (String file : files) {
         directory.copy(cfsDir, file, file, context);
         checkAbort.work(directory.fileLength(file));
       }
-    } catch(IOException ex) {
-      prior = ex;
+      success = true;
     } finally {
-      boolean success = false;
-      try {
-        IOUtils.closeWhileHandlingException(prior, cfsDir);
-        success = true;
-      } finally {
-        if (!success) {
-          try {
-            directory.deleteFile(fileName);
-          } catch (Throwable t) {
-          }
-          try {
-            directory.deleteFile(IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
-          } catch (Throwable t) {
-          }
+      if (success) {
+        IOUtils.close(cfsDir);
+      } else {
+        IOUtils.closeWhileHandlingException(cfsDir);
+        try {
+          directory.deleteFile(fileName);
+        } catch (Throwable t) {
+        }
+        try {
+          directory.deleteFile(IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
+        } catch (Throwable t) {
         }
       }
     }

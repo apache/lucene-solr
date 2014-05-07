@@ -90,7 +90,7 @@ public final class SPIClassIterator<S> implements Iterator<Class<? extends S>> {
       final URL url = profilesEnum.nextElement();
       try {
         final InputStream in = url.openStream();
-        IOException priorE = null;
+        boolean success = false;
         try {
           final BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
           String line;
@@ -104,10 +104,13 @@ public final class SPIClassIterator<S> implements Iterator<Class<? extends S>> {
               lines.add(line);
             }
           }
-        } catch (IOException ioe) {
-          priorE = ioe;
+          success = true;
         } finally {
-          IOUtils.closeWhileHandlingException(priorE, in);
+          if (success) {
+            IOUtils.close(in);
+          } else {
+            IOUtils.closeWhileHandlingException(in);
+          }
         }
       } catch (IOException ioe) {
         throw new ServiceConfigurationError("Error loading SPI class list from URL: " + url, ioe);

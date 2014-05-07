@@ -123,8 +123,9 @@ public final class CompoundFileDirectory extends BaseDirectory {
 
   /** Helper method that reads CFS entries from an input stream */
   private final Map<String, FileEntry> readEntries(Directory dir, String name) throws IOException {
-    IOException priorE = null;
     ChecksumIndexInput entriesStream = null;
+    Map<String,FileEntry> mapping = null;
+    boolean success = false;
     try {
       final String entriesFileName = IndexFileNames.segmentFileName(
                                             IndexFileNames.stripExtension(name), "",
@@ -132,7 +133,7 @@ public final class CompoundFileDirectory extends BaseDirectory {
       entriesStream = dir.openChecksumInput(entriesFileName, IOContext.READONCE);
       version = CodecUtil.checkHeader(entriesStream, CompoundFileWriter.ENTRY_CODEC, CompoundFileWriter.VERSION_START, CompoundFileWriter.VERSION_CURRENT);
       final int numEntries = entriesStream.readVInt();
-      final Map<String, FileEntry> mapping = new HashMap<>(numEntries);
+      mapping = new HashMap<>(numEntries);
       for (int i = 0; i < numEntries; i++) {
         final FileEntry fileEntry = new FileEntry();
         final String id = entriesStream.readString();
@@ -148,14 +149,15 @@ public final class CompoundFileDirectory extends BaseDirectory {
       } else {
         CodecUtil.checkEOF(entriesStream);
       }
-      return mapping;
-    } catch (IOException ioe) {
-      priorE = ioe;
+      success = true;
     } finally {
-      IOUtils.closeWhileHandlingException(priorE, entriesStream);
+      if (success) {
+        IOUtils.close(entriesStream);
+      } else {
+        IOUtils.closeWhileHandlingException(entriesStream);
+      }
     }
-    // this is needed until Java 7's real try-with-resources:
-    throw new AssertionError("impossible to get here");
+    return mapping;
   }
   
   public Directory getDirectory() {

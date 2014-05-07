@@ -54,12 +54,12 @@ public abstract class BinaryDictionary implements Dictionary {
   
   protected BinaryDictionary() throws IOException {
     InputStream mapIS = null, dictIS = null, posIS = null;
-    IOException priorE = null;
     int[] targetMapOffsets = null, targetMap = null;
     String[] posDict = null;
     String[] inflFormDict = null;
     String[] inflTypeDict = null;
     ByteBuffer buffer = null;
+    boolean success = false;
     try {
       mapIS = getResource(TARGETMAP_FILENAME_SUFFIX);
       mapIS = new BufferedInputStream(mapIS);
@@ -117,10 +117,13 @@ public abstract class BinaryDictionary implements Dictionary {
       }
       dictIS.close(); dictIS = null;
       buffer = tmpBuffer.asReadOnlyBuffer();
-    } catch (IOException ioe) {
-      priorE = ioe;
+      success = true;
     } finally {
-      IOUtils.closeWhileHandlingException(priorE, mapIS, posIS, dictIS);
+      if (success) {
+        IOUtils.close(mapIS, posIS, dictIS);
+      } else {
+        IOUtils.closeWhileHandlingException(mapIS, posIS, dictIS);
+      }
     }
     
     this.targetMap = targetMap;
