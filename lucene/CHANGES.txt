@@ -28,6 +28,10 @@ Changes in Backwards Compatibility Policy
   can be used by custom fieldtypes, which don't use the Analyzer, but
   implement their own TokenStream.  (Uwe Schindler, Robert Muir)
 
+* LUCENE-5640: AttributeSource.AttributeFactory was moved to a
+  top-level class: org.apache.lucene.util.AttributeFactory
+  (Uwe Schindler, Robert Muir)
+
 API Changes
 
 * LUCENE-5582: Deprecate IndexOutput.length (just use
@@ -54,6 +58,9 @@ API Changes
 * LUCENE-5633: Change NoMergePolicy to a singleton with no distinction between
   compound and non-compound types. (Shai Erera)
 
+* LUCENE-5640: The Token class was deprecated. Since Lucene 2.9, TokenStreams
+  are using Attributes, Token is no longer used.  (Uwe Schindler, Robert Muir)
+
 Optimizations
 
 * LUCENE-5603: hunspell stemmer more efficiently strips prefixes
@@ -68,9 +75,11 @@ Optimizations
 * LUCENE-5634: IndexWriter reuses TokenStream instances for String and Numeric
   fields by default. (Uwe Schindler, Shay Banon, Mike McCandless, Robert Muir)
 
-* LUCENE-5638: TokenStream uses a more performant AttributeFactory by default,
-  that packs the core attributes into one impl, for faster clearAttributes(),
-  saveState(), and restoreState().  (Uwe Schindler, Robert Muir)
+* LUCENE-5638, LUCENE-5640: TokenStream uses a more performant AttributeFactory
+  by default, that packs the core attributes into one implementation
+  (PackedTokenAttributeImpl), for faster clearAttributes(), saveState(), and
+  restoreState(). In addition, AttributeFactory uses Java 7 MethodHandles for
+  instantiating Attribute implementations.  (Uwe Schindler, Robert Muir)
 
 * LUCENE-5609: Changed the default NumericField precisionStep from 4
   to 8 (for int/float) and 16 (for long/double), for faster indexing

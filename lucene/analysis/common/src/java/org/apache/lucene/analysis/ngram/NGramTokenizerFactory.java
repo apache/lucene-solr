@@ -20,7 +20,7 @@ package org.apache.lucene.analysis.ngram;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.TokenizerFactory;
-import org.apache.lucene.util.AttributeSource.AttributeFactory;
+import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.Version;
 
 import java.io.Reader;

@@ -17,12 +17,14 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -38,59 +40,15 @@ import org.apache.lucene.analysis.TokenStream; // for javadocs
  * it creates a new instance and returns it.
  */
 public class AttributeSource {
+  
   /**
-   * An AttributeFactory creates instances of {@link AttributeImpl}s.
+   * This is the default factory that creates {@link AttributeImpl}s using the
+   * class name of the supplied {@link Attribute} interface class by appending <code>Impl</code> to it.
+   * @deprecated use {@link AttributeFactory#DEFAULT_ATTRIBUTE_FACTORY}
    */
-  public static abstract class AttributeFactory {
-    /**
-     * returns an {@link AttributeImpl} for the supplied {@link Attribute} interface class.
-     */
-    public abstract AttributeImpl createAttributeInstance(Class<? extends Attribute> attClass);
-    
-    /**
-     * This is the default factory that creates {@link AttributeImpl}s using the
-     * class name of the supplied {@link Attribute} interface class by appending <code>Impl</code> to it.
-     */
-    public static final AttributeFactory DEFAULT_ATTRIBUTE_FACTORY = new DefaultAttributeFactory();
-    
-    private static final class DefaultAttributeFactory extends AttributeFactory {
-      private static final WeakIdentityMap<Class<? extends Attribute>, WeakReference<Class<? extends AttributeImpl>>> attClassImplMap =
-        WeakIdentityMap.newConcurrentHashMap(false);
-      
-      DefaultAttributeFactory() {}
-    
-      @Override
-      public AttributeImpl createAttributeInstance(Class<? extends Attribute> attClass) {
-        try {
-          return getClassForInterface(attClass).newInstance();
-        } catch (InstantiationException e) {
-          throw new IllegalArgumentException("Could not instantiate implementing class for " + attClass.getName());
-        } catch (IllegalAccessException e) {
-          throw new IllegalArgumentException("Could not instantiate implementing class for " + attClass.getName());
-        }
-      }
-      
-      private static Class<? extends AttributeImpl> getClassForInterface(Class<? extends Attribute> attClass) {
-        final WeakReference<Class<? extends AttributeImpl>> ref = attClassImplMap.get(attClass);
-        Class<? extends AttributeImpl> clazz = (ref == null) ? null : ref.get();
-        if (clazz == null) {
-          // we have the slight chance that another thread may do the same, but who cares?
-          try {
-            attClassImplMap.put(attClass,
-              new WeakReference<Class<? extends AttributeImpl>>(
-                clazz = Class.forName(attClass.getName() + "Impl", true, attClass.getClassLoader())
-                .asSubclass(AttributeImpl.class)
-              )
-            );
-          } catch (ClassNotFoundException e) {
-            throw new IllegalArgumentException("Could not find implementing class for " + attClass.getName());
-          }
-        }
-        return clazz;
-      }
-    }
-  }
-      
+  @Deprecated
+  public static final AttributeFactory DEFAULT_ATTRIBUTE_FACTORY = AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY;
+  
   /**
    * This class holds the state of an AttributeSource.
    * @see #captureState
@@ -122,7 +80,7 @@ public class AttributeSource {
   private final AttributeFactory factory;
   
   /**
-   * An AttributeSource using the default attribute factory {@link AttributeSource.AttributeFactory#DEFAULT_ATTRIBUTE_FACTORY}.
+   * An AttributeSource using the default attribute factory {@link AttributeFactory#DEFAULT_ATTRIBUTE_FACTORY}.
    */
   public AttributeSource() {
     this(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY);
@@ -200,26 +158,28 @@ public class AttributeSource {
   }
   
   /** a cache that stores all interfaces for known implementation classes for performance (slow reflection) */
-  private static final WeakIdentityMap<Class<? extends AttributeImpl>,LinkedList<WeakReference<Class<? extends Attribute>>>> knownImplClasses =
+  private static final WeakIdentityMap<Class<? extends AttributeImpl>,Reference<Class<? extends Attribute>>[]> knownImplClasses =
     WeakIdentityMap.newConcurrentHashMap(false);
   
-  static LinkedList<WeakReference<Class<? extends Attribute>>> getAttributeInterfaces(final Class<? extends AttributeImpl> clazz) {
-    LinkedList<WeakReference<Class<? extends Attribute>>> foundInterfaces = knownImplClasses.get(clazz);
+  static Reference<Class<? extends Attribute>>[] getAttributeInterfaces(final Class<? extends AttributeImpl> clazz) {
+    Reference<Class<? extends Attribute>>[] foundInterfaces = knownImplClasses.get(clazz);
     if (foundInterfaces == null) {
       // we have the slight chance that another thread may do the same, but who cares?
-      foundInterfaces = new LinkedList<>();
+      final List<Reference<Class<? extends Attribute>>> intfList = new ArrayList<>();
       // find all interfaces that this attribute instance implements
       // and that extend the Attribute interface
       Class<?> actClazz = clazz;
       do {
         for (Class<?> curInterface : actClazz.getInterfaces()) {
           if (curInterface != Attribute.class && Attribute.class.isAssignableFrom(curInterface)) {
-            foundInterfaces.add(new WeakReference<Class<? extends Attribute>>(curInterface.asSubclass(Attribute.class)));
+            intfList.add(new WeakReference<Class<? extends Attribute>>(curInterface.asSubclass(Attribute.class)));
           }
         }
         actClazz = actClazz.getSuperclass();
       } while (actClazz != null);
-      knownImplClasses.put(clazz, foundInterfaces);
+      @SuppressWarnings({"unchecked", "rawtypes"}) final Reference<Class<? extends Attribute>>[] a =
+          intfList.toArray(new Reference[intfList.size()]);
+      knownImplClasses.put(clazz, foundInterfaces = a);
     }
     return foundInterfaces;
   }
@@ -235,11 +195,9 @@ public class AttributeSource {
   public final void addAttributeImpl(final AttributeImpl att) {
     final Class<? extends AttributeImpl> clazz = att.getClass();
     if (attributeImpls.containsKey(clazz)) return;
-    final LinkedList<WeakReference<Class<? extends Attribute>>> foundInterfaces =
-      getAttributeInterfaces(clazz);
     
     // add all interfaces of this AttributeImpl to the maps
-    for (WeakReference<Class<? extends Attribute>> curInterfaceRef : foundInterfaces) {
+    for (Reference<Class<? extends Attribute>> curInterfaceRef : getAttributeInterfaces(clazz)) {
       final Class<? extends Attribute> curInterface = curInterfaceRef.get();
       assert (curInterface != null) :
         "We have a strong reference on the class holding the interfaces, so they should never get evicted";

@@ -21,7 +21,7 @@ import java.io.Reader;
 import java.util.Map;
 
 import org.apache.lucene.analysis.util.TokenizerFactory;
-import org.apache.lucene.util.AttributeSource.AttributeFactory;
+import org.apache.lucene.util.AttributeFactory;
 
 /** @deprecated Use {@link org.apache.lucene.analysis.standard.StandardTokenizerFactory} instead.
  *  This tokenizer has no Russian-specific functionality.

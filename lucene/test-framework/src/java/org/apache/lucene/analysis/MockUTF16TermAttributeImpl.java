@@ -17,9 +17,10 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.lucene.analysis.tokenattributes.CharTermAttributeImpl;
+import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -27,12 +28,15 @@ import org.apache.lucene.util.BytesRef;
  * text as UTF-16 bytes instead of as UTF-8 bytes.
  */
 public class MockUTF16TermAttributeImpl extends CharTermAttributeImpl {
-  static final Charset charset = Charset.forName("UTF-16LE");
+  
+  /** Factory that returns an instance of this class for CharTermAttribute */
+  public static final AttributeFactory UTF16_TERM_ATTRIBUTE_FACTORY =
+      AttributeFactory.getStaticImplementation(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, MockUTF16TermAttributeImpl.class);
   
   @Override
   public void fillBytesRef() {
     BytesRef bytes = getBytesRef();
-    byte[] utf16 = toString().getBytes(charset);
+    byte[] utf16 = toString().getBytes(StandardCharsets.UTF_16LE);
     bytes.bytes = utf16;
     bytes.offset = 0;
     bytes.length = utf16.length;

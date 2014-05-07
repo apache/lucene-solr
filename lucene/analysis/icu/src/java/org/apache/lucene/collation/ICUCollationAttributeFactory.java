@@ -17,12 +17,9 @@ package org.apache.lucene.collation;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.collation.tokenattributes.ICUCollatedTermAttributeImpl;
-import org.apache.lucene.util.Attribute;
-import org.apache.lucene.util.AttributeImpl;
-import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.collation.CollationAttributeFactory; // javadoc
+import org.apache.lucene.util.AttributeFactory;
 
 import com.ibm.icu.text.Collator;
 
@@ -63,18 +60,17 @@ import com.ibm.icu.text.Collator;
  *   java.text.Collator over several languages.
  * </p>
  */
-public class ICUCollationAttributeFactory extends AttributeSource.AttributeFactory {
+public class ICUCollationAttributeFactory extends AttributeFactory.StaticImplementationAttributeFactory<ICUCollatedTermAttributeImpl> {
   private final Collator collator;
-  private final AttributeSource.AttributeFactory delegate;
   
   /**
    * Create an ICUCollationAttributeFactory, using 
-   * {@link org.apache.lucene.analysis.Token#TOKEN_ATTRIBUTE_FACTORY} as the
+   * {@link TokenStream#DEFAULT_TOKEN_ATTRIBUTE_FACTORY} as the
    * factory for all other attributes.
    * @param collator CollationKey generator
    */
   public ICUCollationAttributeFactory(Collator collator) {
-    this(Token.TOKEN_ATTRIBUTE_FACTORY, collator);
+    this(TokenStream.DEFAULT_TOKEN_ATTRIBUTE_FACTORY, collator);
   }
   
   /**
@@ -83,16 +79,13 @@ public class ICUCollationAttributeFactory extends AttributeSource.AttributeFacto
    * @param delegate Attribute Factory
    * @param collator CollationKey generator
    */
-  public ICUCollationAttributeFactory(AttributeSource.AttributeFactory delegate, Collator collator) {
-    this.delegate = delegate;
+  public ICUCollationAttributeFactory(AttributeFactory delegate, Collator collator) {
+    super(delegate, ICUCollatedTermAttributeImpl.class);
     this.collator = collator;
   }
   
   @Override
-  public AttributeImpl createAttributeInstance(
-      Class<? extends Attribute> attClass) {
-    return attClass.isAssignableFrom(ICUCollatedTermAttributeImpl.class)
-      ? new ICUCollatedTermAttributeImpl(collator)
-      : delegate.createAttributeInstance(attClass);
+  public ICUCollatedTermAttributeImpl createInstance() {
+    return new ICUCollatedTermAttributeImpl(collator);
   }
 }

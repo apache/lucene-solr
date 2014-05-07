@@ -22,7 +22,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.TokenizerFactory;
-import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.AttributeFactory;
 
 /** 
  * Factory for {@link ThaiTokenizer}.
@@ -44,7 +44,7 @@ public class ThaiTokenizerFactory extends TokenizerFactory {
   }
   
   @Override
-  public Tokenizer create(AttributeSource.AttributeFactory factory, Reader reader) {
+  public Tokenizer create(AttributeFactory factory, Reader reader) {
     return new ThaiTokenizer(factory, reader);
   }
 }

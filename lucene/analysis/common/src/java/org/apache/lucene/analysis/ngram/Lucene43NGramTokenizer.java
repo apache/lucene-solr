@@ -23,6 +23,7 @@ import java.io.Reader;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.util.AttributeFactory;
 
 /**
  * Old broken version of {@link NGramTokenizer}.
@@ -56,7 +57,7 @@ public final class Lucene43NGramTokenizer extends Tokenizer {
 
   /**
    * Creates NGramTokenizer with given min and max n-grams.
-   * @param factory {@link org.apache.lucene.util.AttributeSource.AttributeFactory} to use
+   * @param factory {@link org.apache.lucene.util.AttributeFactory} to use
    * @param input {@link Reader} holding the input to be tokenized
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate

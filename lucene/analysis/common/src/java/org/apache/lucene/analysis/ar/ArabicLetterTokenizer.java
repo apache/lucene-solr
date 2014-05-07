@@ -21,6 +21,7 @@ import java.io.Reader;
 import org.apache.lucene.analysis.core.LetterTokenizer;
 import org.apache.lucene.analysis.util.CharTokenizer;
 import org.apache.lucene.analysis.standard.StandardTokenizer; // javadoc @link
+import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.Version;
 
 /**
@@ -56,7 +57,7 @@ public class ArabicLetterTokenizer extends LetterTokenizer {
 
   /**
    * Construct a new ArabicLetterTokenizer using a given
-   * {@link org.apache.lucene.util.AttributeSource.AttributeFactory}. * @param
+   * {@link AttributeFactory}. * @param
    * matchVersion Lucene version to match See
    * {@link <a href="#version">above</a>}
    * 

@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.Version;
 
 /**
@@ -99,7 +100,7 @@ public final class Lucene43EdgeNGramTokenizer extends Tokenizer {
    * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
    * 
    * @param version the <a href="#version">Lucene match version</a>
-   * @param factory {@link org.apache.lucene.util.AttributeSource.AttributeFactory} to use
+   * @param factory {@link AttributeFactory} to use
    * @param input {@link Reader} holding the input to be tokenized
    * @param side the {@link Side} from which to chop off an n-gram
    * @param minGram the smallest n-gram to generate
@@ -129,7 +130,7 @@ public final class Lucene43EdgeNGramTokenizer extends Tokenizer {
    * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
    *
    * @param version the <a href="#version">Lucene match version</a>
-   * @param factory {@link org.apache.lucene.util.AttributeSource.AttributeFactory} to use
+   * @param factory {@link org.apache.lucene.util.AttributeFactory} to use
    * @param input {@link Reader} holding the input to be tokenized
    * @param sideLabel the name of the {@link Side} from which to chop off an n-gram
    * @param minGram the smallest n-gram to generate
@@ -156,7 +157,7 @@ public final class Lucene43EdgeNGramTokenizer extends Tokenizer {
    * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
    *
    * @param version the <a href="#version">Lucene match version</a>
-   * @param factory {@link org.apache.lucene.util.AttributeSource.AttributeFactory} to use
+   * @param factory {@link org.apache.lucene.util.AttributeFactory} to use
    * @param input {@link Reader} holding the input to be tokenized
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate

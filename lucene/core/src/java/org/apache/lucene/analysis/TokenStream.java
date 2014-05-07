@@ -21,11 +21,13 @@ import java.io.IOException;
 import java.io.Closeable;
 import java.lang.reflect.Modifier;
 
+import org.apache.lucene.analysis.tokenattributes.PackedTokenAttributeImpl;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.util.Attribute;
+import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeSource;
 
@@ -84,12 +86,16 @@ import org.apache.lucene.util.AttributeSource;
  * assertions are enabled.
  */
 public abstract class TokenStream extends AttributeSource implements Closeable {
+  
+  /** Default {@link AttributeFactory} instance that should be used for TokenStreams. */
+  public static final AttributeFactory DEFAULT_TOKEN_ATTRIBUTE_FACTORY =
+    AttributeFactory.getStaticImplementation(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, PackedTokenAttributeImpl.class);
 
   /**
    * A TokenStream using the default attribute factory.
    */
   protected TokenStream() {
-    super(Token.TOKEN_ATTRIBUTE_FACTORY);
+    super(DEFAULT_TOKEN_ATTRIBUTE_FACTORY);
     assert assertFinal();
   }
   

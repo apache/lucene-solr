@@ -28,6 +28,7 @@ import org.apache.lucene.document.LongField; // for javadocs
 import org.apache.lucene.search.NumericRangeFilter; // for javadocs
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.util.Attribute;
+import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.BytesRef;
@@ -233,7 +234,7 @@ public final class NumericTokenStream extends TokenStream {
   /**
    * Expert: Creates a token stream for numeric values with the specified
    * <code>precisionStep</code> using the given
-   * {@link org.apache.lucene.util.AttributeSource.AttributeFactory}.
+   * {@link org.apache.lucene.util.AttributeFactory}.
    * The stream is not yet initialized,
    * before using set a value using the various set<em>???</em>Value() methods.
    */

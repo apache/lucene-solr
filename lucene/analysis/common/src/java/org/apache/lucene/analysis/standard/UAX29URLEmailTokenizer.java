@@ -29,6 +29,8 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.util.AttributeFactory;
+import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Version;
 
 /**
@@ -115,7 +117,7 @@ public final class UAX29URLEmailTokenizer extends Tokenizer {
   }
 
   /**
-   * Creates a new UAX29URLEmailTokenizer with a given {@link org.apache.lucene.util.AttributeSource.AttributeFactory}
+   * Creates a new UAX29URLEmailTokenizer with a given {@link AttributeFactory}
    */
   public UAX29URLEmailTokenizer(Version matchVersion, AttributeFactory factory, Reader input) {
     super(factory, input);

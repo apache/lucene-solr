@@ -17,11 +17,11 @@ package org.apache.lucene.analysis.uima;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.util.AttributeFactory;
 import org.apache.uima.analysis_engine.AnalysisEngineProcessException;
 import org.apache.uima.cas.CASException;
 import org.apache.uima.cas.FeaturePath;
@@ -54,7 +54,7 @@ public final class UIMATypeAwareAnnotationsTokenizer extends BaseUIMATokenizer {
   private int finalOffset = 0;
 
   public UIMATypeAwareAnnotationsTokenizer(String descriptorPath, String tokenType, String typeAttributeFeaturePath, Map<String, Object> configurationParameters, Reader input) {
-    this(descriptorPath, tokenType, typeAttributeFeaturePath, configurationParameters, Token.TOKEN_ATTRIBUTE_FACTORY, input);
+    this(descriptorPath, tokenType, typeAttributeFeaturePath, configurationParameters,DEFAULT_TOKEN_ATTRIBUTE_FACTORY, input);
   }
 
   public UIMATypeAwareAnnotationsTokenizer(String descriptorPath, String tokenType, String typeAttributeFeaturePath, 

@@ -28,6 +28,8 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.util.AttributeFactory;
+import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Version;
 
 /** A grammar-based tokenizer constructed with JFlex.
@@ -136,7 +138,7 @@ public final class StandardTokenizer extends Tokenizer {
   }
 
   /**
-   * Creates a new StandardTokenizer with a given {@link org.apache.lucene.util.AttributeSource.AttributeFactory} 
+   * Creates a new StandardTokenizer with a given {@link org.apache.lucene.util.AttributeFactory} 
    */
   public StandardTokenizer(Version matchVersion, AttributeFactory factory, Reader input) {
     super(factory, input);

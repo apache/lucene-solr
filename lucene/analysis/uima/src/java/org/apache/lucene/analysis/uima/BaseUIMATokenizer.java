@@ -19,6 +19,7 @@ package org.apache.lucene.analysis.uima;
 
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.uima.ae.AEProviderFactory;
+import org.apache.lucene.util.AttributeFactory;
 import org.apache.uima.analysis_engine.AnalysisEngine;
 import org.apache.uima.analysis_engine.AnalysisEngineProcessException;
 import org.apache.uima.cas.CAS;

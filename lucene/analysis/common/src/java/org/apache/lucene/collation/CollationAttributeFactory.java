@@ -19,11 +19,9 @@ package org.apache.lucene.collation;
 
 import java.text.Collator;
 
-import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.collation.tokenattributes.CollatedTermAttributeImpl;
-import org.apache.lucene.util.Attribute;
-import org.apache.lucene.util.AttributeImpl;
-import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.AttributeFactory;
 
 /**
  * <p>
@@ -69,18 +67,17 @@ import org.apache.lucene.util.AttributeSource;
  *   ICUCollationAttributeFactory on the query side, or vice versa.
  * </p>
  */
-public class CollationAttributeFactory extends AttributeSource.AttributeFactory {
+public class CollationAttributeFactory extends AttributeFactory.StaticImplementationAttributeFactory<CollatedTermAttributeImpl> {
   private final Collator collator;
-  private final AttributeSource.AttributeFactory delegate;
   
   /**
    * Create a CollationAttributeFactory, using 
-   * {@link org.apache.lucene.analysis.Token#TOKEN_ATTRIBUTE_FACTORY} as the
+   * {@link TokenStream#DEFAULT_TOKEN_ATTRIBUTE_FACTORY} as the
    * factory for all other attributes.
    * @param collator CollationKey generator
    */
   public CollationAttributeFactory(Collator collator) {
-    this(Token.TOKEN_ATTRIBUTE_FACTORY, collator);
+    this(TokenStream.DEFAULT_TOKEN_ATTRIBUTE_FACTORY, collator);
   }
   
   /**
@@ -89,16 +86,13 @@ public class CollationAttributeFactory extends AttributeSource.AttributeFactory 
    * @param delegate Attribute Factory
    * @param collator CollationKey generator
    */
-  public CollationAttributeFactory(AttributeSource.AttributeFactory delegate, Collator collator) {
-    this.delegate = delegate;
+  public CollationAttributeFactory(AttributeFactory delegate, Collator collator) {
+    super(delegate, CollatedTermAttributeImpl.class);
     this.collator = collator;
   }
   
   @Override
-  public AttributeImpl createAttributeInstance(
-      Class<? extends Attribute> attClass) {
-    return attClass.isAssignableFrom(CollatedTermAttributeImpl.class)
-    ? new CollatedTermAttributeImpl(collator)
-    : delegate.createAttributeInstance(attClass);
+  public CollatedTermAttributeImpl createInstance() {
+    return new CollatedTermAttributeImpl(collator);
   }
 }
