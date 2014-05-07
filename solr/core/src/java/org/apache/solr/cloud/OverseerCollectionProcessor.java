@@ -1976,7 +1976,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       }
       boolean isLegacyCloud =  Overseer.isLegacy(zkStateReader.getClusterProps());
 
-      String configName = createConfNode(collectionName, message, isLegacyCloud);
+      String configName = createConfNode(collectionName, message);
 
       Overseer.getInQueue(zkStateReader.getZkClient()).offer(ZkStateReader.toJSON(message));
 
@@ -2207,37 +2207,32 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   }
 
 
-  private String createConfNode(String coll, ZkNodeProps message, boolean isLegacyCloud) throws KeeperException, InterruptedException {
+  private String createConfNode(String coll, ZkNodeProps message) throws KeeperException, InterruptedException {
     String configName = message.getStr(OverseerCollectionProcessor.COLL_CONF);
-    if(configName == null){
-      // if there is only one conf, use that
-      List<String> configNames=null;
+
+    if (configName == null) {
+      List<String> configNames = null;
       try {
         configNames = zkStateReader.getZkClient().getChildren(ZkController.CONFIGS_ZKNODE, null, true);
-        if (configNames != null && configNames.size() == 1) {
-          configName = configNames.get(0);
-          // no config set named, but there is only 1 - use it
-          log.info("Only one config set found in zk - using it:" + configName);
-        }
       } catch (KeeperException.NoNodeException e) {
-
+        throw new SolrException(ErrorCode.INVALID_STATE,
+            "The configs zk node doesn't exist: " + ZkController.CONFIGS_ZKNODE, e);
       }
-
+      // if there is only one conf, use that
+      if (configNames != null && configNames.size() == 1) {
+        configName = configNames.get(0);
+        // no config set named, but there is only 1 - use it
+        log.info("Only one config set found in zk - using it: " + configName);
+      } else  {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Unable to determine config name for collection: " + coll);
+      }
     }
 
-    if(configName!= null){
-      log.info("creating collections conf node {} ",ZkStateReader.COLLECTIONS_ZKNODE + "/" + coll);
+    if (configName != null) {
+      log.info("creating collections conf node {} ", ZkStateReader.COLLECTIONS_ZKNODE + "/" + coll);
       zkStateReader.getZkClient().makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + coll,
-          ZkStateReader.toJSON(ZkNodeProps.makeMap(ZkController.CONFIGNAME_PROP,configName)),true );
-
-    } else {
-      if(isLegacyCloud){
-        log.warn("Could not obtain config name");
-      } else {
-        throw new SolrException(ErrorCode.BAD_REQUEST,"Unable to get config name");
-      }
+          ZkStateReader.toJSON(ZkNodeProps.makeMap(ZkController.CONFIGNAME_PROP, configName)), true);
     }
-    return configName;
 
   }
 
@@ -2254,6 +2249,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
     processResponses(results);
 
+    return configName;
   }
 
   private void sliceCmd(ClusterState clusterState, ModifiableSolrParams params, String stateMatcher, Slice slice) {

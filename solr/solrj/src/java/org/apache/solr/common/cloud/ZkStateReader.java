@@ -169,7 +169,8 @@ public class ZkStateReader {
           log.info("path={} {}={} specified config exists in ZooKeeper",
               new Object[] {path, CONFIGNAME_PROP, configName});
         }
-
+      } else  {
+        throw new ZooKeeperException(ErrorCode.INVALID_STATE, "No config data found at path: " + path);
       }
     }
     catch (KeeperException e) {
