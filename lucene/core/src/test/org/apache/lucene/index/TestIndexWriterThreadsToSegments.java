@@ -26,6 +26,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -201,7 +203,7 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
 
                   // We get to index on this cycle:
                   Document doc = new Document();
-                  doc.add(newTextField("field", "here is some text that is a bit longer than normal trivial text", Field.Store.NO));
+                  doc.add(new TextField("field", "here is some text that is a bit longer than normal trivial text", Field.Store.NO));
                   for(int j=0;j<200;j++) {
                     w.addDocument(doc);
                   }
@@ -221,10 +223,47 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
       threads[i].start();
     }
 
-    for(int i=0;i<threads.length;i++) {
-      threads[i].join();
+    for(Thread t : threads) {
+      t.join();
     }
 
     IOUtils.close(checker, w, dir);
+  }
+
+  public void testManyThreadsClose() throws Exception {
+    Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    w.setDoRandomForceMerge(false);
+    Thread[] threads = new Thread[TestUtil.nextInt(random(), 4, 30)];
+    final CountDownLatch startingGun = new CountDownLatch(1);
+    for(int i=0;i<threads.length;i++) {
+      threads[i] = new Thread() {
+          @Override
+          public void run() {
+            try {
+              startingGun.await();
+              Document doc = new Document();
+              doc.add(new TextField("field", "here is some text that is a bit longer than normal trivial text", Field.Store.NO));
+              while (true) {
+                w.addDocument(doc);
+              }
+            } catch (AlreadyClosedException ace) {
+              // ok
+            } catch (Exception e) {
+              throw new RuntimeException(e);
+            }
+          }
+        };
+      threads[i].start();
+    }
+
+    startingGun.countDown();
+
+    Thread.sleep(100);
+    w.close();
+    for(Thread t : threads) {
+      t.join();
+    }
+    dir.close();
   }
 }
