@@ -213,18 +213,12 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
     String testString = "t";
     
     Analyzer analyzer = new MockAnalyzer(random());
-    Exception priorException = null;
-    TokenStream stream = analyzer.tokenStream("dummy", testString);
-    try {
+    try (TokenStream stream = analyzer.tokenStream("dummy", testString)) {
       stream.reset();
       while (stream.incrementToken()) {
         // consume
       }
       stream.end();
-    } catch (Exception e) {
-      priorException = e;
-    } finally {
-      IOUtils.closeWhileHandlingException(priorException, stream);
     }
     
     assertAnalyzesTo(analyzer, testString, new String[] { "t" });
@@ -261,18 +255,12 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
       StringReader reader = new StringReader(s);
       MockCharFilter charfilter = new MockCharFilter(reader, 2);
       MockAnalyzer analyzer = new MockAnalyzer(random());
-      Exception priorException = null;
-      TokenStream ts = analyzer.tokenStream("bogus", charfilter);
-      try {
+      try (TokenStream ts = analyzer.tokenStream("bogus", charfilter)) {
         ts.reset();
         while (ts.incrementToken()) {
           ;
         }
         ts.end();
-      } catch (Exception e) {
-        priorException = e;
-      } finally {
-        IOUtils.closeWhileHandlingException(priorException, ts);
       }
     }
   }

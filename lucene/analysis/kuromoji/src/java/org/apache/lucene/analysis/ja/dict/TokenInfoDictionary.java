@@ -38,17 +38,20 @@ public final class TokenInfoDictionary extends BinaryDictionary {
   
   private TokenInfoDictionary() throws IOException {
     super();
-    IOException priorE = null;
     InputStream is = null;
     FST<Long> fst = null;
+    boolean success = false;
     try {
       is = getResource(FST_FILENAME_SUFFIX);
       is = new BufferedInputStream(is);
       fst = new FST<>(new InputStreamDataInput(is), PositiveIntOutputs.getSingleton());
-    } catch (IOException ioe) {
-      priorE = ioe;
+      success = true;
     } finally {
-      IOUtils.closeWhileHandlingException(priorE, is);
+      if (success) {
+        IOUtils.close(is);
+      } else {
+        IOUtils.closeWhileHandlingException(is);
+      }
     }
     // TODO: some way to configure?
     this.fst = new TokenInfoFST(fst, true);

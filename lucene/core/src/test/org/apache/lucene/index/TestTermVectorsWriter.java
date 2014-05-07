@@ -175,9 +175,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
-    IOException priorException = null;
-    TokenStream stream = analyzer.tokenStream("field", "abcd   ");
-    try {
+    try (TokenStream stream = analyzer.tokenStream("field", "abcd   ")) {
       stream.reset(); // TODO: weird to reset before wrapping with CachingTokenFilter... correct?
       TokenStream cachedStream = new CachingTokenFilter(stream);
       FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
@@ -188,10 +186,6 @@ public class TestTermVectorsWriter extends LuceneTestCase {
       doc.add(f);
       doc.add(f);
       w.addDocument(doc);
-    } catch (IOException e) {
-      priorException = e;
-    } finally {
-      IOUtils.closeWhileHandlingException(priorException, stream);
     }
     w.close();
 

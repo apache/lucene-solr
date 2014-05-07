@@ -38,6 +38,10 @@ Bug fixes
   many segments are flushed on a full-flush (e.g. to obtain a
   near-real-time reader).  (Simon Willnauer, Mike McCandless)
 
+* LUCENE-5654: Fix various close() methods that could suppress 
+  throwables such as OutOfMemoryError, instead returning scary messages
+  that look like index corruption.  (Mike McCandless, Robert Muir)
+
 ======================= Lucene 4.8.0 =======================
 
 System Requirements

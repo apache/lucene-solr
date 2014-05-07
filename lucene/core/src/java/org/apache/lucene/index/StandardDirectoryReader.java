@@ -62,11 +62,9 @@ final class StandardDirectoryReader extends DirectoryReader {
           try {
             readers[i] = new SegmentReader(sis.info(i), termInfosIndexDivisor, IOContext.READ);
             success = true;
-          } catch(IOException ex) {
-            prior = ex;
           } finally {
             if (!success) {
-              IOUtils.closeWhileHandlingException(prior, readers);
+              IOUtils.closeWhileHandlingException(readers);
             }
           }
         }

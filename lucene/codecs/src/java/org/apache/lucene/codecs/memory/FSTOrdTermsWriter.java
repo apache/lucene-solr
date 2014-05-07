@@ -191,7 +191,7 @@ public class FSTOrdTermsWriter extends FieldsConsumer {
   @Override
   public void close() throws IOException {
     if (blockOut != null) {
-      IOException ioe = null;
+      boolean success = false;
       try {
         final long blockDirStart = blockOut.getFilePointer();
         
@@ -219,10 +219,13 @@ public class FSTOrdTermsWriter extends FieldsConsumer {
         writeTrailer(blockOut, blockDirStart);
         CodecUtil.writeFooter(indexOut);
         CodecUtil.writeFooter(blockOut);
-      } catch (IOException ioe2) {
-        ioe = ioe2;
+        success = true;
       } finally {
-        IOUtils.closeWhileHandlingException(ioe, blockOut, indexOut, postingsWriter);
+        if (success) {
+          IOUtils.close(blockOut, indexOut, postingsWriter);
+        } else {
+          IOUtils.closeWhileHandlingException(blockOut, indexOut, postingsWriter);
+        }
         blockOut = null;
       }
     }
