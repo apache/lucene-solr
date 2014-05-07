@@ -208,7 +208,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     } else if (command.equals(CMD_GET_FILE_LIST)) {
       getFileList(solrParams, rsp);
     } else if (command.equalsIgnoreCase(CMD_BACKUP)) {
-      doSnapShoot(new ModifiableSolrParams(solrParams), rsp,req);
+      doSnapShoot(new ModifiableSolrParams(solrParams), rsp, req);
+      rsp.add(STATUS, OK_STATUS);
+    } else if (command.equalsIgnoreCase(CMD_DELETE_BACKUP)) {
+      deleteSnapshot(new ModifiableSolrParams(solrParams), rsp, req);
       rsp.add(STATUS, OK_STATUS);
     } else if (command.equalsIgnoreCase(CMD_FETCH_INDEX)) {
       String masterUrl = solrParams.get(MASTER_URL);
@@ -257,7 +260,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     } else if (command.equals(CMD_SHOW_COMMITS)) {
       rsp.add(CMD_SHOW_COMMITS, getCommits());
     } else if (command.equals(CMD_DETAILS)) {
-      rsp.add(CMD_DETAILS, getReplicationDetails(solrParams.getBool("slave",true)));
+      rsp.add(CMD_DETAILS, getReplicationDetails(solrParams.getBool("slave", true)));
       RequestHandlerUtils.addExperimentalFormatWarning(rsp);
     } else if (CMD_ENABLE_REPL.equalsIgnoreCase(command)) {
       replicationEnabled.set(true);
@@ -266,6 +269,17 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       replicationEnabled.set(false);
       rsp.add(STATUS, OK_STATUS);
     }
+  }
+
+  private void deleteSnapshot(ModifiableSolrParams params, SolrQueryResponse rsp, SolrQueryRequest req) {
+    String name = params.get("name");
+    if(name == null) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Missing mandatory param: name");
+    }
+
+    SnapShooter snapShooter = new SnapShooter(core, params.get("location"), params.get("name"));
+    snapShooter.validateDeleteSnapshot();
+    snapShooter.deleteSnapAsync(this);
   }
 
   private List<NamedList<Object>> getCommits() {
@@ -359,8 +373,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
       
       // small race here before the commit point is saved
-      new SnapShooter(core, params.get("location")).createSnapAsync(
-          indexCommit, numberToKeep, this);
+      SnapShooter snapShooter = new SnapShooter(core, params.get("location"), params.get("name"));
+      snapShooter.validateCreateSnapshot();
+      snapShooter.createSnapAsync(indexCommit, numberToKeep, this);
       
     } catch (Exception e) {
       LOG.warn("Exception during creating a snapshot", e);
@@ -1067,7 +1082,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
             if (numberToKeep < 1) {
               numberToKeep = Integer.MAX_VALUE;
             }            
-            SnapShooter snapShooter = new SnapShooter(core, null);
+            SnapShooter snapShooter = new SnapShooter(core, null, null);
             snapShooter.createSnapAsync(currentCommitPoint, numberToKeep, ReplicationHandler.this);
           } catch (Exception e) {
             LOG.error("Exception while snapshooting", e);
@@ -1304,6 +1319,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   public static final String CMD_INDEX_VERSION = "indexversion";
 
   public static final String CMD_SHOW_COMMITS = "commits";
+
+  public static final String CMD_DELETE_BACKUP = "deletebackup";
 
   public static final String GENERATION = "generation";
 

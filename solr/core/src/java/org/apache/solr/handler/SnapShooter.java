@@ -33,6 +33,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.SimpleFSLockFactory;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
@@ -52,8 +53,12 @@ public class SnapShooter {
   private String snapDir = null;
   private SolrCore solrCore;
   private SimpleFSLockFactory lockFactory;
-  
-  public SnapShooter(SolrCore core, String location) {
+  private String snapshotName = null;
+  private String directoryName = null;
+  private File snapShotDir = null;
+  private Lock lock = null;
+
+  public SnapShooter(SolrCore core, String location, String snapshotName) {
     solrCore = core;
     if (location == null) snapDir = core.getDataDir();
     else  {
@@ -63,10 +68,14 @@ public class SnapShooter {
       if (!dir.exists())  dir.mkdirs();
     }
     lockFactory = new SimpleFSLockFactory(snapDir);
-  }
-  
-  void createSnapAsync(final IndexCommit indexCommit, final ReplicationHandler replicationHandler) {
-    createSnapAsync(indexCommit, Integer.MAX_VALUE, replicationHandler);
+    this.snapshotName = snapshotName;
+
+    if(snapshotName != null) {
+      directoryName = "snapshot." + snapshotName;
+    } else {
+      SimpleDateFormat fmt = new SimpleDateFormat(DATE_FMT, Locale.ROOT);
+      directoryName = "snapshot." + fmt.format(new Date());
+    }
   }
 
   void createSnapAsync(final IndexCommit indexCommit, final int numberToKeep, final ReplicationHandler replicationHandler) {
@@ -75,34 +84,67 @@ public class SnapShooter {
     new Thread() {
       @Override
       public void run() {
-        createSnapshot(indexCommit, numberToKeep, replicationHandler);
+        if(snapshotName != null) {
+          createSnapshot(indexCommit, replicationHandler);
+        } else {
+          deleteOldBackups(numberToKeep);
+          createSnapshot(indexCommit, replicationHandler);
+        }
       }
     }.start();
   }
 
-  void createSnapshot(final IndexCommit indexCommit, int numberToKeep, ReplicationHandler replicationHandler) {
+  public void validateDeleteSnapshot() {
+    boolean dirFound = false;
+    File[] files = new File(snapDir).listFiles();
+    for(File f : files) {
+      if (f.getName().equals("snapshot." + snapshotName)) {
+        dirFound = true;
+        break;
+      }
+    }
+    if(dirFound == false) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Snapshot cannot be found in directory: " + snapDir);
+    }
+  }
+
+  protected void deleteSnapAsync(final ReplicationHandler replicationHandler) {
+    new Thread() {
+      @Override
+      public void run() {
+        deleteNamedSnapshot(replicationHandler);
+      }
+    }.start();
+  }
+
+  void validateCreateSnapshot() throws IOException {
+
+    Lock lock = lockFactory.makeLock(directoryName + ".lock");
+    if (lock.isLocked()) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Unable to acquire lock for snapshot directory: " + snapShotDir.getAbsolutePath());
+    }
+    snapShotDir = new File(snapDir, directoryName);
+    if (snapShotDir.exists()) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Snapshot directory already exists: " + snapShotDir.getAbsolutePath());
+    }
+    if (!snapShotDir.mkdirs()) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Unable to create snapshot directory: " + snapShotDir.getAbsolutePath());
+    }
+  }
+
+  void createSnapshot(final IndexCommit indexCommit, ReplicationHandler replicationHandler) {
     LOG.info("Creating backup snapshot...");
     NamedList<Object> details = new NamedList<>();
     details.add("startTime", new Date().toString());
-    File snapShotDir = null;
     String directoryName = null;
-    Lock lock = null;
+
     try {
-      if(numberToKeep<Integer.MAX_VALUE) {
-        deleteOldBackups(numberToKeep);
-      }
-      SimpleDateFormat fmt = new SimpleDateFormat(DATE_FMT, Locale.ROOT);
-      directoryName = "snapshot." + fmt.format(new Date());
-      lock = lockFactory.makeLock(directoryName + ".lock");
-      if (lock.isLocked()) return;
-      snapShotDir = new File(snapDir, directoryName);
-      if (!snapShotDir.mkdir()) {
-        LOG.warn("Unable to create snapshot directory: " + snapShotDir.getAbsolutePath());
-        return;
-      }
       Collection<String> files = indexCommit.getFileNames();
       FileCopier fileCopier = new FileCopier();
-      
+
       Directory dir = solrCore.getDirectoryFactory().get(solrCore.getIndexDir(), DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
       try {
         fileCopier.copyFiles(dir, files, snapShotDir);
@@ -129,6 +171,7 @@ public class SnapShooter {
       }
     }
   }
+
   private void deleteOldBackups(int numberToKeep) {
     File[] files = new File(snapDir).listFiles();
     List<OldBackupDirectory> dirs = new ArrayList<>();
@@ -138,6 +181,10 @@ public class SnapShooter {
         dirs.add(obd);
       }
     }
+    if(numberToKeep > dirs.size()) {
+      return;
+    }
+
     Collections.sort(dirs);
     int i=1;
     for(OldBackupDirectory dir : dirs) {
@@ -146,6 +193,24 @@ public class SnapShooter {
       }
     }   
   }
+
+  protected void deleteNamedSnapshot(ReplicationHandler replicationHandler) {
+    LOG.info("Deleting snapshot: " + snapshotName);
+
+    NamedList<Object> details = new NamedList<>();
+    boolean isSuccess = false;
+    File f = new File(snapDir, "snapshot." + snapshotName);
+    isSuccess = SnapPuller.delTree(f);
+
+    if(isSuccess) {
+      details.add("status", "success");
+    } else {
+      details.add("status", "Unable to delete snapshot: " + snapshotName);
+      LOG.warn("Unable to delete snapshot: " + snapshotName);
+    }
+    replicationHandler.snapShootDetails = details;
+  }
+
   private class OldBackupDirectory implements Comparable<OldBackupDirectory>{
     File dir;
     Date timestamp;
