@@ -42,14 +42,6 @@ import org.apache.lucene.analysis.TokenStream; // for javadocs
 public class AttributeSource {
   
   /**
-   * This is the default factory that creates {@link AttributeImpl}s using the
-   * class name of the supplied {@link Attribute} interface class by appending <code>Impl</code> to it.
-   * @deprecated use {@link AttributeFactory#DEFAULT_ATTRIBUTE_FACTORY}
-   */
-  @Deprecated
-  public static final AttributeFactory DEFAULT_ATTRIBUTE_FACTORY = AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY;
-  
-  /**
    * This class holds the state of an AttributeSource.
    * @see #captureState
    * @see #restoreState
