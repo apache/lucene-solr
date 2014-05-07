@@ -241,6 +241,7 @@ abstract class TermsWithScoreCollector extends SimpleCollector {
           } else {
             if (termID >= scoreSums.length) {
               scoreSums = ArrayUtil.grow(scoreSums);
+              scoreCounts = ArrayUtil.grow(scoreCounts);
             }
           }
           

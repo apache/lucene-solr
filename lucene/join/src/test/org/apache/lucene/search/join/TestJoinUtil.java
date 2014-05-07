@@ -155,6 +155,60 @@ public class TestJoinUtil extends LuceneTestCase {
     dir.close();
   }
 
+  // TermsWithScoreCollector.MV.Avg forgets to grow beyond TermsWithScoreCollector.INITIAL_ARRAY_SIZE
+  public void testOverflowTermsWithScoreCollector() throws Exception {
+    test300spartans(true, ScoreMode.Avg);
+  }
+
+  public void testOverflowTermsWithScoreCollectorRandom() throws Exception {
+    test300spartans(random().nextBoolean(), ScoreMode.values()[random().nextInt(ScoreMode.values().length)]);
+  }
+
+  void test300spartans(boolean multipleValues, ScoreMode scoreMode) throws Exception {
+    final String idField = "id";
+    final String toField = "productId";
+
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(
+        random(),
+        dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT,
+            new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+
+    // 0
+    Document doc = new Document();
+    doc.add(new TextField("description", "random text", Field.Store.NO));
+    doc.add(new TextField("name", "name1", Field.Store.NO));
+    doc.add(new TextField(idField, "0", Field.Store.NO));
+    w.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new TextField("price", "10.0", Field.Store.NO));
+    for(int i=0;i<300;i++){
+      doc.add(new TextField(toField, ""+i, Field.Store.NO));
+      if(!multipleValues){
+        w.addDocument(doc);
+        doc.removeFields(toField);
+      }
+    }
+    w.addDocument(doc);
+
+    IndexSearcher indexSearcher = new IndexSearcher(w.getReader());
+    w.shutdown();
+
+    // Search for product
+    Query joinQuery =
+        JoinUtil.createJoinQuery(toField, multipleValues, idField, new TermQuery(new Term("price", "10.0")), indexSearcher, scoreMode);
+
+    TopDocs result = indexSearcher.search(joinQuery, 10);
+    assertEquals(1, result.totalHits);
+    assertEquals(0, result.scoreDocs[0].doc);
+   
+
+    indexSearcher.getIndexReader().close();
+    dir.close();
+  }
+
   /** LUCENE-5487: verify a join query inside a SHOULD BQ
    *  will still use the join query's optimized BulkScorers */
   public void testInsideBooleanQuery() throws Exception {
