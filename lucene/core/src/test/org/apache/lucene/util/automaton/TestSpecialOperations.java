@@ -86,7 +86,7 @@ public class TestSpecialOperations extends LuceneTestCase {
 
   public void testRandomFiniteStrings1() {
 
-    int numStrings = atLeast(500);
+    int numStrings = atLeast(100);
     if (VERBOSE) {
       System.out.println("TEST: numStrings=" + numStrings);
     }
