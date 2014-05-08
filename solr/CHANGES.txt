@@ -110,6 +110,9 @@ New Features
 * SOLR-5999: Add checkIntegrityAtMerge support to solrconfig.xml.
   (Varun Thacker via Ryan Ernst)
 
+* SOLR-6043: Add ability to set http headers in solr response
+  (Tomás Fernández Löbbe via Ryan Ernst)
+
 Bug Fixes
 ----------------------
 
@@ -144,12 +147,6 @@ Bug Fixes
 
 * SOLR-6039: fixed debug output when no results in response
   (Tomás Fernández Löbbe, hossman)
-
-New Features
-----------------------
-
-* SOLR-6043: Add ability to set http headers in solr response
-  (Tomás Fernández Löbbe via Ryan Ernst)
 
 Other Changes
 ---------------------
