@@ -46,6 +46,10 @@ Bug fixes
   throwables such as OutOfMemoryError, instead returning scary messages
   that look like index corruption.  (Mike McCandless, Robert Muir)
 
+* LUCENE-5656: Fix rare fd leak in SegmentReader when multiple docvalues
+  fields have been updated with IndexWriter.updateXXXDocValue and one
+  hits exception. (Shai Erera, Robert Muir)
+
 ======================= Lucene 4.8.0 =======================
 
 System Requirements
