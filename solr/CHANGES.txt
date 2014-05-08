@@ -115,6 +115,26 @@ Build
   Solr contrib ivy.xml files, so that the derived Maven dependencies get
   filled out properly in the corresponding POMs. (Steven Scott, Steve Rowe)
 
+==================  4.8.1 ==================
+
+Versions of Major Components
+---------------------
+Apache Tika 1.5
+Carrot2 3.9.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.6
+
+Bug Fixes
+----------------------
+
+* SOLR-6029: CollapsingQParserPlugin throws ArrayIndexOutOfBoundsException 
+  if elevated doc has been deleted from a segment. (Greg Harris, Joel Bernstein)
+
+* SOLR-6035: CloudSolrServer directUpdate routing should use getCoreUrl.
+  (Marvin Justice, Joel Bernstein)
+
+
 ==================  4.8.0 ==================
 
 Versions of Major Components
