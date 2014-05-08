@@ -370,4 +370,73 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     w.shutdown();
     d.close();
   }
+
+  public void testLiveMaxMergeCount() throws Exception {
+    Directory d = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    TieredMergePolicy tmp = new TieredMergePolicy();
+    tmp.setSegmentsPerTier(1000);
+    tmp.setMaxMergeAtOnce(1000);
+    tmp.setMaxMergeAtOnceExplicit(10);
+    iwc.setMergePolicy(tmp);
+    iwc.setMaxBufferedDocs(2);
+    iwc.setRAMBufferSizeMB(-1);
+
+    final AtomicInteger maxRunningMergeCount = new AtomicInteger();
+
+    ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler() {
+
+        final AtomicInteger runningMergeCount = new AtomicInteger();
+
+        @Override
+        public void doMerge(MergePolicy.OneMerge merge) throws IOException {
+          int count = runningMergeCount.incrementAndGet();
+          // evil?
+          synchronized (this) {
+            if (count > maxRunningMergeCount.get()) {
+              maxRunningMergeCount.set(count);
+            }
+          }
+          try {
+            super.doMerge(merge);
+          } finally {
+            runningMergeCount.decrementAndGet();
+          }
+
+        }
+      };
+
+    cms.setMaxMergesAndThreads(5, 3);
+
+    iwc.setMergeScheduler(cms);
+
+    IndexWriter w = new IndexWriter(d, iwc);
+    // Makes 100 segments
+    for(int i=0;i<200;i++) {
+      w.addDocument(new Document());
+    }
+
+    // No merges should have run so far, because TMP has high segmentsPerTier:
+    assertEquals(0, maxRunningMergeCount.get());
+
+    w.forceMerge(1);
+
+    // At most 5 merge threads should have launched at once:
+    assertTrue("maxRunningMergeCount=" + maxRunningMergeCount, maxRunningMergeCount.get() <= 5);
+    maxRunningMergeCount.set(0);
+
+    // Makes another 100 segments
+    for(int i=0;i<200;i++) {
+      w.addDocument(new Document());
+    }
+
+    ((ConcurrentMergeScheduler) w.getConfig().getMergeScheduler()).setMaxMergesAndThreads(1, 1);
+    w.forceMerge(1);
+
+    // At most 1 merge thread should have launched at once:
+    assertEquals(1, maxRunningMergeCount.get());
+
+    w.close();
+    d.close();
+  }
 }
