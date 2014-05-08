@@ -84,6 +84,7 @@ import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MergePolicy;
+import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.MockRandomMergePolicy;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.MultiFields;
@@ -1082,7 +1083,17 @@ public abstract class LuceneTestCase extends Assert {
       c.setCheckIntegrityAtMerge(r.nextBoolean());
     }
     
-    // TODO: mergepolicy, mergescheduler, etc have mutable state on indexwriter
+    if (rarely(r)) {
+      // change CMS merge parameters
+      MergeScheduler ms = c.getMergeScheduler();
+      if (ms instanceof ConcurrentMergeScheduler) {
+        int maxThreadCount = TestUtil.nextInt(random(), 1, 4);
+        int maxMergeCount = TestUtil.nextInt(random(), maxThreadCount, maxThreadCount + 4);
+        ((ConcurrentMergeScheduler)ms).setMaxMergesAndThreads(maxMergeCount, maxThreadCount);
+      }
+    }
+    
+    // TODO: mergepolicy, etc have mutable state on indexwriter
     // every setter must be tested
   }
 
