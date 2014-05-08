@@ -44,11 +44,13 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Rethrow;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 /** 
  * Causes a bunch of fake OOM and checks that no other exceptions are delivered instead,
  * no index corruption is ever created.
  */
+@SuppressCodecs("Lucene3x")
 public class TestIndexWriterOutOfMemory extends LuceneTestCase {
   
   // just one thread, serial merge policy, hopefully debuggable
