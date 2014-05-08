@@ -17,12 +17,18 @@
 
 package org.apache.solr.response;
 
+import java.util.Collection;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrReturnFields;
-
-import java.util.*;
 
 /**
  * <code>SolrQueryResponse</code> is used by a query handler to return
@@ -77,6 +83,15 @@ public class SolrQueryResponse {
   protected NamedList<Object> toLog = new SimpleOrderedMap<>();
 
   protected ReturnFields returnFields;
+  
+  /**
+   * Container for storing HTTP headers. Internal Solr components can add headers to
+   * this SolrQueryResponse through the methods: {@link #addHttpHeader(String, String)}
+   * and {@link #setHttpHeader(String, String)}, or remove existing ones through 
+   * {@link #removeHttpHeader(String)} and {@link #removeHttpHeaders(String)}. 
+   * All these headers are going to be added to the HTTP response.
+   */
+  private final NamedList<String> headers = new SimpleOrderedMap<>();
 
   // error if this is set...
   protected Exception err;
@@ -244,5 +259,111 @@ public class SolrQueryResponse {
    */
   public boolean isHttpCaching() {
     return this.httpCaching;
+  }
+  
+  /**
+   *
+   * Sets a response header with the given name and value. This header
+   * will be included in the HTTP response
+   * If the header had already been set, the new value overwrites the
+   * previous ones (all of them if there are multiple for the same name).
+   * 
+   * @param name the name of the header
+   * @param value the header value  If it contains octet string,
+   *    it should be encoded according to RFC 2047
+   *    (http://www.ietf.org/rfc/rfc2047.txt)
+   *
+   * @see #addHttpHeader
+   * @see HttpServletResponse#setHeader
+   */
+  public void setHttpHeader(String name, String value) {
+    headers.removeAll(name);
+    headers.add(name, value);
+  }
+ 
+  /**
+   * Adds a response header with the given name and value. This header
+   * will be included in the HTTP response
+   * This method allows response headers to have multiple values.
+   * 
+   * @param name  the name of the header
+   * @param value the additional header value   If it contains
+   *    octet string, it should be encoded
+   *    according to RFC 2047
+   *    (http://www.ietf.org/rfc/rfc2047.txt)
+   *
+   * @see #setHttpHeader
+   * @see HttpServletResponse#addHeader
+   */
+  public void addHttpHeader(String name, String value) {
+     headers.add(name, value);
+  }
+ 
+  /**
+   * Gets the value of the response header with the given name.
+   * 
+   * <p>If a response header with the given name exists and contains
+   * multiple values, the value that was added first will be returned.</p>
+   *
+   * <p>NOTE: this runs in linear time (it scans starting at the
+   * beginning of the list until it finds the first pair with
+   * the specified name).</p>
+   *
+   * @param name the name of the response header whose value to return
+   * @return the value of the response header with the given name,
+   * or <tt>null</tt> if no header with the given name has been set
+   * on this response
+   */
+  public String getHttpHeader(String name) {
+    return headers.get(name);
+  }
+
+  /**
+   * Gets the values of the response header with the given name.
+   *
+   * @param name the name of the response header whose values to return
+   *
+   * @return a (possibly empty) <code>Collection</code> of the values
+   * of the response header with the given name
+   *
+   */     
+  public Collection<String> getHttpHeaders(String name) {
+    return headers.getAll(name);
+  }
+
+  /**
+   * Removes a previously added header with the given name (only
+   * the first one if multiple are present for the same name) 
+   *
+   * <p>NOTE: this runs in linear time (it scans starting at the
+   * beginning of the list until it finds the first pair with
+   * the specified name).</p>
+   *
+   * @param name the name of the response header to remove
+   * @return the value of the removed entry or <tt>null</tt> if no 
+   * value is found for the given header name 
+   */
+  public String removeHttpHeader(String name) {
+    return headers.remove(name);
+  }
+
+  /**
+   * Removes all previously added headers with the given name. 
+   *
+   * @param name the name of the response headers to remove
+   * @return a <code>Collection</code> with all the values
+   * of the removed entries. It returns <code>null</code> if no
+   * entries are found for the given name
+   */
+  public Collection<String> removeHttpHeaders(String name) {
+    return headers.removeAll(name);
+  }
+
+  /**
+   * Returns a new iterator of response headers
+   * @return a new Iterator instance for the response headers
+   */
+  public Iterator<Entry<String, String>> httpHeaders() {
+    return headers.iterator();
   }
 }
