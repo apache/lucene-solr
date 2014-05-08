@@ -1087,14 +1087,48 @@ public abstract class LuceneTestCase extends Assert {
       // change CMS merge parameters
       MergeScheduler ms = c.getMergeScheduler();
       if (ms instanceof ConcurrentMergeScheduler) {
-        int maxThreadCount = TestUtil.nextInt(random(), 1, 4);
-        int maxMergeCount = TestUtil.nextInt(random(), maxThreadCount, maxThreadCount + 4);
+        int maxThreadCount = TestUtil.nextInt(r, 1, 4);
+        int maxMergeCount = TestUtil.nextInt(r, maxThreadCount, maxThreadCount + 4);
         ((ConcurrentMergeScheduler)ms).setMaxMergesAndThreads(maxMergeCount, maxThreadCount);
       }
     }
     
-    // TODO: mergepolicy, etc have mutable state on indexwriter
-    // every setter must be tested
+    if (rarely(r)) {
+      MergePolicy mp = c.getMergePolicy();
+      configureRandom(r, mp);
+      if (mp instanceof LogMergePolicy) {
+        LogMergePolicy logmp = (LogMergePolicy) mp;
+        logmp.setCalibrateSizeByDeletes(r.nextBoolean());
+        if (rarely(r)) {
+          logmp.setMergeFactor(TestUtil.nextInt(r, 2, 9));
+        } else {
+          logmp.setMergeFactor(TestUtil.nextInt(r, 10, 50));
+        }
+      } else if (mp instanceof TieredMergePolicy) {
+        TieredMergePolicy tmp = (TieredMergePolicy) mp;
+        if (rarely(r)) {
+          tmp.setMaxMergeAtOnce(TestUtil.nextInt(r, 2, 9));
+          tmp.setMaxMergeAtOnceExplicit(TestUtil.nextInt(r, 2, 9));
+        } else {
+          tmp.setMaxMergeAtOnce(TestUtil.nextInt(r, 10, 50));
+          tmp.setMaxMergeAtOnceExplicit(TestUtil.nextInt(r, 10, 50));
+        }
+        if (rarely(r)) {
+          tmp.setMaxMergedSegmentMB(0.2 + r.nextDouble() * 2.0);
+        } else {
+          tmp.setMaxMergedSegmentMB(r.nextDouble() * 100);
+        }
+        tmp.setFloorSegmentMB(0.2 + r.nextDouble() * 2.0);
+        tmp.setForceMergeDeletesPctAllowed(0.0 + r.nextDouble() * 30.0);
+        if (rarely(r)) {
+          tmp.setSegmentsPerTier(TestUtil.nextInt(r, 2, 20));
+        } else {
+          tmp.setSegmentsPerTier(TestUtil.nextInt(r, 10, 50));
+        }
+        configureRandom(r, tmp);
+        tmp.setReclaimDeletesWeight(r.nextDouble()*4);
+      }
+    }
   }
 
   /**
