@@ -117,8 +117,7 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
     tmp.setForceMergeDeletesPctAllowed(0.0);
     conf.setMergePolicy(tmp);
 
-    final RandomIndexWriter w = new RandomIndexWriter(random(), dir, conf);
-    w.setDoRandomForceMerge(false);
+    final IndexWriter w = new IndexWriter(dir, conf);
 
     final int numDocs = atLeast(200);
     for(int i=0;i<numDocs;i++) {
