@@ -86,10 +86,11 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
   public void testMergeStability() throws Exception {
     Directory dir = newDirectory();
     // do not use newMergePolicy that might return a MockMergePolicy that ignores the no-CFS ratio
+    // do not use RIW which will change things up!
     MergePolicy mp = newTieredMergePolicy();
     mp.setNoCFSRatio(0);
     IndexWriterConfig cfg = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setUseCompoundFile(false).setMergePolicy(mp);
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir, cfg);
+    IndexWriter w = new IndexWriter(dir, cfg);
     final int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; ++i) {
       Document d = new Document();
@@ -105,7 +106,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     mp = newTieredMergePolicy();
     mp.setNoCFSRatio(0);
     cfg = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setUseCompoundFile(false).setMergePolicy(mp);
-    w = new RandomIndexWriter(random(), dir2, cfg);
+    w = new IndexWriter(dir2, cfg);
     w.addIndexes(reader);
     w.commit();
     w.close();
