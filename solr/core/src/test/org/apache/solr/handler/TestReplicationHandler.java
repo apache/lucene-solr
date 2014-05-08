@@ -1321,7 +1321,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     }
 
     masterJetty.stop();
-    master.copyConfigFile(CONF_DIR + configFile, 
+    master.copyConfigFile(CONF_DIR + configFile,
                           "solrconfig.xml");
 
     masterJetty = createJetty(master);
@@ -1334,7 +1334,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       index(masterClient, "id", i, "name", "name = " + i);
 
     masterClient.commit();
-   
+
     class BackupThread extends Thread {
       volatile String fail = null;
       final boolean addNumberToKeepInRequest;
@@ -1401,7 +1401,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         }
       };
     }
-    
+
     class CheckBackupStatus {
       String fail = null;
       String response = null;
@@ -1409,7 +1409,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       String backupTimestamp = null;
       final String lastBackupTimestamp;
       final Pattern p = Pattern.compile("<str name=\"snapshotCompletedAt\">(.*?)</str>");
-      
+
       CheckBackupStatus(String lastBackupTimestamp) {
         this.lastBackupTimestamp = lastBackupTimestamp;
       }
@@ -1427,7 +1427,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
             if(!m.find()) {
               fail("could not find the completed timestamp in response.");
             }
-            backupTimestamp = m.group(1);   
+            backupTimestamp = m.group(1);
             if(!backupTimestamp.equals(lastBackupTimestamp)) {
               success = true;
             }
@@ -1441,118 +1441,119 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
       };
     };
-    
+
     File[] snapDir = new File[2];
-    String firstBackupTimestamp = null;
-    boolean namedBackup = true;
-    String[] backupNames = null;
-    if(namedBackup) {
-      backupNames = new String[2];
-    }
-    for(int i=0 ; i<2 ; i++) {
-      BackupThread backupThread;
-      final String backupName = TestUtil.randomSimpleString(random(), 1, 20);
-      if(!namedBackup) {
-        backupThread = new BackupThread(addNumberToKeepInRequest, backupKeepParamName, ReplicationHandler.CMD_BACKUP);
-      } else {
-        backupThread = new BackupThread(backupName, ReplicationHandler.CMD_BACKUP);
-        backupNames[i] = backupName;
+    try {
+      String firstBackupTimestamp = null;
+      boolean namedBackup = true;
+      String[] backupNames = null;
+      if (namedBackup) {
+        backupNames = new String[2];
       }
-      backupThread.start();
-      
-      File dataDir = new File(master.getDataDir());
-      
-      int waitCnt = 0;
-      CheckBackupStatus checkBackupStatus = new CheckBackupStatus(firstBackupTimestamp);
-      while(true) {
-        checkBackupStatus.fetchStatus();
-        if(checkBackupStatus.fail != null) {
-          fail(checkBackupStatus.fail);
+      for (int i = 0; i < 2; i++) {
+        BackupThread backupThread;
+        final String backupName = TestUtil.randomSimpleString(random(), 1, 20);
+        if (!namedBackup) {
+          backupThread = new BackupThread(addNumberToKeepInRequest, backupKeepParamName, ReplicationHandler.CMD_BACKUP);
+        } else {
+          backupThread = new BackupThread(backupName, ReplicationHandler.CMD_BACKUP);
+          backupNames[i] = backupName;
         }
-        if(checkBackupStatus.success) {
-          if(i==0) {
-            firstBackupTimestamp = checkBackupStatus.backupTimestamp;
-            Thread.sleep(1000); //ensure the next backup will have a different timestamp.
+        backupThread.start();
+
+        File dataDir = new File(master.getDataDir());
+
+        int waitCnt = 0;
+        CheckBackupStatus checkBackupStatus = new CheckBackupStatus(firstBackupTimestamp);
+        while (true) {
+          checkBackupStatus.fetchStatus();
+          if (checkBackupStatus.fail != null) {
+            fail(checkBackupStatus.fail);
           }
-          break;
-        }
-        Thread.sleep(200);
-        if(waitCnt == 20) {
-          fail("Backup success not detected:" + checkBackupStatus.response);
-        }
-        waitCnt++;
-      }
-      
-      if(backupThread.fail != null) {
-        fail(backupThread.fail);
-      }
-      File[] files = null;
-      if(!namedBackup) {
-        files = dataDir.listFiles(new FilenameFilter() {
-          @Override
-          public boolean accept(File dir, String name) {
-            if(name.startsWith("snapshot")) {
-              return true;
+          if (checkBackupStatus.success) {
+            if (i == 0) {
+              firstBackupTimestamp = checkBackupStatus.backupTimestamp;
+              Thread.sleep(1000); //ensure the next backup will have a different timestamp.
             }
-            return false;
+            break;
           }
-        });
-      } else {
-        files = dataDir.listFiles(new FilenameFilter() {
-          @Override
-          public boolean accept(File dir, String name) {
-            if(name.startsWith("snapshot." + backupName)) {
-              return true;
+          Thread.sleep(200);
+          if (waitCnt == 20) {
+            fail("Backup success not detected:" + checkBackupStatus.response);
+          }
+          waitCnt++;
+        }
+
+        if (backupThread.fail != null) {
+          fail(backupThread.fail);
+        }
+        File[] files = null;
+        if (!namedBackup) {
+          files = dataDir.listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+              if (name.startsWith("snapshot")) {
+                return true;
+              }
+              return false;
             }
-            return false;
+          });
+        } else {
+          files = dataDir.listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+              if (name.startsWith("snapshot." + backupName)) {
+                return true;
+              }
+              return false;
+            }
+          });
+        }
+        assertEquals(1, files.length);
+        snapDir[i] = files[0];
+        Directory dir = new SimpleFSDirectory(snapDir[i].getAbsoluteFile());
+        IndexReader reader = DirectoryReader.open(dir);
+        IndexSearcher searcher = new IndexSearcher(reader);
+        TopDocs hits = searcher.search(new MatchAllDocsQuery(), 1);
+        assertEquals(nDocs, hits.totalHits);
+        reader.close();
+        dir.close();
+
+        if (!namedBackup && snapDir[0].exists()) {
+          fail("The first backup should have been cleaned up because " + backupKeepParamName + " was set to 1.");
+        }
+      }
+
+      for (int i = 0; i < 2; i++) {
+        //Test Deletion of named backup
+        BackupThread deleteBackupThread = new BackupThread(backupNames[i], ReplicationHandler.CMD_DELETE_BACKUP);
+        deleteBackupThread.start();
+        int waitCnt = 0;
+        CheckDeleteBackupStatus checkDeleteBackupStatus = new CheckDeleteBackupStatus();
+        while (true) {
+          checkDeleteBackupStatus.fetchStatus();
+          if (checkDeleteBackupStatus.fail != null) {
+            fail(checkDeleteBackupStatus.fail);
           }
-        });
-      }
-      assertEquals(1, files.length);
-      snapDir[i] = files[0];
-      Directory dir = new SimpleFSDirectory(snapDir[i].getAbsoluteFile());
-      IndexReader reader = DirectoryReader.open(dir);
-      IndexSearcher searcher = new IndexSearcher(reader);
-      TopDocs hits = searcher.search(new MatchAllDocsQuery(), 1);
-      assertEquals(nDocs, hits.totalHits);
-      reader.close();
-      dir.close();
-
-      if(!namedBackup && snapDir[0].exists()) {
-        fail("The first backup should have been cleaned up because " + backupKeepParamName + " was set to 1.");
-      }
-    }
-
-    for(int i=0; i<2; i++) {
-      //Test Deletion of named backup
-      BackupThread deleteBackupThread = new BackupThread(backupNames[i], ReplicationHandler.CMD_DELETE_BACKUP);
-      deleteBackupThread.start();
-      int waitCnt = 0;
-      CheckDeleteBackupStatus checkDeleteBackupStatus = new CheckDeleteBackupStatus();
-      while(true) {
-        checkDeleteBackupStatus.fetchStatus();
-        if(checkDeleteBackupStatus.fail != null) {
-          fail(checkDeleteBackupStatus.fail);
+          if (checkDeleteBackupStatus.success) {
+            break;
+          }
+          Thread.sleep(200);
+          if (waitCnt == 20) {
+            fail("Delete Backup success not detected:" + checkDeleteBackupStatus.response);
+          }
+          waitCnt++;
         }
-        if(checkDeleteBackupStatus.success) {
-          break;
-        }
-        Thread.sleep(200);
-        if(waitCnt == 20) {
-          fail("Delete Backup success not detected:" + checkDeleteBackupStatus.response);
-        }
-        waitCnt++;
-      }
 
-      if(deleteBackupThread.fail != null) {
-        fail(deleteBackupThread.fail);
+        if (deleteBackupThread.fail != null) {
+          fail(deleteBackupThread.fail);
+        }
       }
+    }finally {
+      for (File dir : snapDir) if(dir !=null) AbstractSolrTestCase.recurseDelete(dir);
     }
     
-    //nocommit - Should move this to tearDown as it fails to delete the dir in case it fails?
-    for(int i=0 ; i< snapDir.length ; i++) {
-      AbstractSolrTestCase.recurseDelete(snapDir[i]); // clean up the snap dir
-    }
+
   }
 
   /* character copy of file using UTF-8 */
