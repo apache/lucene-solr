@@ -187,13 +187,12 @@ public final class SegmentReader extends AtomicReader {
       Long gen = e.getKey();
       List<FieldInfo> infos = e.getValue();
       DocValuesProducer dvp = segDocValues.getDocValuesProducer(gen, si, IOContext.READ, dir, dvFormat, infos);
+      dvGens.add(gen);
       for (FieldInfo fi : infos) {
         dvProducersByField.put(fi.name, dvp);
       }
       dvProducers.add(dvp);
     }
-    
-    dvGens.addAll(genInfos.keySet());
   }
   
   /**
