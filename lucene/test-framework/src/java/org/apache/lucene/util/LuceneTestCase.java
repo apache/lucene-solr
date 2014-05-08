@@ -915,25 +915,7 @@ public abstract class LuceneTestCase extends Assert {
       int maxNumThreadStates = rarely(r) ? TestUtil.nextInt(r, 5, 20) // crazy value
           : TestUtil.nextInt(r, 1, 4); // reasonable value
 
-      try {
-        if (rarely(r)) {
-          // Retrieve the package-private setIndexerThreadPool
-          // method:
-          Method setIndexerThreadPoolMethod = IndexWriterConfig.class.getDeclaredMethod("setIndexerThreadPool",
-            Class.forName("org.apache.lucene.index.DocumentsWriterPerThreadPool"));
-          setIndexerThreadPoolMethod.setAccessible(true);
-          Class<?> clazz = Class.forName("org.apache.lucene.index.RandomDocumentsWriterPerThreadPool");
-          Constructor<?> ctor = clazz.getConstructor(int.class, Random.class);
-          ctor.setAccessible(true);
-          // random thread pool
-          setIndexerThreadPoolMethod.invoke(c, ctor.newInstance(maxNumThreadStates, r));
-        } else {
-          // random thread pool
-          c.setMaxThreadStates(maxNumThreadStates);
-        }
-      } catch (Exception e) {
-        Rethrow.rethrow(e);
-      }
+      c.setMaxThreadStates(maxNumThreadStates);
     }
 
     c.setMergePolicy(newMergePolicy(r));

@@ -71,7 +71,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT,
         analyzer).setFlushPolicy(flushPolicy);
     final int numDWPT = 1 + atLeast(2);
-    DocumentsWriterPerThreadPool threadPool = new ThreadAffinityDocumentsWriterThreadPool(
+    DocumentsWriterPerThreadPool threadPool = new DocumentsWriterPerThreadPool(
         numDWPT);
     iwc.setIndexerThreadPool(threadPool);
     iwc.setRAMBufferSizeMB(maxRamMB);
@@ -128,7 +128,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
           new MockAnalyzer(random())).setFlushPolicy(flushPolicy);
 
       final int numDWPT = 1 + atLeast(2);
-      DocumentsWriterPerThreadPool threadPool = new ThreadAffinityDocumentsWriterThreadPool(
+      DocumentsWriterPerThreadPool threadPool = new DocumentsWriterPerThreadPool(
           numDWPT);
       iwc.setIndexerThreadPool(threadPool);
       iwc.setMaxBufferedDocs(2 + atLeast(10));
@@ -179,7 +179,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     iwc.setFlushPolicy(flushPolicy);
 
     final int numDWPT = 1 + random().nextInt(8);
-    DocumentsWriterPerThreadPool threadPool = new ThreadAffinityDocumentsWriterThreadPool(
+    DocumentsWriterPerThreadPool threadPool = new DocumentsWriterPerThreadPool(
         numDWPT);
     iwc.setIndexerThreadPool(threadPool);
 
@@ -245,7 +245,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       FlushPolicy flushPolicy = new FlushByRamOrCountsPolicy();
       iwc.setFlushPolicy(flushPolicy);
       
-      DocumentsWriterPerThreadPool threadPool = new ThreadAffinityDocumentsWriterThreadPool(
+      DocumentsWriterPerThreadPool threadPool = new DocumentsWriterPerThreadPool(
           numThreads[i]== 1 ? 1 : 2);
       iwc.setIndexerThreadPool(threadPool);
       // with such a small ram buffer we should be stalled quiet quickly

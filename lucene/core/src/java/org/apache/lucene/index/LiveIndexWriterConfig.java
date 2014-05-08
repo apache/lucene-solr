@@ -125,7 +125,7 @@ public class LiveIndexWriterConfig {
     mergePolicy = new TieredMergePolicy();
     flushPolicy = new FlushByRamOrCountsPolicy();
     readerPooling = IndexWriterConfig.DEFAULT_READER_POOLING;
-    indexerThreadPool = new ThreadAffinityDocumentsWriterThreadPool(IndexWriterConfig.DEFAULT_MAX_THREAD_STATES);
+    indexerThreadPool = new DocumentsWriterPerThreadPool(IndexWriterConfig.DEFAULT_MAX_THREAD_STATES);
     perThreadHardLimitMB = IndexWriterConfig.DEFAULT_RAM_PER_THREAD_HARD_LIMIT_MB;
   }
   
@@ -404,11 +404,7 @@ public class LiveIndexWriterConfig {
    * documents at once in IndexWriter.
    */
   public int getMaxThreadStates() {
-    try {
-      return ((ThreadAffinityDocumentsWriterThreadPool) indexerThreadPool).getMaxThreadStates();
-    } catch (ClassCastException cce) {
-      throw new IllegalStateException(cce);
-    }
+    return indexerThreadPool.getMaxThreadStates();
   }
 
   /**

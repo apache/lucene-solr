@@ -345,11 +345,7 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
   }
 
   /** Expert: Sets the {@link DocumentsWriterPerThreadPool} instance used by the
-   * IndexWriter to assign thread-states to incoming indexing threads. If no
-   * {@link DocumentsWriterPerThreadPool} is set {@link IndexWriter} will use
-   * {@link ThreadAffinityDocumentsWriterThreadPool} with max number of
-   * thread-states set to {@link #DEFAULT_MAX_THREAD_STATES} (see
-   * {@link #DEFAULT_MAX_THREAD_STATES}).
+   * IndexWriter to assign thread-states to incoming indexing threads.
    * </p>
    * <p>
    * NOTE: The given {@link DocumentsWriterPerThreadPool} instance must not be used with
@@ -379,17 +375,13 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig implements Cl
    *
    * <p>Only takes effect when IndexWriter is first created. */
   public IndexWriterConfig setMaxThreadStates(int maxThreadStates) {
-    this.indexerThreadPool = new ThreadAffinityDocumentsWriterThreadPool(maxThreadStates);
+    this.indexerThreadPool = new DocumentsWriterPerThreadPool(maxThreadStates);
     return this;
   }
 
   @Override
   public int getMaxThreadStates() {
-    try {
-      return ((ThreadAffinityDocumentsWriterThreadPool) indexerThreadPool).getMaxThreadStates();
-    } catch (ClassCastException cce) {
-      throw new IllegalStateException(cce);
-    }
+    return indexerThreadPool.getMaxThreadStates();
   }
 
   /** By default, IndexWriter does not pool the

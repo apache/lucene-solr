@@ -435,7 +435,7 @@ final class DocumentsWriter implements Closeable {
       final boolean isUpdate = delTerm != null;
       flushingDWPT = flushControl.doAfterDocument(perThread, isUpdate);
     } finally {
-      perThread.unlock();
+      perThreadPool.release(perThread);
     }
 
     return postUpdate(flushingDWPT, hasEvents);
@@ -476,7 +476,7 @@ final class DocumentsWriter implements Closeable {
       final boolean isUpdate = delTerm != null;
       flushingDWPT = flushControl.doAfterDocument(perThread, isUpdate);
     } finally {
-      perThread.unlock();
+      perThreadPool.release(perThread);
     }
 
     return postUpdate(flushingDWPT, hasEvents);
