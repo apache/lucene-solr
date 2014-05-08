@@ -42,7 +42,6 @@ import org.apache.lucene.store.MockDirectoryWrapper.Failure;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Rethrow;
 
@@ -50,7 +49,6 @@ import org.apache.lucene.util.Rethrow;
  * Causes a bunch of fake OOM and checks that no other exceptions are delivered instead,
  * no index corruption is ever created.
  */
-@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-5656")
 public class TestIndexWriterOutOfMemory extends LuceneTestCase {
   
   // just one thread, serial merge policy, hopefully debuggable
