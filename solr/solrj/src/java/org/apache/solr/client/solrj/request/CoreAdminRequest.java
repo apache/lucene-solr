@@ -253,7 +253,14 @@ public class CoreAdminRequest extends SolrRequest
 
       return params;
     }
-
+    
+    public String toString() {
+      if (action != null) {
+        return "WaitForState: "+getParams();
+      } else {
+        return super.toString();
+      }
+    }
   }
   
   public static class RequestRecovery extends CoreAdminRequest {

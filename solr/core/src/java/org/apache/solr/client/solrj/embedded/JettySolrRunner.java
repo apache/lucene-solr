@@ -95,6 +95,8 @@ public class JettySolrRunner {
   private LinkedList<FilterHolder> extraFilters;
 
   private SSLConfig sslConfig;
+  
+  private int proxyPort = -1;
 
   public static class DebugFilter implements Filter {
     public int requestsToKeep = 10;
@@ -477,7 +479,7 @@ public class JettySolrRunner {
     if (0 == conns.length) {
       throw new RuntimeException("Jetty Server has no Connectors");
     }
-    return conns[0].getLocalPort();
+    return (proxyPort != -1) ? proxyPort : conns[0].getLocalPort();
   }
   
   /**
@@ -489,7 +491,16 @@ public class JettySolrRunner {
     if (lastPort == -1) {
       throw new IllegalStateException("You cannot get the port until this instance has started");
     }
-    return lastPort;
+    return (proxyPort != -1) ? proxyPort : lastPort;
+  }
+  
+  /**
+   * Sets the port of a local socket proxy that sits infront of this server; if set
+   * then all client traffic will flow through the proxy, giving us the ability to
+   * simulate network partitions very easily.
+   */
+  public void setProxyPort(int proxyPort) {
+    this.proxyPort = proxyPort;
   }
 
   /**

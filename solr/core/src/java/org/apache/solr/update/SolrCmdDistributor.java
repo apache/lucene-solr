@@ -176,7 +176,7 @@ public class SolrCmdDistributor {
     for (Node node : nodes) {
       UpdateRequest uReq = new UpdateRequest();
       uReq.setParams(params);
-      uReq.add(cmd.solrDoc, cmd.commitWithin, cmd.overwrite);
+      uReq.add(cmd.solrDoc, cmd.commitWithin, cmd.overwrite);      
       submit(new Req(cmd.toString(), node, uReq, synchronous));
     }
     
@@ -230,6 +230,7 @@ public class SolrCmdDistributor {
           + req.node.getUrl() + " retry:"
           + req.retries + " " + req.cmdString + " params:" + req.uReq.getParams());
     }
+    
     try {
       SolrServer solrServer = servers.getSolrServer(req);
       NamedList<Object> rsp = solrServer.request(req.uReq);
@@ -258,6 +259,13 @@ public class SolrCmdDistributor {
       this.synchronous = synchronous;
       this.cmdString = cmdString;
     }
+    
+    public String toString() {
+      StringBuilder sb = new StringBuilder();
+      sb.append("SolrCmdDistributor$Req: cmd=").append(String.valueOf(cmdString));
+      sb.append("; node=").append(String.valueOf(node));
+      return sb.toString();
+    }
   }
     
 
@@ -272,6 +280,14 @@ public class SolrCmdDistributor {
     public Exception e;
     public int statusCode = -1;
     public Req req;
+    
+    public String toString() {
+      StringBuilder sb = new StringBuilder();
+      sb.append("SolrCmdDistributor$Error: statusCode=").append(statusCode);
+      sb.append("; exception=").append(String.valueOf(e));
+      sb.append("; req=").append(String.valueOf(req));
+      return sb.toString();
+    }
   }
   
   public static abstract class Node {
@@ -284,11 +300,27 @@ public class SolrCmdDistributor {
 
   public static class StdNode extends Node {
     protected ZkCoreNodeProps nodeProps;
+    protected String collection;
+    protected String shardId;
 
     public StdNode(ZkCoreNodeProps nodeProps) {
-      this.nodeProps = nodeProps;
+      this(nodeProps, null, null);
     }
     
+    public StdNode(ZkCoreNodeProps nodeProps, String collection, String shardId) {    
+      this.nodeProps = nodeProps;
+      this.collection = collection;
+      this.shardId = shardId;
+    }
+    
+    public String getCollection() {
+      return collection;
+    }
+    
+    public String getShardId() {
+      return shardId;
+    }
+        
     @Override
     public String getUrl() {
       return nodeProps.getCoreUrl();
@@ -359,11 +391,9 @@ public class SolrCmdDistributor {
   public static class RetryNode extends StdNode {
     
     private ZkStateReader zkStateReader;
-    private String collection;
-    private String shardId;
     
     public RetryNode(ZkCoreNodeProps nodeProps, ZkStateReader zkStateReader, String collection, String shardId) {
-      super(nodeProps);
+      super(nodeProps, collection, shardId);
       this.zkStateReader = zkStateReader;
       this.collection = collection;
       this.shardId = shardId;

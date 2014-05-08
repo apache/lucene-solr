@@ -845,7 +845,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
   protected void handleRequestRecoveryAction(SolrQueryRequest req,
       SolrQueryResponse rsp) throws IOException {
     final SolrParams params = req.getParams();
-    log.info("It has been requested that we recover");
+    log.info("It has been requested that we recover: core="+params.get(CoreAdminParams.CORE));
     Thread thread = new Thread() {
       @Override
       public void run() {
@@ -958,7 +958,8 @@ public class CoreAdminHandler extends RequestHandlerBase {
     Boolean onlyIfLeaderActive = params.getBool("onlyIfLeaderActive");
 
     log.info("Going to wait for coreNodeName: " + coreNodeName + ", state: " + waitForState
-        + ", checkLive: " + checkLive + ", onlyIfLeader: " + onlyIfLeader);
+        + ", checkLive: " + checkLive + ", onlyIfLeader: " + onlyIfLeader
+        + ", onlyIfLeaderActive: "+onlyIfLeaderActive);
 
     int maxTries = 0; 
     String state = null;
@@ -1014,10 +1015,28 @@ public class CoreAdminHandler extends RequestHandlerBase {
               live = clusterState.liveNodesContain(nodeName);
               
               String localState = cloudDescriptor.getLastPublished();
+
+              // TODO: This is funky but I've seen this in testing where the replica asks the
+              // leader to be in recovery? Need to track down how that happens ... in the meantime,
+              // this is a safeguard 
+              boolean leaderDoesNotNeedRecovery = (onlyIfLeader != null && 
+                  onlyIfLeader && 
+                  core.getName().equals(nodeProps.getStr("core")) &&
+                  ZkStateReader.RECOVERING.equals(waitForState) && 
+                  ZkStateReader.ACTIVE.equals(localState) && 
+                  ZkStateReader.ACTIVE.equals(state));
+              
+              if (leaderDoesNotNeedRecovery) {
+                log.warn("Leader "+core.getName()+" ignoring request to be in the recovering state because it is live and active.");
+              }              
               
               boolean onlyIfActiveCheckResult = onlyIfLeaderActive != null && onlyIfLeaderActive && (localState == null || !localState.equals(ZkStateReader.ACTIVE));
+              log.info("In WaitForState("+waitForState+"): collection="+collection+", shard="+slice.getName()+
+                  ", isLeader? "+core.getCoreDescriptor().getCloudDescriptor().isLeader()+
+                  ", live="+live+", currentState="+state+", localState="+localState+", nodeName="+nodeName+
+                  ", coreNodeName="+coreNodeName+", onlyIfActiveCheckResult="+onlyIfActiveCheckResult+", nodeProps: "+nodeProps);
 
-              if (!onlyIfActiveCheckResult && nodeProps != null && state.equals(waitForState)) {
+              if (!onlyIfActiveCheckResult && nodeProps != null && (state.equals(waitForState) || leaderDoesNotNeedRecovery)) {
                 if (checkLive == null) {
                   break;
                 } else if (checkLive && live) {
@@ -1040,7 +1059,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
             collection = cloudDescriptor.getCollectionName();
             shardId = cloudDescriptor.getShardId();
             leaderInfo = coreContainer.getZkController().
-                getZkStateReader().getLeaderUrl(collection, shardId, 0);
+                getZkStateReader().getLeaderUrl(collection, shardId, 5000);
           } catch (Exception exc) {
             leaderInfo = "Not available due to: " + exc;
           }

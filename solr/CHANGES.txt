@@ -82,6 +82,10 @@ Other Changes
 * SOLR-5868: HttpClient should be configured to use ALLOW_ALL_HOSTNAME hostname
   verifier to simplify SSL setup. (Steve Davids via Mark Miller)
 
+* SOLR-5495: Recovery strategy for leader partitioned from replica case. Hardening
+  recovery scenarios after the leader receives an error trying to forward an
+  update request to a replica. (Timothy Potter)
+
 ==================  4.9.0 ==================
 
 Versions of Major Components
