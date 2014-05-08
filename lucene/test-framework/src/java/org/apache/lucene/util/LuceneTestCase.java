@@ -1035,6 +1035,8 @@ public abstract class LuceneTestCase extends Assert {
   
   // if you want it in LiveIndexWriterConfig: it must and will be tested here.
   public static void maybeChangeLiveIndexWriterConfig(Random r, LiveIndexWriterConfig c) {
+    boolean didChange = false;
+
     if (rarely(r)) {
       // change flush parameters:
       // this is complicated because the api requires you "invoke setters in a magical order!"
@@ -1052,6 +1054,7 @@ public abstract class LuceneTestCase extends Assert {
         }
         c.setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
       }
+      didChange = true;
     }
     
     if (rarely(r)) {
@@ -1062,6 +1065,7 @@ public abstract class LuceneTestCase extends Assert {
       } else {
         c.setMaxBufferedDeleteTerms(IndexWriterConfig.DISABLE_AUTO_FLUSH);
       }
+      didChange = true;
     }
     
     if (rarely(r)) {
@@ -1071,16 +1075,19 @@ public abstract class LuceneTestCase extends Assert {
       } else {
         c.setMergedSegmentWarmer(null);
       }
+      didChange = true;
     }
     
     if (rarely(r)) {
       // change CFS flush parameters
       c.setUseCompoundFile(r.nextBoolean());
+      didChange = true;
     }
     
     if (rarely(r)) {
       // change merge integrity check parameters
       c.setCheckIntegrityAtMerge(r.nextBoolean());
+      didChange = true;
     }
     
     if (rarely(r)) {
@@ -1091,6 +1098,7 @@ public abstract class LuceneTestCase extends Assert {
         int maxMergeCount = TestUtil.nextInt(r, maxThreadCount, maxThreadCount + 4);
         ((ConcurrentMergeScheduler)ms).setMaxMergesAndThreads(maxMergeCount, maxThreadCount);
       }
+      didChange = true;
     }
     
     if (rarely(r)) {
@@ -1128,6 +1136,10 @@ public abstract class LuceneTestCase extends Assert {
         configureRandom(r, tmp);
         tmp.setReclaimDeletesWeight(r.nextDouble()*4);
       }
+      didChange = true;
+    }
+    if (VERBOSE && didChange) {
+      System.out.println("NOTE: LuceneTestCase: randomly changed IWC's live settings to:\n" + c);
     }
   }
 

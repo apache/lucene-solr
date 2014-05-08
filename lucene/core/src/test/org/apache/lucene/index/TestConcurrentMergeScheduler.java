@@ -356,7 +356,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
       // no
       iwc.setCodec(TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat()));
     }
-    RandomIndexWriter w = new RandomIndexWriter(random(), d, iwc);
+    IndexWriter w = new IndexWriter(d, iwc);
     for(int i=0;i<1000;i++) {
       Document doc = new Document();
       doc.add(new StringField("id", ""+i, Field.Store.NO));
@@ -366,7 +366,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
         w.deleteDocuments(new Term("id", ""+random().nextInt(i+1)));
       }
     }
-    assertTrue(((TrackingCMS) w.w.getConfig().getMergeScheduler()).totMergedBytes != 0);
+    assertTrue(((TrackingCMS) w.getConfig().getMergeScheduler()).totMergedBytes != 0);
     w.shutdown();
     d.close();
   }
