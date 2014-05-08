@@ -415,7 +415,7 @@ public class CloudSolrServer extends SolrServer {
         return null;
       }
       ZkCoreNodeProps zkProps = new ZkCoreNodeProps(leader);
-      String url = zkProps.getBaseUrl() + "/" + col.getName();
+      String url = zkProps.getCoreUrl();
       urls.add(url);
       Collection<Replica> replicas = slice.getReplicas();
       Iterator<Replica> replicaIterator = replicas.iterator();
@@ -424,7 +424,7 @@ public class CloudSolrServer extends SolrServer {
         if (!replica.getNodeName().equals(leader.getNodeName()) &&
             !replica.getName().equals(leader.getName())) {
           ZkCoreNodeProps zkProps1 = new ZkCoreNodeProps(replica);
-          String url1 = zkProps1.getBaseUrl() + "/" + col.getName();
+          String url1 = zkProps1.getCoreUrl();
           urls.add(url1);
         }
       }
