@@ -79,6 +79,7 @@ import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader.ReaderClosedListener;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LiveIndexWriterConfig;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.LogMergePolicy;
@@ -1029,6 +1030,60 @@ public abstract class LuceneTestCase extends Assert {
     LogMergePolicy logmp = newLogMergePolicy();
     logmp.setMergeFactor(mergeFactor);
     return logmp;
+  }
+  
+  // if you want it in LiveIndexWriterConfig: it must and will be tested here.
+  public static void maybeChangeLiveIndexWriterConfig(Random r, LiveIndexWriterConfig c) {
+    if (rarely(r)) {
+      // change flush parameters:
+      // this is complicated because the api requires you "invoke setters in a magical order!"
+      boolean flushByRam = r.nextBoolean();
+      if (flushByRam) { 
+        c.setRAMBufferSizeMB(TestUtil.nextInt(r, 1, 10));
+        c.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
+      } else {
+        if (rarely(r)) {
+          // crazy value
+          c.setMaxBufferedDocs(TestUtil.nextInt(r, 2, 15));
+        } else {
+          // reasonable value
+          c.setMaxBufferedDocs(TestUtil.nextInt(r, 16, 1000));
+        }
+        c.setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
+      }
+    }
+    
+    if (rarely(r)) {
+      // change buffered deletes parameters
+      boolean limitBufferedDeletes = r.nextBoolean();
+      if (limitBufferedDeletes) {
+        c.setMaxBufferedDeleteTerms(TestUtil.nextInt(r, 1, 1000));
+      } else {
+        c.setMaxBufferedDeleteTerms(IndexWriterConfig.DISABLE_AUTO_FLUSH);
+      }
+    }
+    
+    if (rarely(r)) {
+      // change warmer parameters
+      if (r.nextBoolean()) {
+        c.setMergedSegmentWarmer(new SimpleMergedSegmentWarmer(c.getInfoStream()));
+      } else {
+        c.setMergedSegmentWarmer(null);
+      }
+    }
+    
+    if (rarely(r)) {
+      // change CFS flush parameters
+      c.setUseCompoundFile(r.nextBoolean());
+    }
+    
+    if (rarely(r)) {
+      // change merge integrity check parameters
+      c.setCheckIntegrityAtMerge(r.nextBoolean());
+    }
+    
+    // TODO: mergepolicy, mergescheduler, etc have mutable state on indexwriter
+    // every setter must be tested
   }
 
   /**
