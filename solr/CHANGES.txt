@@ -53,6 +53,12 @@ Bug Fixes
 * SOLR-6039: fixed debug output when no results in response
   (Tomás Fernández Löbbe, hossman)
 
+* SOLR-6029: CollapsingQParserPlugin throws ArrayIndexOutOfBoundsException 
+  if elevated doc has been deleted from a segment. (Greg Harris, Joel Bernstein)
+
+* SOLR-6035: CloudSolrServer directUpdate routing should use getCoreUrl.
+  (Marvin Justice, Joel Bernstein)
+
 
 ==================  4.8.0 ==================
 
