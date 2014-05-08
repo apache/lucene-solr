@@ -346,7 +346,9 @@ public class RandomIndexWriter implements Closeable {
    */
   @Override
   public void close() throws IOException {
-    LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
+    if (!w.isClosed()) {
+      LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
+    }
     // if someone isn't using getReader() API, we want to be sure to
     // forceMerge since presumably they might open a reader on the dir.
     if (getReaderCalled == false && r.nextInt(8) == 2) {
