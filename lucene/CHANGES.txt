@@ -50,6 +50,9 @@ Bug fixes
   fields have been updated with IndexWriter.updateXXXDocValue and one
   hits exception. (Shai Erera, Robert Muir)
 
+* LUCENE-5660: AnalyzingSuggester.build will now throw IllegalArgumentException if
+  you give it a longer suggestion than it can handle (Robert Muir, Mike McCandless)
+
 ======================= Lucene 4.8.0 =======================
 
 System Requirements
