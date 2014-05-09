@@ -80,10 +80,18 @@ public abstract class SpatialPrefixTree {
   public abstract double getDistanceForLevel(int level);
 
   /**
-   * Returns the level 0 cell which encompasses all spatial data. Equivalent to {@link Cell#readCell(BytesRef)}
+   * Returns the level 0 cell which encompasses all spatial data. Equivalent to {@link #readCell(BytesRef,Cell)}
    * with no bytes.
    */
   public abstract Cell getWorldCell(); //another possible name: getTopCell
+
+  /**
+   * This creates a new Cell (or re-using {@code scratch} if provided), initialized to the state as read
+   * by the bytes.
+   * Warning: An implementation may refer to the same byte array (no copy). If {@link Cell#setLeaf()} is
+   * subsequently called, it would then modify these bytes.
+   */
+  public abstract Cell readCell(BytesRef term, Cell scratch);
 
   /**
    * Gets the intersecting cells for the specified shape, without exceeding

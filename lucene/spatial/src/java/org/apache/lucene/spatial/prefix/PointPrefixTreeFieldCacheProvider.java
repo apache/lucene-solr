@@ -31,17 +31,16 @@ import org.apache.lucene.util.BytesRef;
 public class PointPrefixTreeFieldCacheProvider extends ShapeFieldCacheProvider<Point> {
 
   private final SpatialPrefixTree grid;
-  private Cell scanCell;
+  private Cell scanCell;//re-used in readShape to save GC
 
   public PointPrefixTreeFieldCacheProvider(SpatialPrefixTree grid, String shapeField, int defaultSize) {
     super( shapeField, defaultSize );
     this.grid = grid;
-    this.scanCell = grid.getWorldCell();//re-used in readShape to save GC
   }
 
   @Override
   protected Point readShape(BytesRef term) {
-    scanCell.readCell(term);
+    scanCell = grid.readCell(term, scanCell);;
     if (scanCell.getLevel() == grid.getMaxLevels() && !scanCell.isLeaf())//points are never flagged as leaf
       return scanCell.getShape().getCenter();
     return null;

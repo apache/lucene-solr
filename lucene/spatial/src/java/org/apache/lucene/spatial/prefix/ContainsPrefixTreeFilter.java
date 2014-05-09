@@ -84,7 +84,7 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
     }
 
     BytesRef termBytes = new BytesRef();//no leaf
-    Cell nextCell = grid.getWorldCell();//see getLeafDocs
+    Cell nextCell;//see getLeafDocs
 
     /** This is the primary algorithm; recursive.  Returns null if finds none. */
     private SmallDocSet visit(Cell cell, Bits acceptContains) throws IOException {
@@ -158,7 +158,7 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
         termsEnum = null;//signals all done
         return null;
       }
-      nextCell.readCell(nextTerm);
+      nextCell = grid.readCell(nextTerm, nextCell);
       assert leafCell.isPrefixOf(nextCell);
       if (nextCell.getLevel() == leafCell.getLevel() && nextCell.isLeaf()) {
         return collectDocs(acceptContains);

@@ -25,20 +25,12 @@ import org.apache.lucene.util.BytesRef;
  * Represents a grid cell. Cell instances are generally very transient and may be re-used
  * internally.  To get an instance, you could start with {@link SpatialPrefixTree#getWorldCell()}.
  * And from there you could either traverse down the tree with {@link #getNextLevelCells(com.spatial4j.core.shape.Shape)},
- * or you could read an indexed term via {@link #readCell(org.apache.lucene.util.BytesRef)}.
+ * or you could read an indexed term via {@link SpatialPrefixTree#readCell(org.apache.lucene.util.BytesRef,Cell)}.
  * When a cell is read from a term, it is comprised of just the base bytes plus optionally a leaf flag.
  *
  * @lucene.experimental
  */
 public interface Cell {
-
-  /** This initializes the cell with the given bytes and clears any previous state.
-   * Warning: Refers to the same byte array (no copy). If {@link #setLeaf()} is subsequently called,
-   * then it may modify these bytes.
-   *
-   * @param bytes the bytes of the new cell. WARNING: copy by reference.
-   */
-  void readCell(BytesRef bytes);
 
 //  If we bring this back; perhaps do so as a method that un-shares its internal state: void unshare();
 //  /** Resets the state of this cell such that it is identical to {@code source}. This can be used for

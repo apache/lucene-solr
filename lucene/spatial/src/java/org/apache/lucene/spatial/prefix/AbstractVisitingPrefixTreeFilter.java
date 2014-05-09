@@ -128,7 +128,7 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
 
     private VNode curVNode;//current pointer, derived from query shape
     private BytesRef curVNodeTerm = new BytesRef();//curVNode.cell's term, without leaf
-    private Cell scanCell = grid.getWorldCell();
+    private Cell scanCell;
 
     private BytesRef thisTerm;//the result of termsEnum.term()
 
@@ -224,7 +224,7 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
       if (hasIndexedLeaves && cell.getLevel() != 0) {
         //If the next indexed term just adds a leaf marker ('+') to cell,
         // then add all of those docs
-        scanCell.readCell(thisTerm);
+        scanCell = grid.readCell(thisTerm, scanCell);
         assert curVNode.cell.isPrefixOf(scanCell);
         if (scanCell.getLevel() == cell.getLevel() && scanCell.isLeaf()) {
           visitLeaf(scanCell);
@@ -276,7 +276,7 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
       for ( ;
           thisTerm != null;
           thisTerm = termsEnum.next()) {
-        scanCell.readCell(thisTerm);
+        scanCell = grid.readCell(thisTerm, scanCell);
         if (!curVNode.cell.isPrefixOf(scanCell))
           break;
 

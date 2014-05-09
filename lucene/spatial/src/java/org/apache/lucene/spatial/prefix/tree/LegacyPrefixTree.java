@@ -51,6 +51,15 @@ abstract class LegacyPrefixTree extends SpatialPrefixTree {
   protected abstract Cell getCell(Point p, int level);
 
   @Override
+  public Cell readCell(BytesRef term, Cell scratch) {
+    LegacyCell cell = (LegacyCell) scratch;
+    if (cell == null)
+      cell = (LegacyCell) getWorldCell();
+    cell.readCell(term);
+    return cell;
+  }
+
+  @Override
   public CellIterator getTreeCellIterator(Shape shape, int detailLevel) {
     if (!(shape instanceof Point))
       return super.getTreeCellIterator(shape, detailLevel);
@@ -65,9 +74,8 @@ abstract class LegacyPrefixTree extends SpatialPrefixTree {
     //fill in reverse order to be sorted
     Cell[] cells = new Cell[detailLevel];
     for (int i = 1; i < detailLevel; i++) {
-      Cell parentCell = getWorldCell();
       fullBytes.length = i;
-      parentCell.readCell(fullBytes);
+      Cell parentCell = readCell(fullBytes, null);
       cells[i-1] = parentCell;
     }
     cells[detailLevel-1] = cell;

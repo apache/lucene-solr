@@ -116,7 +116,7 @@ public class GeohashPrefixTree extends LegacyPrefixTree {
     protected GeohashPrefixTree getGrid() { return GeohashPrefixTree.this; }
 
     @Override
-    public void readCell(BytesRef bytesRef) {
+    protected void readCell(BytesRef bytesRef) {
       super.readCell(bytesRef);
       geohash = null;
     }

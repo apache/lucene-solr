@@ -59,8 +59,7 @@ public abstract class LegacyCell implements Cell {
     readLeafAdjust();
   }
 
-  @Override
-  public void readCell(BytesRef bytes) {
+  protected void readCell(BytesRef bytes) {
     shapeRel = null;
     shape = null;
     this.bytes = bytes.bytes;
