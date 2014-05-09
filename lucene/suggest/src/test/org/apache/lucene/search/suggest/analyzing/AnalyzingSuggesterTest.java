@@ -1200,4 +1200,18 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     Collections.shuffle(asList, random());
     return asList;
   }
+
+  // TODO: we need BaseSuggesterTestCase?
+  public void testTooLongSuggestion() throws Exception {
+    Analyzer a = new MockAnalyzer(random());
+    AnalyzingSuggester suggester = new AnalyzingSuggester(a);
+    String bigString = TestUtil.randomSimpleString(random(), 30000, 30000);
+    try {
+      suggester.build(new InputArrayIterator(new Input[] {
+            new Input(bigString, 7)}));
+      fail("did not hit expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+  }
 }
