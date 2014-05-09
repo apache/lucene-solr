@@ -459,7 +459,6 @@ public class AnalyzingSuggester extends Lookup {
           }
 
           assert output.getPosition() == requiredLength: output.getPosition() + " vs " + requiredLength;
-
           writer.write(buffer, 0, output.getPosition());
         }
         count++;
@@ -839,7 +838,8 @@ public class AnalyzingSuggester extends Lookup {
     replaceSep(automaton);
     automaton = convertAutomaton(automaton);
 
-    assert SpecialOperations.isFinite(automaton);
+    // TODO: LUCENE-5660 re-enable this once we disallow massive suggestion strings
+    // assert SpecialOperations.isFinite(automaton);
 
     // Get all paths from the automaton (there can be
     // more than one path, eg if the analyzer created a
