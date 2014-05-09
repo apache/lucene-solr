@@ -35,6 +35,7 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MultiFields;
@@ -190,7 +191,7 @@ public class TestTermInfosReaderIndex extends LuceneTestCase {
   }
 
   private static void populate(Directory directory, IndexWriterConfig config) throws CorruptIndexException, LockObtainFailedException, IOException {
-    RandomIndexWriter writer = new RandomIndexWriter(random(), directory, config);
+    IndexWriter writer = new IndexWriter(directory, config);
     for (int i = 0; i < NUMBER_OF_DOCUMENTS; i++) {
       Document document = new Document();
       for (int f = 0; f < NUMBER_OF_FIELDS; f++) {
