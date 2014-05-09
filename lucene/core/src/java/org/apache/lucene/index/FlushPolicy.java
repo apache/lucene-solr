@@ -113,15 +113,22 @@ abstract class FlushPolicy implements Cloneable {
     ThreadState maxRamUsingThreadState = perThreadState;
     assert !perThreadState.flushPending : "DWPT should have flushed";
     Iterator<ThreadState> activePerThreadsIterator = control.allActiveThreadStates();
+    int count = 0;
     while (activePerThreadsIterator.hasNext()) {
       ThreadState next = activePerThreadsIterator.next();
       if (!next.flushPending) {
         final long nextRam = next.bytesUsed;
-        if (nextRam > maxRamSoFar && next.dwpt.getNumDocsInRAM() > 0) {
-          maxRamSoFar = nextRam;
-          maxRamUsingThreadState = next;
+        if (nextRam > 0 && next.dwpt.getNumDocsInRAM() > 0) {
+          count++;
+          if (nextRam > maxRamSoFar) {
+            maxRamSoFar = nextRam;
+            maxRamUsingThreadState = next;
+          }
         }
       }
+    }
+    if (infoStream.isEnabled("FP")) {
+      infoStream.message("FP", count + " in-use non-flushing threads states");
     }
     assert assertMessage("set largest ram consuming thread pending on lower watermark");
     return maxRamUsingThreadState;
