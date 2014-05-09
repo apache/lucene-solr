@@ -19,16 +19,21 @@ package org.apache.lucene.index;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.lucene46.Lucene46SegmentInfoFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -264,6 +269,76 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
     for(Thread t : threads) {
       t.join();
     }
+    dir.close();
+  }
+
+  public void testDocsStuckInRAMForever() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setRAMBufferSizeMB(.2);
+    Codec codec = Codec.forName("Lucene46");
+    iwc.setCodec(codec);
+    iwc.setMergePolicy(NoMergePolicy.INSTANCE);
+    final IndexWriter w = new IndexWriter(dir, iwc);
+    final CountDownLatch startingGun = new CountDownLatch(1);
+    Thread[] threads = new Thread[2];
+    for(int i=0;i<threads.length;i++) {
+      final int threadID = i;
+      threads[i] = new Thread() {
+          @Override
+          public void run() {
+            try {
+              startingGun.await();
+              for(int j=0;j<1000;j++) {
+                Document doc = new Document();
+                doc.add(newStringField("field", "threadID" + threadID, Field.Store.NO));
+                w.addDocument(doc);
+              }
+            } catch (Exception e) {
+              throw new RuntimeException(e);
+            }
+          }
+        };
+      threads[i].start();
+    }
+
+    startingGun.countDown();
+    for(Thread t : threads) {
+      t.join();
+    }
+
+    Set<String> segSeen = new HashSet<>();
+    int thread0Count = 0;
+    int thread1Count = 0;
+
+    // At this point the writer should have 2 thread states w/ docs; now we index with only 1 thread until we see all 1000 thread0 & thread1
+    // docs flushed.  If the writer incorrectly holds onto previously indexed docs forever then this will run forever:
+    while (thread0Count < 1000 || thread1Count < 1000) {
+      Document doc = new Document();
+      doc.add(newStringField("field", "threadIDmain", Field.Store.NO));
+      w.addDocument(doc);
+
+      for(String fileName : dir.listAll()) {
+        if (fileName.endsWith(".si")) {
+          String segName = IndexFileNames.parseSegmentName(fileName);
+          if (segSeen.contains(segName) == false) {
+            segSeen.add(segName);
+            SegmentInfo si = new Lucene46SegmentInfoFormat().getSegmentInfoReader().read(dir, segName, IOContext.DEFAULT);
+            si.setCodec(codec);
+            SegmentCommitInfo sci = new SegmentCommitInfo(si, 0, -1, -1);
+            SegmentReader sr = new SegmentReader(sci, IOContext.DEFAULT);
+            try {
+              thread0Count += sr.docFreq(new Term("field", "threadID0"));
+              thread1Count += sr.docFreq(new Term("field", "threadID1"));
+            } finally {
+              sr.close();
+            }
+          }
+        }
+      }
+    }
+
+    w.close();
     dir.close();
   }
 }

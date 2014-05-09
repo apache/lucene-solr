@@ -263,6 +263,27 @@ final class DocumentsWriterPerThreadPool implements Cloneable {
           // Important that we are LIFO here! This way if number of concurrent indexing threads was once high, but has now reduced, we only use a
           // limited number of thread states:
           threadState = freeList[freeCount-1];
+
+          if (threadState.dwpt == null) {
+            // This thread-state is not initialized, e.g. it
+            // was just flushed. See if we can instead find
+            // another free thread state that already has docs
+            // indexed. This way if incoming thread concurrency
+            // has decreased, we don't leave docs
+            // indefinitely buffered, tying up RAM.  This
+            // will instead get those thread states flushed,
+            // freeing up RAM for larger segment flushes:
+            for(int i=0;i<freeCount;i++) {
+              if (freeList[i].dwpt != null) {
+                // Use this one instead, and swap it with
+                // the un-initialized one:
+                ThreadState ts = freeList[i];
+                freeList[i] = threadState;
+                threadState = ts;
+                break;
+              }
+            }
+          }
           freeCount--;
           break;
         } else if (numThreadStatesActive < threadStates.length) {
