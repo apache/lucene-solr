@@ -1040,19 +1040,22 @@ public abstract class LuceneTestCase extends Assert {
     if (rarely(r)) {
       // change flush parameters:
       // this is complicated because the api requires you "invoke setters in a magical order!"
-      boolean flushByRam = r.nextBoolean();
-      if (flushByRam) { 
-        c.setRAMBufferSizeMB(TestUtil.nextInt(r, 1, 10));
-        c.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
-      } else {
-        if (rarely(r)) {
-          // crazy value
-          c.setMaxBufferedDocs(TestUtil.nextInt(r, 2, 15));
+      // LUCENE-5661: workaround for race conditions in the API
+      synchronized (c) {
+        boolean flushByRam = r.nextBoolean();
+        if (flushByRam) { 
+          c.setRAMBufferSizeMB(TestUtil.nextInt(r, 1, 10));
+          c.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
         } else {
-          // reasonable value
-          c.setMaxBufferedDocs(TestUtil.nextInt(r, 16, 1000));
+          if (rarely(r)) {
+            // crazy value
+            c.setMaxBufferedDocs(TestUtil.nextInt(r, 2, 15));
+          } else {
+            // reasonable value
+            c.setMaxBufferedDocs(TestUtil.nextInt(r, 16, 1000));
+          }
+          c.setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
         }
-        c.setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
       }
       didChange = true;
     }
