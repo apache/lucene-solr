@@ -474,9 +474,12 @@ public final class OfflineSorter {
       assert bytes != null;
       assert off >= 0 && off + len <= bytes.length;
       assert len >= 0;
+      if (len > Short.MAX_VALUE) {
+        throw new IllegalArgumentException("len must be <= " + Short.MAX_VALUE + "; got " + len);
+      }
       os.writeShort(len);
       os.write(bytes, off, len);
-    }        
+    }
     
     /**
      * Closes the provided {@link DataOutput} if it is {@link Closeable}.
