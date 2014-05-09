@@ -89,7 +89,7 @@ class FlushByRamOrCountsPolicy extends FlushPolicy {
       final long totalRam = control.activeBytes() + control.getDeleteBytesUsed();
       if (totalRam >= limit) {
         if (infoStream.isEnabled("FP")) {
-          infoStream.message("FP", "flush: activeBytes=" + control.activeBytes() + " deleteBytes=" + control.getDeleteBytesUsed() + " vs limit=" + limit);
+          infoStream.message("FP", "trigger flush: activeBytes=" + control.activeBytes() + " deleteBytes=" + control.getDeleteBytesUsed() + " vs limit=" + limit);
         }
         markLargestWriterPending(control, state, totalRam);
       }
@@ -102,8 +102,7 @@ class FlushByRamOrCountsPolicy extends FlushPolicy {
    */
   protected void markLargestWriterPending(DocumentsWriterFlushControl control,
       ThreadState perThreadState, final long currentBytesPerThread) {
-    control
-        .setFlushPending(findLargestNonPendingWriter(control, perThreadState));
+    control.setFlushPending(findLargestNonPendingWriter(control, perThreadState));
   }
   
   /**
