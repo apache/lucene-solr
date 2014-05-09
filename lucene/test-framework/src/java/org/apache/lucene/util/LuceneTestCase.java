@@ -1034,7 +1034,7 @@ public abstract class LuceneTestCase extends Assert {
   }
   
   // if you want it in LiveIndexWriterConfig: it must and will be tested here.
-  public static synchronized void maybeChangeLiveIndexWriterConfig(Random r, LiveIndexWriterConfig c) {
+  public static void maybeChangeLiveIndexWriterConfig(Random r, LiveIndexWriterConfig c) {
     boolean didChange = false;
 
     if (rarely(r)) {

@@ -248,7 +248,7 @@ public class LiveIndexWriterConfig {
    *           if ramBufferSize is enabled but non-positive, or it disables
    *           ramBufferSize when maxBufferedDocs is already disabled
    */
-  public LiveIndexWriterConfig setRAMBufferSizeMB(double ramBufferSizeMB) {
+  public synchronized LiveIndexWriterConfig setRAMBufferSizeMB(double ramBufferSizeMB) {
     if (ramBufferSizeMB != IndexWriterConfig.DISABLE_AUTO_FLUSH && ramBufferSizeMB <= 0.0) {
       throw new IllegalArgumentException("ramBufferSize should be > 0.0 MB when enabled");
     }
@@ -289,7 +289,7 @@ public class LiveIndexWriterConfig {
    *           if maxBufferedDocs is enabled but smaller than 2, or it disables
    *           maxBufferedDocs when ramBufferSize is already disabled
    */
-  public LiveIndexWriterConfig setMaxBufferedDocs(int maxBufferedDocs) {
+  public synchronized LiveIndexWriterConfig setMaxBufferedDocs(int maxBufferedDocs) {
     if (maxBufferedDocs != IndexWriterConfig.DISABLE_AUTO_FLUSH && maxBufferedDocs < 2) {
       throw new IllegalArgumentException("maxBufferedDocs must at least be 2 when enabled");
     }
