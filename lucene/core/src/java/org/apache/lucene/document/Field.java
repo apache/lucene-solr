@@ -211,6 +211,9 @@ public class Field implements IndexableField, StorableField {
     if (name == null) {
       throw new IllegalArgumentException("name cannot be null");
     }
+    if (bytes == null) {
+      throw new IllegalArgumentException("bytes cannot be null");
+    }
     if (type.indexed()) {
       throw new IllegalArgumentException("Fields with BytesRef values cannot be indexed");
     }
@@ -299,6 +302,9 @@ public class Field implements IndexableField, StorableField {
     if (!(fieldsData instanceof String)) {
       throw new IllegalArgumentException("cannot change value type from " + fieldsData.getClass().getSimpleName() + " to String");
     }
+    if (value == null) {
+      throw new IllegalArgumentException("value cannot be null");
+    }
     fieldsData = value;
   }
   
@@ -334,6 +340,9 @@ public class Field implements IndexableField, StorableField {
     }
     if (type.indexed()) {
       throw new IllegalArgumentException("cannot set a BytesRef value on an indexed field");
+    }
+    if (value == null) {
+      throw new IllegalArgumentException("value cannot be null");
     }
     fieldsData = value;
   }

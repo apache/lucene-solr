@@ -42,6 +42,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -1487,6 +1488,149 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     r.close();
     dir.close();
   }
+  
+  /** test a null string value doesn't abort the entire segment */
+  public void testNullStoredField() throws Exception {
+    Directory dir = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    // add good document
+    Document doc = new Document();
+    iw.addDocument(doc);
+    try {
+      // set to null value
+      String value = null;
+      doc.add(new StoredField("foo", value));
+      iw.addDocument(doc);
+    } catch (IllegalArgumentException expected) {}
+    iw.shutdown();
+    // make sure we see our good doc
+    DirectoryReader r = DirectoryReader.open(dir);
+    assertEquals(1, r.numDocs());
+    r.close();
+    dir.close();
+  }
+  
+  /** test a null string value doesn't abort the entire segment */
+  public void testNullStoredFieldReuse() throws Exception {
+    Directory dir = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    // add good document
+    Document doc = new Document();
+    Field theField = new StoredField("foo", "hello", StoredField.TYPE);
+    doc.add(theField);
+    iw.addDocument(doc);
+    try {
+      // set to null value
+      theField.setStringValue(null);
+      iw.addDocument(doc);
+    } catch (IllegalArgumentException expected) {}
+    iw.shutdown();
+    // make sure we see our good doc
+    DirectoryReader r = DirectoryReader.open(dir);
+    assertEquals(1, r.numDocs());
+    r.close();
+    dir.close();
+  }
+  
+  /** test a null byte[] value doesn't abort the entire segment */
+  public void testNullStoredBytesField() throws Exception {
+    Directory dir = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    // add good document
+    Document doc = new Document();
+    iw.addDocument(doc);
+
+    try {
+      // set to null value
+      byte v[] = null;
+      Field theField = new StoredField("foo", v);
+      doc.add(theField);
+      iw.addDocument(doc);
+    } catch (NullPointerException expected) {}
+    iw.shutdown();
+    // make sure we see our good doc
+    DirectoryReader r = DirectoryReader.open(dir);
+    assertEquals(1, r.numDocs());
+    r.close();
+    dir.close();
+  }
+  
+  /** test a null byte[] value doesn't abort the entire segment */
+  public void testNullStoredBytesFieldReuse() throws Exception {
+    Directory dir = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    // add good document
+    Document doc = new Document();
+    Field theField = new StoredField("foo", new BytesRef("hello").bytes);
+    doc.add(theField);
+    iw.addDocument(doc);
+    try {
+      // set to null value
+      byte v[] = null;
+      theField.setBytesValue(v);
+      iw.addDocument(doc);
+    } catch (NullPointerException expected) {}
+    iw.shutdown();
+    // make sure we see our good doc
+    DirectoryReader r = DirectoryReader.open(dir);
+    assertEquals(1, r.numDocs());
+    r.close();
+    dir.close();
+  }
+  
+  /** test a null bytesref value doesn't abort the entire segment */
+  public void testNullStoredBytesRefField() throws Exception {
+    Directory dir = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    // add good document
+    Document doc = new Document();
+    iw.addDocument(doc);
+
+    try {
+      // set to null value
+      BytesRef v = null;
+      Field theField = new StoredField("foo", v);
+      doc.add(theField);
+      iw.addDocument(doc);
+    } catch (IllegalArgumentException expected) {}
+    iw.shutdown();
+    // make sure we see our good doc
+    DirectoryReader r = DirectoryReader.open(dir);
+    assertEquals(1, r.numDocs());
+    r.close();
+    dir.close();
+  }
+  
+  /** test a null bytesref value doesn't abort the entire segment */
+  public void testNullStoredBytesRefFieldReuse() throws Exception {
+    Directory dir = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random());
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    // add good document
+    Document doc = new Document();
+    Field theField = new StoredField("foo", new BytesRef("hello"));
+    doc.add(theField);
+    iw.addDocument(doc);
+    try {
+      // set to null value
+      BytesRef v = null;
+      theField.setBytesValue(v);
+      iw.addDocument(doc);
+    } catch (IllegalArgumentException expected) {}
+    iw.shutdown();
+    // make sure we see our good doc
+    DirectoryReader r = DirectoryReader.open(dir);
+    assertEquals(1, r.numDocs());
+    r.close();
+    dir.close();
+  }
+  
+  // TODO: we could also check isValid, to catch "broken" bytesref values, might be too much?
   
   static class UOEDirectory extends RAMDirectory {
     boolean doFail = false;
