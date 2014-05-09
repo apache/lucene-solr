@@ -53,6 +53,9 @@ Bug fixes
 * LUCENE-5660: AnalyzingSuggester.build will now throw IllegalArgumentException if
   you give it a longer suggestion than it can handle (Robert Muir, Mike McCandless)
 
+* LUCENE-5662: Add missing checks to Field to prevent IndexWriter.abort
+  if a stored value is null. (Robert Muir)
+
 ======================= Lucene 4.8.0 =======================
 
 System Requirements
