@@ -598,8 +598,8 @@ public class Automaton implements Cloneable {
     State[] states = getNumberedStates();
     for (State s : states) {
       b.append("  ").append(s.number);
-      if (s.accept) b.append(" [shape=doublecircle,label=\"\"];\n");
-      else b.append(" [shape=circle,label=\"\"];\n");
+      if (s.accept) b.append(" [shape=doublecircle,label=\"" + s.number + "\"];\n");
+      else b.append(" [shape=circle,label=\" " + s.number + "\"];\n");
       if (s == initial) {
         b.append("  initial [shape=plaintext,label=\"\"];\n");
         b.append("  initial -> ").append(s.number).append("\n");
