@@ -33,12 +33,14 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.UnicodeUtil;
 
 /**
  * Tests the DocTermOrdsRangeFilter
  */
+@SuppressCodecs({"Lucene40", "Lucene41", "Lucene42"}) // needs SORTED_SET
 public class TestDocTermOrdsRangeFilter extends LuceneTestCase {
   protected IndexSearcher searcher1;
   protected IndexSearcher searcher2;
@@ -49,7 +51,6 @@ public class TestDocTermOrdsRangeFilter extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    assumeTrue("requires codec support for SORTED_SET", defaultCodecSupportsSortedSet());
     dir = newDirectory();
     fieldName = random().nextBoolean() ? "field" : ""; // sometimes use an empty string as field name
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, 

@@ -28,7 +28,6 @@ import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.DocTermOrds;
 import org.apache.lucene.index.IndexReader; // javadocs
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;

@@ -27,7 +27,6 @@ import java.util.WeakHashMap;
 
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.DocTermOrds;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
