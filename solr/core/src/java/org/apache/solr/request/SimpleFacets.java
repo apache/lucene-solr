@@ -38,6 +38,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.MultiDocsEnum;
@@ -46,7 +47,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
@@ -644,7 +644,7 @@ public class SimpleFacets {
     FieldType ft = searcher.getSchema().getFieldType(fieldName);
     NamedList<Integer> res = new NamedList<>();
 
-    SortedDocValues si = FieldCache.DEFAULT.getTermsIndex(searcher.getAtomicReader(), fieldName);
+    SortedDocValues si = DocValues.getSorted(searcher.getAtomicReader(), fieldName);
 
     final BytesRef br = new BytesRef();
 

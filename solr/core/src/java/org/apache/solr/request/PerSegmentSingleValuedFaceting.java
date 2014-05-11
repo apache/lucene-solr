@@ -22,11 +22,11 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
@@ -236,7 +236,7 @@ class PerSegmentSingleValuedFaceting {
     BytesRef tempBR = new BytesRef();
 
     void countTerms() throws IOException {
-      si = FieldCache.DEFAULT.getTermsIndex(context.reader(), fieldName);
+      si = DocValues.getSorted(context.reader(), fieldName);
       // SolrCore.log.info("reader= " + reader + "  FC=" + System.identityHashCode(si));
 
       if (prefix!=null) {

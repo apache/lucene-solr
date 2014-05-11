@@ -17,7 +17,6 @@
 
 package org.apache.solr;
 
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -133,7 +132,8 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
         }
       }
     } finally {
-      FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity
+      // nocommit: split test if needed
+      // FieldCache.DEFAULT.purgeAllCaches();   // hide FC insanity
     }
   }
 

@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
@@ -134,7 +133,8 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
         }
       }
     } finally {
-      FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity
+      // nocommit: split test if needed
+      // FieldCache.DEFAULT.purgeAllCaches();   // hide FC insanity
     }
   }
 

@@ -35,7 +35,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -284,7 +283,8 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   @Override
   public void tearDown() throws Exception {
     destroyServers();
-    FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity
+    // nocommit: split test if needed
+    // FieldCache.DEFAULT.purgeAllCaches();   // hide FC insanity
     super.tearDown();
   }
 

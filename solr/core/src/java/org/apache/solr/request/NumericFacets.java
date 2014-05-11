@@ -30,13 +30,13 @@ import java.util.Set;
 
 import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
@@ -156,13 +156,13 @@ final class NumericFacets {
         assert doc >= ctx.docBase;
         switch (numericType) {
           case LONG:
-            longs = FieldCache.DEFAULT.getNumerics(ctx.reader(), fieldName, FieldCache.NUMERIC_UTILS_LONG_PARSER, true);
+            longs = DocValues.getNumeric(ctx.reader(), fieldName);
             break;
           case INT:
-            longs = FieldCache.DEFAULT.getNumerics(ctx.reader(), fieldName, FieldCache.NUMERIC_UTILS_INT_PARSER, true);
+            longs = DocValues.getNumeric(ctx.reader(), fieldName);
             break;
           case FLOAT:
-            final NumericDocValues floats = FieldCache.DEFAULT.getNumerics(ctx.reader(), fieldName, FieldCache.NUMERIC_UTILS_FLOAT_PARSER, true);
+            final NumericDocValues floats = DocValues.getNumeric(ctx.reader(), fieldName);
             // TODO: this bit flipping should probably be moved to tie-break in the PQ comparator
             longs = new NumericDocValues() {
               @Override
@@ -174,7 +174,7 @@ final class NumericFacets {
             };
             break;
           case DOUBLE:
-            final NumericDocValues doubles = FieldCache.DEFAULT.getNumerics(ctx.reader(), fieldName, FieldCache.NUMERIC_UTILS_DOUBLE_PARSER, true);
+            final NumericDocValues doubles = DocValues.getNumeric(ctx.reader(), fieldName);
             // TODO: this bit flipping should probably be moved to tie-break in the PQ comparator
             longs = new NumericDocValues() {
               @Override
@@ -188,7 +188,7 @@ final class NumericFacets {
           default:
             throw new AssertionError();
         }
-        docsWithField = FieldCache.DEFAULT.getDocsWithField(ctx.reader(), fieldName);
+        docsWithField = DocValues.getDocsWithField(ctx.reader(), fieldName);
       }
       long v = longs.get(doc - ctx.docBase);
       if (v != 0 || docsWithField.get(doc - ctx.docBase)) {

@@ -39,7 +39,6 @@ import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCacheRangeFilter;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
@@ -153,7 +152,7 @@ public class TrieField extends PrimitiveFieldType {
         else if( sortMissingFirst ) {
           missingValue = top ? Integer.MAX_VALUE : Integer.MIN_VALUE;
         }
-        sf = new SortField( field.getName(), SortField.Type.INT, top, FieldCache.NUMERIC_UTILS_INT_PARSER);
+        sf = new SortField( field.getName(), SortField.Type.INT, top);
         sf.setMissingValue(missingValue);
         return sf;
       
@@ -164,7 +163,7 @@ public class TrieField extends PrimitiveFieldType {
         else if( sortMissingFirst ) {
           missingValue = top ? Float.POSITIVE_INFINITY : Float.NEGATIVE_INFINITY;
         }
-        sf = new SortField( field.getName(), SortField.Type.FLOAT, top, FieldCache.NUMERIC_UTILS_FLOAT_PARSER);
+        sf = new SortField( field.getName(), SortField.Type.FLOAT, top);
         sf.setMissingValue(missingValue);
         return sf;
       
@@ -176,7 +175,7 @@ public class TrieField extends PrimitiveFieldType {
         else if( sortMissingFirst ) {
           missingValue = top ? Long.MAX_VALUE : Long.MIN_VALUE;
         }
-        sf = new SortField( field.getName(), SortField.Type.LONG, top, FieldCache.NUMERIC_UTILS_LONG_PARSER);
+        sf = new SortField( field.getName(), SortField.Type.LONG, top);
         sf.setMissingValue(missingValue);
         return sf;
         
@@ -187,7 +186,7 @@ public class TrieField extends PrimitiveFieldType {
         else if( sortMissingFirst ) {
           missingValue = top ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;
         }
-        sf = new SortField( field.getName(), SortField.Type.DOUBLE, top, FieldCache.NUMERIC_UTILS_DOUBLE_PARSER);
+        sf = new SortField( field.getName(), SortField.Type.DOUBLE, top);
         sf.setMissingValue(missingValue);
         return sf;
         
@@ -201,15 +200,15 @@ public class TrieField extends PrimitiveFieldType {
     field.checkFieldCacheSource(qparser);
     switch (type) {
       case INTEGER:
-        return new IntFieldSource( field.getName(), FieldCache.NUMERIC_UTILS_INT_PARSER );
+        return new IntFieldSource( field.getName());
       case FLOAT:
-        return new FloatFieldSource( field.getName(), FieldCache.NUMERIC_UTILS_FLOAT_PARSER );
+        return new FloatFieldSource( field.getName());
       case DATE:
-        return new TrieDateFieldSource( field.getName(), FieldCache.NUMERIC_UTILS_LONG_PARSER );        
+        return new TrieDateFieldSource( field.getName());        
       case LONG:
-        return new LongFieldSource( field.getName(), FieldCache.NUMERIC_UTILS_LONG_PARSER );
+        return new LongFieldSource( field.getName());
       case DOUBLE:
-        return new DoubleFieldSource( field.getName(), FieldCache.NUMERIC_UTILS_DOUBLE_PARSER );
+        return new DoubleFieldSource( field.getName());
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + field.name);
     }
@@ -706,8 +705,8 @@ public class TrieField extends PrimitiveFieldType {
 
 class TrieDateFieldSource extends LongFieldSource {
 
-  public TrieDateFieldSource(String field, FieldCache.Parser parser) {
-    super(field, parser);
+  public TrieDateFieldSource(String field) {
+    super(field);
   }
 
   @Override

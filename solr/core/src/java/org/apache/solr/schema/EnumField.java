@@ -178,7 +178,7 @@ public class EnumField extends PrimitiveFieldType {
   public SortField getSortField(SchemaField field, boolean top) {
     field.checkSortability();
     final Object missingValue = Integer.MIN_VALUE;
-    SortField sf = new SortField(field.getName(), SortField.Type.INT, top, FieldCache.NUMERIC_UTILS_INT_PARSER);
+    SortField sf = new SortField(field.getName(), SortField.Type.INT, top);
     sf.setMissingValue(missingValue);
     return sf;
   }
@@ -189,7 +189,7 @@ public class EnumField extends PrimitiveFieldType {
   @Override
   public ValueSource getValueSource(SchemaField field, QParser qparser) {
     field.checkFieldCacheSource(qparser);
-    return new EnumFieldSource(field.getName(), FieldCache.NUMERIC_UTILS_INT_PARSER, enumIntToStringMap, enumStringToIntMap);
+    return new EnumFieldSource(field.getName(), enumIntToStringMap, enumStringToIntMap);
   }
 
   /**

@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.GeneralField;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.StorableField;
@@ -32,7 +33,6 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.BoolDocValues;
 import org.apache.lucene.queries.function.valuesource.OrdFieldSource;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
@@ -179,7 +179,7 @@ class BoolFieldSource extends ValueSource {
 
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final SortedDocValues sindex = FieldCache.DEFAULT.getTermsIndex(readerContext.reader(), field);
+    final SortedDocValues sindex = DocValues.getSorted(readerContext.reader(), field);
 
     // figure out what ord maps to true
     int nord = sindex.getValueCount();

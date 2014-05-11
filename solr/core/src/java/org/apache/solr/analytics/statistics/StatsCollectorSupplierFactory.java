@@ -33,7 +33,6 @@ import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
-import org.apache.lucene.search.FieldCache;
 import org.apache.solr.analytics.expression.ExpressionFactory;
 import org.apache.solr.analytics.request.ExpressionRequest;
 import org.apache.solr.analytics.util.AnalyticsParams;
@@ -357,7 +356,7 @@ public class StatsCollectorSupplierFactory {
       if (sourceType!=NUMBER_TYPE&&sourceType!=FIELD_TYPE) {
         return null;
       }
-      return new IntFieldSource(expressionString, FieldCache.NUMERIC_UTILS_INT_PARSER) {
+      return new IntFieldSource(expressionString) {
         public String description() {
           return field;
         }
@@ -366,7 +365,7 @@ public class StatsCollectorSupplierFactory {
       if (sourceType!=NUMBER_TYPE&&sourceType!=FIELD_TYPE) {
         return null;
       }
-      return new LongFieldSource(expressionString, FieldCache.NUMERIC_UTILS_LONG_PARSER) {
+      return new LongFieldSource(expressionString) {
         public String description() {
           return field;
         }
@@ -375,7 +374,7 @@ public class StatsCollectorSupplierFactory {
       if (sourceType!=NUMBER_TYPE&&sourceType!=FIELD_TYPE) {
         return null;
       }
-      return new FloatFieldSource(expressionString, FieldCache.NUMERIC_UTILS_FLOAT_PARSER) {
+      return new FloatFieldSource(expressionString) {
         public String description() {
           return field;
         }
@@ -384,7 +383,7 @@ public class StatsCollectorSupplierFactory {
       if (sourceType!=NUMBER_TYPE&&sourceType!=FIELD_TYPE) {
         return null;
       }
-      return new DoubleFieldSource(expressionString, FieldCache.NUMERIC_UTILS_DOUBLE_PARSER) {
+      return new DoubleFieldSource(expressionString) {
         public String description() {
           return field;
         }

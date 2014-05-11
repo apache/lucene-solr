@@ -25,18 +25,21 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
 
+/*
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
 import org.apache.lucene.util.FieldCacheSanityChecker;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
+*/
+// nocommit: maybe provide something useful here instead.
 
 /**
- * A SolrInfoMBean that provides introspection of the Lucene FieldCache, this is <b>NOT</b> a cache that is managed by Solr.
+ * A SolrInfoMBean that provides introspection of the Solr FieldCache
  *
  */
 public class SolrFieldCacheMBean implements SolrInfoMBean {
 
-  protected FieldCacheSanityChecker checker = new FieldCacheSanityChecker();
+  //protected FieldCacheSanityChecker checker = new FieldCacheSanityChecker();
 
   @Override
   public String getName() { return this.getClass().getName(); }
@@ -44,8 +47,7 @@ public class SolrFieldCacheMBean implements SolrInfoMBean {
   public String getVersion() { return SolrCore.version; }
   @Override
   public String getDescription() {
-    return "Provides introspection of the Lucene FieldCache, "
-      +    "this is **NOT** a cache that is managed by Solr.";
+    return "Provides introspection of the Solr FieldCache ";
   }
   @Override
   public Category getCategory() { return Category.CACHE; } 
@@ -60,6 +62,7 @@ public class SolrFieldCacheMBean implements SolrInfoMBean {
   @Override
   public NamedList getStatistics() {
     NamedList stats = new SimpleOrderedMap();
+    /*
     CacheEntry[] entries = FieldCache.DEFAULT.getCacheEntries();
     stats.add("entries_count", entries.length);
     for (int i = 0; i < entries.length; i++) {
@@ -71,17 +74,9 @@ public class SolrFieldCacheMBean implements SolrInfoMBean {
 
     stats.add("insanity_count", insanity.length);
     for (int i = 0; i < insanity.length; i++) {
-
-      /** RAM estimation is both CPU and memory intensive... we don't want to do it unless asked.
-      // we only estimate the size of insane entries
-      for (CacheEntry e : insanity[i].getCacheEntries()) {
-        // don't re-estimate if we've already done it.
-        if (null == e.getEstimatedSize()) e.estimateSize();
-      }
-      **/
       
       stats.add("insanity#" + i, insanity[i].toString());
-    }
+    }*/
     return stats;
   }
 

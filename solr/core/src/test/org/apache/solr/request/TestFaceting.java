@@ -22,9 +22,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 
-import org.apache.lucene.index.DocTermOrds;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.uninverting.DocTermOrds;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.FacetParams;
