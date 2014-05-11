@@ -568,10 +568,14 @@ public class TestGrouping extends LuceneTestCase {
         docs.add(doc);
         if (groupValue.group != null) {
           doc.add(newStringField("group", groupValue.group.utf8ToString(), Field.Store.YES));
+          doc.add(new SortedDocValuesField("group", BytesRef.deepCopyOf(groupValue.group)));
         }
         doc.add(newStringField("sort1", groupValue.sort1.utf8ToString(), Field.Store.NO));
+        doc.add(new SortedDocValuesField("sort1", BytesRef.deepCopyOf(groupValue.sort1)));
         doc.add(newStringField("sort2", groupValue.sort2.utf8ToString(), Field.Store.NO));
+        doc.add(new SortedDocValuesField("sort2", BytesRef.deepCopyOf(groupValue.sort2)));
         doc.add(new IntField("id", groupValue.id, Field.Store.NO));
+        doc.add(new NumericDocValuesField("id", groupValue.id));
         doc.add(newTextField("content", groupValue.content, Field.Store.NO));
         //System.out.println("TEST:     doc content=" + groupValue.content + " group=" + (groupValue.group == null ? "null" : groupValue.group.utf8ToString()) + " sort1=" + groupValue.sort1.utf8ToString() + " id=" + groupValue.id);
       }
@@ -671,16 +675,16 @@ public class TestGrouping extends LuceneTestCase {
                                                                        new MockAnalyzer(random())));
       Document doc = new Document();
       Document docNoGroup = new Document();
-      Field idvGroupField = new SortedDocValuesField("group_dv", new BytesRef());
+      Field idvGroupField = new SortedDocValuesField("group", new BytesRef());
       doc.add(idvGroupField);
       docNoGroup.add(idvGroupField);
 
       Field group = newStringField("group", "", Field.Store.NO);
       doc.add(group);
-      Field sort1 = newStringField("sort1", "", Field.Store.NO);
+      Field sort1 = new SortedDocValuesField("sort1", new BytesRef());
       doc.add(sort1);
       docNoGroup.add(sort1);
-      Field sort2 = newStringField("sort2", "", Field.Store.NO);
+      Field sort2 = new SortedDocValuesField("sort2", new BytesRef());
       doc.add(sort2);
       docNoGroup.add(sort2);
       Field content = newTextField("content", "", Field.Store.NO);
@@ -722,8 +726,8 @@ public class TestGrouping extends LuceneTestCase {
           // we get null back instead of empty BytesRef:
           idvGroupField.setBytesValue(new BytesRef());
         }
-        sort1.setStringValue(groupDoc.sort1.utf8ToString());
-        sort2.setStringValue(groupDoc.sort2.utf8ToString());
+        sort1.setBytesValue(BytesRef.deepCopyOf(groupDoc.sort1));
+        sort2.setBytesValue(BytesRef.deepCopyOf(groupDoc.sort2));
         content.setStringValue(groupDoc.content);
         id.setIntValue(groupDoc.id);
         idDV.setLongValue(groupDoc.id);
@@ -846,7 +850,7 @@ public class TestGrouping extends LuceneTestCase {
             System.out.println("TEST: groupSort=" + groupSort + " docSort=" + docSort + " searchTerm=" + searchTerm + " dF=" + r.docFreq(new Term("content", searchTerm))  +" dFBlock=" + rBlocks.docFreq(new Term("content", searchTerm)) + " topNGroups=" + topNGroups + " groupOffset=" + groupOffset + " docOffset=" + docOffset + " doCache=" + doCache + " docsPerGroup=" + docsPerGroup + " doAllGroups=" + doAllGroups + " getScores=" + getScores + " getMaxScores=" + getMaxScores);
           }
 
-          String groupField = "group_dv";
+          String groupField = "group";
           if (VERBOSE) {
             System.out.println("  groupField=" + groupField);
           }
@@ -1017,7 +1021,7 @@ public class TestGrouping extends LuceneTestCase {
             }
           }
 
-          assertEquals(docIDToID, expectedGroups, groupsResult, true, true, true, getScores, groupField.endsWith("_dv"));
+          assertEquals(docIDToID, expectedGroups, groupsResult, true, true, true, getScores, true);
 
           // Confirm merged shards match:
           assertEquals(docIDToID, expectedGroups, topGroupsShards, true, false, fillFields, getScores, idvBasedImplsUsedSharded.value);
@@ -1071,10 +1075,8 @@ public class TestGrouping extends LuceneTestCase {
           }
 
           // Get shard'd block grouping result:
-          // Block index does not index DocValues so we pass
-          // false for canUseIDV:
           final TopGroups<BytesRef> topGroupsBlockShards = searchShards(sBlocks, shardsBlocks.subSearchers, query,
-              groupSort, docSort, groupOffset, topNGroups, docOffset, docsPerGroup, getScores, getMaxScores, false, false, new ValueHolder<>(false));
+              groupSort, docSort, groupOffset, topNGroups, docOffset, docsPerGroup, getScores, getMaxScores, false, false, new ValueHolder<>(true));
 
           if (expectedGroups != null) {
             // Fixup scores for reader2
@@ -1171,10 +1173,6 @@ public class TestGrouping extends LuceneTestCase {
     }
 
     String groupField = "group";
-    if (shardsCanUseIDV && random().nextBoolean()) {
-      groupField += "_dv";
-      usedIdvBasedImpl.value = true;
-    }
 
     for(int shardIDX=0;shardIDX<subSearchers.length;shardIDX++) {
 
