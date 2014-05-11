@@ -23,12 +23,14 @@ import java.util.Map;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.DocTermsIndexDocValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.mutable.MutableValue;
+import org.apache.lucene.util.mutable.MutableValueStr;
 
 /**
  * An implementation for retrieving {@link FunctionValues} instances for string based fields.
@@ -42,6 +44,7 @@ public class BytesRefFieldSource extends FieldCacheSource {
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     final FieldInfo fieldInfo = readerContext.reader().getFieldInfos().fieldInfo(field);
+
     // To be sorted or not to be sorted, that is the question
     // TODO: do it cleaner?
     if (fieldInfo != null && fieldInfo.getDocValuesType() == DocValuesType.BINARY) {
@@ -76,6 +79,27 @@ public class BytesRefFieldSource extends FieldCacheSource {
         public String toString(int doc) {
           return description() + '=' + strVal(doc);
         }
+
+        @Override
+        public ValueFiller getValueFiller() {
+          return new ValueFiller() {
+            private final MutableValueStr mval = new MutableValueStr();
+
+            @Override
+            public MutableValue getValue() {
+              return mval;
+            }
+
+            @Override
+            public void fillValue(int doc) {
+              mval.exists = docsWithField.get(doc);
+              if (mval.exists) {
+                binaryValues.get(doc, mval.value);
+              }
+            }
+          };
+        }
+
       };
     } else {
       return new DocTermsIndexDocValues(this, readerContext, field) {

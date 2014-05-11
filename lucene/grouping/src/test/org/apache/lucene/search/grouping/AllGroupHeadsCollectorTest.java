@@ -62,10 +62,6 @@ import org.apache.lucene.util.TestUtil;
 
 public class AllGroupHeadsCollectorTest extends LuceneTestCase {
 
-  private static final DocValuesType[] vts = new DocValuesType[]{
-      DocValuesType.BINARY, DocValuesType.SORTED
-  };
-
   public void testBasic() throws Exception {
     final String groupField = "author";
     Directory dir = newDirectory();
@@ -74,7 +70,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT,
             new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
-    DocValuesType valueType = vts[random().nextInt(vts.length)];
+    DocValuesType valueType = DocValuesType.SORTED;
 
     // 0
     Document doc = new Document();
@@ -200,6 +196,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
           // B/c of DV based impl we can't see the difference between an empty string and a null value.
           // For that reason we don't generate empty string groups.
           randomValue = TestUtil.randomRealisticUnicodeString(random());
+          //randomValue = TestUtil.randomSimpleString(random());
         } while ("".equals(randomValue));
         groups.add(new BytesRef(randomValue));
       }
@@ -226,31 +223,20 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
           dir,
           newIndexWriterConfig(TEST_VERSION_CURRENT,
               new MockAnalyzer(random())));
-      DocValuesType valueType = vts[random().nextInt(vts.length)];
+      DocValuesType valueType = DocValuesType.SORTED;
 
       Document doc = new Document();
       Document docNoGroup = new Document();
-      Field group = newStringField("group", "", Field.Store.NO);
-      doc.add(group);
       Field valuesField = null;
-      switch(valueType) {
-        case BINARY:
-          valuesField = new BinaryDocValuesField("group_dv", new BytesRef());
-          break;
-        case SORTED:
-          valuesField = new SortedDocValuesField("group_dv", new BytesRef());
-          break;
-        default:
-          fail("unhandled type");
-      }
+      valuesField = new SortedDocValuesField("group", new BytesRef());
       doc.add(valuesField);
-      Field sort1 = newStringField("sort1", "", Field.Store.NO);
+      Field sort1 = new SortedDocValuesField("sort1", new BytesRef());
       doc.add(sort1);
       docNoGroup.add(sort1);
-      Field sort2 = newStringField("sort2", "", Field.Store.NO);
+      Field sort2 = new SortedDocValuesField("sort2", new BytesRef());
       doc.add(sort2);
       docNoGroup.add(sort2);
-      Field sort3 = newStringField("sort3", "", Field.Store.NO);
+      Field sort3 = new SortedDocValuesField("sort3", new BytesRef());
       doc.add(sort3);
       docNoGroup.add(sort3);
       Field content = newTextField("content", "", Field.Store.NO);
@@ -258,8 +244,10 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
       docNoGroup.add(content);
       IntField id = new IntField("id", 0, Field.Store.NO);
       doc.add(id);
-      NumericDocValuesField idDV = new NumericDocValuesField("id", 0);
       docNoGroup.add(id);
+      NumericDocValuesField idDV = new NumericDocValuesField("id", 0);
+      doc.add(idDV);
+      docNoGroup.add(idDV);
       final GroupDoc[] groupDocs = new GroupDoc[numDocs];
       for (int i = 0; i < numDocs; i++) {
         final BytesRef groupValue;
@@ -286,12 +274,11 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
 
         groupDocs[i] = groupDoc;
         if (groupDoc.group != null) {
-          group.setStringValue(groupDoc.group.utf8ToString());
           valuesField.setBytesValue(new BytesRef(groupDoc.group.utf8ToString()));
         }
-        sort1.setStringValue(groupDoc.sort1.utf8ToString());
-        sort2.setStringValue(groupDoc.sort2.utf8ToString());
-        sort3.setStringValue(groupDoc.sort3.utf8ToString());
+        sort1.setBytesValue(groupDoc.sort1);
+        sort2.setBytesValue(groupDoc.sort2);
+        sort3.setBytesValue(groupDoc.sort3);
         content.setStringValue(groupDoc.content);
         id.setIntValue(groupDoc.id);
         idDV.setLongValue(groupDoc.id);
