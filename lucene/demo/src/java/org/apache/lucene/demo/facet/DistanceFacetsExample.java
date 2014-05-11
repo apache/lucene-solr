@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.expressions.SimpleBindings;
 import org.apache.lucene.expressions.js.JavascriptCompiler;
@@ -92,19 +93,26 @@ public class DistanceFacetsExample implements Closeable {
     // TODO: we could index in radians instead ... saves all the conversions in getBoundingBoxFilter
 
     // Add documents with latitude/longitude location:
+    // we index these both as DoubleFields (for bounding box/ranges) and as NumericDocValuesFields (for scoring)
     Document doc = new Document();
     doc.add(new DoubleField("latitude", 40.759011, Field.Store.NO));
+    doc.add(new NumericDocValuesField("latitude", Double.doubleToRawLongBits(40.759011)));
     doc.add(new DoubleField("longitude", -73.9844722, Field.Store.NO));
+    doc.add(new NumericDocValuesField("longitude", Double.doubleToRawLongBits(-73.9844722)));
     writer.addDocument(doc);
     
     doc = new Document();
     doc.add(new DoubleField("latitude", 40.718266, Field.Store.NO));
+    doc.add(new NumericDocValuesField("latitude", Double.doubleToRawLongBits(40.718266)));
     doc.add(new DoubleField("longitude", -74.007819, Field.Store.NO));
+    doc.add(new NumericDocValuesField("longitude", Double.doubleToRawLongBits(-74.007819)));
     writer.addDocument(doc);
     
     doc = new Document();
     doc.add(new DoubleField("latitude", 40.7051157, Field.Store.NO));
+    doc.add(new NumericDocValuesField("latitude", Double.doubleToRawLongBits(40.7051157)));
     doc.add(new DoubleField("longitude", -74.0088305, Field.Store.NO));
+    doc.add(new NumericDocValuesField("longitude", Double.doubleToRawLongBits(-74.0088305)));
     writer.addDocument(doc);
 
     // Open near-real-time searcher
