@@ -60,23 +60,6 @@ public class TestCollationKeyAnalyzer extends CollationTestBase {
        secondRangeBeginning, secondRangeEnd);
   }
   
-  public void testCollationKeySort() throws Exception {
-    Analyzer usAnalyzer 
-      = new CollationKeyAnalyzer(TEST_VERSION_CURRENT, Collator.getInstance(Locale.US));
-    Analyzer franceAnalyzer 
-      = new CollationKeyAnalyzer(TEST_VERSION_CURRENT, Collator.getInstance(Locale.FRANCE));
-    Analyzer swedenAnalyzer 
-      = new CollationKeyAnalyzer(TEST_VERSION_CURRENT, Collator.getInstance(new Locale("sv", "se")));
-    Analyzer denmarkAnalyzer 
-      = new CollationKeyAnalyzer(TEST_VERSION_CURRENT, Collator.getInstance(new Locale("da", "dk")));
-    
-    // The ICU Collator and Sun java.text.Collator implementations differ in their
-    // orderings - "BFJDH" is the ordering for java.text.Collator for Locale.US.
-    testCollationKeySort
-    (usAnalyzer, franceAnalyzer, swedenAnalyzer, denmarkAnalyzer, 
-     oStrokeFirst ? "BFJHD" : "BFJDH", "EACGI", "BJDFH", "BJDHF");
-  }
-  
   public void testThreadSafe() throws Exception {
     int iters = 20 * RANDOM_MULTIPLIER;
     for (int i = 0; i < iters; i++) {
