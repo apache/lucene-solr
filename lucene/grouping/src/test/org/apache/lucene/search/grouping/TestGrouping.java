@@ -41,6 +41,7 @@ import org.apache.lucene.search.grouping.term.TermSecondPassGroupingCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueStr;
@@ -54,6 +55,7 @@ import java.util.*;
 //   - test ties
 //   - test compound sort
 
+@SuppressCodecs({"Lucene40", "Lucene41", "Lucene42"}) // we need missing support... i think?
 public class TestGrouping extends LuceneTestCase {
 
   public void testBasic() throws Exception {
@@ -122,10 +124,6 @@ public class TestGrouping extends LuceneTestCase {
 
     final Sort groupSort = Sort.RELEVANCE;
 
-    if (random().nextBoolean()) {
-      groupField += "_dv";
-    }
-
     final AbstractFirstPassGroupingCollector<?> c1 = createRandomFirstPassCollector(groupField, groupSort, 10);
     indexSearcher.search(new TermQuery(new Term("content", "random")), c1);
 
@@ -174,8 +172,7 @@ public class TestGrouping extends LuceneTestCase {
   }
 
   private void addGroupField(Document doc, String groupField, String value) {
-    doc.add(new TextField(groupField, value, Field.Store.YES));
-    doc.add(new SortedDocValuesField(groupField + "_dv", new BytesRef(value)));
+    doc.add(new SortedDocValuesField(groupField, new BytesRef(value)));
   }
 
   private AbstractFirstPassGroupingCollector<?> createRandomFirstPassCollector(String groupField, Sort groupSort, int topDocs) throws IOException {
