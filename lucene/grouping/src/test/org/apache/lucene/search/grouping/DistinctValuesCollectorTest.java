@@ -17,6 +17,20 @@ package org.apache.lucene.search.grouping;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
@@ -41,38 +55,24 @@ import org.apache.lucene.search.grouping.term.TermDistinctValuesCollector;
 import org.apache.lucene.search.grouping.term.TermFirstPassGroupingCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueStr;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
 
+@SuppressCodecs({"Lucene40", "Lucene41", "Lucene42"}) // we need missing support... i think?
 public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
 
   private final static NullComparator nullComparator = new NullComparator();
   
   private final String groupField = "author";
-  private final String dvGroupField = "author_dv";
   private final String countField = "publisher";
-  private final String dvCountField = "publisher_dv";
 
   public void testSimple() throws Exception {
     Random random = random();
     DocValuesType[] dvTypes = new DocValuesType[]{
         DocValuesType.NUMERIC,
-        DocValuesType.BINARY,
         DocValuesType.SORTED,
     };
     Directory dir = newDirectory();
@@ -83,7 +83,6 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
             new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy()));
     boolean canUseDV = true;
     DocValuesType dvType = canUseDV ? dvTypes[random.nextInt(dvTypes.length)] : null;
-
     Document doc = new Document();
     addField(doc, groupField, "1", dvType);
     addField(doc, countField, "1", dvType);
@@ -108,7 +107,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
     w.addDocument(doc);
     w.commit(); // To ensure a second segment
 
-    // 3
+    // 3 -- no count field
     doc = new Document();
     addField(doc, groupField, "2", dvType);
     doc.add(new TextField("content", "some random text", Field.Store.NO));
@@ -166,7 +165,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
         = createDistinctCountCollector(firstCollector, groupField, countField, dvType);
     indexSearcher.search(new TermQuery(new Term("content", "random")), distinctValuesCollector);
 
-    List<? extends AbstractDistinctValuesCollector.GroupCount<Comparable<Object>>> gcs =  distinctValuesCollector.getGroups();
+    List<? extends AbstractDistinctValuesCollector.GroupCount<Comparable<Object>>> gcs = distinctValuesCollector.getGroups();
     Collections.sort(gcs, cmp);
     assertEquals(4, gcs.size());
 
@@ -251,8 +250,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
       IndexContext context = createIndexContext();
       for (int searchIter = 0; searchIter < 100; searchIter++) {
         final IndexSearcher searcher = newSearcher(context.indexReader);
-        boolean useDv = context.dvType != null && random.nextBoolean();
-        DocValuesType dvType = useDv ? context.dvType : null;
+        DocValuesType dvType = context.dvType;
         String term = context.contentStrings[random.nextInt(context.contentStrings.length)];
         Sort groupSort = new Sort(new SortField("id", SortField.Type.STRING));
         int topN = 1 + random.nextInt(10);
@@ -364,22 +362,18 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
   }
 
   private void addField(Document doc, String field, String value, DocValuesType type) {
-    doc.add(new StringField(field, value, Field.Store.YES));
-    if (type == null) {
-      return;
-    }
-    String dvField = field + "_dv";
+    assert type != null;
 
     Field valuesField = null;
     switch (type) {
       case NUMERIC:
-        valuesField = new NumericDocValuesField(dvField, Integer.parseInt(value));
+        valuesField = new NumericDocValuesField(field, Integer.parseInt(value));
         break;
       case BINARY:
-        valuesField = new BinaryDocValuesField(dvField, new BytesRef(value));
+        valuesField = new BinaryDocValuesField(field, new BytesRef(value));
         break;
       case SORTED:
-        valuesField = new SortedDocValuesField(dvField, new BytesRef(value));
+        valuesField = new SortedDocValuesField(field, new BytesRef(value));
         break;
     }
     doc.add(valuesField);
@@ -402,18 +396,11 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
   @SuppressWarnings({"unchecked","rawtypes"})
   private <T> AbstractFirstPassGroupingCollector<T> createRandomFirstPassCollector(DocValuesType dvType, Sort groupSort, String groupField, int topNGroups) throws IOException {
     Random random = random();
-    if (dvType != null) {
-      if (random.nextBoolean()) {
-        return (AbstractFirstPassGroupingCollector<T>) new FunctionFirstPassGroupingCollector(new BytesRefFieldSource(groupField), new HashMap<>(), groupSort, topNGroups);
-      } else {
-        return (AbstractFirstPassGroupingCollector<T>) new TermFirstPassGroupingCollector(groupField, groupSort, topNGroups);
-      }
+    assert dvType != null;
+    if (random.nextBoolean()) {
+      return (AbstractFirstPassGroupingCollector<T>) new FunctionFirstPassGroupingCollector(new BytesRefFieldSource(groupField), new HashMap<>(), groupSort, topNGroups);
     } else {
-      if (random.nextBoolean()) {
-        return (AbstractFirstPassGroupingCollector<T>) new FunctionFirstPassGroupingCollector(new BytesRefFieldSource(groupField), new HashMap<>(), groupSort, topNGroups);
-      } else {
-        return (AbstractFirstPassGroupingCollector<T>) new TermFirstPassGroupingCollector(groupField, groupSort, topNGroups);
-      }
+      return (AbstractFirstPassGroupingCollector<T>) new TermFirstPassGroupingCollector(groupField, groupSort, topNGroups);
     }
   }
 
@@ -444,10 +431,6 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
 
   private IndexContext createIndexContext() throws Exception {
     Random random = random();
-    DocValuesType[] dvTypes = new DocValuesType[]{
-        DocValuesType.BINARY,
-        DocValuesType.SORTED
-    };
 
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(
@@ -457,8 +440,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
         new MockAnalyzer(random)).setMergePolicy(newLogMergePolicy())
       );
 
-    boolean canUseDV = true;
-    DocValuesType dvType = canUseDV ? dvTypes[random.nextInt(dvTypes.length)] : null;
+    DocValuesType dvType = DocValuesType.SORTED;
 
     int numDocs = 86 + random.nextInt(1087) * RANDOM_MULTIPLIER;
     String[] groupValues = new String[numDocs / 5];

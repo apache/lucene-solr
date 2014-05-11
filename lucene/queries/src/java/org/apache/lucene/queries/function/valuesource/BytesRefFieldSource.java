@@ -95,6 +95,10 @@ public class BytesRefFieldSource extends FieldCacheSource {
               mval.exists = docsWithField.get(doc);
               if (mval.exists) {
                 binaryValues.get(doc, mval.value);
+              } else {
+                mval.value.bytes = BytesRef.EMPTY_BYTES;
+                mval.value.offset = 0;
+                mval.value.length = 0;
               }
             }
           };
