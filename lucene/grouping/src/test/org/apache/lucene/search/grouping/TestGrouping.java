@@ -645,7 +645,7 @@ public class TestGrouping extends LuceneTestCase {
           // For that reason we don't generate empty string
           // groups.
           randomValue = TestUtil.randomRealisticUnicodeString(random());
-          //randomValue = _TestUtil.randomSimpleString(random());
+          //randomValue = TestUtil.randomSimpleString(random());
         } while ("".equals(randomValue));
 
         groups.add(new BytesRef(randomValue));
@@ -776,6 +776,7 @@ public class TestGrouping extends LuceneTestCase {
         rBlocks = getDocBlockReader(dirBlocks, groupDocs);
         final Filter lastDocInBlock = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("groupend", "x"))));
         final NumericDocValues docIDToIDBlocks = MultiDocValues.getNumericValues(rBlocks, "id");
+        assertNotNull(docIDToIDBlocks);
 
         final IndexSearcher sBlocks = newSearcher(rBlocks);
         final ShardState shardsBlocks = new ShardState(sBlocks);
@@ -931,9 +932,8 @@ public class TestGrouping extends LuceneTestCase {
 
           // Get 1st pass top groups using shards
 
-          ValueHolder<Boolean> idvBasedImplsUsedSharded = new ValueHolder<>(false);
           final TopGroups<BytesRef> topGroupsShards = searchShards(s, shards.subSearchers, query, groupSort, docSort,
-              groupOffset, topNGroups, docOffset, docsPerGroup, getScores, getMaxScores, true, false, idvBasedImplsUsedSharded);
+              groupOffset, topNGroups, docOffset, docsPerGroup, getScores, getMaxScores, true, false);
           final AbstractSecondPassGroupingCollector<?> c2;
           if (topGroups != null) {
 
@@ -1024,7 +1024,7 @@ public class TestGrouping extends LuceneTestCase {
           assertEquals(docIDToID, expectedGroups, groupsResult, true, true, true, getScores, true);
 
           // Confirm merged shards match:
-          assertEquals(docIDToID, expectedGroups, topGroupsShards, true, false, fillFields, getScores, idvBasedImplsUsedSharded.value);
+          assertEquals(docIDToID, expectedGroups, topGroupsShards, true, false, fillFields, getScores, true);
           if (topGroupsShards != null) {
             verifyShards(shards.docStarts, topGroupsShards);
           }
@@ -1076,7 +1076,7 @@ public class TestGrouping extends LuceneTestCase {
 
           // Get shard'd block grouping result:
           final TopGroups<BytesRef> topGroupsBlockShards = searchShards(sBlocks, shardsBlocks.subSearchers, query,
-              groupSort, docSort, groupOffset, topNGroups, docOffset, docsPerGroup, getScores, getMaxScores, false, false, new ValueHolder<>(true));
+              groupSort, docSort, groupOffset, topNGroups, docOffset, docsPerGroup, getScores, getMaxScores, false, false);
 
           if (expectedGroups != null) {
             // Fixup scores for reader2
@@ -1149,7 +1149,7 @@ public class TestGrouping extends LuceneTestCase {
   }
 
   private TopGroups<BytesRef> searchShards(IndexSearcher topSearcher, ShardSearcher[] subSearchers, Query query, Sort groupSort, Sort docSort, int groupOffset, int topNGroups, int docOffset,
-                                           int topNDocs, boolean getScores, boolean getMaxScores, boolean canUseIDV, boolean preFlex, ValueHolder<Boolean> usedIdvBasedImpl) throws Exception {
+                                           int topNDocs, boolean getScores, boolean getMaxScores, boolean canUseIDV, boolean preFlex) throws Exception {
 
     // TODO: swap in caching, all groups collector hereassertEquals(expected.totalHitCount, actual.totalHitCount);
     // too...
