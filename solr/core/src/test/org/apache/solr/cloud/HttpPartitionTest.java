@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import java.io.File;
+import java.net.ServerSocket;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
@@ -62,7 +63,6 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   
   private Map<URI,SocketProxy> proxies = new HashMap<URI,SocketProxy>();
   private AtomicInteger portCounter = new AtomicInteger(0);
-  private int basePort = 49900;
   
   public HttpPartitionTest() {
     super();
@@ -106,26 +106,31 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
       String shardList, String solrConfigOverride, String schemaOverride)
       throws Exception {
     
-    int jettyPort = basePort + portCounter.incrementAndGet();
-    
     JettySolrRunner jetty = new JettySolrRunner(solrHome.getPath(), context,
-        jettyPort, solrConfigOverride, schemaOverride, false,
+        0, solrConfigOverride, schemaOverride, false,
         getExtraServlets(), sslConfig, getExtraRequestFilters());
     jetty.setShards(shardList);
-    jetty.setDataDir(getDataDir(dataDir));
+    jetty.setDataDir(getDataDir(dataDir));      
     
     // setup to proxy Http requests to this server unless it is the control
     // server
-    int proxyPort = basePort + portCounter.incrementAndGet();
-    jetty.setProxyPort(proxyPort);
-    
-    jetty.start();
+    int proxyPort = getNextAvailablePort();
+    jetty.setProxyPort(proxyPort);        
+    jetty.start();        
     
     // create a socket proxy for the jetty server ...
     SocketProxy proxy = new SocketProxy(proxyPort, jetty.getBaseUrl().toURI());
     proxies.put(proxy.getUrl(), proxy);
     
     return jetty;
+  }
+  
+  protected int getNextAvailablePort() throws Exception {    
+    int port = -1;
+    try (ServerSocket s = new ServerSocket(0)) {
+      port = s.getLocalPort();
+    }
+    return port;
   }
    
   @Override
