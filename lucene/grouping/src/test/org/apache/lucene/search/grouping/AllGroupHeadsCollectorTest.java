@@ -17,6 +17,16 @@ package org.apache.lucene.search.grouping;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
@@ -50,16 +60,6 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
 public class AllGroupHeadsCollectorTest extends LuceneTestCase {
 
   private static final DocValuesType[] vts = new DocValuesType[]{
@@ -80,24 +80,24 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     Document doc = new Document();
     addGroupField(doc, groupField, "author1", valueType);
     doc.add(newTextField("content", "random text", Field.Store.NO));
-    doc.add(new IntField("id_1", 1, Field.Store.NO));
-    doc.add(newStringField("id_2", "1", Field.Store.NO));
+    doc.add(new NumericDocValuesField("id_1", 1));
+    doc.add(new SortedDocValuesField("id_2", new BytesRef("1")));
     w.addDocument(doc);
 
     // 1
     doc = new Document();
     addGroupField(doc, groupField, "author1", valueType);
     doc.add(newTextField("content", "some more random text blob", Field.Store.NO));
-    doc.add(new IntField("id_1", 2, Field.Store.NO));
-    doc.add(newStringField("id_2", "2", Field.Store.NO));
+    doc.add(new NumericDocValuesField("id_1", 2));
+    doc.add(new SortedDocValuesField("id_2", new BytesRef("2")));
     w.addDocument(doc);
 
     // 2
     doc = new Document();
     addGroupField(doc, groupField, "author1", valueType);
     doc.add(newTextField("content", "some more random textual data", Field.Store.NO));
-    doc.add(new IntField("id_1", 3, Field.Store.NO));
-    doc.add(newStringField("id_2", "3", Field.Store.NO));
+    doc.add(new NumericDocValuesField("id_1", 3));
+    doc.add(new SortedDocValuesField("id_2", new BytesRef("3")));
     w.addDocument(doc);
     w.commit(); // To ensure a second segment
 
@@ -105,38 +105,38 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     doc = new Document();
     addGroupField(doc, groupField, "author2", valueType);
     doc.add(newTextField("content", "some random text", Field.Store.NO));
-    doc.add(new IntField("id_1", 4, Field.Store.NO));
-    doc.add(newStringField("id_2", "4", Field.Store.NO));
+    doc.add(new NumericDocValuesField("id_1", 4));
+    doc.add(new SortedDocValuesField("id_2", new BytesRef("4")));
     w.addDocument(doc);
 
     // 4
     doc = new Document();
     addGroupField(doc, groupField, "author3", valueType);
     doc.add(newTextField("content", "some more random text", Field.Store.NO));
-    doc.add(new IntField("id_1", 5, Field.Store.NO));
-    doc.add(newStringField("id_2", "5", Field.Store.NO));
+    doc.add(new NumericDocValuesField("id_1", 5));
+    doc.add(new SortedDocValuesField("id_2", new BytesRef("5")));
     w.addDocument(doc);
 
     // 5
     doc = new Document();
     addGroupField(doc, groupField, "author3", valueType);
     doc.add(newTextField("content", "random blob", Field.Store.NO));
-    doc.add(new IntField("id_1", 6, Field.Store.NO));
-    doc.add(newStringField("id_2", "6", Field.Store.NO));
+    doc.add(new NumericDocValuesField("id_1", 6));
+    doc.add(new SortedDocValuesField("id_2", new BytesRef("6")));
     w.addDocument(doc);
 
     // 6 -- no author field
     doc = new Document();
     doc.add(newTextField("content", "random word stuck in alot of other text", Field.Store.NO));
-    doc.add(new IntField("id_1", 6, Field.Store.NO));
-    doc.add(newStringField("id_2", "6", Field.Store.NO));
+    doc.add(new NumericDocValuesField("id_1", 6));
+    doc.add(new SortedDocValuesField("id_2", new BytesRef("6")));
     w.addDocument(doc);
 
     // 7 -- no author field
     doc = new Document();
     doc.add(newTextField("content", "random word stuck in alot of other text", Field.Store.NO));
-    doc.add(new IntField("id_1", 7, Field.Store.NO));
-    doc.add(newStringField("id_2", "7", Field.Store.NO));
+    doc.add(new NumericDocValuesField("id_1", 7));
+    doc.add(new SortedDocValuesField("id_2", new BytesRef("7")));
     w.addDocument(doc);
 
     IndexReader reader = w.getReader();
@@ -545,14 +545,13 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
   }
 
   private void addGroupField(Document doc, String groupField, String value, DocValuesType valueType) {
-    doc.add(new TextField(groupField, value, Field.Store.NO));
     Field valuesField = null;
     switch(valueType) {
       case BINARY:
-        valuesField = new BinaryDocValuesField(groupField + "_dv", new BytesRef(value));
+        valuesField = new BinaryDocValuesField(groupField, new BytesRef(value));
         break;
       case SORTED:
-        valuesField = new SortedDocValuesField(groupField + "_dv", new BytesRef(value));
+        valuesField = new SortedDocValuesField(groupField, new BytesRef(value));
         break;
       default:
         fail("unhandled type");
