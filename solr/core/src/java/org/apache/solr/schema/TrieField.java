@@ -153,7 +153,7 @@ public class TrieField extends PrimitiveFieldType {
         else if( sortMissingFirst ) {
           missingValue = top ? Integer.MAX_VALUE : Integer.MIN_VALUE;
         }
-        sf = new SortField( field.getName(), FieldCache.NUMERIC_UTILS_INT_PARSER, top);
+        sf = new SortField( field.getName(), SortField.Type.INT, top, FieldCache.NUMERIC_UTILS_INT_PARSER);
         sf.setMissingValue(missingValue);
         return sf;
       
@@ -164,7 +164,7 @@ public class TrieField extends PrimitiveFieldType {
         else if( sortMissingFirst ) {
           missingValue = top ? Float.POSITIVE_INFINITY : Float.NEGATIVE_INFINITY;
         }
-        sf = new SortField( field.getName(), FieldCache.NUMERIC_UTILS_FLOAT_PARSER, top);
+        sf = new SortField( field.getName(), SortField.Type.FLOAT, top, FieldCache.NUMERIC_UTILS_FLOAT_PARSER);
         sf.setMissingValue(missingValue);
         return sf;
       
@@ -176,7 +176,7 @@ public class TrieField extends PrimitiveFieldType {
         else if( sortMissingFirst ) {
           missingValue = top ? Long.MAX_VALUE : Long.MIN_VALUE;
         }
-        sf = new SortField( field.getName(), FieldCache.NUMERIC_UTILS_LONG_PARSER, top);
+        sf = new SortField( field.getName(), SortField.Type.LONG, top, FieldCache.NUMERIC_UTILS_LONG_PARSER);
         sf.setMissingValue(missingValue);
         return sf;
         
@@ -187,7 +187,7 @@ public class TrieField extends PrimitiveFieldType {
         else if( sortMissingFirst ) {
           missingValue = top ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;
         }
-        sf = new SortField( field.getName(), FieldCache.NUMERIC_UTILS_DOUBLE_PARSER, top);
+        sf = new SortField( field.getName(), SortField.Type.DOUBLE, top, FieldCache.NUMERIC_UTILS_DOUBLE_PARSER);
         sf.setMissingValue(missingValue);
         return sf;
         
@@ -706,7 +706,7 @@ public class TrieField extends PrimitiveFieldType {
 
 class TrieDateFieldSource extends LongFieldSource {
 
-  public TrieDateFieldSource(String field, FieldCache.LongParser parser) {
+  public TrieDateFieldSource(String field, FieldCache.Parser parser) {
     super(field, parser);
   }
 

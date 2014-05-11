@@ -105,8 +105,6 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.AssertingIndexSearcher;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.FieldCache.CacheEntry;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.QueryUtils.FCInvisibleMultiReader;
 import org.apache.lucene.store.BaseDirectoryWrapper;
@@ -121,7 +119,6 @@ import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.store.RateLimitedDirectoryWrapper;
-import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
@@ -741,6 +738,7 @@ public abstract class LuceneTestCase extends Assert {
     return Thread.currentThread() == threadAndTestNameRule.testCaseThread;
   }
 
+  // nocommit: move to SolrTestCaseJ4 ?
   /**
    * Asserts that FieldCacheSanityChecker does not detect any
    * problems with FieldCache.DEFAULT.
@@ -756,11 +754,9 @@ public abstract class LuceneTestCase extends Assert {
    * scoped at the class level, or to explicitly call this method
    * directly in the same scope as the IndexReader.
    * </p>
-   *
-   * @see org.apache.lucene.util.FieldCacheSanityChecker
    */
   protected static void assertSaneFieldCaches(final String msg) {
-    final CacheEntry[] entries = FieldCache.DEFAULT.getCacheEntries();
+   /* final CacheEntry[] entries = FieldCache.DEFAULT.getCacheEntries();
     Insanity[] insanity = null;
     try {
       try {
@@ -780,7 +776,7 @@ public abstract class LuceneTestCase extends Assert {
       if (null != insanity) {
         dumpArray(msg + ": Insane FieldCache usage(s)", insanity, System.err);
       }
-    }
+    } */
   }
 
   /**

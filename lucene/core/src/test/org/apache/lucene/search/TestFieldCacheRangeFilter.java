@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -440,6 +441,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     for (int d = -20; d <= 20; d++) {
       Document doc = new Document();
       doc.add(new IntField("id_int", d, Field.Store.NO));
+      doc.add(new NumericDocValuesField("id_int", d));
       doc.add(newStringField("body", "body", Field.Store.NO));
       writer.addDocument(doc);
     }

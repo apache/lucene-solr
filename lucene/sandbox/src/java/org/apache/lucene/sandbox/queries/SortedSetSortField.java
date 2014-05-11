@@ -24,7 +24,6 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.RandomAccessOrds;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
@@ -159,7 +158,7 @@ public class SortedSetSortField extends SortField {
     return new FieldComparator.TermOrdValComparator(numHits, getField(), missingValue == STRING_LAST) {
       @Override
       protected SortedDocValues getSortedDocValues(AtomicReaderContext context, String field) throws IOException {
-        SortedSetDocValues sortedSet = FieldCache.DEFAULT.getDocTermOrds(context.reader(), field);
+        SortedSetDocValues sortedSet = DocValues.getSortedSet(context.reader(), field);
         
         if (sortedSet.getValueCount() >= Integer.MAX_VALUE) {
           throw new UnsupportedOperationException("fields containing more than " + (Integer.MAX_VALUE-1) + " unique terms are unsupported");

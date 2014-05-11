@@ -1,4 +1,4 @@
-package org.apache.lucene.search;
+package org.apache.lucene.uninverting;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -30,6 +30,7 @@ import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocTermOrds;
 import org.apache.lucene.index.IndexReader; // javadocs
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Terms;
@@ -45,67 +46,11 @@ import org.apache.lucene.util.RamUsageEstimator;
  * <p>Created: May 19, 2004 11:13:14 AM
  *
  * @since   lucene 1.4
- * @see org.apache.lucene.util.FieldCacheSanityChecker
+ * @see FieldCacheSanityChecker
  *
  * @lucene.internal
  */
-public interface FieldCache {
-
-  /** Field values as 32-bit signed integers */
-  public static abstract class Ints {
-    /** Return an integer representation of this field's value. */
-    public abstract int get(int docID);
-    
-    /** Zero value for every document */
-    public static final Ints EMPTY = new Ints() {
-      @Override
-      public int get(int docID) {
-        return 0;
-      }
-    };
-  }
-
-  /** Field values as 64-bit signed long integers */
-  public static abstract class Longs {
-    /** Return an long representation of this field's value. */
-    public abstract long get(int docID);
-    
-    /** Zero value for every document */
-    public static final Longs EMPTY = new Longs() {
-      @Override
-      public long get(int docID) {
-        return 0;
-      }
-    };
-  }
-
-  /** Field values as 32-bit floats */
-  public static abstract class Floats {
-    /** Return an float representation of this field's value. */
-    public abstract float get(int docID);
-    
-    /** Zero value for every document */
-    public static final Floats EMPTY = new Floats() {
-      @Override
-      public float get(int docID) {
-        return 0;
-      }
-    };
-  }
-
-  /** Field values as 64-bit doubles */
-  public static abstract class Doubles {
-    /** Return an double representation of this field's value. */
-    public abstract double get(int docID);
-    
-    /** Zero value for every document */
-    public static final Doubles EMPTY = new Doubles() {
-      @Override
-      public double get(int docID) {
-        return 0;
-      }
-    };
-  }
+interface FieldCache {
 
   /**
    * Placeholder indicating creation of this cache is currently in-progress.
@@ -115,9 +60,7 @@ public interface FieldCache {
   }
 
   /**
-   * Marker interface as super-interface to all parsers. It
-   * is used to specify a custom parser to {@link
-   * SortField#SortField(String, FieldCache.Parser)}.
+   * interface to all parsers. It is used to parse different numeric types.
    */
   public interface Parser {
     
@@ -130,38 +73,9 @@ public interface FieldCache {
      * @throws IOException if an {@link IOException} occurs
      */
     public TermsEnum termsEnum(Terms terms) throws IOException;
-  }
-
-  /** Interface to parse ints from document fields.
-   * @see FieldCache#getInts(AtomicReader, String, FieldCache.IntParser, boolean)
-   */
-  public interface IntParser extends Parser {
-    /** Return an integer representation of this field's value. */
-    public int parseInt(BytesRef term);
-  }
-
-  /** Interface to parse floats from document fields.
-   * @see FieldCache#getFloats(AtomicReader, String, FieldCache.FloatParser, boolean)
-   */
-  public interface FloatParser extends Parser {
-    /** Return an float representation of this field's value. */
-    public float parseFloat(BytesRef term);
-  }
-
-  /** Interface to parse long from document fields.
-   * @see FieldCache#getLongs(AtomicReader, String, FieldCache.LongParser, boolean)
-   */
-  public interface LongParser extends Parser {
-    /** Return an long representation of this field's value. */
-    public long parseLong(BytesRef term);
-  }
-
-  /** Interface to parse doubles from document fields.
-   * @see FieldCache#getDoubles(AtomicReader, String, FieldCache.DoubleParser, boolean)
-   */
-  public interface DoubleParser extends Parser {
-    /** Return an double representation of this field's value. */
-    public double parseDouble(BytesRef term);
+    
+    /** Parse's this field's value */
+    public long parseValue(BytesRef term);
   }
 
   /** Expert: The cache used internally by sorting and range query classes. */
@@ -171,9 +85,9 @@ public interface FieldCache {
    * A parser instance for int values encoded by {@link NumericUtils}, e.g. when indexed
    * via {@link IntField}/{@link NumericTokenStream}.
    */
-  public static final IntParser NUMERIC_UTILS_INT_PARSER=new IntParser(){
+  public static final Parser NUMERIC_UTILS_INT_PARSER = new Parser() {
     @Override
-    public int parseInt(BytesRef term) {
+    public long parseValue(BytesRef term) {
       return NumericUtils.prefixCodedToInt(term);
     }
     
@@ -192,11 +106,14 @@ public interface FieldCache {
    * A parser instance for float values encoded with {@link NumericUtils}, e.g. when indexed
    * via {@link FloatField}/{@link NumericTokenStream}.
    */
-  public static final FloatParser NUMERIC_UTILS_FLOAT_PARSER=new FloatParser(){
+  public static final Parser NUMERIC_UTILS_FLOAT_PARSER = new Parser() {
     @Override
-    public float parseFloat(BytesRef term) {
-      return NumericUtils.sortableIntToFloat(NumericUtils.prefixCodedToInt(term));
+    public long parseValue(BytesRef term) {
+      int val = NumericUtils.prefixCodedToInt(term);
+      if (val<0) val ^= 0x7fffffff;
+      return val;
     }
+    
     @Override
     public String toString() { 
       return FieldCache.class.getName()+".NUMERIC_UTILS_FLOAT_PARSER"; 
@@ -212,9 +129,9 @@ public interface FieldCache {
    * A parser instance for long values encoded by {@link NumericUtils}, e.g. when indexed
    * via {@link LongField}/{@link NumericTokenStream}.
    */
-  public static final LongParser NUMERIC_UTILS_LONG_PARSER = new LongParser(){
+  public static final Parser NUMERIC_UTILS_LONG_PARSER = new Parser() {
     @Override
-    public long parseLong(BytesRef term) {
+    public long parseValue(BytesRef term) {
       return NumericUtils.prefixCodedToLong(term);
     }
     @Override
@@ -232,10 +149,12 @@ public interface FieldCache {
    * A parser instance for double values encoded with {@link NumericUtils}, e.g. when indexed
    * via {@link DoubleField}/{@link NumericTokenStream}.
    */
-  public static final DoubleParser NUMERIC_UTILS_DOUBLE_PARSER = new DoubleParser(){
+  public static final Parser NUMERIC_UTILS_DOUBLE_PARSER = new Parser() {
     @Override
-    public double parseDouble(BytesRef term) {
-      return NumericUtils.sortableLongToDouble(NumericUtils.prefixCodedToLong(term));
+    public long parseValue(BytesRef term) {
+      long val = NumericUtils.prefixCodedToLong(term);
+      if (val<0) val ^= 0x7fffffffffffffffL;
+      return val;
     }
     @Override
     public String toString() { 
@@ -256,83 +175,7 @@ public interface FieldCache {
   public Bits getDocsWithField(AtomicReader reader, String field) throws IOException;
 
   /**
-   * Returns an {@link Ints} over the values found in documents in the given
-   * field.
-   *
-   * @see #getInts(AtomicReader, String, IntParser, boolean)
-   */
-  public Ints getInts(AtomicReader reader, String field, boolean setDocsWithField) throws IOException;
-
-  /**
-   * Returns an {@link Ints} over the values found in documents in the given
-   * field. If the field was indexed as {@link NumericDocValuesField}, it simply
-   * uses {@link AtomicReader#getNumericDocValues(String)} to read the values.
-   * Otherwise, it checks the internal cache for an appropriate entry, and if
-   * none is found, reads the terms in <code>field</code> as ints and returns
-   * an array of size <code>reader.maxDoc()</code> of the value each document
-   * has in the given field.
-   * 
-   * @param reader
-   *          Used to get field values.
-   * @param field
-   *          Which field contains the longs.
-   * @param parser
-   *          Computes int for string values. May be {@code null} if the
-   *          requested field was indexed as {@link NumericDocValuesField} or
-   *          {@link IntField}.
-   * @param setDocsWithField
-   *          If true then {@link #getDocsWithField} will also be computed and
-   *          stored in the FieldCache.
-   * @return The values in the given field for each document.
-   * @throws IOException
-   *           If any error occurs.
-   */
-  public Ints getInts(AtomicReader reader, String field, IntParser parser, boolean setDocsWithField) throws IOException;
-
-  /**
-   * Returns a {@link Floats} over the values found in documents in the given
-   * field.
-   *
-   * @see #getFloats(AtomicReader, String, FloatParser, boolean)
-   */
-  public Floats getFloats(AtomicReader reader, String field, boolean setDocsWithField) throws IOException;
-
-  /**
-   * Returns a {@link Floats} over the values found in documents in the given
-   * field. If the field was indexed as {@link NumericDocValuesField}, it simply
-   * uses {@link AtomicReader#getNumericDocValues(String)} to read the values.
-   * Otherwise, it checks the internal cache for an appropriate entry, and if
-   * none is found, reads the terms in <code>field</code> as floats and returns
-   * an array of size <code>reader.maxDoc()</code> of the value each document
-   * has in the given field.
-   * 
-   * @param reader
-   *          Used to get field values.
-   * @param field
-   *          Which field contains the floats.
-   * @param parser
-   *          Computes float for string values. May be {@code null} if the
-   *          requested field was indexed as {@link NumericDocValuesField} or
-   *          {@link FloatField}.
-   * @param setDocsWithField
-   *          If true then {@link #getDocsWithField} will also be computed and
-   *          stored in the FieldCache.
-   * @return The values in the given field for each document.
-   * @throws IOException
-   *           If any error occurs.
-   */
-  public Floats getFloats(AtomicReader reader, String field, FloatParser parser, boolean setDocsWithField) throws IOException;
-
-  /**
-   * Returns a {@link Longs} over the values found in documents in the given
-   * field.
-   *
-   * @see #getLongs(AtomicReader, String, LongParser, boolean)
-   */
-  public Longs getLongs(AtomicReader reader, String field, boolean setDocsWithField) throws IOException;
-
-  /**
-   * Returns a {@link Longs} over the values found in documents in the given
+   * Returns a {@link NumericDocValues} over the values found in documents in the given
    * field. If the field was indexed as {@link NumericDocValuesField}, it simply
    * uses {@link AtomicReader#getNumericDocValues(String)} to read the values.
    * Otherwise, it checks the internal cache for an appropriate entry, and if
@@ -355,41 +198,7 @@ public interface FieldCache {
    * @throws IOException
    *           If any error occurs.
    */
-  public Longs getLongs(AtomicReader reader, String field, LongParser parser, boolean setDocsWithField) throws IOException;
-
-  /**
-   * Returns a {@link Doubles} over the values found in documents in the given
-   * field.
-   *
-   * @see #getDoubles(AtomicReader, String, DoubleParser, boolean)
-   */
-  public Doubles getDoubles(AtomicReader reader, String field, boolean setDocsWithField) throws IOException;
-
-  /**
-   * Returns a {@link Doubles} over the values found in documents in the given
-   * field. If the field was indexed as {@link NumericDocValuesField}, it simply
-   * uses {@link AtomicReader#getNumericDocValues(String)} to read the values.
-   * Otherwise, it checks the internal cache for an appropriate entry, and if
-   * none is found, reads the terms in <code>field</code> as doubles and returns
-   * an array of size <code>reader.maxDoc()</code> of the value each document
-   * has in the given field.
-   * 
-   * @param reader
-   *          Used to get field values.
-   * @param field
-   *          Which field contains the longs.
-   * @param parser
-   *          Computes double for string values. May be {@code null} if the
-   *          requested field was indexed as {@link NumericDocValuesField} or
-   *          {@link DoubleField}.
-   * @param setDocsWithField
-   *          If true then {@link #getDocsWithField} will also be computed and
-   *          stored in the FieldCache.
-   * @return The values in the given field for each document.
-   * @throws IOException
-   *           If any error occurs.
-   */
-  public Doubles getDoubles(AtomicReader reader, String field, DoubleParser parser, boolean setDocsWithField) throws IOException;
+  public NumericDocValues getNumerics(AtomicReader reader, String field, Parser parser, boolean setDocsWithField) throws IOException;
 
   /** Checks the internal cache for an appropriate entry, and if none
    * is found, reads the term values in <code>field</code>
@@ -562,7 +371,7 @@ public interface FieldCache {
   /**
    * If non-null, FieldCacheImpl will warn whenever
    * entries are created that are not sane according to
-   * {@link org.apache.lucene.util.FieldCacheSanityChecker}.
+   * {@link FieldCacheSanityChecker}.
    */
   public void setInfoStream(PrintStream stream);
 

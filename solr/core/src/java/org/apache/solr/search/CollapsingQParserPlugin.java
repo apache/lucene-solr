@@ -28,6 +28,7 @@ import java.util.Set;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -794,7 +795,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
   private class IntValueCollapse extends FieldValueCollapse {
 
-    private FieldCache.Ints vals;
+    private NumericDocValues vals;
     private IntCompare comp;
     private int nullVal;
     private int[] ordVals;
@@ -829,11 +830,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     public void setNextReader(AtomicReaderContext context) throws IOException {
-      this.vals = FieldCache.DEFAULT.getInts(context.reader(), this.field, false);
+      this.vals = FieldCache.DEFAULT.getNumerics(context.reader(), this.field, FieldCache.NUMERIC_UTILS_INT_PARSER, false);
     }
 
     public void collapse(int ord, int contextDoc, int globalDoc) throws IOException {
-      int val = vals.get(contextDoc);
+      int val = (int) vals.get(contextDoc);
       if(ord > -1) {
         if(comp.test(val, ordVals[ord])) {
           ords[ord] = globalDoc;
@@ -863,7 +864,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
   private class LongValueCollapse extends FieldValueCollapse {
 
-    private FieldCache.Longs vals;
+    private NumericDocValues vals;
     private LongCompare comp;
     private long nullVal;
     private long[] ordVals;
@@ -897,7 +898,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     public void setNextReader(AtomicReaderContext context) throws IOException {
-      this.vals = FieldCache.DEFAULT.getLongs(context.reader(), this.field, false);
+      this.vals = FieldCache.DEFAULT.getNumerics(context.reader(), this.field, FieldCache.NUMERIC_UTILS_LONG_PARSER, false);
     }
 
     public void collapse(int ord, int contextDoc, int globalDoc) throws IOException {
@@ -931,7 +932,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
   private class FloatValueCollapse extends FieldValueCollapse {
 
-    private FieldCache.Floats vals;
+    private NumericDocValues vals;
     private FloatCompare comp;
     private float nullVal;
     private float[] ordVals;
@@ -966,11 +967,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     public void setNextReader(AtomicReaderContext context) throws IOException {
-      this.vals = FieldCache.DEFAULT.getFloats(context.reader(), this.field, false);
+      this.vals = FieldCache.DEFAULT.getNumerics(context.reader(), this.field, FieldCache.NUMERIC_UTILS_FLOAT_PARSER, false);
     }
 
     public void collapse(int ord, int contextDoc, int globalDoc) throws IOException {
-      float val = vals.get(contextDoc);
+      float val = Float.intBitsToFloat((int)vals.get(contextDoc));
       if(ord > -1) {
         if(comp.test(val, ordVals[ord])) {
           ords[ord] = globalDoc;

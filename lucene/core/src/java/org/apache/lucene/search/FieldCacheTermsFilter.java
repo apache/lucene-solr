@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocsEnum; // javadoc @link
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.SortedDocValues;
@@ -40,17 +41,6 @@ import org.apache.lucene.util.FixedBitSet;
  * Because of drastically different implementations, they
  * also have different performance characteristics, as
  * described below.
- * 
- * <p/>
- * 
- * The first invocation of this filter on a given field will
- * be slower, since a {@link SortedDocValues} must be
- * created.  Subsequent invocations using the same field
- * will re-use this cache.  However, as with all
- * functionality based on {@link FieldCache}, persistent RAM
- * is consumed to hold the cache, and is not freed until the
- * {@link IndexReader} is closed.  In contrast, TermsFilter
- * has no persistent RAM consumption.
  * 
  * 
  * <p/>
@@ -113,13 +103,9 @@ public class FieldCacheTermsFilter extends Filter {
       this.terms[i] = new BytesRef(terms[i]);
   }
 
-  public FieldCache getFieldCache() {
-    return FieldCache.DEFAULT;
-  }
-
   @Override
   public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
-    final SortedDocValues fcsi = getFieldCache().getTermsIndex(context.reader(), field);
+    final SortedDocValues fcsi = DocValues.getSorted(context.reader(), field);
     final FixedBitSet bits = new FixedBitSet(fcsi.getValueCount());
     for (int i=0;i<terms.length;i++) {
       int ord = fcsi.lookupTerm(terms[i]);

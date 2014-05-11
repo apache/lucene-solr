@@ -24,8 +24,8 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
@@ -159,6 +159,7 @@ public class TestTermsEnum extends LuceneTestCase {
   private void addDoc(RandomIndexWriter w, Collection<String> terms, Map<BytesRef,Integer> termToID, int id) throws IOException {
     Document doc = new Document();
     doc.add(new IntField("id", id, Field.Store.YES));
+    doc.add(new NumericDocValuesField("id", id));
     if (VERBOSE) {
       System.out.println("TEST: addDoc id:" + id + " terms=" + terms);
     }
@@ -226,8 +227,7 @@ public class TestTermsEnum extends LuceneTestCase {
     final IndexReader r = w.getReader();
     w.shutdown();
 
-    // NOTE: intentional insanity!!
-    final FieldCache.Ints docIDToID = FieldCache.DEFAULT.getInts(SlowCompositeReaderWrapper.wrap(r), "id", false);
+    final NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
 
     for(int iter=0;iter<10*RANDOM_MULTIPLIER;iter++) {
 

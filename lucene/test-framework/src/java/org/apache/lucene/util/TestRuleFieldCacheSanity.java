@@ -17,8 +17,6 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.util.FieldCacheSanityChecker; // javadocs
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -38,10 +36,10 @@ import org.junit.runners.model.Statement;
  * call purgeFieldCache at the end of your test method, or refactor
  * your Test class so that the inconsistent FieldCache usages are
  * isolated in distinct test methods
- * 
- * @see FieldCacheSanityChecker
  */
 public class TestRuleFieldCacheSanity implements TestRule {
+  
+  // nocommit: move to solr?
   
   @Override
   public Statement apply(final Statement s, final Description d) {
@@ -57,7 +55,7 @@ public class TestRuleFieldCacheSanity implements TestRule {
           problem = t;
         }
 
-        FieldCache.DEFAULT.purgeAllCaches();
+        //FieldCache.DEFAULT.purgeAllCaches();
 
         if (problem != null) {
           Rethrow.rethrow(problem);

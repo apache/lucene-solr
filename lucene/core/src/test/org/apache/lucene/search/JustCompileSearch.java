@@ -95,34 +95,6 @@ final class JustCompileSearch {
     }
   }
   
-  static final class JustCompileExtendedFieldCacheLongParser implements FieldCache.LongParser {
-
-    @Override
-    public long parseLong(BytesRef string) {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public TermsEnum termsEnum(Terms terms) {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-    
-  }
-  
-  static final class JustCompileExtendedFieldCacheDoubleParser implements FieldCache.DoubleParser {
-    
-    @Override
-    public double parseDouble(BytesRef term) {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public TermsEnum termsEnum(Terms terms) {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-    
-  }
-
   static final class JustCompileFieldComparator extends FieldComparator<Object> {
 
     @Override

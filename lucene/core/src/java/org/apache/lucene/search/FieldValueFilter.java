@@ -18,15 +18,17 @@ package org.apache.lucene.search;
  */
 import java.io.IOException;
 
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Bits.MatchAllBits;
 import org.apache.lucene.util.Bits.MatchNoBits;
 
 /**
  * A {@link Filter} that accepts all documents that have one or more values in a
- * given field. This {@link Filter} request {@link Bits} from the
- * {@link FieldCache} and build the bits if not present.
+ * given field. This {@link Filter} request {@link Bits} from
+ * {@link AtomicReader#getDocsWithField}
  */
 public class FieldValueFilter extends Filter {
   private final String field;
@@ -76,7 +78,7 @@ public class FieldValueFilter extends Filter {
   @Override
   public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs)
       throws IOException {
-    final Bits docsWithField = FieldCache.DEFAULT.getDocsWithField(
+    final Bits docsWithField = DocValues.getDocsWithField(
         context.reader(), field);
     if (negate) {
       if (docsWithField instanceof MatchAllBits) {

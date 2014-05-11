@@ -18,6 +18,8 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.document.Document;
@@ -35,6 +37,7 @@ import java.util.List;
  */
 public class TestFieldCacheTermsFilter extends LuceneTestCase {
   public void testMissingTerms() throws Exception {
+    assumeTrue("requires support for missing values", defaultCodecSupportsMissingDocValues());
     String fieldName = "field1";
     Directory rd = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), rd);
@@ -42,6 +45,7 @@ public class TestFieldCacheTermsFilter extends LuceneTestCase {
       Document doc = new Document();
       int term = i * 10; //terms are units of 10;
       doc.add(newStringField(fieldName, "" + term, Field.Store.YES));
+      doc.add(new SortedDocValuesField(fieldName, new BytesRef("" + term)));
       w.addDocument(doc);
     }
     IndexReader reader = w.getReader();

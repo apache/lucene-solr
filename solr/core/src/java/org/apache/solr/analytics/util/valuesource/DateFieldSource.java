@@ -23,6 +23,7 @@ import java.util.Date;
 import java.util.Map;
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.LongDocValues;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
@@ -39,16 +40,16 @@ import org.apache.solr.schema.TrieDateField;
  */
 public class DateFieldSource extends LongFieldSource {
 
-  public DateFieldSource(String field) throws ParseException {
-    super(field, null);
+  public DateFieldSource(String field) {
+    super(field, FieldCache.NUMERIC_UTILS_LONG_PARSER);
   }
 
-  public DateFieldSource(String field, FieldCache.LongParser parser) {
+  public DateFieldSource(String field, FieldCache.Parser parser) {
     super(field, parser);
   }
 
   public long externalToLong(String extVal) {
-    return parser.parseLong(new BytesRef(extVal));
+    return parser.parseValue(new BytesRef(extVal));
   }
 
   public Object longToObject(long val) {
@@ -62,7 +63,7 @@ public class DateFieldSource extends LongFieldSource {
 
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final FieldCache.Longs arr = cache.getLongs(readerContext.reader(), field, parser, true);
+    final NumericDocValues arr = cache.getNumerics(readerContext.reader(), field, parser, true);
     final Bits valid = cache.getDocsWithField(readerContext.reader(), field);
     return new LongDocValues(this) {
       @Override

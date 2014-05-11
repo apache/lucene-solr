@@ -20,30 +20,26 @@ package org.apache.lucene.queries.function.valuesource;
 import java.io.IOException;
 import java.util.Map;
 
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSourceScorer;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueInt;
 
 /**
- * Obtains int field values from {@link FieldCache#getInts} and makes those
+ * Obtains int field values from {@link AtomicReader#getNumericDocValues} and makes those
  * values available as other numeric types, casting as needed.
  */
 public class IntFieldSource extends FieldCacheSource {
-  final FieldCache.IntParser parser;
 
   public IntFieldSource(String field) {
-    this(field, null);
-  }
-
-  public IntFieldSource(String field, FieldCache.IntParser parser) {
     super(field);
-    this.parser = parser;
   }
 
   @Override
@@ -54,50 +50,25 @@ public class IntFieldSource extends FieldCacheSource {
 
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final FieldCache.Ints arr = cache.getInts(readerContext.reader(), field, parser, true);
-    final Bits valid = cache.getDocsWithField(readerContext.reader(), field);
+    final NumericDocValues arr = DocValues.getNumeric(readerContext.reader(), field);
+    final Bits valid = DocValues.getDocsWithField(readerContext.reader(), field);
     
     return new IntDocValues(this) {
       final MutableValueInt val = new MutableValueInt();
-      
-      @Override
-      public float floatVal(int doc) {
-        return (float)arr.get(doc);
-      }
 
       @Override
       public int intVal(int doc) {
-        return arr.get(doc);
-      }
-
-      @Override
-      public long longVal(int doc) {
-        return (long)arr.get(doc);
-      }
-
-      @Override
-      public double doubleVal(int doc) {
-        return (double)arr.get(doc);
+        return (int) arr.get(doc);
       }
 
       @Override
       public String strVal(int doc) {
-        return Integer.toString(arr.get(doc));
-      }
-
-      @Override
-      public Object objectVal(int doc) {
-        return valid.get(doc) ? arr.get(doc) : null;
+        return Integer.toString(intVal(doc));
       }
 
       @Override
       public boolean exists(int doc) {
         return arr.get(doc) != 0 || valid.get(doc);
-      }
-
-      @Override
-      public String toString(int doc) {
-        return description() + '=' + intVal(doc);
       }
 
       @Override
@@ -112,13 +83,11 @@ public class IntFieldSource extends FieldCacheSource {
 
           @Override
           public void fillValue(int doc) {
-            mval.value = arr.get(doc);
+            mval.value = intVal(doc);
             mval.exists = mval.value != 0 || valid.get(doc);
           }
         };
       }
-
-      
     };
   }
 
@@ -126,14 +95,12 @@ public class IntFieldSource extends FieldCacheSource {
   public boolean equals(Object o) {
     if (o.getClass() !=  IntFieldSource.class) return false;
     IntFieldSource other = (IntFieldSource)o;
-    return super.equals(other)
-      && (this.parser==null ? other.parser==null :
-          this.parser.getClass() == other.parser.getClass());
+    return super.equals(other);
   }
 
   @Override
   public int hashCode() {
-    int h = parser==null ? Integer.class.hashCode() : parser.getClass().hashCode();
+    int h = Integer.class.hashCode();
     h += super.hashCode();
     return h;
   }

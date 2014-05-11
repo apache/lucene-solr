@@ -52,17 +52,12 @@ import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.SerialMergeScheduler;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
-import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 
 /**
  * Test very simply that perf tasks - simple algorithms - are doing what they should.
@@ -328,7 +323,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
         "content.source.forever=true",
         "directory=RAMDirectory",
         "doc.reuse.fields=false",
-        "doc.stored=false",
+        "doc.stored=true",
         "doc.tokenized=false",
         "doc.index.props=true",
         "# ----- alg ",
@@ -344,11 +339,11 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     Benchmark benchmark = execBenchmark(algLines);
 
     DirectoryReader r = DirectoryReader.open(benchmark.getRunData().getDirectory());
-    SortedDocValues idx = FieldCache.DEFAULT.getTermsIndex(SlowCompositeReaderWrapper.wrap(r), "country");
+    
     final int maxDoc = r.maxDoc();
     assertEquals(1000, maxDoc);
     for(int i=0;i<1000;i++) {
-      assertTrue("doc " + i + " has null country", idx.getOrd(i) != -1);
+      assertNotNull("doc " + i + " has null country", r.document(i).getField("country"));
     }
     r.close();
   }

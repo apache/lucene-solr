@@ -23,6 +23,7 @@ import java.util.Map;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.CompositeReader;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
@@ -30,10 +31,9 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
-import org.apache.lucene.search.FieldCache;
 
 /**
- * Obtains the ordinal of the field value from the default Lucene {@link org.apache.lucene.search.FieldCache} using getTermsIndex()
+ * Obtains the ordinal of the field value from {@link AtomicReader#getSortedDocValues}
  * and reverses the order.
  * <br>
  * The native lucene index order is used to assign an ordinal value for each field value.
@@ -72,7 +72,7 @@ public class ReverseOrdFieldSource extends ValueSource {
     final AtomicReader r = SlowCompositeReaderWrapper.wrap(topReader);
     final int off = readerContext.docBase;
 
-    final SortedDocValues sindex = FieldCache.DEFAULT.getTermsIndex(r, field);
+    final SortedDocValues sindex = DocValues.getSorted(r, field);
     final int end = sindex.getValueCount();
 
     return new IntDocValues(this) {

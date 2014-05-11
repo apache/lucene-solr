@@ -23,6 +23,7 @@ import java.util.Map;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.CompositeReader;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
@@ -30,12 +31,11 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueInt;
 
 /**
- * Obtains the ordinal of the field value from the default Lucene {@link org.apache.lucene.search.FieldCache} using getStringIndex().
+ * Obtains the ordinal of the field value from {@link AtomicReader#getSortedDocValues}.
  * <br>
  * The native lucene index order is used to assign an ordinal value for each field value.
  * <br>Field values (terms) are lexicographically ordered by unicode value, and numbered starting at 1.
@@ -71,7 +71,7 @@ public class OrdFieldSource extends ValueSource {
     final int off = readerContext.docBase;
     final IndexReader topReader = ReaderUtil.getTopLevelContext(readerContext).reader();
     final AtomicReader r = SlowCompositeReaderWrapper.wrap(topReader);
-    final SortedDocValues sindex = FieldCache.DEFAULT.getTermsIndex(r, field);
+    final SortedDocValues sindex = DocValues.getSorted(r, field);
     return new IntDocValues(this) {
       protected String toTerm(String readableValue) {
         return readableValue;

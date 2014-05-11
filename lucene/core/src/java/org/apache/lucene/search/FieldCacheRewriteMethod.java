@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Terms;
@@ -28,11 +29,12 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LongBitSet;
 
 /**
- * Rewrites MultiTermQueries into a filter, using the FieldCache for term enumeration.
+ * Rewrites MultiTermQueries into a filter, using DocValues for term enumeration.
  * <p>
  * This can be used to perform these queries against an unindexed docvalues field.
  * @lucene.experimental
  */
+// nocommit: rename this class
 public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod {
   
   @Override
@@ -83,7 +85,7 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
      */
     @Override
     public DocIdSet getDocIdSet(AtomicReaderContext context, final Bits acceptDocs) throws IOException {
-      final SortedDocValues fcsi = FieldCache.DEFAULT.getTermsIndex(context.reader(), query.field);
+      final SortedDocValues fcsi = DocValues.getSorted(context.reader(), query.field);
       // Cannot use FixedBitSet because we require long index (ord):
       final LongBitSet termSet = new LongBitSet(fcsi.getValueCount());
       TermsEnum termsEnum = query.getTermsEnum(new Terms() {

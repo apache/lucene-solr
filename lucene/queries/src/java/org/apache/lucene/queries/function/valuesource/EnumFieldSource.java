@@ -20,31 +20,31 @@ package org.apache.lucene.queries.function.valuesource;
 import java.io.IOException;
 import java.util.Map;
 
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSourceScorer;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueInt;
 
 /**
- * Obtains int field values from {@link FieldCache#getInts} and makes
+ * Obtains int field values from {@link AtomicReader#getNumericDocValues} and makes
  * those values available as other numeric types, casting as needed.
  * strVal of the value is not the int value, but its string (displayed) value
  */
 public class EnumFieldSource extends FieldCacheSource {
   static final Integer DEFAULT_VALUE = -1;
 
-  final FieldCache.IntParser parser;
   final Map<Integer, String> enumIntToStringMap;
   final Map<String, Integer> enumStringToIntMap;
 
-  public EnumFieldSource(String field, FieldCache.IntParser parser, Map<Integer, String> enumIntToStringMap, Map<String, Integer> enumStringToIntMap) {
+  public EnumFieldSource(String field, Map<Integer, String> enumIntToStringMap, Map<String, Integer> enumStringToIntMap) {
     super(field);
-    this.parser = parser;
     this.enumIntToStringMap = enumIntToStringMap;
     this.enumStringToIntMap = enumStringToIntMap;
   }
@@ -98,53 +98,27 @@ public class EnumFieldSource extends FieldCacheSource {
 
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final FieldCache.Ints arr = cache.getInts(readerContext.reader(), field, parser, true);
-    final Bits valid = cache.getDocsWithField(readerContext.reader(), field);
+    final NumericDocValues arr = DocValues.getNumeric(readerContext.reader(), field);
+    final Bits valid = DocValues.getDocsWithField(readerContext.reader(), field);
 
     return new IntDocValues(this) {
       final MutableValueInt val = new MutableValueInt();
 
       @Override
-      public float floatVal(int doc) {
-        return (float) arr.get(doc);
-      }
-
-      @Override
       public int intVal(int doc) {
-        return arr.get(doc);
-      }
-
-      @Override
-      public long longVal(int doc) {
-        return (long) arr.get(doc);
-      }
-
-      @Override
-      public double doubleVal(int doc) {
-        return (double) arr.get(doc);
+        return (int) arr.get(doc);
       }
 
       @Override
       public String strVal(int doc) {
-        Integer intValue = arr.get(doc);
+        Integer intValue = intVal(doc);
         return intValueToStringValue(intValue);
-      }
-
-      @Override
-      public Object objectVal(int doc) {
-        return valid.get(doc) ? arr.get(doc) : null;
       }
 
       @Override
       public boolean exists(int doc) {
         return valid.get(doc);
       }
-
-      @Override
-      public String toString(int doc) {
-        return description() + '=' + strVal(doc);
-      }
-
 
       @Override
       public ValueSourceScorer getRangeScorer(IndexReader reader, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
@@ -171,7 +145,7 @@ public class EnumFieldSource extends FieldCacheSource {
         return new ValueSourceScorer(reader, this) {
           @Override
           public boolean matchesValue(int doc) {
-            int val = arr.get(doc);
+            int val = intVal(doc);
             // only check for deleted if it's the default value
             // if (val==0 && reader.isDeleted(doc)) return false;
             return val >= ll && val <= uu;
@@ -191,13 +165,11 @@ public class EnumFieldSource extends FieldCacheSource {
 
           @Override
           public void fillValue(int doc) {
-            mval.value = arr.get(doc);
+            mval.value = intVal(doc);
             mval.exists = valid.get(doc);
           }
         };
       }
-
-
     };
   }
 
@@ -211,7 +183,6 @@ public class EnumFieldSource extends FieldCacheSource {
 
     if (!enumIntToStringMap.equals(that.enumIntToStringMap)) return false;
     if (!enumStringToIntMap.equals(that.enumStringToIntMap)) return false;
-    if (!parser.equals(that.parser)) return false;
 
     return true;
   }
@@ -219,7 +190,6 @@ public class EnumFieldSource extends FieldCacheSource {
   @Override
   public int hashCode() {
     int result = super.hashCode();
-    result = 31 * result + parser.hashCode();
     result = 31 * result + enumIntToStringMap.hashCode();
     result = 31 * result + enumStringToIntMap.hashCode();
     return result;

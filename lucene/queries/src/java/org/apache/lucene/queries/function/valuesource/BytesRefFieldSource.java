@@ -22,11 +22,11 @@ import java.util.Map;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.DocTermsIndexDocValues;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
@@ -45,8 +45,8 @@ public class BytesRefFieldSource extends FieldCacheSource {
     // To be sorted or not to be sorted, that is the question
     // TODO: do it cleaner?
     if (fieldInfo != null && fieldInfo.getDocValuesType() == DocValuesType.BINARY) {
-      final BinaryDocValues binaryValues = FieldCache.DEFAULT.getTerms(readerContext.reader(), field, true);
-      final Bits docsWithField = FieldCache.DEFAULT.getDocsWithField(readerContext.reader(), field);
+      final BinaryDocValues binaryValues = DocValues.getBinary(readerContext.reader(), field);
+      final Bits docsWithField = DocValues.getDocsWithField(readerContext.reader(), field);
       return new FunctionValues() {
 
         @Override

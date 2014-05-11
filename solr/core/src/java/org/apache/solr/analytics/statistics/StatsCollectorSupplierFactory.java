@@ -393,7 +393,7 @@ public class StatsCollectorSupplierFactory {
       if (sourceType!=DATE_TYPE&&sourceType!=FIELD_TYPE) {
         return null;
       }
-      return new DateFieldSource(expressionString, AnalyticsParsers.DEFAULT_DATE_PARSER) {
+      return new DateFieldSource(expressionString) {
         public String description() {
           return field;
         }

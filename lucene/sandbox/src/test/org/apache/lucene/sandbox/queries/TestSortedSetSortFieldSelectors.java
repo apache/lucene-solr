@@ -26,7 +26,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Sort;
@@ -61,18 +60,6 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     Codec.setDefault(savedCodec);
   }
   
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    // ensure there is nothing in fieldcache before test starts
-    FieldCache.DEFAULT.purgeAllCaches();
-  }
-  
-  private void assertNoFieldCaches() {
-    // docvalues sorting should NOT create any fieldcache entries!
-    assertEquals(0, FieldCache.DEFAULT.getCacheEntries().length);
-  }
-  
   public void testMax() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -98,7 +85,6 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     // 'baz' comes before 'foo'
     assertEquals("2", searcher.doc(td.scoreDocs[0].doc).get("id"));
     assertEquals("1", searcher.doc(td.scoreDocs[1].doc).get("id"));
-    assertNoFieldCaches();
     
     ir.close();
     dir.close();
@@ -129,7 +115,6 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     // 'baz' comes before 'foo'
     assertEquals("1", searcher.doc(td.scoreDocs[0].doc).get("id"));
     assertEquals("2", searcher.doc(td.scoreDocs[1].doc).get("id"));
-    assertNoFieldCaches();
     
     ir.close();
     dir.close();
@@ -167,7 +152,6 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     // 'baz' comes before 'foo'
     assertEquals("3", searcher.doc(td.scoreDocs[1].doc).get("id"));
     assertEquals("2", searcher.doc(td.scoreDocs[2].doc).get("id"));
-    assertNoFieldCaches();
     
     ir.close();
     dir.close();
@@ -205,7 +189,6 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     assertEquals("2", searcher.doc(td.scoreDocs[1].doc).get("id"));
     // null comes last
     assertEquals("1", searcher.doc(td.scoreDocs[2].doc).get("id"));
-    assertNoFieldCaches();
     
     ir.close();
     dir.close();
@@ -234,7 +217,6 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     // 'bar' comes before 'baz'
     assertEquals("1", searcher.doc(td.scoreDocs[0].doc).get("id"));
     assertEquals("2", searcher.doc(td.scoreDocs[1].doc).get("id"));
-    assertNoFieldCaches();
 
     ir.close();
     dir.close();
@@ -266,7 +248,6 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     // 'b' comes before 'c'
     assertEquals("1", searcher.doc(td.scoreDocs[0].doc).get("id"));
     assertEquals("2", searcher.doc(td.scoreDocs[1].doc).get("id"));
-    assertNoFieldCaches();
     
     ir.close();
     dir.close();
@@ -298,7 +279,6 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     // 'b' comes before 'c'
     assertEquals("2", searcher.doc(td.scoreDocs[0].doc).get("id"));
     assertEquals("1", searcher.doc(td.scoreDocs[1].doc).get("id"));
-    assertNoFieldCaches();
     
     ir.close();
     dir.close();
@@ -337,7 +317,6 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     // 'b' comes before 'c'
     assertEquals("1", searcher.doc(td.scoreDocs[1].doc).get("id"));
     assertEquals("2", searcher.doc(td.scoreDocs[2].doc).get("id"));
-    assertNoFieldCaches();
     
     ir.close();
     dir.close();
@@ -376,7 +355,6 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     assertEquals("2", searcher.doc(td.scoreDocs[1].doc).get("id"));
     // null comes last
     assertEquals("3", searcher.doc(td.scoreDocs[2].doc).get("id"));
-    assertNoFieldCaches();
     
     ir.close();
     dir.close();
@@ -405,7 +383,6 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     // 'bar' comes before 'baz'
     assertEquals("1", searcher.doc(td.scoreDocs[0].doc).get("id"));
     assertEquals("2", searcher.doc(td.scoreDocs[1].doc).get("id"));
-    assertNoFieldCaches();
 
     ir.close();
     dir.close();
@@ -437,7 +414,6 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     // 'b' comes before 'c'
     assertEquals("2", searcher.doc(td.scoreDocs[0].doc).get("id"));
     assertEquals("1", searcher.doc(td.scoreDocs[1].doc).get("id"));
-    assertNoFieldCaches();
     
     ir.close();
     dir.close();
@@ -469,7 +445,6 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     // 'b' comes before 'c'
     assertEquals("1", searcher.doc(td.scoreDocs[0].doc).get("id"));
     assertEquals("2", searcher.doc(td.scoreDocs[1].doc).get("id"));
-    assertNoFieldCaches();
     
     ir.close();
     dir.close();
@@ -508,7 +483,6 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     // 'b' comes before 'c'
     assertEquals("2", searcher.doc(td.scoreDocs[1].doc).get("id"));
     assertEquals("1", searcher.doc(td.scoreDocs[2].doc).get("id"));
-    assertNoFieldCaches();
     
     ir.close();
     dir.close();
@@ -547,7 +521,6 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     assertEquals("1", searcher.doc(td.scoreDocs[1].doc).get("id"));
     // null comes last
     assertEquals("3", searcher.doc(td.scoreDocs[2].doc).get("id"));
-    assertNoFieldCaches();
     
     ir.close();
     dir.close();
@@ -576,7 +549,6 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     // 'bar' comes before 'baz'
     assertEquals("1", searcher.doc(td.scoreDocs[0].doc).get("id"));
     assertEquals("2", searcher.doc(td.scoreDocs[1].doc).get("id"));
-    assertNoFieldCaches();
 
     ir.close();
     dir.close();

@@ -32,7 +32,9 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
@@ -87,7 +89,6 @@ public class TestSortRandom extends LuceneTestCase {
 
         br = new BytesRef(s);
         doc.add(new SortedDocValuesField("stringdv", br));
-        doc.add(newStringField("string", s, Field.Store.NO));
         docValues.add(br);
 
       } else {
@@ -124,17 +125,12 @@ public class TestSortRandom extends LuceneTestCase {
       final SortField sf;
       final boolean sortMissingLast;
       final boolean missingIsNull;
-      if (random.nextBoolean()) {
-        sf = new SortField("stringdv", SortField.Type.STRING, reverse);
-        // Can only use sort missing if the DVFormat
-        // supports docsWithField:
-        sortMissingLast = defaultCodecSupportsDocsWithField() && random().nextBoolean();
-        missingIsNull = defaultCodecSupportsDocsWithField();
-      } else {
-        sf = new SortField("string", SortField.Type.STRING, reverse);
-        sortMissingLast = random().nextBoolean();
-        missingIsNull = true;
-      }
+      sf = new SortField("stringdv", SortField.Type.STRING, reverse);
+      // Can only use sort missing if the DVFormat
+      // supports docsWithField:
+      sortMissingLast = defaultCodecSupportsDocsWithField() && random().nextBoolean();
+      missingIsNull = defaultCodecSupportsDocsWithField();
+
       if (sortMissingLast) {
         sf.setMissingValue(SortField.STRING_LAST);
       }
@@ -264,14 +260,14 @@ public class TestSortRandom extends LuceneTestCase {
     @Override
     public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
       final int maxDoc = context.reader().maxDoc();
-      final FieldCache.Ints idSource = FieldCache.DEFAULT.getInts(context.reader(), "id", false);
+      final NumericDocValues idSource = DocValues.getNumeric(context.reader(), "id");
       assertNotNull(idSource);
       final FixedBitSet bits = new FixedBitSet(maxDoc);
       for(int docID=0;docID<maxDoc;docID++) {
         if (random.nextFloat() <= density && (acceptDocs == null || acceptDocs.get(docID))) {
           bits.set(docID);
           //System.out.println("  acc id=" + idSource.getInt(docID) + " docID=" + docID);
-          matchValues.add(docValues.get(idSource.get(docID)));
+          matchValues.add(docValues.get((int) idSource.get(docID)));
         }
       }
 

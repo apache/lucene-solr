@@ -178,7 +178,7 @@ public class EnumField extends PrimitiveFieldType {
   public SortField getSortField(SchemaField field, boolean top) {
     field.checkSortability();
     final Object missingValue = Integer.MIN_VALUE;
-    SortField sf = new SortField(field.getName(), FieldCache.NUMERIC_UTILS_INT_PARSER, top);
+    SortField sf = new SortField(field.getName(), SortField.Type.INT, top, FieldCache.NUMERIC_UTILS_INT_PARSER);
     sf.setMissingValue(missingValue);
     return sf;
   }

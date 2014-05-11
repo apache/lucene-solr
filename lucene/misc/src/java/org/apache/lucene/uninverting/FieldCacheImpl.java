@@ -1,4 +1,4 @@
-package org.apache.lucene.search;
+package org.apache.lucene.uninverting;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -38,9 +38,9 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FieldCacheSanityChecker;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.packed.GrowableWriter;
@@ -61,11 +61,8 @@ class FieldCacheImpl implements FieldCache {
   }
 
   private synchronized void init() {
-    caches = new HashMap<>(9);
-    caches.put(Integer.TYPE, new IntCache(this));
-    caches.put(Float.TYPE, new FloatCache(this));
+    caches = new HashMap<>(6);
     caches.put(Long.TYPE, new LongCache(this));
-    caches.put(Double.TYPE, new DoubleCache(this));
     caches.put(BinaryDocValues.class, new BinaryDocValuesCache(this));
     caches.put(SortedDocValues.class, new SortedDocValuesCache(this));
     caches.put(DocTermOrds.class, new DocTermOrdsCache(this));
@@ -352,54 +349,6 @@ class FieldCacheImpl implements FieldCache {
     caches.get(DocsWithFieldCache.class).put(reader, new CacheKey(field, null), bits);
   }
 
-  @Override
-  public Ints getInts (AtomicReader reader, String field, boolean setDocsWithField) throws IOException {
-    return getInts(reader, field, null, setDocsWithField);
-  }
-
-  @Override
-  public Ints getInts(AtomicReader reader, String field, IntParser parser, boolean setDocsWithField)
-      throws IOException {
-    final NumericDocValues valuesIn = reader.getNumericDocValues(field);
-    if (valuesIn != null) {
-      // Not cached here by FieldCacheImpl (cached instead
-      // per-thread by SegmentReader):
-      return new Ints() {
-        @Override
-        public int get(int docID) {
-          return (int) valuesIn.get(docID);
-        }
-      };
-    } else {
-      final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
-      if (info == null) {
-        return Ints.EMPTY;
-      } else if (info.hasDocValues()) {
-        throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
-      } else if (!info.isIndexed()) {
-        return Ints.EMPTY;
-      }
-      return (Ints) caches.get(Integer.TYPE).get(reader, new CacheKey(field, parser), setDocsWithField);
-    }
-  }
-
-  static class IntsFromArray extends Ints {
-    private final PackedInts.Reader values;
-    private final int minValue;
-
-    public IntsFromArray(PackedInts.Reader values, int minValue) {
-      assert values.getBitsPerValue() <= 32;
-      this.values = values;
-      this.minValue = minValue;
-    }
-    
-    @Override
-    public int get(int docID) {
-      final long delta = values.get(docID);
-      return minValue + (int) delta;
-    }
-  }
-
   private static class HoldsOneThing<T> {
     private T it;
 
@@ -419,79 +368,6 @@ class FieldCacheImpl implements FieldCache {
     }
     public GrowableWriter writer;
     public long minValue;
-  }
-
-  static final class IntCache extends Cache {
-    IntCache(FieldCacheImpl wrapper) {
-      super(wrapper);
-    }
-
-    @Override
-    protected Object createValue(final AtomicReader reader, CacheKey key, boolean setDocsWithField)
-        throws IOException {
-
-      final IntParser parser = (IntParser) key.custom;
-      if (parser == null) {
-        // Confusing: must delegate to wrapper (vs simply
-        // setting parser = NUMERIC_UTILS_INT_PARSER) so
-        // cache key includes NUMERIC_UTILS_INT_PARSER:
-        return wrapper.getInts(reader, key.field, NUMERIC_UTILS_INT_PARSER, setDocsWithField);
-      }
-
-      final HoldsOneThing<GrowableWriterAndMinValue> valuesRef = new HoldsOneThing<>();
-
-      Uninvert u = new Uninvert() {
-          private int minValue;
-          private int currentValue;
-          private GrowableWriter values;
-
-          @Override
-          public void visitTerm(BytesRef term) {
-            currentValue = parser.parseInt(term);
-            if (values == null) {
-              // Lazy alloc so for the numeric field case
-              // (which will hit a NumberFormatException
-              // when we first try the DEFAULT_INT_PARSER),
-              // we don't double-alloc:
-              int startBitsPerValue;
-              // Make sure than missing values (0) can be stored without resizing
-              if (currentValue < 0) {
-                minValue = currentValue;
-                startBitsPerValue = PackedInts.bitsRequired((-minValue) & 0xFFFFFFFFL);
-              } else {
-                minValue = 0;
-                startBitsPerValue = PackedInts.bitsRequired(currentValue);
-              }
-              values = new GrowableWriter(startBitsPerValue, reader.maxDoc(), PackedInts.FAST);
-              if (minValue != 0) {
-                values.fill(0, values.size(), (-minValue) & 0xFFFFFFFFL); // default value must be 0
-              }
-              valuesRef.set(new GrowableWriterAndMinValue(values, minValue));
-            }
-          }
-
-          @Override
-          public void visitDoc(int docID) {
-            values.set(docID, (currentValue - minValue) & 0xFFFFFFFFL);
-          }
-
-          @Override
-          protected TermsEnum termsEnum(Terms terms) throws IOException {
-            return parser.termsEnum(terms);
-          }
-        };
-
-      u.uninvert(reader, key.field, setDocsWithField);
-
-      if (setDocsWithField) {
-        wrapper.setDocsWithField(reader, key.field, u.docsWithField);
-      }
-      GrowableWriterAndMinValue values = valuesRef.get();
-      if (values == null) {
-        return new IntsFromArray(new PackedInts.NullReader(reader.maxDoc()), 0);
-      }
-      return new IntsFromArray(values.writer.getMutable(), (int) values.minValue);
-    }
   }
 
   public Bits getDocsWithField(AtomicReader reader, String field) throws IOException {
@@ -563,145 +439,31 @@ class FieldCacheImpl implements FieldCache {
       return res;
     }
   }
-
-  @Override
-  public Floats getFloats (AtomicReader reader, String field, boolean setDocsWithField)
-    throws IOException {
-    return getFloats(reader, field, null, setDocsWithField);
-  }
-
-  @Override
-  public Floats getFloats(AtomicReader reader, String field, FloatParser parser, boolean setDocsWithField)
-    throws IOException {
-    final NumericDocValues valuesIn = reader.getNumericDocValues(field);
-    if (valuesIn != null) {
-      // Not cached here by FieldCacheImpl (cached instead
-      // per-thread by SegmentReader):
-      return new Floats() {
-        @Override
-        public float get(int docID) {
-          return Float.intBitsToFloat((int) valuesIn.get(docID));
-        }
-      };
-    } else {
-      final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
-      if (info == null) {
-        return Floats.EMPTY;
-      } else if (info.hasDocValues()) {
-        throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
-      } else if (!info.isIndexed()) {
-        return Floats.EMPTY;
-      }
-      return (Floats) caches.get(Float.TYPE).get(reader, new CacheKey(field, parser), setDocsWithField);
-    }
-  }
-
-  static class FloatsFromArray extends Floats {
-    private final float[] values;
-
-    public FloatsFromArray(float[] values) {
-      this.values = values;
-    }
-    
-    @Override
-    public float get(int docID) {
-      return values[docID];
-    }
-  }
-
-  static final class FloatCache extends Cache {
-    FloatCache(FieldCacheImpl wrapper) {
-      super(wrapper);
-    }
-
-    @Override
-    protected Object createValue(final AtomicReader reader, CacheKey key, boolean setDocsWithField)
-        throws IOException {
-
-      final FloatParser parser = (FloatParser) key.custom;
-      if (parser == null) {
-        // Confusing: must delegate to wrapper (vs simply
-        // setting parser = NUMERIC_UTILS_FLOAT_PARSER) so
-        // cache key includes NUMERIC_UTILS_FLOAT_PARSER:
-        return wrapper.getFloats(reader, key.field, NUMERIC_UTILS_FLOAT_PARSER, setDocsWithField);
-      }
-
-      final HoldsOneThing<float[]> valuesRef = new HoldsOneThing<>();
-
-      Uninvert u = new Uninvert() {
-          private float currentValue;
-          private float[] values;
-
-          @Override
-          public void visitTerm(BytesRef term) {
-            currentValue = parser.parseFloat(term);
-            if (values == null) {
-              // Lazy alloc so for the numeric field case
-              // (which will hit a NumberFormatException
-              // when we first try the DEFAULT_INT_PARSER),
-              // we don't double-alloc:
-              values = new float[reader.maxDoc()];
-              valuesRef.set(values);
-            }
-          }
-
-          @Override
-          public void visitDoc(int docID) {
-            values[docID] = currentValue;
-          }
-          
-          @Override
-          protected TermsEnum termsEnum(Terms terms) throws IOException {
-            return parser.termsEnum(terms);
-          }
-        };
-
-      u.uninvert(reader, key.field, setDocsWithField);
-
-      if (setDocsWithField) {
-        wrapper.setDocsWithField(reader, key.field, u.docsWithField);
-      }
-
-      float[] values = valuesRef.get();
-      if (values == null) {
-        values = new float[reader.maxDoc()];
-      }
-      return new FloatsFromArray(values);
-    }
-  }
-
-  @Override
-  public Longs getLongs(AtomicReader reader, String field, boolean setDocsWithField) throws IOException {
-    return getLongs(reader, field, null, setDocsWithField);
-  }
   
   @Override
-  public Longs getLongs(AtomicReader reader, String field, FieldCache.LongParser parser, boolean setDocsWithField)
-      throws IOException {
+  public NumericDocValues getNumerics(AtomicReader reader, String field, Parser parser, boolean setDocsWithField) throws IOException {
+    if (parser == null) {
+      throw new NullPointerException();
+    }
     final NumericDocValues valuesIn = reader.getNumericDocValues(field);
     if (valuesIn != null) {
       // Not cached here by FieldCacheImpl (cached instead
       // per-thread by SegmentReader):
-      return new Longs() {
-        @Override
-        public long get(int docID) {
-          return valuesIn.get(docID);
-        }
-      };
+      return valuesIn;
     } else {
       final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
       if (info == null) {
-        return Longs.EMPTY;
+        return DocValues.EMPTY_NUMERIC;
       } else if (info.hasDocValues()) {
         throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
       } else if (!info.isIndexed()) {
-        return Longs.EMPTY;
+        return DocValues.EMPTY_NUMERIC;
       }
-      return (Longs) caches.get(Long.TYPE).get(reader, new CacheKey(field, parser), setDocsWithField);
+      return (NumericDocValues) caches.get(Long.TYPE).get(reader, new CacheKey(field, parser), setDocsWithField);
     }
   }
 
-  static class LongsFromArray extends Longs {
+  static class LongsFromArray extends NumericDocValues {
     private final PackedInts.Reader values;
     private final long minValue;
 
@@ -725,13 +487,7 @@ class FieldCacheImpl implements FieldCache {
     protected Object createValue(final AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException {
 
-      final LongParser parser = (LongParser) key.custom;
-      if (parser == null) {
-        // Confusing: must delegate to wrapper (vs simply
-        // setting parser = NUMERIC_UTILS_LONG_PARSER) so
-        // cache key includes NUMERIC_UTILS_LONG_PARSER:
-        return wrapper.getLongs(reader, key.field, NUMERIC_UTILS_LONG_PARSER, setDocsWithField);
-      }
+      final Parser parser = (Parser) key.custom;
 
       final HoldsOneThing<GrowableWriterAndMinValue> valuesRef = new HoldsOneThing<>();
 
@@ -742,7 +498,7 @@ class FieldCacheImpl implements FieldCache {
 
           @Override
           public void visitTerm(BytesRef term) {
-            currentValue = parser.parseLong(term);
+            currentValue = parser.parseValue(term);
             if (values == null) {
               // Lazy alloc so for the numeric field case
               // (which will hit a NumberFormatException
@@ -786,111 +542,6 @@ class FieldCacheImpl implements FieldCache {
         return new LongsFromArray(new PackedInts.NullReader(reader.maxDoc()), 0L);
       }
       return new LongsFromArray(values.writer.getMutable(), values.minValue);
-    }
-  }
-
-  @Override
-  public Doubles getDoubles(AtomicReader reader, String field, boolean setDocsWithField)
-    throws IOException {
-    return getDoubles(reader, field, null, setDocsWithField);
-  }
-
-  @Override
-  public Doubles getDoubles(AtomicReader reader, String field, FieldCache.DoubleParser parser, boolean setDocsWithField)
-      throws IOException {
-    final NumericDocValues valuesIn = reader.getNumericDocValues(field);
-    if (valuesIn != null) {
-      // Not cached here by FieldCacheImpl (cached instead
-      // per-thread by SegmentReader):
-      return new Doubles() {
-        @Override
-        public double get(int docID) {
-          return Double.longBitsToDouble(valuesIn.get(docID));
-        }
-      };
-    } else {
-      final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
-      if (info == null) {
-        return Doubles.EMPTY;
-      } else if (info.hasDocValues()) {
-        throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
-      } else if (!info.isIndexed()) {
-        return Doubles.EMPTY;
-      }
-      return (Doubles) caches.get(Double.TYPE).get(reader, new CacheKey(field, parser), setDocsWithField);
-    }
-  }
-
-  static class DoublesFromArray extends Doubles {
-    private final double[] values;
-
-    public DoublesFromArray(double[] values) {
-      this.values = values;
-    }
-    
-    @Override
-    public double get(int docID) {
-      return values[docID];
-    }
-  }
-
-  static final class DoubleCache extends Cache {
-    DoubleCache(FieldCacheImpl wrapper) {
-      super(wrapper);
-    }
-
-    @Override
-    protected Object createValue(final AtomicReader reader, CacheKey key, boolean setDocsWithField)
-        throws IOException {
-
-      final DoubleParser parser = (DoubleParser) key.custom;
-      if (parser == null) {
-        // Confusing: must delegate to wrapper (vs simply
-        // setting parser = NUMERIC_UTILS_DOUBLE_PARSER) so
-        // cache key includes NUMERIC_UTILS_DOUBLE_PARSER:
-        return wrapper.getDoubles(reader, key.field, NUMERIC_UTILS_DOUBLE_PARSER, setDocsWithField);
-      }
-
-      final HoldsOneThing<double[]> valuesRef = new HoldsOneThing<>();
-
-      Uninvert u = new Uninvert() {
-          private double currentValue;
-          private double[] values;
-
-          @Override
-          public void visitTerm(BytesRef term) {
-            currentValue = parser.parseDouble(term);
-            if (values == null) {
-              // Lazy alloc so for the numeric field case
-              // (which will hit a NumberFormatException
-              // when we first try the DEFAULT_INT_PARSER),
-              // we don't double-alloc:
-              values = new double[reader.maxDoc()];
-              valuesRef.set(values);
-            }
-          }
-
-          @Override
-          public void visitDoc(int docID) {
-            values[docID] = currentValue;
-          }
-          
-          @Override
-          protected TermsEnum termsEnum(Terms terms) throws IOException {
-            return parser.termsEnum(terms);
-          }
-        };
-
-      u.uninvert(reader, key.field, setDocsWithField);
-
-      if (setDocsWithField) {
-        wrapper.setDocsWithField(reader, key.field, u.docsWithField);
-      }
-      double[] values = valuesRef.get();
-      if (values == null) {
-        values = new double[reader.maxDoc()];
-      }
-      return new DoublesFromArray(values);
     }
   }
 

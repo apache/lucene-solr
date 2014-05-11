@@ -18,13 +18,15 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * A range filter built on top of a cached multi-valued term field (in {@link FieldCache}).
+ * A range filter built on top of a cached multi-valued term field (from {@link AtomicReader#getSortedSetDocValues}).
  * 
  * <p>Like {@link FieldCacheRangeFilter}, this is just a specialized range query versus
  *    using a TermRangeQuery with {@link DocTermOrdsRewriteMethod}: it will only do
@@ -51,7 +53,7 @@ public abstract class DocTermOrdsRangeFilter extends Filter {
   public abstract DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException;
   
   /**
-   * Creates a BytesRef range filter using {@link FieldCache#getTermsIndex}. This works with all
+   * Creates a BytesRef range filter using {@link AtomicReader#getSortedSetDocValues}. This works with all
    * fields containing zero or one term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
@@ -59,7 +61,7 @@ public abstract class DocTermOrdsRangeFilter extends Filter {
     return new DocTermOrdsRangeFilter(field, lowerVal, upperVal, includeLower, includeUpper) {
       @Override
       public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
-        final SortedSetDocValues docTermOrds = FieldCache.DEFAULT.getDocTermOrds(context.reader(), field);
+        final SortedSetDocValues docTermOrds = DocValues.getSortedSet(context.reader(), field);
         final long lowerPoint = lowerVal == null ? -1 : docTermOrds.lookupTerm(lowerVal);
         final long upperPoint = upperVal == null ? -1 : docTermOrds.lookupTerm(upperVal);
 

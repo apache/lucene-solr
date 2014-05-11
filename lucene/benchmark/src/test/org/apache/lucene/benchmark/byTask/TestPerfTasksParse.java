@@ -42,6 +42,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import conf.ConfLoader;
 
 /** Test very simply that perf tasks are parses as expected. */
+@SuppressSysoutChecks(bugUrl = "very noisy")
 public class TestPerfTasksParse extends LuceneTestCase {
 
   static final String NEW_LINE = System.getProperty("line.separator");

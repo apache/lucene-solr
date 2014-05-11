@@ -22,18 +22,20 @@ import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.ScoreDoc;
@@ -256,6 +258,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
       docNoGroup.add(content);
       IntField id = new IntField("id", 0, Field.Store.NO);
       doc.add(id);
+      NumericDocValuesField idDV = new NumericDocValuesField("id", 0);
       docNoGroup.add(id);
       final GroupDoc[] groupDocs = new GroupDoc[numDocs];
       for (int i = 0; i < numDocs; i++) {
@@ -291,6 +294,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
         sort3.setStringValue(groupDoc.sort3.utf8ToString());
         content.setStringValue(groupDoc.content);
         id.setIntValue(groupDoc.id);
+        idDV.setLongValue(groupDoc.id);
         if (groupDoc.group == null) {
           w.addDocument(docNoGroup);
         } else {
@@ -301,11 +305,10 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
       final DirectoryReader r = w.getReader();
       w.shutdown();
 
-      // NOTE: intentional but temporary field cache insanity!
-      final FieldCache.Ints docIdToFieldId = FieldCache.DEFAULT.getInts(SlowCompositeReaderWrapper.wrap(r), "id", false);
+      final NumericDocValues docIdToFieldId = MultiDocValues.getNumericValues(r, "id");
       final int[] fieldIdToDocID = new int[numDocs];
       for (int i = 0; i < numDocs; i++) {
-        int fieldId = docIdToFieldId.get(i);
+        int fieldId = (int) docIdToFieldId.get(i);
         fieldIdToDocID[fieldId] = i;
       }
 
@@ -315,7 +318,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
         for (int contentID = 0; contentID < 3; contentID++) {
           final ScoreDoc[] hits = s.search(new TermQuery(new Term("content", "real" + contentID)), numDocs).scoreDocs;
           for (ScoreDoc hit : hits) {
-            final GroupDoc gd = groupDocs[docIdToFieldId.get(hit.doc)];
+            final GroupDoc gd = groupDocs[(int) docIdToFieldId.get(hit.doc)];
             assertTrue(gd.score == 0.0);
             gd.score = hit.score;
             int docId = gd.id;
@@ -342,7 +345,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
           int[] actualGroupHeads = allGroupHeadsCollector.retrieveGroupHeads();
           // The actual group heads contains Lucene ids. Need to change them into our id value.
           for (int i = 0; i < actualGroupHeads.length; i++) {
-            actualGroupHeads[i] = docIdToFieldId.get(actualGroupHeads[i]);
+            actualGroupHeads[i] = (int) docIdToFieldId.get(actualGroupHeads[i]);
           }
           // Allows us the easily iterate and assert the actual and expected results.
           Arrays.sort(expectedGroupHeads);

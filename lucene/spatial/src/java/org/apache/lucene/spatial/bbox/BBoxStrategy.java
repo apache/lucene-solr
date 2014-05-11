@@ -25,6 +25,7 @@ import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
@@ -64,7 +65,7 @@ import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
  * The {@link #makeBBoxAreaSimilarityValueSource(com.spatial4j.core.shape.Rectangle)}
  * works by calculating the query bbox overlap percentage against the indexed
  * shape overlap percentage. The indexed shape's coordinates are retrieved from
- * the {@link org.apache.lucene.search.FieldCache}.
+ * {@link AtomicReader#getNumericDocValues}
  *
  * @lucene.experimental
  */

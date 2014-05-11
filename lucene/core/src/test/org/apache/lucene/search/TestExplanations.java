@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -30,6 +31,7 @@ import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -73,6 +75,7 @@ public class TestExplanations extends LuceneTestCase {
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
       doc.add(newStringField(KEY, ""+i, Field.Store.NO));
+      doc.add(new SortedDocValuesField(KEY, new BytesRef(""+i)));
       Field f = newTextField(FIELD, docFields[i], Field.Store.NO);
       f.setBoost(i);
       doc.add(f);
@@ -117,9 +120,6 @@ public class TestExplanations extends LuceneTestCase {
         out[i] = ""+terms[i];
       }
       return out;
-    }
-    public ItemizedFilter(String keyField, int [] keys) {
-      super(keyField, int2str(keys));
     }
     public ItemizedFilter(int [] keys) {
       super(KEY, int2str(keys));

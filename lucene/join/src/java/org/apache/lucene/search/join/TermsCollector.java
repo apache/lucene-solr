@@ -21,10 +21,10 @@ import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.util.BytesRef;
@@ -85,7 +85,7 @@ abstract class TermsCollector extends SimpleCollector {
 
     @Override
     protected void doSetNextReader(AtomicReaderContext context) throws IOException {
-      docTermOrds = FieldCache.DEFAULT.getDocTermOrds(context.reader(), field);
+      docTermOrds = DocValues.getSortedSet(context.reader(), field);
     }
   }
 
@@ -107,7 +107,7 @@ abstract class TermsCollector extends SimpleCollector {
 
     @Override
     protected void doSetNextReader(AtomicReaderContext context) throws IOException {
-      fromDocTerms = FieldCache.DEFAULT.getTerms(context.reader(), field, false);
+      fromDocTerms = DocValues.getBinary(context.reader(), field);
     }
   }
 

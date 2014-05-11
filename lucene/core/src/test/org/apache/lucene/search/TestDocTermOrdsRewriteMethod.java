@@ -51,6 +51,7 @@ public class TestDocTermOrdsRewriteMethod extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
+    assumeTrue("requires codec support for SORTED_SET", defaultCodecSupportsSortedSet());
     dir = newDirectory();
     fieldName = random().nextBoolean() ? "field" : ""; // sometimes use an empty string as field name
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, 
@@ -65,10 +66,7 @@ public class TestDocTermOrdsRewriteMethod extends LuceneTestCase {
       for (int j = 0; j < numTerms; j++) {
         String s = TestUtil.randomUnicodeString(random());
         doc.add(newStringField(fieldName, s, Field.Store.NO));
-        // if the default codec doesn't support sortedset, we will uninvert at search time
-        if (defaultCodecSupportsSortedSet()) {
-          doc.add(new SortedSetDocValuesField(fieldName, new BytesRef(s)));
-        }
+        doc.add(new SortedSetDocValuesField(fieldName, new BytesRef(s)));
         terms.add(s);
       }
       writer.addDocument(doc);
