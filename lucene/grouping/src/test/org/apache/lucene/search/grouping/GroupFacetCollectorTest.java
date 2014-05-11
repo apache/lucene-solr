@@ -389,7 +389,6 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
         if (VERBOSE) {
           System.out.println("TEST: searchIter=" + searchIter);
         }
-        boolean useDv = !multipleFacetsPerDocument && context.useDV && random.nextBoolean();
         String searchTerm = context.contentStrings[random.nextInt(context.contentStrings.length)];
         int limit = random.nextInt(context.facetValues.size());
         int offset = random.nextInt(context.facetValues.size() - limit);
@@ -412,7 +411,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
         }
 
         GroupedFacetResult expectedFacetResult = createExpectedFacetResult(searchTerm, context, offset, limit, minCount, orderByCount, facetPrefix);
-        AbstractGroupFacetCollector groupFacetCollector = createRandomCollector(useDv ? "group_dv" : "group", useDv ? "facet_dv" : "facet", facetPrefix, multipleFacetsPerDocument);
+        AbstractGroupFacetCollector groupFacetCollector = createRandomCollector("group", "facet", facetPrefix, multipleFacetsPerDocument);
         searcher.search(new TermQuery(new Term("content", searchTerm)), groupFacetCollector);
         TermGroupFacetCollector.GroupedFacetResult actualFacetResult = groupFacetCollector.mergeSegmentResults(size, minCount, orderByCount);
 
@@ -420,7 +419,6 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
         List<TermGroupFacetCollector.FacetEntry> actualFacetEntries = actualFacetResult.getFacetEntries(offset, limit);
 
         if (VERBOSE) {
-          System.out.println("Use DV: " + useDv);
           System.out.println("Collector: " + groupFacetCollector.getClass().getSimpleName());
           System.out.println("Num group: " + context.numGroups);
           System.out.println("Num doc: " + context.numDocs);
@@ -517,35 +515,29 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
             new MockAnalyzer(random)
         )
     );
-    boolean canUseDV = true;
-    boolean useDv = canUseDV && !multipleFacetValuesPerDocument && random.nextBoolean();
-
     Document doc = new Document();
     Document docNoGroup = new Document();
     Document docNoFacet = new Document();
     Document docNoGroupNoFacet = new Document();
     Field group = newStringField("group", "", Field.Store.NO);
-    Field groupDc = new SortedDocValuesField("group_dv", new BytesRef());
-    if (useDv) {
-      doc.add(groupDc);
-      docNoFacet.add(groupDc);
-    }
+    Field groupDc = new SortedDocValuesField("group", new BytesRef());
+    doc.add(groupDc);
+    docNoFacet.add(groupDc);
     doc.add(group);
     docNoFacet.add(group);
     Field[] facetFields;
-    if (useDv) {
-      assert !multipleFacetValuesPerDocument;
+    if (multipleFacetValuesPerDocument == false) {
       facetFields = new Field[2];
       facetFields[0] = newStringField("facet", "", Field.Store.NO);
       doc.add(facetFields[0]);
       docNoGroup.add(facetFields[0]);
-      facetFields[1] = new SortedDocValuesField("facet_dv", new BytesRef());
+      facetFields[1] = new SortedDocValuesField("facet", new BytesRef());
       doc.add(facetFields[1]);
       docNoGroup.add(facetFields[1]);
     } else {
       facetFields = multipleFacetValuesPerDocument ? new Field[2 + random.nextInt(6)] : new Field[1];
       for (int i = 0; i < facetFields.length; i++) {
-        facetFields[i] = newStringField("facet", "", Field.Store.NO);
+        facetFields[i] = new SortedSetDocValuesField("facet", new BytesRef());
         doc.add(facetFields[i]);
         docNoGroup.add(facetFields[i]);
       }
@@ -579,11 +571,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
       if (random.nextInt(24) == 17) {
         // So we test the "doc doesn't have the group'd
         // field" case:
-        if (useDv) {
-          groupValue = "";
-        } else {
-          groupValue = null;
-        }
+        groupValue = "";
       } else {
         groupValue = groups.get(random.nextInt(groups.size()));
       }
@@ -595,8 +583,22 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
       Map<String, Set<String>> facetToGroups = searchTermToFacetToGroups.get(contentStr);
 
       List<String> facetVals = new ArrayList<>();
-      if (useDv || random.nextInt(24) != 18) {
-        if (useDv) {
+      if (multipleFacetValuesPerDocument == false) {
+        String facetValue = facetValues.get(random.nextInt(facetValues.size()));
+        uniqueFacetValues.add(facetValue);
+        if (!facetToGroups.containsKey(facetValue)) {
+          facetToGroups.put(facetValue, new HashSet<String>());
+        }
+        Set<String> groupsInFacet = facetToGroups.get(facetValue);
+        groupsInFacet.add(groupValue);
+        if (groupsInFacet.size() > facetWithMostGroups) {
+          facetWithMostGroups = groupsInFacet.size();
+        }
+        facetFields[0].setStringValue(facetValue);
+        facetFields[1].setBytesValue(new BytesRef(facetValue));
+        facetVals.add(facetValue);
+      } else {
+        for (Field facetField : facetFields) {
           String facetValue = facetValues.get(random.nextInt(facetValues.size()));
           uniqueFacetValues.add(facetValue);
           if (!facetToGroups.containsKey(facetValue)) {
@@ -607,34 +609,8 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
           if (groupsInFacet.size() > facetWithMostGroups) {
             facetWithMostGroups = groupsInFacet.size();
           }
-          facetFields[0].setStringValue(facetValue);
-          facetFields[1].setBytesValue(new BytesRef(facetValue));
+          facetField.setBytesValue(new BytesRef(facetValue));
           facetVals.add(facetValue);
-        } else {
-          for (Field facetField : facetFields) {
-            String facetValue = facetValues.get(random.nextInt(facetValues.size()));
-            uniqueFacetValues.add(facetValue);
-            if (!facetToGroups.containsKey(facetValue)) {
-              facetToGroups.put(facetValue, new HashSet<String>());
-            }
-            Set<String> groupsInFacet = facetToGroups.get(facetValue);
-            groupsInFacet.add(groupValue);
-            if (groupsInFacet.size() > facetWithMostGroups) {
-              facetWithMostGroups = groupsInFacet.size();
-            }
-            facetField.setStringValue(facetValue);
-            facetVals.add(facetValue);
-          }
-        }
-      } else {
-        uniqueFacetValues.add(null);
-        if (!facetToGroups.containsKey(null)) {
-          facetToGroups.put(null, new HashSet<String>());
-        }
-        Set<String> groupsInFacet = facetToGroups.get(null);
-        groupsInFacet.add(groupValue);
-        if (groupsInFacet.size() > facetWithMostGroups) {
-          facetWithMostGroups = groupsInFacet.size();
         }
       }
 
@@ -643,11 +619,10 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
       }
 
       if (groupValue != null) {
-        if (useDv) {
-          groupDc.setBytesValue(new BytesRef(groupValue));
-        }
+        groupDc.setBytesValue(new BytesRef(groupValue));
         group.setStringValue(groupValue);
-      } else if (useDv) {
+      } else {
+        // TODO: not true
         // DV cannot have missing values:
         groupDc.setBytesValue(new BytesRef());
       }
@@ -666,7 +641,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     DirectoryReader reader = writer.getReader();
     writer.shutdown();
 
-    return new IndexContext(searchTermToFacetToGroups, reader, numDocs, dir, facetWithMostGroups, numGroups, contentBrs, uniqueFacetValues, useDv);
+    return new IndexContext(searchTermToFacetToGroups, reader, numDocs, dir, facetWithMostGroups, numGroups, contentBrs, uniqueFacetValues);
   }
 
   private GroupedFacetResult createExpectedFacetResult(String searchTerm, IndexContext context, int offset, int limit, int minCount, final boolean orderByCount, String facetPrefix) {
@@ -740,7 +715,6 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
   }
 
   private AbstractGroupFacetCollector createRandomCollector(String groupField, String facetField, String facetPrefix, boolean multipleFacetsPerDocument) {
-    assert groupField.endsWith("_dv");
     BytesRef facetPrefixBR = facetPrefix == null ? null : new BytesRef(facetPrefix);
     return TermGroupFacetCollector.createTermGroupFacetCollector(groupField, facetField, multipleFacetsPerDocument, facetPrefixBR, random().nextInt(1024));
   }
@@ -766,10 +740,9 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     final int facetWithMostGroups;
     final int numGroups;
     final String[] contentStrings;
-    final boolean useDV;
 
     public IndexContext(Map<String, Map<String, Set<String>>> searchTermToFacetGroups, DirectoryReader r,
-                        int numDocs, Directory dir, int facetWithMostGroups, int numGroups, String[] contentStrings, NavigableSet<String> facetValues, boolean useDV) {
+                        int numDocs, Directory dir, int facetWithMostGroups, int numGroups, String[] contentStrings, NavigableSet<String> facetValues) {
       this.searchTermToFacetGroups = searchTermToFacetGroups;
       this.indexReader = r;
       this.numDocs = numDocs;
@@ -778,7 +751,6 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
       this.numGroups = numGroups;
       this.contentStrings = contentStrings;
       this.facetValues = facetValues;
-      this.useDV = useDV;
     }
   }
 
