@@ -17,24 +17,6 @@ package org.apache.lucene.search.grouping;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.NoMergePolicy;
-import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.grouping.term.TermGroupFacetCollector;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.TestUtil;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -49,6 +31,29 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedSetDocValuesField;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.NoMergePolicy;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.grouping.term.TermGroupFacetCollector;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.TestUtil;
+
+
+// Need SSDV
+@SuppressCodecs({"Lucene40", "Lucene41"})
 public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
 
   public void testSimple() throws Exception {
@@ -62,7 +67,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT,
             new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
-    boolean useDv = random().nextBoolean();
+    boolean useDv = true;
 
     // 0
     Document doc = new Document();
@@ -287,7 +292,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT,
             new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE));
-    boolean useDv = false;
+    boolean useDv = true;
 
     // Cannot assert this since we use NoMergePolicy:
     w.setDoRandomForceMergeAssert(false);
@@ -300,7 +305,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     // 1
     doc = new Document();
     addField(doc, groupField, "a", useDv);
-    doc.add(new StringField("airport", "ams", Field.Store.NO));
+    doc.add(new SortedSetDocValuesField("airport", new BytesRef("ams")));
     w.addDocument(doc);
 
     w.commit();
@@ -309,32 +314,32 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     // 2
     doc = new Document();
     addField(doc, groupField, "a", useDv);
-    doc.add(new StringField("airport", "ams", Field.Store.NO));
+    doc.add(new SortedSetDocValuesField("airport", new BytesRef("ams")));
     w.addDocument(doc);
 
     // 3
     doc = new Document();
     addField(doc, groupField, "a", useDv);
-    doc.add(new StringField("airport", "dus", Field.Store.NO));
+    doc.add(new SortedSetDocValuesField("airport", new BytesRef("dus")));
 
     w.addDocument(doc);
 
     // 4
     doc = new Document();
     addField(doc, groupField, "b", useDv);
-    doc.add(new StringField("airport", "ams", Field.Store.NO));
+    doc.add(new SortedSetDocValuesField("airport", new BytesRef("ams")));
     w.addDocument(doc);
 
     // 5
     doc = new Document();
     addField(doc, groupField, "b", useDv);
-    doc.add(new StringField("airport", "ams", Field.Store.NO));
+    doc.add(new SortedSetDocValuesField("airport", new BytesRef("ams")));
     w.addDocument(doc);
 
     // 6
     doc = new Document();
     addField(doc, groupField, "b", useDv);
-    doc.add(new StringField("airport", "ams", Field.Store.NO));
+    doc.add(new SortedSetDocValuesField("airport", new BytesRef("ams")));
     w.addDocument(doc);
     w.commit();
 
@@ -346,7 +351,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
 
     w.shutdown();
     IndexSearcher indexSearcher = newSearcher(DirectoryReader.open(dir));
-    AbstractGroupFacetCollector groupedAirportFacetCollector = createRandomCollector(groupField, "airport", null, true);
+    AbstractGroupFacetCollector groupedAirportFacetCollector = createRandomCollector(groupField + "_dv", "airport", null, true);
     indexSearcher.search(new MatchAllDocsQuery(), groupedAirportFacetCollector);
     TermGroupFacetCollector.GroupedFacetResult airportResult = groupedAirportFacetCollector.mergeSegmentResults(10, 0, false);
     assertEquals(3, airportResult.getTotalCount());
@@ -364,10 +369,8 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
   }
 
   private void addField(Document doc, String field, String value, boolean canUseIDV) {
-    doc.add(new StringField(field, value, Field.Store.NO));
-    if (canUseIDV) {
-      doc.add(new SortedDocValuesField(field + "_dv", new BytesRef(value)));
-    }
+    assert canUseIDV;
+    doc.add(new SortedDocValuesField(field + "_dv", new BytesRef(value)));
   }
 
   public void testRandom() throws Exception {
@@ -737,9 +740,8 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
   }
 
   private AbstractGroupFacetCollector createRandomCollector(String groupField, String facetField, String facetPrefix, boolean multipleFacetsPerDocument) {
+    assert groupField.endsWith("_dv");
     BytesRef facetPrefixBR = facetPrefix == null ? null : new BytesRef(facetPrefix);
-    // DocValues cannot be multi-valued:
-    assert !multipleFacetsPerDocument || !groupField.endsWith("_dv");
     return TermGroupFacetCollector.createTermGroupFacetCollector(groupField, facetField, multipleFacetsPerDocument, facetPrefixBR, random().nextInt(1024));
   }
 
