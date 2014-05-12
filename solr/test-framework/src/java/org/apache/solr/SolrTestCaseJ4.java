@@ -998,6 +998,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
 
   public static boolean recurseDelete(File f) {
+    if(f == null || !f.exists()) return false;
     if (f.isDirectory()) {
       for (File sub : f.listFiles()) {
         if (!recurseDelete(sub)) {
