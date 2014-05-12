@@ -68,7 +68,6 @@ public class DocCollection extends ZkNodeProps {
     this.router = router;
     this.znode = znode == null? ZkStateReader.CLUSTER_STATE : znode;
     assert name != null && slices != null;
-    if("myExternColl".equals(name) && getStateFormat()==1) throw new RuntimeException("Some problem with colection creation");
   }
 
   public DocCollection copyWith(Map<String, Slice> slices){

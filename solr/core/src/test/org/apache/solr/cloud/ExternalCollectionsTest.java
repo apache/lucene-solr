@@ -92,7 +92,7 @@ public class ExternalCollectionsTest extends AbstractFullDistribZkTestBase {
     DocCollection c = ZkStateReader.getCollectionLive(cloudClient.getZkStateReader(), collectionName);
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
     assertEquals("The zkversion of the nodes must be same zkver:" + stat.getVersion() , stat.getVersion(),clusterState.getCollection(collectionName).getZnodeVersion() );
-    assertTrue("DocCllection#isExternal() must be true", cloudClient.getZkStateReader().getClusterState().getCollection(collectionName).getStateFormat() > 1);
+    assertTrue("DocCllection#getStateFormat() must be > 1", cloudClient.getZkStateReader().getClusterState().getCollection(collectionName).getStateFormat() > 1);
 
 
     // remove collection

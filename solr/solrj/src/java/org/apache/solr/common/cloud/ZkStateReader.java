@@ -859,7 +859,7 @@ public class ZkStateReader {
 
           } catch (InterruptedException e) {
             // Restore the interrupted status
-            Thread.currentThread().interrupt();
+            Thread.interrupted();
             log.error("Unwatched collection :"+coll , e);
             return;
           }
