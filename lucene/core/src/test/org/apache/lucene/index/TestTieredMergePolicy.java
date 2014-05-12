@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
@@ -218,6 +219,8 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
     IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     TieredMergePolicy tmp = (TieredMergePolicy) iwc.getMergePolicy();
     tmp.setFloorSegmentMB(0.00001);
+    // We need stable sizes for each segment:
+    iwc.setCodec(Codec.forName("Lucene46"));
     iwc.setMergeScheduler(new SerialMergeScheduler());
     iwc.setMaxBufferedDocs(100);
     iwc.setRAMBufferSizeMB(-1);
