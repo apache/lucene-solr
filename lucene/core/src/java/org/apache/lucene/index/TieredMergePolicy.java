@@ -361,7 +361,7 @@ public class TieredMergePolicy extends MergePolicy {
         return spec;
       }
 
-      if (eligible.size() >= allowedSegCountInt) {
+      if (eligible.size() > allowedSegCountInt) {
 
         // OK we are over budget -- find best merge!
         MergeScore bestScore = null;
