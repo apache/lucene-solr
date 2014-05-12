@@ -2233,6 +2233,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       zkStateReader.getZkClient().makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + coll,
           ZkStateReader.toJSON(ZkNodeProps.makeMap(ZkController.CONFIGNAME_PROP, configName)), true);
     }
+    return configName;
 
   }
 
@@ -2249,7 +2250,6 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
 
     processResponses(results);
 
-    return configName;
   }
 
   private void sliceCmd(ClusterState clusterState, ModifiableSolrParams params, String stateMatcher, Slice slice) {
