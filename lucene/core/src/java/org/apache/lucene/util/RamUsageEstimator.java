@@ -420,6 +420,7 @@ public final class RamUsageEstimator {
       seen.add(ob);
 
       final Class<?> obClazz = ob.getClass();
+      assert obClazz != null : "jvm bug detected (Object.getClass() == null). please report this to your vendor";
       if (obClazz.isArray()) {
         /*
          * Consider an array, possibly of primitive types. Push any of its references to
