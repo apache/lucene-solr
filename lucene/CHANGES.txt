@@ -56,6 +56,8 @@ Bug fixes
 * LUCENE-5662: Add missing checks to Field to prevent IndexWriter.abort
   if a stored value is null. (Robert Muir)
 
+* LUCENE-5668: Fix off-by-one in TieredMergePolicy (Mike McCandless)
+
 ======================= Lucene 4.8.0 =======================
 
 System Requirements
