@@ -841,6 +841,9 @@ class FieldCacheImpl implements FieldCache {
   // TODO: this if DocTermsIndex was already created, we
   // should share it...
   public SortedSetDocValues getDocTermOrds(AtomicReader reader, String field, BytesRef prefix) throws IOException {
+    // not a general purpose filtering mechanism...
+    assert prefix == null || prefix == INT32_TERM_PREFIX || prefix == INT64_TERM_PREFIX;
+    
     SortedSetDocValues dv = reader.getSortedSetDocValues(field);
     if (dv != null) {
       return dv;
@@ -858,6 +861,21 @@ class FieldCacheImpl implements FieldCache {
       throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
     } else if (!info.isIndexed()) {
       return DocValues.EMPTY_SORTED_SET;
+    }
+    
+    // ok we need to uninvert. check if we can optimize a bit.
+    
+    Terms terms = reader.terms(field);
+    if (terms == null) {
+      return DocValues.EMPTY_SORTED_SET;
+    } else {
+      // if #postings = #docswithfield we know that the field is "single valued enough".
+      // its possible the same term might appear twice in the same document, but SORTED_SET discards frequency.
+      // its still ok with filtering (which we limit to numerics), it just means precisionStep = Inf
+      long numPostings = terms.getSumDocFreq();
+      if (numPostings != -1 && numPostings == terms.getDocCount()) {
+        return DocValues.singleton(getTermsIndex(reader, field));
+      }
     }
     
     DocTermOrds dto = (DocTermOrds) caches.get(DocTermOrds.class).get(reader, new CacheKey(field, prefix), false);

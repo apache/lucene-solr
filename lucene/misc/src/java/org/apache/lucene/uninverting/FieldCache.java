@@ -239,6 +239,11 @@ interface FieldCache {
    *  subsequent calls will share the same cache entry. */
   public SortedDocValues getTermsIndex(AtomicReader reader, String field, float acceptableOverheadRatio) throws IOException;
 
+  /** Can be passed to {@link #getDocTermOrds} to filter for 32-bit numeric terms */
+  public static final BytesRef INT32_TERM_PREFIX = new BytesRef(new byte[] { NumericUtils.SHIFT_START_INT });
+  /** Can be passed to {@link #getDocTermOrds} to filter for 64-bit numeric terms */
+  public static final BytesRef INT64_TERM_PREFIX = new BytesRef(new byte[] { NumericUtils.SHIFT_START_LONG });
+  
   /**
    * Checks the internal cache for an appropriate entry, and if none is found, reads the term values
    * in <code>field</code> and returns a {@link DocTermOrds} instance, providing a method to retrieve
@@ -246,11 +251,12 @@ interface FieldCache {
    *
    * @param reader  Used to build a {@link DocTermOrds} instance
    * @param field   Which field contains the strings.
-   * @param prefix  prefix for a subset of the terms which should be uninverted. Can be null.
+   * @param prefix  prefix for a subset of the terms which should be uninverted. Can be null or
+   *                {@link #INT32_TERM_PREFIX} or {@link #INT64_TERM_PREFIX}
+   *                
    * @return a {@link DocTermOrds} instance
    * @throws IOException  If any error occurs.
    */
-  // TODO: change this to take Parser
   public SortedSetDocValues getDocTermOrds(AtomicReader reader, String field, BytesRef prefix) throws IOException;
 
   /**

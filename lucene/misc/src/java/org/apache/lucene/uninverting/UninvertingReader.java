@@ -248,10 +248,6 @@ public class UninvertingReader extends FilterAtomicReader {
     }
   }
   
-  // TODO: clean this up to instead just pass parsers...
-  static final BytesRef INT32_TERM_PREFIX = new BytesRef(new byte[] { NumericUtils.SHIFT_START_INT });
-  static final BytesRef INT64_TERM_PREFIX = new BytesRef(new byte[] { NumericUtils.SHIFT_START_LONG });
-
   @Override
   public SortedSetDocValues getSortedSetDocValues(String field) throws IOException {
     Type v = mapping.get(field);
@@ -259,10 +255,10 @@ public class UninvertingReader extends FilterAtomicReader {
       switch (mapping.get(field)) {
         case SORTED_SET_INTEGER:
         case SORTED_SET_FLOAT: 
-          return FieldCache.DEFAULT.getDocTermOrds(in, field, INT32_TERM_PREFIX);
+          return FieldCache.DEFAULT.getDocTermOrds(in, field, FieldCache.INT32_TERM_PREFIX);
         case SORTED_SET_LONG:
         case SORTED_SET_DOUBLE:
-          return FieldCache.DEFAULT.getDocTermOrds(in, field, INT64_TERM_PREFIX);
+          return FieldCache.DEFAULT.getDocTermOrds(in, field, FieldCache.INT64_TERM_PREFIX);
         case SORTED_SET_BINARY:
           return FieldCache.DEFAULT.getDocTermOrds(in, field, null);
       }

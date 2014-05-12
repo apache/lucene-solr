@@ -36,6 +36,7 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -402,6 +403,8 @@ public class TestDocTermOrds extends LuceneTestCase {
     
     doc = new Document();
     doc.add(newStringField("foo", "baz", Field.Store.NO));
+    // we need a second value for a doc, or we don't actually test DocTermOrds!
+    doc.add(newStringField("foo", "car", Field.Store.NO));
     iw.addDocument(doc);
     
     DirectoryReader r1 = DirectoryReader.open(iw, true);
@@ -412,7 +415,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     FieldCache.DEFAULT.getDocTermOrds(getOnlySegmentReader(r2), "foo", null);
     
     SortedSetDocValues v = FieldCache.DEFAULT.getDocTermOrds(getOnlySegmentReader(r1), "foo", null);
-    assertEquals(2, v.getValueCount());
+    assertEquals(3, v.getValueCount());
     v.setDocument(1);
     assertEquals(1, v.nextOrd());
     
@@ -441,7 +444,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     DirectoryReader ir = DirectoryReader.open(dir);
     AtomicReader ar = getOnlySegmentReader(ir);
     
-    SortedSetDocValues v = FieldCache.DEFAULT.getDocTermOrds(ar, "foo", UninvertingReader.INT32_TERM_PREFIX);
+    SortedSetDocValues v = FieldCache.DEFAULT.getDocTermOrds(ar, "foo", FieldCache.INT32_TERM_PREFIX);
     assertEquals(2, v.getValueCount());
     
     v.setDocument(0);
@@ -483,7 +486,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     DirectoryReader ir = DirectoryReader.open(dir);
     AtomicReader ar = getOnlySegmentReader(ir);
     
-    SortedSetDocValues v = FieldCache.DEFAULT.getDocTermOrds(ar, "foo", UninvertingReader.INT64_TERM_PREFIX);
+    SortedSetDocValues v = FieldCache.DEFAULT.getDocTermOrds(ar, "foo", FieldCache.INT64_TERM_PREFIX);
     assertEquals(2, v.getValueCount());
     
     v.setDocument(0);
@@ -519,6 +522,8 @@ public class TestDocTermOrds extends LuceneTestCase {
     
     doc = new Document();
     doc.add(new StringField("field", "world", Field.Store.NO));
+    // we need a second value for a doc, or we don't actually test DocTermOrds!
+    doc.add(new StringField("field", "hello", Field.Store.NO));
     iwriter.addDocument(doc);
 
     doc = new Document();
@@ -576,5 +581,63 @@ public class TestDocTermOrds extends LuceneTestCase {
     assertEquals(2, termsEnum.ord());
     ireader.close();
     directory.close();
+  }
+  
+  public void testActuallySingleValued() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwconfig =  newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    iwconfig.setMergePolicy(newLogMergePolicy());
+    IndexWriter iw = new IndexWriter(dir, iwconfig);
+    
+    Document doc = new Document();
+    doc.add(new StringField("foo", "bar", Field.Store.NO));
+    iw.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new StringField("foo", "baz", Field.Store.NO));
+    iw.addDocument(doc);
+    
+    doc = new Document();
+    iw.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new StringField("foo", "baz", Field.Store.NO));
+    doc.add(new StringField("foo", "baz", Field.Store.NO));
+    iw.addDocument(doc);
+    
+    iw.forceMerge(1);
+    iw.shutdown();
+    
+    DirectoryReader ir = DirectoryReader.open(dir);
+    AtomicReader ar = getOnlySegmentReader(ir);
+    
+    SortedSetDocValues v = FieldCache.DEFAULT.getDocTermOrds(ar, "foo", null);
+    assertNotNull(DocValues.unwrapSingleton(v)); // actually a single-valued field
+    assertEquals(2, v.getValueCount());
+    
+    v.setDocument(0);
+    assertEquals(0, v.nextOrd());
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
+    
+    v.setDocument(1);
+    assertEquals(1, v.nextOrd());
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
+    
+    v.setDocument(2);
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
+    
+    v.setDocument(3);
+    assertEquals(1, v.nextOrd());
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
+    
+    BytesRef value = new BytesRef();
+    v.lookupOrd(0, value);
+    assertEquals("bar", value.utf8ToString());
+    
+    v.lookupOrd(1, value);
+    assertEquals("baz", value.utf8ToString());
+    
+    ir.close();
+    dir.close();
   }
 }
