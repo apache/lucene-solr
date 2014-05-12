@@ -840,7 +840,7 @@ class FieldCacheImpl implements FieldCache {
 
   // TODO: this if DocTermsIndex was already created, we
   // should share it...
-  public SortedSetDocValues getDocTermOrds(AtomicReader reader, String field) throws IOException {
+  public SortedSetDocValues getDocTermOrds(AtomicReader reader, String field, BytesRef prefix) throws IOException {
     SortedSetDocValues dv = reader.getSortedSetDocValues(field);
     if (dv != null) {
       return dv;
@@ -860,7 +860,7 @@ class FieldCacheImpl implements FieldCache {
       return DocValues.EMPTY_SORTED_SET;
     }
     
-    DocTermOrds dto = (DocTermOrds) caches.get(DocTermOrds.class).get(reader, new CacheKey(field, null), false);
+    DocTermOrds dto = (DocTermOrds) caches.get(DocTermOrds.class).get(reader, new CacheKey(field, prefix), false);
     return dto.iterator(reader);
   }
 
@@ -872,7 +872,8 @@ class FieldCacheImpl implements FieldCache {
     @Override
     protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField /* ignored */)
         throws IOException {
-      return new DocTermOrds(reader, null, key.field);
+      BytesRef prefix = (BytesRef) key.custom;
+      return new DocTermOrds(reader, null, key.field, prefix);
     }
   }
 

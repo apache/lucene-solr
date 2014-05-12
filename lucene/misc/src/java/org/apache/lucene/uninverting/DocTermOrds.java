@@ -185,6 +185,8 @@ public class DocTermOrds {
   public DocTermOrds(AtomicReader reader, Bits liveDocs, String field) throws IOException {
     this(reader, liveDocs, field, null, Integer.MAX_VALUE);
   }
+  
+  // TODO: instead of all these ctors and options, take termsenum!
 
   /** Inverts only terms starting w/ prefix */
   public DocTermOrds(AtomicReader reader, Bits liveDocs, String field, BytesRef termPrefix) throws IOException {

@@ -21,6 +21,15 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
 
+import org.apache.lucene.document.IntField; // javadocs
+import org.apache.lucene.document.LongField; // javadocs
+import org.apache.lucene.document.FloatField; // javadocs
+import org.apache.lucene.document.DoubleField; // javadocs
+import org.apache.lucene.document.BinaryDocValuesField; // javadocs
+import org.apache.lucene.document.NumericDocValuesField; // javadocs
+import org.apache.lucene.document.SortedDocValuesField; // javadocs
+import org.apache.lucene.document.SortedSetDocValuesField; // javadocs
+import org.apache.lucene.document.StringField; // javadocs
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
@@ -32,19 +41,110 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.NumericUtils;
 
+/**
+ * A FilterReader that exposes <i>indexed</i> values as if they also had
+ * docvalues.
+ * <p>
+ * This is accomplished by "inverting the inverted index" or "uninversion".
+ * <p>
+ * The uninversion process happens lazily: upon the first request for the 
+ * field's docvalues (e.g. via {@link AtomicReader#getNumericDocValues(String)} 
+ * or similar), it will create the docvalues on-the-fly if needed and cache it,
+ * based on the core cache key of the wrapped AtomicReader.
+ */
 public class UninvertingReader extends FilterAtomicReader {
   
+  /**
+   * Specifies the type of uninversion to apply for the field. 
+   */
   public static enum Type {
+    /** 
+     * Single-valued Integer, (e.g. indexed with {@link IntField})
+     * <p>
+     * Fields with this type act as if they were indexed with
+     * {@link NumericDocValuesField}.
+     */
     INTEGER,
+    /** 
+     * Single-valued Long, (e.g. indexed with {@link LongField}) 
+     * <p>
+     * Fields with this type act as if they were indexed with
+     * {@link NumericDocValuesField}.
+     */
     LONG,
+    /** 
+     * Single-valued Float, (e.g. indexed with {@link FloatField}) 
+     * <p>
+     * Fields with this type act as if they were indexed with
+     * {@link NumericDocValuesField}.
+     */
     FLOAT,
+    /** 
+     * Single-valued Double, (e.g. indexed with {@link DoubleField}) 
+     * <p>
+     * Fields with this type act as if they were indexed with
+     * {@link NumericDocValuesField}.
+     */
     DOUBLE,
+    /** 
+     * Single-valued Binary, (e.g. indexed with {@link StringField}) 
+     * <p>
+     * Fields with this type act as if they were indexed with
+     * {@link BinaryDocValuesField}.
+     */
     BINARY,
+    /** 
+     * Single-valued Binary, (e.g. indexed with {@link StringField}) 
+     * <p>
+     * Fields with this type act as if they were indexed with
+     * {@link SortedDocValuesField}.
+     */
     SORTED,
-    SORTED_SET
+    /** 
+     * Multi-valued Binary, (e.g. indexed with {@link StringField}) 
+     * <p>
+     * Fields with this type act as if they were indexed with
+     * {@link SortedSetDocValuesField}.
+     */
+    SORTED_SET_BINARY,
+    /** 
+     * Multi-valued Integer, (e.g. indexed with {@link IntField}) 
+     * <p>
+     * Fields with this type act as if they were indexed with
+     * {@link SortedSetDocValuesField}.
+     */
+    SORTED_SET_INTEGER,
+    /** 
+     * Multi-valued Float, (e.g. indexed with {@link FloatField}) 
+     * <p>
+     * Fields with this type act as if they were indexed with
+     * {@link SortedSetDocValuesField}.
+     */
+    SORTED_SET_FLOAT,
+    /** 
+     * Multi-valued Long, (e.g. indexed with {@link LongField}) 
+     * <p>
+     * Fields with this type act as if they were indexed with
+     * {@link SortedSetDocValuesField}.
+     */
+    SORTED_SET_LONG,
+    /** 
+     * Multi-valued Double, (e.g. indexed with {@link DoubleField}) 
+     * <p>
+     * Fields with this type act as if they were indexed with
+     * {@link SortedSetDocValuesField}.
+     */
+    SORTED_SET_DOUBLE
   }
   
+  /**
+   * Wraps a provided DirectoryReader. Note that for convenience, the returned reader
+   * can be used normally (e.g. passed to {@link DirectoryReader#openIfChanged(DirectoryReader)})
+   * and so on. 
+   */
   public static DirectoryReader wrap(DirectoryReader in, final Map<String,Type> mapping) {
     return new UninvertingDirectoryReader(in, mapping);
   }
@@ -93,7 +193,11 @@ public class UninvertingReader extends FilterAtomicReader {
             case SORTED:
               type = FieldInfo.DocValuesType.SORTED;
               break;
-            case SORTED_SET:
+            case SORTED_SET_BINARY:
+            case SORTED_SET_INTEGER:
+            case SORTED_SET_FLOAT:
+            case SORTED_SET_LONG:
+            case SORTED_SET_DOUBLE:
               type = FieldInfo.DocValuesType.SORTED_SET;
               break;
             default:
@@ -143,14 +247,27 @@ public class UninvertingReader extends FilterAtomicReader {
       return in.getSortedDocValues(field);
     }
   }
+  
+  // TODO: clean this up to instead just pass parsers...
+  static final BytesRef INT32_TERM_PREFIX = new BytesRef(new byte[] { NumericUtils.SHIFT_START_INT });
+  static final BytesRef INT64_TERM_PREFIX = new BytesRef(new byte[] { NumericUtils.SHIFT_START_LONG });
 
   @Override
   public SortedSetDocValues getSortedSetDocValues(String field) throws IOException {
-    if (mapping.get(field) == Type.SORTED_SET) {
-      return FieldCache.DEFAULT.getDocTermOrds(in, field);
-    } else {
-      return in.getSortedSetDocValues(field);
+    Type v = mapping.get(field);
+    if (v != null) {
+      switch (mapping.get(field)) {
+        case SORTED_SET_INTEGER:
+        case SORTED_SET_FLOAT: 
+          return FieldCache.DEFAULT.getDocTermOrds(in, field, INT32_TERM_PREFIX);
+        case SORTED_SET_LONG:
+        case SORTED_SET_DOUBLE:
+          return FieldCache.DEFAULT.getDocTermOrds(in, field, INT64_TERM_PREFIX);
+        case SORTED_SET_BINARY:
+          return FieldCache.DEFAULT.getDocTermOrds(in, field, null);
+      }
     }
+    return in.getSortedSetDocValues(field);
   }
 
   @Override

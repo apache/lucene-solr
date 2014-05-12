@@ -265,10 +265,10 @@ public class TestFieldCache extends LuceneTestCase {
     terms = cache.getTerms(reader, "bogusfield", false);
 
     // getDocTermOrds
-    SortedSetDocValues termOrds = cache.getDocTermOrds(reader, "theRandomUnicodeMultiValuedField");
+    SortedSetDocValues termOrds = cache.getDocTermOrds(reader, "theRandomUnicodeMultiValuedField", null);
     int numEntries = cache.getCacheEntries().length;
     // ask for it again, and check that we didnt create any additional entries:
-    termOrds = cache.getDocTermOrds(reader, "theRandomUnicodeMultiValuedField");
+    termOrds = cache.getDocTermOrds(reader, "theRandomUnicodeMultiValuedField", null);
     assertEquals(numEntries, cache.getCacheEntries().length);
 
     for (int i = 0; i < NUM_DOCS; i++) {
@@ -290,7 +290,7 @@ public class TestFieldCache extends LuceneTestCase {
     }
 
     // test bad field
-    termOrds = cache.getDocTermOrds(reader, "bogusfield");
+    termOrds = cache.getDocTermOrds(reader, "bogusfield", null);
     assertTrue(termOrds.getValueCount() == 0);
 
     FieldCache.DEFAULT.purgeByCacheKey(reader.getCoreCacheKey());
@@ -466,7 +466,7 @@ public class TestFieldCache extends LuceneTestCase {
     } catch (IllegalStateException expected) {}
     
     try {
-      FieldCache.DEFAULT.getDocTermOrds(ar, "binary");
+      FieldCache.DEFAULT.getDocTermOrds(ar, "binary", null);
       fail();
     } catch (IllegalStateException expected) {}
     
@@ -499,7 +499,7 @@ public class TestFieldCache extends LuceneTestCase {
     sorted.get(0, scratch);
     assertEquals("sorted value", scratch.utf8ToString());
     
-    SortedSetDocValues sortedSet = FieldCache.DEFAULT.getDocTermOrds(ar, "sorted");
+    SortedSetDocValues sortedSet = FieldCache.DEFAULT.getDocTermOrds(ar, "sorted", null);
     sortedSet.setDocument(0);
     assertEquals(0, sortedSet.nextOrd());
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, sortedSet.nextOrd());
@@ -523,7 +523,7 @@ public class TestFieldCache extends LuceneTestCase {
     } catch (IllegalStateException expected) {}
     
     try {
-      FieldCache.DEFAULT.getDocTermOrds(ar, "numeric");
+      FieldCache.DEFAULT.getDocTermOrds(ar, "numeric", null);
       fail();
     } catch (IllegalStateException expected) {}
     
@@ -557,7 +557,7 @@ public class TestFieldCache extends LuceneTestCase {
         fail();
       } catch (IllegalStateException expected) {}
     
-      sortedSet = FieldCache.DEFAULT.getDocTermOrds(ar, "sortedset");
+      sortedSet = FieldCache.DEFAULT.getDocTermOrds(ar, "sortedset", null);
       sortedSet.setDocument(0);
       assertEquals(0, sortedSet.nextOrd());
       assertEquals(1, sortedSet.nextOrd());
@@ -608,7 +608,7 @@ public class TestFieldCache extends LuceneTestCase {
     sorted.get(0, scratch);
     assertEquals(0, scratch.length);
     
-    SortedSetDocValues sortedSet = cache.getDocTermOrds(ar, "bogusmultivalued");
+    SortedSetDocValues sortedSet = cache.getDocTermOrds(ar, "bogusmultivalued", null);
     sortedSet.setDocument(0);
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, sortedSet.nextOrd());
     
@@ -667,7 +667,7 @@ public class TestFieldCache extends LuceneTestCase {
     sorted.get(0, scratch);
     assertEquals(0, scratch.length);
     
-    SortedSetDocValues sortedSet = cache.getDocTermOrds(ar, "bogusmultivalued");
+    SortedSetDocValues sortedSet = cache.getDocTermOrds(ar, "bogusmultivalued", null);
     sortedSet.setDocument(0);
     assertEquals(SortedSetDocValues.NO_MORE_ORDS, sortedSet.nextOrd());
     

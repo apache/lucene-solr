@@ -246,10 +246,12 @@ interface FieldCache {
    *
    * @param reader  Used to build a {@link DocTermOrds} instance
    * @param field   Which field contains the strings.
+   * @param prefix  prefix for a subset of the terms which should be uninverted. Can be null.
    * @return a {@link DocTermOrds} instance
    * @throws IOException  If any error occurs.
    */
-  public SortedSetDocValues getDocTermOrds(AtomicReader reader, String field) throws IOException;
+  // TODO: change this to take Parser
+  public SortedSetDocValues getDocTermOrds(AtomicReader reader, String field, BytesRef prefix) throws IOException;
 
   /**
    * EXPERT: A unique Identifier/Description for each item in the FieldCache. 
