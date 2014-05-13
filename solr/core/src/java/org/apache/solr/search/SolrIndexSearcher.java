@@ -175,7 +175,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   
   private String path;
   private final boolean reserveDirectory;
-  private final boolean createdDirectory; 
+  private boolean createdDirectory; 
   
   private static DirectoryReader getReader(SolrCore core, SolrIndexConfig config, DirectoryFactory directoryFactory, String path) throws IOException {
     DirectoryReader reader = null;
@@ -200,6 +200,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   public SolrIndexSearcher(SolrCore core, String path, IndexSchema schema, SolrIndexConfig config, String name, boolean enableCache, DirectoryFactory directoryFactory) throws IOException {
     // we don't need to reserve the directory because we get it from the factory
     this(core, path, schema, config, name, getReader(core, config, directoryFactory, path), true, enableCache, false, directoryFactory);
+    this.createdDirectory = true;
   }
 
   public SolrIndexSearcher(SolrCore core, String path, IndexSchema schema, SolrIndexConfig config, String name, DirectoryReader r, boolean closeReader, boolean enableCache, boolean reserveDirectory, DirectoryFactory directoryFactory) throws IOException {
@@ -224,7 +225,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     Directory dir = getIndexReader().directory();
     
     this.reserveDirectory = reserveDirectory;
-    this.createdDirectory = r == null;
     if (reserveDirectory) {
       // keep the directory from being released while we use it
       directoryFactory.incRef(dir);
