@@ -1,4 +1,4 @@
-package org.apache.lucene.sandbox.queries;
+package org.apache.lucene.search;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -50,7 +50,7 @@ public class TestSortedSetSortField extends LuceneTestCase {
     assertEquals(0, td.totalHits);
     
     // for an empty index, any selector should work
-    for (SortedSetSortField.Selector v : SortedSetSortField.Selector.values()) {
+    for (SortedSetSelector.Type v : SortedSetSelector.Type.values()) {
       sort.setSort(new SortedSetSortField("sortedset", false, v));
       td = empty.search(query, null, 10, sort, true, true);
       assertEquals(0, td.totalHits);
@@ -69,7 +69,7 @@ public class TestSortedSetSortField extends LuceneTestCase {
     
     assertFalse(sf.equals(new SortedSetSortField("a", true)));
     assertFalse(sf.equals(new SortedSetSortField("b", false)));
-    assertFalse(sf.equals(new SortedSetSortField("a", false, SortedSetSortField.Selector.MAX)));
+    assertFalse(sf.equals(new SortedSetSortField("a", false, SortedSetSelector.Type.MAX)));
     assertFalse(sf.equals("foo"));
   }
   
