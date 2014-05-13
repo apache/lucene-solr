@@ -273,7 +273,7 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
   }
 
   public void testDocsStuckInRAMForever() throws Exception {
-    Directory dir = newFSDirectory(createTempDir());
+    Directory dir = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwc.setRAMBufferSizeMB(.2);
     Codec codec = Codec.forName("Lucene46");

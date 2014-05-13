@@ -225,7 +225,7 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
     iwc.setMaxBufferedDocs(100);
     iwc.setRAMBufferSizeMB(-1);
     IndexWriter w = new IndexWriter(dir, iwc);
-    for(int i=0;i<100000;i++) {
+    for(int i=0;i<15000*RANDOM_MULTIPLIER;i++) {
       Document doc = new Document();
       doc.add(newTextField("id", random().nextLong() + "" + random().nextLong(), Field.Store.YES));
       w.addDocument(doc);
