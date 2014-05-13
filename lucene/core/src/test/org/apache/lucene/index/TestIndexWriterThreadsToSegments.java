@@ -160,7 +160,7 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
   // LUCENE-5644: index docs w/ multiple threads but in between flushes we limit how many threads can index concurrently in the next
   // iteration, and then verify that no more segments were flushed than number of threads:
   public void testSegmentCountOnFlushRandom() throws Exception {
-    Directory dir = newDirectory();
+    Directory dir = newFSDirectory(createTempDir());
     IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
 
     int maxThreadStates = TestUtil.nextInt(random(), 1, 12);
