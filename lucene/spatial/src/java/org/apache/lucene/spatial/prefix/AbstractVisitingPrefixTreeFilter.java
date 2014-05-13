@@ -222,10 +222,10 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
 
       //Check for adjacent leaf (happens for indexed non-point shapes)
       if (hasIndexedLeaves && cell.getLevel() != 0) {
-        //If the next indexed term just adds a leaf marker ('+') to cell,
+        //If the next indexed term just adds a leaf marker to cell,
         // then add all of those docs
         scanCell = grid.readCell(thisTerm, scanCell);
-        assert curVNode.cell.isPrefixOf(scanCell);
+        assert curVNode.cell.isPrefixOf(scanCell) : "missing leaf or descendants";
         if (scanCell.getLevel() == cell.getLevel() && scanCell.isLeaf()) {
           visitLeaf(scanCell);
           //advance
@@ -347,7 +347,6 @@ public abstract class AbstractVisitingPrefixTreeFilter extends AbstractPrefixTre
      * might not even intersect the query shape, so be sure to check for that.
      */
     protected abstract void visitScanned(Cell cell) throws IOException;
-
 
     protected void preSiblings(VNode vNode) throws IOException {
     }
