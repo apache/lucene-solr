@@ -369,7 +369,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     
     long cpg = reader.getIndexCommit().getGeneration();
     try {
-      if (closeReader) reader.decRef();
+      if (closeReader) rawReader.decRef();
     } catch (Exception e) {
       SolrException.log(log, "Problem dec ref'ing reader", e);
     }

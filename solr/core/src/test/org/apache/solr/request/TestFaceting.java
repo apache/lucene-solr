@@ -22,6 +22,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.uninverting.DocTermOrds;
@@ -81,12 +84,11 @@ public class TestFaceting extends SolrTestCaseJ4 {
     createIndex(size);
     req = lrf.makeRequest("q","*:*");
 
-    UnInvertedField uif = new UnInvertedField(proto.field(), req.getSearcher());
+    SortedSetDocValues dv = DocValues.getSortedSet(req.getSearcher().getAtomicReader(), proto.field());
 
-    assertEquals(size, uif.getNumTerms());
+    assertEquals(size, dv.getValueCount());
 
-    TermsEnum te = uif.getOrdTermsEnum(req.getSearcher().getAtomicReader());
-    assertEquals(size == 0, te == null);
+    TermsEnum te = dv.termsEnum();
 
     Random r = new Random(size);
     // test seeking by term string
@@ -763,16 +765,16 @@ public class TestFaceting extends SolrTestCaseJ4 {
     RefCounted<SolrIndexSearcher> currentSearcherRef = h.getCore().getSearcher();
     try {
       SolrIndexSearcher currentSearcher = currentSearcherRef.get();
-      UnInvertedField ui0 = UnInvertedField.getUnInvertedField("f0_ws", currentSearcher);
-      UnInvertedField ui1 = UnInvertedField.getUnInvertedField("f1_ws", currentSearcher);
-      UnInvertedField ui2 = UnInvertedField.getUnInvertedField("f2_ws", currentSearcher);
-      UnInvertedField ui3 = UnInvertedField.getUnInvertedField("f3_ws", currentSearcher);
-      UnInvertedField ui4 = UnInvertedField.getUnInvertedField("f4_ws", currentSearcher);
-      UnInvertedField ui5 = UnInvertedField.getUnInvertedField("f5_ws", currentSearcher);
-      UnInvertedField ui6 = UnInvertedField.getUnInvertedField("f6_ws", currentSearcher);
-      UnInvertedField ui7 = UnInvertedField.getUnInvertedField("f7_ws", currentSearcher);
-      UnInvertedField ui8 = UnInvertedField.getUnInvertedField("f8_ws", currentSearcher);
-      UnInvertedField ui9 = UnInvertedField.getUnInvertedField("f9_ws", currentSearcher);
+      SortedSetDocValues ui0 = DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f0_ws");
+      SortedSetDocValues ui1 = DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f1_ws");
+      SortedSetDocValues ui2 = DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f2_ws");
+      SortedSetDocValues ui3 = DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f3_ws");
+      SortedSetDocValues ui4 = DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f4_ws");
+      SortedSetDocValues ui5 = DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f5_ws");
+      SortedSetDocValues ui6 = DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f6_ws");
+      SortedSetDocValues ui7 = DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f7_ws");
+      SortedSetDocValues ui8 = DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f8_ws");
+      SortedSetDocValues ui9 = DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f9_ws");
 
       assertQ("check threading, more threads than fields",
           req("q", "id:*", "indent", "true", "fl", "id", "rows", "1"
@@ -924,27 +926,38 @@ public class TestFaceting extends SolrTestCaseJ4 {
       // Now, are all the UnInvertedFields still the same? Meaning they weren't re-fetched even when a bunch were
       // requested at the same time?
       assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
-          ui0, UnInvertedField.getUnInvertedField("f0_ws", currentSearcher));
+          ui0, DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f0_ws"));
       assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
-          ui1, UnInvertedField.getUnInvertedField("f1_ws", currentSearcher));
+          ui1, DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f1_ws"));
       assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
-          ui2, UnInvertedField.getUnInvertedField("f2_ws", currentSearcher));
+          ui2, DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f2_ws"));
       assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
-          ui3, UnInvertedField.getUnInvertedField("f3_ws", currentSearcher));
+          ui3, DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f3_ws"));
       assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
-          ui4, UnInvertedField.getUnInvertedField("f4_ws", currentSearcher));
+          ui4, DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f4_ws"));
       assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
-          ui5, UnInvertedField.getUnInvertedField("f5_ws", currentSearcher));
+          ui5, DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f5_ws"));
       assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
-          ui6, UnInvertedField.getUnInvertedField("f6_ws", currentSearcher));
+          ui6, DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f6_ws"));
       assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
-          ui7, UnInvertedField.getUnInvertedField("f7_ws", currentSearcher));
+          ui7, DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f7_ws"));
       assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
-          ui8, UnInvertedField.getUnInvertedField("f8_ws", currentSearcher));
+          ui8, DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f8_ws"));
       assertEquals("UnInvertedField coming back from the seacher should not have changed! ",
-          ui9, UnInvertedField.getUnInvertedField("f9_ws", currentSearcher));
+          ui9, DocValues.getSortedSet(currentSearcher.getAtomicReader(), "f9_ws"));
     } finally {
       currentSearcherRef.decref();
+    }
+  }
+  
+  // assert same instance: either same object, or both wrapping same single-valued object
+  private void assertEquals(String msg, SortedSetDocValues dv1, SortedSetDocValues dv2) {
+    SortedDocValues singleton1 = DocValues.unwrapSingleton(dv1);
+    SortedDocValues singleton2 = DocValues.unwrapSingleton(dv2);
+    if (singleton1 == null || singleton2 == null) {
+      assertSame(dv1, dv2);
+    } else {
+      assertSame(singleton1, singleton2);
     }
   }
 }

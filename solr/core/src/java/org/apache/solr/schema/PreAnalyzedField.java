@@ -120,6 +120,7 @@ public class PreAnalyzedField extends FieldType {
   
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
+    field.checkSortability();
     return new SortedSetSortField(field.getName(), top);
   }
   

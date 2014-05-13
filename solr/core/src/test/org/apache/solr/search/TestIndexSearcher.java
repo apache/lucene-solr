@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReaderContext;
@@ -71,7 +72,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     assertU(commit());
 
     SolrQueryRequest sr1 = req("q","foo");
-    IndexReaderContext rCtx1 = sr1.getSearcher().getTopReaderContext();
+    IndexReader r1 = sr1.getSearcher().getRawReader();
 
     String sval1 = getStringVal(sr1, "v_s1",0);
     assertEquals("string1", sval1);
@@ -81,28 +82,28 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     assertU(commit());
 
     SolrQueryRequest sr2 = req("q","foo");
-    IndexReaderContext rCtx2 = sr2.getSearcher().getTopReaderContext();
+    IndexReader r2 = sr2.getSearcher().getRawReader();
 
     // make sure the readers share the first segment
     // Didn't work w/ older versions of lucene2.9 going from segment -> multi
-    assertEquals(rCtx1.leaves().get(0).reader(), rCtx2.leaves().get(0).reader());
+    assertEquals(r1.leaves().get(0).reader(), r2.leaves().get(0).reader());
 
     assertU(adoc("id","5", "v_f","3.14159"));
     assertU(adoc("id","6", "v_f","8983", "v_s1","string6"));
     assertU(commit());
 
     SolrQueryRequest sr3 = req("q","foo");
-    IndexReaderContext rCtx3 = sr3.getSearcher().getTopReaderContext();
+    IndexReader r3 = sr3.getSearcher().getRawReader();
     // make sure the readers share segments
     // assertEquals(r1.getLeafReaders()[0], r3.getLeafReaders()[0]);
-    assertEquals(rCtx2.leaves().get(0).reader(), rCtx3.leaves().get(0).reader());
-    assertEquals(rCtx2.leaves().get(1).reader(), rCtx3.leaves().get(1).reader());
+    assertEquals(r2.leaves().get(0).reader(), r3.leaves().get(0).reader());
+    assertEquals(r2.leaves().get(1).reader(), r3.leaves().get(1).reader());
 
     sr1.close();
     sr2.close();            
 
     // should currently be 1, but this could change depending on future index management
-    int baseRefCount = rCtx3.reader().getRefCount();
+    int baseRefCount = r3.getRefCount();
     assertEquals(1, baseRefCount);
 
     Object sr3SearcherRegAt = sr3.getSearcher().getStatistics().get("registeredAt");
@@ -112,7 +113,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
                sr3.getSearcher(), sr4.getSearcher());
     assertEquals("nothing changed, searcher should not have been re-registered",
                  sr3SearcherRegAt, sr4.getSearcher().getStatistics().get("registeredAt"));
-    IndexReaderContext rCtx4 = sr4.getSearcher().getTopReaderContext();
+    IndexReader r4 = sr4.getSearcher().getRawReader();
 
     // force an index change so the registered searcher won't be the one we are testing (and
     // then we should be able to test the refCount going all the way to 0
@@ -120,12 +121,12 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     assertU(commit()); 
 
     // test that reader didn't change
-    assertSame(rCtx3.reader(), rCtx4.reader());
-    assertEquals(baseRefCount, rCtx4.reader().getRefCount());
+    assertSame(r3, r4);
+    assertEquals(baseRefCount, r4.getRefCount());
     sr3.close();
-    assertEquals(baseRefCount, rCtx4.reader().getRefCount());
+    assertEquals(baseRefCount, r4.getRefCount());
     sr4.close();
-    assertEquals(baseRefCount-1, rCtx4.reader().getRefCount());
+    assertEquals(baseRefCount-1, r4.getRefCount());
 
 
     SolrQueryRequest sr5 = req("q","foo");
