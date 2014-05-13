@@ -30,6 +30,7 @@ import org.apache.lucene.util.QueryBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.Sorting;
 
 import java.util.Map;
 import java.io.IOException;
@@ -97,7 +98,7 @@ public class TextField extends FieldType {
   public SortField getSortField(SchemaField field, boolean reverse) {
     /* :TODO: maybe warn if isTokenized(), but doesn't use LimitTokenCountFilter in it's chain? */
     field.checkSortability();
-    return new SortedSetSortField(field.getName(), reverse);
+    return Sorting.getTextSortField(field.getName(), reverse, field.sortMissingLast(), field.sortMissingFirst());
   }
   
   @Override

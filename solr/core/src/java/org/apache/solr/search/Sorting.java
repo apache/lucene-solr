@@ -40,12 +40,23 @@ public class Sorting {
    * @return SortField
    */
   public static SortField getStringSortField(String fieldName, boolean reverse, boolean nullLast, boolean nullFirst) {
+    SortField sortField = new SortField(fieldName, SortField.Type.STRING, reverse);
+    applyMissingFirstLast(sortField, reverse, nullLast, nullFirst);
+    return sortField;
+  }
+
+  /** Like {@link #getStringSortField}) except safe for tokenized fields */
+  public static SortField getTextSortField(String fieldName, boolean reverse, boolean nullLast, boolean nullFirst) {
+    SortField sortField = new SortedSetSortField(fieldName, reverse);
+    applyMissingFirstLast(sortField, reverse, nullLast, nullFirst);
+    return sortField;
+  }
+  
+  private static void applyMissingFirstLast(SortField in, boolean reverse, boolean nullLast, boolean nullFirst) {
     if (nullFirst && nullLast) {
       throw new IllegalArgumentException("Cannot specify missing values as both first and last");
     }
-
-    SortField sortField = new SortField(fieldName, SortField.Type.STRING, reverse);
-
+    
     // 4 cases:
     // missingFirst / forward: default lucene behavior
     // missingFirst / reverse: set sortMissingLast
@@ -53,12 +64,11 @@ public class Sorting {
     // missingLast  / reverse: default lucene behavior
     
     if (nullFirst && reverse) {
-      sortField.setMissingValue(SortField.STRING_LAST);
+      in.setMissingValue(SortField.STRING_LAST);
     } else if (nullLast && !reverse) {
-      sortField.setMissingValue(SortField.STRING_LAST);
+      in.setMissingValue(SortField.STRING_LAST);
     }
-
-    return sortField;
   }
+    
 }
 

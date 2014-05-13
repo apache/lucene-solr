@@ -41,6 +41,7 @@ import org.apache.lucene.util.AttributeSource.State;
 import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.Sorting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -121,7 +122,7 @@ public class PreAnalyzedField extends FieldType {
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
     field.checkSortability();
-    return new SortedSetSortField(field.getName(), top);
+    return Sorting.getTextSortField(field.getName(), top, field.sortMissingLast(), field.sortMissingFirst());
   }
   
   @Override
