@@ -57,7 +57,7 @@ final class DeleteByQueryWrapper extends Query {
   public Query rewrite(IndexReader reader) throws IOException {
     Query rewritten = in.rewrite(reader);
     if (rewritten != in) {
-      return new DeleteByQueryWrapper(in, schema);
+      return new DeleteByQueryWrapper(rewritten, schema);
     } else {
       return this;
     }
