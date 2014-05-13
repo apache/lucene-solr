@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.AnalyzerWrapper;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.StorableField;
@@ -362,7 +363,7 @@ public class IndexSchema {
     queryAnalyzer = new SolrQueryAnalyzer();
   }
   
-  public Map<String,UninvertingReader.Type> getUninversionMap(DirectoryReader reader) {
+  public Map<String,UninvertingReader.Type> getUninversionMap(IndexReader reader) {
     Map<String,UninvertingReader.Type> map = new HashMap<>();
     for (FieldInfo f : MultiFields.getMergedFieldInfos(reader)) {
       if (f.hasDocValues() == false && f.isIndexed()) {

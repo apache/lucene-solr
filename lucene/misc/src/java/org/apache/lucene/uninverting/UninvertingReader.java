@@ -171,7 +171,15 @@ public class UninvertingReader extends FilterAtomicReader {
   final Map<String,Type> mapping;
   final FieldInfos fieldInfos;
   
-  UninvertingReader(AtomicReader in, Map<String,Type> mapping) {
+  /** 
+   * Create a new UninvertingReader with the specified mapping 
+   * <p>
+   * Expert: This should almost never be used. Use {@link #wrap(DirectoryReader, Map)}
+   * instead.
+   *  
+   * @lucene.internal
+   */
+  public UninvertingReader(AtomicReader in, Map<String,Type> mapping) {
     super(in);
     this.mapping = mapping;
     ArrayList<FieldInfo> filteredInfos = new ArrayList<>();
