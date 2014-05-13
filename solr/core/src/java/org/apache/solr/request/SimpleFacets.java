@@ -378,15 +378,10 @@ public class SimpleFacets {
 
     final boolean multiToken = sf.multiValued() || ft.multiValuedFieldCache();
     
-    if (method == null && ft.getNumericType() != null && !sf.multiValued()) {
+    if (ft.getNumericType() != null && !sf.multiValued()) {
       // the per-segment approach is optimal for numeric field types since there
       // are no global ords to merge and no need to create an expensive
       // top-level reader
-      method = FacetMethod.FCS;
-    }
-
-    if (ft.getNumericType() != null && sf.hasDocValues()) {
-      // only fcs is able to leverage the numeric field caches
       method = FacetMethod.FCS;
     }
 
@@ -430,14 +425,7 @@ public class SimpleFacets {
           }
           break;
         case FC:
-          if (sf.hasDocValues()) {
-            counts = DocValuesFacets.getCounts(searcher, base, field, offset,limit, mincount, missing, sort, prefix);
-          } else if (multiToken || TrieField.getMainValuePrefix(ft) != null) {
-            UnInvertedField uif = UnInvertedField.getUnInvertedField(field, searcher);
-            counts = uif.getCounts(searcher, base, offset, limit, mincount,missing,sort,prefix);
-          } else {
-            counts = getFieldCacheCounts(searcher, base, field, offset,limit, mincount, missing, sort, prefix);
-          }
+          counts = DocValuesFacets.getCounts(searcher, base, field, offset,limit, mincount, missing, sort, prefix);
           break;
         default:
           throw new AssertionError();
@@ -621,152 +609,6 @@ public class SimpleFacets {
         (sf.getType().getRangeQuery(null, sf, null, null, false, false));
     return docs.andNotSize(hasVal);
   }
-
-
-  /**
-   * Use the Lucene FieldCache to get counts for each unique field value in <code>docs</code>.
-   * The field must have at most one indexed token per document.
-   */
-  public static NamedList<Integer> getFieldCacheCounts(SolrIndexSearcher searcher, DocSet docs, String fieldName, int offset, int limit, int mincount, boolean missing, String sort, String prefix) throws IOException {
-    // TODO: If the number of terms is high compared to docs.size(), and zeros==false,
-    //  we should use an alternate strategy to avoid
-    //  1) creating another huge int[] for the counts
-    //  2) looping over that huge int[] looking for the rare non-zeros.
-    //
-    // Yet another variation: if docs.size() is small and termvectors are stored,
-    // then use them instead of the FieldCache.
-    //
-
-    // TODO: this function is too big and could use some refactoring, but
-    // we also need a facet cache, and refactoring of SimpleFacets instead of
-    // trying to pass all the various params around.
-
-    FieldType ft = searcher.getSchema().getFieldType(fieldName);
-    NamedList<Integer> res = new NamedList<>();
-
-    SortedDocValues si = DocValues.getSorted(searcher.getAtomicReader(), fieldName);
-
-    final BytesRef br = new BytesRef();
-
-    final BytesRef prefixRef;
-    if (prefix == null) {
-      prefixRef = null;
-    } else if (prefix.length()==0) {
-      prefix = null;
-      prefixRef = null;
-    } else {
-      prefixRef = new BytesRef(prefix);
-    }
-
-    int startTermIndex, endTermIndex;
-    if (prefix!=null) {
-      startTermIndex = si.lookupTerm(prefixRef);
-      if (startTermIndex<0) startTermIndex=-startTermIndex-1;
-      prefixRef.append(UnicodeUtil.BIG_TERM);
-      endTermIndex = si.lookupTerm(prefixRef);
-      assert endTermIndex < 0;
-      endTermIndex = -endTermIndex-1;
-    } else {
-      startTermIndex=-1;
-      endTermIndex=si.getValueCount();
-    }
-
-    final int nTerms=endTermIndex-startTermIndex;
-    int missingCount = -1; 
-    final CharsRef charsRef = new CharsRef(10);
-    if (nTerms>0 && docs.size() >= mincount) {
-
-      // count collection array only needs to be as big as the number of terms we are
-      // going to collect counts for.
-      final int[] counts = new int[nTerms];
-
-      DocIterator iter = docs.iterator();
-
-      while (iter.hasNext()) {
-        int term = si.getOrd(iter.nextDoc());
-        int arrIdx = term-startTermIndex;
-        if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
-      }
-
-      if (startTermIndex == -1) {
-        missingCount = counts[0];
-      }
-
-      // IDEA: we could also maintain a count of "other"... everything that fell outside
-      // of the top 'N'
-
-      int off=offset;
-      int lim=limit>=0 ? limit : Integer.MAX_VALUE;
-
-      if (sort.equals(FacetParams.FACET_SORT_COUNT) || sort.equals(FacetParams.FACET_SORT_COUNT_LEGACY)) {
-        int maxsize = limit>0 ? offset+limit : Integer.MAX_VALUE-1;
-        maxsize = Math.min(maxsize, nTerms);
-        LongPriorityQueue queue = new LongPriorityQueue(Math.min(maxsize,1000), maxsize, Long.MIN_VALUE);
-
-        int min=mincount-1;  // the smallest value in the top 'N' values
-        for (int i=(startTermIndex==-1)?1:0; i<nTerms; i++) {
-          int c = counts[i];
-          if (c>min) {
-            // NOTE: we use c>min rather than c>=min as an optimization because we are going in
-            // index order, so we already know that the keys are ordered.  This can be very
-            // important if a lot of the counts are repeated (like zero counts would be).
-
-            // smaller term numbers sort higher, so subtract the term number instead
-            long pair = (((long)c)<<32) + (Integer.MAX_VALUE - i);
-            boolean displaced = queue.insert(pair);
-            if (displaced) min=(int)(queue.top() >>> 32);
-          }
-        }
-
-        // if we are deep paging, we don't have to order the highest "offset" counts.
-        int collectCount = Math.max(0, queue.size() - off);
-        assert collectCount <= lim;
-
-        // the start and end indexes of our list "sorted" (starting with the highest value)
-        int sortedIdxStart = queue.size() - (collectCount - 1);
-        int sortedIdxEnd = queue.size() + 1;
-        final long[] sorted = queue.sort(collectCount);
-
-        for (int i=sortedIdxStart; i<sortedIdxEnd; i++) {
-          long pair = sorted[i];
-          int c = (int)(pair >>> 32);
-          int tnum = Integer.MAX_VALUE - (int)pair;
-          si.lookupOrd(startTermIndex+tnum, br);
-          ft.indexedToReadable(br, charsRef);
-          res.add(charsRef.toString(), c);
-        }
-      
-      } else {
-        // add results in index order
-        int i=(startTermIndex==-1)?1:0;
-        if (mincount<=0) {
-          // if mincount<=0, then we won't discard any terms and we know exactly
-          // where to start.
-          i+=off;
-          off=0;
-        }
-
-        for (; i<nTerms; i++) {          
-          int c = counts[i];
-          if (c<mincount || --off>=0) continue;
-          if (--lim<0) break;
-          si.lookupOrd(startTermIndex+i, br);
-          ft.indexedToReadable(br, charsRef);
-          res.add(charsRef.toString(), c);
-        }
-      }
-    }
-
-    if (missing) {
-      if (missingCount < 0) {
-        missingCount = getFieldMissingCount(searcher,docs,fieldName);
-      }
-      res.add(null, missingCount);
-    }
-    
-    return res;
-  }
-
 
   /**
    * Returns a list of terms in the specified field along with the 

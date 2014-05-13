@@ -43,6 +43,7 @@ import org.apache.lucene.search.FieldCacheRangeFilter;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.NumericUtils;
@@ -192,6 +193,39 @@ public class TrieField extends PrimitiveFieldType {
         
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + field.name);
+    }
+  }
+  
+  @Override
+  public Type getUninversionType(SchemaField sf) {
+    if (sf.multiValued()) {
+      switch (type) {
+        case INTEGER:
+          return Type.SORTED_SET_INTEGER;
+        case LONG:
+        case DATE:
+          return Type.SORTED_SET_LONG;
+        case FLOAT:
+          return Type.SORTED_SET_FLOAT;
+        case DOUBLE:
+          return Type.SORTED_SET_DOUBLE;
+        default:
+          throw new AssertionError();
+      }
+    } else {
+      switch (type) {
+        case INTEGER:
+          return Type.INTEGER;
+        case LONG:
+        case DATE:
+          return Type.LONG;
+        case FLOAT:
+          return Type.FLOAT;
+        case DOUBLE:
+          return Type.DOUBLE;
+        default:
+          throw new AssertionError();
+      }
     }
   }
 

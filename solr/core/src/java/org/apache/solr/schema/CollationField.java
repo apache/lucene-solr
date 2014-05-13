@@ -42,6 +42,7 @@ import org.apache.lucene.search.FieldCacheRangeFilter;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.analysis.util.ResourceLoader;
@@ -198,6 +199,15 @@ public class CollationField extends FieldType {
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
     return getStringSort(field, top);
+  }
+  
+  @Override
+  public Type getUninversionType(SchemaField sf) {
+    if (sf.multiValued()) {
+      return Type.SORTED_SET_BINARY;
+    } else {
+      return Type.SORTED;
+    }
   }
 
   @Override

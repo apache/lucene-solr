@@ -41,6 +41,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.uninverting.UninvertingReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.UnicodeUtil;
@@ -446,6 +447,16 @@ public abstract class FieldType extends FieldProperties {
     query.setRewriteMethod(sf.getType().getRewriteMethod(parser, sf));
     return query;
   }
+  
+  /**
+   * DocValues is not enabled for a field, but its indexed, docvalues can be constructed 
+   * on the fly (uninverted, aka fieldcache) on the first request to sort, facet, etc. 
+   * This specifies the structure to use.
+   * 
+   * @param sf field instance
+   * @return type to uninvert, or {@code null} (to disallow uninversion for the field)
+   */
+  public abstract UninvertingReader.Type getUninversionType(SchemaField sf);
 
   /**
    * Default analyzer for types that only produce 1 verbatim token...

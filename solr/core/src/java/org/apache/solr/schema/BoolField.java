@@ -34,6 +34,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.BoolDocValues;
 import org.apache.lucene.queries.function.valuesource.OrdFieldSource;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.mutable.MutableValue;
@@ -49,6 +50,15 @@ public class BoolField extends PrimitiveFieldType {
   public SortField getSortField(SchemaField field,boolean reverse) {
     field.checkSortability();
     return getStringSort(field,reverse);
+  }
+
+  @Override
+  public Type getUninversionType(SchemaField sf) {
+    if (sf.multiValued()) {
+      return Type.SORTED_SET_BINARY;
+    } else {
+      return Type.SORTED;
+    }
   }
 
   @Override

@@ -99,11 +99,11 @@ public class SortByFunctionTest extends AbstractSolrTestCase {
   
   public void testSortJoinDocFreq() throws Exception
   {
-    assertU(adoc("id", "4", "id_s", "D", "links_mfacet", "A", "links_mfacet", "B", "links_mfacet", "C" ) );
-    assertU(adoc("id", "3", "id_s", "C", "links_mfacet", "A", "links_mfacet", "B" ) );
+    assertU(adoc("id", "4", "id_s1", "D", "links_mfacet", "A", "links_mfacet", "B", "links_mfacet", "C" ) );
+    assertU(adoc("id", "3", "id_s1", "C", "links_mfacet", "A", "links_mfacet", "B" ) );
     assertU(commit()); // Make sure it uses two readers
-    assertU(adoc("id", "2", "id_s", "B", "links_mfacet", "A" ) );
-    assertU(adoc("id", "1", "id_s", "A"  ) );
+    assertU(adoc("id", "2", "id_s1", "B", "links_mfacet", "A" ) );
+    assertU(adoc("id", "1", "id_s1", "A"  ) );
     assertU(commit());
 
     assertQ(req("q", "links_mfacet:B", "fl", "id", "sort", "id asc"),
@@ -112,7 +112,7 @@ public class SortByFunctionTest extends AbstractSolrTestCase {
             "//result/doc[2]/int[@name='id'][.='4']"
     );
     
-    assertQ(req("q", "*:*", "fl", "id", "sort", "joindf(id_s, links_mfacet) desc"),
+    assertQ(req("q", "*:*", "fl", "id", "sort", "joindf(id_s1, links_mfacet) desc"),
             "//*[@numFound='4']",
             "//result/doc[1]/int[@name='id'][.='1']",
             "//result/doc[2]/int[@name='id'][.='2']",
@@ -120,7 +120,7 @@ public class SortByFunctionTest extends AbstractSolrTestCase {
             "//result/doc[4]/int[@name='id'][.='4']"
     );
 
-    assertQ(req("q", "*:*", "fl", "id", "sort", "joindf(id_s, links_mfacet) asc"),
+    assertQ(req("q", "*:*", "fl", "id", "sort", "joindf(id_s1, links_mfacet) asc"),
             "//*[@numFound='4']",
             "//result/doc[1]/int[@name='id'][.='4']",
             "//result/doc[2]/int[@name='id'][.='3']",

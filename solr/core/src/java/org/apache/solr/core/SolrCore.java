@@ -1461,7 +1461,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       if (newestSearcher != null && (nrt || indexDirFile.equals(newIndexDirFile))) {
 
         DirectoryReader newReader;
-        DirectoryReader currentReader = newestSearcher.get().getIndexReader();
+        DirectoryReader currentReader = newestSearcher.get().getRawReader();
 
         // SolrCore.verbose("start reopen from",previousSearcher,"writer=",writer);
         

@@ -19,10 +19,14 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.AnalyzerWrapper;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.uninverting.UninvertingReader;
 import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -356,6 +360,22 @@ public class IndexSchema {
   public void refreshAnalyzers() {
     indexAnalyzer = new SolrIndexAnalyzer();
     queryAnalyzer = new SolrQueryAnalyzer();
+  }
+  
+  public Map<String,UninvertingReader.Type> getUninversionMap(DirectoryReader reader) {
+    Map<String,UninvertingReader.Type> map = new HashMap<>();
+    for (FieldInfo f : MultiFields.getMergedFieldInfos(reader)) {
+      if (f.hasDocValues() == false && f.isIndexed()) {
+        SchemaField sf = getFieldOrNull(f.name);
+        if (sf != null) {
+          UninvertingReader.Type type = sf.getType().getUninversionType(sf);
+          if (type != null) {
+            map.put(f.name, type);
+          }
+        }
+      }
+    }
+    return map;
   }
 
   /**

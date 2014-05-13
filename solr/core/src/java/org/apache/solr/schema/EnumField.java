@@ -22,6 +22,7 @@ import org.apache.lucene.index.StorableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.EnumFieldSource;
 import org.apache.lucene.search.*;
+import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.NumericUtils;
@@ -181,6 +182,15 @@ public class EnumField extends PrimitiveFieldType {
     SortField sf = new SortField(field.getName(), SortField.Type.INT, top);
     sf.setMissingValue(missingValue);
     return sf;
+  }
+  
+  @Override
+  public Type getUninversionType(SchemaField sf) {
+    if (sf.multiValued()) {
+      return Type.SORTED_SET_INTEGER;
+    } else {
+      return Type.INTEGER;
+    }
   }
 
   /**

@@ -30,12 +30,17 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortedSetSortField;
+import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.AttributeSource.State;
 import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.response.TextResponseWriter;
+import org.apache.solr.search.QParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -112,10 +117,20 @@ public class PreAnalyzedField extends FieldType {
     }
     return f;
   }
-
+  
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
-    return getStringSort(field, top);
+    return new SortedSetSortField(field.getName(), top);
+  }
+  
+  @Override
+  public ValueSource getValueSource(SchemaField field, QParser parser) {
+    return new SortedSetFieldSource(field.getName());
+  }
+
+  @Override
+  public Type getUninversionType(SchemaField sf) {
+    return Type.SORTED_SET_BINARY;
   }
 
   @Override
