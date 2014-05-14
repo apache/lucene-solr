@@ -162,6 +162,64 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
   */
   
+  private void updateNumeric(IndexWriter writer, String id, String f, String cf, long value) throws IOException {
+    writer.updateNumericDocValue(new Term("id", id), f, value);
+    writer.updateNumericDocValue(new Term("id", id), cf, value*2);
+  }
+  
+  private void updateBinary(IndexWriter writer, String id, String f, String cf, long value) throws IOException {
+    writer.updateBinaryDocValue(new Term("id", id), f, TestBinaryDocValuesUpdates.toBytes(value));
+    writer.updateBinaryDocValue(new Term("id", id), cf, TestBinaryDocValuesUpdates.toBytes(value*2));
+  }
+
+/*  // Creates an index with DocValues updates
+  public void testCreateIndexWithDocValuesUpdates() throws Exception {
+    // we use a real directory name that is not cleaned up,
+    // because this method is only used to create backwards
+    // indexes:
+    File indexDir = new File("/tmp/idx/dvupdates");
+    TestUtil.rm(indexDir);
+    Directory dir = newFSDirectory(indexDir);
+    
+    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+      .setUseCompoundFile(false).setMergePolicy(NoMergePolicy.INSTANCE);
+    IndexWriter writer = new IndexWriter(dir, conf);
+    // create an index w/ few doc-values fields, some with updates and some without
+    for (int i = 0; i < 30; i++) {
+      Document doc = new Document();
+      doc.add(new StringField("id", "" + i, Store.NO));
+      doc.add(new NumericDocValuesField("ndv1", i));
+      doc.add(new NumericDocValuesField("ndv1_c", i*2));
+      doc.add(new NumericDocValuesField("ndv2", i*3));
+      doc.add(new NumericDocValuesField("ndv2_c", i*6));
+      doc.add(new BinaryDocValuesField("bdv1", TestBinaryDocValuesUpdates.toBytes(i)));
+      doc.add(new BinaryDocValuesField("bdv1_c", TestBinaryDocValuesUpdates.toBytes(i*2)));
+      doc.add(new BinaryDocValuesField("bdv2", TestBinaryDocValuesUpdates.toBytes(i*3)));
+      doc.add(new BinaryDocValuesField("bdv2_c", TestBinaryDocValuesUpdates.toBytes(i*6)));
+      writer.addDocument(doc);
+      if ((i+1) % 10 == 0) {
+        writer.commit(); // flush every 10 docs
+      }
+    }
+    
+    // first segment: no updates
+    
+    // second segment: update two fields, same gen
+    updateNumeric(writer, "10", "ndv1", "ndv1_c", 100L);
+    updateBinary(writer, "11", "bdv1", "bdv1_c", 100L);
+    writer.commit();
+    
+    // third segment: update few fields, different gens, few docs
+    updateNumeric(writer, "20", "ndv1", "ndv1_c", 100L);
+    updateBinary(writer, "21", "bdv1", "bdv1_c", 100L);
+    writer.commit();
+    updateNumeric(writer, "22", "ndv1", "ndv1_c", 200L); // update the field again
+    writer.commit();
+    
+    writer.shutdown();
+    dir.close();
+  }*/
+
   final static String[] oldNames = {"40.cfs",
                                     "40.nocfs",
                                     "41.cfs",
@@ -982,4 +1040,62 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     TestUtil.checkIndex(dir);
     dir.close();
   }
+
+  public static final String dvUpdatesIndex = "dvupdates.48.zip";
+
+  private void assertNumericDocValues(AtomicReader r, String f, String cf) throws IOException {
+    NumericDocValues ndvf = r.getNumericDocValues(f);
+    NumericDocValues ndvcf = r.getNumericDocValues(cf);
+    for (int i = 0; i < r.maxDoc(); i++) {
+      assertEquals(ndvcf.get(i), ndvf.get(i)*2);
+    }
+  }
+  
+  private void assertBinaryDocValues(AtomicReader r, String f, String cf) throws IOException {
+    BinaryDocValues bdvf = r.getBinaryDocValues(f);
+    BinaryDocValues bdvcf = r.getBinaryDocValues(cf);
+    BytesRef scratch = new BytesRef();
+    for (int i = 0; i < r.maxDoc(); i++) {
+      assertEquals(TestBinaryDocValuesUpdates.getValue(bdvcf, i, scratch ), TestBinaryDocValuesUpdates.getValue(bdvf, i, scratch)*2);
+    }
+  }
+  
+  private void verifyDocValues(Directory dir) throws IOException {
+    DirectoryReader reader = DirectoryReader.open(dir);
+    for (AtomicReaderContext context : reader.leaves()) {
+      AtomicReader r = context.reader();
+      assertNumericDocValues(r, "ndv1", "ndv1_c");
+      assertNumericDocValues(r, "ndv2", "ndv2_c");
+      assertBinaryDocValues(r, "bdv1", "bdv1_c");
+      assertBinaryDocValues(r, "bdv2", "bdv2_c");
+    }
+    reader.close();
+  }
+  
+  public void testDocValuesUpdates() throws Exception {
+    File oldIndexDir = createTempDir("dvupdates");
+    TestUtil.unzip(getDataFile(dvUpdatesIndex), oldIndexDir);
+    Directory dir = newFSDirectory(oldIndexDir);
+    
+    verifyDocValues(dir);
+    
+    // update fields and verify index
+    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriter writer = new IndexWriter(dir, conf);
+    updateNumeric(writer, "1", "ndv1", "ndv1_c", 300L);
+    updateNumeric(writer, "1", "ndv2", "ndv2_c", 300L);
+    updateBinary(writer, "1", "bdv1", "bdv1_c", 300L);
+    updateBinary(writer, "1", "bdv2", "bdv2_c", 300L);
+    writer.commit();
+    verifyDocValues(dir);
+    
+    // merge all segments
+    writer.forceMerge(1);
+    writer.commit();
+    verifyDocValues(dir);
+    
+    writer.shutdown();
+    dir.close();
+  }
+  
 }

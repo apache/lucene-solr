@@ -192,6 +192,9 @@ Test Framework
 
 * LUCENE-5622: Fail tests if they print over the given limit of bytes to 
   System.out or System.err. (Robert Muir, Dawid Weiss)
+  
+* LUCENE-5619: Added backwards compatibility tests to ensure we can update existing
+  indexes with doc-values updates. (Shai Erera, Robert Muir)
 
 ======================= Lucene 4.8.0 =======================
 
