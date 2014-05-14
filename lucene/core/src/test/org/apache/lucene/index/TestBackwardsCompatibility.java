@@ -63,6 +63,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
@@ -818,22 +819,20 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       hits = searcher.search(NumericRangeQuery.newLongRange("trieLong", 4, Long.MIN_VALUE, Long.MAX_VALUE, false, false), 100).scoreDocs;
       assertEquals("wrong number of hits", 34, hits.length);
       
-      // check decoding into field cache
-      // nocommit: instead use the NumericUtils termsenum stuff to test this directly...
-      /*
-      NumericDocValues fci = FieldCache.DEFAULT.getNumerics(SlowCompositeReaderWrapper.wrap(searcher.getIndexReader()), "trieInt", FieldCache.NUMERIC_UTILS_INT_PARSER, false);
-      int maxDoc = searcher.getIndexReader().maxDoc();
-      for(int doc=0;doc<maxDoc;doc++) {
-        long val = fci.get(doc);
+      // check decoding of terms
+      Terms terms = MultiFields.getTerms(searcher.getIndexReader(), "trieInt");
+      TermsEnum termsEnum = NumericUtils.filterPrefixCodedInts(terms.iterator(null));
+      while (termsEnum.next() != null) {
+        int val = NumericUtils.prefixCodedToInt(termsEnum.term());
         assertTrue("value in id bounds", val >= 0 && val < 35);
       }
       
-      NumericDocValues fcl = FieldCache.DEFAULT.getNumerics(SlowCompositeReaderWrapper.wrap(searcher.getIndexReader()), "trieLong", FieldCache.NUMERIC_UTILS_LONG_PARSER, false);
-      for(int doc=0;doc<maxDoc;doc++) {
-        long val = fcl.get(doc);
+      terms = MultiFields.getTerms(searcher.getIndexReader(), "trieLong");
+      termsEnum = NumericUtils.filterPrefixCodedLongs(terms.iterator(null));
+      while (termsEnum.next() != null) {
+        long val = NumericUtils.prefixCodedToLong(termsEnum.term());
         assertTrue("value in id bounds", val >= 0L && val < 35L);
       }
-      */
       
       reader.close();
     }

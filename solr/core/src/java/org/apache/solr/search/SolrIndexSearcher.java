@@ -193,7 +193,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   // this reader supports reopen
   private static DirectoryReader wrapReader(SolrCore core, DirectoryReader reader) {
     assert reader != null;
-    assert !reader.getClass().getSimpleName().startsWith("Uninverting"); // nocommit
     return UninvertingReader.wrap(reader, core.getLatestSchema().getUninversionMap(reader));
   }
 

@@ -240,7 +240,7 @@ public class EnumField extends PrimitiveFieldType {
     Query query = null;
     final boolean matchOnly = field.hasDocValues() && !field.indexed();
     if (matchOnly) {
-      query = new ConstantScoreQuery(FieldCacheRangeFilter.newIntRange(field.getName(),
+      query = new ConstantScoreQuery(DocValuesRangeFilter.newIntRange(field.getName(),
               min == null ? null : minValue,
               max == null ? null : maxValue,
               minInclusive, maxInclusive));

@@ -32,8 +32,8 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocTermOrdsRangeFilter;
 import org.apache.lucene.search.DocTermOrdsRewriteMethod;
-import org.apache.lucene.search.FieldCacheRangeFilter;
-import org.apache.lucene.search.FieldCacheRewriteMethod;
+import org.apache.lucene.search.DocValuesRangeFilter;
+import org.apache.lucene.search.DocValuesRewriteMethod;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
@@ -698,7 +698,7 @@ public abstract class FieldType extends FieldProperties {
             part2 == null ? null : new BytesRef(toInternal(part2)),
             minInclusive, maxInclusive));
       } else {
-        return new ConstantScoreQuery(FieldCacheRangeFilter.newStringRange(
+        return new ConstantScoreQuery(DocValuesRangeFilter.newStringRange(
             field.getName(), 
             part1 == null ? null : toInternal(part1),
             part2 == null ? null : toInternal(part2),
@@ -742,7 +742,7 @@ public abstract class FieldType extends FieldProperties {
    */
   public MultiTermQuery.RewriteMethod getRewriteMethod(QParser parser, SchemaField field) {
     if (!field.indexed() && field.hasDocValues()) {
-      return field.multiValued() ? new DocTermOrdsRewriteMethod() : new FieldCacheRewriteMethod();
+      return field.multiValued() ? new DocTermOrdsRewriteMethod() : new DocValuesRewriteMethod();
     } else {
       return MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT;
     }

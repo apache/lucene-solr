@@ -627,7 +627,6 @@ public abstract class LuceneTestCase extends Assert {
     .around(threadAndTestNameRule)
     .around(new SystemPropertiesInvariantRule(IGNORED_INVARIANT_PROPERTIES))
     .around(new TestRuleSetupAndRestoreInstanceEnv())
-    .around(new TestRuleFieldCacheSanity())
     .around(parentChainCallRule);
 
   private static final Map<String,FieldType> fieldToType = new HashMap<String,FieldType>();
@@ -736,47 +735,6 @@ public abstract class LuceneTestCase extends Assert {
   protected boolean isTestThread() {
     assertNotNull("Test case thread not set?", threadAndTestNameRule.testCaseThread);
     return Thread.currentThread() == threadAndTestNameRule.testCaseThread;
-  }
-
-  // nocommit: move to SolrTestCaseJ4 ?
-  /**
-   * Asserts that FieldCacheSanityChecker does not detect any
-   * problems with FieldCache.DEFAULT.
-   * <p>
-   * If any problems are found, they are logged to System.err
-   * (allong with the msg) when the Assertion is thrown.
-   * </p>
-   * <p>
-   * This method is called by tearDown after every test method,
-   * however IndexReaders scoped inside test methods may be garbage
-   * collected prior to this method being called, causing errors to
-   * be overlooked. Tests are encouraged to keep their IndexReaders
-   * scoped at the class level, or to explicitly call this method
-   * directly in the same scope as the IndexReader.
-   * </p>
-   */
-  protected static void assertSaneFieldCaches(final String msg) {
-   /* final CacheEntry[] entries = FieldCache.DEFAULT.getCacheEntries();
-    Insanity[] insanity = null;
-    try {
-      try {
-        insanity = FieldCacheSanityChecker.checkSanity(entries);
-      } catch (RuntimeException e) {
-        dumpArray(msg + ": FieldCache", entries, System.err);
-        throw e;
-      }
-
-      assertEquals(msg + ": Insane FieldCache usage(s) found",
-                   0, insanity.length);
-      insanity = null;
-    } finally {
-
-      // report this in the event of any exception/failure
-      // if no failure, then insanity will be null anyway
-      if (null != insanity) {
-        dumpArray(msg + ": Insane FieldCache usage(s)", insanity, System.err);
-      }
-    } */
   }
 
   /**

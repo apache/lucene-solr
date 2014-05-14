@@ -35,11 +35,11 @@ import org.apache.lucene.util.NumericUtils;
  * A range filter built on top of an uninverted single term field 
  * (from {@link AtomicReader#getNumericDocValues(String)}).
  * 
- * <p>{@code FieldCacheRangeFilter} builds a single cache for the field the first time it is used.
- * Each subsequent {@code FieldCacheRangeFilter} on the same field then reuses this cache,
+ * <p>{@code DocValuesRangeFilter} builds a single cache for the field the first time it is used.
+ * Each subsequent {@code DocValuesRangeFilter} on the same field then reuses this cache,
  * even if the range itself changes. 
  * 
- * <p>This means that {@code FieldCacheRangeFilter} is much faster (sometimes more than 100x as fast) 
+ * <p>This means that {@code DocValuesRangeFilter} is much faster (sometimes more than 100x as fast) 
  * as building a {@link TermRangeFilter}, if using a {@link #newStringRange}.
  * However, if the range never changes it is slower (around 2x as slow) than building
  * a CachingWrapperFilter on top of a single {@link TermRangeFilter}.
@@ -51,7 +51,7 @@ import org.apache.lucene.util.NumericUtils;
  * it has the problem that it only works with exact one value/document (see below).
  *
  * <p>As with all {@link AtomicReader#getNumericDocValues} based functionality, 
- * {@code FieldCacheRangeFilter} is only valid for 
+ * {@code DocValuesRangeFilter} is only valid for 
  * fields which exact one term for each document (except for {@link #newStringRange}
  * where 0 terms are also allowed). Due to historical reasons, for numeric ranges
  * all terms that do not have a numeric value, 0 is assumed.
@@ -63,16 +63,15 @@ import org.apache.lucene.util.NumericUtils;
  * <p>This class does not have an constructor, use one of the static factory methods available,
  * that create a correct instance for different data types.
  */
-// nocommit: rename this class
 // TODO: use docsWithField to handle empty properly
-public abstract class FieldCacheRangeFilter<T> extends Filter {
+public abstract class DocValuesRangeFilter<T> extends Filter {
   final String field;
   final T lowerVal;
   final T upperVal;
   final boolean includeLower;
   final boolean includeUpper;
   
-  private FieldCacheRangeFilter(String field, T lowerVal, T upperVal, boolean includeLower, boolean includeUpper) {
+  private DocValuesRangeFilter(String field, T lowerVal, T upperVal, boolean includeLower, boolean includeUpper) {
     this.field = field;
     this.lowerVal = lowerVal;
     this.upperVal = upperVal;
@@ -89,8 +88,8 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
    * fields containing zero or one term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
-  public static FieldCacheRangeFilter<String> newStringRange(String field, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
-    return new FieldCacheRangeFilter<String>(field, lowerVal, upperVal, includeLower, includeUpper) {
+  public static DocValuesRangeFilter<String> newStringRange(String field, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
+    return new DocValuesRangeFilter<String>(field, lowerVal, upperVal, includeLower, includeUpper) {
       @Override
       public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
         final SortedDocValues fcsi = DocValues.getSorted(context.reader(), field);
@@ -129,7 +128,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         
         assert inclusiveLowerPoint >= 0 && inclusiveUpperPoint >= 0;
         
-        return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
+        return new DocValuesDocIdSet(context.reader().maxDoc(), acceptDocs) {
           @Override
           protected final boolean matchDoc(int doc) {
             final int docOrd = fcsi.getOrd(doc);
@@ -146,8 +145,8 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
    * of the values to <code>null</code>.
    */
   // TODO: bogus that newStringRange doesnt share this code... generics hell
-  public static FieldCacheRangeFilter<BytesRef> newBytesRefRange(String field, BytesRef lowerVal, BytesRef upperVal, boolean includeLower, boolean includeUpper) {
-    return new FieldCacheRangeFilter<BytesRef>(field, lowerVal, upperVal, includeLower, includeUpper) {
+  public static DocValuesRangeFilter<BytesRef> newBytesRefRange(String field, BytesRef lowerVal, BytesRef upperVal, boolean includeLower, boolean includeUpper) {
+    return new DocValuesRangeFilter<BytesRef>(field, lowerVal, upperVal, includeLower, includeUpper) {
       @Override
       public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
         final SortedDocValues fcsi = DocValues.getSorted(context.reader(), field);
@@ -186,7 +185,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         
         assert inclusiveLowerPoint >= 0 && inclusiveUpperPoint >= 0;
         
-        return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
+        return new DocValuesDocIdSet(context.reader().maxDoc(), acceptDocs) {
           @Override
           protected final boolean matchDoc(int doc) {
             final int docOrd = fcsi.getOrd(doc);
@@ -202,8 +201,8 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
    * int fields containing exactly one numeric term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
-  public static FieldCacheRangeFilter<Integer> newIntRange(String field, Integer lowerVal, Integer upperVal, boolean includeLower, boolean includeUpper) {
-    return new FieldCacheRangeFilter<Integer>(field, lowerVal, upperVal, includeLower, includeUpper) {
+  public static DocValuesRangeFilter<Integer> newIntRange(String field, Integer lowerVal, Integer upperVal, boolean includeLower, boolean includeUpper) {
+    return new DocValuesRangeFilter<Integer>(field, lowerVal, upperVal, includeLower, includeUpper) {
       @Override
       public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
         final int inclusiveLowerPoint, inclusiveUpperPoint;
@@ -228,7 +227,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
           return null;
         
         final NumericDocValues values = DocValues.getNumeric(context.reader(), field);
-        return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
+        return new DocValuesDocIdSet(context.reader().maxDoc(), acceptDocs) {
           @Override
           protected boolean matchDoc(int doc) {
             final int value = (int) values.get(doc);
@@ -244,8 +243,8 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
    * long fields containing exactly one numeric term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
-  public static FieldCacheRangeFilter<Long> newLongRange(String field, Long lowerVal, Long upperVal, boolean includeLower, boolean includeUpper) {
-    return new FieldCacheRangeFilter<Long>(field, lowerVal, upperVal, includeLower, includeUpper) {
+  public static DocValuesRangeFilter<Long> newLongRange(String field, Long lowerVal, Long upperVal, boolean includeLower, boolean includeUpper) {
+    return new DocValuesRangeFilter<Long>(field, lowerVal, upperVal, includeLower, includeUpper) {
       @Override
       public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
         final long inclusiveLowerPoint, inclusiveUpperPoint;
@@ -270,7 +269,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
           return null;
         
         final NumericDocValues values = DocValues.getNumeric(context.reader(), field);
-        return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
+        return new DocValuesDocIdSet(context.reader().maxDoc(), acceptDocs) {
           @Override
           protected boolean matchDoc(int doc) {
             final long value = values.get(doc);
@@ -286,8 +285,8 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
    * float fields containing exactly one numeric term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
-  public static FieldCacheRangeFilter<Float> newFloatRange(String field, Float lowerVal, Float upperVal, boolean includeLower, boolean includeUpper) {
-    return new FieldCacheRangeFilter<Float>(field, lowerVal, upperVal, includeLower, includeUpper) {
+  public static DocValuesRangeFilter<Float> newFloatRange(String field, Float lowerVal, Float upperVal, boolean includeLower, boolean includeUpper) {
+    return new DocValuesRangeFilter<Float>(field, lowerVal, upperVal, includeLower, includeUpper) {
       @Override
       public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
         // we transform the floating point numbers to sortable integers
@@ -316,7 +315,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
           return null;
         
         final NumericDocValues values = DocValues.getNumeric(context.reader(), field);
-        return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
+        return new DocValuesDocIdSet(context.reader().maxDoc(), acceptDocs) {
           @Override
           protected boolean matchDoc(int doc) {
             final float value = Float.intBitsToFloat((int)values.get(doc));
@@ -332,8 +331,8 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
    * double fields containing exactly one numeric term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.
    */
-  public static FieldCacheRangeFilter<Double> newDoubleRange(String field, Double lowerVal, Double upperVal, boolean includeLower, boolean includeUpper) {
-    return new FieldCacheRangeFilter<Double>(field, lowerVal, upperVal, includeLower, includeUpper) {
+  public static DocValuesRangeFilter<Double> newDoubleRange(String field, Double lowerVal, Double upperVal, boolean includeLower, boolean includeUpper) {
+    return new DocValuesRangeFilter<Double>(field, lowerVal, upperVal, includeLower, includeUpper) {
       @Override
       public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
         // we transform the floating point numbers to sortable integers
@@ -363,7 +362,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         
         final NumericDocValues values = DocValues.getNumeric(context.reader(), field);
         // ignore deleted docs if range doesn't contain 0
-        return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
+        return new DocValuesDocIdSet(context.reader().maxDoc(), acceptDocs) {
           @Override
           protected boolean matchDoc(int doc) {
             final double value = Double.longBitsToDouble(values.get(doc));
@@ -389,8 +388,8 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
   @SuppressWarnings({"rawtypes"})
   public final boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof FieldCacheRangeFilter)) return false;
-    FieldCacheRangeFilter other = (FieldCacheRangeFilter) o;
+    if (!(o instanceof DocValuesRangeFilter)) return false;
+    DocValuesRangeFilter other = (DocValuesRangeFilter) o;
 
     if (!this.field.equals(other.field)
         || this.includeLower != other.includeLower

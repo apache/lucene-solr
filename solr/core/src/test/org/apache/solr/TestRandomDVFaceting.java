@@ -113,28 +113,23 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
 
   @Test
   public void testRandomFaceting() throws Exception {
-    try {
-      Random rand = random();
-      int iter = atLeast(100);
-      init();
-      addMoreDocs(0);
-
-      for (int i=0; i<iter; i++) {
-        doFacetTests();
-
-        if (rand.nextInt(100) < 5) {
-          init();
-        }
-
-        addMoreDocs(rand.nextInt(indexSize) + 1);
-
-        if (rand.nextInt(100) < 50) {
-          deleteSomeDocs();
-        }
+    Random rand = random();
+    int iter = atLeast(100);
+    init();
+    addMoreDocs(0);
+    
+    for (int i=0; i<iter; i++) {
+      doFacetTests();
+      
+      if (rand.nextInt(100) < 5) {
+        init();
       }
-    } finally {
-      // nocommit: split test if needed
-      // FieldCache.DEFAULT.purgeAllCaches();   // hide FC insanity
+      
+      addMoreDocs(rand.nextInt(indexSize) + 1);
+      
+      if (rand.nextInt(100) < 50) {
+        deleteSomeDocs();
+      }
     }
   }
 

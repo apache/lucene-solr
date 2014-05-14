@@ -145,7 +145,7 @@ public final class DocTermOrdsRewriteMethod extends MultiTermQuery.RewriteMethod
         return null;
       }
       
-      return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
+      return new DocValuesDocIdSet(context.reader().maxDoc(), acceptDocs) {
         @Override
         protected final boolean matchDoc(int doc) throws ArrayIndexOutOfBoundsException {
           docTermOrds.setDocument(doc);

@@ -39,7 +39,7 @@ import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.FieldCacheRangeFilter;
+import org.apache.lucene.search.DocValuesRangeFilter;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
@@ -307,7 +307,7 @@ public class TrieField extends PrimitiveFieldType {
     switch (type) {
       case INTEGER:
         if (matchOnly) {
-          query = new ConstantScoreQuery(FieldCacheRangeFilter.newIntRange(field.getName(),
+          query = new ConstantScoreQuery(DocValuesRangeFilter.newIntRange(field.getName(),
                 min == null ? null : Integer.parseInt(min),
                 max == null ? null : Integer.parseInt(max),
                 minInclusive, maxInclusive));
@@ -320,7 +320,7 @@ public class TrieField extends PrimitiveFieldType {
         break;
       case FLOAT:
         if (matchOnly) {
-          query = new ConstantScoreQuery(FieldCacheRangeFilter.newFloatRange(field.getName(),
+          query = new ConstantScoreQuery(DocValuesRangeFilter.newFloatRange(field.getName(),
                 min == null ? null : Float.parseFloat(min),
                 max == null ? null : Float.parseFloat(max),
                 minInclusive, maxInclusive));
@@ -333,7 +333,7 @@ public class TrieField extends PrimitiveFieldType {
         break;
       case LONG:
         if (matchOnly) {
-          query = new ConstantScoreQuery(FieldCacheRangeFilter.newLongRange(field.getName(),
+          query = new ConstantScoreQuery(DocValuesRangeFilter.newLongRange(field.getName(),
                 min == null ? null : Long.parseLong(min),
                 max == null ? null : Long.parseLong(max),
                 minInclusive, maxInclusive));
@@ -346,7 +346,7 @@ public class TrieField extends PrimitiveFieldType {
         break;
       case DOUBLE:
         if (matchOnly) {
-          query = new ConstantScoreQuery(FieldCacheRangeFilter.newDoubleRange(field.getName(),
+          query = new ConstantScoreQuery(DocValuesRangeFilter.newDoubleRange(field.getName(),
                 min == null ? null : Double.parseDouble(min),
                 max == null ? null : Double.parseDouble(max),
                 minInclusive, maxInclusive));
@@ -359,7 +359,7 @@ public class TrieField extends PrimitiveFieldType {
         break;
       case DATE:
         if (matchOnly) {
-          query = new ConstantScoreQuery(FieldCacheRangeFilter.newLongRange(field.getName(),
+          query = new ConstantScoreQuery(DocValuesRangeFilter.newLongRange(field.getName(),
                 min == null ? null : dateField.parseMath(null, min).getTime(),
                 max == null ? null : dateField.parseMath(null, max).getTime(),
                 minInclusive, maxInclusive));

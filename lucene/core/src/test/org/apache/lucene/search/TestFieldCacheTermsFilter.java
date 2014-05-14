@@ -33,7 +33,7 @@ import java.util.List;
 /**
  * A basic unit test for FieldCacheTermsFilter
  *
- * @see org.apache.lucene.search.FieldCacheTermsFilter
+ * @see org.apache.lucene.search.DocValuesTermsFilter
  */
 public class TestFieldCacheTermsFilter extends LuceneTestCase {
   public void testMissingTerms() throws Exception {
@@ -58,18 +58,18 @@ public class TestFieldCacheTermsFilter extends LuceneTestCase {
 
     List<String> terms = new ArrayList<>();
     terms.add("5");
-    results = searcher.search(q, new FieldCacheTermsFilter(fieldName,  terms.toArray(new String[0])), numDocs).scoreDocs;
+    results = searcher.search(q, new DocValuesTermsFilter(fieldName,  terms.toArray(new String[0])), numDocs).scoreDocs;
     assertEquals("Must match nothing", 0, results.length);
 
     terms = new ArrayList<>();
     terms.add("10");
-    results = searcher.search(q, new FieldCacheTermsFilter(fieldName,  terms.toArray(new String[0])), numDocs).scoreDocs;
+    results = searcher.search(q, new DocValuesTermsFilter(fieldName,  terms.toArray(new String[0])), numDocs).scoreDocs;
     assertEquals("Must match 1", 1, results.length);
 
     terms = new ArrayList<>();
     terms.add("10");
     terms.add("20");
-    results = searcher.search(q, new FieldCacheTermsFilter(fieldName,  terms.toArray(new String[0])), numDocs).scoreDocs;
+    results = searcher.search(q, new DocValuesTermsFilter(fieldName,  terms.toArray(new String[0])), numDocs).scoreDocs;
     assertEquals("Must match 2", 2, results.length);
 
     reader.close();

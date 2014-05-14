@@ -421,9 +421,6 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     
     // Thread.sleep(10000000000L);
 
-    // nocommit: split test if needed
-    // FieldCache.DEFAULT.purgeAllCaches();   // hide FC insanity
-
     del("*:*"); // delete all docs and test stats request
     commit();
     try {

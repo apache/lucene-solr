@@ -38,7 +38,7 @@ import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocTermOrdsRangeFilter;
-import org.apache.lucene.search.FieldCacheRangeFilter;
+import org.apache.lucene.search.DocValuesRangeFilter;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermRangeQuery;
@@ -255,7 +255,7 @@ public class CollationField extends FieldType {
           return new ConstantScoreQuery(DocTermOrdsRangeFilter.newBytesRefRange(
               field.getName(), low, high, minInclusive, maxInclusive));
         } else {
-          return new ConstantScoreQuery(FieldCacheRangeFilter.newBytesRefRange(
+          return new ConstantScoreQuery(DocValuesRangeFilter.newBytesRefRange(
               field.getName(), low, high, minInclusive, maxInclusive));
         } 
     } else {

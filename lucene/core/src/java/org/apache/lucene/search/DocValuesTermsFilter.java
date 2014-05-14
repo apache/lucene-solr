@@ -87,16 +87,16 @@ import org.apache.lucene.util.FixedBitSet;
  * Which filter is best is very application dependent.
  */
 
-public class FieldCacheTermsFilter extends Filter {
+public class DocValuesTermsFilter extends Filter {
   private String field;
   private BytesRef[] terms;
 
-  public FieldCacheTermsFilter(String field, BytesRef... terms) {
+  public DocValuesTermsFilter(String field, BytesRef... terms) {
     this.field = field;
     this.terms = terms;
   }
 
-  public FieldCacheTermsFilter(String field, String... terms) {
+  public DocValuesTermsFilter(String field, String... terms) {
     this.field = field;
     this.terms = new BytesRef[terms.length];
     for (int i = 0; i < terms.length; i++)
@@ -113,7 +113,7 @@ public class FieldCacheTermsFilter extends Filter {
         bits.set(ord);
       }
     }
-    return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
+    return new DocValuesDocIdSet(context.reader().maxDoc(), acceptDocs) {
       @Override
       protected final boolean matchDoc(int doc) {
         int ord = fcsi.getOrd(doc);

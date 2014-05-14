@@ -283,8 +283,6 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   @Override
   public void tearDown() throws Exception {
     destroyServers();
-    // nocommit: split test if needed
-    // FieldCache.DEFAULT.purgeAllCaches();   // hide FC insanity
     super.tearDown();
   }
 

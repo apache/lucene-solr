@@ -84,7 +84,7 @@ public class FieldValueFilter extends Filter {
       if (docsWithField instanceof MatchAllBits) {
         return null;
       }
-      return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
+      return new DocValuesDocIdSet(context.reader().maxDoc(), acceptDocs) {
         @Override
         protected final boolean matchDoc(int doc) {
           return !docsWithField.get(doc);
@@ -99,7 +99,7 @@ public class FieldValueFilter extends Filter {
         // :-)
         return BitsFilteredDocIdSet.wrap((DocIdSet) docsWithField, acceptDocs);
       }
-      return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
+      return new DocValuesDocIdSet(context.reader().maxDoc(), acceptDocs) {
         @Override
         protected final boolean matchDoc(int doc) {
           return docsWithField.get(doc);

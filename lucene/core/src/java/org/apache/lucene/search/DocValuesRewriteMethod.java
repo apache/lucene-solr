@@ -34,24 +34,23 @@ import org.apache.lucene.util.LongBitSet;
  * This can be used to perform these queries against an unindexed docvalues field.
  * @lucene.experimental
  */
-// nocommit: rename this class
-public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod {
+public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
   
   @Override
   public Query rewrite(IndexReader reader, MultiTermQuery query) {
-    Query result = new ConstantScoreQuery(new MultiTermQueryFieldCacheWrapperFilter(query));
+    Query result = new ConstantScoreQuery(new MultiTermQueryDocValuesWrapperFilter(query));
     result.setBoost(query.getBoost());
     return result;
   }
   
-  static class MultiTermQueryFieldCacheWrapperFilter extends Filter {
+  static class MultiTermQueryDocValuesWrapperFilter extends Filter {
     
     protected final MultiTermQuery query;
     
     /**
      * Wrap a {@link MultiTermQuery} as a Filter.
      */
-    protected MultiTermQueryFieldCacheWrapperFilter(MultiTermQuery query) {
+    protected MultiTermQueryDocValuesWrapperFilter(MultiTermQuery query) {
       this.query = query;
     }
     
@@ -66,7 +65,7 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
       if (o==this) return true;
       if (o==null) return false;
       if (this.getClass().equals(o.getClass())) {
-        return this.query.equals( ((MultiTermQueryFieldCacheWrapperFilter)o).query );
+        return this.query.equals( ((MultiTermQueryDocValuesWrapperFilter)o).query );
       }
       return false;
     }
@@ -149,7 +148,7 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
         return null;
       }
       
-      return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
+      return new DocValuesDocIdSet(context.reader().maxDoc(), acceptDocs) {
         @Override
         protected final boolean matchDoc(int doc) throws ArrayIndexOutOfBoundsException {
           int ord = fcsi.getOrd(doc);

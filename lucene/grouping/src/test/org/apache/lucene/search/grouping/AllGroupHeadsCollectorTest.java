@@ -299,83 +299,79 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
         fieldIdToDocID[fieldId] = i;
       }
 
-      try {
-        final IndexSearcher s = newSearcher(r);
-
-        for (int contentID = 0; contentID < 3; contentID++) {
-          final ScoreDoc[] hits = s.search(new TermQuery(new Term("content", "real" + contentID)), numDocs).scoreDocs;
-          for (ScoreDoc hit : hits) {
-            final GroupDoc gd = groupDocs[(int) docIdToFieldId.get(hit.doc)];
-            assertTrue(gd.score == 0.0);
-            gd.score = hit.score;
-            int docId = gd.id;
-            assertEquals(docId, docIdToFieldId.get(hit.doc));
-          }
+      final IndexSearcher s = newSearcher(r);
+      
+      for (int contentID = 0; contentID < 3; contentID++) {
+        final ScoreDoc[] hits = s.search(new TermQuery(new Term("content", "real" + contentID)), numDocs).scoreDocs;
+        for (ScoreDoc hit : hits) {
+          final GroupDoc gd = groupDocs[(int) docIdToFieldId.get(hit.doc)];
+          assertTrue(gd.score == 0.0);
+          gd.score = hit.score;
+          int docId = gd.id;
+          assertEquals(docId, docIdToFieldId.get(hit.doc));
         }
-
-        for (GroupDoc gd : groupDocs) {
-          assertTrue(gd.score != 0.0);
-        }
-
-        for (int searchIter = 0; searchIter < 100; searchIter++) {
-
-          if (VERBOSE) {
-            System.out.println("TEST: searchIter=" + searchIter);
-          }
-
-          final String searchTerm = "real" + random().nextInt(3);
-          boolean sortByScoreOnly = random().nextBoolean();
-          Sort sortWithinGroup = getRandomSort(sortByScoreOnly);
-          AbstractAllGroupHeadsCollector<?> allGroupHeadsCollector = createRandomCollector("group", sortWithinGroup);
-          s.search(new TermQuery(new Term("content", searchTerm)), allGroupHeadsCollector);
-          int[] expectedGroupHeads = createExpectedGroupHeads(searchTerm, groupDocs, sortWithinGroup, sortByScoreOnly, fieldIdToDocID);
-          int[] actualGroupHeads = allGroupHeadsCollector.retrieveGroupHeads();
-          // The actual group heads contains Lucene ids. Need to change them into our id value.
-          for (int i = 0; i < actualGroupHeads.length; i++) {
-            actualGroupHeads[i] = (int) docIdToFieldId.get(actualGroupHeads[i]);
-          }
-          // Allows us the easily iterate and assert the actual and expected results.
-          Arrays.sort(expectedGroupHeads);
-          Arrays.sort(actualGroupHeads);
-
-          if (VERBOSE) {
-            System.out.println("Collector: " + allGroupHeadsCollector.getClass().getSimpleName());
-            System.out.println("Sort within group: " + sortWithinGroup);
-            System.out.println("Num group: " + numGroups);
-            System.out.println("Num doc: " + numDocs);
-            System.out.println("\n=== Expected: \n");
-            for (int expectedDocId : expectedGroupHeads) {
-              GroupDoc expectedGroupDoc = groupDocs[expectedDocId];
-              String expectedGroup = expectedGroupDoc.group == null ? null : expectedGroupDoc.group.utf8ToString();
-              System.out.println(
-                  String.format(Locale.ROOT,
-                      "Group:%10s score%5f Sort1:%10s Sort2:%10s Sort3:%10s doc:%5d",
-                      expectedGroup, expectedGroupDoc.score, expectedGroupDoc.sort1.utf8ToString(),
-                      expectedGroupDoc.sort2.utf8ToString(), expectedGroupDoc.sort3.utf8ToString(), expectedDocId
-                  )
-              );
-            }
-            System.out.println("\n=== Actual: \n");
-            for (int actualDocId : actualGroupHeads) {
-              GroupDoc actualGroupDoc = groupDocs[actualDocId];
-              String actualGroup = actualGroupDoc.group == null ? null : actualGroupDoc.group.utf8ToString();
-              System.out.println(
-                  String.format(Locale.ROOT,
-                      "Group:%10s score%5f Sort1:%10s Sort2:%10s Sort3:%10s doc:%5d",
-                      actualGroup, actualGroupDoc.score, actualGroupDoc.sort1.utf8ToString(),
-                      actualGroupDoc.sort2.utf8ToString(), actualGroupDoc.sort3.utf8ToString(), actualDocId
-                  )
-              );
-            }
-            System.out.println("\n===================================================================================");
-          }
-
-          assertArrayEquals(expectedGroupHeads, actualGroupHeads);
-        }
-      } finally {
-        QueryUtils.purgeFieldCache(r);
       }
-
+      
+      for (GroupDoc gd : groupDocs) {
+        assertTrue(gd.score != 0.0);
+      }
+      
+      for (int searchIter = 0; searchIter < 100; searchIter++) {
+        
+        if (VERBOSE) {
+          System.out.println("TEST: searchIter=" + searchIter);
+        }
+        
+        final String searchTerm = "real" + random().nextInt(3);
+        boolean sortByScoreOnly = random().nextBoolean();
+        Sort sortWithinGroup = getRandomSort(sortByScoreOnly);
+        AbstractAllGroupHeadsCollector<?> allGroupHeadsCollector = createRandomCollector("group", sortWithinGroup);
+        s.search(new TermQuery(new Term("content", searchTerm)), allGroupHeadsCollector);
+        int[] expectedGroupHeads = createExpectedGroupHeads(searchTerm, groupDocs, sortWithinGroup, sortByScoreOnly, fieldIdToDocID);
+        int[] actualGroupHeads = allGroupHeadsCollector.retrieveGroupHeads();
+        // The actual group heads contains Lucene ids. Need to change them into our id value.
+        for (int i = 0; i < actualGroupHeads.length; i++) {
+          actualGroupHeads[i] = (int) docIdToFieldId.get(actualGroupHeads[i]);
+        }
+        // Allows us the easily iterate and assert the actual and expected results.
+        Arrays.sort(expectedGroupHeads);
+        Arrays.sort(actualGroupHeads);
+        
+        if (VERBOSE) {
+          System.out.println("Collector: " + allGroupHeadsCollector.getClass().getSimpleName());
+          System.out.println("Sort within group: " + sortWithinGroup);
+          System.out.println("Num group: " + numGroups);
+          System.out.println("Num doc: " + numDocs);
+          System.out.println("\n=== Expected: \n");
+          for (int expectedDocId : expectedGroupHeads) {
+            GroupDoc expectedGroupDoc = groupDocs[expectedDocId];
+            String expectedGroup = expectedGroupDoc.group == null ? null : expectedGroupDoc.group.utf8ToString();
+            System.out.println(
+                String.format(Locale.ROOT,
+                    "Group:%10s score%5f Sort1:%10s Sort2:%10s Sort3:%10s doc:%5d",
+                    expectedGroup, expectedGroupDoc.score, expectedGroupDoc.sort1.utf8ToString(),
+                    expectedGroupDoc.sort2.utf8ToString(), expectedGroupDoc.sort3.utf8ToString(), expectedDocId
+                    )
+                );
+          }
+          System.out.println("\n=== Actual: \n");
+          for (int actualDocId : actualGroupHeads) {
+            GroupDoc actualGroupDoc = groupDocs[actualDocId];
+            String actualGroup = actualGroupDoc.group == null ? null : actualGroupDoc.group.utf8ToString();
+            System.out.println(
+                String.format(Locale.ROOT,
+                    "Group:%10s score%5f Sort1:%10s Sort2:%10s Sort3:%10s doc:%5d",
+                    actualGroup, actualGroupDoc.score, actualGroupDoc.sort1.utf8ToString(),
+                    actualGroupDoc.sort2.utf8ToString(), actualGroupDoc.sort3.utf8ToString(), actualDocId
+                    )
+                );
+          }
+          System.out.println("\n===================================================================================");
+        }
+        
+        assertArrayEquals(expectedGroupHeads, actualGroupHeads);
+      }
+      
       r.close();
       dir.close();
     }

@@ -28,7 +28,7 @@ import org.apache.lucene.util.BytesRef;
 /**
  * A range filter built on top of a cached multi-valued term field (from {@link AtomicReader#getSortedSetDocValues}).
  * 
- * <p>Like {@link FieldCacheRangeFilter}, this is just a specialized range query versus
+ * <p>Like {@link DocValuesRangeFilter}, this is just a specialized range query versus
  *    using a TermRangeQuery with {@link DocTermOrdsRewriteMethod}: it will only do
  *    two ordinal to term lookups.</p>
  */
@@ -97,7 +97,7 @@ public abstract class DocTermOrdsRangeFilter extends Filter {
         
         assert inclusiveLowerPoint >= 0 && inclusiveUpperPoint >= 0;
         
-        return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
+        return new DocValuesDocIdSet(context.reader().maxDoc(), acceptDocs) {
           @Override
           protected final boolean matchDoc(int doc) {
             docTermOrds.setDocument(doc);

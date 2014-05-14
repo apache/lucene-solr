@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.queries.function.valuesource;
+package org.apache.solr.search.function;
 
 import java.io.IOException;
 import java.util.Map;
@@ -31,6 +31,8 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
+import org.apache.lucene.search.SortedSetSelector;
+import org.apache.solr.search.SolrIndexSearcher;
 
 /**
  * Obtains the ordinal of the field value from {@link AtomicReader#getSortedDocValues}
@@ -65,14 +67,20 @@ public class ReverseOrdFieldSource extends ValueSource {
     return "rord("+field+')';
   }
 
-  // TODO: this is trappy? perhaps this query instead should make you pass a slow reader yourself?
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final IndexReader topReader = ReaderUtil.getTopLevelContext(readerContext).reader();
-    final AtomicReader r = SlowCompositeReaderWrapper.wrap(topReader);
     final int off = readerContext.docBase;
-
-    final SortedDocValues sindex = DocValues.getSorted(r, field);
+    final AtomicReader r;
+    Object o = context.get("searcher");
+    if (o instanceof SolrIndexSearcher) {
+      // reuse ordinalmap
+      r = ((SolrIndexSearcher)o).getAtomicReader();
+    } else {
+      IndexReader topReader = ReaderUtil.getTopLevelContext(readerContext).reader();
+      r = SlowCompositeReaderWrapper.wrap(topReader);
+    }
+    // if its e.g. tokenized/multivalued, emulate old behavior of single-valued fc
+    final SortedDocValues sindex = SortedSetSelector.wrap(DocValues.getSortedSet(r, field), SortedSetSelector.Type.MIN);
     final int end = sindex.getValueCount();
 
     return new IntDocValues(this) {

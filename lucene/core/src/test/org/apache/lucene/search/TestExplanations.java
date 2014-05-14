@@ -113,7 +113,7 @@ public class TestExplanations extends LuceneTestCase {
   /** 
    * Convenience subclass of FieldCacheTermsFilter
    */
-  public static class ItemizedFilter extends FieldCacheTermsFilter {
+  public static class ItemizedFilter extends DocValuesTermsFilter {
     private static String[] int2str(int [] terms) {
       String [] out = new String[terms.length];
       for (int i = 0; i < terms.length; i++) {

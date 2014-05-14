@@ -517,8 +517,6 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
       ,"/grouped/"+f+"/matches==10"
       ,"/facet_counts/facet_fields/"+f+"==['1',3, '2',3, '3',2, '4',1, '5',1]"
     );
-    // nocommit: split test if needed
-    // FieldCache.DEFAULT.purgeAllCaches();   // hide FC insanity
 
     // test that grouping works with highlighting
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.field",f, "fl","id"

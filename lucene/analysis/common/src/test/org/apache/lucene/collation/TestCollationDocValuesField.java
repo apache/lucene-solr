@@ -27,7 +27,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.FieldCacheRangeFilter;
+import org.apache.lucene.search.DocValuesRangeFilter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
@@ -111,7 +111,7 @@ public class TestCollationDocValuesField extends LuceneTestCase {
       String end = TestUtil.randomSimpleString(random());
       BytesRef lowerVal = new BytesRef(collator.getCollationKey(start).toByteArray());
       BytesRef upperVal = new BytesRef(collator.getCollationKey(end).toByteArray());
-      Query query = new ConstantScoreQuery(FieldCacheRangeFilter.newBytesRefRange("collated", lowerVal, upperVal, true, true));
+      Query query = new ConstantScoreQuery(DocValuesRangeFilter.newBytesRefRange("collated", lowerVal, upperVal, true, true));
       doTestRanges(is, start, end, query, collator);
     }
     
