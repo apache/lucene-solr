@@ -19,8 +19,10 @@ package org.apache.solr.search.grouping;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.MultiCollector;
@@ -28,8 +30,12 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TimeLimitingCollector;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.search.grouping.AbstractAllGroupHeadsCollector;
+import org.apache.lucene.search.grouping.function.FunctionAllGroupHeadsCollector;
+import org.apache.lucene.search.grouping.function.FunctionAllGroupsCollector;
 import org.apache.lucene.search.grouping.term.TermAllGroupHeadsCollector;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.DocSetCollector;
@@ -157,16 +163,25 @@ public class CommandHandler {
 
   private DocSet computeGroupedDocSet(Query query, ProcessedFilter filter, List<Collector> collectors) throws IOException {
     Command firstCommand = commands.get(0);
-    AbstractAllGroupHeadsCollector termAllGroupHeadsCollector =
-        TermAllGroupHeadsCollector.create(firstCommand.getKey(), firstCommand.getSortWithinGroup());
-    if (collectors.isEmpty()) {
-      searchWithTimeLimiter(query, filter, termAllGroupHeadsCollector);
+    String field = firstCommand.getKey();
+    SchemaField sf = searcher.getSchema().getField(field);
+    FieldType fieldType = sf.getType();
+    
+    final AbstractAllGroupHeadsCollector allGroupHeadsCollector;
+    if (fieldType.getNumericType() != null) {
+      ValueSource vs = fieldType.getValueSource(sf, null);
+      allGroupHeadsCollector = new FunctionAllGroupHeadsCollector(vs, new HashMap<Object,Object>(), firstCommand.getSortWithinGroup());
     } else {
-      collectors.add(termAllGroupHeadsCollector);
+      allGroupHeadsCollector = TermAllGroupHeadsCollector.create(firstCommand.getKey(), firstCommand.getSortWithinGroup());
+    }
+    if (collectors.isEmpty()) {
+      searchWithTimeLimiter(query, filter, allGroupHeadsCollector);
+    } else {
+      collectors.add(allGroupHeadsCollector);
       searchWithTimeLimiter(query, filter, MultiCollector.wrap(collectors.toArray(new Collector[collectors.size()])));
     }
 
-    return new BitDocSet(termAllGroupHeadsCollector.retrieveGroupHeads(searcher.maxDoc()));
+    return new BitDocSet(allGroupHeadsCollector.retrieveGroupHeads(searcher.maxDoc()));
   }
 
   private DocSet computeDocSet(Query query, ProcessedFilter filter, List<Collector> collectors) throws IOException {

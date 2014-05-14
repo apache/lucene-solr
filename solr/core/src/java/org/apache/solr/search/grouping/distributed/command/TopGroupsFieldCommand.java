@@ -17,13 +17,18 @@ package org.apache.solr.search.grouping.distributed.command;
  * limitations under the License.
  */
 
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.grouping.AbstractSecondPassGroupingCollector;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.TopGroups;
+import org.apache.lucene.search.grouping.function.FunctionSecondPassGroupingCollector;
 import org.apache.lucene.search.grouping.term.TermSecondPassGroupingCollector;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.mutable.MutableValue;
+import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.grouping.Command;
 
@@ -31,6 +36,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -101,7 +107,7 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
   private final int maxDocPerGroup;
   private final boolean needScores;
   private final boolean needMaxScore;
-  private TermSecondPassGroupingCollector secondPassCollector;
+  private AbstractSecondPassGroupingCollector secondPassCollector;
 
   private TopGroupsFieldCommand(SchemaField field,
                                 Sort groupSort,
@@ -126,9 +132,18 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
     }
 
     List<Collector> collectors = new ArrayList<>();
-    secondPassCollector = new TermSecondPassGroupingCollector(
+    FieldType fieldType = field.getType();
+    if (fieldType.getNumericType() != null) {
+      ValueSource vs = fieldType.getValueSource(field, null);
+      Collection<SearchGroup<MutableValue>> v = GroupConverter.toMutable(field, firstPhaseGroups);
+      secondPassCollector = new FunctionSecondPassGroupingCollector(
+          v, groupSort, sortWithinGroup, maxDocPerGroup, needScores, needMaxScore, true, vs, new HashMap<Object,Object>()
+      );
+    } else {
+      secondPassCollector = new TermSecondPassGroupingCollector(
           field.getName(), firstPhaseGroups, groupSort, sortWithinGroup, maxDocPerGroup, needScores, needMaxScore, true
-    );
+      );
+    }
     collectors.add(secondPassCollector);
     return collectors;
   }
@@ -140,7 +155,12 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
       return new TopGroups<>(groupSort.getSort(), sortWithinGroup.getSort(), 0, 0, new GroupDocs[0], Float.NaN);
     }
 
-    return secondPassCollector.getTopGroups(0);
+    FieldType fieldType = field.getType();
+    if (fieldType.getNumericType() != null) {
+      return GroupConverter.fromMutable(field, secondPassCollector.getTopGroups(0));
+    } else {
+      return secondPassCollector.getTopGroups(0);
+    }
   }
 
   @Override

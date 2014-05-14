@@ -17,12 +17,18 @@ package org.apache.solr.search.grouping.distributed.command;
  * limitations under the License.
  */
 
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.grouping.AbstractAllGroupsCollector;
+import org.apache.lucene.search.grouping.AbstractFirstPassGroupingCollector;
 import org.apache.lucene.search.grouping.SearchGroup;
+import org.apache.lucene.search.grouping.function.FunctionAllGroupsCollector;
+import org.apache.lucene.search.grouping.function.FunctionFirstPassGroupingCollector;
 import org.apache.lucene.search.grouping.term.TermAllGroupsCollector;
 import org.apache.lucene.search.grouping.term.TermFirstPassGroupingCollector;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.grouping.Command;
 
@@ -76,8 +82,8 @@ public class SearchGroupsFieldCommand implements Command<Pair<Integer, Collectio
   private final int topNGroups;
   private final boolean includeGroupCount;
 
-  private TermFirstPassGroupingCollector firstPassGroupingCollector;
-  private TermAllGroupsCollector allGroupsCollector;
+  private AbstractFirstPassGroupingCollector firstPassGroupingCollector;
+  private AbstractAllGroupsCollector allGroupsCollector;
 
   private SearchGroupsFieldCommand(SchemaField field, Sort groupSort, int topNGroups, boolean includeGroupCount) {
     this.field = field;
@@ -89,12 +95,23 @@ public class SearchGroupsFieldCommand implements Command<Pair<Integer, Collectio
   @Override
   public List<Collector> create() throws IOException {
     List<Collector> collectors = new ArrayList<>();
+    FieldType fieldType = field.getType();
     if (topNGroups > 0) {
-      firstPassGroupingCollector = new TermFirstPassGroupingCollector(field.getName(), groupSort, topNGroups);
+      if (fieldType.getNumericType() != null) {
+        ValueSource vs = fieldType.getValueSource(field, null);
+        firstPassGroupingCollector = new FunctionFirstPassGroupingCollector(vs, new HashMap<Object,Object>(), groupSort, topNGroups);
+      } else {
+        firstPassGroupingCollector = new TermFirstPassGroupingCollector(field.getName(), groupSort, topNGroups);
+      }
       collectors.add(firstPassGroupingCollector);
     }
     if (includeGroupCount) {
-      allGroupsCollector = new TermAllGroupsCollector(field.getName());
+      if (fieldType.getNumericType() != null) {
+        ValueSource vs = fieldType.getValueSource(field, null);
+        allGroupsCollector = new FunctionAllGroupsCollector(vs, new HashMap<Object,Object>());
+      } else {
+        allGroupsCollector = new TermAllGroupsCollector(field.getName());
+      }
       collectors.add(allGroupsCollector);
     }
     return collectors;
@@ -104,7 +121,11 @@ public class SearchGroupsFieldCommand implements Command<Pair<Integer, Collectio
   public Pair<Integer, Collection<SearchGroup<BytesRef>>> result() {
     final Collection<SearchGroup<BytesRef>> topGroups;
     if (topNGroups > 0) {
-      topGroups = firstPassGroupingCollector.getTopGroups(0, true);
+      if (field.getType().getNumericType() != null) {
+        topGroups = GroupConverter.fromMutable(field, firstPassGroupingCollector.getTopGroups(0, true));
+      } else {
+        topGroups = firstPassGroupingCollector.getTopGroups(0, true);
+      }
     } else {
       topGroups = Collections.emptyList();
     }
