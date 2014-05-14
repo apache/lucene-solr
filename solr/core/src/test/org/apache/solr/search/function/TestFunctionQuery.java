@@ -417,10 +417,6 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
            ,"*//doc[1]/float[.='120.0']"
            ,"*//doc[2]/float[.='121.0']"
     );
-
-
-    // nocommit: split test if needed
-    // FieldCache.DEFAULT.purgeAllCaches();   // hide FC insanity
   }
 
   /**

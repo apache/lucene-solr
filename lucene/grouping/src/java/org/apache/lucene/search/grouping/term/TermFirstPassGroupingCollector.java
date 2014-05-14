@@ -46,7 +46,7 @@ public class TermFirstPassGroupingCollector extends AbstractFirstPassGroupingCol
    *
    *  @param groupField The field used to group
    *    documents. This field must be single-valued and
-   *    indexed (FieldCache is used to access its value
+   *    indexed (DocValues is used to access its value
    *    per-document).
    *  @param groupSort The {@link Sort} used to sort the
    *    groups.  The top sorted document within each group

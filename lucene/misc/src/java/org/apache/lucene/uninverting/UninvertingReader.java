@@ -40,6 +40,7 @@ import org.apache.lucene.index.FilterDirectoryReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.uninverting.FieldCache.CacheEntry;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
@@ -308,5 +309,18 @@ public class UninvertingReader extends FilterAtomicReader {
   @Override
   public String toString() {
     return "Uninverting(" + in.toString() + ")";
+  }
+  
+  /** 
+   * Return information about the backing cache
+   * @lucene.internal 
+   */
+  public static String[] getUninvertedStats() {
+    CacheEntry[] entries = FieldCache.DEFAULT.getCacheEntries();
+    String[] info = new String[entries.length];
+    for (int i = 0; i < entries.length; i++) {
+      info[i] = entries[i].toString();
+    }
+    return info;
   }
 }

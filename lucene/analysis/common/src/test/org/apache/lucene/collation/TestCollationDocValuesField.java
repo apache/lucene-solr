@@ -85,7 +85,7 @@ public class TestCollationDocValuesField extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
     Field field = newField("field", "", StringField.TYPE_STORED);
-    Collator collator = Collator.getInstance(); // uses -Dtests.locale
+    Collator collator = Collator.getInstance(Locale.getDefault()); // uses -Dtests.locale
     if (random().nextBoolean()) {
       collator.setStrength(Collator.PRIMARY);
     }

@@ -19,27 +19,18 @@ package org.apache.solr.search;
 
 import java.net.URL;
 
+import org.apache.lucene.uninverting.UninvertingReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
 
-/*
-import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.search.FieldCache.CacheEntry;
-import org.apache.lucene.util.FieldCacheSanityChecker;
-import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
-*/
-// nocommit: maybe provide something useful here instead.
-
 /**
  * A SolrInfoMBean that provides introspection of the Solr FieldCache
  *
  */
 public class SolrFieldCacheMBean implements SolrInfoMBean {
-
-  //protected FieldCacheSanityChecker checker = new FieldCacheSanityChecker();
 
   @Override
   public String getName() { return this.getClass().getName(); }
@@ -62,21 +53,11 @@ public class SolrFieldCacheMBean implements SolrInfoMBean {
   @Override
   public NamedList getStatistics() {
     NamedList stats = new SimpleOrderedMap();
-    /*
-    CacheEntry[] entries = FieldCache.DEFAULT.getCacheEntries();
+    String[] entries = UninvertingReader.getUninvertedStats();
     stats.add("entries_count", entries.length);
     for (int i = 0; i < entries.length; i++) {
-      CacheEntry e = entries[i];
-      stats.add("entry#" + i, e.toString());
+      stats.add("entry#" + i, entries[i]);
     }
-
-    Insanity[] insanity = checker.check(entries);
-
-    stats.add("insanity_count", insanity.length);
-    for (int i = 0; i < insanity.length; i++) {
-      
-      stats.add("insanity#" + i, insanity[i].toString());
-    }*/
     return stats;
   }
 
