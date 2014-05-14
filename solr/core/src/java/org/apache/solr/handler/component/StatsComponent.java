@@ -37,6 +37,7 @@ import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.request.DocValuesStats;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.UnInvertedField;
 import org.apache.solr.schema.FieldType;
@@ -315,9 +316,8 @@ class SimpleStats {
         NamedList<?> stv;
 
         if (sf.multiValued() || ft.multiValuedFieldCache()) {
-          //use UnInvertedField for multivalued fields
-          UnInvertedField uif = UnInvertedField.getUnInvertedField(statsField, searcher);
-          stv = uif.getStats(searcher, docs, calcDistinct, facets).getStatsValues();
+          // TODO: should this also be used for single-valued string fields? (should work fine)
+          stv = DocValuesStats.getCounts(searcher, sf.getName(), docs, calcDistinct, facets).getStatsValues();
         } else {
           stv = getFieldCacheStats(statsField, calcDistinct, facets);
         }
