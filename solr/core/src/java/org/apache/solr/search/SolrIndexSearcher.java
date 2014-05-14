@@ -1482,7 +1482,13 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    *        TopDocsCollector to use.
    */
   private TopDocsCollector buildTopDocsCollector(int len, QueryCommand cmd) throws IOException {
-    
+
+    Query q = cmd.getQuery();
+    if(q instanceof RankQuery) {
+      RankQuery rq = (RankQuery)q;
+      return rq.getTopDocsCollector(len, cmd);
+    }
+
     if (null == cmd.getSort()) {
       assert null == cmd.getCursorMark() : "have cursor but no sort";
       return TopScoreDocCollector.create(len, true);
