@@ -38,6 +38,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
@@ -48,6 +49,8 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.FilterCollector;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
@@ -83,6 +86,7 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.Grouping;
 import org.apache.solr.search.HashDocSet;
+import org.apache.solr.search.Insanity;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -446,7 +450,7 @@ public class SimpleFacets {
                                              String sort,
                                              String prefix) throws IOException {
     GroupingSpecification groupingSpecification = rb.getGroupingSpec();
-    String groupField  = groupingSpecification != null ? groupingSpecification.getFields()[0] : null;
+    final String groupField  = groupingSpecification != null ? groupingSpecification.getFields()[0] : null;
     if (groupField == null) {
       throw new SolrException (
           SolrException.ErrorCode.BAD_REQUEST,
@@ -455,8 +459,24 @@ public class SimpleFacets {
     }
 
     BytesRef prefixBR = prefix != null ? new BytesRef(prefix) : null;
-    TermGroupFacetCollector collector = TermGroupFacetCollector.createTermGroupFacetCollector(groupField, field, multiToken, prefixBR, 128);
-    searcher.search(new MatchAllDocsQuery(), base.getTopFilter(), collector);
+    final TermGroupFacetCollector collector = TermGroupFacetCollector.createTermGroupFacetCollector(groupField, field, multiToken, prefixBR, 128);
+    
+    SchemaField sf = searcher.getSchema().getFieldOrNull(groupField);
+    
+    if (sf != null && sf.hasDocValues() == false && sf.multiValued() == false && sf.getType().getNumericType() != null) {
+      // its a single-valued numeric field: we must currently create insanity :(
+      // there isnt a GroupedFacetCollector that works on numerics right now...
+      searcher.search(new MatchAllDocsQuery(), base.getTopFilter(), new FilterCollector(collector) {
+        @Override
+        public LeafCollector getLeafCollector(AtomicReaderContext context) throws IOException {
+          AtomicReader insane = Insanity.wrapInsanity(context.reader(), groupField);
+          return in.getLeafCollector(insane.getContext());
+        }
+      });
+    } else {
+      searcher.search(new MatchAllDocsQuery(), base.getTopFilter(), collector);
+    }
+    
     boolean orderByCount = sort.equals(FacetParams.FACET_SORT_COUNT) || sort.equals(FacetParams.FACET_SORT_COUNT_LEGACY);
     TermGroupFacetCollector.GroupedFacetResult result 
       = collector.mergeSegmentResults(limit < 0 ? Integer.MAX_VALUE : 
