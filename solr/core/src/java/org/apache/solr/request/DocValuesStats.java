@@ -69,7 +69,7 @@ public class DocValuesStats {
     // TODO: remove multiValuedFieldCache(), check dv type / uninversion type?
     final boolean multiValued = schemaField.multiValued() || ft.multiValuedFieldCache();
 
-    final SortedSetDocValues si; // for term lookups only
+    SortedSetDocValues si; // for term lookups only
     OrdinalMap ordinalMap = null; // for mapping per-segment ords to global ones
     if (multiValued) {
       si = searcher.getAtomicReader().getSortedSetDocValues(fieldName);
@@ -84,7 +84,7 @@ public class DocValuesStats {
       }
     }
     if (si == null) {
-      return res;
+      si = DocValues.EMPTY_SORTED_SET;
     }
     if (si.getValueCount() >= Integer.MAX_VALUE) {
       throw new UnsupportedOperationException("Currently this stats method is limited to " + Integer.MAX_VALUE + " unique terms");
