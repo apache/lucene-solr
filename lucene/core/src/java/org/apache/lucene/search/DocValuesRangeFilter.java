@@ -32,7 +32,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 
 /**
- * A range filter built on top of an uninverted single term field 
+ * A range filter built on top of numeric doc values field 
  * (from {@link AtomicReader#getNumericDocValues(String)}).
  * 
  * <p>{@code DocValuesRangeFilter} builds a single cache for the field the first time it is used.
