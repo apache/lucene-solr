@@ -83,6 +83,7 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
       super(context, acceptDocs);
     }
 
+    //The reused value of cell.getTokenBytesNoLeaf which is always then seek()'ed to. It's used in assertions too.
     BytesRef termBytes = new BytesRef();//no leaf
     Cell nextCell;//see getLeafDocs
 
@@ -135,7 +136,13 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
       if (termsEnum == null)
         return false;
       termBytes = cell.getTokenBytesNoLeaf(termBytes);
+      assert assertCloneTermBytes(); //assertions look at termBytes later on
       return termsEnum.seekExact(termBytes);
+    }
+
+    private boolean assertCloneTermBytes() {
+      termBytes = BytesRef.deepCopyOf(termBytes);
+      return true;
     }
 
     private SmallDocSet getDocs(Cell cell, Bits acceptContains) throws IOException {
@@ -144,12 +151,9 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
       return collectDocs(acceptContains);
     }
 
-    private Cell lastLeaf = null;//just for assertion
-
-    private SmallDocSet getLeafDocs(Cell leafCell, Bits acceptContains) throws IOException {
-      assert leafCell.getTokenBytesNoLeaf(null).equals(termBytes);
-      assert ! leafCell.equals(lastLeaf);//don't call for same leaf again
-      lastLeaf = leafCell;
+    /** Gets docs on the leaf of the given cell, _if_ there is a leaf cell, otherwise null. */
+    private SmallDocSet getLeafDocs(Cell cell, Bits acceptContains) throws IOException {
+      assert cell.getTokenBytesNoLeaf(null).equals(termBytes);
 
       if (termsEnum == null)
         return null;
@@ -159,8 +163,8 @@ public class ContainsPrefixTreeFilter extends AbstractPrefixTreeFilter {
         return null;
       }
       nextCell = grid.readCell(nextTerm, nextCell);
-      assert leafCell.isPrefixOf(nextCell);
-      if (nextCell.getLevel() == leafCell.getLevel() && nextCell.isLeaf()) {
+      assert cell.isPrefixOf(nextCell);
+      if (nextCell.getLevel() == cell.getLevel() && nextCell.isLeaf()) {
         return collectDocs(acceptContains);
       } else {
         return null;

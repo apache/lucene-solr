@@ -32,7 +32,7 @@ class TreeCellIterator extends CellIterator {
   // pave the way for re-using Cell & CellIterator at a given level in the future.
 
   private final Shape shapeFilter;//possibly null
-  private final CellIterator[] iterStack;
+  private final CellIterator[] iterStack;//starts at level 1
   private int stackIdx;//-1 when done
   private boolean descend;
 
@@ -40,8 +40,7 @@ class TreeCellIterator extends CellIterator {
     this.shapeFilter = shapeFilter;
     assert parentCell.getLevel() == 0;
     iterStack = new CellIterator[detailLevel];
-    CellIterator nextLevelCells = parentCell.getNextLevelCells(shapeFilter);
-    iterStack[0] = nextLevelCells;
+    iterStack[0] = parentCell.getNextLevelCells(shapeFilter);
     stackIdx = 0;//always points to an iter (non-null)
     //note: not obvious but needed to visit the first cell before trying to descend
     descend = false;

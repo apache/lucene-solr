@@ -48,10 +48,13 @@ import java.io.IOException;
  *
  * @lucene.experimental
  */
-//TODO LUCENE-4869: implement faster algorithm based on filtering out false-positives of a
-//  minimal query buffer by looking in a DocValues cache holding a representative
-//  point of each disjoint component of a document's shape(s).
 public class WithinPrefixTreeFilter extends AbstractVisitingPrefixTreeFilter {
+  //TODO LUCENE-4869: implement faster algorithm based on filtering out false-positives of a
+  //  minimal query buffer by looking in a DocValues cache holding a representative
+  //  point of each disjoint component of a document's shape(s).
+
+  //TODO Could the recursion in allCellsIntersectQuery() be eliminated when non-fuzzy or other
+  //  circumstances?
 
   private final Shape bufferedQueryShape;//if null then the whole world
 

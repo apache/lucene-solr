@@ -198,6 +198,8 @@ Bug fixes
 * LUCENE-5660: AnalyzingSuggester.build will now throw IllegalArgumentException if
   you give it a longer suggestion than it can handle (Robert Muir, Mike McCandless)
 
+* LUCENE-5668: Fix off-by-one in TieredMergePolicy (Mike McCandless)
+
 Test Framework
 
 * LUCENE-5622: Fail tests if they print over the given limit of bytes to 
