@@ -28,10 +28,10 @@ import org.apache.lucene.analysis.icu.tokenattributes.ScriptAttribute;
 import com.ibm.icu.lang.UScript;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.io.StringReader;
 import java.util.Arrays;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
 
 public class TestICUTokenizer extends BaseTokenStreamTestCase {
   
@@ -268,6 +268,45 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
         assertTrue(ts.reflectAsString(false).contains("script=Latin"));
       }
       ts.end();
+    }
+  }
+  
+  /** test for bugs like http://bugs.icu-project.org/trac/ticket/10767 */
+  public void testICUConcurrency() throws Exception {
+    int numThreads = 8;
+    final CountDownLatch startingGun = new CountDownLatch(1);
+    Thread threads[] = new Thread[numThreads];
+    for (int i = 0; i < threads.length; i++) {
+      threads[i] = new Thread() {
+        @Override
+        public void run() {
+          try {
+            startingGun.await();
+            long tokenCount = 0;
+            final String contents = "英 เบียร์ ビール ເບຍ abc";
+            for (int i = 0; i < 1000; i++) {
+              try (Tokenizer tokenizer = new ICUTokenizer()) {
+                tokenizer.setReader(new StringReader(contents));
+                tokenizer.reset();
+                while (tokenizer.incrementToken()) {
+                  tokenCount++;
+                }
+                tokenizer.end();
+              }
+            }
+            if (VERBOSE) {
+              System.out.println(tokenCount);
+            }
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        } 
+      };
+      threads[i].start();
+    }
+    startingGun.countDown();
+    for (int i = 0; i < threads.length; i++) {
+      threads[i].join();
     }
   }
 }
