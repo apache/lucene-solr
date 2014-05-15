@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs;
+package org.apache.lucene.codecs.blocktree;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,15 +17,16 @@ package org.apache.lucene.codecs;
  * limitations under the License.
  */
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.io.UnsupportedEncodingException;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.Locale;
 import java.util.TreeMap;
 
+import org.apache.lucene.codecs.BlockTermState;
+import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
@@ -286,177 +287,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
         // prefix of UTF8 that ends mid-unicode-char, we
         // fallback to hex:
         return b.toString();
-      }
-    }
-  }
-
-  /**
-   * BlockTree statistics for a single field 
-   * returned by {@link FieldReader#computeStats()}.
-   */
-  public static class Stats {
-    /** How many nodes in the index FST. */
-    public long indexNodeCount;
-
-    /** How many arcs in the index FST. */
-    public long indexArcCount;
-
-    /** Byte size of the index. */
-    public long indexNumBytes;
-
-    /** Total number of terms in the field. */
-    public long totalTermCount;
-
-    /** Total number of bytes (sum of term lengths) across all terms in the field. */
-    public long totalTermBytes;
-
-    /** The number of normal (non-floor) blocks in the terms file. */
-    public int nonFloorBlockCount;
-
-    /** The number of floor blocks (meta-blocks larger than the
-     *  allowed {@code maxItemsPerBlock}) in the terms file. */
-    public int floorBlockCount;
-    
-    /** The number of sub-blocks within the floor blocks. */
-    public int floorSubBlockCount;
-
-    /** The number of "internal" blocks (that have both
-     *  terms and sub-blocks). */
-    public int mixedBlockCount;
-
-    /** The number of "leaf" blocks (blocks that have only
-     *  terms). */
-    public int termsOnlyBlockCount;
-
-    /** The number of "internal" blocks that do not contain
-     *  terms (have only sub-blocks). */
-    public int subBlocksOnlyBlockCount;
-
-    /** Total number of blocks. */
-    public int totalBlockCount;
-
-    /** Number of blocks at each prefix depth. */
-    public int[] blockCountByPrefixLen = new int[10];
-    private int startBlockCount;
-    private int endBlockCount;
-
-    /** Total number of bytes used to store term suffixes. */
-    public long totalBlockSuffixBytes;
-
-    /** Total number of bytes used to store term stats (not
-     *  including what the {@link PostingsBaseFormat}
-     *  stores. */
-    public long totalBlockStatsBytes;
-
-    /** Total bytes stored by the {@link PostingsBaseFormat},
-     *  plus the other few vInts stored in the frame. */
-    public long totalBlockOtherBytes;
-
-    /** Segment name. */
-    public final String segment;
-
-    /** Field name. */
-    public final String field;
-
-    Stats(String segment, String field) {
-      this.segment = segment;
-      this.field = field;
-    }
-
-    void startBlock(FieldReader.SegmentTermsEnum.Frame frame, boolean isFloor) {
-      totalBlockCount++;
-      if (isFloor) {
-        if (frame.fp == frame.fpOrig) {
-          floorBlockCount++;
-        }
-        floorSubBlockCount++;
-      } else {
-        nonFloorBlockCount++;
-      }
-
-      if (blockCountByPrefixLen.length <= frame.prefix) {
-        blockCountByPrefixLen = ArrayUtil.grow(blockCountByPrefixLen, 1+frame.prefix);
-      }
-      blockCountByPrefixLen[frame.prefix]++;
-      startBlockCount++;
-      totalBlockSuffixBytes += frame.suffixesReader.length();
-      totalBlockStatsBytes += frame.statsReader.length();
-    }
-
-    void endBlock(FieldReader.SegmentTermsEnum.Frame frame) {
-      final int termCount = frame.isLeafBlock ? frame.entCount : frame.state.termBlockOrd;
-      final int subBlockCount = frame.entCount - termCount;
-      totalTermCount += termCount;
-      if (termCount != 0 && subBlockCount != 0) {
-        mixedBlockCount++;
-      } else if (termCount != 0) {
-        termsOnlyBlockCount++;
-      } else if (subBlockCount != 0) {
-        subBlocksOnlyBlockCount++;
-      } else {
-        throw new IllegalStateException();
-      }
-      endBlockCount++;
-      final long otherBytes = frame.fpEnd - frame.fp - frame.suffixesReader.length() - frame.statsReader.length();
-      assert otherBytes > 0 : "otherBytes=" + otherBytes + " frame.fp=" + frame.fp + " frame.fpEnd=" + frame.fpEnd;
-      totalBlockOtherBytes += otherBytes;
-    }
-
-    void term(BytesRef term) {
-      totalTermBytes += term.length;
-    }
-
-    void finish() {
-      assert startBlockCount == endBlockCount: "startBlockCount=" + startBlockCount + " endBlockCount=" + endBlockCount;
-      assert totalBlockCount == floorSubBlockCount + nonFloorBlockCount: "floorSubBlockCount=" + floorSubBlockCount + " nonFloorBlockCount=" + nonFloorBlockCount + " totalBlockCount=" + totalBlockCount;
-      assert totalBlockCount == mixedBlockCount + termsOnlyBlockCount + subBlocksOnlyBlockCount: "totalBlockCount=" + totalBlockCount + " mixedBlockCount=" + mixedBlockCount + " subBlocksOnlyBlockCount=" + subBlocksOnlyBlockCount + " termsOnlyBlockCount=" + termsOnlyBlockCount;
-    }
-
-    @Override
-    public String toString() {
-      final ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
-      PrintStream out;
-      try {
-        out = new PrintStream(bos, false, IOUtils.UTF_8);
-      } catch (UnsupportedEncodingException bogus) {
-        throw new RuntimeException(bogus);
-      }
-      
-      out.println("  index FST:");
-      out.println("    " + indexNodeCount + " nodes");
-      out.println("    " + indexArcCount + " arcs");
-      out.println("    " + indexNumBytes + " bytes");
-      out.println("  terms:");
-      out.println("    " + totalTermCount + " terms");
-      out.println("    " + totalTermBytes + " bytes" + (totalTermCount != 0 ? " (" + String.format(Locale.ROOT, "%.1f", ((double) totalTermBytes)/totalTermCount) + " bytes/term)" : ""));
-      out.println("  blocks:");
-      out.println("    " + totalBlockCount + " blocks");
-      out.println("    " + termsOnlyBlockCount + " terms-only blocks");
-      out.println("    " + subBlocksOnlyBlockCount + " sub-block-only blocks");
-      out.println("    " + mixedBlockCount + " mixed blocks");
-      out.println("    " + floorBlockCount + " floor blocks");
-      out.println("    " + (totalBlockCount-floorSubBlockCount) + " non-floor blocks");
-      out.println("    " + floorSubBlockCount + " floor sub-blocks");
-      out.println("    " + totalBlockSuffixBytes + " term suffix bytes" + (totalBlockCount != 0 ? " (" + String.format(Locale.ROOT, "%.1f", ((double) totalBlockSuffixBytes)/totalBlockCount) + " suffix-bytes/block)" : ""));
-      out.println("    " + totalBlockStatsBytes + " term stats bytes" + (totalBlockCount != 0 ? " (" + String.format(Locale.ROOT, "%.1f", ((double) totalBlockStatsBytes)/totalBlockCount) + " stats-bytes/block)" : ""));
-      out.println("    " + totalBlockOtherBytes + " other bytes" + (totalBlockCount != 0 ? " (" + String.format(Locale.ROOT, "%.1f", ((double) totalBlockOtherBytes)/totalBlockCount) + " other-bytes/block)" : ""));
-      if (totalBlockCount != 0) {
-        out.println("    by prefix length:");
-        int total = 0;
-        for(int prefix=0;prefix<blockCountByPrefixLen.length;prefix++) {
-          final int blockCount = blockCountByPrefixLen[prefix];
-          total += blockCount;
-          if (blockCount != 0) {
-            out.println("      " + String.format(Locale.ROOT, "%2d", prefix) + ": " + blockCount);
-          }
-        }
-        assert totalBlockCount == total;
-      }
-
-      try {
-        return bos.toString(IOUtils.UTF_8);
-      } catch (UnsupportedEncodingException bogus) {
-        throw new RuntimeException(bogus);
       }
     }
   }
@@ -1310,7 +1140,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
     }
 
     // Iterates through terms in this field
-    private final class SegmentTermsEnum extends TermsEnum {
+    final class SegmentTermsEnum extends TermsEnum {
       private IndexInput in;
 
       private Frame[] stack;
@@ -2308,7 +2138,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
 
       // Not static -- references term, postingsReader,
       // fieldInfo, in
-      private final class Frame {
+      final class Frame {
         // Our index in stack[]:
         final int ord;
 

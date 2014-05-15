@@ -17,7 +17,7 @@ package org.apache.lucene.codecs.pulsing;
  * limitations under the License.
  */
 
-import org.apache.lucene.codecs.BlockTreeTermsWriter;
+import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsBaseFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat; // javadocs
 
