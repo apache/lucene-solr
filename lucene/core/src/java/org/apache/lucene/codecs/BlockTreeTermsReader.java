@@ -1318,6 +1318,8 @@ public class BlockTreeTermsReader extends FieldsProducer {
       private Frame currentFrame;
       private boolean termExists;
 
+      // nocommit make this public "for casting" and add a getVersion method?
+
       private int targetBeforeCurrentLength;
 
       private final ByteArrayDataInput scratchReader = new ByteArrayDataInput();
@@ -1559,6 +1561,8 @@ public class BlockTreeTermsReader extends FieldsProducer {
         eof = true;
         return true;
       }
+
+      // nocommit we need a seekExact(BytesRef target, long minVersion) API?
 
       @Override
       public boolean seekExact(final BytesRef target) throws IOException {

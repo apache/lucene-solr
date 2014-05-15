@@ -61,14 +61,31 @@ public final class IDVersionPostingsReader extends PostingsReaderBase {
 
   @Override
   public DocsEnum docs(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
-    // nocommit todo -- need a SingleDocDocsEnum
-    return null;
+    SingleDocsEnum docsEnum;
+
+    if (reuse instanceof SingleDocsEnum) {
+      docsEnum = (SingleDocsEnum) reuse;
+    } else {
+      docsEnum = new SingleDocsEnum();
+    }
+    docsEnum.reset(((IDVersionTermState) termState).docID, liveDocs);
+
+    return docsEnum;
   }
 
   @Override
-  public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs,
+  public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState _termState, Bits liveDocs,
                                                DocsAndPositionsEnum reuse, int flags) {
-    return null;
+    SingleDocsAndPositionsEnum posEnum;
+
+    if (reuse instanceof SingleDocsAndPositionsEnum) {
+      posEnum = (SingleDocsAndPositionsEnum) reuse;
+    } else {
+      posEnum = new SingleDocsAndPositionsEnum();
+    }
+    IDVersionTermState termState = (IDVersionTermState) _termState;
+    posEnum.reset(termState.docID, termState.idVersion, liveDocs);
+    return posEnum;
   }
 
   @Override
