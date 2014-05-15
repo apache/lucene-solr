@@ -53,8 +53,8 @@ public final class IDVersionPostingsReader extends PostingsReaderBase {
   public void decodeTerm(long[] longs, DataInput in, FieldInfo fieldInfo, BlockTermState _termState, boolean absolute)
     throws IOException {
     final IDVersionTermState termState = (IDVersionTermState) _termState;
-    termState.idVersion = Long.MAX_VALUE - longs[0];
     termState.docID = in.readVInt();
+    termState.idVersion = in.readVLong();
   }
 
   @Override

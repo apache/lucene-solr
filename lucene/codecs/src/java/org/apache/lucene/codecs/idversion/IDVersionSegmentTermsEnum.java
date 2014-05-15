@@ -40,7 +40,7 @@ import org.apache.lucene.util.fst.PairOutputs;
 import org.apache.lucene.util.fst.Util;
 
 /** Iterates through terms in this field */
-final class IDVersionSegmentTermsEnum extends TermsEnum {
+public final class IDVersionSegmentTermsEnum extends TermsEnum {
 
   final static Outputs<Pair<BytesRef,Long>> fstOutputs = VersionBlockTreeTermsWriter.getFSTOutputs();
   final static Pair<BytesRef,Long> NO_OUTPUT = fstOutputs.getNoOutput();

@@ -28,6 +28,7 @@ import org.apache.lucene.codecs.blocktree.BlockTreeTermsReader;
 import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
 /** A PostingsFormat for primary-key (ID) fields, that associates a
@@ -41,7 +42,7 @@ import org.apache.lucene.util.IOUtils;
  *
  *  @lucene.experimental */
 
-public abstract class IDVersionPostingsFormat extends PostingsFormat {
+public class IDVersionPostingsFormat extends PostingsFormat {
 
   private final int minTermsInBlock;
   private final int maxTermsInBlock;
@@ -92,5 +93,27 @@ public abstract class IDVersionPostingsFormat extends PostingsFormat {
          IOUtils.closeWhileHandlingException(postingsReader);
        }
      }
+  }
+
+  public static long bytesToLong(BytesRef bytes) {
+    return ((bytes.bytes[bytes.offset]&0xFF) << 56) |
+      ((bytes.bytes[bytes.offset+1]&0xFF) << 48) |
+      ((bytes.bytes[bytes.offset+2]&0xFF) << 40) |
+      ((bytes.bytes[bytes.offset+3]&0xFF) << 32) |
+      ((bytes.bytes[bytes.offset+4]&0xFF) << 24) |
+      ((bytes.bytes[bytes.offset+5]&0xFF) << 16) |
+      ((bytes.bytes[bytes.offset+6]&0xFF) << 8) |
+      (bytes.bytes[bytes.offset+7]&0xFF);
+  }
+
+  public static void longToBytes(long v, BytesRef bytes) {
+    bytes.bytes[0] = (byte) (v >> 56);
+    bytes.bytes[1] = (byte) (v >> 48);
+    bytes.bytes[2] = (byte) (v >> 40);
+    bytes.bytes[3] = (byte) (v >> 32);
+    bytes.bytes[4] = (byte) (v >> 24);
+    bytes.bytes[5] = (byte) (v >> 16);
+    bytes.bytes[6] = (byte) (v >> 8);
+    bytes.bytes[7] = (byte) v;
   }
 }

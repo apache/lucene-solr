@@ -27,7 +27,7 @@ class SingleDocsAndPositionsEnum extends DocsAndPositionsEnum {
   private int singleDocID;
   private Bits liveDocs;
   private long version;
-  private final BytesRef payload = new BytesRef();
+  private final BytesRef payload = new BytesRef(8);
 
   /** For reuse */
   public void reset(int singleDocID, long version, Bits liveDocs) {
@@ -79,7 +79,7 @@ class SingleDocsAndPositionsEnum extends DocsAndPositionsEnum {
   public int nextPosition() {
     assert pos == -1;
     pos = 0;
-    // nocommit re-encode version back into payload here:
+    IDVersionPostingsFormat.longToBytes(version, payload);
     return pos;
   }
 

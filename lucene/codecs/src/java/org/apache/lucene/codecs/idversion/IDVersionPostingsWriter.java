@@ -92,14 +92,14 @@ public final class IDVersionPostingsWriter extends PushPostingsWriterBase {
     lastPosition = position;
     if (payload == null) {
       // nocommit need test
-      throw new IllegalArgumentException("missing payload");
+      throw new IllegalArgumentException("token doens't have a payload");
     }
-    if (payload.length == 0) {
+    if (payload.length != 8) {
       // nocommit need test
-      throw new IllegalArgumentException("payload.length == 0");
+      throw new IllegalArgumentException("payload.length != 8 (got " + payload.length + ")");
     }
-    // nocommit decode payload to long here ... PayloadHelper!?  or keep as byte[]?
-    lastVersion = 0;
+    
+    lastVersion = IDVersionPostingsFormat.bytesToLong(payload);
   }
 
   @Override
