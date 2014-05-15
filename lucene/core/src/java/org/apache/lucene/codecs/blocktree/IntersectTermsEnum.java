@@ -19,13 +19,11 @@ package org.apache.lucene.codecs.blocktree;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
@@ -34,288 +32,26 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RunAutomaton;
-import org.apache.lucene.util.automaton.Transition;
 import org.apache.lucene.util.fst.FST;
 
 // NOTE: cannot seek!
 final class IntersectTermsEnum extends TermsEnum {
-  private final IndexInput in;
+  final IndexInput in;
 
-  private Frame[] stack;
+  private IntersectTermsEnumFrame[] stack;
       
   @SuppressWarnings({"rawtypes","unchecked"}) private FST.Arc<BytesRef>[] arcs = new FST.Arc[5];
 
-  private final RunAutomaton runAutomaton;
-  private final CompiledAutomaton compiledAutomaton;
+  final RunAutomaton runAutomaton;
+  final CompiledAutomaton compiledAutomaton;
 
-  private Frame currentFrame;
+  private IntersectTermsEnumFrame currentFrame;
 
   private final BytesRef term = new BytesRef();
 
   private final FST.BytesReader fstReader;
 
-  private final FieldReader fr;
-
-  // TODO: can we share this with the frame in STE?
-  private final class Frame {
-    final int ord;
-    long fp;
-    long fpOrig;
-    long fpEnd;
-    long lastSubFP;
-
-    // State in automaton
-    int state;
-
-    int metaDataUpto;
-
-    byte[] suffixBytes = new byte[128];
-    final ByteArrayDataInput suffixesReader = new ByteArrayDataInput();
-
-    byte[] statBytes = new byte[64];
-    final ByteArrayDataInput statsReader = new ByteArrayDataInput();
-
-    byte[] floorData = new byte[32];
-    final ByteArrayDataInput floorDataReader = new ByteArrayDataInput();
-
-    // Length of prefix shared by all terms in this block
-    int prefix;
-
-    // Number of entries (term or sub-block) in this block
-    int entCount;
-
-    // Which term we will next read
-    int nextEnt;
-
-    // True if this block is either not a floor block,
-    // or, it's the last sub-block of a floor block
-    boolean isLastInFloor;
-
-    // True if all entries are terms
-    boolean isLeafBlock;
-
-    int numFollowFloorBlocks;
-    int nextFloorLabel;
-        
-    Transition[] transitions;
-    int curTransitionMax;
-    int transitionIndex;
-
-    FST.Arc<BytesRef> arc;
-
-    final BlockTermState termState;
-  
-    // metadata buffer, holding monotonic values
-    public long[] longs;
-    // metadata buffer, holding general values
-    public byte[] bytes;
-    ByteArrayDataInput bytesReader;
-
-    // Cumulative output so far
-    BytesRef outputPrefix;
-
-    private int startBytePos;
-    private int suffix;
-
-    public Frame(int ord) throws IOException {
-      this.ord = ord;
-      this.termState = fr.parent.postingsReader.newTermState();
-      this.termState.totalTermFreq = -1;
-      this.longs = new long[fr.longsSize];
-    }
-
-    void loadNextFloorBlock() throws IOException {
-      assert numFollowFloorBlocks > 0;
-      //if (DEBUG) System.out.println("    loadNextFoorBlock trans=" + transitions[transitionIndex]);
-
-      do {
-        fp = fpOrig + (floorDataReader.readVLong() >>> 1);
-        numFollowFloorBlocks--;
-        // if (DEBUG) System.out.println("    skip floor block2!  nextFloorLabel=" + (char) nextFloorLabel + " vs target=" + (char) transitions[transitionIndex].getMin() + " newFP=" + fp + " numFollowFloorBlocks=" + numFollowFloorBlocks);
-        if (numFollowFloorBlocks != 0) {
-          nextFloorLabel = floorDataReader.readByte() & 0xff;
-        } else {
-          nextFloorLabel = 256;
-        }
-        // if (DEBUG) System.out.println("    nextFloorLabel=" + (char) nextFloorLabel);
-      } while (numFollowFloorBlocks != 0 && nextFloorLabel <= transitions[transitionIndex].getMin());
-
-      load(null);
-    }
-
-    public void setState(int state) {
-      this.state = state;
-      transitionIndex = 0;
-      transitions = compiledAutomaton.sortedTransitions[state];
-      if (transitions.length != 0) {
-        curTransitionMax = transitions[0].getMax();
-      } else {
-        curTransitionMax = -1;
-      }
-    }
-
-    void load(BytesRef frameIndexData) throws IOException {
-
-      // if (DEBUG) System.out.println("    load fp=" + fp + " fpOrig=" + fpOrig + " frameIndexData=" + frameIndexData + " trans=" + (transitions.length != 0 ? transitions[0] : "n/a" + " state=" + state));
-
-      if (frameIndexData != null && transitions.length != 0) {
-        // Floor frame
-        if (floorData.length < frameIndexData.length) {
-          this.floorData = new byte[ArrayUtil.oversize(frameIndexData.length, 1)];
-        }
-        System.arraycopy(frameIndexData.bytes, frameIndexData.offset, floorData, 0, frameIndexData.length);
-        floorDataReader.reset(floorData, 0, frameIndexData.length);
-        // Skip first long -- has redundant fp, hasTerms
-        // flag, isFloor flag
-        final long code = floorDataReader.readVLong();
-        if ((code & BlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR) != 0) {
-          numFollowFloorBlocks = floorDataReader.readVInt();
-          nextFloorLabel = floorDataReader.readByte() & 0xff;
-          // if (DEBUG) System.out.println("    numFollowFloorBlocks=" + numFollowFloorBlocks + " nextFloorLabel=" + nextFloorLabel);
-
-          // If current state is accept, we must process
-          // first block in case it has empty suffix:
-          if (!runAutomaton.isAccept(state)) {
-            // Maybe skip floor blocks:
-            while (numFollowFloorBlocks != 0 && nextFloorLabel <= transitions[0].getMin()) {
-              fp = fpOrig + (floorDataReader.readVLong() >>> 1);
-              numFollowFloorBlocks--;
-              // if (DEBUG) System.out.println("    skip floor block!  nextFloorLabel=" + (char) nextFloorLabel + " vs target=" + (char) transitions[0].getMin() + " newFP=" + fp + " numFollowFloorBlocks=" + numFollowFloorBlocks);
-              if (numFollowFloorBlocks != 0) {
-                nextFloorLabel = floorDataReader.readByte() & 0xff;
-              } else {
-                nextFloorLabel = 256;
-              }
-            }
-          }
-        }
-      }
-
-      in.seek(fp);
-      int code = in.readVInt();
-      entCount = code >>> 1;
-      assert entCount > 0;
-      isLastInFloor = (code & 1) != 0;
-
-      // term suffixes:
-      code = in.readVInt();
-      isLeafBlock = (code & 1) != 0;
-      int numBytes = code >>> 1;
-      // if (DEBUG) System.out.println("      entCount=" + entCount + " lastInFloor?=" + isLastInFloor + " leafBlock?=" + isLeafBlock + " numSuffixBytes=" + numBytes);
-      if (suffixBytes.length < numBytes) {
-        suffixBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
-      }
-      in.readBytes(suffixBytes, 0, numBytes);
-      suffixesReader.reset(suffixBytes, 0, numBytes);
-
-      // stats
-      numBytes = in.readVInt();
-      if (statBytes.length < numBytes) {
-        statBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
-      }
-      in.readBytes(statBytes, 0, numBytes);
-      statsReader.reset(statBytes, 0, numBytes);
-      metaDataUpto = 0;
-
-      termState.termBlockOrd = 0;
-      nextEnt = 0;
-         
-      // metadata
-      numBytes = in.readVInt();
-      if (bytes == null) {
-        bytes = new byte[ArrayUtil.oversize(numBytes, 1)];
-        bytesReader = new ByteArrayDataInput();
-      } else if (bytes.length < numBytes) {
-        bytes = new byte[ArrayUtil.oversize(numBytes, 1)];
-      }
-      in.readBytes(bytes, 0, numBytes);
-      bytesReader.reset(bytes, 0, numBytes);
-
-      if (!isLastInFloor) {
-        // Sub-blocks of a single floor block are always
-        // written one after another -- tail recurse:
-        fpEnd = in.getFilePointer();
-      }
-    }
-
-    // TODO: maybe add scanToLabel; should give perf boost
-
-    public boolean next() {
-      return isLeafBlock ? nextLeaf() : nextNonLeaf();
-    }
-
-    // Decodes next entry; returns true if it's a sub-block
-    public boolean nextLeaf() {
-      //if (DEBUG) System.out.println("  frame.next ord=" + ord + " nextEnt=" + nextEnt + " entCount=" + entCount);
-      assert nextEnt != -1 && nextEnt < entCount: "nextEnt=" + nextEnt + " entCount=" + entCount + " fp=" + fp;
-      nextEnt++;
-      suffix = suffixesReader.readVInt();
-      startBytePos = suffixesReader.getPosition();
-      suffixesReader.skipBytes(suffix);
-      return false;
-    }
-
-    public boolean nextNonLeaf() {
-      //if (DEBUG) System.out.println("  frame.next ord=" + ord + " nextEnt=" + nextEnt + " entCount=" + entCount);
-      assert nextEnt != -1 && nextEnt < entCount: "nextEnt=" + nextEnt + " entCount=" + entCount + " fp=" + fp;
-      nextEnt++;
-      final int code = suffixesReader.readVInt();
-      suffix = code >>> 1;
-      startBytePos = suffixesReader.getPosition();
-      suffixesReader.skipBytes(suffix);
-      if ((code & 1) == 0) {
-        // A normal term
-        termState.termBlockOrd++;
-        return false;
-      } else {
-        // A sub-block; make sub-FP absolute:
-        lastSubFP = fp - suffixesReader.readVLong();
-        return true;
-      }
-    }
-
-    public int getTermBlockOrd() {
-      return isLeafBlock ? nextEnt : termState.termBlockOrd;
-    }
-
-    public void decodeMetaData() throws IOException {
-
-      // lazily catch up on metadata decode:
-      final int limit = getTermBlockOrd();
-      boolean absolute = metaDataUpto == 0;
-      assert limit > 0;
-
-      // TODO: better API would be "jump straight to term=N"???
-      while (metaDataUpto < limit) {
-
-        // TODO: we could make "tiers" of metadata, ie,
-        // decode docFreq/totalTF but don't decode postings
-        // metadata; this way caller could get
-        // docFreq/totalTF w/o paying decode cost for
-        // postings
-
-        // TODO: if docFreq were bulk decoded we could
-        // just skipN here:
-
-        // stats
-        termState.docFreq = statsReader.readVInt();
-        //if (DEBUG) System.out.println("    dF=" + state.docFreq);
-        if (fr.fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
-          termState.totalTermFreq = termState.docFreq + statsReader.readVLong();
-          //if (DEBUG) System.out.println("    totTF=" + state.totalTermFreq);
-        }
-        // metadata 
-        for (int i = 0; i < fr.longsSize; i++) {
-          longs[i] = bytesReader.readVLong();
-        }
-        fr.parent.postingsReader.decodeTerm(longs, bytesReader, fr.fieldInfo, termState, absolute);
-
-        metaDataUpto++;
-        absolute = false;
-      }
-      termState.termBlockOrd = metaDataUpto;
-    }
-  }
+  final FieldReader fr;
 
   private BytesRef savedStartTerm;
       
@@ -329,9 +65,9 @@ final class IntersectTermsEnum extends TermsEnum {
     runAutomaton = compiled.runAutomaton;
     compiledAutomaton = compiled;
     in = fr.parent.in.clone();
-    stack = new Frame[5];
+    stack = new IntersectTermsEnumFrame[5];
     for(int idx=0;idx<stack.length;idx++) {
-      stack[idx] = new Frame(idx);
+      stack[idx] = new IntersectTermsEnumFrame(this, idx);
     }
     for(int arcIdx=0;arcIdx<arcs.length;arcIdx++) {
       arcs[arcIdx] = new FST.Arc<>();
@@ -355,7 +91,7 @@ final class IntersectTermsEnum extends TermsEnum {
     assert arc.isFinal();
 
     // Special pushFrame since it's the first one:
-    final Frame f = stack[0];
+    final IntersectTermsEnumFrame f = stack[0];
     f.fp = f.fpOrig = fr.rootBlockFP;
     f.prefix = 0;
     f.setState(runAutomaton.getInitialState());
@@ -384,12 +120,12 @@ final class IntersectTermsEnum extends TermsEnum {
     return currentFrame.termState.clone();
   }
 
-  private Frame getFrame(int ord) throws IOException {
+  private IntersectTermsEnumFrame getFrame(int ord) throws IOException {
     if (ord >= stack.length) {
-      final Frame[] next = new Frame[ArrayUtil.oversize(1+ord, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+      final IntersectTermsEnumFrame[] next = new IntersectTermsEnumFrame[ArrayUtil.oversize(1+ord, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
       System.arraycopy(stack, 0, next, 0, stack.length);
       for(int stackOrd=stack.length;stackOrd<next.length;stackOrd++) {
-        next[stackOrd] = new Frame(stackOrd);
+        next[stackOrd] = new IntersectTermsEnumFrame(this, stackOrd);
       }
       stack = next;
     }
@@ -410,8 +146,8 @@ final class IntersectTermsEnum extends TermsEnum {
     return arcs[ord];
   }
 
-  private Frame pushFrame(int state) throws IOException {
-    final Frame f = getFrame(currentFrame == null ? 0 : 1+currentFrame.ord);
+  private IntersectTermsEnumFrame pushFrame(int state) throws IOException {
+    final IntersectTermsEnumFrame f = getFrame(currentFrame == null ? 0 : 1+currentFrame.ord);
         
     f.fp = f.fpOrig = currentFrame.lastSubFP;
     f.prefix = currentFrame.prefix + currentFrame.suffix;
