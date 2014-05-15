@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.blocktree;
+package org.apache.lucene.codecs.idversion;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -46,6 +46,10 @@ import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.NoOutputs;
+import org.apache.lucene.util.fst.Outputs;
+import org.apache.lucene.util.fst.PairOutputs.Pair;
+import org.apache.lucene.util.fst.PairOutputs;
+import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
 import org.apache.lucene.util.packed.PackedInts;
 
@@ -187,7 +191,8 @@ import org.apache.lucene.util.packed.PackedInts;
  * @see BlockTreeTermsReader
  * @lucene.experimental
  */
-public final class BlockTreeTermsWriter extends FieldsConsumer {
+// nocommit fix jdocs
+final class VersionBlockTreeTermsWriter extends FieldsConsumer {
 
   /** Suggested default value for the {@code
    *  minItemsInBlock} parameter to {@link
@@ -208,12 +213,14 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
   static final int OUTPUT_FLAG_HAS_TERMS = 0x2;
 
   /** Extension of terms file */
-  static final String TERMS_EXTENSION = "tim";
-  final static String TERMS_CODEC_NAME = "BLOCK_TREE_TERMS_DICT";
+  static final String TERMS_EXTENSION = "tiv";
+  final static String TERMS_CODEC_NAME = "VERSION_BLOCK_TREE_TERMS_DICT";
 
   /** Initial terms format. */
   public static final int VERSION_START = 0;
-  
+
+  // nocommit nuke all these old versions
+
   /** Append-only */
   public static final int VERSION_APPEND_ONLY = 1;
 
@@ -231,7 +238,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
 
   /** Extension of terms index file */
   static final String TERMS_INDEX_EXTENSION = "tip";
-  final static String TERMS_INDEX_CODEC_NAME = "BLOCK_TREE_TERMS_INDEX";
+  final static String TERMS_INDEX_CODEC_NAME = "VERSION_BLOCK_TREE_TERMS_INDEX";
 
   private final IndexOutput out;
   private final IndexOutput indexOut;
@@ -244,7 +251,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
 
   private static class FieldMetaData {
     public final FieldInfo fieldInfo;
-    public final BytesRef rootCode;
+    public final Pair<BytesRef,Long> rootCode;
     public final long numTerms;
     public final long indexStartFP;
     public final long sumTotalTermFreq;
@@ -254,7 +261,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
     public final BytesRef minTerm;
     public final BytesRef maxTerm;
 
-    public FieldMetaData(FieldInfo fieldInfo, BytesRef rootCode, long numTerms, long indexStartFP, long sumTotalTermFreq, long sumDocFreq, int docCount, int longsSize,
+    public FieldMetaData(FieldInfo fieldInfo, Pair<BytesRef,Long> rootCode, long numTerms, long indexStartFP, long sumTotalTermFreq, long sumDocFreq, int docCount, int longsSize,
                          BytesRef minTerm, BytesRef maxTerm) {
       assert numTerms > 0;
       this.fieldInfo = fieldInfo;
@@ -278,11 +285,11 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
    *  sub-blocks) per block will aim to be between
    *  minItemsPerBlock and maxItemsPerBlock, though in some
    *  cases the blocks may be smaller than the min. */
-  public BlockTreeTermsWriter(
-                              SegmentWriteState state,
-                              PostingsWriterBase postingsWriter,
-                              int minItemsInBlock,
-                              int maxItemsInBlock)
+  public VersionBlockTreeTermsWriter(
+                                     SegmentWriteState state,
+                                     PostingsWriterBase postingsWriter,
+                                     int minItemsInBlock,
+                                     int maxItemsInBlock)
     throws IOException
   {
     if (minItemsInBlock <= 1) {
@@ -418,16 +425,19 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
   private static final class PendingBlock extends PendingEntry {
     public final BytesRef prefix;
     public final long fp;
-    public FST<BytesRef> index;
-    public List<FST<BytesRef>> subIndices;
+    public FST<Pair<BytesRef,Long>> index;
+    public List<FST<Pair<BytesRef,Long>>> subIndices;
     public final boolean hasTerms;
     public final boolean isFloor;
     public final int floorLeadByte;
     private final IntsRef scratchIntsRef = new IntsRef();
+    /** Max version for all terms in this block. */
+    private final long maxVersion;
 
-    public PendingBlock(BytesRef prefix, long fp, boolean hasTerms, boolean isFloor, int floorLeadByte, List<FST<BytesRef>> subIndices) {
+    public PendingBlock(BytesRef prefix, long maxVersion, long fp, boolean hasTerms, boolean isFloor, int floorLeadByte, List<FST<Pair<BytesRef,Long>>> subIndices) {
       super(false);
       this.prefix = prefix;
+      this.maxVersion = maxVersion;
       this.fp = fp;
       this.hasTerms = hasTerms;
       this.isFloor = isFloor;
@@ -446,6 +456,8 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
 
       assert scratchBytes.getFilePointer() == 0;
 
+      long maxVersionIndex = maxVersion;
+
       // TODO: try writing the leading vLong in MSB order
       // (opposite of what Lucene does today), for better
       // outputs sharing in the FST
@@ -454,6 +466,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
         scratchBytes.writeVInt(floorBlocks.size());
         for (PendingBlock sub : floorBlocks) {
           assert sub.floorLeadByte != -1;
+          maxVersionIndex = Math.max(maxVersionIndex, sub.maxVersion);
           //if (DEBUG) {
           //  System.out.println("    write floorLeadByte=" + Integer.toHexString(sub.floorLeadByte&0xff));
           //}
@@ -463,11 +476,11 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
         }
       }
 
-      final ByteSequenceOutputs outputs = ByteSequenceOutputs.getSingleton();
-      final Builder<BytesRef> indexBuilder = new Builder<>(FST.INPUT_TYPE.BYTE1,
-                                                                   0, 0, true, false, Integer.MAX_VALUE,
-                                                                   outputs, null, false,
-                                                                   PackedInts.COMPACT, true, 15);
+      final PairOutputs<BytesRef,Long> outputs = getFSTOutputs();
+      final Builder<Pair<BytesRef,Long>> indexBuilder = new Builder<>(FST.INPUT_TYPE.BYTE1,
+                                                                      0, 0, true, false, Integer.MAX_VALUE,
+                                                                      outputs, null, false,
+                                                                      PackedInts.COMPACT, true, 15);
       //if (DEBUG) {
       //  System.out.println("  compile index for prefix=" + prefix);
       //}
@@ -475,13 +488,13 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
       final byte[] bytes = new byte[(int) scratchBytes.getFilePointer()];
       assert bytes.length > 0;
       scratchBytes.writeTo(bytes, 0);
-      indexBuilder.add(Util.toIntsRef(prefix, scratchIntsRef), new BytesRef(bytes, 0, bytes.length));
+      indexBuilder.add(Util.toIntsRef(prefix, scratchIntsRef), outputs.newPair(new BytesRef(bytes, 0, bytes.length), Long.MAX_VALUE - maxVersionIndex));
       scratchBytes.reset();
 
       // Copy over index for all sub-blocks
 
       if (subIndices != null) {
-        for(FST<BytesRef> subIndex : subIndices) {
+        for(FST<Pair<BytesRef,Long>> subIndex : subIndices) {
           append(indexBuilder, subIndex);
         }
       }
@@ -489,7 +502,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
       if (floorBlocks != null) {
         for (PendingBlock sub : floorBlocks) {
           if (sub.subIndices != null) {
-            for(FST<BytesRef> subIndex : sub.subIndices) {
+            for(FST<Pair<BytesRef,Long>> subIndex : sub.subIndices) {
               append(indexBuilder, subIndex);
             }
           }
@@ -511,9 +524,9 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
     // TODO: maybe we could add bulk-add method to
     // Builder?  Takes FST and unions it w/ current
     // FST.
-    private void append(Builder<BytesRef> builder, FST<BytesRef> subIndex) throws IOException {
-      final BytesRefFSTEnum<BytesRef> subIndexEnum = new BytesRefFSTEnum<>(subIndex);
-      BytesRefFSTEnum.InputOutput<BytesRef> indexEnt;
+    private void append(Builder<Pair<BytesRef,Long>> builder, FST<Pair<BytesRef,Long>> subIndex) throws IOException {
+      final BytesRefFSTEnum<Pair<BytesRef,Long>> subIndexEnum = new BytesRefFSTEnum<>(subIndex);
+      BytesRefFSTEnum.InputOutput<Pair<BytesRef,Long>> indexEnt;
       while((indexEnt = subIndexEnum.next()) != null) {
         //if (DEBUG) {
         //  System.out.println("      add sub=" + indexEnt.input + " " + indexEnt.input + " output=" + indexEnt.output);
@@ -521,6 +534,11 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
         builder.add(Util.toIntsRef(indexEnt.input, scratchIntsRef), indexEnt.output);
       }
     }
+  }
+
+  static PairOutputs<BytesRef,Long> getFSTOutputs() {
+    return new PairOutputs<>(ByteSequenceOutputs.getSingleton(),
+                             PositiveIntOutputs.getSingleton());
   }
 
   final RAMOutputStream scratchBytes = new RAMOutputStream();
@@ -884,12 +902,13 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
         isLeafBlock = v;
       }
 
-      final List<FST<BytesRef>> subIndices;
+      final List<FST<Pair<BytesRef,Long>>> subIndices;
 
       int termCount;
 
       long[] longs = new long[longsSize];
       boolean absolute = true;
+      long maxVersionInBlock = -1;
 
       if (isLeafBlock) {
         subIndices = null;
@@ -897,6 +916,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
           assert ent.isTerm;
           PendingTerm term = (PendingTerm) ent;
           BlockTermState state = term.state;
+          maxVersionInBlock = Math.max(maxVersionInBlock, ((IDVersionTermState) state).idVersion);
           final int suffix = term.term.length - prefixLength;
           // if (DEBUG) {
           //   BytesRef suffixBytes = new BytesRef(suffix);
@@ -933,6 +953,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
           if (ent.isTerm) {
             PendingTerm term = (PendingTerm) ent;
             BlockTermState state = term.state;
+            maxVersionInBlock = Math.max(maxVersionInBlock, ((IDVersionTermState) state).idVersion);
             final int suffix = term.term.length - prefixLength;
             // if (DEBUG) {
             //   BytesRef suffixBytes = new BytesRef(suffix);
@@ -973,6 +994,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
             termCount++;
           } else {
             PendingBlock block = (PendingBlock) ent;
+            maxVersionInBlock = Math.max(maxVersionInBlock, block.maxVersion);
             final int suffix = block.prefix.length - prefixLength;
 
             assert suffix > 0;
@@ -1032,7 +1054,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
       //   System.out.println("      fpEnd=" + out.getFilePointer());
       // }
 
-      return new PendingBlock(prefix, startFP, termCount != 0, isFloor, floorLeadByte, subIndices);
+      return new PendingBlock(prefix, maxVersionInBlock, startFP, termCount != 0, isFloor, floorLeadByte, subIndices);
     }
 
     TermsWriter(FieldInfo fieldInfo) {
@@ -1136,8 +1158,9 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
         out.writeVInt(field.fieldInfo.number);
         assert field.numTerms > 0;
         out.writeVLong(field.numTerms);
-        out.writeVInt(field.rootCode.length);
-        out.writeBytes(field.rootCode.bytes, field.rootCode.offset, field.rootCode.length);
+        out.writeVInt(field.rootCode.output1.length);
+        out.writeBytes(field.rootCode.output1.bytes, field.rootCode.output1.offset, field.rootCode.output1.length);
+        out.writeVLong(field.rootCode.output2);
         if (field.fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
           out.writeVLong(field.sumTotalTermFreq);
         }

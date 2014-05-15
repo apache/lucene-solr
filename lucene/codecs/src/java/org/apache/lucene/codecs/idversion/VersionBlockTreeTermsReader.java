@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.blocktree;
+package org.apache.lucene.codecs.idversion;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -54,6 +54,8 @@ import org.apache.lucene.util.automaton.Transition;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.Outputs;
+import org.apache.lucene.util.fst.PairOutputs.Pair;
+import org.apache.lucene.util.fst.PairOutputs;
 import org.apache.lucene.util.fst.Util;
 
 /** A block-based terms index and dictionary that assigns
@@ -86,9 +88,9 @@ import org.apache.lucene.util.fst.Util;
  * @lucene.experimental
  */
 
-public final class BlockTreeTermsReader extends FieldsProducer {
+final class VersionBlockTreeTermsReader extends FieldsProducer {
 
-  // Open input to the main terms dict file (_X.tib)
+  // Open input to the main terms dict file (_X.tiv)
   final IndexInput in;
 
   //private static final boolean DEBUG = BlockTreeTermsWriter.DEBUG;
@@ -97,7 +99,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   // produce DocsEnum on demand
   final PostingsReaderBase postingsReader;
 
-  private final TreeMap<String,FieldReader> fields = new TreeMap<>();
+  private final TreeMap<String,VersionFieldReader> fields = new TreeMap<>();
 
   /** File offset where the directory starts in the terms file. */
   private long dirOffset;
@@ -110,15 +112,15 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   private final int version;
 
   /** Sole constructor. */
-  public BlockTreeTermsReader(Directory dir, FieldInfos fieldInfos, SegmentInfo info,
-                              PostingsReaderBase postingsReader, IOContext ioContext,
-                              String segmentSuffix)
+  public VersionBlockTreeTermsReader(Directory dir, FieldInfos fieldInfos, SegmentInfo info,
+                                     PostingsReaderBase postingsReader, IOContext ioContext,
+                                     String segmentSuffix)
     throws IOException {
     
     this.postingsReader = postingsReader;
 
     this.segment = info.name;
-    in = dir.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, BlockTreeTermsWriter.TERMS_EXTENSION),
+    in = dir.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, VersionBlockTreeTermsWriter.TERMS_EXTENSION),
                        ioContext);
 
     boolean success = false;
@@ -126,7 +128,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
 
     try {
       version = readHeader(in);
-      indexIn = dir.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, BlockTreeTermsWriter.TERMS_INDEX_EXTENSION),
+      indexIn = dir.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, VersionBlockTreeTermsWriter.TERMS_INDEX_EXTENSION),
                                 ioContext);
       int indexVersion = readIndexHeader(indexIn);
       if (indexVersion != version) {
@@ -134,7 +136,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
       }
       
       // verify
-      if (version >= BlockTreeTermsWriter.VERSION_CHECKSUM) {
+      if (version >= VersionBlockTreeTermsWriter.VERSION_CHECKSUM) {
         CodecUtil.checksumEntireFile(indexIn);
       }
 
@@ -150,23 +152,27 @@ public final class BlockTreeTermsReader extends FieldsProducer {
         throw new CorruptIndexException("invalid numFields: " + numFields + " (resource=" + in + ")");
       }
 
+      PairOutputs<BytesRef,Long> fstOutputs = VersionBlockTreeTermsWriter.getFSTOutputs();
+
       for(int i=0;i<numFields;i++) {
         final int field = in.readVInt();
         final long numTerms = in.readVLong();
         assert numTerms >= 0;
         final int numBytes = in.readVInt();
-        final BytesRef rootCode = new BytesRef(new byte[numBytes]);
-        in.readBytes(rootCode.bytes, 0, numBytes);
-        rootCode.length = numBytes;
+        final BytesRef code = new BytesRef(new byte[numBytes]);
+        in.readBytes(code.bytes, 0, numBytes);
+        code.length = numBytes;
+        final long version = in.readVLong();
+        final Pair<BytesRef,Long> rootCode = fstOutputs.newPair(code, version);
         final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
         assert fieldInfo != null: "field=" + field;
         final long sumTotalTermFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY ? -1 : in.readVLong();
         final long sumDocFreq = in.readVLong();
         final int docCount = in.readVInt();
-        final int longsSize = version >= BlockTreeTermsWriter.VERSION_META_ARRAY ? in.readVInt() : 0;
+        final int longsSize = version >= VersionBlockTreeTermsWriter.VERSION_META_ARRAY ? in.readVInt() : 0;
 
         BytesRef minTerm, maxTerm;
-        if (version >= BlockTreeTermsWriter.VERSION_MIN_MAX_TERMS) {
+        if (version >= VersionBlockTreeTermsWriter.VERSION_MIN_MAX_TERMS) {
           minTerm = readBytesRef(in);
           maxTerm = readBytesRef(in);
         } else {
@@ -182,9 +188,9 @@ public final class BlockTreeTermsReader extends FieldsProducer {
           throw new CorruptIndexException("invalid sumTotalTermFreq: " + sumTotalTermFreq + " sumDocFreq: " + sumDocFreq + " (resource=" + in + ")");
         }
         final long indexStartFP = indexIn.readVLong();
-        FieldReader previous = fields.put(fieldInfo.name,       
-                                          new FieldReader(this, fieldInfo, numTerms, rootCode, sumTotalTermFreq, sumDocFreq, docCount,
-                                                          indexStartFP, longsSize, indexIn, minTerm, maxTerm));
+        VersionFieldReader previous = fields.put(fieldInfo.name,       
+                                                 new VersionFieldReader(this, fieldInfo, numTerms, rootCode, sumTotalTermFreq, sumDocFreq, docCount,
+                                                                        indexStartFP, longsSize, indexIn, minTerm, maxTerm));
         if (previous != null) {
           throw new CorruptIndexException("duplicate field: " + fieldInfo.name + " (resource=" + in + ")");
         }
@@ -210,10 +216,10 @@ public final class BlockTreeTermsReader extends FieldsProducer {
 
   /** Reads terms file header. */
   private int readHeader(IndexInput input) throws IOException {
-    int version = CodecUtil.checkHeader(input, BlockTreeTermsWriter.TERMS_CODEC_NAME,
-                          BlockTreeTermsWriter.VERSION_START,
-                          BlockTreeTermsWriter.VERSION_CURRENT);
-    if (version < BlockTreeTermsWriter.VERSION_APPEND_ONLY) {
+    int version = CodecUtil.checkHeader(input, VersionBlockTreeTermsWriter.TERMS_CODEC_NAME,
+                          VersionBlockTreeTermsWriter.VERSION_START,
+                          VersionBlockTreeTermsWriter.VERSION_CURRENT);
+    if (version < VersionBlockTreeTermsWriter.VERSION_APPEND_ONLY) {
       dirOffset = input.readLong();
     }
     return version;
@@ -221,10 +227,10 @@ public final class BlockTreeTermsReader extends FieldsProducer {
 
   /** Reads index file header. */
   private int readIndexHeader(IndexInput input) throws IOException {
-    int version = CodecUtil.checkHeader(input, BlockTreeTermsWriter.TERMS_INDEX_CODEC_NAME,
-                          BlockTreeTermsWriter.VERSION_START,
-                          BlockTreeTermsWriter.VERSION_CURRENT);
-    if (version < BlockTreeTermsWriter.VERSION_APPEND_ONLY) {
+    int version = CodecUtil.checkHeader(input, VersionBlockTreeTermsWriter.TERMS_INDEX_CODEC_NAME,
+                          VersionBlockTreeTermsWriter.VERSION_START,
+                          VersionBlockTreeTermsWriter.VERSION_CURRENT);
+    if (version < VersionBlockTreeTermsWriter.VERSION_APPEND_ONLY) {
       indexDirOffset = input.readLong(); 
     }
     return version;
@@ -233,10 +239,10 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   /** Seek {@code input} to the directory offset. */
   private void seekDir(IndexInput input, long dirOffset)
       throws IOException {
-    if (version >= BlockTreeTermsWriter.VERSION_CHECKSUM) {
+    if (version >= VersionBlockTreeTermsWriter.VERSION_CHECKSUM) {
       input.seek(input.length() - CodecUtil.footerLength() - 8);
       dirOffset = input.readLong();
-    } else if (version >= BlockTreeTermsWriter.VERSION_APPEND_ONLY) {
+    } else if (version >= VersionBlockTreeTermsWriter.VERSION_APPEND_ONLY) {
       input.seek(input.length() - 8);
       dirOffset = input.readLong();
     }
@@ -294,7 +300,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   @Override
   public long ramBytesUsed() {
     long sizeInByes = ((postingsReader!=null) ? postingsReader.ramBytesUsed() : 0);
-    for(FieldReader reader : fields.values()) {
+    for(VersionFieldReader reader : fields.values()) {
       sizeInByes += reader.ramBytesUsed();
     }
     return sizeInByes;
@@ -302,7 +308,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
 
   @Override
   public void checkIntegrity() throws IOException {
-    if (version >= BlockTreeTermsWriter.VERSION_CHECKSUM) {      
+    if (version >= VersionBlockTreeTermsWriter.VERSION_CHECKSUM) {      
       // term dictionary
       CodecUtil.checksumEntireFile(in);
       

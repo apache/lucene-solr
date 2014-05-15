@@ -17,8 +17,6 @@ package org.apache.lucene.codecs.idversion;
  * limitations under the License.
  */
 
-import static org.apache.lucene.codecs.idversion.IDVersionPostingsWriter.IDVersionTermState;
-
 import java.io.IOException;
 
 import org.apache.lucene.codecs.BlockTermState;

@@ -43,26 +43,6 @@ public final class IDVersionPostingsWriter extends PushPostingsWriterBase {
   private int lastPosition;
   private long lastVersion;
 
-  final static class IDVersionTermState extends BlockTermState {
-    long idVersion;
-    int docID;
-
-    @Override
-    public IDVersionTermState clone() {
-      IDVersionTermState other = new IDVersionTermState();
-      other.copyFrom(this);
-      return other;
-    }
-
-    @Override
-    public void copyFrom(TermState _other) {
-      super.copyFrom(_other);
-      IDVersionTermState other = (IDVersionTermState) _other;
-      idVersion = other.idVersion;
-      docID = other.docID;
-    }
-  }
-
   @Override
   public IDVersionTermState newTermState() {
     return new IDVersionTermState();
@@ -144,8 +124,8 @@ public final class IDVersionPostingsWriter extends PushPostingsWriterBase {
   @Override
   public void encodeTerm(long[] longs, DataOutput out, FieldInfo fieldInfo, BlockTermState _state, boolean absolute) throws IOException {
     IDVersionTermState state = (IDVersionTermState) _state;
-    // nocommit must send version up to FST somehow ...
     out.writeVInt(state.docID);
+    out.writeVLong(state.idVersion);
   }
 
   @Override
