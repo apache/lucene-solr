@@ -38,7 +38,7 @@ import org.apache.lucene.util.automaton.Transition;
 import org.apache.lucene.util.fst.FST;
 
 // NOTE: cannot seek!
-final class IntersectEnum extends TermsEnum {
+final class IntersectTermsEnum extends TermsEnum {
   private final IndexInput in;
 
   private Frame[] stack;
@@ -321,7 +321,7 @@ final class IntersectEnum extends TermsEnum {
       
   // TODO: in some cases we can filter by length?  eg
   // regexp foo*bar must be at least length 6 bytes
-  public IntersectEnum(FieldReader fr, CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
+  public IntersectTermsEnum(FieldReader fr, CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
     // if (DEBUG) {
     //   System.out.println("\nintEnum.init seg=" + segment + " commonSuffix=" + brToString(compiled.commonSuffixRef));
     // }

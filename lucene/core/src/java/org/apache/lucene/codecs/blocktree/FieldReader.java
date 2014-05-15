@@ -166,7 +166,7 @@ public final class FieldReader extends Terms {
     if (compiled.type != CompiledAutomaton.AUTOMATON_TYPE.NORMAL) {
       throw new IllegalArgumentException("please use CompiledAutomaton.getTermsEnum instead");
     }
-    return new IntersectEnum(this, compiled, startTerm);
+    return new IntersectTermsEnum(this, compiled, startTerm);
   }
     
   /** Returns approximate RAM bytes used */
