@@ -23,4 +23,4 @@ org.apache.lucene.codecs.memory.FSTOrdPulsing41PostingsFormat
 org.apache.lucene.codecs.memory.FSTPostingsFormat
 org.apache.lucene.codecs.memory.FSTOrdPostingsFormat
 
-#org.apache.lucene.codecs.idversion.IDVersionPostingsFormat
+org.apache.lucene.codecs.idversion.IDVersionPostingsFormat

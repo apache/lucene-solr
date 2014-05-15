@@ -75,7 +75,7 @@ final class VersionFieldReader extends Terms {
       final IndexInput clone = indexIn.clone();
       //System.out.println("start=" + indexStartFP + " field=" + fieldInfo.name);
       clone.seek(indexStartFP);
-      index = new FST<>(clone, VersionBlockTreeTermsWriter.getFSTOutputs());
+      index = new FST<>(clone, VersionBlockTreeTermsWriter.FST_OUTPUTS);
         
       /*
         if (false) {

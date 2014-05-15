@@ -62,10 +62,10 @@ public class IDVersionPostingsFormat extends PostingsFormat {
     PostingsWriterBase postingsWriter = new IDVersionPostingsWriter();
     boolean success = false;
     try {
-      FieldsConsumer ret = new BlockTreeTermsWriter(state, 
-                                                    postingsWriter,
-                                                    minTermsInBlock, 
-                                                    maxTermsInBlock);
+      FieldsConsumer ret = new VersionBlockTreeTermsWriter(state, 
+                                                           postingsWriter,
+                                                           minTermsInBlock, 
+                                                           maxTermsInBlock);
       success = true;
       return ret;
     } finally {
@@ -80,12 +80,12 @@ public class IDVersionPostingsFormat extends PostingsFormat {
     PostingsReaderBase postingsReader = new IDVersionPostingsReader();
     boolean success = false;
      try {
-       FieldsProducer ret = new BlockTreeTermsReader(state.directory,
-                                                     state.fieldInfos,
-                                                     state.segmentInfo,
-                                                     postingsReader,
-                                                     state.context,
-                                                     state.segmentSuffix);
+       FieldsProducer ret = new VersionBlockTreeTermsReader(state.directory,
+                                                            state.fieldInfos,
+                                                            state.segmentInfo,
+                                                            postingsReader,
+                                                            state.context,
+                                                            state.segmentSuffix);
        success = true;
        return ret;
      } finally {

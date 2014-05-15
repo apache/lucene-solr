@@ -42,9 +42,6 @@ import org.apache.lucene.util.fst.Util;
 /** Iterates through terms in this field */
 public final class IDVersionSegmentTermsEnum extends TermsEnum {
 
-  final static Outputs<Pair<BytesRef,Long>> fstOutputs = VersionBlockTreeTermsWriter.getFSTOutputs();
-  final static Pair<BytesRef,Long> NO_OUTPUT = fstOutputs.getNoOutput();
-
   // Lazy init:
   IndexInput in;
 
@@ -154,6 +151,7 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
     final long code = scratchReader.readVLong();
     final long fpSeek = code >>> VersionBlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS;
     final IDVersionSegmentTermsEnumFrame f = getFrame(1+currentFrame.ord);
+    f.maxIDVersion = Long.MAX_VALUE - frameData.output2;
     f.hasTerms = (code & VersionBlockTreeTermsWriter.OUTPUT_FLAG_HAS_TERMS) != 0;
     f.hasTermsOrig = f.hasTerms;
     f.isFloor = (code & VersionBlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR) != 0;
@@ -222,6 +220,7 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
     if (fr.index == null) {
       throw new IllegalStateException("terms index was not loaded");
     }
+    System.out.println("seekExact target=" + target + " minIDVersion=" + minIDVersion);
 
     if (term.bytes.length <= target.length) {
       term.bytes = ArrayUtil.grow(term.bytes, 1+target.length);
@@ -282,8 +281,8 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
         //System.out.println("FAIL: arc.label=" + (char) arc.label + " targetLabel=" + (char) (target.bytes[target.offset + targetUpto] & 0xFF));
         //}
         assert arc.label == (target.bytes[target.offset + targetUpto] & 0xFF): "arc.label=" + (char) arc.label + " targetLabel=" + (char) (target.bytes[target.offset + targetUpto] & 0xFF);
-        if (arc.output != NO_OUTPUT) {
-          output = fstOutputs.add(output, arc.output);
+        if (arc.output != VersionBlockTreeTermsWriter.NO_OUTPUT) {
+          output = VersionBlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.output);
         }
         if (arc.isFinal()) {
           lastFrame = stack[1+lastFrame.ord];
@@ -358,6 +357,7 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
 
       targetBeforeCurrentLength = -1;
       arc = fr.index.getFirstArc(arcs[0]);
+      System.out.println("first arc=" + arc);
 
       // Empty string prefix must have an output (block) in the index!
       assert arc.isFinal();
@@ -373,7 +373,7 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
 
       //term.length = 0;
       targetUpto = 0;
-      currentFrame = pushFrame(arc, fstOutputs.add(output, arc.nextFinalOutput), 0);
+      currentFrame = pushFrame(arc, VersionBlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.nextFinalOutput), 0);
     }
 
     // if (DEBUG) {
@@ -407,8 +407,9 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
           // }
           return false;
         }
+        System.out.println("  check output=" +((output.output2)));
 
-        if ((Long.MAX_VALUE-output.output2) < minIDVersion) {
+        if (currentFrame.maxIDVersion < minIDVersion) {
           // The max version for all terms in this block is lower than the minVersion
           return false;
         }
@@ -439,8 +440,8 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
         term.bytes[targetUpto] = (byte) targetLabel;
         // Aggregate output as we go:
         assert arc.output != null;
-        if (arc.output != NO_OUTPUT) {
-          output = fstOutputs.add(output, arc.output);
+        if (arc.output != VersionBlockTreeTermsWriter.NO_OUTPUT) {
+          output = VersionBlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.output);
         }
 
         // if (DEBUG) {
@@ -450,7 +451,7 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
 
         if (arc.isFinal()) {
           //if (DEBUG) System.out.println("    arc is final!");
-          currentFrame = pushFrame(arc, fstOutputs.add(output, arc.nextFinalOutput), targetUpto);
+          currentFrame = pushFrame(arc, VersionBlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.nextFinalOutput), targetUpto);
           //if (DEBUG) System.out.println("    curFrame.ord=" + currentFrame.ord + " hasTerms=" + currentFrame.hasTerms);
         }
       }
@@ -555,8 +556,8 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
         // seek; but, often the FST doesn't have any
         // shared bytes (but this could change if we
         // reverse vLong byte order)
-        if (arc.output != NO_OUTPUT) {
-          output = fstOutputs.add(output, arc.output);
+        if (arc.output != VersionBlockTreeTermsWriter.NO_OUTPUT) {
+          output = VersionBlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.output);
         }
         if (arc.isFinal()) {
           lastFrame = stack[1+lastFrame.ord];
@@ -641,7 +642,7 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
 
       //term.length = 0;
       targetUpto = 0;
-      currentFrame = pushFrame(arc, fstOutputs.add(output, arc.nextFinalOutput), 0);
+      currentFrame = pushFrame(arc, VersionBlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.nextFinalOutput), 0);
     }
 
     //if (DEBUG) {
@@ -696,8 +697,8 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
         arc = nextArc;
         // Aggregate output as we go:
         assert arc.output != null;
-        if (arc.output != NO_OUTPUT) {
-          output = fstOutputs.add(output, arc.output);
+        if (arc.output != VersionBlockTreeTermsWriter.NO_OUTPUT) {
+          output = VersionBlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.output);
         }
 
         //if (DEBUG) {
@@ -707,7 +708,7 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
 
         if (arc.isFinal()) {
           //if (DEBUG) System.out.println("    arc is final!");
-          currentFrame = pushFrame(arc, fstOutputs.add(output, arc.nextFinalOutput), targetUpto);
+          currentFrame = pushFrame(arc, VersionBlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.nextFinalOutput), targetUpto);
           //if (DEBUG) System.out.println("    curFrame.ord=" + currentFrame.ord + " hasTerms=" + currentFrame.hasTerms);
         }
       }

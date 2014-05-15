@@ -61,6 +61,11 @@ public class PairOutputs<A,B> extends Outputs<PairOutputs.Pair<A,B>> {
     public int hashCode() {
       return output1.hashCode() + output2.hashCode();
     }
+
+    @Override
+    public String toString() {
+      return "Pair(" + output1 + "," + output2 + ")";
+    }
   };
 
   public PairOutputs(Outputs<A> outputs1, Outputs<B> outputs2) {
@@ -93,15 +98,18 @@ public class PairOutputs<A,B> extends Outputs<PairOutputs.Pair<A,B>> {
     final boolean noOutput2 = pair.output2.equals(outputs2.getNoOutput());
 
     if (noOutput1 && pair.output1 != outputs1.getNoOutput()) {
+      System.out.println("no1");
       return false;
     }
 
     if (noOutput2 && pair.output2 != outputs2.getNoOutput()) {
+      System.out.println("no2");
       return false;
     }
 
     if (noOutput1 && noOutput2) {
       if (pair != NO_OUTPUT) {
+        System.out.println("no3");
         return false;
       } else {
         return true;

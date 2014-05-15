@@ -152,8 +152,6 @@ final class VersionBlockTreeTermsReader extends FieldsProducer {
         throw new CorruptIndexException("invalid numFields: " + numFields + " (resource=" + in + ")");
       }
 
-      PairOutputs<BytesRef,Long> fstOutputs = VersionBlockTreeTermsWriter.getFSTOutputs();
-
       for(int i=0;i<numFields;i++) {
         final int field = in.readVInt();
         final long numTerms = in.readVLong();
@@ -163,7 +161,8 @@ final class VersionBlockTreeTermsReader extends FieldsProducer {
         in.readBytes(code.bytes, 0, numBytes);
         code.length = numBytes;
         final long version = in.readVLong();
-        final Pair<BytesRef,Long> rootCode = fstOutputs.newPair(code, version);
+        System.out.println("  read code=" +code + " version=" + version);
+        final Pair<BytesRef,Long> rootCode = VersionBlockTreeTermsWriter.FST_OUTPUTS.newPair(code, version);
         final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
         assert fieldInfo != null: "field=" + field;
         final long sumTotalTermFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY ? -1 : in.readVLong();

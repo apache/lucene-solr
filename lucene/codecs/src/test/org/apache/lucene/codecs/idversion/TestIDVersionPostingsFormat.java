@@ -48,7 +48,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     doc.add(makeIDField("id0", 100));
     w.addDocument(doc);
     IndexReader r = w.getReader();
-    IDVersionSegmentTermsEnum termsEnum = (IDVersionSegmentTermsEnum) MultiFields.getTerms(r, "id").iterator(null);
+    IDVersionSegmentTermsEnum termsEnum = (IDVersionSegmentTermsEnum) r.leaves().get(0).reader().fields().terms("id").iterator(null);
     assertTrue(termsEnum.seekExact(new BytesRef("id0"), 50));
     assertFalse(termsEnum.seekExact(new BytesRef("id0"), 101));
     r.close();
@@ -63,6 +63,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     Field field = newTextField("id", "", Field.Store.NO);
     Token token = new Token(id, 0, id.length());
     BytesRef payload = new BytesRef(8);
+    payload.length = 8;
     IDVersionPostingsFormat.longToBytes(100, payload);
     token.setPayload(payload);
     field.setTokenStream(new CannedTokenStream(token));

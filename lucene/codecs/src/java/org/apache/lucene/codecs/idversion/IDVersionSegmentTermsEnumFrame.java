@@ -36,6 +36,8 @@ final class IDVersionSegmentTermsEnumFrame {
   boolean hasTermsOrig;
   boolean isFloor;
 
+  long maxIDVersion;
+
   FST.Arc<Pair<BytesRef,Long>> arc;
 
   // File pointer where this block was loaded from

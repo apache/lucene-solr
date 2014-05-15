@@ -194,6 +194,11 @@ import org.apache.lucene.util.packed.PackedInts;
 // nocommit fix jdocs
 final class VersionBlockTreeTermsWriter extends FieldsConsumer {
 
+  public static final PairOutputs<BytesRef,Long> FST_OUTPUTS = new PairOutputs<>(ByteSequenceOutputs.getSingleton(),
+                                                                                 PositiveIntOutputs.getSingleton());
+
+  public static final Pair<BytesRef,Long> NO_OUTPUT = FST_OUTPUTS.getNoOutput();
+
   /** Suggested default value for the {@code
    *  minItemsInBlock} parameter to {@link
    *  #BlockTreeTermsWriter(SegmentWriteState,PostingsWriterBase,int,int)}. */
@@ -476,10 +481,9 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
         }
       }
 
-      final PairOutputs<BytesRef,Long> outputs = getFSTOutputs();
       final Builder<Pair<BytesRef,Long>> indexBuilder = new Builder<>(FST.INPUT_TYPE.BYTE1,
                                                                       0, 0, true, false, Integer.MAX_VALUE,
-                                                                      outputs, null, false,
+                                                                      FST_OUTPUTS, null, false,
                                                                       PackedInts.COMPACT, true, 15);
       //if (DEBUG) {
       //  System.out.println("  compile index for prefix=" + prefix);
@@ -488,7 +492,7 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
       final byte[] bytes = new byte[(int) scratchBytes.getFilePointer()];
       assert bytes.length > 0;
       scratchBytes.writeTo(bytes, 0);
-      indexBuilder.add(Util.toIntsRef(prefix, scratchIntsRef), outputs.newPair(new BytesRef(bytes, 0, bytes.length), Long.MAX_VALUE - maxVersionIndex));
+      indexBuilder.add(Util.toIntsRef(prefix, scratchIntsRef), FST_OUTPUTS.newPair(new BytesRef(bytes, 0, bytes.length), Long.MAX_VALUE - maxVersionIndex));
       scratchBytes.reset();
 
       // Copy over index for all sub-blocks
@@ -534,11 +538,6 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
         builder.add(Util.toIntsRef(indexEnt.input, scratchIntsRef), indexEnt.output);
       }
     }
-  }
-
-  static PairOutputs<BytesRef,Long> getFSTOutputs() {
-    return new PairOutputs<>(ByteSequenceOutputs.getSingleton(),
-                             PositiveIntOutputs.getSingleton());
   }
 
   final RAMOutputStream scratchBytes = new RAMOutputStream();
