@@ -32,11 +32,16 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.Outputs;
 import org.apache.lucene.util.fst.Util;
 
 /** Iterates through terms in this field */
 final class SegmentTermsEnum extends TermsEnum {
+
+  final static Outputs<BytesRef> fstOutputs = ByteSequenceOutputs.getSingleton();
+  final static BytesRef NO_OUTPUT = fstOutputs.getNoOutput();
 
   // Lazy init:
   IndexInput in;
@@ -361,8 +366,8 @@ final class SegmentTermsEnum extends TermsEnum {
         //System.out.println("FAIL: arc.label=" + (char) arc.label + " targetLabel=" + (char) (target.bytes[target.offset + targetUpto] & 0xFF));
         //}
         assert arc.label == (target.bytes[target.offset + targetUpto] & 0xFF): "arc.label=" + (char) arc.label + " targetLabel=" + (char) (target.bytes[target.offset + targetUpto] & 0xFF);
-        if (arc.output != fr.parent.NO_OUTPUT) {
-          output = fr.parent.fstOutputs.add(output, arc.output);
+        if (arc.output != NO_OUTPUT) {
+          output = fstOutputs.add(output, arc.output);
         }
         if (arc.isFinal()) {
           lastFrame = stack[1+lastFrame.ord];
@@ -452,7 +457,7 @@ final class SegmentTermsEnum extends TermsEnum {
 
       //term.length = 0;
       targetUpto = 0;
-      currentFrame = pushFrame(arc, fr.parent.fstOutputs.add(output, arc.nextFinalOutput), 0);
+      currentFrame = pushFrame(arc, fstOutputs.add(output, arc.nextFinalOutput), 0);
     }
 
     // if (DEBUG) {
@@ -507,8 +512,8 @@ final class SegmentTermsEnum extends TermsEnum {
         term.bytes[targetUpto] = (byte) targetLabel;
         // Aggregate output as we go:
         assert arc.output != null;
-        if (arc.output != fr.parent.NO_OUTPUT) {
-          output = fr.parent.fstOutputs.add(output, arc.output);
+        if (arc.output != NO_OUTPUT) {
+          output = fstOutputs.add(output, arc.output);
         }
 
         // if (DEBUG) {
@@ -518,7 +523,7 @@ final class SegmentTermsEnum extends TermsEnum {
 
         if (arc.isFinal()) {
           //if (DEBUG) System.out.println("    arc is final!");
-          currentFrame = pushFrame(arc, fr.parent.fstOutputs.add(output, arc.nextFinalOutput), targetUpto);
+          currentFrame = pushFrame(arc, fstOutputs.add(output, arc.nextFinalOutput), targetUpto);
           //if (DEBUG) System.out.println("    curFrame.ord=" + currentFrame.ord + " hasTerms=" + currentFrame.hasTerms);
         }
       }
@@ -623,8 +628,8 @@ final class SegmentTermsEnum extends TermsEnum {
         // seek; but, often the FST doesn't have any
         // shared bytes (but this could change if we
         // reverse vLong byte order)
-        if (arc.output != fr.parent.NO_OUTPUT) {
-          output = fr.parent.fstOutputs.add(output, arc.output);
+        if (arc.output != NO_OUTPUT) {
+          output = fstOutputs.add(output, arc.output);
         }
         if (arc.isFinal()) {
           lastFrame = stack[1+lastFrame.ord];
@@ -709,7 +714,7 @@ final class SegmentTermsEnum extends TermsEnum {
 
       //term.length = 0;
       targetUpto = 0;
-      currentFrame = pushFrame(arc, fr.parent.fstOutputs.add(output, arc.nextFinalOutput), 0);
+      currentFrame = pushFrame(arc, fstOutputs.add(output, arc.nextFinalOutput), 0);
     }
 
     //if (DEBUG) {
@@ -764,8 +769,8 @@ final class SegmentTermsEnum extends TermsEnum {
         arc = nextArc;
         // Aggregate output as we go:
         assert arc.output != null;
-        if (arc.output != fr.parent.NO_OUTPUT) {
-          output = fr.parent.fstOutputs.add(output, arc.output);
+        if (arc.output != NO_OUTPUT) {
+          output = fstOutputs.add(output, arc.output);
         }
 
         //if (DEBUG) {
@@ -775,7 +780,7 @@ final class SegmentTermsEnum extends TermsEnum {
 
         if (arc.isFinal()) {
           //if (DEBUG) System.out.println("    arc is final!");
-          currentFrame = pushFrame(arc, fr.parent.fstOutputs.add(output, arc.nextFinalOutput), targetUpto);
+          currentFrame = pushFrame(arc, fstOutputs.add(output, arc.nextFinalOutput), targetUpto);
           //if (DEBUG) System.out.println("    curFrame.ord=" + currentFrame.ord + " hasTerms=" + currentFrame.hasTerms);
         }
       }

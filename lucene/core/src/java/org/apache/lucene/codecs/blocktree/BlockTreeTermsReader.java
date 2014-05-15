@@ -291,9 +291,6 @@ public class BlockTreeTermsReader extends FieldsProducer {
     }
   }
 
-  final Outputs<BytesRef> fstOutputs = ByteSequenceOutputs.getSingleton();
-  final BytesRef NO_OUTPUT = fstOutputs.getNoOutput();
-
   @Override
   public long ramBytesUsed() {
     long sizeInByes = ((postingsReader!=null) ? postingsReader.ramBytesUsed() : 0);

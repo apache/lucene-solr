@@ -32,11 +32,14 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RunAutomaton;
+import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.Outputs;
 
 // NOTE: cannot seek!
 final class IntersectTermsEnum extends TermsEnum {
   final IndexInput in;
+  final static Outputs<BytesRef> fstOutputs = ByteSequenceOutputs.getSingleton();
 
   private IntersectTermsEnumFrame[] stack;
       
@@ -169,14 +172,14 @@ final class IntersectTermsEnum extends TermsEnum {
       // passed to findTargetArc
       arc = fr.index.findTargetArc(target, arc, getArc(1+idx), fstReader);
       assert arc != null;
-      output = fr.parent.fstOutputs.add(output, arc.output);
+      output = fstOutputs.add(output, arc.output);
       idx++;
     }
 
     f.arc = arc;
     f.outputPrefix = output;
     assert arc.isFinal();
-    f.load(fr.parent.fstOutputs.add(output, arc.nextFinalOutput));
+    f.load(fstOutputs.add(output, arc.nextFinalOutput));
     return f;
   }
 
