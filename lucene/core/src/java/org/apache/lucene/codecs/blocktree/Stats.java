@@ -99,7 +99,7 @@ public class Stats {
     this.field = field;
   }
 
-  void startBlock(BlockTreeTermsReader.FieldReader.SegmentTermsEnum.Frame frame, boolean isFloor) {
+  void startBlock(FieldReader.SegmentTermsEnum.Frame frame, boolean isFloor) {
     totalBlockCount++;
     if (isFloor) {
       if (frame.fp == frame.fpOrig) {
@@ -119,7 +119,7 @@ public class Stats {
     totalBlockStatsBytes += frame.statsReader.length();
   }
 
-  void endBlock(BlockTreeTermsReader.FieldReader.SegmentTermsEnum.Frame frame) {
+  void endBlock(FieldReader.SegmentTermsEnum.Frame frame) {
     final int termCount = frame.isLeafBlock ? frame.entCount : frame.state.termBlockOrd;
     final int subBlockCount = frame.entCount - termCount;
     totalTermCount += termCount;

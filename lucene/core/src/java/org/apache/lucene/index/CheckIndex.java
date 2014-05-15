@@ -31,6 +31,7 @@ import java.util.Map;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.blocktree.BlockTreeTermsReader;
+import org.apache.lucene.codecs.blocktree.FieldReader;
 import org.apache.lucene.codecs.blocktree.Stats;
 import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
@@ -1117,8 +1118,8 @@ public class CheckIndex {
         // docs got deleted and then merged away):
         
       } else {
-        if (fieldTerms instanceof BlockTreeTermsReader.FieldReader) {
-          final Stats stats = ((BlockTreeTermsReader.FieldReader) fieldTerms).computeStats();
+        if (fieldTerms instanceof FieldReader) {
+          final Stats stats = ((FieldReader) fieldTerms).computeStats();
           assert stats != null;
           if (status.blockTreeStats == null) {
             status.blockTreeStats = new HashMap<>();
