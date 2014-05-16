@@ -47,7 +47,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.TreeSet;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -631,6 +630,15 @@ public abstract class LuceneTestCase extends Assert {
 
   private static final Map<String,FieldType> fieldToType = new HashMap<String,FieldType>();
 
+  enum LiveIWCFlushMode {BY_RAM, BY_DOCS, EITHER};
+
+  /** Set by TestRuleSetupAndRestoreClassEnv */
+  static LiveIWCFlushMode liveIWCFlushMode;
+
+  static void setLiveIWCFlushMode(LiveIWCFlushMode flushMode) {
+    liveIWCFlushMode = flushMode;
+  }
+
   // -----------------------------------------------------------------
   // Suite and test case setup/ cleanup.
   // -----------------------------------------------------------------
@@ -996,8 +1004,21 @@ public abstract class LuceneTestCase extends Assert {
       // this is complicated because the api requires you "invoke setters in a magical order!"
       // LUCENE-5661: workaround for race conditions in the API
       synchronized (c) {
-        boolean flushByRam = r.nextBoolean();
-        if (flushByRam) { 
+        boolean flushByRAM;
+        switch (liveIWCFlushMode) {
+        case BY_RAM:
+          flushByRAM = true;
+          break;
+        case BY_DOCS:
+          flushByRAM = false;
+          break;
+        case EITHER:
+          flushByRAM = random().nextBoolean();
+          break;
+        default:
+          throw new AssertionError();
+        }
+        if (flushByRAM) { 
           c.setRAMBufferSizeMB(TestUtil.nextInt(r, 1, 10));
           c.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
         } else {
