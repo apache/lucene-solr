@@ -168,9 +168,7 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
           try {
             bd = (BigDecimal) decoder.parse(scratch.utf8ToString());
           } catch (ParseException pe) {
-            CorruptIndexException e = new CorruptIndexException("failed to parse BigDecimal value (resource=" + in + ")");
-            e.initCause(pe);
-            throw e;
+            throw new CorruptIndexException("failed to parse BigDecimal value (resource=" + in + ")", pe);
           }
           SimpleTextUtil.readLine(in, scratch); // read the line telling us if its real or not
           return BigInteger.valueOf(field.minValue).add(bd.toBigIntegerExact()).longValue();
@@ -231,9 +229,7 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
           try {
             len = decoder.parse(new String(scratch.bytes, scratch.offset + LENGTH.length, scratch.length - LENGTH.length, StandardCharsets.UTF_8)).intValue();
           } catch (ParseException pe) {
-            CorruptIndexException e = new CorruptIndexException("failed to parse int length (resource=" + in + ")");
-            e.initCause(pe);
-            throw e;
+            throw new CorruptIndexException("failed to parse int length (resource=" + in + ")", pe);
           }
           result.bytes = new byte[len];
           result.offset = 0;
@@ -263,9 +259,7 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
           try {
             len = decoder.parse(new String(scratch.bytes, scratch.offset + LENGTH.length, scratch.length - LENGTH.length, StandardCharsets.UTF_8)).intValue();
           } catch (ParseException pe) {
-            CorruptIndexException e = new CorruptIndexException("failed to parse int length (resource=" + in + ")");
-            e.initCause(pe);
-            throw e;
+            throw new CorruptIndexException("failed to parse int length (resource=" + in + ")", pe);
           }
           // skip past bytes
           byte bytes[] = new byte[len];
@@ -310,9 +304,7 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
           try {
             return (int) ordDecoder.parse(scratch.utf8ToString()).longValue()-1;
           } catch (ParseException pe) {
-            CorruptIndexException e = new CorruptIndexException("failed to parse ord (resource=" + in + ")");
-            e.initCause(pe);
-            throw e;
+            throw new CorruptIndexException("failed to parse ord (resource=" + in + ")", pe);
           }
         } catch (IOException ioe) {
           throw new RuntimeException(ioe);
@@ -332,9 +324,7 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
           try {
             len = decoder.parse(new String(scratch.bytes, scratch.offset + LENGTH.length, scratch.length - LENGTH.length, StandardCharsets.UTF_8)).intValue();
           } catch (ParseException pe) {
-            CorruptIndexException e = new CorruptIndexException("failed to parse int length (resource=" + in + ")");
-            e.initCause(pe);
-            throw e;
+            throw new CorruptIndexException("failed to parse int length (resource=" + in + ")", pe);
           }
           result.bytes = new byte[len];
           result.offset = 0;
@@ -410,9 +400,7 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
           try {
             len = decoder.parse(new String(scratch.bytes, scratch.offset + LENGTH.length, scratch.length - LENGTH.length, StandardCharsets.UTF_8)).intValue();
           } catch (ParseException pe) {
-            CorruptIndexException e = new CorruptIndexException("failed to parse int length (resource=" + in + ")");
-            e.initCause(pe);
-            throw e;
+            throw new CorruptIndexException("failed to parse int length (resource=" + in + ")", pe);
           }
           result.bytes = new byte[len];
           result.offset = 0;
