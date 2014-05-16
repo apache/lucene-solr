@@ -303,7 +303,6 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     doc = new Document();
     addField(doc, groupField, "a", useDv);
     doc.add(new StringField("airport", "dus", Field.Store.NO));
-
     w.addDocument(doc);
 
     // 4
