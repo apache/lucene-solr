@@ -304,7 +304,7 @@ public class Overseer {
             if (zkClient.exists(e.getKey(), true)) zkClient.delete(e.getKey(), 0, true);
           } else {
             if (zkClient.exists(e.getKey(), true)) {
-              log.info("going to update_collection", e.getKey());
+              log.info("going to update_collection {}", e.getKey());
               zkClient.setData(e.getKey(), ZkStateReader.toJSON(e.getValue()), true);
             } else {
               log.info("going to create_collection {}", e.getValue());

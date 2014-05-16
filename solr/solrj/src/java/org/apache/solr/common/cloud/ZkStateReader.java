@@ -843,8 +843,9 @@ public class ZkStateReader {
               ClusterState clusterState = ClusterState.load(stat.getVersion(), data, Collections.<String>emptySet(),ZkStateReader.this,fullpath);
               // update volatile
 
-              watchedCollectionStates.put(coll, clusterState.getCollectionStates().get(coll));
-              log.info("Updating data for {} ", coll);
+              DocCollection newState = clusterState.getCollectionStates().get(coll);
+              watchedCollectionStates.put(coll, newState);
+              log.info("Updating data for {} to ver {} ", coll , newState.getZnodeVersion());
 
             }
           } catch (KeeperException e) {
