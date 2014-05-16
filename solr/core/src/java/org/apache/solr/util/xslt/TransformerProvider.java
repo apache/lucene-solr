@@ -83,9 +83,7 @@ public class TransformerProvider {
       result = lastTemplates.newTransformer();
     } catch(TransformerConfigurationException tce) {
       log.error(getClass().getName(), "getTransformer", tce);
-      final IOException ioe = new IOException("newTransformer fails ( " + lastFilename + ")");
-      ioe.initCause(tce);
-      throw ioe;
+      throw new IOException("newTransformer fails ( " + lastFilename + ")", tce);
     }
     
     return result;
@@ -114,9 +112,7 @@ public class TransformerProvider {
       }
     } catch (Exception e) {
       log.error(getClass().getName(), "newTemplates", e);
-      final IOException ioe = new IOException("Unable to initialize Templates '" + filename + "'");
-      ioe.initCause(e);
-      throw ioe;
+      throw new IOException("Unable to initialize Templates '" + filename + "'", e);
     }
     
     lastFilename = filename;

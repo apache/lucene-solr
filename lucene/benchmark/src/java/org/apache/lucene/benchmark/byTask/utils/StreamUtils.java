@@ -56,17 +56,14 @@ public class StreamUtils {
       try {
         return csfType==null ? in : new CompressorStreamFactory().createCompressorInputStream(csfType, in);
       } catch (CompressorException e) {
-        IOException ioe = new IOException(e.getMessage());
-        ioe.initCause(e);
-        throw ioe;      }
+        throw new IOException(e.getMessage(), e);
+      }
     }
     private OutputStream outputStream(OutputStream os) throws IOException {
       try {
         return csfType==null ? os : new CompressorStreamFactory().createCompressorOutputStream(csfType, os);
       } catch (CompressorException e) {
-        IOException ioe = new IOException(e.getMessage());
-        ioe.initCause(e);
-        throw ioe;
+        throw new IOException(e.getMessage(), e);
       }
     }
   }
