@@ -1806,7 +1806,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
             }
             Throwable t = merge.getException();
             if (t != null) {
-              throw new IOException("background merge hit exception: " + merge.segString(directory), merge.getException());
+              throw new IOException("background merge hit exception: " + merge.segString(directory), t);
             }
           }
 
