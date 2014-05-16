@@ -1804,7 +1804,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
             if (pendingMerges.contains(merge) || runningMerges.contains(merge)) {
               running = true;
             }
-            throw new IOException("background merge hit exception: " + merge.segString(directory), merge.getException());
+            Throwable t = merge.getException();
+            if (t != null) {
+              throw new IOException("background merge hit exception: " + merge.segString(directory), merge.getException());
+            }
           }
 
           // If any of our merges are still running, wait:
