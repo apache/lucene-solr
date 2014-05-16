@@ -195,11 +195,13 @@
     </sequential>
   </macrodef>
   
-  <!-- we ignore our ant-based lock factory test, if user applies test filtering: -->
   <condition property="-ignore-test-lock-factory">
     <or>
+      <!-- We ignore our ant-based lock factory test, if user applies test filtering: -->
       <isset property="tests.class" />
       <isset property="tests.method" />
+      <!-- Clover seems to deadlock if running instrumented code inside the Ant JVM: -->
+      <isset property="run.clover" />
     </or>
   </condition>
   
