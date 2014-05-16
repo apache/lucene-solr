@@ -52,8 +52,8 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
 
 
-// Need SSDV
-@SuppressCodecs({"Lucene40", "Lucene41"})
+// Need SSDV, ord=-1 for missing:
+@SuppressCodecs({"Lucene40", "Lucene41", "Lucene42"})
 public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
 
   public void testSimple() throws Exception {
@@ -321,7 +321,6 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     doc = new Document();
     addField(doc, groupField, "a", useDv);
     doc.add(new SortedSetDocValuesField("airport", new BytesRef("dus")));
-
     w.addDocument(doc);
 
     // 4
