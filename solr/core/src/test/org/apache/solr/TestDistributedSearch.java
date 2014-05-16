@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -421,8 +420,6 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     // query("q","matchesnothing","fl","*,score", "debugQuery", "true");
     
     // Thread.sleep(10000000000L);
-
-    FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity
 
     del("*:*"); // delete all docs and test stats request
     commit();

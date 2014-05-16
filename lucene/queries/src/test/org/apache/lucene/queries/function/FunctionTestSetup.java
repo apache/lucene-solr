@@ -1,7 +1,5 @@
 package org.apache.lucene.queries.function;
 
-import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -9,15 +7,14 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -60,21 +57,7 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
   protected static final String INT_FIELD = "iii";
   protected static final String FLOAT_FIELD = "fff";
 
-  private static final FieldCache.FloatParser CUSTOM_FLOAT_PARSER = new FieldCache.FloatParser() {
-    
-    @Override
-    public TermsEnum termsEnum(Terms terms) throws IOException {
-      return FieldCache.NUMERIC_UTILS_INT_PARSER.termsEnum(terms);
-    }
-    
-    @Override
-    public float parseFloat(BytesRef term) {
-      return (float) FieldCache.NUMERIC_UTILS_INT_PARSER.parseInt(term);
-    }
-  };
-
   protected ValueSource INT_VALUESOURCE = new IntFieldSource(INT_FIELD);
-  protected ValueSource INT_AS_FLOAT_VALUESOURCE = new FloatFieldSource(INT_FIELD, CUSTOM_FLOAT_PARSER);
   protected ValueSource FLOAT_VALUESOURCE = new FloatFieldSource(FLOAT_FIELD);
 
   private static final String DOC_TEXT_LINES[] = {
@@ -152,6 +135,7 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
     
     f = newField(ID_FIELD, id2String(scoreAndID), customType); // for debug purposes
     d.add(f);
+    d.add(new SortedDocValuesField(ID_FIELD, new BytesRef(id2String(scoreAndID))));
 
     FieldType customType2 = new FieldType(TextField.TYPE_NOT_STORED);
     customType2.setOmitNorms(true);
@@ -160,9 +144,11 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
 
     f = new IntField(INT_FIELD, scoreAndID, Store.YES); // for function scoring
     d.add(f);
+    d.add(new NumericDocValuesField(INT_FIELD, scoreAndID));
 
     f = new FloatField(FLOAT_FIELD, scoreAndID, Store.YES); // for function scoring
     d.add(f);
+    d.add(new NumericDocValuesField(FLOAT_FIELD, Float.floatToRawIntBits(scoreAndID)));
 
     iw.addDocument(d);
     log("added: " + d);

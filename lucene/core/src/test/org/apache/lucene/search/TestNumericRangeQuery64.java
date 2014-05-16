@@ -38,7 +38,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestNumericUtils; // NaN arrays
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -606,51 +605,6 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
   @Test
   public void testDoubleRange_2bit() throws Exception {
     testDoubleRange(2);
-  }
-  
-  private void testSorting(int precisionStep) throws Exception {
-    String field="field"+precisionStep;
-    // 10 random tests, the index order is ascending,
-    // so using a reverse sort field should retun descending documents
-    int num = TestUtil.nextInt(random(), 10, 20);
-    for (int i = 0; i < num; i++) {
-      long lower=(long)(random().nextDouble()*noDocs*distance)+startOffset;
-      long upper=(long)(random().nextDouble()*noDocs*distance)+startOffset;
-      if (lower>upper) {
-        long a=lower; lower=upper; upper=a;
-      }
-      Query tq=NumericRangeQuery.newLongRange(field, precisionStep, lower, upper, true, true);
-      TopDocs topDocs = searcher.search(tq, null, noDocs, new Sort(new SortField(field, SortField.Type.LONG, true)));
-      if (topDocs.totalHits==0) continue;
-      ScoreDoc[] sd = topDocs.scoreDocs;
-      assertNotNull(sd);
-      long last=searcher.doc(sd[0].doc).getField(field).numericValue().longValue();
-      for (int j=1; j<sd.length; j++) {
-        long act=searcher.doc(sd[j].doc).getField(field).numericValue().longValue();
-        assertTrue("Docs should be sorted backwards", last>act );
-        last=act;
-      }
-    }
-  }
-
-  @Test
-  public void testSorting_8bit() throws Exception {
-    testSorting(8);
-  }
-  
-  @Test
-  public void testSorting_6bit() throws Exception {
-    testSorting(6);
-  }
-  
-  @Test
-  public void testSorting_4bit() throws Exception {
-    testSorting(4);
-  }
-  
-  @Test
-  public void testSorting_2bit() throws Exception {
-    testSorting(2);
   }
   
   @Test

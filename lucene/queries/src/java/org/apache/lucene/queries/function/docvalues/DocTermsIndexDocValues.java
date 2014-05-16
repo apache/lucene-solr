@@ -20,12 +20,12 @@ package org.apache.lucene.queries.function.docvalues;
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.ValueSourceScorer;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.UnicodeUtil;
@@ -44,12 +44,12 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
   protected final CharsRef spareChars = new CharsRef();
 
   public DocTermsIndexDocValues(ValueSource vs, AtomicReaderContext context, String field) throws IOException {
-    try {
-      termsIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), field);
-    } catch (RuntimeException e) {
-      throw new DocTermsIndexException(field, e);
-    }
+    this(vs, open(context, field));
+  }
+  
+  protected DocTermsIndexDocValues(ValueSource vs, SortedDocValues termsIndex) {
     this.vs = vs;
+    this.termsIndex = termsIndex;
   }
 
   protected abstract String toTerm(String readableValue);
@@ -162,6 +162,15 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
     };
   }
 
+  // TODO: why?
+  static SortedDocValues open(AtomicReaderContext context, String field) throws IOException {
+    try {
+      return DocValues.getSorted(context.reader(), field);
+    } catch (RuntimeException e) {
+      throw new DocTermsIndexException(field, e);
+    }
+  }
+  
   /**
    * Custom Exception to be thrown when the DocTermsIndex for a field cannot be generated
    */

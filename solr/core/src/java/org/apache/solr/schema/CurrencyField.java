@@ -26,6 +26,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.FieldValueFilter;
+import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.queries.ChainedFilter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -342,6 +343,11 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
   public SortField getSortField(SchemaField field, boolean reverse) {
     // Convert all values to default currency for sorting.
     return (new RawCurrencyValueSource(field, defaultCurrency, null)).getSortField(reverse);
+  }
+  
+  @Override
+  public Type getUninversionType(SchemaField sf) {
+    return null;
   }
 
   @Override

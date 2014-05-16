@@ -21,9 +21,10 @@ import com.spatial4j.core.distance.DistanceCalculator;
 import com.spatial4j.core.shape.Point;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
@@ -65,10 +66,10 @@ public class DistanceValueSource extends ValueSource {
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     AtomicReader reader = readerContext.reader();
 
-    final FieldCache.Doubles ptX = FieldCache.DEFAULT.getDoubles(reader, strategy.getFieldNameX(), true);
-    final FieldCache.Doubles ptY = FieldCache.DEFAULT.getDoubles(reader, strategy.getFieldNameY(), true);
-    final Bits validX =  FieldCache.DEFAULT.getDocsWithField(reader, strategy.getFieldNameX());
-    final Bits validY =  FieldCache.DEFAULT.getDocsWithField(reader, strategy.getFieldNameY());
+    final NumericDocValues ptX = DocValues.getNumeric(reader, strategy.getFieldNameX());
+    final NumericDocValues ptY = DocValues.getNumeric(reader, strategy.getFieldNameY());
+    final Bits validX =  DocValues.getDocsWithField(reader, strategy.getFieldNameX());
+    final Bits validY =  DocValues.getDocsWithField(reader, strategy.getFieldNameY());
 
     return new FunctionValues() {
 
@@ -87,7 +88,7 @@ public class DistanceValueSource extends ValueSource {
         // make sure it has minX and area
         if (validX.get(doc)) {
           assert validY.get(doc);
-          return calculator.distance(from, ptX.get(doc), ptY.get(doc)) * multiplier;
+          return calculator.distance(from, Double.longBitsToDouble(ptX.get(doc)), Double.longBitsToDouble(ptY.get(doc))) * multiplier;
         }
         return nullValue;
       }

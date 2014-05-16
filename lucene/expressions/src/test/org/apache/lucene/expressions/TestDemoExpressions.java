@@ -1,7 +1,6 @@
 package org.apache.lucene.expressions;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.expressions.js.JavascriptCompiler;
@@ -53,24 +52,24 @@ public class  TestDemoExpressions extends LuceneTestCase {
     doc.add(newStringField("id", "1", Field.Store.YES));
     doc.add(newTextField("body", "some contents and more contents", Field.Store.NO));
     doc.add(new NumericDocValuesField("popularity", 5));
-    doc.add(new DoubleField("latitude", 40.759011, Field.Store.NO));
-    doc.add(new DoubleField("longitude", -73.9844722, Field.Store.NO));
+    doc.add(new NumericDocValuesField("latitude", Double.doubleToRawLongBits(40.759011)));
+    doc.add(new NumericDocValuesField("longitude", Double.doubleToRawLongBits(-73.9844722)));
     iw.addDocument(doc);
     
     doc = new Document();
     doc.add(newStringField("id", "2", Field.Store.YES));
     doc.add(newTextField("body", "another document with different contents", Field.Store.NO));
     doc.add(new NumericDocValuesField("popularity", 20));
-    doc.add(new DoubleField("latitude", 40.718266, Field.Store.NO));
-    doc.add(new DoubleField("longitude", -74.007819, Field.Store.NO));
+    doc.add(new NumericDocValuesField("latitude", Double.doubleToRawLongBits(40.718266)));
+    doc.add(new NumericDocValuesField("longitude", Double.doubleToRawLongBits(-74.007819)));
     iw.addDocument(doc);
     
     doc = new Document();
     doc.add(newStringField("id", "3", Field.Store.YES));
     doc.add(newTextField("body", "crappy contents", Field.Store.NO));
     doc.add(new NumericDocValuesField("popularity", 2));
-    doc.add(new DoubleField("latitude", 40.7051157, Field.Store.NO));
-    doc.add(new DoubleField("longitude", -74.0088305, Field.Store.NO));
+    doc.add(new NumericDocValuesField("latitude", Double.doubleToRawLongBits(40.7051157)));
+    doc.add(new NumericDocValuesField("longitude", Double.doubleToRawLongBits(-74.0088305)));
     iw.addDocument(doc);
     
     reader = iw.getReader();

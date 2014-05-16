@@ -25,10 +25,6 @@ import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
-import org.apache.lucene.search.FieldCache.DoubleParser;
-import org.apache.lucene.search.FieldCache.FloatParser;
-import org.apache.lucene.search.FieldCache.IntParser;
-import org.apache.lucene.search.FieldCache.LongParser;
 import org.apache.lucene.search.SortField;
 
 /**
@@ -87,13 +83,13 @@ public final class SimpleBindings extends Bindings {
     SortField field = (SortField) o;
     switch(field.getType()) {
       case INT:
-        return new IntFieldSource(field.getField(), (IntParser) field.getParser());
+        return new IntFieldSource(field.getField());
       case LONG:
-        return new LongFieldSource(field.getField(), (LongParser) field.getParser());
+        return new LongFieldSource(field.getField());
       case FLOAT:
-        return new FloatFieldSource(field.getField(), (FloatParser) field.getParser());
+        return new FloatFieldSource(field.getField());
       case DOUBLE:
-        return new DoubleFieldSource(field.getField(), (DoubleParser) field.getParser());
+        return new DoubleFieldSource(field.getField());
       case SCORE:
         return getScoreValueSource();
       default:

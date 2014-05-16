@@ -1,4 +1,4 @@
-package org.apache.lucene.util;
+package org.apache.lucene.uninverting;
 /**
  * Copyright 2009 The Apache Software Foundation
  *
@@ -23,12 +23,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.index.CompositeReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
-import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.search.FieldCache.CacheEntry;
 import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.uninverting.FieldCache.CacheEntry;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.MapOfSets;
 
 /** 
  * Provides methods for sanity checking that entries in the FieldCache 
@@ -52,7 +52,7 @@ import org.apache.lucene.store.AlreadyClosedException;
  * @see FieldCacheSanityChecker.Insanity
  * @see FieldCacheSanityChecker.InsanityType
  */
-public final class FieldCacheSanityChecker {
+final class FieldCacheSanityChecker {
 
   private boolean estimateRam;
 

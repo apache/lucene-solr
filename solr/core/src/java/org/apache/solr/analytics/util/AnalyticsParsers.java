@@ -18,14 +18,9 @@
 package org.apache.solr.analytics.util;
 
 import java.io.IOException;
-import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Date;
 
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.search.FieldCache.LongParser;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.schema.FieldType;
@@ -61,31 +56,7 @@ public class AnalyticsParsers {
       return AnalyticsParsers.STRING_PARSER;
     }
   }
-  
-  /** Long Parser that takes in String representations of dates and
-   *  converts them into longs
-   */
-  public final static LongParser DEFAULT_DATE_PARSER = new LongParser() {
-    @SuppressWarnings("deprecation")
-    @Override
-    public long parseLong(BytesRef term) {
-      try {
-        return TrieDateField.parseDate(term.utf8ToString()).getTime();
-      } catch (ParseException e) {
-        System.err.println("Cannot parse date "+term.utf8ToString());
-        return 0;
-      }
-    }
-    @Override
-    public String toString() { 
-      return FieldCache.class.getName()+".DEFAULT_DATE_PARSER"; 
-    }
-    @Override
-    public TermsEnum termsEnum(Terms terms) throws IOException {
-      return terms.iterator(null);
-    }
-  };
-  
+
   /**
    * For use in classes that grab values by docValue.
    * Converts a BytesRef object into the correct readable text.

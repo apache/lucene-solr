@@ -43,10 +43,10 @@ import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
@@ -289,6 +289,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
       FieldType ft = new FieldType(IntField.TYPE_STORED);
       ft.setNumericPrecisionStep(Integer.MAX_VALUE);
       doc.add(new IntField("id", id, ft));
+      doc.add(new NumericDocValuesField("id", id));
       w.addDocument(doc);
     }
     final DirectoryReader r = w.getReader();
@@ -298,12 +299,12 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
 
     for(AtomicReaderContext ctx : r.leaves()) {
       final AtomicReader sub = ctx.reader();
-      final FieldCache.Ints ids = FieldCache.DEFAULT.getInts(sub, "id", false);
+      final NumericDocValues ids = DocValues.getNumeric(sub, "id");
       for(int docID=0;docID<sub.numDocs();docID++) {
         final StoredDocument doc = sub.document(docID);
         final Field f = (Field) doc.getField("nf");
         assertTrue("got f=" + f, f instanceof StoredField);
-        assertEquals(answers[ids.get(docID)], f.numericValue());
+        assertEquals(answers[(int) ids.get(docID)], f.numericValue());
       }
     }
     r.close();

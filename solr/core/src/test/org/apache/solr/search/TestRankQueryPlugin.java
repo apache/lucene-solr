@@ -18,9 +18,10 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
@@ -702,7 +703,7 @@ public class TestRankQueryPlugin extends QParserPlugin {
   class TestCollector extends TopDocsCollector {
 
     private List<ScoreDoc> list = new ArrayList();
-    private FieldCache.Ints values;
+    private NumericDocValues values;
     private int base;
 
     public TestCollector(PriorityQueue pq) {
@@ -714,7 +715,7 @@ public class TestRankQueryPlugin extends QParserPlugin {
     }
 
     public void doSetNextReader(AtomicReaderContext context) throws IOException {
-      values = FieldCache.DEFAULT.getInts(context.reader(), "sort_i", false);
+      values = DocValues.getNumeric(context.reader(), "sort_i");
       base = context.docBase;
     }
 

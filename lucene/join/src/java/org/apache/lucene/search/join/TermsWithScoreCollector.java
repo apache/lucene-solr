@@ -21,10 +21,10 @@ import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.util.ArrayUtil;
@@ -131,7 +131,7 @@ abstract class TermsWithScoreCollector extends SimpleCollector {
 
     @Override
     protected void doSetNextReader(AtomicReaderContext context) throws IOException {
-      fromDocTerms = FieldCache.DEFAULT.getTerms(context.reader(), field, false);
+      fromDocTerms = DocValues.getBinary(context.reader(), field);
     }
 
     static class Avg extends SV {
@@ -217,7 +217,7 @@ abstract class TermsWithScoreCollector extends SimpleCollector {
 
     @Override
     protected void doSetNextReader(AtomicReaderContext context) throws IOException {
-      fromDocTermOrds = FieldCache.DEFAULT.getDocTermOrds(context.reader(), field);
+      fromDocTermOrds = DocValues.getSortedSet(context.reader(), field);
     }
 
     static class Avg extends MV {

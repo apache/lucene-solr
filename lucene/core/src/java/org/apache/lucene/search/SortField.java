@@ -94,7 +94,6 @@ public class SortField {
   private String field;
   private Type type;  // defaults to determining type dynamically
   boolean reverse = false;  // defaults to natural order
-  private FieldCache.Parser parser;
 
   // Used for CUSTOM sort
   private FieldComparatorSource comparatorSource;
@@ -122,44 +121,6 @@ public class SortField {
   public SortField(String field, Type type, boolean reverse) {
     initFieldType(field, type);
     this.reverse = reverse;
-  }
-
-  /** Creates a sort by terms in the given field, parsed
-   * to numeric values using a custom {@link FieldCache.Parser}.
-   * @param field  Name of field to sort by.  Must not be null.
-   * @param parser Instance of a {@link FieldCache.Parser},
-   *  which must subclass one of the existing numeric
-   *  parsers from {@link FieldCache}. Sort type is inferred
-   *  by testing which numeric parser the parser subclasses.
-   * @throws IllegalArgumentException if the parser fails to
-   *  subclass an existing numeric parser, or field is null
-   */
-  public SortField(String field, FieldCache.Parser parser) {
-    this(field, parser, false);
-  }
-
-  /** Creates a sort, possibly in reverse, by terms in the given field, parsed
-   * to numeric values using a custom {@link FieldCache.Parser}.
-   * @param field  Name of field to sort by.  Must not be null.
-   * @param parser Instance of a {@link FieldCache.Parser},
-   *  which must subclass one of the existing numeric
-   *  parsers from {@link FieldCache}. Sort type is inferred
-   *  by testing which numeric parser the parser subclasses.
-   * @param reverse True if natural order should be reversed.
-   * @throws IllegalArgumentException if the parser fails to
-   *  subclass an existing numeric parser, or field is null
-   */
-  public SortField(String field, FieldCache.Parser parser, boolean reverse) {
-    if (parser instanceof FieldCache.IntParser) initFieldType(field, Type.INT);
-    else if (parser instanceof FieldCache.FloatParser) initFieldType(field, Type.FLOAT);
-    else if (parser instanceof FieldCache.LongParser) initFieldType(field, Type.LONG);
-    else if (parser instanceof FieldCache.DoubleParser) initFieldType(field, Type.DOUBLE);
-    else {
-      throw new IllegalArgumentException("Parser instance does not subclass existing numeric parser from FieldCache (got " + parser + ")");
-    }
-
-    this.reverse = reverse;
-    this.parser = parser;
   }
 
   /** Pass this to {@link #setMissingValue} to have missing
@@ -239,14 +200,6 @@ public class SortField {
     return type;
   }
 
-  /** Returns the instance of a {@link FieldCache} parser that fits to the given sort type.
-   * May return <code>null</code> if no parser was specified. Sorting is using the default parser then.
-   * @return An instance of a {@link FieldCache} parser, or <code>null</code>.
-   */
-  public FieldCache.Parser getParser() {
-    return parser;
-  }
-
   /** Returns whether the sort should be reversed.
    * @return  True if natural order should be reversed.
    */
@@ -320,8 +273,7 @@ public class SortField {
   }
 
   /** Returns true if <code>o</code> is equal to this.  If a
-   *  {@link FieldComparatorSource} or {@link
-   *  FieldCache.Parser} was provided, it must properly
+   *  {@link FieldComparatorSource} was provided, it must properly
    *  implement equals (unless a singleton is always used). */
   @Override
   public boolean equals(Object o) {
@@ -337,8 +289,7 @@ public class SortField {
   }
 
   /** Returns true if <code>o</code> is equal to this.  If a
-   *  {@link FieldComparatorSource} or {@link
-   *  FieldCache.Parser} was provided, it must properly
+   *  {@link FieldComparatorSource} was provided, it must properly
    *  implement hashCode (unless a singleton is always
    *  used). */
   @Override
@@ -381,16 +332,16 @@ public class SortField {
       return new FieldComparator.DocComparator(numHits);
 
     case INT:
-      return new FieldComparator.IntComparator(numHits, field, parser, (Integer) missingValue);
+      return new FieldComparator.IntComparator(numHits, field, (Integer) missingValue);
 
     case FLOAT:
-      return new FieldComparator.FloatComparator(numHits, field, parser, (Float) missingValue);
+      return new FieldComparator.FloatComparator(numHits, field, (Float) missingValue);
 
     case LONG:
-      return new FieldComparator.LongComparator(numHits, field, parser, (Long) missingValue);
+      return new FieldComparator.LongComparator(numHits, field, (Long) missingValue);
 
     case DOUBLE:
-      return new FieldComparator.DoubleComparator(numHits, field, parser, (Double) missingValue);
+      return new FieldComparator.DoubleComparator(numHits, field, (Double) missingValue);
 
     case CUSTOM:
       assert comparatorSource != null;

@@ -22,6 +22,8 @@ import org.apache.lucene.queries.function.valuesource.LiteralValueSource;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.uninverting.UninvertingReader.Type;
+
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.io.GeohashUtils;
 import com.spatial4j.core.shape.Point;
@@ -46,6 +48,15 @@ public class GeoHashField extends FieldType implements SpatialQueryable {
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
     return getStringSort(field, top);
+  }
+  
+  @Override
+  public Type getUninversionType(SchemaField sf) {
+    if (sf.multiValued()) {
+      return Type.SORTED_SET_BINARY;
+    } else {
+      return Type.SORTED;
+    }
   }
 
     //QUESTION: Should we do a fast and crude one?  Or actually check distances

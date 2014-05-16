@@ -17,6 +17,8 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
@@ -158,5 +160,73 @@ public final class DocValues {
         return maxDoc;
       }
     };
+  }
+  
+  // some helpers, for transition from fieldcache apis.
+  // as opposed to the AtomicReader apis (which must be strict for consistency), these are lenient
+  
+  /**
+   * Returns NumericDocValues for the reader, or {@link #EMPTY_NUMERIC} if it has none. 
+   */
+  public static NumericDocValues getNumeric(AtomicReader in, String field) throws IOException {
+    NumericDocValues dv = in.getNumericDocValues(field);
+    if (dv == null) {
+      return EMPTY_NUMERIC;
+    } else {
+      return dv;
+    }
+  }
+  
+  /**
+   * Returns BinaryDocValues for the reader, or {@link #EMPTY_BINARY} if it has none. 
+   */
+  public static BinaryDocValues getBinary(AtomicReader in, String field) throws IOException {
+    BinaryDocValues dv = in.getBinaryDocValues(field);
+    if (dv == null) {
+      dv = in.getSortedDocValues(field);
+      if (dv == null) {
+        return EMPTY_BINARY;
+      }
+    }
+    return dv;
+  }
+  
+  /**
+   * Returns SortedDocValues for the reader, or {@link #EMPTY_SORTED} if it has none. 
+   */
+  public static SortedDocValues getSorted(AtomicReader in, String field) throws IOException {
+    SortedDocValues dv = in.getSortedDocValues(field);
+    if (dv == null) {
+      return EMPTY_SORTED;
+    } else {
+      return dv;
+    }
+  }
+  
+  /**
+   * Returns SortedSetDocValues for the reader, or {@link #EMPTY_SORTED_SET} if it has none. 
+   */
+  public static SortedSetDocValues getSortedSet(AtomicReader in, String field) throws IOException {
+    SortedSetDocValues dv = in.getSortedSetDocValues(field);
+    if (dv == null) {
+      SortedDocValues sorted = in.getSortedDocValues(field);
+      if (sorted == null) {
+        return EMPTY_SORTED_SET;
+      }
+      return singleton(sorted);
+    }
+    return dv;
+  }
+  
+  /**
+   * Returns Bits for the reader, or {@link Bits} matching nothing if it has none. 
+   */
+  public static Bits getDocsWithField(AtomicReader in, String field) throws IOException {
+    Bits dv = in.getDocsWithField(field);
+    if (dv == null) {
+      return new Bits.MatchNoBits(in.maxDoc());
+    } else {
+      return dv;
+    }
   }
 }

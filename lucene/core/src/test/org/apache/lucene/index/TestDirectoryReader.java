@@ -32,13 +32,11 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NoSuchDirectoryException;
 import org.apache.lucene.util.Bits;
@@ -750,44 +748,6 @@ public void testFilesOpenClose() throws IOException {
       }
     }
   
-    dir.close();
-  }
-  
-  // LUCENE-1579: Ensure that on a reopened reader, that any
-  // shared segments reuse the doc values arrays in
-  // FieldCache
-  public void testFieldCacheReuseAfterReopen() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(
-        dir,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
-            setMergePolicy(newLogMergePolicy(10))
-    );
-    Document doc = new Document();
-    doc.add(new IntField("number", 17, Field.Store.NO));
-    writer.addDocument(doc);
-    writer.commit();
-  
-    // Open reader1
-    DirectoryReader r = DirectoryReader.open(dir);
-    AtomicReader r1 = getOnlySegmentReader(r);
-    final FieldCache.Ints ints = FieldCache.DEFAULT.getInts(r1, "number", false);
-    assertEquals(17, ints.get(0));
-  
-    // Add new segment
-    writer.addDocument(doc);
-    writer.commit();
-  
-    // Reopen reader1 --> reader2
-    DirectoryReader r2 = DirectoryReader.openIfChanged(r);
-    assertNotNull(r2);
-    r.close();
-    AtomicReader sub0 = r2.leaves().get(0).reader();
-    final FieldCache.Ints ints2 = FieldCache.DEFAULT.getInts(sub0, "number", false);
-    r2.close();
-    assertTrue(ints == ints2);
-  
-    writer.shutdown();
     dir.close();
   }
   

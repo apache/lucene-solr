@@ -32,6 +32,8 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.uninverting.UninvertingReader;
+import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -42,7 +44,9 @@ import org.junit.Before;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomGaussian;
@@ -59,15 +63,26 @@ public abstract class SpatialTestCase extends LuceneTestCase {
 
   protected SpatialContext ctx;//subclass must initialize
 
+  Map<String,Type> uninvertMap = new HashMap<>();
+  
   @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
-
+    // TODO: change this module to index docvalues instead of uninverting
+    uninvertMap.clear();
+    uninvertMap.put("bbox__minX", Type.DOUBLE);
+    uninvertMap.put("bbox__maxX", Type.DOUBLE);
+    uninvertMap.put("bbox__minY", Type.DOUBLE);
+    uninvertMap.put("bbox__maxY", Type.DOUBLE);
+    uninvertMap.put("pointvector__x", Type.DOUBLE);
+    uninvertMap.put("pointvector__y", Type.DOUBLE);
+    uninvertMap.put("SpatialOpRecursivePrefixTreeTest", Type.SORTED);
+    
     directory = newDirectory();
     final Random random = random();
     indexWriter = new RandomIndexWriter(random,directory, newIndexWriterConfig(random));
-    indexReader = indexWriter.getReader();
+    indexReader = UninvertingReader.wrap(indexWriter.getReader(), uninvertMap);
     indexSearcher = newSearcher(indexReader);
   }
 
@@ -110,8 +125,11 @@ public abstract class SpatialTestCase extends LuceneTestCase {
 
   protected void commit() throws IOException {
     indexWriter.commit();
-    IOUtils.close(indexReader);
-    indexReader = indexWriter.getReader();
+    DirectoryReader newReader = DirectoryReader.openIfChanged(indexReader);
+    if (newReader != null) {
+      IOUtils.close(indexReader);
+      indexReader = newReader;
+    }
     indexSearcher = newSearcher(indexReader);
   }
 

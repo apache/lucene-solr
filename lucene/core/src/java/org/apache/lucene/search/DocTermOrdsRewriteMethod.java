@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Terms;
@@ -83,7 +84,7 @@ public final class DocTermOrdsRewriteMethod extends MultiTermQuery.RewriteMethod
      */
     @Override
     public DocIdSet getDocIdSet(AtomicReaderContext context, final Bits acceptDocs) throws IOException {
-      final SortedSetDocValues docTermOrds = FieldCache.DEFAULT.getDocTermOrds(context.reader(), query.field);
+      final SortedSetDocValues docTermOrds = DocValues.getSortedSet(context.reader(), query.field);
       // Cannot use FixedBitSet because we require long index (ord):
       final LongBitSet termSet = new LongBitSet(docTermOrds.getValueCount());
       TermsEnum termsEnum = query.getTermsEnum(new Terms() {
@@ -144,7 +145,7 @@ public final class DocTermOrdsRewriteMethod extends MultiTermQuery.RewriteMethod
         return null;
       }
       
-      return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
+      return new DocValuesDocIdSet(context.reader().maxDoc(), acceptDocs) {
         @Override
         protected final boolean matchDoc(int doc) throws ArrayIndexOutOfBoundsException {
           docTermOrds.setDocument(doc);

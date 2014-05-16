@@ -29,7 +29,7 @@ import org.apache.lucene.util.BytesRef;
  * for numerical ranges; use {@link NumericRangeFilter} instead.
  *
  * <p>If you construct a large number of range filters with different ranges but on the 
- * same field, {@link FieldCacheRangeFilter} may have significantly better performance. 
+ * same field, {@link DocValuesRangeFilter} may have significantly better performance. 
  * @since 2.9
  */
 public class TermRangeFilter extends MultiTermQueryWrapperFilter<TermRangeQuery> {

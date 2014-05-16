@@ -1,4 +1,4 @@
-package org.apache.lucene.sandbox.queries;
+package org.apache.lucene.search;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,12 +21,15 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -35,18 +38,39 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 /** Simple tests for SortedSetSortField, indexing the sortedset up front */
 @SuppressCodecs({"Lucene40", "Lucene41"}) // avoid codecs that don't support sortedset
-public class TestSortedSetSortFieldDocValues extends LuceneTestCase {
+public class TestSortedSetSortField extends LuceneTestCase {
   
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    // ensure there is nothing in fieldcache before test starts
-    FieldCache.DEFAULT.purgeAllCaches();
+  public void testEmptyIndex() throws Exception {
+    IndexSearcher empty = newSearcher(new MultiReader());
+    Query query = new TermQuery(new Term("contents", "foo"));
+  
+    Sort sort = new Sort();
+    sort.setSort(new SortedSetSortField("sortedset", false));
+    TopDocs td = empty.search(query, null, 10, sort, true, true);
+    assertEquals(0, td.totalHits);
+    
+    // for an empty index, any selector should work
+    for (SortedSetSelector.Type v : SortedSetSelector.Type.values()) {
+      sort.setSort(new SortedSetSortField("sortedset", false, v));
+      td = empty.search(query, null, 10, sort, true, true);
+      assertEquals(0, td.totalHits);
+    }
   }
   
-  private void assertNoFieldCaches() {
-    // docvalues sorting should NOT create any fieldcache entries!
-    assertEquals(0, FieldCache.DEFAULT.getCacheEntries().length);
+  public void testEquals() throws Exception {
+    SortField sf = new SortedSetSortField("a", false);
+    assertFalse(sf.equals(null));
+    
+    assertEquals(sf, sf);
+    
+    SortField sf2 = new SortedSetSortField("a", false);
+    assertEquals(sf, sf2);
+    assertEquals(sf.hashCode(), sf2.hashCode());
+    
+    assertFalse(sf.equals(new SortedSetSortField("a", true)));
+    assertFalse(sf.equals(new SortedSetSortField("b", false)));
+    assertFalse(sf.equals(new SortedSetSortField("a", false, SortedSetSelector.Type.MAX)));
+    assertFalse(sf.equals("foo"));
   }
   
   public void testForward() throws Exception {
@@ -72,7 +96,6 @@ public class TestSortedSetSortFieldDocValues extends LuceneTestCase {
     // 'bar' comes before 'baz'
     assertEquals("1", searcher.doc(td.scoreDocs[0].doc).get("id"));
     assertEquals("2", searcher.doc(td.scoreDocs[1].doc).get("id"));
-    assertNoFieldCaches();
     
     ir.close();
     dir.close();
@@ -102,7 +125,6 @@ public class TestSortedSetSortFieldDocValues extends LuceneTestCase {
     // 'bar' comes before 'baz'
     assertEquals("2", searcher.doc(td.scoreDocs[0].doc).get("id"));
     assertEquals("1", searcher.doc(td.scoreDocs[1].doc).get("id"));
-    assertNoFieldCaches();
 
     ir.close();
     dir.close();
@@ -138,7 +160,6 @@ public class TestSortedSetSortFieldDocValues extends LuceneTestCase {
     assertEquals("3", searcher.doc(td.scoreDocs[0].doc).get("id"));
     assertEquals("1", searcher.doc(td.scoreDocs[1].doc).get("id"));
     assertEquals("2", searcher.doc(td.scoreDocs[2].doc).get("id"));
-    assertNoFieldCaches();
 
     ir.close();
     dir.close();
@@ -174,7 +195,6 @@ public class TestSortedSetSortFieldDocValues extends LuceneTestCase {
     assertEquals("2", searcher.doc(td.scoreDocs[1].doc).get("id"));
     // null comes last
     assertEquals("3", searcher.doc(td.scoreDocs[2].doc).get("id"));
-    assertNoFieldCaches();
 
     ir.close();
     dir.close();
@@ -202,7 +222,6 @@ public class TestSortedSetSortFieldDocValues extends LuceneTestCase {
     // 'bar' comes before 'baz'
     assertEquals("1", searcher.doc(td.scoreDocs[0].doc).get("id"));
     assertEquals("2", searcher.doc(td.scoreDocs[1].doc).get("id"));
-    assertNoFieldCaches();
 
     ir.close();
     dir.close();

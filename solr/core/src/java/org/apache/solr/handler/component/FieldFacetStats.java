@@ -25,10 +25,10 @@ import java.util.Map;
 
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -100,7 +100,7 @@ public class FieldFacetStats {
   // Currently only used by UnInvertedField stats
   public boolean facetTermNum(int docID, int statsTermNum) throws IOException {
     if (topLevelSortedValues == null) {
-      topLevelSortedValues = FieldCache.DEFAULT.getTermsIndex(topLevelReader, name);
+      topLevelSortedValues = DocValues.getSorted(topLevelReader, name);
     }
     
     int term = topLevelSortedValues.getOrd(docID);

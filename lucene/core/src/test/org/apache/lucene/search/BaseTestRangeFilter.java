@@ -28,10 +28,13 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
@@ -120,19 +123,33 @@ public class BaseTestRangeFilter extends LuceneTestCase {
     
     Document doc = new Document();
     Field idField = newStringField(random, "id", "", Field.Store.YES);
+    Field idDVField = new SortedDocValuesField("id", new BytesRef());
     Field intIdField = new IntField("id_int", 0, Store.YES);
+    Field intDVField = new NumericDocValuesField("id_int", 0);
     Field floatIdField = new FloatField("id_float", 0, Store.YES);
+    Field floatDVField = new NumericDocValuesField("id_float", 0);
     Field longIdField = new LongField("id_long", 0, Store.YES);
+    Field longDVField = new NumericDocValuesField("id_long", 0);
     Field doubleIdField = new DoubleField("id_double", 0, Store.YES);
+    Field doubleDVField = new NumericDocValuesField("id_double", 0);
     Field randField = newStringField(random, "rand", "", Field.Store.YES);
+    Field randDVField = new SortedDocValuesField("rand", new BytesRef());
     Field bodyField = newStringField(random, "body", "", Field.Store.NO);
+    Field bodyDVField = new SortedDocValuesField("body", new BytesRef());
     doc.add(idField);
+    doc.add(idDVField);
     doc.add(intIdField);
+    doc.add(intDVField);
     doc.add(floatIdField);
+    doc.add(floatDVField);
     doc.add(longIdField);
+    doc.add(longDVField);
     doc.add(doubleIdField);
+    doc.add(doubleDVField);
     doc.add(randField);
+    doc.add(randDVField);
     doc.add(bodyField);
+    doc.add(bodyDVField);
 
     RandomIndexWriter writer = new RandomIndexWriter(random, index.index, 
                                                      newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer(random))
@@ -146,10 +163,15 @@ public class BaseTestRangeFilter extends LuceneTestCase {
 
       for (int d = minId; d <= maxId; d++) {
         idField.setStringValue(pad(d));
+        idDVField.setBytesValue(new BytesRef(pad(d)));
         intIdField.setIntValue(d);
+        intDVField.setLongValue(d);
         floatIdField.setFloatValue(d);
+        floatDVField.setLongValue(Float.floatToRawIntBits(d));
         longIdField.setLongValue(d);
+        longDVField.setLongValue(d);
         doubleIdField.setDoubleValue(d);
+        doubleDVField.setLongValue(Double.doubleToRawLongBits(d));
         int r = index.allowNegativeRandomInts ? random.nextInt() : random
           .nextInt(Integer.MAX_VALUE);
         if (index.maxR < r) {
@@ -166,7 +188,9 @@ public class BaseTestRangeFilter extends LuceneTestCase {
           minCount++;
         }
         randField.setStringValue(pad(r));
+        randDVField.setBytesValue(new BytesRef(pad(r)));
         bodyField.setStringValue("body");
+        bodyDVField.setBytesValue(new BytesRef("body"));
         writer.addDocument(doc);
       }
 

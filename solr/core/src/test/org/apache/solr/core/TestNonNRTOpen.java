@@ -138,7 +138,7 @@ public class TestNonNRTOpen extends SolrTestCaseJ4 {
     RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
     try {
       SolrIndexSearcher s = searcher.get();
-      DirectoryReader ir = s.getIndexReader();
+      DirectoryReader ir = s.getRawReader();
       assertEquals("SOLR-5815? : wrong maxDoc: core=" + core.toString() +" searcher=" + s.toString(),
                    maxDoc, ir.maxDoc());
       assertFalse("SOLR-5815? : expected non-NRT reader, got: " + ir, ir.toString().contains(":nrt"));
@@ -151,7 +151,7 @@ public class TestNonNRTOpen extends SolrTestCaseJ4 {
     RefCounted<SolrIndexSearcher> searcher = h.getCore().getSearcher();
     Set<Object> set = Collections.newSetFromMap(new IdentityHashMap<Object,Boolean>());
     try {
-      DirectoryReader ir = searcher.get().getIndexReader();
+      DirectoryReader ir = searcher.get().getRawReader();
       for (AtomicReaderContext context : ir.leaves()) {
         set.add(context.reader().getCoreCacheKey());
       }

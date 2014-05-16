@@ -21,7 +21,7 @@ import java.text.Collator;
 
 import org.apache.lucene.search.MultiTermQueryWrapperFilter;
 import org.apache.lucene.search.NumericRangeFilter; // javadoc
-import org.apache.lucene.search.FieldCacheRangeFilter; // javadoc
+import org.apache.lucene.search.DocValuesRangeFilter; // javadoc
 
 /**
  * A Filter that restricts search results to a range of term
@@ -33,7 +33,7 @@ import org.apache.lucene.search.FieldCacheRangeFilter; // javadoc
  * for numerical ranges; use {@link NumericRangeFilter} instead.
  *
  * <p>If you construct a large number of range filters with different ranges but on the 
- * same field, {@link FieldCacheRangeFilter} may have significantly better performance. 
+ * same field, {@link DocValuesRangeFilter} may have significantly better performance. 
  * @deprecated Index collation keys with CollationKeyAnalyzer or ICUCollationKeyAnalyzer instead.
  * This class will be removed in Lucene 5.0
  */

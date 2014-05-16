@@ -1,4 +1,4 @@
-package org.apache.lucene.index;
+package org.apache.lucene.uninverting;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -31,12 +31,28 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
+import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 
@@ -306,7 +322,7 @@ public class TestDocTermOrds extends LuceneTestCase {
                                             TestUtil.nextInt(random(), 2, 10));
                                             
 
-    final FieldCache.Ints docIDToID = FieldCache.DEFAULT.getInts(r, "id", false);
+    final NumericDocValues docIDToID = FieldCache.DEFAULT.getNumerics(r, "id", FieldCache.NUMERIC_UTILS_INT_PARSER, false);
     /*
       for(int docID=0;docID<subR.maxDoc();docID++) {
       System.out.println("  docID=" + docID + " id=" + docIDToID[docID]);
@@ -362,7 +378,7 @@ public class TestDocTermOrds extends LuceneTestCase {
         System.out.println("TEST: docID=" + docID + " of " + r.maxDoc() + " (id=" + docIDToID.get(docID) + ")");
       }
       iter.setDocument(docID);
-      final int[] answers = idToOrds[docIDToID.get(docID)];
+      final int[] answers = idToOrds[(int) docIDToID.get(docID)];
       int upto = 0;
       long ord;
       while ((ord = iter.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
@@ -387,6 +403,8 @@ public class TestDocTermOrds extends LuceneTestCase {
     
     doc = new Document();
     doc.add(newStringField("foo", "baz", Field.Store.NO));
+    // we need a second value for a doc, or we don't actually test DocTermOrds!
+    doc.add(newStringField("foo", "car", Field.Store.NO));
     iw.addDocument(doc);
     
     DirectoryReader r1 = DirectoryReader.open(iw, true);
@@ -394,16 +412,100 @@ public class TestDocTermOrds extends LuceneTestCase {
     iw.deleteDocuments(new Term("foo", "baz"));
     DirectoryReader r2 = DirectoryReader.open(iw, true);
     
-    FieldCache.DEFAULT.getDocTermOrds(getOnlySegmentReader(r2), "foo");
+    FieldCache.DEFAULT.getDocTermOrds(getOnlySegmentReader(r2), "foo", null);
     
-    SortedSetDocValues v = FieldCache.DEFAULT.getDocTermOrds(getOnlySegmentReader(r1), "foo");
-    assertEquals(2, v.getValueCount());
+    SortedSetDocValues v = FieldCache.DEFAULT.getDocTermOrds(getOnlySegmentReader(r1), "foo", null);
+    assertEquals(3, v.getValueCount());
     v.setDocument(1);
     assertEquals(1, v.nextOrd());
     
     iw.shutdown();
     r1.close();
     r2.close();
+    dir.close();
+  }
+  
+  public void testNumericEncoded32() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
+    
+    Document doc = new Document();
+    doc.add(new IntField("foo", 5, Field.Store.NO));
+    iw.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new IntField("foo", 5, Field.Store.NO));
+    doc.add(new IntField("foo", -3, Field.Store.NO));
+    iw.addDocument(doc);
+    
+    iw.forceMerge(1);
+    iw.shutdown();
+    
+    DirectoryReader ir = DirectoryReader.open(dir);
+    AtomicReader ar = getOnlySegmentReader(ir);
+    
+    SortedSetDocValues v = FieldCache.DEFAULT.getDocTermOrds(ar, "foo", FieldCache.INT32_TERM_PREFIX);
+    assertEquals(2, v.getValueCount());
+    
+    v.setDocument(0);
+    assertEquals(1, v.nextOrd());
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
+    
+    v.setDocument(1);
+    assertEquals(0, v.nextOrd());
+    assertEquals(1, v.nextOrd());
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
+    
+    BytesRef value = new BytesRef();
+    v.lookupOrd(0, value);
+    assertEquals(-3, NumericUtils.prefixCodedToInt(value));
+    
+    v.lookupOrd(1, value);
+    assertEquals(5, NumericUtils.prefixCodedToInt(value));
+    
+    ir.close();
+    dir.close();
+  }
+  
+  public void testNumericEncoded64() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
+    
+    Document doc = new Document();
+    doc.add(new LongField("foo", 5, Field.Store.NO));
+    iw.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new LongField("foo", 5, Field.Store.NO));
+    doc.add(new LongField("foo", -3, Field.Store.NO));
+    iw.addDocument(doc);
+    
+    iw.forceMerge(1);
+    iw.shutdown();
+    
+    DirectoryReader ir = DirectoryReader.open(dir);
+    AtomicReader ar = getOnlySegmentReader(ir);
+    
+    SortedSetDocValues v = FieldCache.DEFAULT.getDocTermOrds(ar, "foo", FieldCache.INT64_TERM_PREFIX);
+    assertEquals(2, v.getValueCount());
+    
+    v.setDocument(0);
+    assertEquals(1, v.nextOrd());
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
+    
+    v.setDocument(1);
+    assertEquals(0, v.nextOrd());
+    assertEquals(1, v.nextOrd());
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
+    
+    BytesRef value = new BytesRef();
+    v.lookupOrd(0, value);
+    assertEquals(-3, NumericUtils.prefixCodedToLong(value));
+    
+    v.lookupOrd(1, value);
+    assertEquals(5, NumericUtils.prefixCodedToLong(value));
+    
+    ir.close();
     dir.close();
   }
   
@@ -420,6 +522,8 @@ public class TestDocTermOrds extends LuceneTestCase {
     
     doc = new Document();
     doc.add(new StringField("field", "world", Field.Store.NO));
+    // we need a second value for a doc, or we don't actually test DocTermOrds!
+    doc.add(new StringField("field", "hello", Field.Store.NO));
     iwriter.addDocument(doc);
 
     doc = new Document();
@@ -431,7 +535,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     iwriter.shutdown();
 
     AtomicReader ar = getOnlySegmentReader(ireader);
-    SortedSetDocValues dv = FieldCache.DEFAULT.getDocTermOrds(ar, "field");
+    SortedSetDocValues dv = FieldCache.DEFAULT.getDocTermOrds(ar, "field", null);
     assertEquals(3, dv.getValueCount());
     
     TermsEnum termsEnum = dv.termsEnum();
@@ -477,5 +581,63 @@ public class TestDocTermOrds extends LuceneTestCase {
     assertEquals(2, termsEnum.ord());
     ireader.close();
     directory.close();
+  }
+  
+  public void testActuallySingleValued() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwconfig =  newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    iwconfig.setMergePolicy(newLogMergePolicy());
+    IndexWriter iw = new IndexWriter(dir, iwconfig);
+    
+    Document doc = new Document();
+    doc.add(new StringField("foo", "bar", Field.Store.NO));
+    iw.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new StringField("foo", "baz", Field.Store.NO));
+    iw.addDocument(doc);
+    
+    doc = new Document();
+    iw.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new StringField("foo", "baz", Field.Store.NO));
+    doc.add(new StringField("foo", "baz", Field.Store.NO));
+    iw.addDocument(doc);
+    
+    iw.forceMerge(1);
+    iw.shutdown();
+    
+    DirectoryReader ir = DirectoryReader.open(dir);
+    AtomicReader ar = getOnlySegmentReader(ir);
+    
+    SortedSetDocValues v = FieldCache.DEFAULT.getDocTermOrds(ar, "foo", null);
+    assertNotNull(DocValues.unwrapSingleton(v)); // actually a single-valued field
+    assertEquals(2, v.getValueCount());
+    
+    v.setDocument(0);
+    assertEquals(0, v.nextOrd());
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
+    
+    v.setDocument(1);
+    assertEquals(1, v.nextOrd());
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
+    
+    v.setDocument(2);
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
+    
+    v.setDocument(3);
+    assertEquals(1, v.nextOrd());
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
+    
+    BytesRef value = new BytesRef();
+    v.lookupOrd(0, value);
+    assertEquals("bar", value.utf8ToString());
+    
+    v.lookupOrd(1, value);
+    assertEquals("baz", value.utf8ToString());
+    
+    ir.close();
+    dir.close();
   }
 }

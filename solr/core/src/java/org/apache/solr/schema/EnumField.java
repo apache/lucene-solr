@@ -22,6 +22,7 @@ import org.apache.lucene.index.StorableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.EnumFieldSource;
 import org.apache.lucene.search.*;
+import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.NumericUtils;
@@ -178,9 +179,18 @@ public class EnumField extends PrimitiveFieldType {
   public SortField getSortField(SchemaField field, boolean top) {
     field.checkSortability();
     final Object missingValue = Integer.MIN_VALUE;
-    SortField sf = new SortField(field.getName(), FieldCache.NUMERIC_UTILS_INT_PARSER, top);
+    SortField sf = new SortField(field.getName(), SortField.Type.INT, top);
     sf.setMissingValue(missingValue);
     return sf;
+  }
+  
+  @Override
+  public Type getUninversionType(SchemaField sf) {
+    if (sf.multiValued()) {
+      return Type.SORTED_SET_INTEGER;
+    } else {
+      return Type.INTEGER;
+    }
   }
 
   /**
@@ -189,7 +199,7 @@ public class EnumField extends PrimitiveFieldType {
   @Override
   public ValueSource getValueSource(SchemaField field, QParser qparser) {
     field.checkFieldCacheSource(qparser);
-    return new EnumFieldSource(field.getName(), FieldCache.NUMERIC_UTILS_INT_PARSER, enumIntToStringMap, enumStringToIntMap);
+    return new EnumFieldSource(field.getName(), enumIntToStringMap, enumStringToIntMap);
   }
 
   /**
@@ -230,7 +240,7 @@ public class EnumField extends PrimitiveFieldType {
     Query query = null;
     final boolean matchOnly = field.hasDocValues() && !field.indexed();
     if (matchOnly) {
-      query = new ConstantScoreQuery(FieldCacheRangeFilter.newIntRange(field.getName(),
+      query = new ConstantScoreQuery(DocValuesRangeFilter.newIntRange(field.getName(),
               min == null ? null : minValue,
               max == null ? null : maxValue,
               minInclusive, maxInclusive));

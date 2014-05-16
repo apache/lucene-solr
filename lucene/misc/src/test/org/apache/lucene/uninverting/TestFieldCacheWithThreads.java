@@ -1,4 +1,4 @@
-package org.apache.lucene.index;
+package org.apache.lucene.uninverting;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -30,14 +30,20 @@ import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
 
-public class TestDocValuesWithThreads extends LuceneTestCase {
+public class TestFieldCacheWithThreads extends LuceneTestCase {
 
   public void test() throws Exception {
     Directory dir = newDirectory();
@@ -62,7 +68,7 @@ public class TestDocValuesWithThreads extends LuceneTestCase {
     }
 
     w.forceMerge(1);
-    final IndexReader r = w.getReader();
+    final IndexReader r = DirectoryReader.open(w, true);
     w.shutdown();
 
     assertEquals(1, r.leaves().size());
@@ -78,7 +84,7 @@ public class TestDocValuesWithThreads extends LuceneTestCase {
           public void run() {
             try {
               //NumericDocValues ndv = ar.getNumericDocValues("number");
-              FieldCache.Longs ndv = FieldCache.DEFAULT.getLongs(ar, "number", false);
+              NumericDocValues ndv = FieldCache.DEFAULT.getNumerics(ar, "number", FieldCache.NUMERIC_UTILS_LONG_PARSER, false);
               //BinaryDocValues bdv = ar.getBinaryDocValues("bytes");
               BinaryDocValues bdv = FieldCache.DEFAULT.getTerms(ar, "bytes", false);
               SortedDocValues sdv = FieldCache.DEFAULT.getTermsIndex(ar, "sorted");
@@ -90,16 +96,16 @@ public class TestDocValuesWithThreads extends LuceneTestCase {
                 int docID = threadRandom.nextInt(numDocs);
                 switch(threadRandom.nextInt(4)) {
                 case 0:
-                  assertEquals((int) numbers.get(docID).longValue(), FieldCache.DEFAULT.getInts(ar, "number", false).get(docID));
+                  assertEquals(numbers.get(docID).longValue(), FieldCache.DEFAULT.getNumerics(ar, "number", FieldCache.NUMERIC_UTILS_INT_PARSER, false).get(docID));
                   break;
                 case 1:
-                  assertEquals(numbers.get(docID).longValue(), FieldCache.DEFAULT.getLongs(ar, "number", false).get(docID));
+                  assertEquals(numbers.get(docID).longValue(), FieldCache.DEFAULT.getNumerics(ar, "number", FieldCache.NUMERIC_UTILS_LONG_PARSER, false).get(docID));
                   break;
                 case 2:
-                  assertEquals(Float.intBitsToFloat((int) numbers.get(docID).longValue()), FieldCache.DEFAULT.getFloats(ar, "number", false).get(docID), 0.0f);
+                  assertEquals(numbers.get(docID).longValue(), FieldCache.DEFAULT.getNumerics(ar, "number", FieldCache.NUMERIC_UTILS_FLOAT_PARSER, false).get(docID));
                   break;
                 case 3:
-                  assertEquals(Double.longBitsToDouble(numbers.get(docID).longValue()), FieldCache.DEFAULT.getDoubles(ar, "number", false).get(docID), 0.0);
+                  assertEquals(numbers.get(docID).longValue(), FieldCache.DEFAULT.getNumerics(ar, "number", FieldCache.NUMERIC_UTILS_DOUBLE_PARSER, false).get(docID));
                   break;
                 }
                 bdv.get(docID, scratch);

@@ -18,11 +18,11 @@ package org.apache.lucene.search.grouping.term;
  */
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.LeafCollector;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.grouping.AbstractGroupFacetCollector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SentinelIntSet;
@@ -34,7 +34,7 @@ import java.util.List;
 
 /**
  * An implementation of {@link AbstractGroupFacetCollector} that computes grouped facets based on the indexed terms
- * from the {@link FieldCache}.
+ * from DocValues.
  *
  * @lucene.experimental
  */
@@ -128,8 +128,8 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
         segmentResults.add(createSegmentResult());
       }
 
-      groupFieldTermsIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), groupField);
-      facetFieldTermsIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), facetField);
+      groupFieldTermsIndex = DocValues.getSorted(context.reader(), groupField);
+      facetFieldTermsIndex = DocValues.getSorted(context.reader(), facetField);
 
       // 1+ to allow for the -1 "not set":
       segmentFacetCounts = new int[facetFieldTermsIndex.getValueCount()+1];
@@ -283,8 +283,8 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
         segmentResults.add(createSegmentResult());
       }
 
-      groupFieldTermsIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), groupField);
-      facetFieldDocTermOrds = FieldCache.DEFAULT.getDocTermOrds(context.reader(), facetField);
+      groupFieldTermsIndex = DocValues.getSorted(context.reader(), groupField);
+      facetFieldDocTermOrds = DocValues.getSortedSet(context.reader(), facetField);
       facetFieldNumTerms = (int) facetFieldDocTermOrds.getValueCount();
       if (facetFieldNumTerms == 0) {
         facetOrdTermsEnum = null;

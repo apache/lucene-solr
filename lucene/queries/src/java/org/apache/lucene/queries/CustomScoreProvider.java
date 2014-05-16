@@ -23,7 +23,6 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader; // for javadocs
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.FieldCache; // for javadocs
 
 /**
  * An instance of this subclass should be returned by
@@ -32,7 +31,7 @@ import org.apache.lucene.search.FieldCache; // for javadocs
  * <p>Since Lucene 2.9, queries operate on each segment of an index separately,
  * so the protected {@link #context} field can be used to resolve doc IDs,
  * as the supplied <code>doc</code> ID is per-segment and without knowledge
- * of the IndexReader you cannot access the document or {@link FieldCache}.
+ * of the IndexReader you cannot access the document or DocValues.
  * 
  * @lucene.experimental
  * @since 2.9.2

@@ -1,4 +1,4 @@
-package org.apache.lucene.sandbox.queries;
+package org.apache.lucene.search;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -26,7 +26,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Sort;
@@ -41,7 +40,7 @@ import org.junit.BeforeClass;
 
 /** Tests for SortedSetSortField selectors other than MIN,
  *  these require optional codec support (random access to ordinals) */
-public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
+public class TestSortedSetSelector extends LuceneTestCase {
   static Codec savedCodec;
   
   @BeforeClass
@@ -59,18 +58,6 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
   @AfterClass
   public static void afterClass() throws Exception {
     Codec.setDefault(savedCodec);
-  }
-  
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    // ensure there is nothing in fieldcache before test starts
-    FieldCache.DEFAULT.purgeAllCaches();
-  }
-  
-  private void assertNoFieldCaches() {
-    // docvalues sorting should NOT create any fieldcache entries!
-    assertEquals(0, FieldCache.DEFAULT.getCacheEntries().length);
   }
   
   public void testMax() throws Exception {
@@ -91,14 +78,13 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     // slow wrapper does not support random access ordinals (there is no need for that!)
     IndexSearcher searcher = newSearcher(ir, false);
     
-    Sort sort = new Sort(new SortedSetSortField("value", false, SortedSetSortField.Selector.MAX));
+    Sort sort = new Sort(new SortedSetSortField("value", false, SortedSetSelector.Type.MAX));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(2, td.totalHits);
     // 'baz' comes before 'foo'
     assertEquals("2", searcher.doc(td.scoreDocs[0].doc).get("id"));
     assertEquals("1", searcher.doc(td.scoreDocs[1].doc).get("id"));
-    assertNoFieldCaches();
     
     ir.close();
     dir.close();
@@ -122,14 +108,13 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     // slow wrapper does not support random access ordinals (there is no need for that!)
     IndexSearcher searcher = newSearcher(ir, false);
     
-    Sort sort = new Sort(new SortedSetSortField("value", true, SortedSetSortField.Selector.MAX));
+    Sort sort = new Sort(new SortedSetSortField("value", true, SortedSetSelector.Type.MAX));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(2, td.totalHits);
     // 'baz' comes before 'foo'
     assertEquals("1", searcher.doc(td.scoreDocs[0].doc).get("id"));
     assertEquals("2", searcher.doc(td.scoreDocs[1].doc).get("id"));
-    assertNoFieldCaches();
     
     ir.close();
     dir.close();
@@ -156,7 +141,7 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     // slow wrapper does not support random access ordinals (there is no need for that!)
     IndexSearcher searcher = newSearcher(ir, false);
     
-    SortField sortField = new SortedSetSortField("value", false, SortedSetSortField.Selector.MAX);
+    SortField sortField = new SortedSetSortField("value", false, SortedSetSelector.Type.MAX);
     sortField.setMissingValue(SortField.STRING_FIRST);
     Sort sort = new Sort(sortField);
 
@@ -167,7 +152,6 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     // 'baz' comes before 'foo'
     assertEquals("3", searcher.doc(td.scoreDocs[1].doc).get("id"));
     assertEquals("2", searcher.doc(td.scoreDocs[2].doc).get("id"));
-    assertNoFieldCaches();
     
     ir.close();
     dir.close();
@@ -194,7 +178,7 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     // slow wrapper does not support random access ordinals (there is no need for that!)
     IndexSearcher searcher = newSearcher(ir, false);
     
-    SortField sortField = new SortedSetSortField("value", false, SortedSetSortField.Selector.MAX);
+    SortField sortField = new SortedSetSortField("value", false, SortedSetSelector.Type.MAX);
     sortField.setMissingValue(SortField.STRING_LAST);
     Sort sort = new Sort(sortField);
 
@@ -205,7 +189,6 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     assertEquals("2", searcher.doc(td.scoreDocs[1].doc).get("id"));
     // null comes last
     assertEquals("1", searcher.doc(td.scoreDocs[2].doc).get("id"));
-    assertNoFieldCaches();
     
     ir.close();
     dir.close();
@@ -227,14 +210,13 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     
     // slow wrapper does not support random access ordinals (there is no need for that!)
     IndexSearcher searcher = newSearcher(ir, false);
-    Sort sort = new Sort(new SortedSetSortField("value", false, SortedSetSortField.Selector.MAX));
+    Sort sort = new Sort(new SortedSetSortField("value", false, SortedSetSelector.Type.MAX));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(2, td.totalHits);
     // 'bar' comes before 'baz'
     assertEquals("1", searcher.doc(td.scoreDocs[0].doc).get("id"));
     assertEquals("2", searcher.doc(td.scoreDocs[1].doc).get("id"));
-    assertNoFieldCaches();
 
     ir.close();
     dir.close();
@@ -259,14 +241,13 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     
     // slow wrapper does not support random access ordinals (there is no need for that!)
     IndexSearcher searcher = newSearcher(ir, false);
-    Sort sort = new Sort(new SortedSetSortField("value", false, SortedSetSortField.Selector.MIDDLE_MIN));
+    Sort sort = new Sort(new SortedSetSortField("value", false, SortedSetSelector.Type.MIDDLE_MIN));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(2, td.totalHits);
     // 'b' comes before 'c'
     assertEquals("1", searcher.doc(td.scoreDocs[0].doc).get("id"));
     assertEquals("2", searcher.doc(td.scoreDocs[1].doc).get("id"));
-    assertNoFieldCaches();
     
     ir.close();
     dir.close();
@@ -291,14 +272,13 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     
     // slow wrapper does not support random access ordinals (there is no need for that!)
     IndexSearcher searcher = newSearcher(ir, false);
-    Sort sort = new Sort(new SortedSetSortField("value", true, SortedSetSortField.Selector.MIDDLE_MIN));
+    Sort sort = new Sort(new SortedSetSortField("value", true, SortedSetSelector.Type.MIDDLE_MIN));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(2, td.totalHits);
     // 'b' comes before 'c'
     assertEquals("2", searcher.doc(td.scoreDocs[0].doc).get("id"));
     assertEquals("1", searcher.doc(td.scoreDocs[1].doc).get("id"));
-    assertNoFieldCaches();
     
     ir.close();
     dir.close();
@@ -326,7 +306,7 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     
     // slow wrapper does not support random access ordinals (there is no need for that!)
     IndexSearcher searcher = newSearcher(ir, false);
-    SortField sortField = new SortedSetSortField("value", false, SortedSetSortField.Selector.MIDDLE_MIN);
+    SortField sortField = new SortedSetSortField("value", false, SortedSetSelector.Type.MIDDLE_MIN);
     sortField.setMissingValue(SortField.STRING_FIRST);
     Sort sort = new Sort(sortField);
 
@@ -337,7 +317,6 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     // 'b' comes before 'c'
     assertEquals("1", searcher.doc(td.scoreDocs[1].doc).get("id"));
     assertEquals("2", searcher.doc(td.scoreDocs[2].doc).get("id"));
-    assertNoFieldCaches();
     
     ir.close();
     dir.close();
@@ -365,7 +344,7 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     
     // slow wrapper does not support random access ordinals (there is no need for that!)
     IndexSearcher searcher = newSearcher(ir, false);
-    SortField sortField = new SortedSetSortField("value", false, SortedSetSortField.Selector.MIDDLE_MIN);
+    SortField sortField = new SortedSetSortField("value", false, SortedSetSelector.Type.MIDDLE_MIN);
     sortField.setMissingValue(SortField.STRING_LAST);
     Sort sort = new Sort(sortField);
 
@@ -376,7 +355,6 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     assertEquals("2", searcher.doc(td.scoreDocs[1].doc).get("id"));
     // null comes last
     assertEquals("3", searcher.doc(td.scoreDocs[2].doc).get("id"));
-    assertNoFieldCaches();
     
     ir.close();
     dir.close();
@@ -398,14 +376,13 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     
     // slow wrapper does not support random access ordinals (there is no need for that!)
     IndexSearcher searcher = newSearcher(ir, false);
-    Sort sort = new Sort(new SortedSetSortField("value", false, SortedSetSortField.Selector.MIDDLE_MIN));
+    Sort sort = new Sort(new SortedSetSortField("value", false, SortedSetSelector.Type.MIDDLE_MIN));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(2, td.totalHits);
     // 'bar' comes before 'baz'
     assertEquals("1", searcher.doc(td.scoreDocs[0].doc).get("id"));
     assertEquals("2", searcher.doc(td.scoreDocs[1].doc).get("id"));
-    assertNoFieldCaches();
 
     ir.close();
     dir.close();
@@ -430,14 +407,13 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     
     // slow wrapper does not support random access ordinals (there is no need for that!)
     IndexSearcher searcher = newSearcher(ir, false);
-    Sort sort = new Sort(new SortedSetSortField("value", false, SortedSetSortField.Selector.MIDDLE_MAX));
+    Sort sort = new Sort(new SortedSetSortField("value", false, SortedSetSelector.Type.MIDDLE_MAX));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(2, td.totalHits);
     // 'b' comes before 'c'
     assertEquals("2", searcher.doc(td.scoreDocs[0].doc).get("id"));
     assertEquals("1", searcher.doc(td.scoreDocs[1].doc).get("id"));
-    assertNoFieldCaches();
     
     ir.close();
     dir.close();
@@ -462,14 +438,13 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     
     // slow wrapper does not support random access ordinals (there is no need for that!)
     IndexSearcher searcher = newSearcher(ir, false);
-    Sort sort = new Sort(new SortedSetSortField("value", true, SortedSetSortField.Selector.MIDDLE_MAX));
+    Sort sort = new Sort(new SortedSetSortField("value", true, SortedSetSelector.Type.MIDDLE_MAX));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(2, td.totalHits);
     // 'b' comes before 'c'
     assertEquals("1", searcher.doc(td.scoreDocs[0].doc).get("id"));
     assertEquals("2", searcher.doc(td.scoreDocs[1].doc).get("id"));
-    assertNoFieldCaches();
     
     ir.close();
     dir.close();
@@ -497,7 +472,7 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     
     // slow wrapper does not support random access ordinals (there is no need for that!)
     IndexSearcher searcher = newSearcher(ir, false);
-    SortField sortField = new SortedSetSortField("value", false, SortedSetSortField.Selector.MIDDLE_MAX);
+    SortField sortField = new SortedSetSortField("value", false, SortedSetSelector.Type.MIDDLE_MAX);
     sortField.setMissingValue(SortField.STRING_FIRST);
     Sort sort = new Sort(sortField);
 
@@ -508,7 +483,6 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     // 'b' comes before 'c'
     assertEquals("2", searcher.doc(td.scoreDocs[1].doc).get("id"));
     assertEquals("1", searcher.doc(td.scoreDocs[2].doc).get("id"));
-    assertNoFieldCaches();
     
     ir.close();
     dir.close();
@@ -536,7 +510,7 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     
     // slow wrapper does not support random access ordinals (there is no need for that!)
     IndexSearcher searcher = newSearcher(ir, false);
-    SortField sortField = new SortedSetSortField("value", false, SortedSetSortField.Selector.MIDDLE_MAX);
+    SortField sortField = new SortedSetSortField("value", false, SortedSetSelector.Type.MIDDLE_MAX);
     sortField.setMissingValue(SortField.STRING_LAST);
     Sort sort = new Sort(sortField);
 
@@ -547,7 +521,6 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     assertEquals("1", searcher.doc(td.scoreDocs[1].doc).get("id"));
     // null comes last
     assertEquals("3", searcher.doc(td.scoreDocs[2].doc).get("id"));
-    assertNoFieldCaches();
     
     ir.close();
     dir.close();
@@ -569,14 +542,13 @@ public class TestSortedSetSortFieldSelectors extends LuceneTestCase {
     
     // slow wrapper does not support random access ordinals (there is no need for that!)
     IndexSearcher searcher = newSearcher(ir, false);
-    Sort sort = new Sort(new SortedSetSortField("value", false, SortedSetSortField.Selector.MIDDLE_MAX));
+    Sort sort = new Sort(new SortedSetSortField("value", false, SortedSetSelector.Type.MIDDLE_MAX));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(2, td.totalHits);
     // 'bar' comes before 'baz'
     assertEquals("1", searcher.doc(td.scoreDocs[0].doc).get("id"));
     assertEquals("2", searcher.doc(td.scoreDocs[1].doc).get("id"));
-    assertNoFieldCaches();
 
     ir.close();
     dir.close();

@@ -22,7 +22,7 @@ import java.text.Collator;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -95,8 +95,8 @@ public final class SlowCollatedStringComparator extends FieldComparator<String> 
 
   @Override
   public FieldComparator<String> setNextReader(AtomicReaderContext context) throws IOException {
-    currentDocTerms = FieldCache.DEFAULT.getTerms(context.reader(), field, true);
-    docsWithField = FieldCache.DEFAULT.getDocsWithField(context.reader(), field);
+    currentDocTerms = DocValues.getBinary(context.reader(), field);
+    docsWithField = DocValues.getDocsWithField(context.reader(), field);
     return this;
   }
   
