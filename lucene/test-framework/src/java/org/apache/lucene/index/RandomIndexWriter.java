@@ -295,7 +295,6 @@ public class RandomIndexWriter implements Closeable {
   private void doRandomForceMerge() throws IOException {
     if (doRandomForceMerge) {
       final int segCount = w.getSegmentCount();
-      // nocommit put random force merge deletes here
       if (r.nextBoolean() || segCount == 0) {
         // full forceMerge
         if (LuceneTestCase.VERBOSE) {
