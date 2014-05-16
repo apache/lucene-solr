@@ -46,6 +46,7 @@ import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.NoOutputs;
+import org.apache.lucene.util.fst.Outputs;
 import org.apache.lucene.util.fst.Util;
 import org.apache.lucene.util.packed.PackedInts;
 
@@ -188,6 +189,10 @@ import org.apache.lucene.util.packed.PackedInts;
  * @lucene.experimental
  */
 public final class BlockTreeTermsWriter extends FieldsConsumer {
+
+  static final Outputs<BytesRef> FST_OUTPUTS = ByteSequenceOutputs.getSingleton();
+
+  static final BytesRef NO_OUTPUT = FST_OUTPUTS.getNoOutput();
 
   /** Suggested default value for the {@code
    *  minItemsInBlock} parameter to {@link

@@ -194,10 +194,10 @@ import org.apache.lucene.util.packed.PackedInts;
 // nocommit fix jdocs
 final class VersionBlockTreeTermsWriter extends FieldsConsumer {
 
-  public static final PairOutputs<BytesRef,Long> FST_OUTPUTS = new PairOutputs<>(ByteSequenceOutputs.getSingleton(),
+  static final PairOutputs<BytesRef,Long> FST_OUTPUTS = new PairOutputs<>(ByteSequenceOutputs.getSingleton(),
                                                                                  PositiveIntOutputs.getSingleton());
 
-  public static final Pair<BytesRef,Long> NO_OUTPUT = FST_OUTPUTS.getNoOutput();
+  static final Pair<BytesRef,Long> NO_OUTPUT = FST_OUTPUTS.getNoOutput();
 
   /** Suggested default value for the {@code
    *  minItemsInBlock} parameter to {@link
@@ -284,7 +284,7 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
   }
 
   private final List<FieldMetaData> fields = new ArrayList<>();
-  // private final String segment;
+  private final String segment;
 
   /** Create a new writer.  The number of items (terms or
    *  sub-blocks) per block will aim to be between
@@ -297,6 +297,7 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
                                      int maxItemsInBlock)
     throws IOException
   {
+    System.out.println("VBTTW minItemsInBlock=" + minItemsInBlock + " maxItemsInBlock=" + maxItemsInBlock);
     if (minItemsInBlock <= 1) {
       throw new IllegalArgumentException("minItemsInBlock must be >= 2; got " + minItemsInBlock);
     }
@@ -329,7 +330,7 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
       writeIndexHeader(indexOut);
 
       this.postingsWriter = postingsWriter;
-      // segment = state.segmentName;
+      segment = state.segmentInfo.name;
 
       // System.out.println("BTW.init seg=" + state.segmentName);
 
@@ -625,6 +626,7 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
     // following floor blocks:
 
     void writeBlocks(IntsRef prevTerm, int prefixLength, int count) throws IOException {
+      // nocommit why can't we do floor blocks for root frame?
       if (prefixLength == 0 || count <= maxItemsInBlock) {
         // Easy case: not floor block.  Eg, prefix is "foo",
         // and we found 30 terms/sub-blocks starting w/ that
@@ -644,13 +646,13 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
         // in each block, to make floor blocks authoritative
 
         //if (DEBUG) {
-        //  final BytesRef prefix = new BytesRef(prefixLength);
-        //  for(int m=0;m<prefixLength;m++) {
-        //    prefix.bytes[m] = (byte) prevTerm.ints[m];
-        //  }
-        //  prefix.length = prefixLength;
-        //  //System.out.println("\nWBS count=" + count + " prefix=" + prefix.utf8ToString() + " " + prefix);
-        //  System.out.println("writeBlocks: prefix=" + prefix + " " + prefix + " count=" + count + " pending.size()=" + pending.size());
+          final BytesRef prefix = new BytesRef(prefixLength);
+          for(int m=0;m<prefixLength;m++) {
+            prefix.bytes[m] = (byte) prevTerm.ints[m];
+          }
+          prefix.length = prefixLength;
+          //System.out.println("\nWBS count=" + count + " prefix=" + prefix.utf8ToString() + " " + prefix);
+          System.out.println("writeBlocks: prefix=" + toString(prefix) + " " + prefix + " count=" + count + " pending.size()=" + pending.size());
         //}
         //System.out.println("\nwbs count=" + count);
 
@@ -873,7 +875,7 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
       out.writeVInt((length<<1)|(isLastInFloor ? 1:0));
 
       // if (DEBUG) {
-      //   System.out.println("  writeBlock " + (isFloor ? "(floor) " : "") + "seg=" + segment + " pending.size()=" + pending.size() + " prefixLength=" + prefixLength + " indexPrefix=" + toString(prefix) + " entCount=" + length + " startFP=" + startFP + " futureTermCount=" + futureTermCount + (isFloor ? (" floorLeadByte=" + Integer.toHexString(floorLeadByte&0xff)) : "") + " isLastInFloor=" + isLastInFloor);
+      System.out.println("  writeBlock " + (isFloor ? "(floor) " : "") + "seg=" + segment + " pending.size()=" + pending.size() + " prefixLength=" + prefixLength + " indexPrefix=" + toString(prefix) + " entCount=" + length + " startFP=" + startFP + " futureTermCount=" + futureTermCount + (isFloor ? (" floorLeadByte=" + Integer.toHexString(floorLeadByte&0xff)) : "") + " isLastInFloor=" + isLastInFloor);
       // }
 
       // 1st pass: pack term suffix bytes into byte[] blob
@@ -909,6 +911,7 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
       boolean absolute = true;
       long maxVersionInBlock = -1;
 
+      int countx = 0;
       if (isLeafBlock) {
         subIndices = null;
         for (PendingEntry ent : slice) {
@@ -918,10 +921,10 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
           maxVersionInBlock = Math.max(maxVersionInBlock, ((IDVersionTermState) state).idVersion);
           final int suffix = term.term.length - prefixLength;
           // if (DEBUG) {
-          //   BytesRef suffixBytes = new BytesRef(suffix);
-          //   System.arraycopy(term.term.bytes, prefixLength, suffixBytes.bytes, 0, suffix);
-          //   suffixBytes.length = suffix;
-          //   System.out.println("    write term suffix=" + suffixBytes);
+             BytesRef suffixBytes = new BytesRef(suffix);
+             System.arraycopy(term.term.bytes, prefixLength, suffixBytes.bytes, 0, suffix);
+             suffixBytes.length = suffix;
+             System.out.println("    " + (countx++) + ": write term suffix=" + toString(suffixBytes));
           // }
           // For leaf block we write suffix straight
           suffixWriter.writeVInt(suffix);
@@ -955,10 +958,10 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
             maxVersionInBlock = Math.max(maxVersionInBlock, ((IDVersionTermState) state).idVersion);
             final int suffix = term.term.length - prefixLength;
             // if (DEBUG) {
-            //   BytesRef suffixBytes = new BytesRef(suffix);
-            //   System.arraycopy(term.term.bytes, prefixLength, suffixBytes.bytes, 0, suffix);
-            //   suffixBytes.length = suffix;
-            //   System.out.println("    write term suffix=" + suffixBytes);
+               BytesRef suffixBytes = new BytesRef(suffix);
+               System.arraycopy(term.term.bytes, prefixLength, suffixBytes.bytes, 0, suffix);
+               suffixBytes.length = suffix;
+               System.out.println("    " + (countx++) + ": write term suffix=" + toString(suffixBytes));
             // }
             // For non-leaf block we borrow 1 bit to record
             // if entry is term or sub-block
@@ -1005,10 +1008,10 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
             assert block.fp < startFP;
 
             // if (DEBUG) {
-            //   BytesRef suffixBytes = new BytesRef(suffix);
-            //   System.arraycopy(block.prefix.bytes, prefixLength, suffixBytes.bytes, 0, suffix);
-            //   suffixBytes.length = suffix;
-            //   System.out.println("    write sub-block suffix=" + toString(suffixBytes) + " subFP=" + block.fp + " subCode=" + (startFP-block.fp) + " floor=" + block.isFloor);
+               BytesRef suffixBytes = new BytesRef(suffix);
+               System.arraycopy(block.prefix.bytes, prefixLength, suffixBytes.bytes, 0, suffix);
+               suffixBytes.length = suffix;
+               System.out.println("    " + (countx++) + ": write sub-block suffix=" + toString(suffixBytes) + " subFP=" + block.fp + " subCode=" + (startFP-block.fp) + " floor=" + block.isFloor);
             // }
 
             suffixWriter.writeVLong(startFP - block.fp);

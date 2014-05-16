@@ -36,6 +36,7 @@ final class IDVersionSegmentTermsEnumFrame {
   boolean hasTermsOrig;
   boolean isFloor;
 
+  /** Highest version of any term in this block. */
   long maxIDVersion;
 
   FST.Arc<Pair<BytesRef,Long>> arc;

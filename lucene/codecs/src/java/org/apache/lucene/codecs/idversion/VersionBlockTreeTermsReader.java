@@ -161,7 +161,6 @@ final class VersionBlockTreeTermsReader extends FieldsProducer {
         in.readBytes(code.bytes, 0, numBytes);
         code.length = numBytes;
         final long version = in.readVLong();
-        System.out.println("  read code=" +code + " version=" + version);
         final Pair<BytesRef,Long> rootCode = VersionBlockTreeTermsWriter.FST_OUTPUTS.newPair(code, version);
         final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
         assert fieldInfo != null: "field=" + field;

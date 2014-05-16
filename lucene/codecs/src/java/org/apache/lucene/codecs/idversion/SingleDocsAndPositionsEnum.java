@@ -27,7 +27,12 @@ class SingleDocsAndPositionsEnum extends DocsAndPositionsEnum {
   private int singleDocID;
   private Bits liveDocs;
   private long version;
-  private final BytesRef payload = new BytesRef(8);
+  private final BytesRef payload;
+
+  public SingleDocsAndPositionsEnum() {
+    payload = new BytesRef(8);
+    payload.length = 8;
+  }
 
   /** For reuse */
   public void reset(int singleDocID, long version, Bits liveDocs) {
@@ -35,7 +40,6 @@ class SingleDocsAndPositionsEnum extends DocsAndPositionsEnum {
     this.liveDocs = liveDocs;
     this.singleDocID = singleDocID;
     this.version = version;
-    pos = -1;
   }
 
   @Override
@@ -45,7 +49,7 @@ class SingleDocsAndPositionsEnum extends DocsAndPositionsEnum {
     } else {
       doc = NO_MORE_DOCS;
     }
-    pos = 0;
+    pos = -1;
     
     return doc;
   }
@@ -59,6 +63,7 @@ class SingleDocsAndPositionsEnum extends DocsAndPositionsEnum {
   public int advance(int target) {
     if (doc == -1 && target <= singleDocID && (liveDocs == null || liveDocs.get(singleDocID))) {
       doc = singleDocID;
+      pos = -1;
     } else {
       doc = NO_MORE_DOCS;
     }
