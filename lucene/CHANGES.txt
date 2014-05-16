@@ -188,6 +188,12 @@ Bug fixes
 
 * LUCENE-5668: Fix off-by-one in TieredMergePolicy (Mike McCandless)
 
+* LUCENE-5673: MMapDirectory: Work around a "bug" in the JDK that throws
+  a confusing OutOfMemoryError wrapped inside IOException if the FileChannel
+  mapping failed because of lack of virtual address space. The IOException is
+  rethrown with more useful information about the problem, omitting the
+  incorrect OutOfMemoryError.  (Robert Muir, Uwe Schindler)
+
 Test Framework
 
 * LUCENE-5622: Fail tests if they print over the given limit of bytes to 
