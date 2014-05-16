@@ -27,6 +27,7 @@ import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
@@ -883,5 +884,156 @@ public class TestTermsEnum extends LuceneTestCase {
 
     r.close();
     dir.close();
+  }
+
+  // LUCENE-5667
+  public void testCommonPrefixTerms() throws Exception {
+    Directory d = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), d);
+    Set<String> terms = new HashSet<String>();
+    //String prefix = TestUtil.randomSimpleString(random(), 1, 20);
+    String prefix = TestUtil.randomRealisticUnicodeString(random(), 1, 20);
+    int numTerms = atLeast(1000);
+    if (VERBOSE) {
+      System.out.println("TEST: " + numTerms + " terms; prefix=" + prefix);
+    }
+    while (terms.size() < numTerms) {
+      //terms.add(prefix + TestUtil.randomSimpleString(random(), 1, 20));
+      terms.add(prefix + TestUtil.randomRealisticUnicodeString(random(), 1, 20));
+    }
+    for(String term : terms) {
+      Document doc = new Document();
+      doc.add(newStringField("id", term, Field.Store.YES));
+      w.addDocument(doc);
+    }
+    IndexReader r = w.getReader();
+    if (VERBOSE) {
+      System.out.println("\nTEST: reader=" + r);
+    }
+
+    TermsEnum termsEnum = MultiFields.getTerms(r, "id").iterator(null);
+    DocsEnum docsEnum = null;
+    PerThreadPKLookup pkLookup = new PerThreadPKLookup(r, "id");
+
+    int iters = atLeast(numTerms*3);
+    List<String> termsList = new ArrayList<>(terms);
+    for(int iter=0;iter<iters;iter++) {
+      String term;
+      boolean shouldExist;
+      if (random().nextBoolean()) {
+        term = termsList.get(random().nextInt(terms.size()));
+        shouldExist = true;
+      } else {
+        term = prefix + TestUtil.randomSimpleString(random(), 1, 20);
+        shouldExist = terms.contains(term);
+      }
+
+      if (VERBOSE) {
+        System.out.println("\nTEST: try term=" + term);
+        System.out.println("  shouldExist?=" + shouldExist);
+      }
+
+      BytesRef termBytesRef = new BytesRef(term);
+
+      boolean actualResult = termsEnum.seekExact(termBytesRef);
+      assertEquals(shouldExist, actualResult);
+      if (shouldExist) {
+        docsEnum = termsEnum.docs(null, docsEnum, 0);
+        int docID = docsEnum.nextDoc();
+        assertTrue(docID != DocsEnum.NO_MORE_DOCS);
+        assertEquals(docID, pkLookup.lookup(termBytesRef));
+        StoredDocument doc = r.document(docID);
+        assertEquals(term, doc.get("id"));
+
+        if (random().nextInt(7) == 1) {
+          termsEnum.next();
+        }
+      } else {
+        assertEquals(-1, pkLookup.lookup(termBytesRef));
+      }
+
+      if (random().nextInt(7) == 1) {
+        TermsEnum.SeekStatus status = termsEnum.seekCeil(termBytesRef);
+        if (shouldExist) {
+          assertEquals(TermsEnum.SeekStatus.FOUND, status);
+        } else {
+          assertNotSame(TermsEnum.SeekStatus.FOUND, status);
+        }
+      }
+    }
+
+    r.close();
+    w.close();
+    d.close();
+  }
+
+  /** Utility class to do efficient primary-key (only 1 doc contains the
+   *  given term) lookups by segment, re-using the enums.  This class is
+   *  not thread safe, so it is the caller's job to create and use one
+   *  instance of this per thread.  Do not use this if a term may appear
+   *  in more than one document!  It will only return the first one it
+   *  finds. */
+  static class PerThreadPKLookup {
+
+    private final TermsEnum[] termsEnums;
+    private final DocsEnum[] docsEnums;
+    private final Bits[] liveDocs;
+    private final int[] docBases;
+    private final int numSegs;
+    private final boolean hasDeletions;
+
+    public PerThreadPKLookup(IndexReader r, String idFieldName) throws IOException {
+
+      List<AtomicReaderContext> leaves = new ArrayList<>(r.leaves());
+
+      // Larger segments are more likely to have the id, so we sort largest to smallest by numDocs:
+      Collections.sort(leaves, new Comparator<AtomicReaderContext>() {
+          @Override
+          public int compare(AtomicReaderContext c1, AtomicReaderContext c2) {
+            return c2.reader().numDocs() - c1.reader().numDocs();
+          }
+        });
+
+      termsEnums = new TermsEnum[leaves.size()];
+      docsEnums = new DocsEnum[leaves.size()];
+      liveDocs = new Bits[leaves.size()];
+      docBases = new int[leaves.size()];
+      int numSegs = 0;
+      boolean hasDeletions = false;
+      for(int i=0;i<leaves.size();i++) {
+        Fields fields = leaves.get(i).reader().fields();
+        if (fields != null) {
+          Terms terms = fields.terms(idFieldName);
+          if (terms != null) {
+            termsEnums[numSegs] = terms.iterator(null);
+            assert termsEnums[numSegs] != null;
+            docBases[numSegs] = leaves.get(i).docBase;
+            liveDocs[numSegs] = leaves.get(i).reader().getLiveDocs();
+            hasDeletions |= leaves.get(i).reader().hasDeletions();
+            numSegs++;
+          }
+        }
+      }
+      this.numSegs = numSegs;
+      this.hasDeletions = hasDeletions;
+    }
+    
+    /** Returns docID if found, else -1. */
+    public int lookup(BytesRef id) throws IOException {
+      for(int seg=0;seg<numSegs;seg++) {
+        if (termsEnums[seg].seekExact(id)) {
+          docsEnums[seg] = termsEnums[seg].docs(liveDocs[seg], docsEnums[seg], 0);
+          int docID = docsEnums[seg].nextDoc();
+          if (docID != DocsEnum.NO_MORE_DOCS) {
+            return docBases[seg] + docID;
+          }
+          assert hasDeletions;
+        }
+      }
+
+      return -1;
+    }
+
+    // TODO: add reopen method to carry over re-used enums...?
   }
 }

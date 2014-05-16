@@ -77,6 +77,7 @@ import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SortSpec;
+import org.apache.solr.search.RankQuery;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.grouping.CommandHandler;
 import org.apache.solr.search.grouping.GroupingSpecification;
@@ -98,6 +99,8 @@ import org.apache.solr.search.grouping.endresulttransformer.GroupedEndResultTran
 import org.apache.solr.search.grouping.endresulttransformer.MainEndResultTransformer;
 import org.apache.solr.search.grouping.endresulttransformer.SimpleEndResultTransformer;
 import org.apache.solr.util.SolrPluginUtils;
+import java.util.Collections;
+import java.util.Comparator;
 
 /**
  * TODO!
@@ -147,6 +150,17 @@ public class QueryComponent extends SearchComponent
         // normalize a null query to a query that matches nothing
         q = new BooleanQuery();        
       }
+
+      if(q instanceof RankQuery) {
+        MergeStrategy mergeStrategy = ((RankQuery)q).getMergeStrategy();
+        if(mergeStrategy != null) {
+          rb.addMergeStrategy(mergeStrategy);
+          if(mergeStrategy.handlesMergeFields()) {
+            rb.mergeFieldHandler = mergeStrategy;
+          }
+        }
+      }
+
       rb.setQuery( q );
       rb.setSortSpec( parser.getSort(true) );
       rb.setQparser(parser);
@@ -473,7 +487,13 @@ public class QueryComponent extends SearchComponent
                    rb.getNextCursorMark().getSerializedTotem());
       }
     }
-    doFieldSortValues(rb, searcher);
+
+    if(rb.mergeFieldHandler != null) {
+      rb.mergeFieldHandler.handleMergeFields(rb, searcher);
+    } else {
+      doFieldSortValues(rb, searcher);
+    }
+
     doPrefetch(rb);
   }
 
@@ -821,6 +841,22 @@ public class QueryComponent extends SearchComponent
 
 
   private void mergeIds(ResponseBuilder rb, ShardRequest sreq) {
+      List<MergeStrategy> mergeStrategies = rb.getMergeStrategies();
+      if(mergeStrategies != null) {
+        Collections.sort(mergeStrategies, MergeStrategy.MERGE_COMP);
+        boolean idsMerged = false;
+        for(MergeStrategy mergeStrategy : mergeStrategies) {
+          mergeStrategy.merge(rb, sreq);
+          if(mergeStrategy.mergesIds()) {
+            idsMerged = true;
+          }
+        }
+
+        if(idsMerged) {
+          return; //ids were merged above so return.
+        }
+      }
+
       SortSpec ss = rb.getSortSpec();
       Sort sort = ss.getSort();
 

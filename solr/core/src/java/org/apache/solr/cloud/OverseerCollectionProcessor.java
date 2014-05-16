@@ -288,7 +288,6 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   }
 
   private void prioritizeOverseerNodes() throws KeeperException, InterruptedException {
-    log.info("prioritizing overseer nodes at {}", LeaderElector.getNodeName(myId));
     SolrZkClient zk = zkStateReader.getZkClient();
     if(!zk.exists(ZkStateReader.ROLES,true))return;
     Map m = (Map) ZkStateReader.fromJSON(zk.getData(ZkStateReader.ROLES, null, new Stat(), true));
@@ -296,6 +295,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     List overseerDesignates = (List) m.get("overseer");
     if(overseerDesignates==null || overseerDesignates.isEmpty()) return;
     if(overseerDesignates.size() == 1 && overseerDesignates.contains(getLeaderNode(zk))) return;
+    log.info("prioritizing overseer nodes at {}", LeaderElector.getNodeName(myId));
     log.info("overseer designates {}", overseerDesignates);
 
     List<String> nodeNames = getSortedOverseerNodeNames(zk);

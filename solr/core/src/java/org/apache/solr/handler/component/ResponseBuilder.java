@@ -40,6 +40,7 @@ import org.apache.solr.search.grouping.distributed.command.QueryCommandResult;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Set;
 
@@ -58,6 +59,7 @@ public class ResponseBuilder
   public boolean doExpand;
   public boolean doStats;
   public boolean doTerms;
+  public MergeStrategy mergeFieldHandler;
 
   private boolean needDocList = false;
   private boolean needDocSet = false;
@@ -73,6 +75,9 @@ public class ResponseBuilder
   private GroupingSpecification groupingSpec;
   private CursorMark cursorMark;
   private CursorMark nextCursorMark;
+
+  private List<MergeStrategy> mergeStrategies;
+
 
   private DocListAndSet results = null;
   private NamedList<Object> debugInfo = null;
@@ -230,7 +235,23 @@ public class ResponseBuilder
     debugResults = dbg;
     debugTrack = dbg;
   }
-  
+
+  public void addMergeStrategy(MergeStrategy mergeStrategy) {
+    if(mergeStrategies == null) {
+      mergeStrategies = new ArrayList();
+    }
+
+    mergeStrategies.add(mergeStrategy);
+  }
+
+  public List<MergeStrategy> getMergeStrategies() {
+    return this.mergeStrategies;
+  }
+
+  public void setResponseDocs(SolrDocumentList _responseDocs) {
+    this._responseDocs = _responseDocs;
+  }
+
   public boolean isDebugTrack() {
     return debugTrack;
   }

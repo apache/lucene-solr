@@ -38,8 +38,7 @@ public final class TwoPhaseCommitTool {
 
     /** Sole constructor. */
     public PrepareCommitFailException(Throwable cause, TwoPhaseCommit obj) {
-      super("prepareCommit() failed on " + obj);
-      initCause(cause);
+      super("prepareCommit() failed on " + obj, cause);
     }
   }
 
@@ -51,8 +50,7 @@ public final class TwoPhaseCommitTool {
 
     /** Sole constructor. */
     public CommitFailException(Throwable cause, TwoPhaseCommit obj) {
-      super("commit() failed on " + obj);
-      initCause(cause);
+      super("commit() failed on " + obj, cause);
     }
     
   }

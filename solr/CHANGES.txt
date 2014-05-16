@@ -113,6 +113,9 @@ New Features
 * SOLR-6043: Add ability to set http headers in solr response
   (Tomás Fernández Löbbe via Ryan Ernst)
 
+* SOLR-5973: Pluggable Ranking Collectors and Merge Strategies
+  (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
