@@ -36,6 +36,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Analyzer.TokenStreamComponents;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -1509,6 +1510,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       String value = null;
       doc.add(new StoredField("foo", value));
       iw.addDocument(doc);
+      fail("didn't get expected exception");
     } catch (IllegalArgumentException expected) {}
     iw.close();
     // make sure we see our good doc
@@ -1532,6 +1534,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       // set to null value
       theField.setStringValue(null);
       iw.addDocument(doc);
+      fail("didn't get expected exception");
     } catch (IllegalArgumentException expected) {}
     iw.close();
     // make sure we see our good doc
@@ -1556,6 +1559,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       Field theField = new StoredField("foo", v);
       doc.add(theField);
       iw.addDocument(doc);
+      fail("didn't get expected exception");
     } catch (NullPointerException expected) {}
     iw.close();
     // make sure we see our good doc
@@ -1580,6 +1584,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       byte v[] = null;
       theField.setBytesValue(v);
       iw.addDocument(doc);
+      fail("didn't get expected exception");
     } catch (NullPointerException expected) {}
     iw.close();
     // make sure we see our good doc
@@ -1604,6 +1609,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       Field theField = new StoredField("foo", v);
       doc.add(theField);
       iw.addDocument(doc);
+      fail("didn't get expected exception");
     } catch (IllegalArgumentException expected) {}
     iw.close();
     // make sure we see our good doc
@@ -1628,6 +1634,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       BytesRef v = null;
       theField.setBytesValue(v);
       iw.addDocument(doc);
+      fail("didn't get expected exception");
     } catch (IllegalArgumentException expected) {}
     iw.close();
     // make sure we see our good doc
