@@ -234,6 +234,11 @@ public class AssertingAtomicReader extends FilterAtomicReader {
       super.seekExact(term, state);
       this.state = State.POSITIONED;
     }
+
+    @Override
+    public String toString() {
+      return "AssertingTermsEnum(" + in + ")";
+    }
   }
   
   static enum DocsEnumState { START, ITERATING, FINISHED };

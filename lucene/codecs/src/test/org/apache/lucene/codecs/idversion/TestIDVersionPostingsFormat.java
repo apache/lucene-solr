@@ -140,18 +140,18 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
       }
       
       if (expectedVersion == null) {
-        assertEquals(-1, lookup.lookup(idValueBytes));
+        assertEquals("term should not have been found (doesn't exist)", -1, lookup.lookup(idValueBytes));
       } else {
         if (random().nextBoolean()) {
           if (VERBOSE) {
             System.out.println("  lookup exact version (should be found)");
           }
-          assertTrue(lookup.lookup(idValueBytes, expectedVersion.longValue()) != -1);
+          assertTrue("term should have been found (version too old)", lookup.lookup(idValueBytes, expectedVersion.longValue()) != -1);
         } else {
           if (VERBOSE) {
             System.out.println("  lookup version+1 (should not be found)");
           }
-          assertEquals(-1, lookup.lookup(idValueBytes, expectedVersion.longValue()+1));
+          assertEquals("term should not have been found (version newer)", -1, lookup.lookup(idValueBytes, expectedVersion.longValue()+1));
         }
       }
     }

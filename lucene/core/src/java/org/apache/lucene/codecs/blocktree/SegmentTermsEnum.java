@@ -49,9 +49,9 @@ final class SegmentTermsEnum extends TermsEnum {
   boolean termExists;
   final FieldReader fr;
 
-  // nocommit make this public "for casting" and add a getVersion method?
-
   private int targetBeforeCurrentLength;
+
+  static boolean DEBUG = true;
 
   private final ByteArrayDataInput scratchReader = new ByteArrayDataInput();
 
@@ -69,6 +69,7 @@ final class SegmentTermsEnum extends TermsEnum {
 
   public SegmentTermsEnum(FieldReader fr) throws IOException {
     this.fr = fr;
+    System.out.println("STE: init");
 
     //if (DEBUG) System.out.println("BTTR.init seg=" + segment);
     stack = new SegmentTermsEnumFrame[0];
@@ -295,6 +296,19 @@ final class SegmentTermsEnum extends TermsEnum {
     return true;
   }
 
+  // for debugging
+  @SuppressWarnings("unused")
+  static String brToString(BytesRef b) {
+    try {
+      return b.utf8ToString() + " " + b;
+    } catch (Throwable t) {
+      // If BytesRef isn't actually UTF8, or it's eg a
+      // prefix of UTF8 that ends mid-unicode-char, we
+      // fallback to hex:
+      return b.toString();
+    }
+  }
+
   // nocommit we need a seekExact(BytesRef target, long minVersion) API?
 
   @Override
@@ -310,10 +324,10 @@ final class SegmentTermsEnum extends TermsEnum {
 
     assert clearEOF();
 
-    // if (DEBUG) {
-    //   System.out.println("\nBTTR.seekExact seg=" + segment + " target=" + fieldInfo.name + ":" + brToString(target) + " current=" + brToString(term) + " (exists?=" + termExists + ") validIndexPrefix=" + validIndexPrefix);
-    //   printSeekState();
-    // }
+     if (DEBUG) {
+       System.out.println("\nBTTR.seekExact seg=" + fr.parent.segment + " target=" + fr.fieldInfo.name + ":" + brToString(target) + " current=" + brToString(term) + " (exists?=" + termExists + ") validIndexPrefix=" + validIndexPrefix);
+       printSeekState(System.out);
+     }
 
     FST.Arc<BytesRef> arc;
     int targetUpto;
@@ -352,16 +366,13 @@ final class SegmentTermsEnum extends TermsEnum {
       // First compare up to valid seek frames:
       while (targetUpto < targetLimit) {
         cmp = (term.bytes[targetUpto]&0xFF) - (target.bytes[target.offset + targetUpto]&0xFF);
-        // if (DEBUG) {
-        //   System.out.println("    cycle targetUpto=" + targetUpto + " (vs limit=" + targetLimit + ") cmp=" + cmp + " (targetLabel=" + (char) (target.bytes[target.offset + targetUpto]) + " vs termLabel=" + (char) (term.bytes[targetUpto]) + ")"   + " arc.output=" + arc.output + " output=" + output);
-        // }
+         if (DEBUG) {
+           System.out.println("    cycle targetUpto=" + targetUpto + " (vs limit=" + targetLimit + ") cmp=" + cmp + " (targetLabel=" + (char) (target.bytes[target.offset + targetUpto]) + " vs termLabel=" + (char) (term.bytes[targetUpto]) + ")"   + " arc.output=" + arc.output + " output=" + output);
+         }
         if (cmp != 0) {
           break;
         }
         arc = arcs[1+targetUpto];
-        //if (arc.label != (target.bytes[target.offset + targetUpto] & 0xFF)) {
-        //System.out.println("FAIL: arc.label=" + (char) arc.label + " targetLabel=" + (char) (target.bytes[target.offset + targetUpto] & 0xFF));
-        //}
         assert arc.label == (target.bytes[target.offset + targetUpto] & 0xFF): "arc.label=" + (char) arc.label + " targetLabel=" + (char) (target.bytes[target.offset + targetUpto] & 0xFF);
         if (arc.output != BlockTreeTermsWriter.NO_OUTPUT) {
           output = BlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.output);
@@ -382,9 +393,9 @@ final class SegmentTermsEnum extends TermsEnum {
         final int targetLimit2 = Math.min(target.length, term.length);
         while (targetUpto < targetLimit2) {
           cmp = (term.bytes[targetUpto]&0xFF) - (target.bytes[target.offset + targetUpto]&0xFF);
-          // if (DEBUG) {
-          //   System.out.println("    cycle2 targetUpto=" + targetUpto + " (vs limit=" + targetLimit + ") cmp=" + cmp + " (targetLabel=" + (char) (target.bytes[target.offset + targetUpto]) + " vs termLabel=" + (char) (term.bytes[targetUpto]) + ")");
-          // }
+           if (DEBUG) {
+             System.out.println("    cycle2 targetUpto=" + targetUpto + " (vs limit=" + targetLimit + ") cmp=" + cmp + " (targetLabel=" + (char) (target.bytes[target.offset + targetUpto]) + " vs termLabel=" + (char) (term.bytes[targetUpto]) + ")");
+           }
           if (cmp != 0) {
             break;
           }
@@ -461,6 +472,7 @@ final class SegmentTermsEnum extends TermsEnum {
     //   System.out.println("  start index loop targetUpto=" + targetUpto + " output=" + output + " currentFrame.ord=" + currentFrame.ord + " targetBeforeCurrentLength=" + targetBeforeCurrentLength);
     // }
 
+    // We are done sharing the common prefix with the incoming target and where we are currently seek'd; now continue walking the index:
     while (targetUpto < target.length) {
 
       final int targetLabel = target.bytes[target.offset + targetUpto] & 0xFF;
@@ -718,6 +730,7 @@ final class SegmentTermsEnum extends TermsEnum {
     //System.out.println("  start index loop targetUpto=" + targetUpto + " output=" + output + " currentFrame.ord+1=" + currentFrame.ord + " targetBeforeCurrentLength=" + targetBeforeCurrentLength);
     //}
 
+    // We are done sharing the common prefix with the incoming target and where we are currently seek'd; now continue walking the index:
     while (targetUpto < target.length) {
 
       final int targetLabel = target.bytes[target.offset + targetUpto] & 0xFF;

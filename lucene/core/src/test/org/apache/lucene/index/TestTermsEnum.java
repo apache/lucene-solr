@@ -966,4 +966,44 @@ public class TestTermsEnum extends LuceneTestCase {
     w.close();
     d.close();
   }
+
+  // nocommit mark slow/nigthly: O(N^2)!!
+
+  // Stresses out many-terms-in-root-block case:
+  public void testVaryingTermsPerSegment() throws Exception {
+    Directory dir = newDirectory();
+    Set<BytesRef> terms = new HashSet<BytesRef>();
+    int MAX_TERMS = 10000;
+    while (terms.size() < MAX_TERMS) {
+      terms.add(new BytesRef(TestUtil.randomSimpleString(random())));
+    }
+    List<BytesRef> termsList = new ArrayList<>(terms);
+    StringBuilder sb = new StringBuilder();
+    for(int termCount=0;termCount<10000;termCount++) {
+      System.out.println("\nTEST: termCount=" + termCount);
+      sb.append(' ');
+      sb.append(termsList.get(termCount).utf8ToString());
+      IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+      iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
+      RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+      Document doc = new Document();
+      doc.add(newTextField("field", sb.toString(), Field.Store.NO));
+      w.addDocument(doc);
+      IndexReader r = w.getReader();
+      assertEquals(1, r.leaves().size());
+      TermsEnum te = r.leaves().get(0).reader().fields().terms("field").iterator(null);
+      System.out.println("te=" + te);
+      for(int i=0;i<=termCount;i++) {
+        //System.out.println("TEST: lookup (should exist) " + termsList.get(i));
+        assertTrue("term '" + termsList.get(i).utf8ToString() + "' should exist but doesn't", te.seekExact(termsList.get(i)));
+      }
+      for(int i=termCount+1;i<termsList.size();i++) {
+        //System.out.println("TEST: lookup (should not exist) " + termsList.get(i));
+        assertFalse("term '" + termsList.get(i) + "' shouldn't exist but does", te.seekExact(termsList.get(i)));
+      }
+      r.close();
+      w.shutdown();
+    }
+    dir.close();
+  }
 }

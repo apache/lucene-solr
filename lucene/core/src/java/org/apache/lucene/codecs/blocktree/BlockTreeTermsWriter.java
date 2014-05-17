@@ -606,14 +606,15 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
     }
 
     // Write the top count entries on the pending stack as
-    // one or more blocks.  Returns how many blocks were
-    // written.  If the entry count is <= maxItemsPerBlock
+    // one or more blocks.  If the entry count is <= maxItemsPerBlock
     // we just write a single block; else we break into
     // primary (initial) block and then one or more
     // following floor blocks:
 
     void writeBlocks(IntsRef prevTerm, int prefixLength, int count) throws IOException {
-      if (prefixLength == 0 || count <= maxItemsInBlock) {
+      System.out.println("writeBlocks count=" + count);
+      // nocommit nuke the prefixLength == 0 case, but testVaryingTermsPerSegment fails!!
+      if (count <= maxItemsInBlock) {
         // Easy case: not floor block.  Eg, prefix is "foo",
         // and we found 30 terms/sub-blocks starting w/ that
         // prefix, and minItemsInBlock <= 30 <=
@@ -621,6 +622,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
         final PendingBlock nonFloorBlock = writeBlock(prevTerm, prefixLength, prefixLength, count, count, 0, false, -1, true);
         nonFloorBlock.compileIndex(null, scratchBytes);
         pending.add(nonFloorBlock);
+        System.out.println("  1 block");
       } else {
         // Floor block case.  Eg, prefix is "foo" but we
         // have 100 terms/sub-blocks starting w/ that
@@ -777,6 +779,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
               floorBlocks.add(floorBlock);
             }
             curStart -= pendingCount;
+            System.out.println("  floor=" + pendingCount);
             //System.out.println("    = " + pendingCount);
             pendingCount = 0;
 

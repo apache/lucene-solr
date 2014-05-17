@@ -36,6 +36,8 @@ final class IDVersionSegmentTermsEnumFrame {
   boolean hasTermsOrig;
   boolean isFloor;
 
+  static boolean DEBUG = true;
+
   /** Highest version of any term in this block. */
   long maxIDVersion;
 
@@ -218,10 +220,13 @@ final class IDVersionSegmentTermsEnumFrame {
   }
 
   void rewind() {
+    System.out.println("  rewind frame ord=" + ord);
 
     // Force reload:
     fp = fpOrig;
     nextEnt = -1;
+    // nocommit move to BT too?
+    //state.termBlockOrd = 0;
     hasTerms = hasTermsOrig;
     if (isFloor) {
       floorDataReader.rewind();
@@ -321,22 +326,22 @@ final class IDVersionSegmentTermsEnumFrame {
   public void scanToFloorFrame(BytesRef target) {
 
     if (!isFloor || target.length <= prefix) {
-      // if (DEBUG) {
-      //   System.out.println("    scanToFloorFrame skip: isFloor=" + isFloor + " target.length=" + target.length + " vs prefix=" + prefix);
-      // }
+       if (DEBUG) {
+         System.out.println("    scanToFloorFrame skip: isFloor=" + isFloor + " target.length=" + target.length + " vs prefix=" + prefix);
+       }
       return;
     }
 
     final int targetLabel = target.bytes[target.offset + prefix] & 0xFF;
 
-    // if (DEBUG) {
-    //   System.out.println("    scanToFloorFrame fpOrig=" + fpOrig + " targetLabel=" + toHex(targetLabel) + " vs nextFloorLabel=" + toHex(nextFloorLabel) + " numFollowFloorBlocks=" + numFollowFloorBlocks);
-    // }
+     if (DEBUG) {
+       System.out.println("    scanToFloorFrame fpOrig=" + fpOrig + " targetLabel=" + ((char) targetLabel) + " vs nextFloorLabel=" + ((char) nextFloorLabel) + " numFollowFloorBlocks=" + numFollowFloorBlocks);
+     }
 
     if (targetLabel < nextFloorLabel) {
-      // if (DEBUG) {
-      //   System.out.println("      already on correct block");
-      // }
+       if (DEBUG) {
+         System.out.println("      already on correct block");
+       }
       return;
     }
 
@@ -347,25 +352,25 @@ final class IDVersionSegmentTermsEnumFrame {
       final long code = floorDataReader.readVLong();
       newFP = fpOrig + (code >>> 1);
       hasTerms = (code & 1) != 0;
-      // if (DEBUG) {
-      //   System.out.println("      label=" + toHex(nextFloorLabel) + " fp=" + newFP + " hasTerms?=" + hasTerms + " numFollowFloor=" + numFollowFloorBlocks);
-      // }
+       if (DEBUG) {
+         System.out.println("      label=" + ((char) nextFloorLabel) + " fp=" + newFP + " hasTerms?=" + hasTerms + " numFollowFloor=" + numFollowFloorBlocks);
+       }
             
       isLastInFloor = numFollowFloorBlocks == 1;
       numFollowFloorBlocks--;
 
       if (isLastInFloor) {
         nextFloorLabel = 256;
-        // if (DEBUG) {
-        //   System.out.println("        stop!  last block nextFloorLabel=" + toHex(nextFloorLabel));
-        // }
+         if (DEBUG) {
+           System.out.println("        stop!  last block nextFloorLabel=" + ((char) nextFloorLabel));
+         }
         break;
       } else {
         nextFloorLabel = floorDataReader.readByte() & 0xff;
         if (targetLabel < nextFloorLabel) {
-          // if (DEBUG) {
-          //   System.out.println("        stop!  nextFloorLabel=" + toHex(nextFloorLabel));
-          // }
+           if (DEBUG) {
+             System.out.println("        stop!  nextFloorLabel=" + ((char) nextFloorLabel));
+           }
           break;
         }
       }
@@ -373,26 +378,28 @@ final class IDVersionSegmentTermsEnumFrame {
 
     if (newFP != fp) {
       // Force re-load of the block:
-      // if (DEBUG) {
-      //   System.out.println("      force switch to fp=" + newFP + " oldFP=" + fp);
-      // }
+       if (DEBUG) {
+         System.out.println("      force switch to fp=" + newFP + " oldFP=" + fp);
+       }
       nextEnt = -1;
       fp = newFP;
     } else {
-      // if (DEBUG) {
-      //   System.out.println("      stay on same fp=" + newFP);
-      // }
+       if (DEBUG) {
+         System.out.println("      stay on same fp=" + newFP);
+       }
     }
   }
     
   public void decodeMetaData() throws IOException {
 
     //if (DEBUG) System.out.println("\nBTTR.decodeMetadata seg=" + segment + " mdUpto=" + metaDataUpto + " vs termBlockOrd=" + state.termBlockOrd);
+    System.out.println("\nBTTR.decodeMetadata seg=" + ste.fr.parent.segment + " mdUpto=" + metaDataUpto + " vs termBlockOrd=" + state.termBlockOrd);
+
+    assert nextEnt >= 0;
 
     // lazily catch up on metadata decode:
     final int limit = getTermBlockOrd();
     boolean absolute = metaDataUpto == 0;
-    assert limit > 0;
 
     // TODO: better API would be "jump straight to term=N"???
     while (metaDataUpto < limit) {
@@ -483,7 +490,7 @@ final class IDVersionSegmentTermsEnumFrame {
   // scan the entries check if the suffix matches.
   public SeekStatus scanToTermLeaf(BytesRef target, boolean exactOnly) throws IOException {
 
-    // if (DEBUG) System.out.println("    scanToTermLeaf: block fp=" + fp + " prefix=" + prefix + " nextEnt=" + nextEnt + " (of " + entCount + ") target=" + brToString(target) + " term=" + brToString(term));
+    if (DEBUG) System.out.println("    scanToTermLeaf: block fp=" + fp + " prefix=" + prefix + " nextEnt=" + nextEnt + " (of " + entCount + ") target=" + IDVersionSegmentTermsEnum.brToString(target) + " term=" + IDVersionSegmentTermsEnum.brToString(ste.term));
 
     assert nextEnt != -1;
 
@@ -506,13 +513,13 @@ final class IDVersionSegmentTermsEnumFrame {
 
       suffix = suffixesReader.readVInt();
 
-      // if (DEBUG) {
-      //   BytesRef suffixBytesRef = new BytesRef();
-      //   suffixBytesRef.bytes = suffixBytes;
-      //   suffixBytesRef.offset = suffixesReader.getPosition();
-      //   suffixBytesRef.length = suffix;
-      //   System.out.println("      cycle: term " + (nextEnt-1) + " (of " + entCount + ") suffix=" + brToString(suffixBytesRef));
-      // }
+       if (DEBUG) {
+         BytesRef suffixBytesRef = new BytesRef();
+         suffixBytesRef.bytes = suffixBytes;
+         suffixBytesRef.offset = suffixesReader.getPosition();
+         suffixBytesRef.length = suffix;
+         System.out.println("      cycle: term " + (nextEnt-1) + " (of " + entCount + ") suffix=" + IDVersionSegmentTermsEnum.brToString(suffixBytesRef));
+       }
 
       final int termLen = prefix + suffix;
       startBytePos = suffixesReader.getPosition();
@@ -609,7 +616,7 @@ final class IDVersionSegmentTermsEnumFrame {
   // scan the entries check if the suffix matches.
   public SeekStatus scanToTermNonLeaf(BytesRef target, boolean exactOnly) throws IOException {
 
-    //if (DEBUG) System.out.println("    scanToTermNonLeaf: block fp=" + fp + " prefix=" + prefix + " nextEnt=" + nextEnt + " (of " + entCount + ") target=" + brToString(target) + " term=" + brToString(term));
+    if (DEBUG) System.out.println("    scanToTermNonLeaf: block fp=" + fp + " prefix=" + prefix + " nextEnt=" + nextEnt + " (of " + entCount + ") target=" + IDVersionSegmentTermsEnum.brToString(target) + " term=" + IDVersionSegmentTermsEnum.brToString(ste.term));
 
     assert nextEnt != -1;
 
