@@ -51,7 +51,7 @@ final class SegmentTermsEnum extends TermsEnum {
 
   private int targetBeforeCurrentLength;
 
-  static boolean DEBUG = true;
+  static boolean DEBUG = false;
 
   private final ByteArrayDataInput scratchReader = new ByteArrayDataInput();
 
@@ -69,7 +69,6 @@ final class SegmentTermsEnum extends TermsEnum {
 
   public SegmentTermsEnum(FieldReader fr) throws IOException {
     this.fr = fr;
-    System.out.println("STE: init");
 
     //if (DEBUG) System.out.println("BTTR.init seg=" + segment);
     stack = new SegmentTermsEnumFrame[0];

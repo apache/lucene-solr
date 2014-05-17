@@ -210,8 +210,6 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
     return true;
   }
 
-  // nocommit we need a seekExact(BytesRef target, long minVersion) API?
-
   @Override
   public boolean seekExact(final BytesRef target) throws IOException {
     return seekExact(target, 0);
@@ -230,7 +228,7 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
     }
   }
 
-  /** Returns false if the term deos not exist, or it exists but its version is < minIDVersion. */
+  /** Returns false if the term deos not exist, or it exists but its version is too old (< minIDVersion). */
   public boolean seekExact(final BytesRef target, long minIDVersion) throws IOException {
 
     if (fr.index == null) {
@@ -257,6 +255,8 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
     long startFrameFP = currentFrame.fp;
 
     targetBeforeCurrentLength = currentFrame.ord;
+
+    boolean rewind = false;
 
     // nocommit we could stop earlier w/ the version check, every time we traverse an index arc we can check?
 
@@ -351,6 +351,7 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
         // keep the currentFrame but we must rewind it
         // (so we scan from the start)
         targetBeforeCurrentLength = 0;
+        rewind = true;
          if (DEBUG) {
            System.out.println("  target is before current (shares prefixLen=" + targetUpto + "); rewind frame ord=" + lastFrame.ord);
          }
@@ -459,7 +460,7 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
 
         if (currentFrame.maxIDVersion < minIDVersion) {
           // The max version for all terms in this block is lower than the minVersion
-          if (currentFrame.fp != startFrameFP) {
+          if (currentFrame.fp != startFrameFP || rewind) {
           //if (targetUpto+1 > term.length) {
             termExists = false;
             term.bytes[targetUpto] = (byte) targetLabel;
@@ -473,7 +474,7 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
             //termExists = false;
             //}
           if (DEBUG) {
-            System.out.println("    FAST version NOT_FOUND term=" + brToString(term) + " targetUpto=" + targetUpto + " currentFrame.maxIDVersion=" + currentFrame.maxIDVersion + " validIndexPrefix=" + validIndexPrefix);
+            System.out.println("    FAST version NOT_FOUND term=" + brToString(term) + " targetUpto=" + targetUpto + " currentFrame.maxIDVersion=" + currentFrame.maxIDVersion + " validIndexPrefix=" + validIndexPrefix + " startFrameFP=" + startFrameFP + " vs " + currentFrame.fp);
           }
           return false;
         }

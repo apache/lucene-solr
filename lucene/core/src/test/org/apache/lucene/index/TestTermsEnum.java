@@ -967,20 +967,19 @@ public class TestTermsEnum extends LuceneTestCase {
     d.close();
   }
 
-  // nocommit mark slow/nigthly: O(N^2)!!
-
   // Stresses out many-terms-in-root-block case:
+  @Nightly
   public void testVaryingTermsPerSegment() throws Exception {
     Directory dir = newDirectory();
     Set<BytesRef> terms = new HashSet<BytesRef>();
-    int MAX_TERMS = 10000;
+    int MAX_TERMS = atLeast(1000);
     while (terms.size() < MAX_TERMS) {
-      terms.add(new BytesRef(TestUtil.randomSimpleString(random())));
+      terms.add(new BytesRef(TestUtil.randomSimpleString(random(), 1, 40)));
     }
     List<BytesRef> termsList = new ArrayList<>(terms);
     StringBuilder sb = new StringBuilder();
     for(int termCount=0;termCount<10000;termCount++) {
-      System.out.println("\nTEST: termCount=" + termCount);
+      System.out.println("\nTEST: termCount=" + termCount + " add term=" + termsList.get(termCount).utf8ToString());
       sb.append(' ');
       sb.append(termsList.get(termCount).utf8ToString());
       IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
