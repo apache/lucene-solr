@@ -51,13 +51,6 @@ public final class RateLimitedDirectoryWrapper extends FilterDirectory {
   }
 
   @Override
-  public IndexInputSlicer createSlicer(String name, IOContext context)
-      throws IOException {
-    ensureOpen();
-    return in.createSlicer(name, context);
-  }
-
-  @Override
   public void copy(Directory to, String src, String dest, IOContext context) throws IOException {
     ensureOpen();
     in.copy(to, src, dest, context);

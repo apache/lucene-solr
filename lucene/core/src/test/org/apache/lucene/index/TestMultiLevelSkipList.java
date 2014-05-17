@@ -189,5 +189,9 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
       return new CountingStream(this.input.clone());
     }
 
+    @Override
+    public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
+      return new CountingStream(this.input.slice(sliceDescription, offset, length));
+    }
   }
 }

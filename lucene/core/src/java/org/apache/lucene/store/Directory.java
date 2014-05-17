@@ -17,7 +17,6 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import java.io.EOFException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Closeable;
@@ -201,112 +200,7 @@ public abstract class Directory implements Closeable {
   }
 
   /**
-   * Creates an {@link IndexInputSlicer} for the given file name.
-   * IndexInputSlicer allows other {@link Directory} implementations to
-   * efficiently open one or more sliced {@link IndexInput} instances from a
-   * single file handle. The underlying file handle is kept open until the
-   * {@link IndexInputSlicer} is closed.
-   * <p>Throws {@link FileNotFoundException} or {@link NoSuchFileException}
-   * if the file does not exist.
-   *
-   * @throws IOException
-   *           if an {@link IOException} occurs
-   * @lucene.internal
-   * @lucene.experimental
-   */
-  public IndexInputSlicer createSlicer(final String name, final IOContext context) throws IOException {
-    ensureOpen();
-    return new IndexInputSlicer() {
-      private final IndexInput base = Directory.this.openInput(name, context);
-      @Override
-      public IndexInput openSlice(String sliceDescription, long offset, long length) {
-        return new SlicedIndexInput("SlicedIndexInput(" + sliceDescription + " in " + base + ")", base, offset, length);
-      }
-      @Override
-      public void close() throws IOException {
-        base.close();
-      }
-    };
-  }
-
-  /**
    * @throws AlreadyClosedException if this Directory is closed
    */
   protected void ensureOpen() throws AlreadyClosedException {}
-  
-  /**
-   * Allows to create one or more sliced {@link IndexInput} instances from a single 
-   * file handle. Some {@link Directory} implementations may be able to efficiently map slices of a file
-   * into memory when only certain parts of a file are required.   
-   * @lucene.internal
-   * @lucene.experimental
-   */
-  public abstract class IndexInputSlicer implements Closeable {
-    /**
-     * Returns an {@link IndexInput} slice starting at the given offset with the given length.
-     */
-    public abstract IndexInput openSlice(String sliceDescription, long offset, long length) throws IOException;
-  }
-  
-  /** Implementation of an IndexInput that reads from a portion of
-   *  a file.
-   */
-  private static final class SlicedIndexInput extends BufferedIndexInput {
-    IndexInput base;
-    long fileOffset;
-    long length;
-    
-    SlicedIndexInput(final String sliceDescription, final IndexInput base, final long fileOffset, final long length) {
-      this(sliceDescription, base, fileOffset, length, BufferedIndexInput.BUFFER_SIZE);
-    }
-    
-    SlicedIndexInput(final String sliceDescription, final IndexInput base, final long fileOffset, final long length, int readBufferSize) {
-      super("SlicedIndexInput(" + sliceDescription + " in " + base + " slice=" + fileOffset + ":" + (fileOffset+length) + ")", readBufferSize);
-      this.base = base.clone();
-      this.fileOffset = fileOffset;
-      this.length = length;
-    }
-    
-    @Override
-    public SlicedIndexInput clone() {
-      SlicedIndexInput clone = (SlicedIndexInput)super.clone();
-      clone.base = base.clone();
-      clone.fileOffset = fileOffset;
-      clone.length = length;
-      return clone;
-    }
-    
-    /** Expert: implements buffer refill.  Reads bytes from the current
-     *  position in the input.
-     * @param b the array to read bytes into
-     * @param offset the offset in the array to start storing bytes
-     * @param len the number of bytes to read
-     */
-    @Override
-    protected void readInternal(byte[] b, int offset, int len) throws IOException {
-      long start = getFilePointer();
-      if(start + len > length)
-        throw new EOFException("read past EOF: " + this);
-      base.seek(fileOffset + start);
-      base.readBytes(b, offset, len, false);
-    }
-    
-    /** Expert: implements seek.  Sets current position in this file, where
-     *  the next {@link #readInternal(byte[],int,int)} will occur.
-     * @see #readInternal(byte[],int,int)
-     */
-    @Override
-    protected void seekInternal(long pos) {}
-    
-    /** Closes the stream to further operations. */
-    @Override
-    public void close() throws IOException {
-      base.close();
-    }
-    
-    @Override
-    public long length() {
-      return length;
-    }
-  }
 }

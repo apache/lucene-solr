@@ -27,8 +27,10 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockPayloadAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Analyzer.TokenStreamComponents;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -445,6 +447,40 @@ public class TestPostingsOffsets extends LuceneTestCase {
         makeToken("foo", 0, 0, 3),
         makeToken("foo", 0, 0, 3)
       });
+  }
+  
+  public void testCrazyOffsetGap() throws Exception {
+    Directory dir = newDirectory();
+    Analyzer analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        return new TokenStreamComponents(new MockTokenizer(MockTokenizer.KEYWORD, false));
+      }
+
+      @Override
+      public int getOffsetGap(String fieldName) {
+        return -10;
+      }
+    };
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    // add good document
+    Document doc = new Document();
+    iw.addDocument(doc);
+    try {
+      FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
+      ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+      doc.add(new Field("foo", "bar", ft));
+      doc.add(new Field("foo", "bar", ft));
+      iw.addDocument(doc);
+      fail("didn't get expected exception");
+    } catch (IllegalArgumentException expected) {}
+    iw.shutdown();
+
+    // make sure we see our good doc
+    DirectoryReader r = DirectoryReader.open(dir);   
+    assertEquals(1, r.numDocs());
+    r.close();
+    dir.close();
   }
 
   public void testLegalbutVeryLargeOffsets() throws Exception {

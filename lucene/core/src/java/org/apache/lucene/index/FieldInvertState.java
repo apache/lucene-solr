@@ -67,7 +67,7 @@ public final class FieldInvertState {
    * Re-initialize the state
    */
   void reset() {
-    position = 0;
+    position = -1;
     length = 0;
     numOverlap = 0;
     offset = 0;

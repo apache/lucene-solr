@@ -49,8 +49,8 @@ public class TestSortedSetSelector extends LuceneTestCase {
     // currently only these codecs that support random access ordinals
     int victim = random().nextInt(3);
     switch(victim) {
-      case 0:  Codec.setDefault(TestUtil.alwaysDocValuesFormat(new DirectDocValuesFormat()));
-      case 1:  Codec.setDefault(TestUtil.alwaysDocValuesFormat(new DiskDocValuesFormat()));
+      case 0:  Codec.setDefault(TestUtil.alwaysDocValuesFormat(new DirectDocValuesFormat())); break;
+      case 1:  Codec.setDefault(TestUtil.alwaysDocValuesFormat(new DiskDocValuesFormat())); break;
       default: Codec.setDefault(TestUtil.alwaysDocValuesFormat(new Lucene45DocValuesFormat()));
     }
   }

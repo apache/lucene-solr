@@ -219,6 +219,11 @@ public class TestBufferedIndexInput extends LuceneTestCase {
       public long length() {
         return len;
       }
+      
+      @Override
+      public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
+        throw new UnsupportedOperationException();
+      }
     }
 
     public void testSetBufferSize() throws IOException {

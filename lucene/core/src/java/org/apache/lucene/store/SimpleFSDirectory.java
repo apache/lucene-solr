@@ -59,32 +59,11 @@ public class SimpleFSDirectory extends FSDirectory {
     return new SimpleFSIndexInput("SimpleFSIndexInput(path=\"" + path.getPath() + "\")", raf, context);
   }
 
-  @Override
-  public IndexInputSlicer createSlicer(final String name,
-      final IOContext context) throws IOException {
-    ensureOpen();
-    final File file = new File(getDirectory(), name);
-    final RandomAccessFile descriptor = new RandomAccessFile(file, "r");
-    return new IndexInputSlicer() {
-
-      @Override
-      public void close() throws IOException {
-        descriptor.close();
-      }
-
-      @Override
-      public IndexInput openSlice(String sliceDescription, long offset, long length) {
-        return new SimpleFSIndexInput("SimpleFSIndexInput(" + sliceDescription + " in path=\"" + file.getPath() + "\" slice=" + offset + ":" + (offset+length) + ")", descriptor, offset,
-            length, BufferedIndexInput.bufferSize(context));
-      }
-    };
-  }
-
   /**
    * Reads bytes with {@link RandomAccessFile#seek(long)} followed by
    * {@link RandomAccessFile#read(byte[], int, int)}.  
    */
-  protected static class SimpleFSIndexInput extends BufferedIndexInput {
+  static final class SimpleFSIndexInput extends BufferedIndexInput {
     /**
      * The maximum chunk size is 8192 bytes, because {@link RandomAccessFile} mallocs
      * a native buffer outside of stack if the read buffer size is larger.
@@ -129,6 +108,11 @@ public class SimpleFSDirectory extends FSDirectory {
       return clone;
     }
     
+    @Override
+    public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
+      return new SimpleFSIndexInput(sliceDescription, file, off + offset, length, getBufferSize());
+    }
+
     @Override
     public final long length() {
       return end - off;

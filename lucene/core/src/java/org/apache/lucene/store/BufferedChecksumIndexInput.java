@@ -74,4 +74,9 @@ public class BufferedChecksumIndexInput extends ChecksumIndexInput {
   public IndexInput clone() {
     throw new UnsupportedOperationException();
   }
+
+  @Override
+  public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
+    throw new UnsupportedOperationException();
+  }
 }

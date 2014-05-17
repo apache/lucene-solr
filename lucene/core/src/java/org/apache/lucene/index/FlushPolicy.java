@@ -119,6 +119,9 @@ abstract class FlushPolicy implements Cloneable {
       if (!next.flushPending) {
         final long nextRam = next.bytesUsed;
         if (nextRam > 0 && next.dwpt.getNumDocsInRAM() > 0) {
+          if (infoStream.isEnabled("FP")) {
+            infoStream.message("FP", "thread state has " + nextRam + " bytes; docInRAM=" + next.dwpt.getNumDocsInRAM());
+          }
           count++;
           if (nextRam > maxRamSoFar) {
             maxRamSoFar = nextRam;

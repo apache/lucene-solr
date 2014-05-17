@@ -32,7 +32,6 @@ public class TestFilterDirectory extends LuceneTestCase {
     // except those under the 'exclude' list
     Set<Method> exclude = new HashSet<>();
     exclude.add(Directory.class.getMethod("copy", Directory.class, String.class, String.class, IOContext.class));
-    exclude.add(Directory.class.getMethod("createSlicer", String.class, IOContext.class));
     exclude.add(Directory.class.getMethod("openChecksumInput", String.class, IOContext.class));
     for (Method m : FilterDirectory.class.getMethods()) {
       if (m.getDeclaringClass() == Directory.class) {
