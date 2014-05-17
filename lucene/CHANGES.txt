@@ -217,6 +217,9 @@ Test Framework
 * LUCENE-5619: Added backwards compatibility tests to ensure we can update existing
   indexes with doc-values updates. (Shai Erera, Robert Muir)
 
+* LUCENE-5650: Fail tests if they try to write to CWD, and make test temp dirs absolute.
+  (Ryan Ernst, Dawid Weiss)
+
 ======================= Lucene 4.8.0 =======================
 
 System Requirements
