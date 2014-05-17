@@ -82,4 +82,10 @@ public abstract class IndexInput extends DataInput implements Cloneable,Closeabl
   public IndexInput clone() {
     return (IndexInput) super.clone();
   }
+  
+  /**
+   * Creates a slice of this index input, with the given description, offset, and length. 
+   * The slice is seeked to the beginning.
+   */
+  public abstract IndexInput slice(String sliceDescription, long offset, long length) throws IOException;
 }

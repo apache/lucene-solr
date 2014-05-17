@@ -20,6 +20,7 @@ package org.apache.solr.store.blockcache;
 import java.io.EOFException;
 import java.io.IOException;
 
+import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 
@@ -255,6 +256,11 @@ public abstract class CustomBufferedIndexInput extends IndexInput {
     return clone;
   }
   
+  @Override
+  public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
+    return BufferedIndexInput.wrap(sliceDescription, this, offset, length);
+  }
+
   /**
    * Flushes the in-memory bufer to the given output, copying at most
    * <code>numBytes</code>.

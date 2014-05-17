@@ -406,5 +406,11 @@ public class NativeUnixDirectory extends FSDirectory {
         throw new RuntimeException("IOException during clone: " + this, ioe);
       }
     }
+
+    @Override
+    public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
+      // TODO: is this the right thing to do?
+      return BufferedIndexInput.wrap(sliceDescription, this, offset, length);
+    }
   }
 }

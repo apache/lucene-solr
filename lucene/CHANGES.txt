@@ -77,6 +77,9 @@ API Changes
   takes the same selectors. Add helper methods to DocValues.java that are better 
   suited for search code (never return null, etc).  (Mike McCandless, Robert Muir)
 
+* LUCENE-4371: Removed IndexInputSlicer and Directory.createSlicer() and replaced
+  with IndexInput.slice(). (Robert Muir)
+
 Documentation
 
 * LUCENE-5392: Add/improve analysis package documentation to reflect

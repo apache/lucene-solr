@@ -166,10 +166,4 @@ public class FileSwitchDirectory extends BaseDirectory {
   public IndexInput openInput(String name, IOContext context) throws IOException {
     return getDirectory(name).openInput(name, context);
   }
-
-  @Override
-  public IndexInputSlicer createSlicer(String name, IOContext context)
-      throws IOException {
-    return getDirectory(name).createSlicer(name, context);
-  }
 }

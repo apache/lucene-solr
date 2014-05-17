@@ -197,10 +197,8 @@ abstract class ByteBufferIndexInput extends IndexInput {
   /**
    * Creates a slice of this index input, with the given description, offset, and length. The slice is seeked to the beginning.
    */
+  @Override
   public final ByteBufferIndexInput slice(String sliceDescription, long offset, long length) {
-    if (isClone) { // well we could, but this is stupid
-      throw new IllegalStateException("cannot slice() " + sliceDescription + " from a cloned IndexInput: " + this);
-    }
     final ByteBufferIndexInput clone = buildSlice(offset, length);
     clone.sliceDescription = sliceDescription;
     try {

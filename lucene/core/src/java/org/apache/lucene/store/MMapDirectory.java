@@ -196,23 +196,6 @@ public class MMapDirectory extends FSDirectory {
       return new MMapIndexInput("MMapIndexInput(path=\"" + file.toString() + "\")", c);
     }
   }
-  
-  @Override
-  public IndexInputSlicer createSlicer(String name, IOContext context) throws IOException {
-    final MMapIndexInput full = (MMapIndexInput) openInput(name, context);
-    return new IndexInputSlicer() {
-      @Override
-      public IndexInput openSlice(String sliceDescription, long offset, long length) throws IOException {
-        ensureOpen();
-        return full.slice(sliceDescription, offset, length);
-      }
-      
-      @Override
-      public void close() throws IOException {
-        full.close();
-      }
-    };
-  }
 
   private final class MMapIndexInput extends ByteBufferIndexInput {
     private final boolean useUnmapHack;
