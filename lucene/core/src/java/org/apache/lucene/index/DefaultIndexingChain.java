@@ -300,6 +300,12 @@ final class DefaultIndexingChain extends DocConsumer {
     try {
       for (IndexableField field : docState.doc.indexableFields()) {
         IndexableFieldType fieldType = field.fieldType();
+        
+        // if the field omits norms, the boost cannot be indexed.
+        if (fieldType.omitNorms() && field.boost() != 1.0f) {
+          throw new UnsupportedOperationException("You cannot set an index-time boost: norms are omitted for field '" + field.name() + "'");
+        }
+        
         PerField fp = getOrAddField(field.name(), fieldType, true);
         boolean first = fp.fieldGen != fieldGen;
         fp.invert(field, first);
@@ -557,11 +563,6 @@ final class DefaultIndexingChain extends DocConsumer {
 
       IndexableFieldType fieldType = field.fieldType();
 
-      // if the field omits norms, the boost cannot be indexed.
-      if (fieldType.omitNorms() && field.boost() != 1.0f) {
-        throw new UnsupportedOperationException("You cannot set an index-time boost: norms are omitted for field '" + field.name() + "'");
-      }
-
       final boolean analyzed = fieldType.tokenized() && docState.analyzer != null;
         
       // only bother checking offsets if something will consume them.
@@ -569,6 +570,7 @@ final class DefaultIndexingChain extends DocConsumer {
       final boolean checkOffsets = fieldType.indexOptions() == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
 
       int lastStartOffset = 0;
+      int lastPosition = 0;
         
       /*
        * To assist people in tracking down problems in analysis components, we wish to write the field name to the infostream
@@ -593,26 +595,15 @@ final class DefaultIndexingChain extends DocConsumer {
           // will be marked as deleted, but still
           // consume a docID
 
-          final int posIncr = invertState.posIncrAttribute.getPositionIncrement();
-          if (posIncr < 0) {
-            throw new IllegalArgumentException("position increment must be >=0 (got " + posIncr + ") for field '" + field.name() + "'");
+          int posIncr = invertState.posIncrAttribute.getPositionIncrement();
+          invertState.position += posIncr;
+          if (invertState.position < lastPosition) {
+            if (posIncr == 0) {
+              throw new IllegalArgumentException("first position increment must be > 0 (got 0) for field '" + field.name() + "'");
+            }
+            throw new IllegalArgumentException("position increments (and gaps) must be >= 0 (got " + posIncr + ") for field '" + field.name() + "'");
           }
-          if (invertState.position == 0 && posIncr == 0) {
-            throw new IllegalArgumentException("first position increment must be > 0 (got 0) for field '" + field.name() + "'");
-          }
-          int position = invertState.position + posIncr;
-          if (position > 0) {
-            // NOTE: confusing: this "mirrors" the
-            // position++ we do below
-            position--;
-          } else if (position < 0) {
-            throw new IllegalArgumentException("position overflow for field '" + field.name() + "'");
-          }
-              
-          // position is legal, we can safely place it in invertState now.
-          // not sure if anything will use invertState after non-aborting exc...
-          invertState.position = position;
-
+          lastPosition = invertState.position;
           if (posIncr == 0) {
             invertState.numOverlap++;
           }
@@ -620,13 +611,9 @@ final class DefaultIndexingChain extends DocConsumer {
           if (checkOffsets) {
             int startOffset = invertState.offset + invertState.offsetAttribute.startOffset();
             int endOffset = invertState.offset + invertState.offsetAttribute.endOffset();
-            if (startOffset < 0 || endOffset < startOffset) {
-              throw new IllegalArgumentException("startOffset must be non-negative, and endOffset must be >= startOffset, "
-                                                 + "startOffset=" + startOffset + ",endOffset=" + endOffset + " for field '" + field.name() + "'");
-            }
-            if (startOffset < lastStartOffset) {
-              throw new IllegalArgumentException("offsets must not go backwards startOffset=" 
-                                                 + startOffset + " is < lastStartOffset=" + lastStartOffset + " for field '" + field.name() + "'");
+            if (startOffset < lastStartOffset || endOffset < startOffset) {
+              throw new IllegalArgumentException("startOffset must be non-negative, and endOffset must be >= startOffset, and offsets must not go backwards "
+                                                 + "startOffset=" + startOffset + ",endOffset=" + endOffset + ",lastStartOffset=" + lastStartOffset + " for field '" + field.name() + "'");
             }
             lastStartOffset = startOffset;
           }
@@ -644,7 +631,6 @@ final class DefaultIndexingChain extends DocConsumer {
           aborting = false;
 
           invertState.length++;
-          invertState.position++;
         }
 
         // trigger streams to perform end-of-stream operations

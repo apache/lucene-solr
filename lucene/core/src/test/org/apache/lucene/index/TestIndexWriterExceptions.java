@@ -1637,6 +1637,38 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     dir.close();
   }
   
+  public void testCrazyPositionIncrementGap() throws Exception {
+    Directory dir = newDirectory();
+    Analyzer analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        return new TokenStreamComponents(new MockTokenizer(MockTokenizer.KEYWORD, false));
+      }
+
+      @Override
+      public int getPositionIncrementGap(String fieldName) {
+        return -2;
+      }
+    };
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    // add good document
+    Document doc = new Document();
+    iw.addDocument(doc);
+    try {
+      doc.add(newTextField("foo", "bar", Field.Store.NO));
+      doc.add(newTextField("foo", "bar", Field.Store.NO));
+      iw.addDocument(doc);
+      fail("didn't get expected exception");
+    } catch (IllegalArgumentException expected) {}
+    iw.shutdown();
+
+    // make sure we see our good doc
+    DirectoryReader r = DirectoryReader.open(dir);   
+    assertEquals(1, r.numDocs());
+    r.close();
+    dir.close();
+  }
+  
   // TODO: we could also check isValid, to catch "broken" bytesref values, might be too much?
   
   static class UOEDirectory extends RAMDirectory {
