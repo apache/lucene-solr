@@ -699,8 +699,6 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       if (dataDir == null) {
         try {
           dataDir = cd.getDataDir();
-          // nocommit: this check needs to be fixed, see SOLR-6055
-          //if (!new File(dataDir).isAbsolute()) {
           if (!directoryFactory.isAbsolute(dataDir)) {
             dataDir = directoryFactory.getDataHome(cd);
           }
@@ -714,9 +712,9 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     String updateLogDir = cd.getUlogDir();
     if (updateLogDir == null) {
       updateLogDir = dataDir;
-    }
-    if (new File(updateLogDir).isAbsolute() == false) {
-      updateLogDir = SolrResourceLoader.normalizeDir(cd.getInstanceDir()) + updateLogDir;
+      if (new File(updateLogDir).isAbsolute() == false) {
+        updateLogDir = SolrResourceLoader.normalizeDir(cd.getInstanceDir()) + updateLogDir;
+      }
     }
     ulogDir = updateLogDir;
 

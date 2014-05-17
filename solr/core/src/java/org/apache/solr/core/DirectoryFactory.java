@@ -245,6 +245,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
 
   public String getDataHome(CoreDescriptor cd) throws IOException {
     // by default, we go off the instance directory
-    return normalize(SolrResourceLoader.normalizeDir(cd.getInstanceDir()) + cd.getDataDir());
+    String instanceDir = new File(cd.getInstanceDir()).getAbsolutePath();
+    return normalize(SolrResourceLoader.normalizeDir(instanceDir) + cd.getDataDir());
   }
 }
