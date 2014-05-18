@@ -99,7 +99,7 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
   private static final File MINIMR_INSTANCE_DIR = new File(RESOURCES_DIR + "/solr/minimr");
   private static final File MINIMR_CONF_DIR = new File(RESOURCES_DIR + "/solr/minimr");
   
-  private static final String SEARCH_ARCHIVES_JAR = JarFinder.getJar(MapReduceIndexerTool.class);
+  private static String SEARCH_ARCHIVES_JAR;
   
   private static MiniDFSCluster dfsCluster = null;
   private static MiniMRClientCluster mrCluster = null;
@@ -172,6 +172,9 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
     System.setProperty("test.build.dir", tempDir + File.separator + "hdfs" + File.separator + "test-build-dir");
     System.setProperty("test.build.data", tempDir + File.separator + "hdfs" + File.separator + "build");
     System.setProperty("test.cache.data", tempDir + File.separator + "hdfs" + File.separator + "cache");
+
+    // Initialize AFTER test.build.dir is set, JarFinder uses it.
+    SEARCH_ARCHIVES_JAR = JarFinder.getJar(MapReduceIndexerTool.class);
     
     dfsCluster = new MiniDFSCluster(conf, dataNodes, true, null);
     FileSystem fileSystem = dfsCluster.getFileSystem();
