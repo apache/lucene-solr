@@ -169,9 +169,6 @@ public class FilterAtomicReader extends AtomicReader {
       return in.seekCeil(text);
     }
 
-    // nocommit tests angry about this; need to use VirtualMethod to decide when to call in.X vs super.X, but this is important because BT's
-    // seekExact is not being used today!  maybe we are masking bugs
-
     @Override
     public boolean seekExact(BytesRef text) throws IOException {
       return in.seekExact(text);

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -80,7 +81,11 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     dir.close();
   }
 
-  // nocommit vary the style of iD; sometimes fixed-length ids, timestamp, zero filled, seuqential, random, etc.
+  private interface IDSource {
+    String next();
+  }
+
+  // nocommit make a similar test for BT, w/ varied IDs:
 
   public void testRandom() throws Exception {
     Directory dir = newDirectory();
@@ -96,16 +101,122 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: numDocs=" + numDocs);
     }
+
+    IDSource ids;
+    switch (random().nextInt(6)) {
+    case 0:
+      // random simple
+      if (VERBOSE) {
+        System.out.println("  use random simple ids");
+      }
+      ids = new IDSource() {
+          @Override
+          public String next() {
+            return TestUtil.randomSimpleString(random());
+          }
+        };
+      break;
+    case 1:
+      // random realistic unicode
+      if (VERBOSE) {
+        System.out.println("  use random realistic unicode ids");
+      }
+      ids = new IDSource() {
+          @Override
+          public String next() {
+            return TestUtil.randomRealisticUnicodeString(random());
+          }
+        };
+      break;
+    case 2:
+      // sequential
+      if (VERBOSE) {
+        System.out.println("  use seuquential ids");
+      }
+      ids = new IDSource() {
+          int upto;
+          @Override
+          public String next() {
+            return Integer.toString(upto++);
+          }
+        };
+      break;
+    case 3:
+      // zero-pad sequential
+      if (VERBOSE) {
+        System.out.println("  use zero-pad seuquential ids");
+      }
+      ids = new IDSource() {
+          final int radix = TestUtil.nextInt(random(), Character.MIN_RADIX, Character.MAX_RADIX);
+          final String zeroPad = String.format(Locale.ROOT, "%0" + TestUtil.nextInt(random(), 4, 20) + "d", 0);
+          int upto;
+          @Override
+          public String next() {
+            String s = Integer.toString(upto++);
+            return zeroPad.substring(zeroPad.length() - s.length()) + s;
+          }
+        };
+      break;
+    case 4:
+      // random long
+      if (VERBOSE) {
+        System.out.println("  use random long ids");
+      }
+      ids = new IDSource() {
+          final int radix = TestUtil.nextInt(random(), Character.MIN_RADIX, Character.MAX_RADIX);
+          int upto;
+          @Override
+          public String next() {
+            return Long.toString(random().nextLong() & 0x7ffffffffffffffL, radix);
+          }
+        };
+      break;
+    case 5:
+      // zero-pad random long
+      if (VERBOSE) {
+        System.out.println("  use zero-pad random long ids");
+      }
+      ids = new IDSource() {
+          final int radix = TestUtil.nextInt(random(), Character.MIN_RADIX, Character.MAX_RADIX);
+          final String zeroPad = String.format(Locale.ROOT, "%015d", 0);
+          int upto;
+          @Override
+          public String next() {
+            return Long.toString(random().nextLong() & 0x7ffffffffffffffL, radix);
+          }
+        };
+      break;
+    default:
+      throw new AssertionError();
+    }
+
+    String idPrefix;
+    if (random().nextBoolean()) {
+      idPrefix = "";
+    } else {
+      idPrefix = TestUtil.randomSimpleString(random());
+      if (VERBOSE) {
+        System.out.println("TEST: use id prefix: " + idPrefix);
+      }
+    }
+
+    boolean useMonotonicVersion = random().nextBoolean();
+    if (VERBOSE) {
+      System.out.println("TEST: useMonotonicVersion=" + useMonotonicVersion);
+    }
+
     long version = 0;
     while (docUpto < numDocs) {
       // nocommit add deletes in
-      // nocommit randomRealisticUniode / full binary
-      String idValue = TestUtil.randomSimpleString(random());
+      String idValue = idPrefix + ids.next();
       if (idValues.containsKey(idValue)) {
         continue;
       }
-      //long version = random().nextLong() & 0x7fffffffffffffffL;
-      version++;
+      if (useMonotonicVersion) {
+        version += TestUtil.nextInt(random(), 1, 10);
+      } else {
+        version = random().nextLong() & 0x7fffffffffffffffL;
+      }
       idValues.put(idValue, version);
       if (VERBOSE) {
         System.out.println("  " + idValue + " -> " + version);
@@ -127,8 +238,10 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
 
       if (random().nextBoolean()) {
         idValue = idValuesList.get(random().nextInt(numDocs)).getKey();
+      } else if (random().nextBoolean()) {
+        idValue = ids.next();
       } else {
-        idValue = TestUtil.randomSimpleString(random());
+        idValue = idPrefix + TestUtil.randomSimpleString(random());
       }
 
       BytesRef idValueBytes = new BytesRef(idValue);

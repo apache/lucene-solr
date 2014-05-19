@@ -55,7 +55,8 @@ final class SegmentTermsEnum extends TermsEnum {
 
   private final ByteArrayDataInput scratchReader = new ByteArrayDataInput();
 
-  // What prefix of the current term was present in the index:
+  // What prefix of the current term was present in the index; when we only next() through the index, this stays at 0.  It's only set when
+  // we seekCeil/Exact:
   private int validIndexPrefix;
 
   // assert only:
@@ -64,13 +65,14 @@ final class SegmentTermsEnum extends TermsEnum {
   final BytesRef term = new BytesRef();
   private final FST.BytesReader fstReader;
 
-  @SuppressWarnings({"rawtypes","unchecked"}) private FST.Arc<BytesRef>[] arcs =
-  new FST.Arc[1];
+  @SuppressWarnings({"rawtypes","unchecked"}) private FST.Arc<BytesRef>[] arcs = new FST.Arc[1];
 
   public SegmentTermsEnum(FieldReader fr) throws IOException {
     this.fr = fr;
 
-    //if (DEBUG) System.out.println("BTTR.init seg=" + segment);
+    if (DEBUG) {
+      System.out.println("BTTR.init seg=" + fr.parent.segment);
+    }
     stack = new SegmentTermsEnumFrame[0];
         
     // Used to hold seek by TermState, or cached seek
@@ -97,7 +99,6 @@ final class SegmentTermsEnum extends TermsEnum {
     } else {
       arc = null;
     }
-    currentFrame = staticFrame;
     //currentFrame = pushFrame(arc, rootCode, 0);
     //currentFrame.loadBlock();
     validIndexPrefix = 0;
@@ -258,7 +259,8 @@ final class SegmentTermsEnum extends TermsEnum {
     f.arc = arc;
     if (f.fpOrig == fp && f.nextEnt != -1) {
       //if (DEBUG) System.out.println("      push reused frame ord=" + f.ord + " fp=" + f.fp + " isFloor?=" + f.isFloor + " hasTerms=" + f.hasTerms + " pref=" + term + " nextEnt=" + f.nextEnt + " targetBeforeCurrentLength=" + targetBeforeCurrentLength + " term.length=" + term.length + " vs prefix=" + f.prefix);
-      if (f.prefix > targetBeforeCurrentLength) {
+      //if (f.prefix > targetBeforeCurrentLength) {
+      if (f.ord > targetBeforeCurrentLength) {
         f.rewind();
       } else {
         // if (DEBUG) {
@@ -307,8 +309,6 @@ final class SegmentTermsEnum extends TermsEnum {
       return b.toString();
     }
   }
-
-  // nocommit we need a seekExact(BytesRef target, long minVersion) API?
 
   @Override
   public boolean seekExact(final BytesRef target) throws IOException {
@@ -421,7 +421,7 @@ final class SegmentTermsEnum extends TermsEnum {
         // is before current term; this means we can
         // keep the currentFrame but we must rewind it
         // (so we scan from the start)
-        targetBeforeCurrentLength = 0;
+        targetBeforeCurrentLength = lastFrame.ord;
         // if (DEBUG) {
         //   System.out.println("  target is before current (shares prefixLen=" + targetUpto + "); rewind frame ord=" + lastFrame.ord);
         // }
@@ -581,10 +581,10 @@ final class SegmentTermsEnum extends TermsEnum {
 
     assert clearEOF();
 
-    //if (DEBUG) {
-    //System.out.println("\nBTTR.seekCeil seg=" + segment + " target=" + fieldInfo.name + ":" + target.utf8ToString() + " " + target + " current=" + brToString(term) + " (exists?=" + termExists + ") validIndexPrefix=  " + validIndexPrefix);
-    //printSeekState();
-    //}
+    if (DEBUG) {
+      System.out.println("\nBTTR.seekCeil seg=" + fr.parent.segment + " target=" + fr.fieldInfo.name + ":" + target.utf8ToString() + " " + target + " current=" + brToString(term) + " (exists?=" + termExists + ") validIndexPrefix=  " + validIndexPrefix);
+      printSeekState(System.out);
+    }
 
     FST.Arc<BytesRef> arc;
     int targetUpto;
@@ -876,7 +876,6 @@ final class SegmentTermsEnum extends TermsEnum {
      decode all metadata up to the current term. */
   @Override
   public BytesRef next() throws IOException {
-
     if (in == null) {
       // Fresh TermsEnum; seek to first term:
       final FST.Arc<BytesRef> arc;
@@ -894,10 +893,10 @@ final class SegmentTermsEnum extends TermsEnum {
     targetBeforeCurrentLength = currentFrame.ord;
 
     assert !eof;
-    //if (DEBUG) {
-    //System.out.println("\nBTTR.next seg=" + segment + " term=" + brToString(term) + " termExists?=" + termExists + " field=" + fieldInfo.name + " termBlockOrd=" + currentFrame.state.termBlockOrd + " validIndexPrefix=" + validIndexPrefix);
-    //printSeekState();
-    //}
+    if (DEBUG) {
+      System.out.println("\nBTTR.next seg=" + fr.parent.segment + " term=" + brToString(term) + " termExists?=" + termExists + " field=" + fr.fieldInfo.name + " termBlockOrd=" + currentFrame.state.termBlockOrd + " validIndexPrefix=" + validIndexPrefix);
+      printSeekState(System.out);
+    }
 
     if (currentFrame == staticFrame) {
       // If seek was previously called and the term was

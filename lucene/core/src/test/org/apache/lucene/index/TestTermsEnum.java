@@ -891,8 +891,9 @@ public class TestTermsEnum extends LuceneTestCase {
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
     Set<String> terms = new HashSet<String>();
-    //String prefix = TestUtil.randomSimpleString(random(), 1, 20);
-    String prefix = TestUtil.randomRealisticUnicodeString(random(), 1, 20);
+    // nocommit
+    String prefix = TestUtil.randomSimpleString(random(), 1, 20);
+    //String prefix = TestUtil.randomRealisticUnicodeString(random(), 1, 20);
     int numTerms = atLeast(1000);
     if (VERBOSE) {
       System.out.println("TEST: " + numTerms + " terms; prefix=" + prefix);
@@ -968,7 +969,7 @@ public class TestTermsEnum extends LuceneTestCase {
   }
 
   // Stresses out many-terms-in-root-block case:
-  @Nightly
+  @Slow
   public void testVaryingTermsPerSegment() throws Exception {
     Directory dir = newDirectory();
     Set<BytesRef> terms = new HashSet<BytesRef>();
@@ -978,8 +979,10 @@ public class TestTermsEnum extends LuceneTestCase {
     }
     List<BytesRef> termsList = new ArrayList<>(terms);
     StringBuilder sb = new StringBuilder();
-    for(int termCount=0;termCount<10000;termCount++) {
-      System.out.println("\nTEST: termCount=" + termCount + " add term=" + termsList.get(termCount).utf8ToString());
+    for(int termCount=0;termCount<MAX_TERMS;termCount++) {
+      if (VERBOSE) {
+        System.out.println("\nTEST: termCount=" + termCount + " add term=" + termsList.get(termCount).utf8ToString());
+      }
       sb.append(' ');
       sb.append(termsList.get(termCount).utf8ToString());
       IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
@@ -991,13 +994,10 @@ public class TestTermsEnum extends LuceneTestCase {
       IndexReader r = w.getReader();
       assertEquals(1, r.leaves().size());
       TermsEnum te = r.leaves().get(0).reader().fields().terms("field").iterator(null);
-      System.out.println("te=" + te);
       for(int i=0;i<=termCount;i++) {
-        //System.out.println("TEST: lookup (should exist) " + termsList.get(i));
         assertTrue("term '" + termsList.get(i).utf8ToString() + "' should exist but doesn't", te.seekExact(termsList.get(i)));
       }
       for(int i=termCount+1;i<termsList.size();i++) {
-        //System.out.println("TEST: lookup (should not exist) " + termsList.get(i));
         assertFalse("term '" + termsList.get(i) + "' shouldn't exist but does", te.seekExact(termsList.get(i)));
       }
       r.close();

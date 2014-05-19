@@ -36,7 +36,7 @@ final class IDVersionSegmentTermsEnumFrame {
   boolean hasTermsOrig;
   boolean isFloor;
 
-  static boolean DEBUG = true;
+  static boolean DEBUG = IDVersionSegmentTermsEnum.DEBUG;
 
   /** Highest version of any term in this block. */
   long maxIDVersion;
@@ -220,8 +220,6 @@ final class IDVersionSegmentTermsEnumFrame {
   }
 
   void rewind() {
-    System.out.println("  rewind frame ord=" + ord);
-
     // Force reload:
     fp = fpOrig;
     nextEnt = -1;
@@ -291,7 +289,7 @@ final class IDVersionSegmentTermsEnumFrame {
   }
 
   public boolean nextNonLeaf() {
-    //if (DEBUG) System.out.println("  frame.next ord=" + ord + " nextEnt=" + nextEnt + " entCount=" + entCount);
+    if (DEBUG) System.out.println("  frame.next ord=" + ord + " nextEnt=" + nextEnt + " entCount=" + entCount);
     assert nextEnt != -1 && nextEnt < entCount: "nextEnt=" + nextEnt + " entCount=" + entCount + " fp=" + fp;
     nextEnt++;
     final int code = suffixesReader.readVInt();
@@ -313,9 +311,9 @@ final class IDVersionSegmentTermsEnumFrame {
       ste.termExists = false;
       subCode = suffixesReader.readVLong();
       lastSubFP = fp - subCode;
-      //if (DEBUG) {
-      //System.out.println("    lastSubFP=" + lastSubFP);
-      //}
+      if (DEBUG) {
+        System.out.println("    lastSubFP=" + lastSubFP);
+      }
       return true;
     }
   }

@@ -100,6 +100,9 @@ public final class IDVersionPostingsWriter extends PushPostingsWriterBase {
     }
     
     lastVersion = IDVersionPostingsFormat.bytesToLong(payload);
+    if (lastVersion < 0) {
+      throw new IllegalArgumentException("version must be >= 0 (got: " + lastVersion + "; payload=" + payload + ")");
+    }
   }
 
   @Override

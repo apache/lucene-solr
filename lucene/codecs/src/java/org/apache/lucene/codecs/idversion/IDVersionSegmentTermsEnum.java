@@ -45,7 +45,7 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
   // Lazy init:
   IndexInput in;
 
-  static boolean DEBUG = true;
+  static boolean DEBUG = false;
 
   private IDVersionSegmentTermsEnumFrame[] stack;
   private final IDVersionSegmentTermsEnumFrame staticFrame;
@@ -256,7 +256,7 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
 
     targetBeforeCurrentLength = currentFrame.ord;
 
-    boolean rewind = false;
+    boolean changed = false;
 
     // nocommit we could stop earlier w/ the version check, every time we traverse an index arc we can check?
 
@@ -351,15 +351,17 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
         // keep the currentFrame but we must rewind it
         // (so we scan from the start)
         targetBeforeCurrentLength = 0;
-        rewind = true;
+        changed = true;
          if (DEBUG) {
            System.out.println("  target is before current (shares prefixLen=" + targetUpto + "); rewind frame ord=" + lastFrame.ord);
          }
         currentFrame = lastFrame;
         currentFrame.rewind();
         // nocommit put this back to BT also?
-        term.length = targetUpto;
-        termExists = false;
+        //term.length = targetUpto;
+
+        // nocommit put this back???
+        //termExists = false;
       } else {
         // Target is exactly the same as current term
         assert term.length == target.length;
@@ -375,7 +377,7 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
 
           currentFrame.decodeMetaData();
           if (((IDVersionTermState) currentFrame.state).idVersion < minIDVersion) {
-            // The max version for this term is lower than the minVersion
+            // This term's version is lower than the minVersion
             if (DEBUG) {
               System.out.println("  target is same as current but version=" + ((IDVersionTermState) currentFrame.state).idVersion + " is < minIDVersion=" + minIDVersion + "; return false");
             }
@@ -421,7 +423,7 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
     }
 
     if (DEBUG) {
-      System.out.println("  start index loop targetUpto=" + targetUpto + " output=" + output + " currentFrame.ord=" + currentFrame.ord + " targetBeforeCurrentLength=" + targetBeforeCurrentLength);
+      System.out.println("  start index loop targetUpto=" + targetUpto + " output=" + output + " currentFrame.ord=" + currentFrame.ord + " targetBeforeCurrentLength=" + targetBeforeCurrentLength + " termExists=" + termExists);
     }
 
     // We are done sharing the common prefix with the incoming target and where we are currently seek'd; now continue walking the index:
@@ -435,7 +437,7 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
 
         // Index is exhausted
          if (DEBUG) {
-           System.out.println("    index: index exhausted label=" + ((char) targetLabel) + " " + Integer.toHexString(targetLabel));
+           System.out.println("    index: index exhausted label=" + ((char) targetLabel) + " " + Integer.toHexString(targetLabel) + " termExists=" + termExists);
          }
             
         validIndexPrefix = currentFrame.prefix;
@@ -460,7 +462,7 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
 
         if (currentFrame.maxIDVersion < minIDVersion) {
           // The max version for all terms in this block is lower than the minVersion
-          if (currentFrame.fp != startFrameFP || rewind) {
+          if (currentFrame.fp != startFrameFP || changed) {
           //if (targetUpto+1 > term.length) {
             termExists = false;
             term.bytes[targetUpto] = (byte) targetLabel;
@@ -474,7 +476,7 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
             //termExists = false;
             //}
           if (DEBUG) {
-            System.out.println("    FAST version NOT_FOUND term=" + brToString(term) + " targetUpto=" + targetUpto + " currentFrame.maxIDVersion=" + currentFrame.maxIDVersion + " validIndexPrefix=" + validIndexPrefix + " startFrameFP=" + startFrameFP + " vs " + currentFrame.fp);
+            System.out.println("    FAST version NOT_FOUND term=" + brToString(term) + " targetUpto=" + targetUpto + " currentFrame.maxIDVersion=" + currentFrame.maxIDVersion + " validIndexPrefix=" + validIndexPrefix + " startFrameFP=" + startFrameFP + " vs " + currentFrame.fp + " termExists=" + termExists);
           }
           return false;
         }
@@ -488,7 +490,7 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
         if (result == SeekStatus.FOUND) {
           currentFrame.decodeMetaData();
           if (((IDVersionTermState) currentFrame.state).idVersion < minIDVersion) {
-            // The max version for this term is lower than the minVersion
+            // This term's version is lower than the minVersion
             if (DEBUG) {
               System.out.println("    return NOT_FOUND: idVersion=" + ((IDVersionTermState) currentFrame.state).idVersion + " vs minIDVersion=" + minIDVersion);
             }
@@ -509,8 +511,14 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
       } else {
         // Follow this arc
         arc = nextArc;
-        term.bytes[targetUpto] = (byte) targetLabel;
-        termExists = false;
+        if (term.bytes[targetUpto] != (byte) targetLabel) {
+          if (DEBUG) {
+            System.out.println("  now set termExists=false targetUpto=" + targetUpto + " term=" + term.bytes[targetUpto] + " targetLabel=" + targetLabel);
+          }
+          changed = true;
+          term.bytes[targetUpto] = (byte) targetLabel;
+          termExists = false;
+        }
         // Aggregate output as we go:
         assert arc.output != null;
         if (arc.output != VersionBlockTreeTermsWriter.NO_OUTPUT) {
@@ -566,7 +574,7 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
        }
       currentFrame.decodeMetaData();
       if (((IDVersionTermState) currentFrame.state).idVersion < minIDVersion) {
-        // The max version for this term is lower than the minVersion
+        // This term's version is lower than the minVersion
         return false;
       }
       return true;
@@ -739,6 +747,7 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
     //System.out.println("  start index loop targetUpto=" + targetUpto + " output=" + output + " currentFrame.ord+1=" + currentFrame.ord + " targetBeforeCurrentLength=" + targetBeforeCurrentLength);
     //}
 
+    // We are done sharing the common prefix with the incoming target and where we are currently seek'd; now continue walking the index:
     while (targetUpto < target.length) {
 
       final int targetLabel = target.bytes[target.offset + targetUpto] & 0xFF;
