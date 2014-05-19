@@ -85,18 +85,23 @@ public abstract class QueryRescorer extends Rescorer {
         scorer = weight.scorer(readerContext, null);
       }
 
-      int targetDoc = docID - docBase;
-      int actualDoc = scorer.docID();
-      if (actualDoc < targetDoc) {
-        actualDoc = scorer.advance(targetDoc);
-      }
+      if(scorer != null) {
+        int targetDoc = docID - docBase;
+        int actualDoc = scorer.docID();
+        if (actualDoc < targetDoc) {
+          actualDoc = scorer.advance(targetDoc);
+        }
 
-      if (actualDoc == targetDoc) {
-        // Query did match this doc:
-        hit.score = combine(hit.score, true, scorer.score());
+        if (actualDoc == targetDoc) {
+          // Query did match this doc:
+          hit.score = combine(hit.score, true, scorer.score());
+        } else {
+          // Query did not match this doc:
+          assert actualDoc > targetDoc;
+          hit.score = combine(hit.score, false, 0.0f);
+        }
       } else {
         // Query did not match this doc:
-        assert actualDoc > targetDoc;
         hit.score = combine(hit.score, false, 0.0f);
       }
 
