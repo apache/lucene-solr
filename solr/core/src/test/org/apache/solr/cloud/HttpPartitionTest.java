@@ -62,7 +62,6 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   private static final long sleepMsBeforeHealPartition = 1000L;
   
   private Map<URI,SocketProxy> proxies = new HashMap<URI,SocketProxy>();
-  private AtomicInteger portCounter = new AtomicInteger(0);
   
   public HttpPartitionTest() {
     super();

@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
+import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
@@ -69,6 +70,7 @@ public class StreamingSolrServers {
       server = new ConcurrentUpdateSolrServer(url, httpClient, 100, 1, updateExecutor, true) {
         @Override
         public void handleError(Throwable ex) {
+          req.trackRequestResult(null, false);
           log.error("error", ex);
           Error error = new Error();
           error.e = (Exception) ex;
@@ -77,6 +79,10 @@ public class StreamingSolrServers {
           }
           error.req = req;
           errors.add(error);
+        }
+        @Override
+        public void onSuccess(HttpResponse resp) {
+          req.trackRequestResult(resp, true);
         }
       };
       server.setParser(new BinaryResponseParser());

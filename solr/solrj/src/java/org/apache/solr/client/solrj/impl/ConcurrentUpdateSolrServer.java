@@ -239,6 +239,8 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
               msg.append("\n\n");
               msg.append("request: ").append(method.getURI());
               handleError(new SolrException(ErrorCode.getErrorCode(statusCode), msg.toString()));
+            } else {
+              onSuccess(response);
             }
           } finally {
             try {
@@ -404,6 +406,13 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
 
   public void handleError(Throwable ex) {
     log.error("error", ex);
+  }
+  
+  /**
+   * Intended to be used as an extension point for doing post processing after a request completes.
+   */
+  public void onSuccess(HttpResponse resp) {
+    // no-op by design, override to add functionality
   }
 
   @Override
