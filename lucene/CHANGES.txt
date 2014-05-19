@@ -180,6 +180,9 @@ Bug fixes
   rethrown with more useful information about the problem, omitting the
   incorrect OutOfMemoryError.  (Robert Muir, Uwe Schindler)
 
+* LUCENE-5682: NPE in QueryRescorer when Scorer is null
+  (Joel Bernstein, Mike McCandless)
+
 Test Framework
 
 * LUCENE-5622: Fail tests if they print over the given limit of bytes to 
