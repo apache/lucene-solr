@@ -148,7 +148,9 @@ final class StandardDirectoryReader extends DirectoryReader {
     // remember which readers are shared between the old and the re-opened
     // DirectoryReader - we have to incRef those readers
     boolean[] readerShared = new boolean[infos.size()];
-    
+
+    System.out.println("CYCLE infos=" + infos.size());
+
     for (int i = infos.size() - 1; i>=0; i--) {
       // find SegmentReader for this segment
       Integer oldReaderIndex = segmentReaders.get(infos.info(i).info.name);
@@ -159,6 +161,7 @@ final class StandardDirectoryReader extends DirectoryReader {
         // there is an old reader for this segment - we'll try to reopen it
         newReaders[i] = (SegmentReader) oldReaders.get(oldReaderIndex.intValue());
       }
+      System.out.println("  i=" + i + " newReaders[i]=" + newReaders[i]);
 
       boolean success = false;
       Throwable prior = null;
@@ -171,6 +174,7 @@ final class StandardDirectoryReader extends DirectoryReader {
           readerShared[i] = false;
           newReaders[i] = newReader;
         } else {
+          System.out.println("    now in else");
           if (newReaders[i].getSegmentInfo().getDelGen() == infos.info(i).getDelGen()
               && newReaders[i].getSegmentInfo().getFieldInfosGen() == infos.info(i).getFieldInfosGen()) {
             // No change; this reader will be shared between
@@ -179,6 +183,7 @@ final class StandardDirectoryReader extends DirectoryReader {
             readerShared[i] = true;
             newReaders[i].incRef();
           } else {
+            System.out.println("    has changes");
             // there are changes to the reader, either liveDocs or DV updates
             readerShared[i] = false;
             // Steal the ref returned by SegmentReader ctor:
@@ -191,6 +196,7 @@ final class StandardDirectoryReader extends DirectoryReader {
               // both DV and liveDocs have changed
               newReaders[i] = new SegmentReader(infos.info(i), newReaders[i]);
             }
+            System.out.println("    done open");
           }
         }
         success = true;
@@ -200,6 +206,7 @@ final class StandardDirectoryReader extends DirectoryReader {
         if (!success) {
           for (i++; i < infos.size(); i++) {
             if (newReaders[i] != null) {
+              System.out.println("  decRef i=" + i);
               try {
                 if (!readerShared[i]) {
                   // this is a new subReader that is not used by the old one,

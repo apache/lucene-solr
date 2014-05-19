@@ -28,6 +28,7 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -37,6 +38,8 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -616,6 +619,75 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     assertEquals(1, r2.numDocs());
     w.shutdown();
     r2.close();
+    dir.close();
+  }
+
+  public void testOverDecRefDuringReopen() throws Exception {
+    MockDirectoryWrapper dir = newMockDirectory();
+
+    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setCodec(Codec.forName("Lucene46"));
+    IndexWriter w = new IndexWriter(dir, iwc);
+    Document doc = new Document();
+    doc.add(newStringField("id", "id", Field.Store.NO));
+    w.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("id", "id2", Field.Store.NO));
+    w.addDocument(doc);
+    w.commit();
+
+    // Open reader w/ one segment w/ 2 docs:
+    DirectoryReader r = DirectoryReader.open(dir);
+
+    // Delete 1 doc from the segment:
+    System.out.println("TEST: now delete");
+    w.deleteDocuments(new Term("id", "id"));
+    System.out.println("TEST: now commit");
+    w.commit();
+
+    // Fail when reopen tries to open the live docs file:
+    dir.failOn(new MockDirectoryWrapper.Failure() {
+
+      int failCount;
+
+      @Override
+      public void eval(MockDirectoryWrapper dir) throws IOException {
+        // Need to throw exc three times so the logic in
+        // SegmentInfos.FindSegmentsFile "really believes" us:
+        if (failCount >= 3) {
+          return;
+        }
+        //System.out.println("failOn: ");
+        //new Throwable().printStackTrace(System.out);
+        StackTraceElement[] trace = new Exception().getStackTrace();
+        for (int i = 0; i < trace.length; i++) {
+          if ("readLiveDocs".equals(trace[i].getMethodName())) {
+            if (VERBOSE) {
+              System.out.println("TEST: now fail; exc:");
+              new Throwable().printStackTrace(System.out);
+            }
+            failCount++;
+            throw new FakeIOException();
+          }
+        }
+      }
+    });
+
+    // Now reopen:
+    System.out.println("TEST: now reopen");
+    try {
+      IndexReader r2 = DirectoryReader.openIfChanged(r);
+      System.out.println("got " + r2);
+      fail("didn't hit exception");
+    } catch (FakeIOException fio) {
+      // expected
+    }
+    
+    IndexSearcher s = newSearcher(r);
+    assertEquals(1, s.search(new TermQuery(new Term("id", "id")), 1).totalHits);
+
+    r.close();
+    w.close();
     dir.close();
   }
 }
