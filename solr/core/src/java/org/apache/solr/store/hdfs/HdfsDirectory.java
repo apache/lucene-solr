@@ -30,12 +30,10 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.ipc.RemoteException;
 import org.apache.lucene.store.BaseDirectory;
-import org.apache.lucene.store.BufferedIndexOutput;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.NoLockFactory;
-import org.apache.lucene.util.IOUtils;
 import org.apache.solr.store.blockcache.CustomBufferedIndexInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -99,14 +97,11 @@ public class HdfsDirectory extends BaseDirectory {
   }
   
   @Override
-  public IndexOutput createOutput(String name, IOContext context)
-      throws IOException {
+  public IndexOutput createOutput(String name, IOContext context) throws IOException {
     if (SEGMENTS_GEN.equals(name)) {
       return new NullIndexOutput();
     }
-    HdfsFileWriter writer = new HdfsFileWriter(getFileSystem(), new Path(
-        hdfsDirPath, name));
-    return new HdfsIndexOutput(writer);
+    return new HdfsFileWriter(getFileSystem(), new Path(hdfsDirPath, name));
   }
   
   private String[] getNormalNames(List<String> files) {
@@ -230,36 +225,6 @@ public class HdfsDirectory extends BaseDirectory {
       HdfsIndexInput clone = (HdfsIndexInput) super.clone();
       clone.clone = true;
       return clone;
-    }
-  }
-  
-  static class HdfsIndexOutput extends BufferedIndexOutput {
-    
-    private HdfsFileWriter writer;
-    
-    public HdfsIndexOutput(HdfsFileWriter writer) {
-      this.writer = writer;
-    }
-    
-    @Override
-    public void close() throws IOException {
-      boolean success = false;
-      try {
-        super.close();
-        success = true;
-      } finally {
-        if (success) {
-          IOUtils.close(writer);
-        } else {
-          IOUtils.closeWhileHandlingException(writer);
-        }
-      }
-    }
-
-    @Override
-    protected void flushBuffer(byte[] b, int offset, int len)
-        throws IOException {
-      writer.writeBytes(b, offset, len);
     }
   }
   

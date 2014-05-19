@@ -80,6 +80,12 @@ API Changes
 * LUCENE-4371: Removed IndexInputSlicer and Directory.createSlicer() and replaced
   with IndexInput.slice(). (Robert Muir)
 
+* LUCENE-5678: IndexOutput no longer allows seeking, so it is no longer required
+  to use RandomAccessFile to write Indexes. Lucene now uses standard FileOutputStream
+  wrapped with OutputStreamIndexOutput to write index data. BufferedIndexOutput was
+  removed, because buffering and checksumming is provided by FilterOutputStreams,
+  provided by the JDK.  (Uwe Schindler, Mike McCandless)
+
 Documentation
 
 * LUCENE-5392: Add/improve analysis package documentation to reflect
