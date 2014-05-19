@@ -30,16 +30,16 @@ import java.util.Set;
 
 import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.StringHelper;
 import org.apache.solr.common.params.FacetParams;
@@ -144,7 +144,7 @@ final class NumericFacets {
     final HashTable hashTable = new HashTable();
     final Iterator<AtomicReaderContext> ctxIt = leaves.iterator();
     AtomicReaderContext ctx = null;
-    FieldCache.Longs longs = null;
+    NumericDocValues longs = null;
     Bits docsWithField = null;
     int missingCount = 0;
     for (DocIterator docsIt = docs.iterator(); docsIt.hasNext(); ) {
@@ -156,39 +156,39 @@ final class NumericFacets {
         assert doc >= ctx.docBase;
         switch (numericType) {
           case LONG:
-            longs = FieldCache.DEFAULT.getLongs(ctx.reader(), fieldName, true);
+            longs = DocValues.getNumeric(ctx.reader(), fieldName);
             break;
           case INT:
-            final FieldCache.Ints ints = FieldCache.DEFAULT.getInts(ctx.reader(), fieldName, true);
-            longs = new FieldCache.Longs() {
-              @Override
-              public long get(int docID) {
-                return ints.get(docID);
-              }
-            };
+            longs = DocValues.getNumeric(ctx.reader(), fieldName);
             break;
           case FLOAT:
-            final FieldCache.Floats floats = FieldCache.DEFAULT.getFloats(ctx.reader(), fieldName, true);
-            longs = new FieldCache.Longs() {
+            final NumericDocValues floats = DocValues.getNumeric(ctx.reader(), fieldName);
+            // TODO: this bit flipping should probably be moved to tie-break in the PQ comparator
+            longs = new NumericDocValues() {
               @Override
               public long get(int docID) {
-                return NumericUtils.floatToSortableInt(floats.get(docID));
+                long bits = floats.get(docID);
+                if (bits<0) bits ^= 0x7fffffffffffffffL;
+                return bits;
               }
             };
             break;
           case DOUBLE:
-            final FieldCache.Doubles doubles = FieldCache.DEFAULT.getDoubles(ctx.reader(), fieldName, true);
-            longs = new FieldCache.Longs() {
+            final NumericDocValues doubles = DocValues.getNumeric(ctx.reader(), fieldName);
+            // TODO: this bit flipping should probably be moved to tie-break in the PQ comparator
+            longs = new NumericDocValues() {
               @Override
               public long get(int docID) {
-                return NumericUtils.doubleToSortableLong(doubles.get(docID));
+                long bits = doubles.get(docID);
+                if (bits<0) bits ^= 0x7fffffffffffffffL;
+                return bits;
               }
             };
             break;
           default:
             throw new AssertionError();
         }
-        docsWithField = FieldCache.DEFAULT.getDocsWithField(ctx.reader(), fieldName);
+        docsWithField = DocValues.getDocsWithField(ctx.reader(), fieldName);
       }
       long v = longs.get(doc - ctx.docBase);
       if (v != 0 || docsWithField.get(doc - ctx.docBase)) {

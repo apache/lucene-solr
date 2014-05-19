@@ -19,6 +19,7 @@ package org.apache.solr.handler.component;
 
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -27,7 +28,6 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.TopDocsCollector;
@@ -188,7 +188,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
     SolrIndexSearcher searcher = req.getSearcher();
     AtomicReader reader = searcher.getAtomicReader();
-    SortedDocValues values = FieldCache.DEFAULT.getTermsIndex(reader, field);
+    SortedDocValues values = DocValues.getSorted(reader, field);
     FixedBitSet groupBits = new FixedBitSet(values.getValueCount());
     DocList docList = rb.getResults().docList;
     IntOpenHashSet collapsedSet = new IntOpenHashSet(docList.size()*2);

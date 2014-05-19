@@ -53,8 +53,6 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
   /** Test that FieldScoreQuery of Type.FLOAT returns docs in expected order. */
   @Test
   public void testRankFloat () throws Exception {
-    // INT field can be parsed as float
-    doTestRank(INT_AS_FLOAT_VALUESOURCE);
     // same values, but in flot format
     doTestRank(FLOAT_VALUESOURCE);
   }
@@ -88,8 +86,6 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
   /** Test that FieldScoreQuery of Type.FLOAT returns the expected scores. */
   @Test
   public void testExactScoreFloat () throws  Exception {
-    // INT field can be parsed as float
-    doTestExactScore(INT_AS_FLOAT_VALUESOURCE);
     // same values, but in flot format
     doTestExactScore(FLOAT_VALUESOURCE);
   }

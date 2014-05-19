@@ -40,6 +40,7 @@ import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialArgsParser;
 import org.apache.lucene.spatial.query.SpatialOperation;
+import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.response.TextResponseWriter;
@@ -126,6 +127,11 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   @Override
   public final Field createField(SchemaField field, Object val, float boost) {
     throw new IllegalStateException("instead call createFields() because isPolyField() is true");
+  }
+
+  @Override
+  public Type getUninversionType(SchemaField sf) {
+    return null;
   }
 
   @Override

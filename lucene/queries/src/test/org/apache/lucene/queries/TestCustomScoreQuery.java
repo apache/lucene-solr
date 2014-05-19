@@ -24,7 +24,6 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
@@ -39,7 +38,9 @@ import java.util.Map;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.Term;
 
 /**
@@ -66,11 +67,6 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
    */
   @Test
   public void testCustomScoreFloat() throws Exception {
-    // INT field can be parsed as float
-    doTestCustomScore(INT_AS_FLOAT_VALUESOURCE, 1.0);
-    doTestCustomScore(INT_AS_FLOAT_VALUESOURCE, 5.0);
-
-    // same values, but in float format
     doTestCustomScore(FLOAT_VALUESOURCE, 1.0);
     doTestCustomScore(FLOAT_VALUESOURCE, 6.0);
   }
@@ -164,7 +160,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
 
     @Override
     protected CustomScoreProvider getCustomScoreProvider(AtomicReaderContext context) throws IOException {
-      final FieldCache.Ints values = FieldCache.DEFAULT.getInts(context.reader(), INT_FIELD, false);
+      final NumericDocValues values = DocValues.getNumeric(context.reader(), INT_FIELD);
       return new CustomScoreProvider(context) {
         @Override
         public float customScore(int doc, float subScore, float valSrcScore) {

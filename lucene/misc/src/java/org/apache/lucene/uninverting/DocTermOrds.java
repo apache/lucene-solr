@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.index;
+package org.apache.lucene.uninverting;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -23,6 +23,15 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.codecs.PostingsFormat; // javadocs
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Bits;
@@ -176,6 +185,8 @@ public class DocTermOrds {
   public DocTermOrds(AtomicReader reader, Bits liveDocs, String field) throws IOException {
     this(reader, liveDocs, field, null, Integer.MAX_VALUE);
   }
+  
+  // TODO: instead of all these ctors and options, take termsenum!
 
   /** Inverts only terms starting w/ prefix */
   public DocTermOrds(AtomicReader reader, Bits liveDocs, String field, BytesRef termPrefix) throws IOException {

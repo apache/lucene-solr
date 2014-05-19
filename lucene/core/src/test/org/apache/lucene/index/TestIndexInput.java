@@ -20,9 +20,11 @@ package org.apache.lucene.index;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.DataInput;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMDirectory;
@@ -169,34 +171,26 @@ public class TestIndexInput extends LuceneTestCase {
     }
   }
 
-  // this test only checks BufferedIndexInput because MockIndexInput extends BufferedIndexInput
-  public void testBufferedIndexInputRead() throws IOException {
-    IndexInput is = new MockIndexInput(READ_TEST_BYTES);
-    checkReads(is, IOException.class);
-    is.close();
-    is = new MockIndexInput(RANDOM_TEST_BYTES);
-    checkRandomReads(is);
-    is.close();
-  }
-
-  // this test checks the raw IndexInput methods as it uses RAMIndexInput which extends IndexInput directly
+  // this test checks the IndexInput methods of any impl
   public void testRawIndexInputRead() throws IOException {
-    Random random = random();
-    final RAMDirectory dir = new RAMDirectory();
-    IndexOutput os = dir.createOutput("foo", newIOContext(random));
-    os.writeBytes(READ_TEST_BYTES, READ_TEST_BYTES.length);
-    os.close();
-    IndexInput is = dir.openInput("foo", newIOContext(random));
-    checkReads(is, IOException.class);
-    is.close();
+    for (int i = 0; i < 10; i++) {
+      Random random = random();
+      final Directory dir = newDirectory();
+      IndexOutput os = dir.createOutput("foo", newIOContext(random));
+      os.writeBytes(READ_TEST_BYTES, READ_TEST_BYTES.length);
+      os.close();
+      IndexInput is = dir.openInput("foo", newIOContext(random));
+      checkReads(is, IOException.class);
+      is.close();
     
-    os = dir.createOutput("bar", newIOContext(random));
-    os.writeBytes(RANDOM_TEST_BYTES, RANDOM_TEST_BYTES.length);
-    os.close();
-    is = dir.openInput("bar", newIOContext(random));
-    checkRandomReads(is);
-    is.close();
-    dir.close();
+      os = dir.createOutput("bar", newIOContext(random));
+      os.writeBytes(RANDOM_TEST_BYTES, RANDOM_TEST_BYTES.length);
+      os.close();
+      is = dir.openInput("bar", newIOContext(random));
+      checkRandomReads(is);
+      is.close();
+      dir.close();
+    }
   }
 
   public void testByteArrayDataInput() throws IOException {

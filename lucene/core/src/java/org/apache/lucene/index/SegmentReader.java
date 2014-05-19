@@ -34,7 +34,7 @@ import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
-import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.CachingWrapperFilter;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -361,7 +361,7 @@ public final class SegmentReader extends AtomicReader {
 
   // This is necessary so that cloned SegmentReaders (which
   // share the underlying postings data) will map to the
-  // same entry in the FieldCache.  See LUCENE-1579.
+  // same entry for CachingWrapperFilter.  See LUCENE-1579.
   @Override
   public Object getCoreCacheKey() {
     // NOTE: if this ever changes, be sure to fix
@@ -525,7 +525,7 @@ public final class SegmentReader extends AtomicReader {
    * sharing the same core are closed.  At this point it 
    * is safe for apps to evict this reader from any caches 
    * keyed on {@link #getCoreCacheKey}.  This is the same 
-   * interface that {@link FieldCache} uses, internally, 
+   * interface that {@link CachingWrapperFilter} uses, internally, 
    * to evict entries.</p>
    * 
    * @lucene.experimental

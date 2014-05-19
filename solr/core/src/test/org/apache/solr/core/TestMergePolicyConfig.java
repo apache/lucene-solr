@@ -196,7 +196,7 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
   public static void assertCompoundSegments(SolrCore core, boolean compound) {
     RefCounted<SolrIndexSearcher> searcherRef = core.getRegisteredSearcher();
     try {
-      assertCompoundSegments(searcherRef.get().getIndexReader(), compound);
+      assertCompoundSegments(searcherRef.get().getRawReader(), compound);
     } finally {
       searcherRef.decref();
     }

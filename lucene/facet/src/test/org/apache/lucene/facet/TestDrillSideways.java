@@ -30,6 +30,7 @@ import java.util.Set;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.DrillSideways.DrillSidewaysResult;
 import org.apache.lucene.facet.sortedset.DefaultSortedSetDocValuesReaderState;
@@ -497,6 +498,7 @@ public class TestDrillSideways extends FacetTestCase {
     for(Doc rawDoc : docs) {
       Document doc = new Document();
       doc.add(newStringField("id", rawDoc.id, Field.Store.YES));
+      doc.add(new SortedDocValuesField("id", new BytesRef(rawDoc.id)));
       doc.add(newStringField("content", rawDoc.contentToken, Field.Store.NO));
 
       if (VERBOSE) {

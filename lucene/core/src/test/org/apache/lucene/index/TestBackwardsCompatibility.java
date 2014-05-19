@@ -46,7 +46,6 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.ScoreDoc;
@@ -64,6 +63,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
@@ -877,17 +877,18 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       hits = searcher.search(NumericRangeQuery.newLongRange("trieLong", 4, Long.MIN_VALUE, Long.MAX_VALUE, false, false), 100).scoreDocs;
       assertEquals("wrong number of hits", 34, hits.length);
       
-      // check decoding into field cache
-      FieldCache.Ints fci = FieldCache.DEFAULT.getInts(SlowCompositeReaderWrapper.wrap(searcher.getIndexReader()), "trieInt", false);
-      int maxDoc = searcher.getIndexReader().maxDoc();
-      for(int doc=0;doc<maxDoc;doc++) {
-        int val = fci.get(doc);
+      // check decoding of terms
+      Terms terms = MultiFields.getTerms(searcher.getIndexReader(), "trieInt");
+      TermsEnum termsEnum = NumericUtils.filterPrefixCodedInts(terms.iterator(null));
+      while (termsEnum.next() != null) {
+        int val = NumericUtils.prefixCodedToInt(termsEnum.term());
         assertTrue("value in id bounds", val >= 0 && val < 35);
       }
       
-      FieldCache.Longs fcl = FieldCache.DEFAULT.getLongs(SlowCompositeReaderWrapper.wrap(searcher.getIndexReader()), "trieLong", false);
-      for(int doc=0;doc<maxDoc;doc++) {
-        long val = fcl.get(doc);
+      terms = MultiFields.getTerms(searcher.getIndexReader(), "trieLong");
+      termsEnum = NumericUtils.filterPrefixCodedLongs(terms.iterator(null));
+      while (termsEnum.next() != null) {
+        long val = NumericUtils.prefixCodedToLong(termsEnum.term());
         assertTrue("value in id bounds", val >= 0L && val < 35L);
       }
       

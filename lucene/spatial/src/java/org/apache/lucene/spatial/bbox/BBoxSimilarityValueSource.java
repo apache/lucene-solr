@@ -20,10 +20,11 @@ package org.apache.lucene.spatial.bbox;
 import com.spatial4j.core.shape.Rectangle;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
@@ -64,13 +65,13 @@ public class BBoxSimilarityValueSource extends ValueSource {
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
     AtomicReader reader = readerContext.reader();
-    final FieldCache.Doubles minX = FieldCache.DEFAULT.getDoubles(reader, strategy.field_minX, true);
-    final FieldCache.Doubles minY = FieldCache.DEFAULT.getDoubles(reader, strategy.field_minY, true);
-    final FieldCache.Doubles maxX = FieldCache.DEFAULT.getDoubles(reader, strategy.field_maxX, true);
-    final FieldCache.Doubles maxY = FieldCache.DEFAULT.getDoubles(reader, strategy.field_maxY, true);
+    final NumericDocValues minX = DocValues.getNumeric(reader, strategy.field_minX);
+    final NumericDocValues minY = DocValues.getNumeric(reader, strategy.field_minY);
+    final NumericDocValues maxX = DocValues.getNumeric(reader, strategy.field_maxX);
+    final NumericDocValues maxY = DocValues.getNumeric(reader, strategy.field_maxY);
 
-    final Bits validMinX = FieldCache.DEFAULT.getDocsWithField(reader, strategy.field_minX);
-    final Bits validMaxX = FieldCache.DEFAULT.getDocsWithField(reader, strategy.field_maxX);
+    final Bits validMinX = DocValues.getDocsWithField(reader, strategy.field_minX);
+    final Bits validMaxX = DocValues.getDocsWithField(reader, strategy.field_maxX);
 
     return new FunctionValues() {
       //reused
@@ -78,13 +79,13 @@ public class BBoxSimilarityValueSource extends ValueSource {
 
       @Override
       public float floatVal(int doc) {
-        double minXVal = minX.get(doc);
-        double maxXVal = maxX.get(doc);
+        double minXVal = Double.longBitsToDouble(minX.get(doc));
+        double maxXVal = Double.longBitsToDouble(maxX.get(doc));
         // make sure it has minX and area
         if ((minXVal != 0 || validMinX.get(doc)) && (maxXVal != 0 || validMaxX.get(doc))) {
           rect.reset(
               minXVal, maxXVal,
-              minY.get(doc), maxY.get(doc));
+              Double.longBitsToDouble(minY.get(doc)), Double.longBitsToDouble(maxY.get(doc)));
           return (float) similarity.score(rect, null);
         } else {
           return (float) similarity.score(null, null);
@@ -96,8 +97,8 @@ public class BBoxSimilarityValueSource extends ValueSource {
         // make sure it has minX and area
         if (validMinX.get(doc) && validMaxX.get(doc)) {
           rect.reset(
-              minX.get(doc), maxX.get(doc),
-              minY.get(doc), maxY.get(doc));
+              Double.longBitsToDouble(minX.get(doc)), Double.longBitsToDouble(maxX.get(doc)),
+              Double.longBitsToDouble(minY.get(doc)), Double.longBitsToDouble(maxY.get(doc)));
           Explanation exp = new Explanation();
           similarity.score(rect, exp);
           return exp;

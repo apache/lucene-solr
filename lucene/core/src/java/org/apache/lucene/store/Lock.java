@@ -86,11 +86,7 @@ public abstract class Lock implements Closeable {
         if (failureReason != null) {
           reason += ": " + failureReason;
         }
-        LockObtainFailedException e = new LockObtainFailedException(reason);
-        if (failureReason != null) {
-          e.initCause(failureReason);
-        }
-        throw e;
+        throw new LockObtainFailedException(reason, failureReason);
       }
       try {
         Thread.sleep(LOCK_POLL_INTERVAL);

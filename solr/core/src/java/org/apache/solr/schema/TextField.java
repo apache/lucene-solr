@@ -18,15 +18,19 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
 import org.apache.lucene.search.*;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.QueryBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.Sorting;
 
 import java.util.Map;
 import java.io.IOException;
@@ -93,7 +97,18 @@ public class TextField extends FieldType {
   @Override
   public SortField getSortField(SchemaField field, boolean reverse) {
     /* :TODO: maybe warn if isTokenized(), but doesn't use LimitTokenCountFilter in it's chain? */
-    return getStringSort(field, reverse);
+    field.checkSortability();
+    return Sorting.getTextSortField(field.getName(), reverse, field.sortMissingLast(), field.sortMissingFirst());
+  }
+  
+  @Override
+  public ValueSource getValueSource(SchemaField field, QParser parser) {
+    return new SortedSetFieldSource(field.getName());
+  }
+  
+  @Override
+  public Type getUninversionType(SchemaField sf) {
+    return Type.SORTED_SET_BINARY;
   }
 
   @Override

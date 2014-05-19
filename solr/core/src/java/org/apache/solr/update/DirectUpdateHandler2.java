@@ -242,7 +242,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
               bq.add(new BooleanClause(new TermQuery(updateTerm),
                   Occur.MUST_NOT));
               bq.add(new BooleanClause(new TermQuery(idTerm), Occur.MUST));
-              writer.deleteDocuments(bq);
+              writer.deleteDocuments(new DeleteByQueryWrapper(bq, core.getLatestSchema()));
             }
             
             // Add to the transaction log *after* successfully adding to the
@@ -402,7 +402,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         } else {
           RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
           try {
-            iw.get().deleteDocuments(q);
+            iw.get().deleteDocuments(new DeleteByQueryWrapper(q, core.getLatestSchema()));
           } finally {
             iw.decref();
           }
@@ -440,7 +440,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
             .getIndexAnalyzer());
         
         for (Query q : dbqList) {
-          writer.deleteDocuments(q);
+          writer.deleteDocuments(new DeleteByQueryWrapper(q, core.getLatestSchema()));
         }
       } finally {
         iw.decref();

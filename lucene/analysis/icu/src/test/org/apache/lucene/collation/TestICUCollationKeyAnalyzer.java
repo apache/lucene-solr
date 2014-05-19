@@ -56,29 +56,6 @@ public class TestICUCollationKeyAnalyzer extends CollationTestBase {
        secondRangeBeginning, secondRangeEnd);
   }
 
-  // Test using various international locales with accented characters (which
-  // sort differently depending on locale)
-  //
-  // Copied (and slightly modified) from 
-  // org.apache.lucene.search.TestSort.testInternationalSort()
-  //  
-  public void testCollationKeySort() throws Exception {
-    Analyzer usAnalyzer = new ICUCollationKeyAnalyzer
-      (TEST_VERSION_CURRENT, Collator.getInstance(Locale.ROOT));
-    Analyzer franceAnalyzer = new ICUCollationKeyAnalyzer
-      (TEST_VERSION_CURRENT, Collator.getInstance(Locale.FRANCE));
-    Analyzer swedenAnalyzer = new ICUCollationKeyAnalyzer
-      (TEST_VERSION_CURRENT, Collator.getInstance(new Locale("sv", "se")));
-    Analyzer denmarkAnalyzer = new ICUCollationKeyAnalyzer
-      (TEST_VERSION_CURRENT, Collator.getInstance(new Locale("da", "dk")));
-
-    // The ICU Collator and java.text.Collator implementations differ in their
-    // orderings - "BFJHD" is the ordering for the ICU Collator for Locale.ROOT.
-    testCollationKeySort
-    (usAnalyzer, franceAnalyzer, swedenAnalyzer, denmarkAnalyzer, 
-     "BFJHD", "ECAGI", "BJDFH", "BJDHF");
-  }
-  
   public void testThreadSafe() throws Exception {
     int iters = 20 * RANDOM_MULTIPLIER;
     for (int i = 0; i < iters; i++) {

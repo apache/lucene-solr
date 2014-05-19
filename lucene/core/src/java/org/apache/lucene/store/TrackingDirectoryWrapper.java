@@ -50,11 +50,6 @@ public final class TrackingDirectoryWrapper extends FilterDirectory {
     in.copy(to, src, dest, context);
   }
 
-  @Override
-  public Directory.IndexInputSlicer createSlicer(final String name, final IOContext context) throws IOException {
-    return in.createSlicer(name, context);
-  }
-
   // maybe clone before returning.... all callers are
   // cloning anyway....
   public Set<String> getCreatedFiles() {

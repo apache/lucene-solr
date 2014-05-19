@@ -227,22 +227,6 @@ public class NRTCachingDirectory extends Directory {
       return delegate.openInput(name, context);
     }
   }
-
-  @Override
-  public synchronized IndexInputSlicer createSlicer(final String name, final IOContext context) throws IOException {
-    ensureOpen();
-    if (VERBOSE) {
-      System.out.println("nrtdir.openInput name=" + name);
-    }
-    if (cache.fileNameExists(name)) {
-      if (VERBOSE) {
-        System.out.println("  from cache");
-      }
-      return cache.createSlicer(name, context);
-    } else {
-      return delegate.createSlicer(name, context);
-    }
-  }
   
   /** Close this directory, which flushes any cached files
    *  to the delegate and then closes the delegate. */

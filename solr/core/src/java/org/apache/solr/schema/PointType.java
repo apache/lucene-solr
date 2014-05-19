@@ -25,6 +25,7 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -118,6 +119,11 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
     throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Sorting not supported on PointType " + field.getName());
+  }
+  
+  @Override
+  public Type getUninversionType(SchemaField sf) {
+    return null;
   }
 
   @Override

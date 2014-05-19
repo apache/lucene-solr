@@ -30,6 +30,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 
@@ -362,6 +363,11 @@ public class TrieDateField extends PrimitiveFieldType implements DateValueFieldT
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
     return wrappedField.getSortField(field, top);
+  }
+
+  @Override
+  public Type getUninversionType(SchemaField sf) {
+    return wrappedField.getUninversionType(sf);
   }
 
   @Override

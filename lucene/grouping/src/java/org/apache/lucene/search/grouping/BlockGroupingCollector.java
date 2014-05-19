@@ -300,7 +300,7 @@ public class BlockGroupingCollector extends SimpleCollector {
    *  This is normally not a problem, as you can obtain the
    *  value just like you obtain other values for each
    *  matching document (eg, via stored fields, via
-   *  FieldCache, etc.)
+   *  DocValues, etc.)
    *
    *  @param withinGroupSort The {@link Sort} used to sort
    *    documents within each group.  Passing null is

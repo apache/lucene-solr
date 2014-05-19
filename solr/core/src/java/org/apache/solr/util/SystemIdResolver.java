@@ -144,7 +144,7 @@ public final class SystemIdResolver implements EntityResolver, EntityResolver2 {
           return is;
         } catch (RuntimeException re) {
           // unfortunately XInclude fallback only works with IOException, but openResource() never throws that one
-          throw (IOException) (new IOException(re.getMessage()).initCause(re));
+          throw new IOException(re.getMessage(), re);
         }
       } else {
         // resolve all other URIs using the standard resolver

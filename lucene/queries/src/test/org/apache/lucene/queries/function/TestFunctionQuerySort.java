@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -48,12 +49,15 @@ public class TestFunctionQuerySort extends LuceneTestCase {
 
     Document doc = new Document();
     Field field = new IntField("value", 0, Field.Store.YES);
+    Field dvField = new NumericDocValuesField("value", 0);
     doc.add(field);
+    doc.add(dvField);
 
     // Save docs unsorted (decreasing value n, n-1, ...)
     final int NUM_VALS = 5;
     for (int val = NUM_VALS; val > 0; val--) {
       field.setIntValue(val);
+      dvField.setLongValue(val);
       writer.addDocument(doc);
     }
 

@@ -19,7 +19,6 @@ package org.apache.solr.search.function;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.solr.SolrTestCaseJ4;
@@ -202,8 +201,6 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     singleTest(field,"sum(query($v1,5),query($v1,7))",
             Arrays.asList("v1","\0:[* TO *]"),  88,12
             );
-
-    FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity
   }
 
   @Test
@@ -283,9 +280,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
       singleTest(field, "\0", answers);
       // System.out.println("Done test "+i);
-    }
-
-    FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity    
+    }  
   }
 
   @Test
@@ -422,9 +417,6 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
            ,"*//doc[1]/float[.='120.0']"
            ,"*//doc[2]/float[.='121.0']"
     );
-
-
-    FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity
   }
 
   /**
@@ -640,9 +632,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertU(adoc("id", "10000")); // will get same reader if no index change
     assertU(commit());   
     singleTest(fieldAsFunc, "sqrt(\0)");
-    assertTrue(orig != FileFloatSource.onlyForTesting);
-
-    FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity    
+    assertTrue(orig != FileFloatSource.onlyForTesting);  
   }
 
   /**
@@ -667,9 +657,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
                100,100,  -4,-4,  0,0,  10,10,  25,25,  5,5,  77,77,  1,1);
     singleTest(fieldAsFunc, "sqrt(\0)", 
                100,10,  25,5,  0,0,   1,1);
-    singleTest(fieldAsFunc, "log(\0)",  1,0);
-
-    FieldCache.DEFAULT.purgeAllCaches();   // avoid FC insanity    
+    singleTest(fieldAsFunc, "log(\0)",  1,0); 
   }
 
     @Test

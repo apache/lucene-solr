@@ -22,6 +22,7 @@ import java.util.Map;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.ReaderUtil;
@@ -30,7 +31,6 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.packed.PackedInts;
 
 /**
  * Use a field value and find the Document Frequency within another field.
@@ -56,7 +56,7 @@ public class JoinDocFreqValueSource extends FieldCacheSource {
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException
   {
-    final BinaryDocValues terms = cache.getTerms(readerContext.reader(), field, false, PackedInts.FAST);
+    final BinaryDocValues terms = DocValues.getBinary(readerContext.reader(), field);
     final IndexReader top = ReaderUtil.getTopLevelContext(readerContext).reader();
     Terms t = MultiFields.getTerms(top, qfield);
     final TermsEnum termsEnum = t == null ? TermsEnum.EMPTY : t.iterator(null);

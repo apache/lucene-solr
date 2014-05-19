@@ -20,9 +20,9 @@ package org.apache.lucene.search.grouping.term;
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.LeafCollector;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.grouping.AbstractFirstPassGroupingCollector;
 import org.apache.lucene.util.BytesRef;
@@ -46,7 +46,7 @@ public class TermFirstPassGroupingCollector extends AbstractFirstPassGroupingCol
    *
    *  @param groupField The field used to group
    *    documents. This field must be single-valued and
-   *    indexed (FieldCache is used to access its value
+   *    indexed (DocValues is used to access its value
    *    per-document).
    *  @param groupSort The {@link Sort} used to sort the
    *    groups.  The top sorted document within each group
@@ -88,6 +88,6 @@ public class TermFirstPassGroupingCollector extends AbstractFirstPassGroupingCol
   @Override
   protected void doSetNextReader(AtomicReaderContext readerContext) throws IOException {
     super.doSetNextReader(readerContext);
-    index = FieldCache.DEFAULT.getTermsIndex(readerContext.reader(), groupField);
+    index = DocValues.getSorted(readerContext.reader(), groupField);
   }
 }

@@ -183,6 +183,12 @@ public class TestFieldsReader extends LuceneTestCase {
       }
       return i;
     }
+    
+    @Override
+    public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
+      IndexInput slice = delegate.slice(sliceDescription, offset, length);
+      return new FaultyIndexInput(slice);
+    }
   }
 
   // LUCENE-1262

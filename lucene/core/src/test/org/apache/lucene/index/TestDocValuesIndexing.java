@@ -32,7 +32,6 @@ import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -109,7 +108,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
     DirectoryReader r = w.getReader();
     w.shutdown();
-    assertEquals(17, FieldCache.DEFAULT.getInts(getOnlySegmentReader(r), "field", false).get(0));
+    assertEquals(17, DocValues.getNumeric(getOnlySegmentReader(r), "field").get(0));
     r.close();
     d.close();
   }
@@ -133,7 +132,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
     DirectoryReader r = w.getReader();
     w.shutdown();
-    assertEquals(17, FieldCache.DEFAULT.getInts(getOnlySegmentReader(r), "field", false).get(0));
+    assertEquals(17, DocValues.getNumeric(getOnlySegmentReader(r), "field").get(0));
     r.close();
     d.close();
   }
@@ -176,7 +175,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     w.addDocument(doc);
     w.forceMerge(1);
     DirectoryReader r = w.getReader();
-    BinaryDocValues s = FieldCache.DEFAULT.getTerms(getOnlySegmentReader(r), "field", false);
+    BinaryDocValues s = DocValues.getSorted(getOnlySegmentReader(r), "field");
 
     BytesRef bytes1 = new BytesRef();
     s.get(0, bytes1);
@@ -783,7 +782,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     AtomicReader subR = r.leaves().get(0).reader();
     assertEquals(2, subR.numDocs());
 
-    Bits bits = FieldCache.DEFAULT.getDocsWithField(subR, "dv");
+    Bits bits = DocValues.getDocsWithField(subR, "dv");
     assertTrue(bits.get(0));
     assertTrue(bits.get(1));
     r.close();

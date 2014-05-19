@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
@@ -126,6 +127,9 @@ public class TestElevationComparator extends LuceneTestCase {
    Document doc = new Document();
    for (int i = 0; i < vals.length - 2; i += 2) {
      doc.add(newTextField(vals[i], vals[i + 1], Field.Store.YES));
+     if (vals[i].equals("id")) {
+       doc.add(new SortedDocValuesField(vals[i], new BytesRef(vals[i+1])));
+     }
    }
    return doc;
  }
@@ -185,7 +189,7 @@ class ElevationComparatorSource extends FieldComparatorSource {
 
      @Override
      public FieldComparator<Integer> setNextReader(AtomicReaderContext context) throws IOException {
-       idIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), fieldname);
+       idIndex = DocValues.getSorted(context.reader(), fieldname);
        return this;
      }
 

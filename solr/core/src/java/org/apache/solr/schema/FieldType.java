@@ -32,8 +32,8 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocTermOrdsRangeFilter;
 import org.apache.lucene.search.DocTermOrdsRewriteMethod;
-import org.apache.lucene.search.FieldCacheRangeFilter;
-import org.apache.lucene.search.FieldCacheRewriteMethod;
+import org.apache.lucene.search.DocValuesRangeFilter;
+import org.apache.lucene.search.DocValuesRewriteMethod;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
@@ -41,6 +41,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.uninverting.UninvertingReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.UnicodeUtil;
@@ -446,6 +447,16 @@ public abstract class FieldType extends FieldProperties {
     query.setRewriteMethod(sf.getType().getRewriteMethod(parser, sf));
     return query;
   }
+  
+  /**
+   * DocValues is not enabled for a field, but its indexed, docvalues can be constructed 
+   * on the fly (uninverted, aka fieldcache) on the first request to sort, facet, etc. 
+   * This specifies the structure to use.
+   * 
+   * @param sf field instance
+   * @return type to uninvert, or {@code null} (to disallow uninversion for the field)
+   */
+  public abstract UninvertingReader.Type getUninversionType(SchemaField sf);
 
   /**
    * Default analyzer for types that only produce 1 verbatim token...
@@ -687,7 +698,7 @@ public abstract class FieldType extends FieldProperties {
             part2 == null ? null : new BytesRef(toInternal(part2)),
             minInclusive, maxInclusive));
       } else {
-        return new ConstantScoreQuery(FieldCacheRangeFilter.newStringRange(
+        return new ConstantScoreQuery(DocValuesRangeFilter.newStringRange(
             field.getName(), 
             part1 == null ? null : toInternal(part1),
             part2 == null ? null : toInternal(part2),
@@ -731,7 +742,7 @@ public abstract class FieldType extends FieldProperties {
    */
   public MultiTermQuery.RewriteMethod getRewriteMethod(QParser parser, SchemaField field) {
     if (!field.indexed() && field.hasDocValues()) {
-      return field.multiValued() ? new DocTermOrdsRewriteMethod() : new FieldCacheRewriteMethod();
+      return field.multiValued() ? new DocTermOrdsRewriteMethod() : new DocValuesRewriteMethod();
     } else {
       return MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT;
     }

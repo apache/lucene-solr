@@ -32,6 +32,7 @@
     <path refid="base.classpath"/>
     <path refid="spatialjar"/>
     <pathelement path="${queries.jar}" />
+    <pathelement path="${misc.jar}" />
   </path>
 
   <path id="test.classpath">
@@ -40,12 +41,13 @@
     <pathelement path="src/test-files" />
   </path>
 
-  <target name="compile-core" depends="jar-queries,common.compile-core" />
+  <target name="compile-core" depends="jar-queries,jar-misc,common.compile-core" />
 
-  <target name="javadocs" depends="javadocs-queries,compile-core">
+  <target name="javadocs" depends="javadocs-queries,javadocs-misc,compile-core">
     <invoke-module-javadoc>
       <links>
         <link href="../queries"/>
+        <link href="../misc"/>
       </links>
     </invoke-module-javadoc>
   </target>

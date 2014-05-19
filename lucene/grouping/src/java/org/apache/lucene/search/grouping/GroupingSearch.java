@@ -20,7 +20,6 @@ package org.apache.lucene.search.grouping;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.CachingCollector;
 import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiCollector;
@@ -78,7 +77,7 @@ public class GroupingSearch {
   private Bits matchingGroupHeads;
 
   /**
-   * Constructs a <code>GroupingSearch</code> instance that groups documents by index terms using the {@link FieldCache}.
+   * Constructs a <code>GroupingSearch</code> instance that groups documents by index terms using DocValues.
    * The group field can only have one token per document. This means that the field must not be analysed.
    *
    * @param groupField The name of the field to group by.

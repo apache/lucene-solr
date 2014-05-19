@@ -15,25 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.queries.function.valuesource;
+package org.apache.solr.search.function;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.CompositeReader;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
-import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.SortedSetSelector;
+import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.Insanity;
+import org.apache.solr.search.SolrIndexSearcher;
 
 /**
- * Obtains the ordinal of the field value from the default Lucene {@link org.apache.lucene.search.FieldCache} using getTermsIndex()
+ * Obtains the ordinal of the field value from {@link AtomicReader#getSortedDocValues}
  * and reverses the order.
  * <br>
  * The native lucene index order is used to assign an ordinal value for each field value.
@@ -65,14 +71,33 @@ public class ReverseOrdFieldSource extends ValueSource {
     return "rord("+field+')';
   }
 
-  // TODO: this is trappy? perhaps this query instead should make you pass a slow reader yourself?
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final IndexReader topReader = ReaderUtil.getTopLevelContext(readerContext).reader();
-    final AtomicReader r = SlowCompositeReaderWrapper.wrap(topReader);
     final int off = readerContext.docBase;
-
-    final SortedDocValues sindex = FieldCache.DEFAULT.getTermsIndex(r, field);
+    final AtomicReader r;
+    Object o = context.get("searcher");
+    if (o instanceof SolrIndexSearcher) {
+      SolrIndexSearcher is = (SolrIndexSearcher) o;
+      SchemaField sf = is.getSchema().getFieldOrNull(field);
+      if (sf != null && sf.hasDocValues() == false && sf.multiValued() == false && sf.getType().getNumericType() != null) {
+        // its a single-valued numeric field: we must currently create insanity :(
+        List<AtomicReaderContext> leaves = is.getIndexReader().leaves();
+        AtomicReader insaneLeaves[] = new AtomicReader[leaves.size()];
+        int upto = 0;
+        for (AtomicReaderContext raw : leaves) {
+          insaneLeaves[upto++] = Insanity.wrapInsanity(raw.reader(), field);
+        }
+        r = SlowCompositeReaderWrapper.wrap(new MultiReader(insaneLeaves));
+      } else {
+        // reuse ordinalmap
+        r = ((SolrIndexSearcher)o).getAtomicReader();
+      }
+    } else {
+      IndexReader topReader = ReaderUtil.getTopLevelContext(readerContext).reader();
+      r = SlowCompositeReaderWrapper.wrap(topReader);
+    }
+    // if its e.g. tokenized/multivalued, emulate old behavior of single-valued fc
+    final SortedDocValues sindex = SortedSetSelector.wrap(DocValues.getSortedSet(r, field), SortedSetSelector.Type.MIN);
     final int end = sindex.getValueCount();
 
     return new IntDocValues(this) {

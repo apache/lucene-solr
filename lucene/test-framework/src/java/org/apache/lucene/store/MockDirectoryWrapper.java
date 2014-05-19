@@ -946,45 +946,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     // randomize the IOContext here?
     in.copy(to, src, dest, context);
   }
-
-  @Override
-  public IndexInputSlicer createSlicer(final String name, IOContext context)
-      throws IOException {
-    maybeYield();
-    if (!LuceneTestCase.slowFileExists(in, name)) {
-      throw randomState.nextBoolean() ? new FileNotFoundException(name) : new NoSuchFileException(name);
-    }
-    // cannot open a file for input if it's still open for
-    // output, except for segments.gen and segments_N
-    if (openFilesForWrite.contains(name) && !name.startsWith("segments")) {
-      throw (IOException) fillOpenTrace(new IOException("MockDirectoryWrapper: file \"" + name + "\" is still open for writing"), name, false);
-    }
-    
-    final IndexInputSlicer delegateHandle = in.createSlicer(name, context);
-    final IndexInputSlicer handle = new IndexInputSlicer() {
-      
-      private boolean isClosed;
-      @Override
-      public void close() throws IOException {
-        if (!isClosed) {
-          delegateHandle.close();
-          MockDirectoryWrapper.this.removeOpenFile(this, name);
-          isClosed = true;
-        }
-      }
-
-      @Override
-      public IndexInput openSlice(String sliceDescription, long offset, long length) throws IOException {
-        maybeYield();
-        IndexInput ii = new MockIndexInputWrapper(MockDirectoryWrapper.this, name, delegateHandle.openSlice(sliceDescription, offset, length));
-        addFileHandle(ii, name, Handle.Input);
-        return ii;
-      }
-      
-    };
-    addFileHandle(handle, name, Handle.Slice);
-    return handle;
-  }
   
   final class BufferedIndexOutputWrapper extends BufferedIndexOutput {
     private final IndexOutput io;

@@ -21,7 +21,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import org.apache.lucene.analysis.core.SimpleAnalyzer;
@@ -50,6 +52,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.uninverting.UninvertingReader;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.TestUtil;
@@ -221,8 +224,11 @@ public class TestSort extends SolrTestCaseJ4 {
       }
       iw.shutdown();
 
+      Map<String,UninvertingReader.Type> mapping = new HashMap<>();
+      mapping.put("f", UninvertingReader.Type.SORTED);
+      mapping.put("f2", UninvertingReader.Type.SORTED);
 
-      DirectoryReader reader = DirectoryReader.open(dir);
+      DirectoryReader reader = UninvertingReader.wrap(DirectoryReader.open(dir), mapping);
       IndexSearcher searcher = new IndexSearcher(reader);
       // System.out.println("segments="+searcher.getIndexReader().getSequentialSubReaders().length);
       assertTrue(reader.leaves().size() > 1);

@@ -20,7 +20,6 @@ package org.apache.lucene.store;
 import java.io.File;
 import java.io.EOFException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException; // javadoc @link
 import java.nio.channels.FileChannel;
@@ -83,31 +82,10 @@ public class NIOFSDirectory extends FSDirectory {
     return new NIOFSIndexInput("NIOFSIndexInput(path=\"" + path + "\")", fc, context);
   }
   
-  @Override
-  public IndexInputSlicer createSlicer(final String name,
-      final IOContext context) throws IOException {
-    ensureOpen();
-    final File path = new File(getDirectory(), name);
-    final FileChannel descriptor = FileChannel.open(path.toPath(), StandardOpenOption.READ);
-    return new Directory.IndexInputSlicer() {
-
-      @Override
-      public void close() throws IOException {
-        descriptor.close();
-      }
-
-      @Override
-      public IndexInput openSlice(String sliceDescription, long offset, long length) {
-        return new NIOFSIndexInput("NIOFSIndexInput(" + sliceDescription + " in path=\"" + path + "\" slice=" + offset + ":" + (offset+length) + ")", descriptor, offset,
-            length, BufferedIndexInput.bufferSize(context));
-      }
-    };
-  }
-
   /**
    * Reads bytes with {@link FileChannel#read(ByteBuffer, long)}
    */
-  protected static class NIOFSIndexInput extends BufferedIndexInput {
+  static final class NIOFSIndexInput extends BufferedIndexInput {
     /**
      * The maximum chunk size for reads of 16384 bytes.
      */
@@ -153,6 +131,11 @@ public class NIOFSDirectory extends FSDirectory {
       return clone;
     }
     
+    @Override
+    public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
+      return new NIOFSIndexInput(sliceDescription, channel, off + offset, length, getBufferSize());
+    }
+
     @Override
     public final long length() {
       return end - off;

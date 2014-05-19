@@ -1708,11 +1708,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
             for(int i=0;i<size;i++) {
               final MergePolicy.OneMerge merge = mergeExceptions.get(i);
               if (merge.maxNumSegments != -1) {
-                IOException err = new IOException("background merge hit exception: " + merge.segString(directory));
-                final Throwable t = merge.getException();
-                if (t != null)
-                  err.initCause(t);
-                throw err;
+                throw new IOException("background merge hit exception: " + merge.segString(directory), merge.getException());
               }
             }
           }
@@ -1810,9 +1806,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
             }
             Throwable t = merge.getException();
             if (t != null) {
-              IOException ioe = new IOException("background merge hit exception: " + merge.segString(directory));
-              ioe.initCause(t);
-              throw ioe;
+              throw new IOException("background merge hit exception: " + merge.segString(directory), t);
             }
           }
 

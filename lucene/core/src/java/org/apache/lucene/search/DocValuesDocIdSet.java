@@ -22,7 +22,7 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.OpenBitSet;
 
 /**
- * Base class for DocIdSet to be used with FieldCache. The implementation
+ * Base class for DocIdSet to be used with DocValues. The implementation
  * of its iterator is very stupid and slow if the implementation of the
  * {@link #matchDoc} method is not optimized, as iterators simply increment
  * the document id until {@code matchDoc(int)} returns true. Because of this
@@ -30,12 +30,12 @@ import org.apache.lucene.util.OpenBitSet;
  * I/O.
  * @lucene.internal
  */
-public abstract class FieldCacheDocIdSet extends DocIdSet {
+public abstract class DocValuesDocIdSet extends DocIdSet {
 
   protected final int maxDoc;
   protected final Bits acceptDocs;
 
-  public FieldCacheDocIdSet(int maxDoc, Bits acceptDocs) {
+  public DocValuesDocIdSet(int maxDoc, Bits acceptDocs) {
     this.maxDoc = maxDoc;
     this.acceptDocs = acceptDocs;
   }
@@ -123,7 +123,7 @@ public abstract class FieldCacheDocIdSet extends DocIdSet {
       return new FilteredDocIdSetIterator(((DocIdSet) acceptDocs).iterator()) {
         @Override
         protected boolean match(int doc) {
-          return FieldCacheDocIdSet.this.matchDoc(doc);
+          return DocValuesDocIdSet.this.matchDoc(doc);
         }
       };
     } else {

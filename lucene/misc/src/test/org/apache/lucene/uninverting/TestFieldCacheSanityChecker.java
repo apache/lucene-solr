@@ -1,4 +1,4 @@
-package org.apache.lucene.util;
+package org.apache.lucene.uninverting;
 
 /**
  * Copyright 2009 The Apache Software Foundation
@@ -30,10 +30,10 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
-import org.apache.lucene.util.FieldCacheSanityChecker.InsanityType;
+import org.apache.lucene.uninverting.FieldCacheSanityChecker.Insanity;
+import org.apache.lucene.uninverting.FieldCacheSanityChecker.InsanityType;
+import org.apache.lucene.util.LuceneTestCase;
 
 public class TestFieldCacheSanityChecker extends LuceneTestCase {
 
@@ -94,13 +94,11 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     FieldCache cache = FieldCache.DEFAULT;
     cache.purgeAllCaches();
 
-    cache.getDoubles(readerA, "theDouble", false);
-    cache.getDoubles(readerA, "theDouble", FieldCache.NUMERIC_UTILS_DOUBLE_PARSER, false);
-    cache.getDoubles(readerAclone, "theDouble", FieldCache.NUMERIC_UTILS_DOUBLE_PARSER, false);
-    cache.getDoubles(readerB, "theDouble", FieldCache.NUMERIC_UTILS_DOUBLE_PARSER, false);
+    cache.getNumerics(readerA, "theDouble", FieldCache.NUMERIC_UTILS_DOUBLE_PARSER, false);
+    cache.getNumerics(readerAclone, "theDouble", FieldCache.NUMERIC_UTILS_DOUBLE_PARSER, false);
+    cache.getNumerics(readerB, "theDouble", FieldCache.NUMERIC_UTILS_DOUBLE_PARSER, false);
 
-    cache.getInts(readerX, "theInt", false);
-    cache.getInts(readerX, "theInt", FieldCache.NUMERIC_UTILS_INT_PARSER, false);
+    cache.getNumerics(readerX, "theInt", FieldCache.NUMERIC_UTILS_INT_PARSER, false);
 
     // // // 
 
@@ -119,7 +117,7 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     FieldCache cache = FieldCache.DEFAULT;
     cache.purgeAllCaches();
 
-    cache.getInts(readerX, "theInt", FieldCache.NUMERIC_UTILS_INT_PARSER, false);
+    cache.getNumerics(readerX, "theInt", FieldCache.NUMERIC_UTILS_INT_PARSER, false);
     cache.getTerms(readerX, "theInt", false);
 
     // // // 

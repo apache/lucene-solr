@@ -47,7 +47,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.TreeSet;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -105,8 +104,6 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.AssertingIndexSearcher;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.FieldCache.CacheEntry;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.QueryUtils.FCInvisibleMultiReader;
 import org.apache.lucene.store.BaseDirectoryWrapper;
@@ -121,7 +118,6 @@ import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.store.RateLimitedDirectoryWrapper;
-import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
@@ -630,10 +626,18 @@ public abstract class LuceneTestCase extends Assert {
     .around(threadAndTestNameRule)
     .around(new SystemPropertiesInvariantRule(IGNORED_INVARIANT_PROPERTIES))
     .around(new TestRuleSetupAndRestoreInstanceEnv())
-    .around(new TestRuleFieldCacheSanity())
     .around(parentChainCallRule);
 
   private static final Map<String,FieldType> fieldToType = new HashMap<String,FieldType>();
+
+  enum LiveIWCFlushMode {BY_RAM, BY_DOCS, EITHER};
+
+  /** Set by TestRuleSetupAndRestoreClassEnv */
+  static LiveIWCFlushMode liveIWCFlushMode;
+
+  static void setLiveIWCFlushMode(LiveIWCFlushMode flushMode) {
+    liveIWCFlushMode = flushMode;
+  }
 
   // -----------------------------------------------------------------
   // Suite and test case setup/ cleanup.
@@ -739,48 +743,6 @@ public abstract class LuceneTestCase extends Assert {
   protected boolean isTestThread() {
     assertNotNull("Test case thread not set?", threadAndTestNameRule.testCaseThread);
     return Thread.currentThread() == threadAndTestNameRule.testCaseThread;
-  }
-
-  /**
-   * Asserts that FieldCacheSanityChecker does not detect any
-   * problems with FieldCache.DEFAULT.
-   * <p>
-   * If any problems are found, they are logged to System.err
-   * (allong with the msg) when the Assertion is thrown.
-   * </p>
-   * <p>
-   * This method is called by tearDown after every test method,
-   * however IndexReaders scoped inside test methods may be garbage
-   * collected prior to this method being called, causing errors to
-   * be overlooked. Tests are encouraged to keep their IndexReaders
-   * scoped at the class level, or to explicitly call this method
-   * directly in the same scope as the IndexReader.
-   * </p>
-   *
-   * @see org.apache.lucene.util.FieldCacheSanityChecker
-   */
-  protected static void assertSaneFieldCaches(final String msg) {
-    final CacheEntry[] entries = FieldCache.DEFAULT.getCacheEntries();
-    Insanity[] insanity = null;
-    try {
-      try {
-        insanity = FieldCacheSanityChecker.checkSanity(entries);
-      } catch (RuntimeException e) {
-        dumpArray(msg + ": FieldCache", entries, System.err);
-        throw e;
-      }
-
-      assertEquals(msg + ": Insane FieldCache usage(s) found",
-                   0, insanity.length);
-      insanity = null;
-    } finally {
-
-      // report this in the event of any exception/failure
-      // if no failure, then insanity will be null anyway
-      if (null != insanity) {
-        dumpArray(msg + ": Insane FieldCache usage(s)", insanity, System.err);
-      }
-    }
   }
 
   /**
@@ -1042,8 +1004,21 @@ public abstract class LuceneTestCase extends Assert {
       // this is complicated because the api requires you "invoke setters in a magical order!"
       // LUCENE-5661: workaround for race conditions in the API
       synchronized (c) {
-        boolean flushByRam = r.nextBoolean();
-        if (flushByRam) { 
+        boolean flushByRAM;
+        switch (liveIWCFlushMode) {
+        case BY_RAM:
+          flushByRAM = true;
+          break;
+        case BY_DOCS:
+          flushByRAM = false;
+          break;
+        case EITHER:
+          flushByRAM = random().nextBoolean();
+          break;
+        default:
+          throw new AssertionError();
+        }
+        if (flushByRAM) { 
           c.setRAMBufferSizeMB(TestUtil.nextInt(r, 1, 10));
           c.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
         } else {

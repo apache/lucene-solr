@@ -17,11 +17,12 @@ package org.apache.lucene.spatial;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.queries.ChainedFilter;
 import org.apache.lucene.search.BitsFilteredDocIdSet;
 import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
@@ -48,7 +49,7 @@ public class DisjointSpatialFilter extends Filter {
    * @param strategy Needed to compute intersects
    * @param args Used in spatial intersection
    * @param field This field is used to determine which docs have spatial data via
-   *               {@link org.apache.lucene.search.FieldCache#getDocsWithField(org.apache.lucene.index.AtomicReader, String)}.
+   *               {@link AtomicReader#getDocsWithField(String)}.
    *              Passing null will assume all docs have spatial data.
    */
   public DisjointSpatialFilter(SpatialStrategy strategy, SpatialArgs args, String field) {
@@ -92,7 +93,7 @@ public class DisjointSpatialFilter extends Filter {
       // which is nice but loading it in this way might be slower than say using an
       // intersects filter against the world bounds. So do we add a method to the
       // strategy, perhaps?  But the strategy can't cache it.
-      docsWithField = FieldCache.DEFAULT.getDocsWithField(context.reader(), field);
+      docsWithField = DocValues.getDocsWithField(context.reader(), field);
 
       final int maxDoc = context.reader().maxDoc();
       if (docsWithField.length() != maxDoc )

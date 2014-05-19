@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.response.TextResponseWriter;
@@ -44,6 +45,15 @@ public class BinaryField extends FieldType  {
     throw new RuntimeException("Cannot sort on a Binary field");
   }
 
+  @Override
+  public Type getUninversionType(SchemaField sf) {
+    // TODO: maybe just return null?
+    if (sf.multiValued()) {
+      return Type.SORTED_SET_BINARY;
+    } else {
+      return Type.BINARY;
+    }
+  }
 
   @Override
   public String toExternal(StorableField f) {

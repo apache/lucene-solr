@@ -87,7 +87,7 @@ public final class CompoundFileDirectory extends BaseDirectory {
   private final boolean openForWrite;
   private static final Map<String,FileEntry> SENTINEL = Collections.emptyMap();
   private final CompoundFileWriter writer;
-  private final IndexInputSlicer handle;
+  private final IndexInput handle;
   private int version;
   
   /**
@@ -101,7 +101,7 @@ public final class CompoundFileDirectory extends BaseDirectory {
     this.openForWrite = openForWrite;
     if (!openForWrite) {
       boolean success = false;
-      handle = directory.createSlicer(fileName, context);
+      handle = directory.openInput(fileName, context);
       try {
         this.entries = readEntries(directory, fileName);
         success = true;
@@ -192,7 +192,7 @@ public final class CompoundFileDirectory extends BaseDirectory {
     if (entry == null) {
       throw new FileNotFoundException("No sub-file with id " + id + " found (fileName=" + name + " files: " + entries.keySet() + ")");
     }
-    return handle.openSlice(name, entry.offset, entry.length);
+    return handle.slice(name, entry.offset, entry.length);
   }
   
   /** Returns an array of strings, one for each file in the directory. */
@@ -256,28 +256,6 @@ public final class CompoundFileDirectory extends BaseDirectory {
   @Override
   public Lock makeLock(String name) {
     throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public IndexInputSlicer createSlicer(final String name, IOContext context)
-      throws IOException {
-    ensureOpen();
-    assert !openForWrite;
-    final String id = IndexFileNames.stripSegmentName(name);
-    final FileEntry entry = entries.get(id);
-    if (entry == null) {
-      throw new FileNotFoundException("No sub-file with id " + id + " found (fileName=" + name + " files: " + entries.keySet() + ")");
-    }
-    return new IndexInputSlicer() {
-      @Override
-      public void close() {
-      }
-      
-      @Override
-      public IndexInput openSlice(String sliceDescription, long offset, long length) throws IOException {
-        return handle.openSlice(sliceDescription, entry.offset + offset, length);
-      }
-    };
   }
 
   @Override

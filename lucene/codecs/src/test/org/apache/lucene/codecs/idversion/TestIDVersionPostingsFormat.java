@@ -54,6 +54,8 @@ import org.apache.lucene.util.TestUtil;
 /**
  * Basic tests for IDVersionPostingsFormat
  */
+// Cannot extend BasePostingsFormatTestCase because this PF is not
+// general (it requires payloads, only allows 1 doc per term, etc.)
 public class TestIDVersionPostingsFormat extends LuceneTestCase {
 
   public void testBasic() throws Exception {
@@ -391,4 +393,52 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     return field;
     */
   }
+
+  /*
+  // Invalid
+  public void testMoreThanOneDocPerIDOneSegment() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    Document doc = new Document();
+    doc.add(makeIDField("id", 17));
+    w.addDocument(doc);
+    doc = new Document();
+    doc.add(makeIDField("id", 17));
+    w.addDocument(doc);
+    try {
+      w.commit();
+      fail("didn't hit expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+      iae.printStackTrace();
+    }
+    w.close();
+    dir.close();
+  }
+
+  // Invalid
+  public void testMoreThanOneDocPerIDTwoSegments() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    Document doc = new Document();
+    doc.add(makeIDField("id", 17));
+    w.addDocument(doc);
+    w.commit();
+    doc = new Document();
+    doc.add(makeIDField("id", 17));
+    w.addDocument(doc);
+    w.commit();
+    w.forceMerge(1);
+    w.close();
+    dir.close();
+  }
+
+  public void testMoreThanOneDocPerIDWithDeletes() {
+    
+  }
+  */
 }

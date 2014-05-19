@@ -80,8 +80,7 @@ field fall into a single group.</p>
 <p>Known limitations:</p>
 <ul>
   <li> For the two-pass grouping search, the group field must be a
-    single-valued indexed field (or indexed as a {@link org.apache.lucene.document.SortedDocValuesField}).
-    {@link org.apache.lucene.search.FieldCache} is used to load the {@link org.apache.lucene.index.SortedDocValues} for this field.
+    indexed as a {@link org.apache.lucene.document.SortedDocValuesField}).
   <li> Although Solr support grouping by function and this module has abstraction of what a group is, there are currently only
     implementations for grouping based on terms.
   <li> Sharding is not directly supported, though is not too

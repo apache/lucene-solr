@@ -89,6 +89,7 @@ import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.uninverting.UninvertingReader;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
@@ -169,9 +170,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   private DirectoryFactory directoryFactory;
   
   private final AtomicReader atomicReader;
+  // only for addIndexes etc (no fieldcache)
+  private final DirectoryReader rawReader;
+  
   private String path;
   private final boolean reserveDirectory;
-  private final boolean createdDirectory; 
+  private boolean createdDirectory; 
   
   private static DirectoryReader getReader(SolrCore core, SolrIndexConfig config, DirectoryFactory directoryFactory, String path) throws IOException {
     DirectoryReader reader = null;
@@ -184,18 +188,27 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     }
     return reader;
   }
+  
+  // TODO: wrap elsewhere and return a "map" from the schema that overrides get() ?
+  // this reader supports reopen
+  private static DirectoryReader wrapReader(SolrCore core, DirectoryReader reader) {
+    assert reader != null;
+    return UninvertingReader.wrap(reader, core.getLatestSchema().getUninversionMap(reader));
+  }
 
   public SolrIndexSearcher(SolrCore core, String path, IndexSchema schema, SolrIndexConfig config, String name, boolean enableCache, DirectoryFactory directoryFactory) throws IOException {
     // we don't need to reserve the directory because we get it from the factory
-    this(core, path, schema, config, name, null, true, enableCache, false, directoryFactory);
+    this(core, path, schema, config, name, getReader(core, config, directoryFactory, path), true, enableCache, false, directoryFactory);
+    this.createdDirectory = true;
   }
 
   public SolrIndexSearcher(SolrCore core, String path, IndexSchema schema, SolrIndexConfig config, String name, DirectoryReader r, boolean closeReader, boolean enableCache, boolean reserveDirectory, DirectoryFactory directoryFactory) throws IOException {
-    super(r == null ? getReader(core, config, directoryFactory, path) : r);
+    super(wrapReader(core, r));
 
     this.path = path;
     this.directoryFactory = directoryFactory;
     this.reader = (DirectoryReader) super.readerContext.reader();
+    this.rawReader = r;
     this.atomicReader = SlowCompositeReaderWrapper.wrap(this.reader);
     this.core = core;
     this.schema = schema;
@@ -211,7 +224,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     Directory dir = getIndexReader().directory();
     
     this.reserveDirectory = reserveDirectory;
-    this.createdDirectory = r == null;
     if (reserveDirectory) {
       // keep the directory from being released while we use it
       directoryFactory.incRef(dir);
@@ -303,6 +315,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     return atomicReader;
   }
   
+  /** Raw reader (no fieldcaches etc). Useful for operations like addIndexes */
+  public final DirectoryReader getRawReader() {
+    return rawReader;
+  }
+  
   @Override
   public final DirectoryReader getIndexReader() {
     assert reader == super.getIndexReader();
@@ -351,7 +368,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     
     long cpg = reader.getIndexCommit().getGeneration();
     try {
-      if (closeReader) reader.decRef();
+      if (closeReader) rawReader.decRef();
     } catch (Exception e) {
       SolrException.log(log, "Problem dec ref'ing reader", e);
     }

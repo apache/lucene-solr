@@ -80,27 +80,27 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     // Reused across documents, to add the necessary facet
     // fields:
     Document doc = new Document();
-    doc.add(new IntField("num", 10, Field.Store.NO));
+    doc.add(new NumericDocValuesField("num", 10));
     doc.add(new FacetField("Author", "Bob"));
     writer.addDocument(config.build(taxoWriter, doc));
 
     doc = new Document();
-    doc.add(new IntField("num", 20, Field.Store.NO));
+    doc.add(new NumericDocValuesField("num", 20));
     doc.add(new FacetField("Author", "Lisa"));
     writer.addDocument(config.build(taxoWriter, doc));
 
     doc = new Document();
-    doc.add(new IntField("num", 30, Field.Store.NO));
+    doc.add(new NumericDocValuesField("num", 30));
     doc.add(new FacetField("Author", "Lisa"));
     writer.addDocument(config.build(taxoWriter, doc));
 
     doc = new Document();
-    doc.add(new IntField("num", 40, Field.Store.NO));
+    doc.add(new NumericDocValuesField("num", 40));
     doc.add(new FacetField("Author", "Susan"));
     writer.addDocument(config.build(taxoWriter, doc));
 
     doc = new Document();
-    doc.add(new IntField("num", 45, Field.Store.NO));
+    doc.add(new NumericDocValuesField("num", 45));
     doc.add(new FacetField("Author", "Frank"));
     writer.addDocument(config.build(taxoWriter, doc));
 
@@ -145,7 +145,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     FacetsConfig config = new FacetsConfig();
 
     Document doc = new Document();
-    doc.add(new IntField("num", 10, Field.Store.NO));
+    doc.add(new NumericDocValuesField("num", 10));
     doc.add(new FacetField("a", "foo1"));
     writer.addDocument(config.build(taxoWriter, doc));
 
@@ -154,7 +154,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     }
 
     doc = new Document();
-    doc.add(new IntField("num", 20, Field.Store.NO));
+    doc.add(new NumericDocValuesField("num", 20));
     doc.add(new FacetField("a", "foo2"));
     doc.add(new FacetField("b", "bar1"));
     writer.addDocument(config.build(taxoWriter, doc));
@@ -164,7 +164,7 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     }
 
     doc = new Document();
-    doc.add(new IntField("num", 30, Field.Store.NO));
+    doc.add(new NumericDocValuesField("num", 30));
     doc.add(new FacetField("a", "foo3"));
     doc.add(new FacetField("b", "bar2"));
     doc.add(new FacetField("c", "baz1"));

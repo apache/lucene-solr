@@ -17,17 +17,6 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import static org.apache.lucene.util.LuceneTestCase.INFOSTREAM;
-import static org.apache.lucene.util.LuceneTestCase.TEST_CODEC;
-import static org.apache.lucene.util.LuceneTestCase.TEST_DOCVALUESFORMAT;
-import static org.apache.lucene.util.LuceneTestCase.TEST_POSTINGSFORMAT;
-import static org.apache.lucene.util.LuceneTestCase.VERBOSE;
-import static org.apache.lucene.util.LuceneTestCase.assumeFalse;
-import static org.apache.lucene.util.LuceneTestCase.localeForName;
-import static org.apache.lucene.util.LuceneTestCase.random;
-import static org.apache.lucene.util.LuceneTestCase.randomLocale;
-import static org.apache.lucene.util.LuceneTestCase.randomTimeZone;
-
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Date;
@@ -59,10 +48,19 @@ import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.junit.internal.AssumptionViolatedException;
-
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 
-
+import static org.apache.lucene.util.LuceneTestCase.INFOSTREAM;
+import static org.apache.lucene.util.LuceneTestCase.LiveIWCFlushMode;
+import static org.apache.lucene.util.LuceneTestCase.TEST_CODEC;
+import static org.apache.lucene.util.LuceneTestCase.TEST_DOCVALUESFORMAT;
+import static org.apache.lucene.util.LuceneTestCase.TEST_POSTINGSFORMAT;
+import static org.apache.lucene.util.LuceneTestCase.VERBOSE;
+import static org.apache.lucene.util.LuceneTestCase.assumeFalse;
+import static org.apache.lucene.util.LuceneTestCase.localeForName;
+import static org.apache.lucene.util.LuceneTestCase.random;
+import static org.apache.lucene.util.LuceneTestCase.randomLocale;
+import static org.apache.lucene.util.LuceneTestCase.randomTimeZone;
 
 /**
  * Setup and restore suite-level environment (fine grained junk that 
@@ -274,6 +272,25 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
           Arrays.toString(avoidCodecs.toArray()));
       throw e;
     }
+
+    // We have "stickiness" so that sometimes all we do is vary the RAM buffer size, other times just the doc count to flush by, else both.
+    // This way the assertMemory in DocumentsWriterFlushControl sometimes runs (when we always flush by RAM).
+    LiveIWCFlushMode flushMode;
+    switch (random().nextInt(3)) {
+    case 0:
+      flushMode = LiveIWCFlushMode.BY_RAM;
+      break;
+    case 1:
+      flushMode = LiveIWCFlushMode.BY_DOCS;
+      break;
+    case 2:
+      flushMode = LiveIWCFlushMode.EITHER;
+      break;
+    default:
+      throw new AssertionError();
+    }
+
+    LuceneTestCase.setLiveIWCFlushMode(flushMode);
   }
 
   /**

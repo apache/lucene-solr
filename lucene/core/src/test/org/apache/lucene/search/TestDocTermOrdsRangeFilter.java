@@ -33,12 +33,14 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.UnicodeUtil;
 
 /**
  * Tests the DocTermOrdsRangeFilter
  */
+@SuppressCodecs({"Lucene40", "Lucene41", "Lucene42"}) // needs SORTED_SET
 public class TestDocTermOrdsRangeFilter extends LuceneTestCase {
   protected IndexSearcher searcher1;
   protected IndexSearcher searcher2;
@@ -63,10 +65,7 @@ public class TestDocTermOrdsRangeFilter extends LuceneTestCase {
       for (int j = 0; j < numTerms; j++) {
         String s = TestUtil.randomUnicodeString(random());
         doc.add(newStringField(fieldName, s, Field.Store.NO));
-        // if the default codec doesn't support sortedset, we will uninvert at search time
-        if (defaultCodecSupportsSortedSet()) {
-          doc.add(new SortedSetDocValuesField(fieldName, new BytesRef(s)));
-        }
+        doc.add(new SortedSetDocValuesField(fieldName, new BytesRef(s)));
         terms.add(s);
       }
       writer.addDocument(doc);

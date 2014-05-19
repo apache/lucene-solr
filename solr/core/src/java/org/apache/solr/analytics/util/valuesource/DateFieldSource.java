@@ -18,17 +18,18 @@
 package org.apache.solr.analytics.util.valuesource;
 
 import java.io.IOException;
-import java.text.ParseException;
 import java.util.Date;
 import java.util.Map;
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.LongDocValues;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueDate;
 import org.apache.solr.schema.TrieDateField;
@@ -39,16 +40,12 @@ import org.apache.solr.schema.TrieDateField;
  */
 public class DateFieldSource extends LongFieldSource {
 
-  public DateFieldSource(String field) throws ParseException {
-    super(field, null);
-  }
-
-  public DateFieldSource(String field, FieldCache.LongParser parser) {
-    super(field, parser);
+  public DateFieldSource(String field) {
+    super(field);
   }
 
   public long externalToLong(String extVal) {
-    return parser.parseLong(new BytesRef(extVal));
+    return NumericUtils.prefixCodedToLong(new BytesRef(extVal));
   }
 
   public Object longToObject(long val) {
@@ -62,8 +59,8 @@ public class DateFieldSource extends LongFieldSource {
 
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final FieldCache.Longs arr = cache.getLongs(readerContext.reader(), field, parser, true);
-    final Bits valid = cache.getDocsWithField(readerContext.reader(), field);
+    final NumericDocValues arr = DocValues.getNumeric(readerContext.reader(), field);
+    final Bits valid = DocValues.getDocsWithField(readerContext.reader(), field);
     return new LongDocValues(this) {
       @Override
       public long longVal(int doc) {
@@ -110,16 +107,12 @@ public class DateFieldSource extends LongFieldSource {
   public boolean equals(Object o) {
     if (o.getClass() != this.getClass()) return false;
     DateFieldSource other = (DateFieldSource) o;
-    if (parser==null) {
-      return field.equals(other.field);
-    } else {
-      return field.equals(other.field) && parser.equals(other.parser);
-    }
+    return field.equals(other.field);
   }
 
   @Override
   public int hashCode() {
-    int h = parser == null ? this.getClass().hashCode() : parser.getClass().hashCode();
+    int h = this.getClass().hashCode();
     h += super.hashCode();
     return h;
   }

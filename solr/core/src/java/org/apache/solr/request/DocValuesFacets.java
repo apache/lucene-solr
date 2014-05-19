@@ -60,10 +60,13 @@ public class DocValuesFacets {
     SchemaField schemaField = searcher.getSchema().getField(fieldName);
     FieldType ft = schemaField.getType();
     NamedList<Integer> res = new NamedList<>();
+    
+    // TODO: remove multiValuedFieldCache(), check dv type / uninversion type?
+    final boolean multiValued = schemaField.multiValued() || ft.multiValuedFieldCache();
 
     final SortedSetDocValues si; // for term lookups only
     OrdinalMap ordinalMap = null; // for mapping per-segment ords to global ones
-    if (schemaField.multiValued()) {
+    if (multiValued) {
       si = searcher.getAtomicReader().getSortedSetDocValues(fieldName);
       if (si instanceof MultiSortedSetDocValues) {
         ordinalMap = ((MultiSortedSetDocValues)si).mapping;
@@ -126,7 +129,7 @@ public class DocValuesFacets {
           disi = dis.iterator();
         }
         if (disi != null) {
-          if (schemaField.multiValued()) {
+          if (multiValued) {
             SortedSetDocValues sub = leaf.reader().getSortedSetDocValues(fieldName);
             if (sub == null) {
               sub = DocValues.EMPTY_SORTED_SET;
