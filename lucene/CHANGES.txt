@@ -87,35 +87,6 @@ Optimizations
 
 Bug fixes
 
-* LUCENE-5600: HttpClientBase did not properly consume a connection if a server
-  error occurred. (Christoph Kaser via Shai Erera)
-
-* LUCENE-5559: Add additional argument validation for CapitalizationFilter
-  and CodepointCountFilter. (Ahmet Arslan via Robert Muir)
-
-* LUCENE-5639: Fix PositionLengthAttribute implementation in Token class.
-  (Uwe Schindler, Robert Muir)
-
-* LUCENE-5628: Change getFiniteStrings to iterative not recursive
-  implementation, so that building suggesters on a long suggestion
-  doesn't risk overflowing the stack; previously it consumed one Java
-  stack frame per character in the expanded suggestion (Robert Muir,
-  Simon Willnauer, Mike McCandless).
-
-* LUCENE-5641: SimpleRateLimiter would silently rate limit at 8 MB/sec
-  even if you asked for higher rates.  (Mike McCandless)
-
-* LUCENE-5644: IndexWriter clears which threads use which internal
-  thread states on flush, so that if an application reduces how many
-  threads it uses for indexing, that results in a reduction of how
-  many segments are flushed on a full-flush (e.g. to obtain a
-  near-real-time reader).  (Simon Willnauer, Mike McCandless)
-
-* LUCENE-5660: AnalyzingSuggester.build will now throw IllegalArgumentException if
-  you give it a longer suggestion than it can handle (Robert Muir, Mike McCandless)
-
-* LUCENE-5668: Fix off-by-one in TieredMergePolicy (Mike McCandless)
-
 * LUCENE-5673: MMapDirectory: Work around a "bug" in the JDK that throws
   a confusing OutOfMemoryError wrapped inside IOException if the FileChannel
   mapping failed because of lack of virtual address space. The IOException is
@@ -129,6 +100,64 @@ Test Framework
   
 * LUCENE-5619: Added backwards compatibility tests to ensure we can update existing
   indexes with doc-values updates. (Shai Erera, Robert Muir)
+
+======================= Lucene 4.8.1 =======================
+
+Bug fixes
+
+* LUCENE-5639: Fix PositionLengthAttribute implementation in Token class.
+  (Uwe Schindler, Robert Muir)
+
+* LUCENE-5635: IndexWriter didn't properly handle IOException on TokenStream.reset(),
+  which could leave the analyzer in an inconsistent state.  (Robert Muir)
+
+* LUCENE-5599: HttpReplicator did not properly delegate bulk read() to wrapped
+  InputStream. (Christoph Kaser via Shai Erera)
+  
+* LUCENE-5600: HttpClientBase did not properly consume a connection if a server
+  error occurred. (Christoph Kaser via Shai Erera)
+
+* LUCENE-5628: Change getFiniteStrings to iterative not recursive
+  implementation, so that building suggesters on a long suggestion
+  doesn't risk overflowing the stack; previously it consumed one Java
+  stack frame per character in the expanded suggestion.  If you are building
+  a suggester this is a nasty trap. (Robert Muir, Simon Willnauer,
+  Mike McCandless).
+
+* LUCENE-5559: Add additional argument validation for CapitalizationFilter
+  and CodepointCountFilter. (Ahmet Arslan via Robert Muir)
+
+* LUCENE-5641: SimpleRateLimiter would silently rate limit at 8 MB/sec
+  even if you asked for higher rates.  (Mike McCandless)
+
+* LUCENE-5644: IndexWriter clears which threads use which internal
+  thread states on flush, so that if an application reduces how many
+  threads it uses for indexing, that results in a reduction of how
+  many segments are flushed on a full-flush (e.g. to obtain a
+  near-real-time reader).  (Simon Willnauer, Mike McCandless)
+
+* LUCENE-5653: JoinUtil with ScoreMode.Avg on a multi-valued field
+  with more than 256 values would throw exception.
+  (Mikhail Khludnev via Robert Muir)
+
+* LUCENE-5654: Fix various close() methods that could suppress 
+  throwables such as OutOfMemoryError, instead returning scary messages
+  that look like index corruption.  (Mike McCandless, Robert Muir)
+
+* LUCENE-5656: Fix rare fd leak in SegmentReader when multiple docvalues
+  fields have been updated with IndexWriter.updateXXXDocValue and one
+  hits exception. (Shai Erera, Robert Muir)
+
+* LUCENE-5660: AnalyzingSuggester.build will now throw IllegalArgumentException if
+  you give it a longer suggestion than it can handle (Robert Muir, Mike McCandless)
+
+* LUCENE-5662: Add missing checks to Field to prevent IndexWriter.abort
+  if a stored value is null. (Robert Muir)
+
+* LUCENE-5668: Fix off-by-one in TieredMergePolicy (Mike McCandless)
+
+* LUCENE-5671: Upgrade ICU version to fix an ICU concurrency problem that
+  could cause exceptions when indexing. (feedly team, Robert Muir)
 
 ======================= Lucene 4.8.0 =======================
 
