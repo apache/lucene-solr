@@ -18,10 +18,6 @@
 
 package org.apache.solr.cloud;
 
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.TreeMap;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -35,6 +31,12 @@ import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * A distributed queue from zk recipes.
@@ -362,6 +364,103 @@ public class DistributedQueue {
     } finally {
       time.stop();
     }
+  }
+  
+  public List<QueueEvent> peekTopN(int n, Set<String> excludeSet, Long wait)
+      throws KeeperException, InterruptedException {
+    ArrayList<QueueEvent> topN = new ArrayList<>();
+
+    LOG.debug("Peeking for top {} elements. ExcludeSet: " + excludeSet.toString());
+    boolean waitedEnough = false;
+    TimerContext time = null;
+    if (wait == Long.MAX_VALUE) time = stats.time(dir + "_peekTopN_wait_forever");
+    else time = stats.time(dir + "_peekTopN_wait" + wait);
+
+    try {
+      TreeMap<Long, String> orderedChildren;
+      while (true) {
+        LatchChildWatcher childWatcher = new LatchChildWatcher();
+        try {
+          orderedChildren = orderedChildren(childWatcher);
+        } catch (KeeperException.NoNodeException e) {
+          zookeeper.create(dir, new byte[0], acl, CreateMode.PERSISTENT, true);
+          continue;
+        }
+
+        if (orderedChildren.size() == 0) {
+          if(waitedEnough) return null;
+          childWatcher.await(wait == Long.MAX_VALUE ? DEFAULT_TIMEOUT : wait);
+          waitedEnough = wait != Long.MAX_VALUE;
+          continue;
+        }
+
+        for (String headNode : orderedChildren.values()) {
+          if (headNode != null && topN.size() < n) {
+            try {
+              String id = dir + "/" + headNode;
+              if (excludeSet != null && excludeSet.contains(id)) continue;
+              QueueEvent queueEvent = new QueueEvent(id,
+                  zookeeper.getData(dir + "/" + headNode, null, null, true), null);
+              topN.add(queueEvent);
+            } catch (KeeperException.NoNodeException e) {
+              // Another client removed the node first, try next
+            }
+          } else {
+            if (topN.size() >= 1) {
+              printQueueEventsListElementIds(topN);
+              return topN;
+            }
+          }
+        }
+
+        if (topN.size() > 0 ) {
+          printQueueEventsListElementIds(topN);
+          return topN;
+        }
+        if (waitedEnough) {
+          LOG.debug("Waited enough, returning null after peekTopN");
+          return null;
+        }
+        childWatcher.await(wait == Long.MAX_VALUE ? DEFAULT_TIMEOUT : wait);
+        waitedEnough = wait != Long.MAX_VALUE;
+      }
+    } finally {
+      time.stop();
+    }
+  }
+
+  private void printQueueEventsListElementIds(ArrayList<QueueEvent> topN) {
+    if(LOG.isDebugEnabled()) {
+      StringBuffer sb = new StringBuffer("[");
+      for(QueueEvent queueEvent: topN) {
+        sb.append(queueEvent.getId()).append(", ");
+      }
+      sb.append("]");
+      LOG.debug("Returning topN elements: {}", sb.toString());
+    }
+  }
+
+
+  /**
+   *
+   * Gets last element of the Queue without removing it.
+   */
+  public String getTailId() throws KeeperException, InterruptedException {
+    TreeMap<Long, String> orderedChildren = null;
+    orderedChildren = orderedChildren(null);
+    if(orderedChildren == null || orderedChildren.isEmpty()) return null;
+
+    for(String headNode : orderedChildren.descendingMap().values())
+      if (headNode != null) {
+        try {
+          QueueEvent queueEvent = new QueueEvent(dir + "/" + headNode, zookeeper.getData(dir + "/" + headNode,
+              null, null, true), null);
+          return queueEvent.getId();
+        } catch (KeeperException.NoNodeException e) {
+          // Another client removed the node first, try next
+        }
+      }
+    return null;
   }
   
   public static class QueueEvent {

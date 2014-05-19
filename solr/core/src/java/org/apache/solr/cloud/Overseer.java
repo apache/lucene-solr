@@ -1200,7 +1200,6 @@ public class Overseer {
         }
       }
     } finally {
-      
       if (ccThread != null) {
         try {
           ccThread.close();
@@ -1309,16 +1308,19 @@ public class Overseer {
 
     public void success(String operation) {
       String op = operation.toLowerCase(Locale.ROOT);
-      Stat stat = stats.get(op);
-      if (stat == null) {
-        stat = new Stat();
-        stats.put(op, stat);
+      synchronized (stats) {
+        Stat stat = stats.get(op);
+        if (stat == null) {
+          stat = new Stat();
+          stats.put(op, stat);
+        }
+        stat.success.incrementAndGet();
       }
-      stat.success.incrementAndGet();
     }
 
     public void error(String operation) {
       String op = operation.toLowerCase(Locale.ROOT);
+      synchronized (stats) {
       Stat stat = stats.get(op);
       if (stat == null) {
         stat = new Stat();
@@ -1326,20 +1328,26 @@ public class Overseer {
       }
       stat.errors.incrementAndGet();
     }
+    }
 
     public TimerContext time(String operation) {
       String op = operation.toLowerCase(Locale.ROOT);
-      Stat stat = stats.get(op);
+      Stat stat;
+      synchronized (stats) {
+        stat = stats.get(op);
       if (stat == null) {
         stat = new Stat();
         stats.put(op, stat);
+      }
       }
       return stat.requestTime.time();
     }
 
     public void storeFailureDetails(String operation, ZkNodeProps request, SolrResponse resp) {
       String op = operation.toLowerCase(Locale.ROOT);
-      Stat stat = stats.get(op);
+      Stat stat ;
+      synchronized (stats) {
+        stat = stats.get(op);
       if (stat == null) {
         stat = new Stat();
         stats.put(op, stat);
@@ -1351,6 +1359,7 @@ public class Overseer {
         }
         failedOps.addLast(new FailedOp(request, resp));
       }
+    }
     }
 
     public List<FailedOp> getFailureDetails(String operation) {

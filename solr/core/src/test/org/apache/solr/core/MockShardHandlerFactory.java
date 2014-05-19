@@ -57,6 +57,11 @@ public class MockShardHandlerFactory extends ShardHandlerFactory implements Plug
 
       @Override
       public void cancelAll() {}
+
+      @Override
+      public ShardHandlerFactory getShardHandlerFactory() {
+        return MockShardHandlerFactory.this;
+      }
     };
   }
 

@@ -151,6 +151,8 @@ Other Changes
 
 * SOLR-5340: Add support for named snapshots (Varun Thacker via Noble Paul)
 
+* SOLR-5681: Make the processing of Collection API calls multi-threaded. (Anshum Gupta)
+
 Build
 ---------------------
 

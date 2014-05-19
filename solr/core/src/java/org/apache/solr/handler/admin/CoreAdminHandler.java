@@ -1345,11 +1345,13 @@ public class CoreAdminHandler extends RequestHandlerBase {
    * Helper method to add a task to a tracking map.
    */
   protected void addTask(String map, TaskObject o, boolean limit) {
-    if(limit && getMap(map).size() == MAX_TRACKED_REQUESTS) {
-      String key = getMap(map).entrySet().iterator().next().getKey();
-      getMap(map).remove(key);
+    synchronized (getMap(map)) {
+      if(limit && getMap(map).size() == MAX_TRACKED_REQUESTS) {
+        String key = getMap(map).entrySet().iterator().next().getKey();
+        getMap(map).remove(key);
+      }
+      addTask(map, o);
     }
-    addTask(map, o);
   }
 
 
