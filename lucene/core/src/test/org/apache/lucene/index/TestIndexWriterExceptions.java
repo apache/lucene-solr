@@ -508,7 +508,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     writer.shutdown();
     IndexReader reader = DirectoryReader.open(dir);
     final Term t = new Term("content", "aa");
-    assertEquals(3, reader.docFreq(t));
+    assertEquals(2, reader.docFreq(t));
 
     // Make sure the doc that hit the exception was marked
     // as deleted:
@@ -648,7 +648,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       IndexReader reader = DirectoryReader.open(dir);
       if (i == 0) { 
         int expected = 5;
-        assertEquals(expected, reader.docFreq(new Term("contents", "here")));
+        assertEquals(expected-1, reader.docFreq(new Term("contents", "here")));
         assertEquals(expected, reader.maxDoc());
         int numDel = 0;
         final Bits liveDocs = MultiFields.getLiveDocs(reader);
@@ -760,8 +760,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
       IndexReader reader = DirectoryReader.open(dir);
       int expected = (3+(1-i)*2)*NUM_THREAD*NUM_ITER;
-      assertEquals("i=" + i, expected, reader.docFreq(new Term("contents", "here")));
-      assertEquals(expected, reader.maxDoc());
+      assertEquals("i=" + i, expected - NUM_THREAD*NUM_ITER, reader.docFreq(new Term("contents", "here")));
+      assertEquals("i=" + i, expected, reader.maxDoc());
       int numDel = 0;
       final Bits liveDocs = MultiFields.getLiveDocs(reader);
       assertNotNull(liveDocs);

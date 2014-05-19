@@ -613,7 +613,6 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
 
     void writeBlocks(IntsRef prevTerm, int prefixLength, int count) throws IOException {
       System.out.println("writeBlocks count=" + count);
-      // nocommit nuke the prefixLength == 0 case, but testVaryingTermsPerSegment fails!!
       if (count <= maxItemsInBlock) {
         // Easy case: not floor block.  Eg, prefix is "foo",
         // and we found 30 terms/sub-blocks starting w/ that

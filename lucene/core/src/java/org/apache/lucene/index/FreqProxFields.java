@@ -37,11 +37,17 @@ import org.apache.lucene.util.BytesRef;
 class FreqProxFields extends Fields {
   final Map<String,FreqProxTermsWriterPerField> fields = new LinkedHashMap<>();
 
+  private Bits liveDocs;
+
   public FreqProxFields(List<FreqProxTermsWriterPerField> fieldList) {
     // NOTE: fields are already sorted by field name
     for(FreqProxTermsWriterPerField field : fieldList) {
       fields.put(field.fieldInfo.name, field);
     }
+  }
+
+  public void setLiveDocs(Bits liveDocs) {
+    this.liveDocs = liveDocs;
   }
 
   public Iterator<String> iterator() {
@@ -51,7 +57,7 @@ class FreqProxFields extends Fields {
   @Override
   public Terms terms(String field) throws IOException {
     FreqProxTermsWriterPerField perField = fields.get(field);
-    return perField == null ? null : new FreqProxTerms(perField);
+    return perField == null ? null : new FreqProxTerms(perField, liveDocs);
   }
 
   @Override
@@ -62,9 +68,11 @@ class FreqProxFields extends Fields {
 
   private static class FreqProxTerms extends Terms {
     final FreqProxTermsWriterPerField terms;
+    final Bits liveDocs;
 
-    public FreqProxTerms(FreqProxTermsWriterPerField terms) {
+    public FreqProxTerms(FreqProxTermsWriterPerField terms, Bits liveDocs) {
       this.terms = terms;
+      this.liveDocs = liveDocs;
     }
 
     @Override
@@ -72,8 +80,9 @@ class FreqProxFields extends Fields {
       FreqProxTermsEnum termsEnum;
       if (reuse instanceof FreqProxTermsEnum && ((FreqProxTermsEnum) reuse).terms == this.terms) {
         termsEnum = (FreqProxTermsEnum) reuse;
+        assert termsEnum.liveDocs == this.liveDocs;
       } else {
-        termsEnum = new FreqProxTermsEnum(terms);
+        termsEnum = new FreqProxTermsEnum(terms, liveDocs);
       }
       termsEnum.reset();
       return termsEnum;
@@ -136,11 +145,13 @@ class FreqProxFields extends Fields {
     final FreqProxPostingsArray postingsArray;
     final BytesRef scratch = new BytesRef();
     final int numTerms;
+    final Bits liveDocs;
     int ord;
 
-    public FreqProxTermsEnum(FreqProxTermsWriterPerField terms) {
+    public FreqProxTermsEnum(FreqProxTermsWriterPerField terms, Bits liveDocs) {
       this.terms = terms;
       this.numTerms = terms.bytesHash.size();
+      this.liveDocs = liveDocs;
       sortedTermIDs = terms.sortedTermIDs;
       assert sortedTermIDs != null;
       postingsArray = (FreqProxPostingsArray) terms.postingsArray;
@@ -228,8 +239,8 @@ class FreqProxFields extends Fields {
     }
 
     @Override
-    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) {
-      if (liveDocs != null) {
+    public DocsEnum docs(Bits liveDocsIn, DocsEnum reuse, int flags) {
+      if (liveDocsIn != null) {
         throw new IllegalArgumentException("liveDocs must be null");
       }
 
@@ -244,18 +255,20 @@ class FreqProxFields extends Fields {
       if (reuse instanceof FreqProxDocsEnum) {
         docsEnum = (FreqProxDocsEnum) reuse;
         if (docsEnum.postingsArray != postingsArray) {
-          docsEnum = new FreqProxDocsEnum(terms, postingsArray);
+          docsEnum = new FreqProxDocsEnum(terms, postingsArray, liveDocs);
+        } else {
+          assert docsEnum.liveDocs == liveDocs;
         }
       } else {
-        docsEnum = new FreqProxDocsEnum(terms, postingsArray);
+        docsEnum = new FreqProxDocsEnum(terms, postingsArray, liveDocs);
       }
       docsEnum.reset(sortedTermIDs[ord]);
       return docsEnum;
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) {
-      if (liveDocs != null) {
+    public DocsAndPositionsEnum docsAndPositions(Bits liveDocsIn, DocsAndPositionsEnum reuse, int flags) {
+      if (liveDocsIn != null) {
         throw new IllegalArgumentException("liveDocs must be null");
       }
       FreqProxDocsAndPositionsEnum posEnum;
@@ -275,10 +288,12 @@ class FreqProxFields extends Fields {
       if (reuse instanceof FreqProxDocsAndPositionsEnum) {
         posEnum = (FreqProxDocsAndPositionsEnum) reuse;
         if (posEnum.postingsArray != postingsArray) {
-          posEnum = new FreqProxDocsAndPositionsEnum(terms, postingsArray);
+          posEnum = new FreqProxDocsAndPositionsEnum(terms, postingsArray, liveDocs);
+        } else {
+          assert posEnum.liveDocs == liveDocs;
         }
       } else {
-        posEnum = new FreqProxDocsAndPositionsEnum(terms, postingsArray);
+        posEnum = new FreqProxDocsAndPositionsEnum(terms, postingsArray, liveDocs);
       }
       posEnum.reset(sortedTermIDs[ord]);
       return posEnum;
@@ -311,15 +326,17 @@ class FreqProxFields extends Fields {
     final FreqProxPostingsArray postingsArray;
     final ByteSliceReader reader = new ByteSliceReader();
     final boolean readTermFreq;
+    final Bits liveDocs;
     int docID;
     int freq;
     boolean ended;
     int termID;
 
-    public FreqProxDocsEnum(FreqProxTermsWriterPerField terms, FreqProxPostingsArray postingsArray) {
+    public FreqProxDocsEnum(FreqProxTermsWriterPerField terms, FreqProxPostingsArray postingsArray, Bits liveDocs) {
       this.terms = terms;
       this.postingsArray = postingsArray;
       this.readTermFreq = terms.hasFreq;
+      this.liveDocs = liveDocs;
     }
 
     public void reset(int termID) {
@@ -347,33 +364,39 @@ class FreqProxFields extends Fields {
 
     @Override
     public int nextDoc() throws IOException {
-      if (reader.eof()) {
-        if (ended) {
-          return NO_MORE_DOCS;
-        } else {
-          ended = true;
-          docID = postingsArray.lastDocIDs[termID];
-          if (readTermFreq) {
-            freq = postingsArray.termFreqs[termID];
-          }
-        }
-      } else {
-        int code = reader.readVInt();
-        if (!readTermFreq) {
-          docID += code;
-        } else {
-          docID += code >>> 1;
-          if ((code & 1) != 0) {
-            freq = 1;
+      while (true) {
+        if (reader.eof()) {
+          if (ended) {
+            return NO_MORE_DOCS;
           } else {
-            freq = reader.readVInt();
+            ended = true;
+            docID = postingsArray.lastDocIDs[termID];
+            if (readTermFreq) {
+              freq = postingsArray.termFreqs[termID];
+            }
           }
+        } else {
+          int code = reader.readVInt();
+          if (!readTermFreq) {
+            docID += code;
+          } else {
+            docID += code >>> 1;
+            if ((code & 1) != 0) {
+              freq = 1;
+            } else {
+              freq = reader.readVInt();
+            }
+          }
+
+          assert docID != postingsArray.lastDocIDs[termID];
         }
 
-        assert docID != postingsArray.lastDocIDs[termID];
-      }
+        if (liveDocs != null && liveDocs.get(docID) == false) {
+          continue;
+        }
 
-      return docID;
+        return docID;
+      }
     }
 
     @Override
@@ -394,6 +417,7 @@ class FreqProxFields extends Fields {
     final ByteSliceReader reader = new ByteSliceReader();
     final ByteSliceReader posReader = new ByteSliceReader();
     final boolean readOffsets;
+    final Bits liveDocs;
     int docID;
     int freq;
     int pos;
@@ -405,10 +429,11 @@ class FreqProxFields extends Fields {
     boolean hasPayload;
     BytesRef payload = new BytesRef();
 
-    public FreqProxDocsAndPositionsEnum(FreqProxTermsWriterPerField terms, FreqProxPostingsArray postingsArray) {
+    public FreqProxDocsAndPositionsEnum(FreqProxTermsWriterPerField terms, FreqProxPostingsArray postingsArray, Bits liveDocs) {
       this.terms = terms;
       this.postingsArray = postingsArray;
       this.readOffsets = terms.hasOffsets;
+      this.liveDocs = liveDocs;
       assert terms.hasProx;
       assert terms.hasFreq;
     }
@@ -434,34 +459,40 @@ class FreqProxFields extends Fields {
 
     @Override
     public int nextDoc() throws IOException {
-      while (posLeft != 0) {
-        nextPosition();
-      }
-
-      if (reader.eof()) {
-        if (ended) {
-          return NO_MORE_DOCS;
-        } else {
-          ended = true;
-          docID = postingsArray.lastDocIDs[termID];
-          freq = postingsArray.termFreqs[termID];
-        }
-      } else {
-        int code = reader.readVInt();
-        docID += code >>> 1;
-        if ((code & 1) != 0) {
-          freq = 1;
-        } else {
-          freq = reader.readVInt();
+      while (true) {
+        while (posLeft != 0) {
+          nextPosition();
         }
 
-        assert docID != postingsArray.lastDocIDs[termID];
-      }
+        if (reader.eof()) {
+          if (ended) {
+            return NO_MORE_DOCS;
+          } else {
+            ended = true;
+            docID = postingsArray.lastDocIDs[termID];
+            freq = postingsArray.termFreqs[termID];
+          }
+        } else {
+          int code = reader.readVInt();
+          docID += code >>> 1;
+          if ((code & 1) != 0) {
+            freq = 1;
+          } else {
+            freq = reader.readVInt();
+          }
 
-      posLeft = freq;
-      pos = 0;
-      startOffset = 0;
-      return docID;
+          assert docID != postingsArray.lastDocIDs[termID];
+        }
+
+        posLeft = freq;
+        pos = 0;
+        startOffset = 0;
+        if (liveDocs != null && liveDocs.get(docID) == false) {
+          continue;
+        }
+
+        return docID;
+      }
     }
 
     @Override

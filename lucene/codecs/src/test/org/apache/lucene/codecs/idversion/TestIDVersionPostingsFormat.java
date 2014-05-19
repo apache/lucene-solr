@@ -36,15 +36,18 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
+import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.PerThreadPKLookup;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -262,6 +265,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
             System.out.println("  lookup exact version (should be found)");
           }
           assertTrue("term should have been found (version too old)", lookup.lookup(idValueBytes, expectedVersion.longValue()) != -1);
+          assertEquals(expectedVersion.longValue(), lookup.getVersion());
         } else {
           if (VERBOSE) {
             System.out.println("  lookup version+1 (should not be found)");
@@ -281,6 +285,8 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
       super(r, field);
     }
 
+    long lastVersion;
+
     /** Returns docID if found, else -1. */
     public int lookup(BytesRef id, long version) throws IOException {
       for(int seg=0;seg<numSegs;seg++) {
@@ -291,6 +297,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
           docsEnums[seg] = termsEnums[seg].docs(liveDocs[seg], docsEnums[seg], 0);
           int docID = docsEnums[seg].nextDoc();
           if (docID != DocsEnum.NO_MORE_DOCS) {
+            lastVersion = ((IDVersionSegmentTermsEnum) termsEnums[seg]).getVersion();
             return docBases[seg] + docID;
           }
           assert hasDeletions;
@@ -299,83 +306,10 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
 
       return -1;
     }
-  }
 
-  /** Produces a single token from the provided value, with the provided payload. */
-  private static class StringAndPayloadField extends Field {
-
-    public static final FieldType TYPE = new FieldType();
-
-    static {
-      TYPE.setIndexed(true);
-      TYPE.setOmitNorms(true);
-      TYPE.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-      TYPE.setTokenized(true);
-      TYPE.freeze();
-    }
-
-    private final BytesRef payload;
-
-    public StringAndPayloadField(String name, String value, BytesRef payload) {
-      super(name, value, TYPE);
-      this.payload = payload;
-    }
-
-    @Override
-    public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) throws IOException {
-      SingleTokenWithPayloadTokenStream ts;
-      if (reuse instanceof SingleTokenWithPayloadTokenStream) {
-        ts = (SingleTokenWithPayloadTokenStream) reuse;
-      } else {
-        ts = new SingleTokenWithPayloadTokenStream();
-      }
-      ts.setValue((String) fieldsData, payload);
-      return ts;
-    }
-  }
-
-  private static final class SingleTokenWithPayloadTokenStream extends TokenStream {
-
-    private final CharTermAttribute termAttribute = addAttribute(CharTermAttribute.class);
-    private final PayloadAttribute payloadAttribute = addAttribute(PayloadAttribute.class);
-    private boolean used = false;
-    private String value = null;
-    private BytesRef payload;
-    
-    /** Creates a new TokenStream that returns a String+payload as single token.
-     * <p>Warning: Does not initialize the value, you must call
-     * {@link #setValue(String)} afterwards!
-     */
-    SingleTokenWithPayloadTokenStream() {
-    }
-    
-    /** Sets the string value. */
-    void setValue(String value, BytesRef payload) {
-      this.value = value;
-      this.payload = payload;
-    }
-
-    @Override
-    public boolean incrementToken() {
-      if (used) {
-        return false;
-      }
-      clearAttributes();
-      termAttribute.append(value);
-      payloadAttribute.setPayload(payload);
-      used = true;
-      return true;
-    }
-
-    @Override
-    public void reset() {
-      used = false;
-    }
-
-    @Override
-    public void close() {
-      value = null;
-      payload = null;
+    /** Only valid if lookup returned a valid docID. */
+    public long getVersion() {
+      return lastVersion;
     }
   }
 
@@ -394,8 +328,6 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     */
   }
 
-  /*
-  // Invalid
   public void testMoreThanOneDocPerIDOneSegment() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
@@ -412,14 +344,138 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
       fail("didn't hit expected exception");
     } catch (IllegalArgumentException iae) {
       // expected
-      iae.printStackTrace();
     }
     w.close();
     dir.close();
   }
 
-  // Invalid
   public void testMoreThanOneDocPerIDTwoSegments() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
+    MergeScheduler ms = iwc.getMergeScheduler();
+    if (ms instanceof ConcurrentMergeScheduler) {
+      iwc.setMergeScheduler(new ConcurrentMergeScheduler() {
+          @Override
+          protected void handleMergeException(Throwable exc) {
+            assertTrue(exc instanceof IllegalArgumentException);
+          }
+        });
+    }
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    Document doc = new Document();
+    doc.add(makeIDField("id", 17));
+    w.addDocument(doc);
+    w.commit();
+    doc = new Document();
+    doc.add(makeIDField("id", 17));
+    try {
+      w.addDocument(doc);
+      w.commit();
+      w.forceMerge(1);
+      fail("didn't hit exception");
+    } catch (IllegalArgumentException iae) {
+      // expected: SMS will hit this
+    } catch (IOException ioe) {
+      // expected
+      assertTrue(ioe.getCause() instanceof IllegalArgumentException);
+    }
+    w.w.close();
+    dir.close();
+  }
+
+  public void testMoreThanOneDocPerIDWithUpdates() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    Document doc = new Document();
+    doc.add(makeIDField("id", 17));
+    w.addDocument(doc);
+    doc = new Document();
+    doc.add(makeIDField("id", 17));
+    // Replaces the doc we just indexed:
+    w.updateDocument(new Term("id", "id"), doc);
+    w.commit();
+    w.close();
+    dir.close();
+  }
+
+  public void testMoreThanOneDocPerIDWithDeletes() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    Document doc = new Document();
+    doc.add(makeIDField("id", 17));
+    w.addDocument(doc);
+    w.deleteDocuments(new Term("id", "id"));
+    doc = new Document();
+    doc.add(makeIDField("id", 17));
+    w.addDocument(doc);
+    w.commit();
+    w.close();
+    dir.close();
+  }
+
+  public void testMissingPayload() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    Document doc = new Document();
+    doc.add(newTextField("id", "id", Field.Store.NO));
+    try {
+      w.addDocument(doc);
+      w.commit();
+      fail("didn't hit expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+             
+    w.close();
+    dir.close();
+  }
+
+  public void testMissingPositions() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    Document doc = new Document();
+    doc.add(newStringField("id", "id", Field.Store.NO));
+    try {
+      w.addDocument(doc);
+      w.commit();
+      fail("didn't hit expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+             
+    w.close();
+    dir.close();
+  }
+
+  public void testInvalidPayload() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    Document doc = new Document();
+    doc.add(new StringAndPayloadField("id", "id", new BytesRef("foo")));
+    try {
+      w.addDocument(doc);
+      w.commit();
+      fail("didn't hit expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+             
+    w.close();
+    dir.close();
+  }
+
+  public void testMoreThanOneDocPerIDWithDeletesAcrossSegments() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
@@ -430,15 +486,29 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     w.commit();
     doc = new Document();
     doc.add(makeIDField("id", 17));
-    w.addDocument(doc);
-    w.commit();
+    // Replaces the doc we just indexed:
+    w.updateDocument(new Term("id", "id"), doc);
     w.forceMerge(1);
     w.close();
     dir.close();
   }
 
-  public void testMoreThanOneDocPerIDWithDeletes() {
-    
+  public void testMoreThanOnceInSingleDoc() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    Document doc = new Document();
+    doc.add(makeIDField("id", 17));
+    doc.add(makeIDField("id", 17));
+    try {
+      w.addDocument(doc);
+      w.commit();
+      fail("didn't hit expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    w.close();
+    dir.close();
   }
-  */
 }

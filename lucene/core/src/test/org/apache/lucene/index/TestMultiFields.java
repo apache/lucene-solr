@@ -123,14 +123,18 @@ public class TestMultiFields extends LuceneTestCase {
         }
         
         DocsEnum docsEnum = TestUtil.docs(random(), reader, "field", term, liveDocs, null, DocsEnum.FLAG_NONE);
-        assertNotNull(docsEnum);
-
-        for(int docID : docs.get(term)) {
-          if (!deleted.contains(docID)) {
-            assertEquals(docID, docsEnum.nextDoc());
+        if (docsEnum == null) {
+          for(int docID : docs.get(term)) {
+            assert deleted.contains(docID);
           }
+        } else {
+          for(int docID : docs.get(term)) {
+            if (!deleted.contains(docID)) {
+              assertEquals(docID, docsEnum.nextDoc());
+            }
+          }
+          assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsEnum.nextDoc());
         }
-        assertEquals(DocIdSetIterator.NO_MORE_DOCS, docsEnum.nextDoc());
       }
 
       reader.close();

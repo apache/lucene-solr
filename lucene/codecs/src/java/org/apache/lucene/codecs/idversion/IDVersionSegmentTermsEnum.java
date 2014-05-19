@@ -53,9 +53,6 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
   boolean termExists;
   final VersionFieldReader fr;
 
-  // nocommit make this public "for casting" and add a getVersion method?
-
-  // nocommit unused?
   private int targetBeforeCurrentLength;
 
   private final ByteArrayDataInput scratchReader = new ByteArrayDataInput();
@@ -228,6 +225,11 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
     }
   }
 
+  /** Only valid if we are positioned. */
+  public long getVersion() {
+    return ((IDVersionTermState) currentFrame.state).idVersion;
+  }
+
   /** Returns false if the term deos not exist, or it exists but its version is too old (< minIDVersion). */
   public boolean seekExact(final BytesRef target, long minIDVersion) throws IOException {
 
@@ -357,11 +359,6 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
          }
         currentFrame = lastFrame;
         currentFrame.rewind();
-        // nocommit put this back to BT also?
-        //term.length = targetUpto;
-
-        // nocommit put this back???
-        //termExists = false;
       } else {
         // Target is exactly the same as current term
         assert term.length == target.length;
@@ -559,7 +556,6 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
 
     if (currentFrame.maxIDVersion < minIDVersion) {
       // The max version for all terms in this block is lower than the minVersion
-      // nocommit need same logic here as above?
       termExists = false;
       term.length = targetUpto;
       return false;

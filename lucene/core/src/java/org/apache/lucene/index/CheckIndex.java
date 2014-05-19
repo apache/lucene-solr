@@ -1642,6 +1642,12 @@ public class CheckIndex {
 
           // Only agg stats if the doc is live:
           final boolean doStats = liveDocs == null || liveDocs.get(j);
+
+          if (doStats == false) {
+            // nocommit is it OK to stop verifying deleted docs?
+            continue;
+          }
+
           if (doStats) {
             status.docCount++;
           }

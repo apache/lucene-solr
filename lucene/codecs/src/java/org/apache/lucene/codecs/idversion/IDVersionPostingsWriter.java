@@ -26,6 +26,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 public final class IDVersionPostingsWriter extends PushPostingsWriterBase {
@@ -71,11 +72,9 @@ public final class IDVersionPostingsWriter extends PushPostingsWriterBase {
   @Override
   public void startDoc(int docID, int termDocFreq) throws IOException {
     if (lastDocID != -1) {
-      // nocommit need test
       throw new IllegalArgumentException("term appears in more than one document");
     }
     if (termDocFreq != 1) {
-      // nocommit need test
       throw new IllegalArgumentException("term appears more than once in the document");
     }
 
@@ -86,16 +85,13 @@ public final class IDVersionPostingsWriter extends PushPostingsWriterBase {
   @Override
   public void addPosition(int position, BytesRef payload, int startOffset, int endOffset) throws IOException {
     if (lastPosition != -1) {
-      // nocommit need test
       throw new IllegalArgumentException("term appears more than once in document");
     }
     lastPosition = position;
     if (payload == null) {
-      // nocommit need test
       throw new IllegalArgumentException("token doens't have a payload");
     }
     if (payload.length != 8) {
-      // nocommit need test
       throw new IllegalArgumentException("payload.length != 8 (got " + payload.length + ")");
     }
     
@@ -108,7 +104,6 @@ public final class IDVersionPostingsWriter extends PushPostingsWriterBase {
   @Override
   public void finishDoc() throws IOException {
     if (lastPosition == -1) {
-      // nocommit need test
       throw new IllegalArgumentException("missing addPosition");
     }
   }
