@@ -468,12 +468,22 @@ def testChangesText(dir, version, project):
       checkChangesContent(open(fullPath, encoding='UTF-8').read(), version, fullPath, project, False)
 
 reChangesSectionHREF = re.compile('<a id="(.*?)".*?>(.*?)</a>', re.IGNORECASE)
-
+reUnderbarNotDashHTML = re.compile(r'<li>(\s*(LUCENE|SOLR)_\d\d\d\d+)')
+reUnderbarNotDashTXT = re.compile(r'\s+((LUCENE|SOLR)_\d\d\d\d+)', re.MULTILINE)
 def checkChangesContent(s, version, name, project, isHTML):
 
   if isHTML and s.find('Release %s' % version) == -1:
     raise RuntimeError('did not see "Release %s" in %s' % (version, name))
 
+  if isHTML:
+    r = reUnderbarNotDashHTML
+  else:
+    r = reUnderbarNotDashTXT
+
+  m = r.search(s)
+  if m is not None:
+    raise RuntimeError('incorrect issue (_ instead of -) in %s: %s' % (name, m.group(1)))
+    
   if s.lower().find('not yet released') != -1:
     raise RuntimeError('saw "not yet released" in %s' % name)
 
