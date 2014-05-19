@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -55,7 +56,9 @@ public abstract class AbstractDataImportHandlerTestCase extends
 
   // note, a little twisted that we shadow this static method
   public static void initCore(String config, String schema) throws Exception {
-    initCore(config, schema, getFile("dih/solr").getAbsolutePath());
+    File testHome = createTempDir();
+    FileUtils.copyDirectory(getFile("dih/solr"), testHome);
+    initCore(config, schema, testHome.getAbsolutePath());
   }
   
   @Override

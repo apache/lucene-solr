@@ -38,13 +38,7 @@ public class SolrPingTest extends SolrJettyTestBase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     File testHome = createTempDir();
-    File testConf = new File(testHome, "collection1/conf");
-    testConf.mkdirs();
-    File originalHome = getFile("solrj/solr");
-    FileUtils.copyFile(new File(originalHome, "solr.xml"), new File(testHome, "solr.xml"));
-    File originalConf = new File(originalHome, "collection1/conf");
-    FileUtils.copyFile(new File(originalConf, "solrconfig.xml"), new File(testConf, "solrconfig.xml"));
-    FileUtils.copyFile(new File(originalConf, "schema.xml"), new File(testConf, "schema.xml"));
+    FileUtils.copyDirectory(getFile("solrj/solr"), testHome);
     initCore("solrconfig.xml", "schema.xml", testHome.getAbsolutePath(), "collection1");
   }
   

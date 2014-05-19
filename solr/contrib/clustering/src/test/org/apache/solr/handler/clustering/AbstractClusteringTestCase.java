@@ -16,8 +16,10 @@ package org.apache.solr.handler.clustering;
  * limitations under the License.
  */
 
+import java.io.File;
 import java.util.Map;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
@@ -31,7 +33,9 @@ public abstract class AbstractClusteringTestCase extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml", "schema.xml", "clustering/solr");
+    File testHome = createTempDir();
+    FileUtils.copyDirectory(getFile("clustering/solr"), testHome);
+    initCore("solrconfig.xml", "schema.xml", testHome.getAbsolutePath());
     numberOfDocs = 0;
     for (String[] doc : DOCUMENTS) {
       assertNull(h.validateUpdate(adoc("id", Integer.toString(numberOfDocs), "url", doc[0], "title", doc[1], "snippet", doc[2])));
