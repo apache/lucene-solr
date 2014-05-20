@@ -362,7 +362,7 @@ class BytesStore extends DataOutput {
       }
 
       @Override
-      public void skipBytes(int count) {
+      public void skipBytes(long count) {
         setPosition(getPosition() + count);
       }
 
@@ -430,7 +430,7 @@ class BytesStore extends DataOutput {
       }
 
       @Override
-      public void skipBytes(int count) {
+      public void skipBytes(long count) {
         setPosition(getPosition() - count);
       }
 
