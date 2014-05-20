@@ -23,6 +23,7 @@ import java.util.Locale;
 import java.util.Random;
 
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
@@ -955,9 +956,27 @@ public class TestFaceting extends SolrTestCaseJ4 {
     SortedDocValues singleton1 = DocValues.unwrapSingleton(dv1);
     SortedDocValues singleton2 = DocValues.unwrapSingleton(dv2);
     if (singleton1 == null || singleton2 == null) {
-      assertSame(dv1, dv2);
+      // actually a multi-valued field
+      if (dv1 instanceof MultiDocValues.MultiSortedSetDocValues) {
+        // if we produced more than one segment, ensure the core ordinal map is the same object
+        assertTrue(dv2 instanceof MultiDocValues.MultiSortedSetDocValues);
+        assertSame(((MultiDocValues.MultiSortedSetDocValues) dv1).mapping, 
+                   ((MultiDocValues.MultiSortedSetDocValues) dv2).mapping);
+      } else {
+        // otherwise, same atomic instance
+        assertSame(dv1, dv2);
+      }
     } else {
-      assertSame(singleton1, singleton2);
+      // just wrapping a field that is actually single-valued
+      if (singleton1 instanceof MultiDocValues.MultiSortedDocValues) {
+        // if we produced more than one segment, ensure the core ordinal map is the same object
+        assertTrue(singleton2 instanceof MultiDocValues.MultiSortedDocValues);
+        assertSame(((MultiDocValues.MultiSortedDocValues) singleton1).mapping, 
+                   ((MultiDocValues.MultiSortedDocValues) singleton2).mapping);
+      } else {
+        // otherwise, same atomic instance
+        assertSame(singleton1, singleton2);
+      }
     }
   }
 }
