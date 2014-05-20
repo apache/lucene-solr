@@ -61,6 +61,10 @@ API Changes
 * LUCENE-5640: The Token class was deprecated. Since Lucene 2.9, TokenStreams
   are using Attributes, Token is no longer used.  (Uwe Schindler, Robert Muir)
 
+* LUCENE-5679: Consolidated IndexWriter.deleteDocuments(Term) and 
+  IndexWriter.deleteDocuments(Query) with their varargs counterparts.
+  (Shai Erera)
+
 Optimizations
 
 * LUCENE-5603: hunspell stemmer more efficiently strips prefixes
