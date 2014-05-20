@@ -29,8 +29,8 @@ class ReqOptSumScorer extends Scorer {
   /** The scorers passed from the constructor.
    * These are set to null as soon as their next() or skipTo() returns false.
    */
-  private Scorer reqScorer;
-  private Scorer optScorer;
+  protected Scorer reqScorer;
+  protected Scorer optScorer;
 
   /** Construct a <code>ReqOptScorer</code>.
    * @param reqScorer The required scorer. This must match.
@@ -103,6 +103,68 @@ class ReqOptSumScorer extends Scorer {
   @Override
   public long cost() {
     return reqScorer.cost();
+  }
+  
+  // nocommit: WTF?
+  static class ReqSingleOptScorer extends ReqOptSumScorer {
+    // coord factor if just the required part matches
+    private final float coordReq;
+    // coord factor if both required and optional part matches 
+    private final float coordBoth;
+    
+    public ReqSingleOptScorer(Scorer reqScorer, Scorer optScorer, float coordReq, float coordBoth) {
+      super(reqScorer, optScorer);
+      this.coordReq = coordReq;
+      this.coordBoth = coordBoth;
+    }
+    
+    @Override
+    public float score() throws IOException {
+      int curDoc = reqScorer.docID();
+      float reqScore = reqScorer.score();
+      if (optScorer == null) {
+        return reqScore * coordReq;
+      }
+      
+      int optScorerDoc = optScorer.docID();
+      if (optScorerDoc < curDoc && (optScorerDoc = optScorer.advance(curDoc)) == NO_MORE_DOCS) {
+        optScorer = null;
+        return reqScore * coordReq;
+      }
+      
+      return optScorerDoc == curDoc ? (reqScore + optScorer.score()) * coordBoth : reqScore * coordReq;
+    }
+  }
+
+  // nocommit: WTF?
+  static class ReqMultiOptScorer extends ReqOptSumScorer {
+    private final int requiredCount;
+    private final float coords[];
+    private final Scorer disjunction;
+    
+    public ReqMultiOptScorer(Scorer reqScorer, Scorer optScorer, int requiredCount, float coords[]) {
+      super(reqScorer, optScorer);
+      this.requiredCount = requiredCount;
+      this.coords = coords;
+      this.disjunction = optScorer;
+    }
+    
+    @Override
+    public float score() throws IOException {
+      int curDoc = reqScorer.docID();
+      float reqScore = reqScorer.score();
+      if (optScorer == null) {
+        return reqScore * coords[requiredCount];
+      }
+      
+      int optScorerDoc = optScorer.docID();
+      if (optScorerDoc < curDoc && (optScorerDoc = optScorer.advance(curDoc)) == NO_MORE_DOCS) {
+        optScorer = null;
+        return reqScore * coords[requiredCount];
+      }
+      
+      return optScorerDoc == curDoc ? (reqScore + optScorer.score()) * coords[requiredCount + disjunction.freq()] : reqScore * coords[requiredCount];
+    }
   }
 }
 
