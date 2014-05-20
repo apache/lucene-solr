@@ -92,6 +92,8 @@ Other Changes
   recovery scenarios after the leader receives an error trying to forward an
   update request to a replica. (Timothy Potter)
 
+* SOLR-5681: Make the processing of Collection API calls multi-threaded. (Anshum Gupta)
+
 Build
 ---------------------
 
