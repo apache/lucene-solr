@@ -122,6 +122,11 @@ public final class ListOfOutputs<T> extends Outputs<Object> {
   public Object read(DataInput in) throws IOException {
     return outputs.read(in);
   }
+  
+  @Override
+  public void skipOutput(DataInput in) throws IOException {
+    outputs.skipOutput(in);
+  }
 
   @Override
   public Object readFinalOutput(DataInput in) throws IOException {
@@ -134,6 +139,14 @@ public final class ListOfOutputs<T> extends Outputs<Object> {
         outputList.add(outputs.read(in));
       }
       return outputList;
+    }
+  }
+  
+  @Override
+  public void skipFinalOutput(DataInput in) throws IOException {
+    int count = in.readVInt();
+    for(int i=0;i<count;i++) {
+      outputs.skipOutput(in);
     }
   }
 

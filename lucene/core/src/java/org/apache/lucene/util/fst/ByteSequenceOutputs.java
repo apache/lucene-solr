@@ -129,6 +129,14 @@ public final class ByteSequenceOutputs extends Outputs<BytesRef> {
   }
 
   @Override
+  public void skipOutput(DataInput in) throws IOException {
+    final int len = in.readVInt();
+    if (len != 0) {
+      in.skipBytes(len);
+    }
+  }
+
+  @Override
   public BytesRef getNoOutput() {
     return NO_OUTPUT;
   }

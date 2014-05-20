@@ -182,6 +182,9 @@ Optimizations
   to 8 (for int/float) and 16 (for long/double), for faster indexing
   time and smaller indices. (Robert Muir, Uwe Schindler, Mike McCandless)
 
+* LUCENE-5670: Add skip/FinalOutput to FST Outputs.  (Christian
+  Ziech via Mike McCandless).
+
 Bug fixes
 
 * LUCENE-5673: MMapDirectory: Work around a "bug" in the JDK that throws
