@@ -579,6 +579,16 @@ public class TestDocTermOrds extends LuceneTestCase {
     termsEnum.seekExact(2);
     assertEquals("world", termsEnum.term().utf8ToString());
     assertEquals(2, termsEnum.ord());
+    
+    // lookupTerm(BytesRef) 
+    assertEquals(-1, dv.lookupTerm(new BytesRef("apple")));
+    assertEquals(0, dv.lookupTerm(new BytesRef("beer")));
+    assertEquals(-2, dv.lookupTerm(new BytesRef("car")));
+    assertEquals(1, dv.lookupTerm(new BytesRef("hello")));
+    assertEquals(-3, dv.lookupTerm(new BytesRef("matter")));
+    assertEquals(2, dv.lookupTerm(new BytesRef("world")));
+    assertEquals(-4, dv.lookupTerm(new BytesRef("zany")));
+
     ireader.close();
     directory.close();
   }

@@ -196,6 +196,10 @@ Bug fixes
 * LUCENE-5682: NPE in QueryRescorer when Scorer is null
   (Joel Bernstein, Mike McCandless)
 
+* LUCENE-5691: DocTermOrds lookupTerm(BytesRef) would return incorrect results
+  if the underlying TermsEnum supports ord() and the insertion point would
+  be at the end. (Robert Muir)
+
 Test Framework
 
 * LUCENE-5622: Fail tests if they print over the given limit of bytes to 
