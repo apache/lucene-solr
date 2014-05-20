@@ -82,9 +82,9 @@ Other Changes
 * SOLR-5868: HttpClient should be configured to use ALLOW_ALL_HOSTNAME hostname
   verifier to simplify SSL setup. (Steve Davids via Mark Miller)
 
-* SOLR-5495: Recovery strategy for leader partitioned from replica case. Hardening
-  recovery scenarios after the leader receives an error trying to forward an
-  update request to a replica. (Timothy Potter)
+* SOLR-5468: Allow a client application to request the minium achieved 
+  replication factor for an update request (single or batch) by sending
+  an optional parameter "min_rf". (Timothy Potter)
 
 ==================  4.9.0 ==================
 
@@ -152,6 +152,10 @@ Other Changes
 * SOLR-5340: Add support for named snapshots (Varun Thacker via Noble Paul)
 
 * SOLR-5681: Make the processing of Collection API calls multi-threaded. (Anshum Gupta)
+
+* SOLR-5495: Recovery strategy for leader partitioned from replica case. Hardening
+  recovery scenarios after the leader receives an error trying to forward an
+  update request to a replica. (Timothy Potter)
 
 Build
 ---------------------
