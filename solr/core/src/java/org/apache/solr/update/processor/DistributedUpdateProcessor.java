@@ -20,6 +20,8 @@ package org.apache.solr.update.processor;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 import java.io.IOException;
+import java.net.ConnectException;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -33,12 +35,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.apache.http.NoHttpResponseException;
+import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.DistributedQueue;
+import org.apache.solr.cloud.LeaderInitiatedRecoveryThread;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -64,7 +69,9 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.RealTimeGetComponent;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
@@ -160,7 +167,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private List<Node> nodes;
 
   private UpdateCommand updateCommand;  // the current command this processor is working on.
-  
+    
   public DistributedUpdateProcessor(SolrQueryRequest req,
       SolrQueryResponse rsp, UpdateRequestProcessor next) {
     super(next);
@@ -213,7 +220,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
       String coreName = req.getCore().getName();
 
-      ClusterState cstate = zkController.getClusterState();
+      ClusterState cstate = zkController.getClusterState();      
       DocCollection coll = cstate.getCollection(collection);
       Slice slice = coll.getRouter().getTargetSlice(id, doc, req.getParams(), coll);
 
@@ -299,10 +306,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                 boolean skip = skipListSet.contains(props.getCoreUrl());
                 log.info("check url:" + props.getCoreUrl() + " against:" + skipListSet + " result:" + skip);
                 if (!skip) {
-                  nodes.add(new StdNode(props));
+                    nodes.add(new StdNode(props, collection, shardId));
                 }
               } else {
-                nodes.add(new StdNode(props));
+                  nodes.add(new StdNode(props, collection, shardId));
               }
             }
           }
@@ -375,7 +382,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           if (sliceLeader != null && zkController.getClusterState().liveNodesContain(sliceLeader.getNodeName()))  {
             if (nodes == null) nodes = new ArrayList<>();
             ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(sliceLeader);
-            nodes.add(new StdNode(nodeProps));
+            nodes.add(new StdNode(nodeProps, coll.getName(), shardId));
           }
         }
       }
@@ -471,6 +478,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     String from = req.getParams().get(DISTRIB_FROM);
     ClusterState clusterState = zkController.getClusterState();
+        
     CloudDescriptor cloudDescriptor = req.getCore().getCoreDescriptor().getCloudDescriptor();
     Slice mySlice = clusterState.getSlice(collection, cloudDescriptor.getShardId());
     boolean localIsLeader = cloudDescriptor.isLeader();
@@ -528,7 +536,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       if (replicaProps != null) {
         nodes = new ArrayList<>(replicaProps.size());
         for (ZkCoreNodeProps props : replicaProps) {
-          nodes.add(new StdNode(props));
+          nodes.add(new StdNode(props, collection, shardId));
         }
       }
     } catch (InterruptedException e) {
@@ -553,7 +561,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
 
     boolean dropCmd = false;
-    if (!forwardToLeader) {
+    if (!forwardToLeader) {      
       dropCmd = versionAdd(cmd);
     }
 
@@ -582,6 +590,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
         params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
             zkController.getBaseUrl(), req.getCore().getName()));
+        
         params.set(DISTRIB_FROM_COLLECTION, req.getCore().getCoreDescriptor().getCloudDescriptor().getCollectionName());
         params.set(DISTRIB_FROM_SHARD, req.getCore().getCoreDescriptor().getCloudDescriptor().getShardId());
         for (Node nodesByRoutingRule : nodesByRoutingRules) {
@@ -600,7 +609,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                   DistribPhase.TOLEADER.toString()));
       params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
           zkController.getBaseUrl(), req.getCore().getName()));
-
       cmdDistrib.distribAdd(cmd, nodes, params);
     }
     
@@ -655,46 +663,66 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // legit
 
     for (final SolrCmdDistributor.Error error : errors) {
+      
       if (error.req.node instanceof RetryNode) {
         // we don't try to force a leader to recover
         // when we cannot forward to it
         continue;
       }
-      // TODO: we should force their state to recovering ??
-      // TODO: do retries??
-      // TODO: what if its is already recovering? Right now recoveries queue up -
-      // should they?
-      final String recoveryUrl = error.req.node.getBaseUrl();
+       
+      DistribPhase phase =
+          DistribPhase.parseParam(error.req.uReq.getParams().get(DISTRIB_UPDATE_PARAM));       
+      if (phase != DistribPhase.FROMLEADER)
+        continue; // don't have non-leaders try to recovery other nodes
       
-      Thread thread = new Thread() {
-        {
-          setDaemon(true);
+      final String replicaUrl = error.req.node.getUrl();      
+
+      int maxTries = 1;       
+      boolean sendRecoveryCommand = true;
+      String collection = null;
+      String shardId = null;
+      
+      if (error.req.node instanceof StdNode) {
+        StdNode stdNode = (StdNode)error.req.node;
+        collection = stdNode.getCollection();
+        shardId = stdNode.getShardId();
+        try {
+          // if false, then the node is probably not "live" anymore
+          sendRecoveryCommand = 
+              zkController.ensureReplicaInLeaderInitiatedRecovery(collection, 
+                                                                  shardId, 
+                                                                  replicaUrl, 
+                                                                  stdNode.getNodeProps(), 
+                                                                  false);
+          
+          // we want to try more than once, ~10 minutes
+          if (sendRecoveryCommand) {
+            maxTries = 120;
+          } // else the node is no longer "live" so no need to send any recovery command
+          
+        } catch (Exception e) {
+          log.error("Leader failed to set replica "+
+              error.req.node.getUrl()+" state to DOWN due to: "+e, e);
         }
-        @Override
-        public void run() {
-          log.info("try and ask " + recoveryUrl + " to recover");
-          HttpSolrServer server = new HttpSolrServer(recoveryUrl);
-          try {
-            server.setSoTimeout(60000);
-            server.setConnectionTimeout(15000);
+      } // else not a StdNode, recovery command still gets sent once
             
-            RequestRecovery recoverRequestCmd = new RequestRecovery();
-            recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
-            recoverRequestCmd.setCoreName(error.req.node.getCoreName());
-            try {
-              server.request(recoverRequestCmd);
-            } catch (Throwable t) {
-              SolrException.log(log, recoveryUrl
-                  + ": Could not tell a replica to recover", t);
-            }
-          } finally {
-            server.shutdown();
-          }
-        }
-      };
-      ExecutorService executor = req.getCore().getCoreDescriptor().getCoreContainer().getUpdateShardHandler().getUpdateExecutor();
-      executor.execute(thread);
+      if (!sendRecoveryCommand)
+        continue; // the replica is already in recovery handling or is not live   
       
+      Throwable rootCause = SolrException.getRootCause(error.e);      
+      log.error("Setting up to try to start recovery on replica "+replicaUrl+" after: "+rootCause);
+      
+      // try to send the recovery command to the downed replica in a background thread
+      CoreContainer coreContainer = req.getCore().getCoreDescriptor().getCoreContainer();      
+      LeaderInitiatedRecoveryThread lirThread = 
+          new LeaderInitiatedRecoveryThread(zkController,
+                                            coreContainer,
+                                            collection,
+                                            shardId,
+                                            error.req.node.getNodeProps(),
+                                            maxTries);
+      ExecutorService executor = coreContainer.getUpdateShardHandler().getUpdateExecutor();
+      executor.execute(lirThread);      
     }
   }
 
@@ -1151,7 +1179,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           // don't forward to ourself
           leaderForAnyShard = true;
         } else {
-          leaders.add(new StdNode(coreLeaderProps));
+          leaders.add(new StdNode(coreLeaderProps, collection, sliceName));
         }
       }
 
@@ -1254,7 +1282,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           if (replicaProps != null) {
             List<Node> myReplicas = new ArrayList<>();
             for (ZkCoreNodeProps replicaProp : replicaProps) {
-              myReplicas.add(new StdNode(replicaProp));
+              myReplicas.add(new StdNode(replicaProp, collection, myShardId));
             }
             cmdDistrib.distribDelete(cmd, myReplicas, params);
             someReplicas = true;
@@ -1521,7 +1549,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       for (Entry<String,Replica> entry : shardMap.entrySet()) {
         ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(entry.getValue());
         if (clusterState.liveNodesContain(nodeProps.getNodeName())) {
-          urls.add(new StdNode(nodeProps));
+          urls.add(new StdNode(nodeProps, collection, replicas.getName()));
         }
       }
     }

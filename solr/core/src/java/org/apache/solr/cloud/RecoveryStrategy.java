@@ -351,6 +351,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
           return;
         }
         
+        log.info("Publishing state of core "+core.getName()+" as recovering, leader is "+leaderUrl+" and I am "+ourUrl);
         zkController.publish(core.getCoreDescriptor(), ZkStateReader.RECOVERING);
         
         
@@ -608,6 +609,9 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
       }
       HttpUriRequestResponse mrr = server.httpUriRequest(prepCmd);
       prevSendPreRecoveryHttpUriRequest = mrr.httpUriRequest;
+      
+      log.info("Sending prep recovery command to {}; {}", leaderBaseUrl, prepCmd.toString());
+      
       mrr.future.get();
     } finally {
       server.shutdown();
