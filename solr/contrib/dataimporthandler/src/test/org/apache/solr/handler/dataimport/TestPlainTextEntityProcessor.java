@@ -16,10 +16,12 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import org.junit.Test;
-
+import java.io.File;
+import java.io.IOException;
 import java.io.StringReader;
 import java.util.Properties;
+
+import org.junit.Test;
 
 /**
  * Test for PlainTextEntityProcessor
@@ -30,9 +32,11 @@ import java.util.Properties;
  */
 public class TestPlainTextEntityProcessor extends AbstractDataImportHandlerTestCase {
   @Test
-  public void testSimple() {
+  public void testSimple() throws IOException {
     DataImporter di = new DataImporter();
     di.loadAndInit(DATA_CONFIG);
+    redirectTempProperties(di);
+
     TestDocBuilder.SolrWriterImpl sw = new TestDocBuilder.SolrWriterImpl();
     RequestInfo rp = new RequestInfo(null, createMap("command", "full-import"), null);
     di.runCmd(rp, sw);

@@ -67,20 +67,6 @@ public abstract class AbstractDataImportHandlerTestCase extends
     super.setUp();
   }
 
-  @Override
-  @After
-  public void tearDown() throws Exception {
-    // remove dataimport.properties
-    File f = new File("solr/collection1/conf/dataimport.properties");
-    log.info("Looking for dataimport.properties at: " + f.getAbsolutePath());
-    if (f.exists()) {
-      log.info("Deleting dataimport.properties");
-      if (!f.delete())
-        log.warn("Could not delete dataimport.properties");
-    }
-    super.tearDown();
-  }
-
   protected String loadDataConfig(String dataConfigFileName) {
     try {
       SolrCore core = h.getCore();
@@ -104,6 +90,21 @@ public abstract class AbstractDataImportHandlerTestCase extends
             "debug", "on", "clean", "false", "commit", "true", "dataConfig",
             dataConfig);
     h.query("/dataimport", request);
+  }
+
+  /**
+   * Redirect {@link SimplePropertiesWriter#filename} to a temporary location 
+   * and return it.
+   */
+  protected File redirectTempProperties(DataImporter di) {
+    try {
+      File tempFile = createTempFile();
+      di.getConfig().getPropertyWriter().getParameters()
+        .put(SimplePropertiesWriter.FILENAME, tempFile.getAbsolutePath());
+      return tempFile;
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   /**

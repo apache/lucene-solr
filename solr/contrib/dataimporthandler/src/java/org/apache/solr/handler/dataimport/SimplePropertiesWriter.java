@@ -27,6 +27,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.security.AccessControlException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -118,17 +119,25 @@ public class SimplePropertiesWriter extends DIHProperties {
   }
   
   private File getPersistFile() {
-    String filePath = configDir;
-    if (configDir != null && !configDir.endsWith(File.separator)) filePath += File.separator;
-    filePath += filename;
-    return new File(filePath);
+    final File filePath;
+    if (new File(filename).isAbsolute() || configDir == null) {
+      filePath = new File(filename);
+    } else {
+      filePath = new File(new File(configDir), filename);
+    }
+    return filePath;
   }
+
   @Override
   public boolean isWritable() {
     File persistFile = getPersistFile();
-    return persistFile.exists() ? persistFile.canWrite() : persistFile
-        .getParentFile().canWrite();
-    
+    try {
+      return persistFile.exists() 
+          ? persistFile.canWrite() 
+          : persistFile.getParentFile().canWrite();
+    } catch (AccessControlException e) {
+      return false;
+    }
   }
   
   @Override
@@ -188,12 +197,7 @@ public class SimplePropertiesWriter extends DIHProperties {
     Properties newProps = mapToProperties(propObjs);
     try {
       existingProps.putAll(newProps);
-      String filePath = configDir;
-      if (configDir != null && !configDir.endsWith(File.separator)) {
-        filePath += File.separator;
-      }
-      filePath += filename;
-      propOutput = new OutputStreamWriter(new FileOutputStream(filePath), StandardCharsets.UTF_8);
+      propOutput = new OutputStreamWriter(new FileOutputStream(getPersistFile()), StandardCharsets.UTF_8);
       existingProps.store(propOutput, null);
       log.info("Wrote last indexed time to " + filename);
     } catch (Exception e) {
