@@ -26,7 +26,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.JSONTestUtil;
@@ -60,6 +59,8 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   // To prevent the test assertions firing too fast before cluster state
   // recognizes (and propagates) partitions
   private static final long sleepMsBeforeHealPartition = 1000L;
+  
+  private static final int maxWaitSecsToSeeAllActive = 30;
   
   private Map<URI,SocketProxy> proxies = new HashMap<URI,SocketProxy>();
   
@@ -156,7 +157,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     sendDoc(1);
     
     Replica notLeader = 
-        ensureAllReplicasAreActive(testCollectionName, 2, 10).get(0);
+        ensureAllReplicasAreActive(testCollectionName, 2, maxWaitSecsToSeeAllActive).get(0);
     
     // ok, now introduce a network partition between the leader and the replica
     SocketProxy proxy = getProxyForReplica(notLeader);
@@ -178,7 +179,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     proxy.reopen();
     
     List<Replica> notLeaders = 
-        ensureAllReplicasAreActive(testCollectionName, 2, 20); // shouldn't take 20 secs but just to be safe
+        ensureAllReplicasAreActive(testCollectionName, 2, maxWaitSecsToSeeAllActive);
     
     sendDoc(3);
     
@@ -210,7 +211,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
       proxy.reopen();
     }
     
-    notLeaders = ensureAllReplicasAreActive(testCollectionName, 2, 20);
+    notLeaders = ensureAllReplicasAreActive(testCollectionName, 2, maxWaitSecsToSeeAllActive);
     
     // verify all docs received
     assertDocsExistInAllReplicas(notLeaders, testCollectionName, 1, numDocs + 3);
@@ -225,7 +226,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     sendDoc(1);
     
     List<Replica> notLeaders = 
-        ensureAllReplicasAreActive(testCollectionName, 3, 10);
+        ensureAllReplicasAreActive(testCollectionName, 3, maxWaitSecsToSeeAllActive);
     assertTrue("Expected 2 replicas for collection " + testCollectionName
         + " but found " + notLeaders.size() + "; clusterState: "
         + cloudClient.getZkStateReader().getClusterState(),
@@ -255,7 +256,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     proxy1.reopen();
     
     // sent 4 docs in so far, verify they are on the leader and replica
-    notLeaders = ensureAllReplicasAreActive(testCollectionName, 3, 20); 
+    notLeaders = ensureAllReplicasAreActive(testCollectionName, 3, maxWaitSecsToSeeAllActive); 
     
     sendDoc(4);
     
@@ -273,7 +274,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     sendDoc(1);
     
     List<Replica> notLeaders = 
-        ensureAllReplicasAreActive(testCollectionName, 3, 10);
+        ensureAllReplicasAreActive(testCollectionName, 3, maxWaitSecsToSeeAllActive);
     assertTrue("Expected 2 replicas for collection " + testCollectionName
         + " but found " + notLeaders.size() + "; clusterState: "
         + cloudClient.getZkStateReader().getClusterState(),
@@ -304,7 +305,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     proxy1.reopen();
     
     // sent 4 docs in so far, verify they are on the leader and replica
-    notLeaders = ensureAllReplicasAreActive(testCollectionName, 3, 20); 
+    notLeaders = ensureAllReplicasAreActive(testCollectionName, 3, maxWaitSecsToSeeAllActive); 
     
     sendDoc(4);
     
@@ -317,7 +318,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     JettySolrRunner leaderJetty = getJettyOnPort(getReplicaPort(leader));
     
     // since maxShardsPerNode is 1, we're safe to kill the leader
-    notLeaders = ensureAllReplicasAreActive(testCollectionName, 3, 20);    
+    notLeaders = ensureAllReplicasAreActive(testCollectionName, 3, maxWaitSecsToSeeAllActive);    
     proxy0 = getProxyForReplica(notLeaders.get(0));
     proxy0.close();
         
@@ -345,9 +346,9 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     Thread.sleep(sleepMsBeforeHealPartition);
     
     Replica newLeader = 
-        cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1", 30000);
+        cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1", 60000);
         
-    assertNotNull("No new leader was elected after 30 seconds", newLeader);
+    assertNotNull("No new leader was elected after 60 seconds", newLeader);
         
     assertTrue("Expected node "+shouldNotBeNewLeaderNode+
         " to NOT be the new leader b/c it was out-of-sync with the old leader! ClusterState: "+

@@ -1737,7 +1737,15 @@ public final class ZkController {
   public boolean ensureReplicaInLeaderInitiatedRecovery(final String collection, 
       final String shardId, final String replicaUrl, final ZkCoreNodeProps replicaCoreProps, boolean forcePublishState) 
           throws KeeperException, InterruptedException 
-  {
+  {    
+    if (collection == null)
+      throw new IllegalArgumentException("collection parameter cannot be null for starting leader-initiated recovery for replica: "+replicaUrl);
+
+    if (shardId == null)
+      throw new IllegalArgumentException("shard parameter cannot be null for starting leader-initiated recovery for replica: "+replicaUrl);
+    
+    if (replicaUrl == null)
+      throw new IllegalArgumentException("replicaUrl parameter cannot be null for starting leader-initiated recovery");
     
     // First, determine if this replica is already in recovery handling
     // which is needed because there can be many concurrent errors flooding in

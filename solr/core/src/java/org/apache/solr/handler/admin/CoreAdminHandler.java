@@ -1032,8 +1032,9 @@ public class CoreAdminHandler extends RequestHandlerBase {
               
               boolean onlyIfActiveCheckResult = onlyIfLeaderActive != null && onlyIfLeaderActive && (localState == null || !localState.equals(ZkStateReader.ACTIVE));
               log.info("In WaitForState("+waitForState+"): collection="+collection+", shard="+slice.getName()+
+                  ", thisCore="+core.getName()+", leaderDoesNotNeedRecovery="+leaderDoesNotNeedRecovery+
                   ", isLeader? "+core.getCoreDescriptor().getCloudDescriptor().isLeader()+
-                  ", live="+live+", currentState="+state+", localState="+localState+", nodeName="+nodeName+
+                  ", live="+live+", checkLive="+checkLive+", currentState="+state+", localState="+localState+", nodeName="+nodeName+
                   ", coreNodeName="+coreNodeName+", onlyIfActiveCheckResult="+onlyIfActiveCheckResult+", nodeProps: "+nodeProps);
 
               if (!onlyIfActiveCheckResult && nodeProps != null && (state.equals(waitForState) || leaderDoesNotNeedRecovery)) {
