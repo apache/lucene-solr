@@ -234,6 +234,8 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     getProxyForReplica(replicas.get(0)).reopen();    
     getProxyForReplica(replicas.get(1)).reopen();
     
+    ensureAllReplicasAreActive(testCollectionName, shardId, numShards, replicationFactor, 30);
+    
     rf = sendDoc(4, minRf);
     assertTrue("Expected rf=3 as partitions to replicas have been healed, but got "+rf, rf == 3);
     
