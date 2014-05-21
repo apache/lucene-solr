@@ -44,7 +44,6 @@ import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 
 
 /** JUnit adaptation of an older test case DocTest. */
@@ -240,7 +239,7 @@ public class TestDoc extends LuceneTestCase {
         }
       }
 
-      return new SegmentCommitInfo(info, 0, -1L, -1L);
+      return new SegmentCommitInfo(info, 0, -1L, -1L, -1L);
    }
 
 

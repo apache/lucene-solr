@@ -2532,7 +2532,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
         }
       }
 
-      SegmentCommitInfo infoPerCommit = new SegmentCommitInfo(info, 0, -1L, -1L);
+      SegmentCommitInfo infoPerCommit = new SegmentCommitInfo(info, 0, -1L, -1L, -1L);
 
       info.setFiles(new HashSet<>(trackingDir.getCreatedFiles()));
       trackingDir.getCreatedFiles().clear();
@@ -2610,7 +2610,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     SegmentInfo newInfo = new SegmentInfo(directory, info.info.getVersion(), segName, info.info.getDocCount(),
                                           info.info.getUseCompoundFile(), info.info.getCodec(), 
                                           info.info.getDiagnostics());
-    SegmentCommitInfo newInfoPerCommit = new SegmentCommitInfo(newInfo, info.getDelCount(), info.getDelGen(), info.getFieldInfosGen());
+    SegmentCommitInfo newInfoPerCommit = new SegmentCommitInfo(newInfo,
+        info.getDelCount(), info.getDelGen(), info.getFieldInfosGen(),
+        info.getDocValuesGen());
 
     Set<String> segFiles = new HashSet<>();
 
@@ -3733,7 +3735,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     details.put("mergeMaxNumSegments", "" + merge.maxNumSegments);
     details.put("mergeFactor", Integer.toString(merge.segments.size()));
     setDiagnostics(si, SOURCE_MERGE, details);
-    merge.setInfo(new SegmentCommitInfo(si, 0, -1L, -1L));
+    merge.setInfo(new SegmentCommitInfo(si, 0, -1L, -1L, -1L));
 
 //    System.out.println("[" + Thread.currentThread().getName() + "] IW._mergeInit: " + segString(merge.segments) + " into " + si);
 
