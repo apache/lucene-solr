@@ -58,32 +58,8 @@ import org.apache.lucene.util.fst.PairOutputs.Pair;
 import org.apache.lucene.util.fst.PairOutputs;
 import org.apache.lucene.util.fst.Util;
 
-/** A block-based terms index and dictionary that assigns
- *  terms to variable length blocks according to how they
- *  share prefixes.  The terms index is a prefix trie
- *  whose leaves are term blocks.  The advantage of this
- *  approach is that seekExact is often able to
- *  determine a term cannot exist without doing any IO, and
- *  intersection with Automata is very fast.  Note that this
- *  terms dictionary has it's own fixed terms index (ie, it
- *  does not support a pluggable terms index
- *  implementation).
- *
- *  <p><b>NOTE</b>: this terms dictionary supports
- *  min/maxItemsPerBlock during indexing to control how
- *  much memory the terms index uses.</p>
- *
- *  <p>The data structure used by this implementation is very
- *  similar to a burst trie
- *  (http://citeseer.ist.psu.edu/viewdoc/summary?doi=10.1.1.18.3499),
- *  but with added logic to break up too-large blocks of all
- *  terms sharing a given prefix into smaller ones.</p>
- *
- *  <p>Use {@link org.apache.lucene.index.CheckIndex} with the <code>-verbose</code>
- *  option to see summary statistics on the blocks in the
- *  dictionary.
- *
- *  See {@link BlockTreeTermsWriter}.
+/**
+ * See {@link VersionBlockTreeTermsWriter}.
  *
  * @lucene.experimental
  */

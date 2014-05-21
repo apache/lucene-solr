@@ -30,7 +30,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
-public final class IDVersionPostingsWriter extends PushPostingsWriterBase {
+final class IDVersionPostingsWriter extends PushPostingsWriterBase {
 
   final static String TERMS_CODEC = "IDVersionPostingsWriterTerms";
 
@@ -52,7 +52,7 @@ public final class IDVersionPostingsWriter extends PushPostingsWriterBase {
   }
 
   @Override
-  public IDVersionTermState newTermState() {
+  public BlockTermState newTermState() {
     return new IDVersionTermState();
   }
 
@@ -78,6 +78,7 @@ public final class IDVersionPostingsWriter extends PushPostingsWriterBase {
 
   @Override
   public void startDoc(int docID, int termDocFreq) throws IOException {
+    // TODO: LUCENE-5693: we don't need this check if we fix IW to not send deleted docs to us on flush:
     if (state.liveDocs != null && state.liveDocs.get(docID) == false) {
       return;
     }

@@ -25,6 +25,7 @@ import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.PostingsWriterBase;
+import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -52,10 +53,6 @@ import org.apache.lucene.util.fst.PairOutputs;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
 import org.apache.lucene.util.packed.PackedInts;
-
-// nocommit break out the "don't write del docs on flush"
-
-// nocommit don't write/read stats
 
 /*
   TODO:
@@ -97,7 +94,7 @@ import org.apache.lucene.util.packed.PackedInts;
 
 final class VersionBlockTreeTermsWriter extends FieldsConsumer {
 
-  private static boolean DEBUG = IDVersionSegmentTermsEnum.DEBUG;
+  // private static boolean DEBUG = IDVersionSegmentTermsEnum.DEBUG;
 
   static final PairOutputs<BytesRef,Long> FST_OUTPUTS = new PairOutputs<>(ByteSequenceOutputs.getSingleton(),
                                                                           PositiveIntOutputs.getSingleton());
@@ -106,12 +103,12 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
 
   /** Suggested default value for the {@code
    *  minItemsInBlock} parameter to {@link
-   *  #BlockTreeTermsWriter(SegmentWriteState,PostingsWriterBase,int,int)}. */
+   *  #VersionBlockTreeTermsWriter(SegmentWriteState,PostingsWriterBase,int,int)}. */
   public final static int DEFAULT_MIN_BLOCK_SIZE = 25;
 
   /** Suggested default value for the {@code
    *  maxItemsInBlock} parameter to {@link
-   *  #BlockTreeTermsWriter(SegmentWriteState,PostingsWriterBase,int,int)}. */
+   *  #VersionBlockTreeTermsWriter(SegmentWriteState,PostingsWriterBase,int,int)}. */
   public final static int DEFAULT_MAX_BLOCK_SIZE = 48;
 
   //public final static boolean DEBUG = false;
@@ -516,6 +513,7 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
         // TODO: we could store min & max suffix start byte
         // in each block, to make floor blocks authoritative
 
+        /*
         if (DEBUG) {
           final BytesRef prefix = new BytesRef(prefixLength);
           for(int m=0;m<prefixLength;m++) {
@@ -525,6 +523,7 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
           //System.out.println("\nWBS count=" + count + " prefix=" + prefix.utf8ToString() + " " + prefix);
           System.out.println("writeBlocks: prefix=" + toString(prefix) + " " + prefix + " count=" + count + " pending.size()=" + pending.size());
         }
+        */
         //System.out.println("\nwbs count=" + count);
 
         final int savLabel = prevTerm.ints[prevTerm.offset + prefixLength];
@@ -745,9 +744,9 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
       // Write block header:
       out.writeVInt((length<<1)|(isLastInFloor ? 1:0));
 
-      if (DEBUG) {
-        System.out.println("  writeBlock " + (isFloor ? "(floor) " : "") + "seg=" + segment + " pending.size()=" + pending.size() + " prefixLength=" + prefixLength + " indexPrefix=" + toString(prefix) + " entCount=" + length + " startFP=" + startFP + " futureTermCount=" + futureTermCount + (isFloor ? (" floorLeadByte=" + Integer.toHexString(floorLeadByte&0xff)) : "") + " isLastInFloor=" + isLastInFloor);
-      }
+      // if (DEBUG) {
+      //  System.out.println("  writeBlock " + (isFloor ? "(floor) " : "") + "seg=" + segment + " pending.size()=" + pending.size() + " prefixLength=" + prefixLength + " indexPrefix=" + toString(prefix) + " entCount=" + length + " startFP=" + startFP + " futureTermCount=" + futureTermCount + (isFloor ? (" floorLeadByte=" + Integer.toHexString(floorLeadByte&0xff)) : "") + " isLastInFloor=" + isLastInFloor);
+      // }
 
       // 1st pass: pack term suffix bytes into byte[] blob
       // TODO: cutover to bulk int codec... simple64?
@@ -791,12 +790,12 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
           BlockTermState state = term.state;
           maxVersionInBlock = Math.max(maxVersionInBlock, ((IDVersionTermState) state).idVersion);
           final int suffix = term.term.length - prefixLength;
-          if (DEBUG) {
-             BytesRef suffixBytes = new BytesRef(suffix);
-             System.arraycopy(term.term.bytes, prefixLength, suffixBytes.bytes, 0, suffix);
-             suffixBytes.length = suffix;
-             System.out.println("    " + (countx++) + ": write term suffix=" + toString(suffixBytes));
-          }
+          // if (DEBUG) {
+          //    BytesRef suffixBytes = new BytesRef(suffix);
+          //    System.arraycopy(term.term.bytes, prefixLength, suffixBytes.bytes, 0, suffix);
+          //    suffixBytes.length = suffix;
+          //    System.out.println("    " + (countx++) + ": write term suffix=" + toString(suffixBytes));
+          // }
           // For leaf block we write suffix straight
           suffixWriter.writeVInt(suffix);
           suffixWriter.writeBytes(term.term.bytes, prefixLength, suffix);
@@ -821,12 +820,12 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
             BlockTermState state = term.state;
             maxVersionInBlock = Math.max(maxVersionInBlock, ((IDVersionTermState) state).idVersion);
             final int suffix = term.term.length - prefixLength;
-            if (DEBUG) {
-               BytesRef suffixBytes = new BytesRef(suffix);
-               System.arraycopy(term.term.bytes, prefixLength, suffixBytes.bytes, 0, suffix);
-               suffixBytes.length = suffix;
-               System.out.println("    " + (countx++) + ": write term suffix=" + toString(suffixBytes));
-            }
+            // if (DEBUG) {
+            //    BytesRef suffixBytes = new BytesRef(suffix);
+            //    System.arraycopy(term.term.bytes, prefixLength, suffixBytes.bytes, 0, suffix);
+            //    suffixBytes.length = suffix;
+            //    System.out.println("    " + (countx++) + ": write term suffix=" + toString(suffixBytes));
+            // }
             // For non-leaf block we borrow 1 bit to record
             // if entry is term or sub-block
             suffixWriter.writeVInt(suffix<<1);
@@ -864,12 +863,12 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
             suffixWriter.writeBytes(block.prefix.bytes, prefixLength, suffix);
             assert block.fp < startFP;
 
-            if (DEBUG) {
-               BytesRef suffixBytes = new BytesRef(suffix);
-               System.arraycopy(block.prefix.bytes, prefixLength, suffixBytes.bytes, 0, suffix);
-               suffixBytes.length = suffix;
-               System.out.println("    " + (countx++) + ": write sub-block suffix=" + toString(suffixBytes) + " subFP=" + block.fp + " subCode=" + (startFP-block.fp) + " floor=" + block.isFloor);
-            }
+            // if (DEBUG) {
+            //    BytesRef suffixBytes = new BytesRef(suffix);
+            //    System.arraycopy(block.prefix.bytes, prefixLength, suffixBytes.bytes, 0, suffix);
+            //    suffixBytes.length = suffix;
+            //    System.out.println("    " + (countx++) + ": write sub-block suffix=" + toString(suffixBytes) + " subFP=" + block.fp + " subCode=" + (startFP-block.fp) + " floor=" + block.isFloor);
+            // }
 
             suffixWriter.writeVLong(startFP - block.fp);
             subIndices.add(block.index);
@@ -937,6 +936,7 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
     public void write(BytesRef text, TermsEnum termsEnum) throws IOException {
 
       BlockTermState state = postingsWriter.writeTerm(text, termsEnum, docsSeen);
+      // TODO: LUCENE-5693: we don't need this check if we fix IW to not send deleted docs to us on flush:
       if (state != null && ((IDVersionPostingsWriter) postingsWriter).lastDocID != -1) {
         assert state.docFreq != 0;
         assert fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY || state.totalTermFreq >= state.docFreq: "postingsWriter=" + postingsWriter;

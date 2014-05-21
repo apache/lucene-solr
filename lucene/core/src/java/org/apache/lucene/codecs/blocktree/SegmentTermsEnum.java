@@ -51,7 +51,7 @@ final class SegmentTermsEnum extends TermsEnum {
 
   private int targetBeforeCurrentLength;
 
-  static boolean DEBUG = false;
+  // static boolean DEBUG = false;
 
   private final ByteArrayDataInput scratchReader = new ByteArrayDataInput();
 
@@ -70,9 +70,9 @@ final class SegmentTermsEnum extends TermsEnum {
   public SegmentTermsEnum(FieldReader fr) throws IOException {
     this.fr = fr;
 
-    if (DEBUG) {
-      System.out.println("BTTR.init seg=" + fr.parent.segment);
-    }
+    // if (DEBUG) {
+    //   System.out.println("BTTR.init seg=" + fr.parent.segment);
+    // }
     stack = new SegmentTermsEnumFrame[0];
         
     // Used to hold seek by TermState, or cached seek
@@ -323,10 +323,10 @@ final class SegmentTermsEnum extends TermsEnum {
 
     assert clearEOF();
 
-     if (DEBUG) {
-       System.out.println("\nBTTR.seekExact seg=" + fr.parent.segment + " target=" + fr.fieldInfo.name + ":" + brToString(target) + " current=" + brToString(term) + " (exists?=" + termExists + ") validIndexPrefix=" + validIndexPrefix);
-       printSeekState(System.out);
-     }
+    // if (DEBUG) {
+    //   System.out.println("\nBTTR.seekExact seg=" + fr.parent.segment + " target=" + fr.fieldInfo.name + ":" + brToString(target) + " current=" + brToString(term) + " (exists?=" + termExists + ") validIndexPrefix=" + validIndexPrefix);
+    //   printSeekState(System.out);
+    // }
 
     FST.Arc<BytesRef> arc;
     int targetUpto;
@@ -365,9 +365,9 @@ final class SegmentTermsEnum extends TermsEnum {
       // First compare up to valid seek frames:
       while (targetUpto < targetLimit) {
         cmp = (term.bytes[targetUpto]&0xFF) - (target.bytes[target.offset + targetUpto]&0xFF);
-         if (DEBUG) {
-           System.out.println("    cycle targetUpto=" + targetUpto + " (vs limit=" + targetLimit + ") cmp=" + cmp + " (targetLabel=" + (char) (target.bytes[target.offset + targetUpto]) + " vs termLabel=" + (char) (term.bytes[targetUpto]) + ")"   + " arc.output=" + arc.output + " output=" + output);
-         }
+        // if (DEBUG) {
+        //    System.out.println("    cycle targetUpto=" + targetUpto + " (vs limit=" + targetLimit + ") cmp=" + cmp + " (targetLabel=" + (char) (target.bytes[target.offset + targetUpto]) + " vs termLabel=" + (char) (term.bytes[targetUpto]) + ")"   + " arc.output=" + arc.output + " output=" + output);
+        // }
         if (cmp != 0) {
           break;
         }
@@ -392,9 +392,9 @@ final class SegmentTermsEnum extends TermsEnum {
         final int targetLimit2 = Math.min(target.length, term.length);
         while (targetUpto < targetLimit2) {
           cmp = (term.bytes[targetUpto]&0xFF) - (target.bytes[target.offset + targetUpto]&0xFF);
-           if (DEBUG) {
-             System.out.println("    cycle2 targetUpto=" + targetUpto + " (vs limit=" + targetLimit + ") cmp=" + cmp + " (targetLabel=" + (char) (target.bytes[target.offset + targetUpto]) + " vs termLabel=" + (char) (term.bytes[targetUpto]) + ")");
-           }
+          // if (DEBUG) {
+          //    System.out.println("    cycle2 targetUpto=" + targetUpto + " (vs limit=" + targetLimit + ") cmp=" + cmp + " (targetLabel=" + (char) (target.bytes[target.offset + targetUpto]) + " vs termLabel=" + (char) (term.bytes[targetUpto]) + ")");
+          // }
           if (cmp != 0) {
             break;
           }
@@ -581,10 +581,10 @@ final class SegmentTermsEnum extends TermsEnum {
 
     assert clearEOF();
 
-    if (DEBUG) {
-      System.out.println("\nBTTR.seekCeil seg=" + fr.parent.segment + " target=" + fr.fieldInfo.name + ":" + target.utf8ToString() + " " + target + " current=" + brToString(term) + " (exists?=" + termExists + ") validIndexPrefix=  " + validIndexPrefix);
-      printSeekState(System.out);
-    }
+    // if (DEBUG) {
+    //   System.out.println("\nBTTR.seekCeil seg=" + fr.parent.segment + " target=" + fr.fieldInfo.name + ":" + target.utf8ToString() + " " + target + " current=" + brToString(term) + " (exists?=" + termExists + ") validIndexPrefix=  " + validIndexPrefix);
+    //   printSeekState(System.out);
+    // }
 
     FST.Arc<BytesRef> arc;
     int targetUpto;
@@ -893,10 +893,10 @@ final class SegmentTermsEnum extends TermsEnum {
     targetBeforeCurrentLength = currentFrame.ord;
 
     assert !eof;
-    if (DEBUG) {
-      System.out.println("\nBTTR.next seg=" + fr.parent.segment + " term=" + brToString(term) + " termExists?=" + termExists + " field=" + fr.fieldInfo.name + " termBlockOrd=" + currentFrame.state.termBlockOrd + " validIndexPrefix=" + validIndexPrefix);
-      printSeekState(System.out);
-    }
+    // if (DEBUG) {
+    //   System.out.println("\nBTTR.next seg=" + fr.parent.segment + " term=" + brToString(term) + " termExists?=" + termExists + " field=" + fr.fieldInfo.name + " termBlockOrd=" + currentFrame.state.termBlockOrd + " validIndexPrefix=" + validIndexPrefix);
+    //   printSeekState(System.out);
+    // }
 
     if (currentFrame == staticFrame) {
       // If seek was previously called and the term was

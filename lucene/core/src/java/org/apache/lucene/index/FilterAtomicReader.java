@@ -169,11 +169,6 @@ public class FilterAtomicReader extends AtomicReader {
     }
 
     @Override
-    public boolean seekExact(BytesRef text) throws IOException {
-      return in.seekExact(text);
-    }
-
-    @Override
     public void seekExact(long ord) throws IOException {
       in.seekExact(ord);
     }

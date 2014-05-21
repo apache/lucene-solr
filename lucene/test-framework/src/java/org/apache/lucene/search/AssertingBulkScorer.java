@@ -31,8 +31,8 @@ import org.apache.lucene.util.VirtualMethod;
 /** Wraps a Scorer with additional checks */
 public class AssertingBulkScorer extends BulkScorer {
 
-  private static final VirtualMethod<BulkScorer> SCORE_COLLECTOR = new VirtualMethod<BulkScorer>(BulkScorer.class, "score", LeafCollector.class);
-  private static final VirtualMethod<BulkScorer> SCORE_COLLECTOR_RANGE = new VirtualMethod<BulkScorer>(BulkScorer.class, "score", LeafCollector.class, int.class);
+  private static final VirtualMethod<BulkScorer> SCORE_COLLECTOR = new VirtualMethod<>(BulkScorer.class, "score", LeafCollector.class);
+  private static final VirtualMethod<BulkScorer> SCORE_COLLECTOR_RANGE = new VirtualMethod<>(BulkScorer.class, "score", LeafCollector.class, int.class);
 
   public static BulkScorer wrap(Random random, BulkScorer other) {
     if (other == null || other instanceof AssertingBulkScorer) {

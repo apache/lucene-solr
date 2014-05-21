@@ -29,7 +29,7 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
 
-public final class IDVersionPostingsReader extends PostingsReaderBase {
+final class IDVersionPostingsReader extends PostingsReaderBase {
 
   @Override
   public void init(IndexInput termsIn) throws IOException {

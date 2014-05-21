@@ -6,6 +6,7 @@ import java.util.Iterator;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.VirtualMethod;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 /*
@@ -117,12 +118,16 @@ public class AssertingAtomicReader extends FilterAtomicReader {
     }
   }
   
+  static final VirtualMethod<TermsEnum> SEEK_EXACT = new VirtualMethod<>(TermsEnum.class, "seekExact", BytesRef.class);
+
   static class AssertingTermsEnum extends FilterTermsEnum {
     private enum State {INITIAL, POSITIONED, UNPOSITIONED};
     private State state = State.INITIAL;
+    private final boolean delegateOverridesSeekExact;
 
     public AssertingTermsEnum(TermsEnum in) {
       super(in);
+      delegateOverridesSeekExact = SEEK_EXACT.isOverriddenAsOf(in.getClass());
     }
 
     @Override
@@ -213,13 +218,18 @@ public class AssertingAtomicReader extends FilterAtomicReader {
     @Override
     public boolean seekExact(BytesRef text) throws IOException {
       assert text.isValid();
-      if (super.seekExact(text)) {
+      boolean result;
+      if (delegateOverridesSeekExact) {
+        result = in.seekExact(text);
+      } else {
+        result = super.seekExact(text);
+      }
+      if (result) {
         state = State.POSITIONED;
-        return true;
       } else {
         state = State.UNPOSITIONED;
-        return false;
       }
+      return result;
     }
 
     @Override

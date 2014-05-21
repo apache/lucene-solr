@@ -176,9 +176,6 @@ public class TestRuleLimitSysouts extends TestRuleAdapter {
   }
 
   protected boolean isEnforced() {
-    return false;
-    // nocommit
-    /*
     Class<?> target = RandomizedTest.getContext().getTargetClass();
 
     if (LuceneTestCase.VERBOSE || 
@@ -192,7 +189,6 @@ public class TestRuleLimitSysouts extends TestRuleAdapter {
     }
 
     return true;
-    */
   }
 
   /**
