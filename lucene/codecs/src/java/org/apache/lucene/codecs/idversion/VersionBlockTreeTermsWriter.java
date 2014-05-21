@@ -84,118 +84,19 @@ import org.apache.lucene.util.packed.PackedInts;
 */
 
 /**
- * Block-based terms index and dictionary writer.
- * <p>
- * Writes terms dict and index, block-encoding (column
- * stride) each term's metadata for each set of terms
- * between two index terms.
- * <p>
- * Files:
- * <ul>
- *   <li><tt>.tim</tt>: <a href="#Termdictionary">Term Dictionary</a></li>
- *   <li><tt>.tip</tt>: <a href="#Termindex">Term Index</a></li>
- * </ul>
- * <p>
- * <a name="Termdictionary" id="Termdictionary"></a>
- * <h3>Term Dictionary</h3>
+ * This is just like {@link BlockTreeTermsWriter}, except it also stores a version per term, and adds a method to its TermsEnum
+ * implementation to seekExact only if the version is >= the specified version.  The version is added to the terms index to avoid seeking if
+ * no term in the block has a high enough version.  The term blocks file is .tiv and the terms index extension is .tipv.
  *
- * <p>The .tim file contains the list of terms in each
- * field along with per-term statistics (such as docfreq)
- * and per-term metadata (typically pointers to the postings list
- * for that term in the inverted index).
- * </p>
- *
- * <p>The .tim is arranged in blocks: with blocks containing
- * a variable number of entries (by default 25-48), where
- * each entry is either a term or a reference to a
- * sub-block.</p>
- *
- * <p>NOTE: The term dictionary can plug into different postings implementations:
- * the postings writer/reader are actually responsible for encoding 
- * and decoding the Postings Metadata and Term Metadata sections.</p>
- *
- * <ul>
- *    <li>TermsDict (.tim) --&gt; Header, <i>PostingsHeader</i>, NodeBlock<sup>NumBlocks</sup>,
- *                               FieldSummary, DirOffset, Footer</li>
- *    <li>NodeBlock --&gt; (OuterNode | InnerNode)</li>
- *    <li>OuterNode --&gt; EntryCount, SuffixLength, Byte<sup>SuffixLength</sup>, StatsLength, &lt; TermStats &gt;<sup>EntryCount</sup>, MetaLength, &lt;<i>TermMetadata</i>&gt;<sup>EntryCount</sup></li>
- *    <li>InnerNode --&gt; EntryCount, SuffixLength[,Sub?], Byte<sup>SuffixLength</sup>, StatsLength, &lt; TermStats ? &gt;<sup>EntryCount</sup>, MetaLength, &lt;<i>TermMetadata ? </i>&gt;<sup>EntryCount</sup></li>
- *    <li>TermStats --&gt; DocFreq, TotalTermFreq </li>
- *    <li>FieldSummary --&gt; NumFields, &lt;FieldNumber, NumTerms, RootCodeLength, Byte<sup>RootCodeLength</sup>,
- *                            SumTotalTermFreq?, SumDocFreq, DocCount, LongsSize, MinTerm, MaxTerm&gt;<sup>NumFields</sup></li>
- *    <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
- *    <li>DirOffset --&gt; {@link DataOutput#writeLong Uint64}</li>
- *    <li>MinTerm,MaxTerm --&gt; {@link DataOutput#writeVInt VInt} length followed by the byte[]</li>
- *    <li>EntryCount,SuffixLength,StatsLength,DocFreq,MetaLength,NumFields,
- *        FieldNumber,RootCodeLength,DocCount,LongsSize --&gt; {@link DataOutput#writeVInt VInt}</li>
- *    <li>TotalTermFreq,NumTerms,SumTotalTermFreq,SumDocFreq --&gt; 
- *        {@link DataOutput#writeVLong VLong}</li>
- *    <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
- * </ul>
- * <p>Notes:</p>
- * <ul>
- *    <li>Header is a {@link CodecUtil#writeHeader CodecHeader} storing the version information
- *        for the BlockTree implementation.</li>
- *    <li>DirOffset is a pointer to the FieldSummary section.</li>
- *    <li>DocFreq is the count of documents which contain the term.</li>
- *    <li>TotalTermFreq is the total number of occurrences of the term. This is encoded
- *        as the difference between the total number of occurrences and the DocFreq.</li>
- *    <li>FieldNumber is the fields number from {@link FieldInfos}. (.fnm)</li>
- *    <li>NumTerms is the number of unique terms for the field.</li>
- *    <li>RootCode points to the root block for the field.</li>
- *    <li>SumDocFreq is the total number of postings, the number of term-document pairs across
- *        the entire field.</li>
- *    <li>DocCount is the number of documents that have at least one posting for this field.</li>
- *    <li>LongsSize records how many long values the postings writer/reader record per term
- *        (e.g., to hold freq/prox/doc file offsets).
- *    <li>MinTerm, MaxTerm are the lowest and highest term in this field.</li>
- *    <li>PostingsHeader and TermMetadata are plugged into by the specific postings implementation:
- *        these contain arbitrary per-file data (such as parameters or versioning information) 
- *        and per-term data (such as pointers to inverted files).</li>
- *    <li>For inner nodes of the tree, every entry will steal one bit to mark whether it points
- *        to child nodes(sub-block). If so, the corresponding TermStats and TermMetaData are omitted </li>
- * </ul>
- * <a name="Termindex" id="Termindex"></a>
- * <h3>Term Index</h3>
- * <p>The .tip file contains an index into the term dictionary, so that it can be 
- * accessed randomly.  The index is also used to determine
- * when a given term cannot exist on disk (in the .tim file), saving a disk seek.</p>
- * <ul>
- *   <li>TermsIndex (.tip) --&gt; Header, FSTIndex<sup>NumFields</sup>
- *                                &lt;IndexStartFP&gt;<sup>NumFields</sup>, DirOffset, Footer</li>
- *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
- *   <li>DirOffset --&gt; {@link DataOutput#writeLong Uint64}</li>
- *   <li>IndexStartFP --&gt; {@link DataOutput#writeVLong VLong}</li>
- *   <!-- TODO: better describe FST output here -->
- *   <li>FSTIndex --&gt; {@link FST FST&lt;byte[]&gt;}</li>
- *   <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
- * </ul>
- * <p>Notes:</p>
- * <ul>
- *   <li>The .tip file contains a separate FST for each
- *       field.  The FST maps a term prefix to the on-disk
- *       block that holds all terms starting with that
- *       prefix.  Each field's IndexStartFP points to its
- *       FST.</li>
- *   <li>DirOffset is a pointer to the start of the IndexStartFPs
- *       for all fields</li>
- *   <li>It's possible that an on-disk block would contain
- *       too many terms (more than the allowed maximum
- *       (default: 48)).  When this happens, the block is
- *       sub-divided into new blocks (called "floor
- *       blocks"), and then the output in the FST for the
- *       block's prefix encodes the leading byte of each
- *       sub-block, and its file pointer.
- * </ul>
- *
- * @see BlockTreeTermsReader
  * @lucene.experimental
  */
-// nocommit fix jdocs
+
 final class VersionBlockTreeTermsWriter extends FieldsConsumer {
 
+  private static boolean DEBUG = IDVersionSegmentTermsEnum.DEBUG;
+
   static final PairOutputs<BytesRef,Long> FST_OUTPUTS = new PairOutputs<>(ByteSequenceOutputs.getSingleton(),
-                                                                                 PositiveIntOutputs.getSingleton());
+                                                                          PositiveIntOutputs.getSingleton());
 
   static final Pair<BytesRef,Long> NO_OUTPUT = FST_OUTPUTS.getNoOutput();
 
@@ -224,25 +125,11 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
   /** Initial terms format. */
   public static final int VERSION_START = 0;
 
-  // nocommit nuke all these old versions
-
-  /** Append-only */
-  public static final int VERSION_APPEND_ONLY = 1;
-
-  /** Meta data as array */
-  public static final int VERSION_META_ARRAY = 2;
-  
-  /** checksums */
-  public static final int VERSION_CHECKSUM = 3;
-
-  /** min/max term */
-  public static final int VERSION_MIN_MAX_TERMS = 4;
-
   /** Current terms format. */
-  public static final int VERSION_CURRENT = VERSION_MIN_MAX_TERMS;
+  public static final int VERSION_CURRENT = VERSION_START;
 
   /** Extension of terms index file */
-  static final String TERMS_INDEX_EXTENSION = "tip";
+  static final String TERMS_INDEX_EXTENSION = "tipv";
   final static String TERMS_INDEX_CODEC_NAME = "VERSION_BLOCK_TREE_TERMS_INDEX";
 
   private final IndexOutput out;
@@ -297,7 +184,6 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
                                      int maxItemsInBlock)
     throws IOException
   {
-    System.out.println("VBTTW minItemsInBlock=" + minItemsInBlock + " maxItemsInBlock=" + maxItemsInBlock);
     if (minItemsInBlock <= 1) {
       throw new IllegalArgumentException("minItemsInBlock must be >= 2; got " + minItemsInBlock);
     }
@@ -626,8 +512,7 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
     // following floor blocks:
 
     void writeBlocks(IntsRef prevTerm, int prefixLength, int count) throws IOException {
-      // nocommit why can't we do floor blocks for root frame?
-      if (prefixLength == 0 || count <= maxItemsInBlock) {
+      if (count <= maxItemsInBlock) {
         // Easy case: not floor block.  Eg, prefix is "foo",
         // and we found 30 terms/sub-blocks starting w/ that
         // prefix, and minItemsInBlock <= 30 <=
@@ -645,7 +530,7 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
         // TODO: we could store min & max suffix start byte
         // in each block, to make floor blocks authoritative
 
-        //if (DEBUG) {
+        if (DEBUG) {
           final BytesRef prefix = new BytesRef(prefixLength);
           for(int m=0;m<prefixLength;m++) {
             prefix.bytes[m] = (byte) prevTerm.ints[m];
@@ -653,7 +538,7 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
           prefix.length = prefixLength;
           //System.out.println("\nWBS count=" + count + " prefix=" + prefix.utf8ToString() + " " + prefix);
           System.out.println("writeBlocks: prefix=" + toString(prefix) + " " + prefix + " count=" + count + " pending.size()=" + pending.size());
-        //}
+        }
         //System.out.println("\nwbs count=" + count);
 
         final int savLabel = prevTerm.ints[prevTerm.offset + prefixLength];
@@ -874,9 +759,9 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
       // Write block header:
       out.writeVInt((length<<1)|(isLastInFloor ? 1:0));
 
-      // if (DEBUG) {
-      System.out.println("  writeBlock " + (isFloor ? "(floor) " : "") + "seg=" + segment + " pending.size()=" + pending.size() + " prefixLength=" + prefixLength + " indexPrefix=" + toString(prefix) + " entCount=" + length + " startFP=" + startFP + " futureTermCount=" + futureTermCount + (isFloor ? (" floorLeadByte=" + Integer.toHexString(floorLeadByte&0xff)) : "") + " isLastInFloor=" + isLastInFloor);
-      // }
+      if (DEBUG) {
+        System.out.println("  writeBlock " + (isFloor ? "(floor) " : "") + "seg=" + segment + " pending.size()=" + pending.size() + " prefixLength=" + prefixLength + " indexPrefix=" + toString(prefix) + " entCount=" + length + " startFP=" + startFP + " futureTermCount=" + futureTermCount + (isFloor ? (" floorLeadByte=" + Integer.toHexString(floorLeadByte&0xff)) : "") + " isLastInFloor=" + isLastInFloor);
+      }
 
       // 1st pass: pack term suffix bytes into byte[] blob
       // TODO: cutover to bulk int codec... simple64?
@@ -920,12 +805,12 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
           BlockTermState state = term.state;
           maxVersionInBlock = Math.max(maxVersionInBlock, ((IDVersionTermState) state).idVersion);
           final int suffix = term.term.length - prefixLength;
-          // if (DEBUG) {
+          if (DEBUG) {
              BytesRef suffixBytes = new BytesRef(suffix);
              System.arraycopy(term.term.bytes, prefixLength, suffixBytes.bytes, 0, suffix);
              suffixBytes.length = suffix;
              System.out.println("    " + (countx++) + ": write term suffix=" + toString(suffixBytes));
-          // }
+          }
           // For leaf block we write suffix straight
           suffixWriter.writeVInt(suffix);
           suffixWriter.writeBytes(term.term.bytes, prefixLength, suffix);
@@ -957,12 +842,12 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
             BlockTermState state = term.state;
             maxVersionInBlock = Math.max(maxVersionInBlock, ((IDVersionTermState) state).idVersion);
             final int suffix = term.term.length - prefixLength;
-            // if (DEBUG) {
+            if (DEBUG) {
                BytesRef suffixBytes = new BytesRef(suffix);
                System.arraycopy(term.term.bytes, prefixLength, suffixBytes.bytes, 0, suffix);
                suffixBytes.length = suffix;
                System.out.println("    " + (countx++) + ": write term suffix=" + toString(suffixBytes));
-            // }
+            }
             // For non-leaf block we borrow 1 bit to record
             // if entry is term or sub-block
             suffixWriter.writeVInt(suffix<<1);
@@ -1007,12 +892,12 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
             suffixWriter.writeBytes(block.prefix.bytes, prefixLength, suffix);
             assert block.fp < startFP;
 
-            // if (DEBUG) {
+            if (DEBUG) {
                BytesRef suffixBytes = new BytesRef(suffix);
                System.arraycopy(block.prefix.bytes, prefixLength, suffixBytes.bytes, 0, suffix);
                suffixBytes.length = suffix;
                System.out.println("    " + (countx++) + ": write sub-block suffix=" + toString(suffixBytes) + " subFP=" + block.fp + " subCode=" + (startFP-block.fp) + " floor=" + block.isFloor);
-            // }
+            }
 
             suffixWriter.writeVLong(startFP - block.fp);
             subIndices.add(block.index);

@@ -1640,22 +1640,15 @@ public class CheckIndex {
           // Again, with the one doc deleted:
           checkFields(tfv, onlyDocIsDeleted, 1, fieldInfos, false, true, infoStream, verbose);
 
-          // Only agg stats if the doc is live:
-          final boolean doStats = liveDocs == null || liveDocs.get(j);
-
-          if (doStats == false) {
-            // nocommit is it OK to stop verifying deleted docs?
+          if (liveDocs != null && liveDocs.get(j) == false) {
+            // Only check live docs
             continue;
           }
 
-          if (doStats) {
-            status.docCount++;
-          }
+          status.docCount++;
 
           for(String field : tfv) {
-            if (doStats) {
-              status.totVectors++;
-            }
+            status.totVectors++;
 
             // Make sure FieldInfo thinks this field is vector'd:
             final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);

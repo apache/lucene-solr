@@ -94,6 +94,8 @@ final class DefaultIndexingChain extends DocConsumer {
     // aborting on any exception from this method
 
     int numDocs = state.segmentInfo.getDocCount();
+
+    // TODO: we could set liveDocs earlier and then fix DVs to also not write deleted docs:
     writeNorms(state);
     writeDocValues(state);
     

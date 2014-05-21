@@ -34,7 +34,6 @@ final class FreqProxTermsWriter extends TermsHash {
   }
 
   private void applyDeletes(SegmentWriteState state, Fields fields) throws IOException {
-    System.out.println("applyDeletes segUpdates=" + state.segUpdates);
 
     // Process any pending Term deletes for this newly
     // flushed segment:
@@ -107,8 +106,6 @@ final class FreqProxTermsWriter extends TermsHash {
     if (state.liveDocs != null) {
       fields.setLiveDocs(state.liveDocs);
     }
-
-    System.out.println("now: " + state.liveDocs + " pf=" + state.segmentInfo.getCodec().postingsFormat());
 
     FieldsConsumer consumer = state.segmentInfo.getCodec().postingsFormat().fieldsConsumer(state);
     boolean success = false;

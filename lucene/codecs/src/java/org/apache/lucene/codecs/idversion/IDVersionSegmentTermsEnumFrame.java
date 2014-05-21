@@ -220,11 +220,10 @@ final class IDVersionSegmentTermsEnumFrame {
   }
 
   void rewind() {
+
     // Force reload:
     fp = fpOrig;
     nextEnt = -1;
-    // nocommit move to BT too?
-    //state.termBlockOrd = 0;
     hasTerms = hasTermsOrig;
     if (isFloor) {
       floorDataReader.rewind();
@@ -390,8 +389,7 @@ final class IDVersionSegmentTermsEnumFrame {
     
   public void decodeMetaData() throws IOException {
 
-    //if (DEBUG) System.out.println("\nBTTR.decodeMetadata seg=" + segment + " mdUpto=" + metaDataUpto + " vs termBlockOrd=" + state.termBlockOrd);
-    System.out.println("\nBTTR.decodeMetadata seg=" + ste.fr.parent.segment + " mdUpto=" + metaDataUpto + " vs termBlockOrd=" + state.termBlockOrd);
+    //if (DEBUG) System.out.println("\nBTTR.decodeMetadata seg=" + ste.fr.parent.segment + " mdUpto=" + metaDataUpto + " vs termBlockOrd=" + state.termBlockOrd);
 
     assert nextEnt >= 0;
 

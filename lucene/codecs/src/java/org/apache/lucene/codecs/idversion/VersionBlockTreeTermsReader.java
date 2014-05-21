@@ -136,9 +136,7 @@ final class VersionBlockTreeTermsReader extends FieldsProducer {
       }
       
       // verify
-      if (version >= VersionBlockTreeTermsWriter.VERSION_CHECKSUM) {
-        CodecUtil.checksumEntireFile(indexIn);
-      }
+      CodecUtil.checksumEntireFile(indexIn);
 
       // Have PostingsReader init itself
       postingsReader.init(in);
@@ -167,15 +165,10 @@ final class VersionBlockTreeTermsReader extends FieldsProducer {
         final long sumTotalTermFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY ? -1 : in.readVLong();
         final long sumDocFreq = in.readVLong();
         final int docCount = in.readVInt();
-        final int longsSize = version >= VersionBlockTreeTermsWriter.VERSION_META_ARRAY ? in.readVInt() : 0;
+        final int longsSize = in.readVInt();
 
-        BytesRef minTerm, maxTerm;
-        if (version >= VersionBlockTreeTermsWriter.VERSION_MIN_MAX_TERMS) {
-          minTerm = readBytesRef(in);
-          maxTerm = readBytesRef(in);
-        } else {
-          minTerm = maxTerm = null;
-        }
+        BytesRef minTerm = readBytesRef(in);
+        BytesRef maxTerm = readBytesRef(in);
         if (docCount < 0 || docCount > info.getDocCount()) { // #docs with field must be <= #docs
           throw new CorruptIndexException("invalid docCount: " + docCount + " maxDoc: " + info.getDocCount() + " (resource=" + in + ")");
         }
@@ -217,9 +210,6 @@ final class VersionBlockTreeTermsReader extends FieldsProducer {
     int version = CodecUtil.checkHeader(input, VersionBlockTreeTermsWriter.TERMS_CODEC_NAME,
                           VersionBlockTreeTermsWriter.VERSION_START,
                           VersionBlockTreeTermsWriter.VERSION_CURRENT);
-    if (version < VersionBlockTreeTermsWriter.VERSION_APPEND_ONLY) {
-      dirOffset = input.readLong();
-    }
     return version;
   }
 
@@ -228,22 +218,14 @@ final class VersionBlockTreeTermsReader extends FieldsProducer {
     int version = CodecUtil.checkHeader(input, VersionBlockTreeTermsWriter.TERMS_INDEX_CODEC_NAME,
                           VersionBlockTreeTermsWriter.VERSION_START,
                           VersionBlockTreeTermsWriter.VERSION_CURRENT);
-    if (version < VersionBlockTreeTermsWriter.VERSION_APPEND_ONLY) {
-      indexDirOffset = input.readLong(); 
-    }
     return version;
   }
 
   /** Seek {@code input} to the directory offset. */
   private void seekDir(IndexInput input, long dirOffset)
       throws IOException {
-    if (version >= VersionBlockTreeTermsWriter.VERSION_CHECKSUM) {
-      input.seek(input.length() - CodecUtil.footerLength() - 8);
-      dirOffset = input.readLong();
-    } else if (version >= VersionBlockTreeTermsWriter.VERSION_APPEND_ONLY) {
-      input.seek(input.length() - 8);
-      dirOffset = input.readLong();
-    }
+    input.seek(input.length() - CodecUtil.footerLength() - 8);
+    dirOffset = input.readLong();
     input.seek(dirOffset);
   }
 
@@ -306,12 +288,10 @@ final class VersionBlockTreeTermsReader extends FieldsProducer {
 
   @Override
   public void checkIntegrity() throws IOException {
-    if (version >= VersionBlockTreeTermsWriter.VERSION_CHECKSUM) {      
-      // term dictionary
-      CodecUtil.checksumEntireFile(in);
+    // term dictionary
+    CodecUtil.checksumEntireFile(in);
       
-      // postings
-      postingsReader.checkIntegrity();
-    }
+    // postings
+    postingsReader.checkIntegrity();
   }
 }

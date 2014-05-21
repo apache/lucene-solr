@@ -28,7 +28,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.util.BytesRef;
 
-// nocommit can we take a BytesRef token instead?
+// TODO: can we take a BytesRef token instead?
 
 /** Produces a single String token from the provided value, with the provided payload. */
 class StringAndPayloadField extends Field {

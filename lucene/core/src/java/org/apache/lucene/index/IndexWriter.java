@@ -1696,7 +1696,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     if (doWait) {
       synchronized(this) {
         while(true) {
-
           if (hitOOM) {
             throw new IllegalStateException("this writer hit an OutOfMemoryError; cannot complete forceMerge");
           }

@@ -230,14 +230,12 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
     return ((IDVersionTermState) currentFrame.state).idVersion;
   }
 
-  /** Returns false if the term deos not exist, or it exists but its version is too old (< minIDVersion). */
+  /** Returns false if the term does not exist, or it exists but its version is too old (< minIDVersion). */
   public boolean seekExact(final BytesRef target, long minIDVersion) throws IOException {
 
     if (fr.index == null) {
       throw new IllegalStateException("terms index was not loaded");
     }
-
-    // nocommit would be nice if somehow on doing deletes we didn't have to double-lookup again...
 
     if (term.bytes.length <= target.length) {
       term.bytes = ArrayUtil.grow(term.bytes, 1+target.length);
@@ -260,7 +258,7 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
 
     boolean changed = false;
 
-    // nocommit we could stop earlier w/ the version check, every time we traverse an index arc we can check?
+    // TODO: we could stop earlier w/ the version check, every time we traverse an index arc we can check?
 
     if (currentFrame != staticFrame) {
 
@@ -380,7 +378,7 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
             }
             return false;
           }
-          System.out.println("  term version=" + ((IDVersionTermState) currentFrame.state).idVersion + " frame version=" + currentFrame.maxIDVersion + " frame ord=" + currentFrame.ord);
+          // System.out.println("  term version=" + ((IDVersionTermState) currentFrame.state).idVersion + " frame version=" + currentFrame.maxIDVersion + " frame ord=" + currentFrame.ord);
 
            if (DEBUG) {
              System.out.println("  target is same as current; return true");

@@ -49,6 +49,7 @@ import org.apache.lucene.index.PerThreadPKLookup;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -90,16 +91,16 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     String next();
   }
 
-  // nocommit make a similar test for BT, w/ varied IDs:
+  // TODO make a similar test for BT, w/ varied IDs:
 
   public void testRandom() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    // nocommit randomize the block sizes:
-    iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
-    // nocommit put back
-    //RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
-    IndexWriter w = new IndexWriter(dir, iwc);
+    int minItemsInBlock = TestUtil.nextInt(random(), 2, 50);
+    int maxItemsInBlock = 2*(minItemsInBlock-1) + random().nextInt(50);
+    iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat(minItemsInBlock, maxItemsInBlock)));
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    //IndexWriter w = new IndexWriter(dir, iwc);
     int numDocs = atLeast(1000);
     Map<String,Long> idValues = new HashMap<String,Long>();
     int docUpto = 0;
@@ -210,9 +211,10 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
       System.out.println("TEST: useMonotonicVersion=" + useMonotonicVersion);
     }
 
+    List<String> idsList = new ArrayList<>();
+
     long version = 0;
     while (docUpto < numDocs) {
-      // nocommit add deletes in
       String idValue = idPrefix + ids.next();
       if (idValues.containsKey(idValue)) {
         continue;
@@ -229,11 +231,38 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
       Document doc = new Document();
       doc.add(makeIDField(idValue, version));
       w.addDocument(doc);
+      idsList.add(idValue);
+
+      if (idsList.size() > 0 && random().nextInt(7) == 5) {
+        // Randomly delete or update a previous ID
+        idValue = idsList.get(random().nextInt(idsList.size()));
+        if (random().nextBoolean()) {
+          if (useMonotonicVersion) {
+            version += TestUtil.nextInt(random(), 1, 10);
+          } else {
+            version = random().nextLong() & 0x7fffffffffffffffL;
+          }
+          doc = new Document();
+          doc.add(makeIDField(idValue, version));
+          if (VERBOSE) {
+            System.out.println("  update " + idValue + " -> " + version);
+          }
+          w.updateDocument(new Term("id", idValue), doc);
+          idValues.put(idValue, version);
+        } else {
+          if (VERBOSE) {
+            System.out.println("  delete " + idValue);
+          }
+          w.deleteDocuments(new Term("id", idValue));
+          idValues.remove(idValue);
+        }        
+      }
+
       docUpto++;
     }
 
-    //IndexReader r = w.getReader();
-    IndexReader r = DirectoryReader.open(w, true);
+    IndexReader r = w.getReader();
+    //IndexReader r = DirectoryReader.open(w, true);
     PerThreadVersionPKLookup lookup = new PerThreadVersionPKLookup(r, "id");
 
     List<Map.Entry<String,Long>> idValuesList = new ArrayList<>(idValues.entrySet());
@@ -242,7 +271,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
       String idValue;
 
       if (random().nextBoolean()) {
-        idValue = idValuesList.get(random().nextInt(numDocs)).getKey();
+        idValue = idValuesList.get(random().nextInt(idValuesList.size())).getKey();
       } else if (random().nextBoolean()) {
         idValue = ids.next();
       } else {
@@ -318,14 +347,6 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     payload.length = 8;
     IDVersionPostingsFormat.longToBytes(version, payload);
     return new StringAndPayloadField("id", id, payload);
-
-    /*
-    Field field = newTextField("id", "", Field.Store.NO);
-    Token token = new Token(id, 0, id.length());
-    token.setPayload(payload);
-    field.setTokenStream(new CannedTokenStream(token));
-    return field;
-    */
   }
 
   public void testMoreThanOneDocPerIDOneSegment() throws Exception {
@@ -353,6 +374,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
+    iwc.setMergePolicy(new TieredMergePolicy());
     MergeScheduler ms = iwc.getMergeScheduler();
     if (ms instanceof ConcurrentMergeScheduler) {
       iwc.setMergeScheduler(new ConcurrentMergeScheduler() {
@@ -362,7 +384,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
           }
         });
     }
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
     doc.add(makeIDField("id", 17));
     w.addDocument(doc);
@@ -380,7 +402,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
       // expected
       assertTrue(ioe.getCause() instanceof IllegalArgumentException);
     }
-    w.w.close();
+    w.close();
     dir.close();
   }
 

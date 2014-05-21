@@ -17,8 +17,7 @@ package org.apache.lucene.uninverting;
  * limitations under the License.
  */
 
-import static org.apache.lucene.index.SortedSetDocValues.NO_MORE_ORDS;
-
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -47,13 +46,16 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+
+import static org.apache.lucene.index.SortedSetDocValues.NO_MORE_ORDS;
 
 public class TestFieldCacheVsDocValues extends LuceneTestCase {
   
@@ -315,14 +317,11 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     }
     
     // delete some docs
-    // nocommit hmmm what to do
-    /*
     int numDeletions = random().nextInt(numDocs/10);
     for (int i = 0; i < numDeletions; i++) {
       int id = random().nextInt(numDocs);
       writer.deleteDocuments(new Term("id", Integer.toString(id)));
     }
-    */
     writer.shutdown();
     
     // compare
@@ -331,7 +330,7 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
       AtomicReader r = context.reader();
       SortedDocValues expected = FieldCache.DEFAULT.getTermsIndex(r, "indexed");
       SortedDocValues actual = r.getSortedDocValues("dv");
-      assertEquals(r.maxDoc(), expected, actual);
+      assertEquals(r.maxDoc(), r.getLiveDocs(), expected, actual);
     }
     ir.close();
     dir.close();
@@ -382,14 +381,11 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     }
     
     // delete some docs
-    // nocommit hmmm what to do
-    /*
     int numDeletions = random().nextInt(numDocs/10);
     for (int i = 0; i < numDeletions; i++) {
       int id = random().nextInt(numDocs);
       writer.deleteDocuments(new Term("id", Integer.toString(id)));
     }
-    */
     
     // compare per-segment
     DirectoryReader ir = writer.getReader();
@@ -397,7 +393,7 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
       AtomicReader r = context.reader();
       SortedSetDocValues expected = FieldCache.DEFAULT.getDocTermOrds(r, "indexed", null);
       SortedSetDocValues actual = r.getSortedSetDocValues("dv");
-      assertEquals(r.maxDoc(), expected, actual);
+      assertEquals(r.maxDoc(), r.getLiveDocs(), expected, actual);
     }
     ir.close();
     
@@ -408,7 +404,7 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     AtomicReader ar = getOnlySegmentReader(ir);
     SortedSetDocValues expected = FieldCache.DEFAULT.getDocTermOrds(ar, "indexed", null);
     SortedSetDocValues actual = ar.getSortedSetDocValues("dv");
-    assertEquals(ir.maxDoc(), expected, actual);
+    assertEquals(ir.maxDoc(), ar.getLiveDocs(), expected, actual);
     ir.close();
     
     writer.shutdown();
@@ -449,14 +445,11 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     }
     
     // delete some docs
-    // nocommit hmmm what to do
-    /*
     int numDeletions = random().nextInt(numDocs/10);
     for (int i = 0; i < numDeletions; i++) {
       int id = random().nextInt(numDocs);
       writer.deleteDocuments(new Term("id", Integer.toString(id)));
     }
-    */
 
     // merge some segments and ensure that at least one of them has more than
     // 256 values
@@ -496,102 +489,149 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     }
   }
   
-  private void assertEquals(int maxDoc, SortedDocValues expected, SortedDocValues actual) throws Exception {
-    assertEquals(maxDoc, DocValues.singleton(expected), DocValues.singleton(actual));
+  private void assertEquals(int maxDoc, Bits liveDocs, SortedDocValues expected, SortedDocValues actual) throws Exception {
+    assertEquals(maxDoc, liveDocs, DocValues.singleton(expected), DocValues.singleton(actual));
   }
   
-  private void assertEquals(int maxDoc, SortedSetDocValues expected, SortedSetDocValues actual) throws Exception {
+  private void assertEquals(int maxDoc, Bits liveDocs, SortedSetDocValues expected, SortedSetDocValues actual) throws Exception {
     // can be null for the segment if no docs actually had any SortedDocValues
     // in this case FC.getDocTermsOrds returns EMPTY
     if (actual == null) {
       assertEquals(DocValues.EMPTY_SORTED_SET, expected);
       return;
     }
-    assertEquals(expected.getValueCount(), actual.getValueCount());
-    // compare ord lists
+
+    FixedBitSet liveOrdsExpected = new FixedBitSet((int) expected.getValueCount());
+    FixedBitSet liveOrdsActual = new FixedBitSet((int) actual.getValueCount());
+
+    BytesRef expectedBytes = new BytesRef();
+    BytesRef actualBytes = new BytesRef();
+
+    // compare values for all live docs:
     for (int i = 0; i < maxDoc; i++) {
+      if (liveDocs != null && liveDocs.get(i) == false) {
+        // Don't check deleted docs
+        continue;
+      }
       expected.setDocument(i);
       actual.setDocument(i);
       long expectedOrd;
       while ((expectedOrd = expected.nextOrd()) != NO_MORE_ORDS) {
-        assertEquals(expectedOrd, actual.nextOrd());
+        expected.lookupOrd(expectedOrd, expectedBytes);
+        long actualOrd = actual.nextOrd();
+        assertTrue(actualOrd != NO_MORE_ORDS);
+        actual.lookupOrd(actualOrd, actualBytes);
+        assertEquals(expectedBytes, actualBytes);
+        liveOrdsExpected.set((int) expectedOrd);
+        liveOrdsActual.set((int) actualOrd);
       }
+
       assertEquals(NO_MORE_ORDS, actual.nextOrd());
     }
+
+    // Make sure both have same number of non-deleted values:
+    assertEquals(liveOrdsExpected.cardinality(), liveOrdsActual.cardinality());
     
     // compare ord dictionary
-    BytesRef expectedBytes = new BytesRef();
-    BytesRef actualBytes = new BytesRef();
-    for (long i = 0; i < expected.getValueCount(); i++) {
-      expected.lookupTerm(expectedBytes);
-      actual.lookupTerm(actualBytes);
+    int expectedOrd = 0;
+    int actualOrd = 0;
+    while (expectedOrd < expected.getValueCount()) {
+      expectedOrd = liveOrdsExpected.nextSetBit(expectedOrd);
+      if (expectedOrd == -1) {
+        break;
+      }
+      actualOrd = liveOrdsActual.nextSetBit(actualOrd);
+      expected.lookupOrd(expectedOrd, expectedBytes);
+      actual.lookupOrd(actualOrd, actualBytes);
       assertEquals(expectedBytes, actualBytes);
+      expectedOrd++;
+      actualOrd++;
     }
+    assertTrue(actualOrd == actual.getValueCount() || liveOrdsActual.nextSetBit(actualOrd) == -1);
     
     // compare termsenum
-    assertEquals(expected.getValueCount(), expected.termsEnum(), actual.termsEnum());
+    assertEquals(expected.getValueCount(), expected.termsEnum(), liveOrdsExpected, actual.termsEnum(), liveOrdsActual);
   }
-  
-  private void assertEquals(long numOrds, TermsEnum expected, TermsEnum actual) throws Exception {
+
+  /** Does termsEnum.next() but then skips over deleted ords. */
+  private static BytesRef next(TermsEnum termsEnum, Bits liveOrds) throws IOException {
+    while (termsEnum.next() != null) {
+      if (liveOrds.get((int) termsEnum.ord())) {
+        return termsEnum.term();
+      }
+    }
+    return null;
+  }
+
+  /** Does termsEnum.seekCeil() but then skips over deleted ords. */
+  private static SeekStatus seekCeil(TermsEnum termsEnum, BytesRef term, Bits liveOrds) throws IOException {
+    SeekStatus status = termsEnum.seekCeil(term);
+    if (status == SeekStatus.END) {
+      return status;
+    } else {
+      if (liveOrds.get((int) termsEnum.ord()) == false) {
+        while (termsEnum.next() != null) {
+          if (liveOrds.get((int) termsEnum.ord())) {
+            return SeekStatus.NOT_FOUND;
+          }
+        }
+        return SeekStatus.END;
+      } else {
+        return status;
+      }
+    }
+  }
+
+  private void assertEquals(long numOrds, TermsEnum expected, Bits liveOrdsExpected, TermsEnum actual, Bits liveOrdsActual) throws Exception {
     BytesRef ref;
     
     // sequential next() through all terms
-    while ((ref = expected.next()) != null) {
-      assertEquals(ref, actual.next());
-      assertEquals(expected.ord(), actual.ord());
+    while ((ref = next(expected, liveOrdsExpected)) != null) {
+      assertEquals(ref, next(actual, liveOrdsActual));
       assertEquals(expected.term(), actual.term());
     }
-    assertNull(actual.next());
-    
-    // sequential seekExact(ord) through all terms
-    for (long i = 0; i < numOrds; i++) {
-      expected.seekExact(i);
-      actual.seekExact(i);
-      assertEquals(expected.ord(), actual.ord());
-      assertEquals(expected.term(), actual.term());
-    }
+    assertNull(next(actual, liveOrdsActual));
     
     // sequential seekExact(BytesRef) through all terms
     for (long i = 0; i < numOrds; i++) {
+      if (liveOrdsExpected.get((int) i) == false) {
+        continue;
+      }
       expected.seekExact(i);
       assertTrue(actual.seekExact(expected.term()));
-      assertEquals(expected.ord(), actual.ord());
       assertEquals(expected.term(), actual.term());
     }
     
     // sequential seekCeil(BytesRef) through all terms
     for (long i = 0; i < numOrds; i++) {
+      if (liveOrdsExpected.get((int) i) == false) {
+        continue;
+      }
       expected.seekExact(i);
       assertEquals(SeekStatus.FOUND, actual.seekCeil(expected.term()));
-      assertEquals(expected.ord(), actual.ord());
-      assertEquals(expected.term(), actual.term());
-    }
-    
-    // random seekExact(ord)
-    for (long i = 0; i < numOrds; i++) {
-      long randomOrd = TestUtil.nextLong(random(), 0, numOrds - 1);
-      expected.seekExact(randomOrd);
-      actual.seekExact(randomOrd);
-      assertEquals(expected.ord(), actual.ord());
       assertEquals(expected.term(), actual.term());
     }
     
     // random seekExact(BytesRef)
     for (long i = 0; i < numOrds; i++) {
       long randomOrd = TestUtil.nextLong(random(), 0, numOrds - 1);
+      if (liveOrdsExpected.get((int) randomOrd) == false) {
+        continue;
+      }
       expected.seekExact(randomOrd);
       actual.seekExact(expected.term());
-      assertEquals(expected.ord(), actual.ord());
       assertEquals(expected.term(), actual.term());
     }
     
     // random seekCeil(BytesRef)
     for (long i = 0; i < numOrds; i++) {
+      if (liveOrdsExpected.get((int) i) == false) {
+        continue;
+      }
       BytesRef target = new BytesRef(TestUtil.randomUnicodeString(random()));
-      SeekStatus expectedStatus = expected.seekCeil(target);
-      assertEquals(expectedStatus, actual.seekCeil(target));
+      SeekStatus expectedStatus = seekCeil(expected, target, liveOrdsExpected);
+      assertEquals(expectedStatus, seekCeil(actual, target, liveOrdsActual));
       if (expectedStatus != SeekStatus.END) {
-        assertEquals(expected.ord(), actual.ord());
         assertEquals(expected.term(), actual.term());
       }
     }

@@ -80,6 +80,7 @@ public final class IDVersionPostingsWriter extends PushPostingsWriterBase {
 
     lastDocID = docID;
     lastPosition = -1;
+    lastVersion = -1;
   }
 
   @Override
@@ -94,7 +95,7 @@ public final class IDVersionPostingsWriter extends PushPostingsWriterBase {
     if (payload.length != 8) {
       throw new IllegalArgumentException("payload.length != 8 (got " + payload.length + ")");
     }
-    
+
     lastVersion = IDVersionPostingsFormat.bytesToLong(payload);
     if (lastVersion < 0) {
       throw new IllegalArgumentException("version must be >= 0 (got: " + lastVersion + "; payload=" + payload + ")");
