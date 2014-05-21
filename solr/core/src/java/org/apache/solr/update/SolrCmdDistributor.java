@@ -18,11 +18,15 @@ package org.apache.solr.update;
  */
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.http.HttpResponse;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -33,6 +37,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.Diagnostics;
+import org.apache.solr.update.processor.DistributedUpdateProcessor.RequestReplicationTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +68,7 @@ public class SolrCmdDistributor {
     this.retryPause = retryPause;
   }
   
-  public void finish() {
+  public void finish() {    
     try {
       servers.blockUntilFinished();
       doRetriesIfNeeded();
@@ -168,16 +173,20 @@ public class SolrCmdDistributor {
   }
   
   public void distribAdd(AddUpdateCommand cmd, List<Node> nodes, ModifiableSolrParams params) throws IOException {
-    distribAdd(cmd, nodes, params, false);
+    distribAdd(cmd, nodes, params, false, null);
+  }
+
+  public void distribAdd(AddUpdateCommand cmd, List<Node> nodes, ModifiableSolrParams params, boolean synchronous) throws IOException {
+    distribAdd(cmd, nodes, params, synchronous, null);
   }
   
-  public void distribAdd(AddUpdateCommand cmd, List<Node> nodes, ModifiableSolrParams params, boolean synchronous) throws IOException {
+  public void distribAdd(AddUpdateCommand cmd, List<Node> nodes, ModifiableSolrParams params, boolean synchronous, RequestReplicationTracker rrt) throws IOException {  
 
     for (Node node : nodes) {
       UpdateRequest uReq = new UpdateRequest();
       uReq.setParams(params);
-      uReq.add(cmd.solrDoc, cmd.commitWithin, cmd.overwrite);      
-      submit(new Req(cmd.toString(), node, uReq, synchronous));
+      uReq.add(cmd.solrDoc, cmd.commitWithin, cmd.overwrite);
+      submit(new Req(cmd.toString(), node, uReq, synchronous, rrt));
     }
     
   }
@@ -233,7 +242,7 @@ public class SolrCmdDistributor {
     
     try {
       SolrServer solrServer = servers.getSolrServer(req);
-      NamedList<Object> rsp = solrServer.request(req.uReq);
+      solrServer.request(req.uReq);
     } catch (Exception e) {
       SolrException.log(log, e);
       Error error = new Error();
@@ -252,12 +261,18 @@ public class SolrCmdDistributor {
     public int retries;
     public boolean synchronous;
     public String cmdString;
-    
+    public RequestReplicationTracker rfTracker;
+
     public Req(String cmdString, Node node, UpdateRequest uReq, boolean synchronous) {
+      this(cmdString, node, uReq, synchronous, null);
+    }
+    
+    public Req(String cmdString, Node node, UpdateRequest uReq, boolean synchronous, RequestReplicationTracker rfTracker) {
       this.node = node;
       this.uReq = uReq;
       this.synchronous = synchronous;
       this.cmdString = cmdString;
+      this.rfTracker = rfTracker;
     }
     
     public String toString() {
@@ -265,6 +280,37 @@ public class SolrCmdDistributor {
       sb.append("SolrCmdDistributor$Req: cmd=").append(String.valueOf(cmdString));
       sb.append("; node=").append(String.valueOf(node));
       return sb.toString();
+    }
+    public void trackRequestResult(HttpResponse resp, boolean success) {      
+      if (rfTracker != null) {
+        Integer rf = null;
+        if (resp != null) {
+          // need to parse out the rf from requests that were forwards to another leader
+          InputStream inputStream = null;
+          try {
+            inputStream = resp.getEntity().getContent();
+            BinaryResponseParser brp = new BinaryResponseParser();
+            NamedList<Object> nl= brp.processResponse(inputStream, null);
+            Object hdr = nl.get("responseHeader");
+            if (hdr != null && hdr instanceof NamedList) {
+              NamedList<Object> hdrList = (NamedList<Object>)hdr;
+              Object rfObj = hdrList.get(UpdateRequest.REPFACT);
+              if (rfObj != null && rfObj instanceof Integer) {
+                rf = (Integer)rfObj;
+              }
+            }
+          } catch (Exception e) {
+            log.warn("Failed to parse response from "+node+" during replication factor accounting due to: "+e);
+          } finally {
+            if (inputStream != null) {
+              try {
+                inputStream.close();
+              } catch (Exception ignore){}
+            }
+          }
+        }
+        rfTracker.trackRequestResult(node, success, rf);
+      }
     }
   }
     
@@ -296,6 +342,8 @@ public class SolrCmdDistributor {
     public abstract String getCoreName();
     public abstract String getBaseUrl();
     public abstract ZkCoreNodeProps getNodeProps();
+    public abstract String getCollection();
+    public abstract String getShardId();
   }
 
   public static class StdNode extends Node {

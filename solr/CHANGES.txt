@@ -94,6 +94,10 @@ Other Changes
 
 * SOLR-5681: Make the processing of Collection API calls multi-threaded. (Anshum Gupta)
 
+* SOLR-5468: Allow a client application to request the minium achieved 
+  replication factor for an update request (single or batch) by sending
+  an optional parameter "min_rf". (Timothy Potter)
+
 Build
 ---------------------
 
