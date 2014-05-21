@@ -38,7 +38,6 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.update.DirectUpdateHandler2;
 import org.junit.After;
 import org.junit.Before;
 
@@ -52,14 +51,12 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import org.apache.lucene.util.LuceneTestCase.BadApple;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.NUM_SLICES;
 import static org.apache.solr.cloud.OverseerCollectionProcessor.REPLICATION_FACTOR;
 
 @Slow
-@BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5309")
 public class ShardSplitTest extends BasicDistributedZkTest {
 
   public static final String SHARD1_0 = SHARD1 + "_0";
@@ -235,7 +232,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
       }
     }
 
-    waitForRecoveriesToFinish(false);
+    waitForRecoveriesToFinish(true);
     checkDocCountsAndShardStates(docCounts, numReplicas);
   }
 
@@ -466,8 +463,8 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
     logDebugHelp(docCounts, response, shard10Count, response2, shard11Count);
 
-    assertEquals("Wrong doc count on shard1_0", docCounts[0], shard10Count);
-    assertEquals("Wrong doc count on shard1_1", docCounts[1], shard11Count);
+    assertEquals("Wrong doc count on shard1_0. See SOLR-5309", docCounts[0], shard10Count);
+    assertEquals("Wrong doc count on shard1_1. See SOLR-5309", docCounts[1], shard11Count);
   }
 
   protected void checkSubShardConsistency(String shard) throws SolrServerException {

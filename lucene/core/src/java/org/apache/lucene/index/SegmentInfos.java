@@ -33,6 +33,7 @@ import java.util.Set;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.store.ChecksumIndexInput;
@@ -44,68 +45,79 @@ import org.apache.lucene.store.NoSuchDirectoryException;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * A collection of segmentInfo objects with methods for operating on
- * those segments in relation to the file system.
+ * A collection of segmentInfo objects with methods for operating on those
+ * segments in relation to the file system.
  * <p>
  * The active segments in the index are stored in the segment info file,
- * <tt>segments_N</tt>. There may be one or more <tt>segments_N</tt> files in the
- * index; however, the one with the largest generation is the active one (when
- * older segments_N files are present it's because they temporarily cannot be
- * deleted, or, a writer is in the process of committing, or a custom 
- * {@link org.apache.lucene.index.IndexDeletionPolicy IndexDeletionPolicy}
- * is in use). This file lists each segment by name and has details about the
- * codec and generation of deletes.
+ * <tt>segments_N</tt>. There may be one or more <tt>segments_N</tt> files in
+ * the index; however, the one with the largest generation is the active one
+ * (when older segments_N files are present it's because they temporarily cannot
+ * be deleted, or, a writer is in the process of committing, or a custom
+ * {@link org.apache.lucene.index.IndexDeletionPolicy IndexDeletionPolicy} is in
+ * use). This file lists each segment by name and has details about the codec
+ * and generation of deletes.
  * </p>
- * <p>There is also a file <tt>segments.gen</tt>. This file contains
- * the current generation (the <tt>_N</tt> in <tt>segments_N</tt>) of the index.
- * This is used only as a fallback in case the current generation cannot be
- * accurately determined by directory listing alone (as is the case for some NFS
- * clients with time-based directory cache expiration). This file simply contains
- * an {@link DataOutput#writeInt Int32} version header 
- * ({@link #FORMAT_SEGMENTS_GEN_CURRENT}), followed by the
- * generation recorded as {@link DataOutput#writeLong Int64}, written twice.</p>
+ * <p>
+ * There is also a file <tt>segments.gen</tt>. This file contains the current
+ * generation (the <tt>_N</tt> in <tt>segments_N</tt>) of the index. This is
+ * used only as a fallback in case the current generation cannot be accurately
+ * determined by directory listing alone (as is the case for some NFS clients
+ * with time-based directory cache expiration). This file simply contains an
+ * {@link DataOutput#writeInt Int32} version header (
+ * {@link #FORMAT_SEGMENTS_GEN_CURRENT}), followed by the generation recorded as
+ * {@link DataOutput#writeLong Int64}, written twice.
+ * </p>
  * <p>
  * Files:
  * <ul>
- *   <li><tt>segments.gen</tt>: GenHeader, Generation, Generation, Footer
- *   <li><tt>segments_N</tt>: Header, Version, NameCounter, SegCount,
- *    &lt;SegName, SegCodec, DelGen, DeletionCount, FieldInfosGen, UpdatesFiles&gt;<sup>SegCount</sup>, 
- *    CommitUserData, Footer
+ * <li><tt>segments.gen</tt>: GenHeader, Generation, Generation, Footer
+ * <li><tt>segments_N</tt>: Header, Version, NameCounter, SegCount, &lt;SegName,
+ * SegCodec, DelGen, DeletionCount, FieldInfosGen, DocValuesGen,
+ * UpdatesFiles&gt;<sup>SegCount</sup>, CommitUserData, Footer
  * </ul>
  * </p>
  * Data types:
  * <p>
  * <ul>
- *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
- *   <li>GenHeader, NameCounter, SegCount, DeletionCount --&gt; {@link DataOutput#writeInt Int32}</li>
- *   <li>Generation, Version, DelGen, Checksum, FieldInfosGen --&gt; {@link DataOutput#writeLong Int64}</li>
- *   <li>SegName, SegCodec --&gt; {@link DataOutput#writeString String}</li>
- *   <li>CommitUserData --&gt; {@link DataOutput#writeStringStringMap Map&lt;String,String&gt;}</li>
- *   <li>UpdatesFiles --&gt; {@link DataOutput#writeStringSet(Set) Set&lt;String&gt;}</li>
- *   <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
+ * <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
+ * <li>GenHeader, NameCounter, SegCount, DeletionCount --&gt;
+ * {@link DataOutput#writeInt Int32}</li>
+ * <li>Generation, Version, DelGen, Checksum, FieldInfosGen, DocValuesGen --&gt;
+ * {@link DataOutput#writeLong Int64}</li>
+ * <li>SegName, SegCodec --&gt; {@link DataOutput#writeString String}</li>
+ * <li>CommitUserData --&gt; {@link DataOutput#writeStringStringMap
+ * Map&lt;String,String&gt;}</li>
+ * <li>UpdatesFiles --&gt; Map&lt;{@link DataOutput#writeInt Int32},
+ * {@link DataOutput#writeStringSet(Set) Set&lt;String&gt;}&gt;</li>
+ * <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  * </ul>
  * </p>
  * Field Descriptions:
  * <p>
  * <ul>
- *   <li>Version counts how often the index has been changed by adding or deleting
- *       documents.</li>
- *   <li>NameCounter is used to generate names for new segment files.</li>
- *   <li>SegName is the name of the segment, and is used as the file name prefix for
- *       all of the files that compose the segment's index.</li>
- *   <li>DelGen is the generation count of the deletes file. If this is -1,
- *       there are no deletes. Anything above zero means there are deletes 
- *       stored by {@link LiveDocsFormat}.</li>
- *   <li>DeletionCount records the number of deleted documents in this segment.</li>
- *   <li>SegCodec is the {@link Codec#getName() name} of the Codec that encoded
- *       this segment.</li>
- *   <li>CommitUserData stores an optional user-supplied opaque
- *       Map&lt;String,String&gt; that was passed to 
- *       {@link IndexWriter#setCommitData(java.util.Map)}.</li>
- *   <li>FieldInfosGen is the generation count of the fieldInfos file. If this is -1,
- *       there are no updates to the fieldInfos in that segment. Anything above zero 
- *       means there are updates to fieldInfos stored by {@link FieldInfosFormat}.</li>
- *   <li>UpdatesFiles stores the list of files that were updated in that segment.</li>
+ * <li>Version counts how often the index has been changed by adding or deleting
+ * documents.</li>
+ * <li>NameCounter is used to generate names for new segment files.</li>
+ * <li>SegName is the name of the segment, and is used as the file name prefix
+ * for all of the files that compose the segment's index.</li>
+ * <li>DelGen is the generation count of the deletes file. If this is -1, there
+ * are no deletes. Anything above zero means there are deletes stored by
+ * {@link LiveDocsFormat}.</li>
+ * <li>DeletionCount records the number of deleted documents in this segment.</li>
+ * <li>SegCodec is the {@link Codec#getName() name} of the Codec that encoded
+ * this segment.</li>
+ * <li>CommitUserData stores an optional user-supplied opaque
+ * Map&lt;String,String&gt; that was passed to
+ * {@link IndexWriter#setCommitData(java.util.Map)}.</li>
+ * <li>FieldInfosGen is the generation count of the fieldInfos file. If this is
+ * -1, there are no updates to the fieldInfos in that segment. Anything above
+ * zero means there are updates to fieldInfos stored by {@link FieldInfosFormat}
+ * .</li>
+ * <li>DocValuesGen is the generation count of the updatable DocValues. If this
+ * is -1, there are no updates to DocValues in that segment. Anything above zero
+ * means there are updates to DocValues stored by {@link DocValuesFormat}.</li>
+ * <li>UpdatesFiles stores the set of files that were updated in that segment
+ * per field.</li>
  * </ul>
  * </p>
  * 
@@ -121,6 +133,9 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   
   /** The file format version for the segments_N codec header, since 4.8+ */
   public static final int VERSION_48 = 2;
+  
+  /** The file format version for the segments_N codec header, since 4.9+ */
+  public static final int VERSION_49 = 3;
 
   // Used for the segments.gen file only!
   // Whenever you add a new format, make it 1 smaller (negative version logic)!
@@ -330,7 +345,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         throw new IndexFormatTooOldException(input, magic, CodecUtil.CODEC_MAGIC, CodecUtil.CODEC_MAGIC);
       }
       // 4.0+
-      int format = CodecUtil.checkHeaderNoMagic(input, "segments", VERSION_40, VERSION_48);
+      int format = CodecUtil.checkHeaderNoMagic(input, "segments", VERSION_40, VERSION_49);
       version = input.readLong();
       counter = input.readInt();
       int numSegments = input.readInt();
@@ -352,19 +367,45 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         if (format >= VERSION_46) {
           fieldInfosGen = input.readLong();
         }
-        SegmentCommitInfo siPerCommit = new SegmentCommitInfo(info, delCount, delGen, fieldInfosGen);
+        long dvGen = -1;
+        if (format >= VERSION_49) {
+          dvGen = input.readLong();
+        } else {
+          dvGen = fieldInfosGen;
+        }
+        SegmentCommitInfo siPerCommit = new SegmentCommitInfo(info, delCount, delGen, fieldInfosGen, dvGen);
         if (format >= VERSION_46) {
-          int numGensUpdatesFiles = input.readInt();
-          final Map<Long,Set<String>> genUpdatesFiles;
-          if (numGensUpdatesFiles == 0) {
-            genUpdatesFiles = Collections.emptyMap();
-          } else {
-            genUpdatesFiles = new HashMap<>(numGensUpdatesFiles);
-            for (int i = 0; i < numGensUpdatesFiles; i++) {
-              genUpdatesFiles.put(input.readLong(), input.readStringSet());
+          if (format < VERSION_49) {
+            // Recorded per-generation files, which were buggy (see
+            // LUCENE-5636). We need to read and keep them so we continue to
+            // reference those files. Unfortunately it means that the files will
+            // be referenced even if the fields are updated again, until the
+            // segment is merged.
+            final int numGensUpdatesFiles = input.readInt();
+            final Map<Long,Set<String>> genUpdatesFiles;
+            if (numGensUpdatesFiles == 0) {
+              genUpdatesFiles = Collections.emptyMap();
+            } else {
+              genUpdatesFiles = new HashMap<>(numGensUpdatesFiles);
+              for (int i = 0; i < numGensUpdatesFiles; i++) {
+                genUpdatesFiles.put(input.readLong(), input.readStringSet());
+              }
             }
+            siPerCommit.setGenUpdatesFiles(genUpdatesFiles);
+          } else {
+            siPerCommit.setFieldInfosFiles(input.readStringSet());
+            final Map<Integer,Set<String>> dvUpdateFiles;
+            final int numDVFields = input.readInt();
+            if (numDVFields == 0) {
+              dvUpdateFiles = Collections.emptyMap();
+            } else {
+              dvUpdateFiles = new HashMap<>(numDVFields);
+              for (int i = 0; i < numDVFields; i++) {
+                dvUpdateFiles.put(input.readInt(), input.readStringSet());
+              }
+            }
+            siPerCommit.setDocValuesUpdatesFiles(dvUpdateFiles);
           }
-          siPerCommit.setGenUpdatesFiles(genUpdatesFiles);
         }
         add(siPerCommit);
       }
@@ -429,7 +470,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
 
     try {
       segnOutput = directory.createOutput(segmentFileName, IOContext.DEFAULT);
-      CodecUtil.writeHeader(segnOutput, "segments", VERSION_48);
+      CodecUtil.writeHeader(segnOutput, "segments", VERSION_49);
       segnOutput.writeLong(version); 
       segnOutput.writeInt(counter); // write counter
       segnOutput.writeInt(size()); // write infos
@@ -444,10 +485,12 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         }
         segnOutput.writeInt(delCount);
         segnOutput.writeLong(siPerCommit.getFieldInfosGen());
-        final Map<Long,Set<String>> genUpdatesFiles = siPerCommit.getUpdatesFiles();
-        segnOutput.writeInt(genUpdatesFiles.size());
-        for (Entry<Long,Set<String>> e : genUpdatesFiles.entrySet()) {
-          segnOutput.writeLong(e.getKey());
+        segnOutput.writeLong(siPerCommit.getDocValuesGen());
+        segnOutput.writeStringSet(siPerCommit.getFieldInfosFiles());
+        final Map<Integer,Set<String>> dvUpdatesFiles = siPerCommit.getDocValuesUpdatesFiles();
+        segnOutput.writeInt(dvUpdatesFiles.size());
+        for (Entry<Integer,Set<String>> e : dvUpdatesFiles.entrySet()) {
+          segnOutput.writeInt(e.getKey());
           segnOutput.writeStringSet(e.getValue());
         }
         assert si.dir == directory;

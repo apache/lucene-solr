@@ -89,8 +89,7 @@ final class Lucene46FieldInfosReader extends FieldInfosReader {
         final long dvGen = input.readLong();
         final Map<String,String> attributes = input.readStringStringMap();
         infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, 
-          omitNorms, storePayloads, indexOptions, docValuesType, normsType, Collections.unmodifiableMap(attributes));
-        infos[i].setDocValuesGen(dvGen);
+          omitNorms, storePayloads, indexOptions, docValuesType, normsType, dvGen, Collections.unmodifiableMap(attributes));
       }
       
       if (codecVersion >= Lucene46FieldInfosFormat.FORMAT_CHECKSUM) {

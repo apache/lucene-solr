@@ -89,7 +89,7 @@ final class Lucene42FieldInfosReader extends FieldInfosReader {
         final DocValuesType normsType = getDocValuesType(input, (byte) ((val >>> 4) & 0x0F));
         final Map<String,String> attributes = input.readStringStringMap();
         infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, 
-          omitNorms, storePayloads, indexOptions, docValuesType, normsType, Collections.unmodifiableMap(attributes));
+          omitNorms, storePayloads, indexOptions, docValuesType, normsType, -1, Collections.unmodifiableMap(attributes));
       }
 
       CodecUtil.checkEOF(input);
