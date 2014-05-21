@@ -58,7 +58,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   
   // To prevent the test assertions firing too fast before cluster state
   // recognizes (and propagates) partitions
-  private static final long sleepMsBeforeHealPartition = 1000L;
+  private static final long sleepMsBeforeHealPartition = 2000L;
   
   private static final int maxWaitSecsToSeeAllActive = 30;
   
@@ -229,7 +229,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
         ensureAllReplicasAreActive(testCollectionName, 3, maxWaitSecsToSeeAllActive);
     assertTrue("Expected 2 replicas for collection " + testCollectionName
         + " but found " + notLeaders.size() + "; clusterState: "
-        + cloudClient.getZkStateReader().getClusterState(),
+        + printClusterStateInfo(),
         notLeaders.size() == 2);
     
     sendDoc(1);
@@ -277,7 +277,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
         ensureAllReplicasAreActive(testCollectionName, 3, maxWaitSecsToSeeAllActive);
     assertTrue("Expected 2 replicas for collection " + testCollectionName
         + " but found " + notLeaders.size() + "; clusterState: "
-        + cloudClient.getZkStateReader().getClusterState(),
+        + printClusterStateInfo(),
         notLeaders.size() == 2);
         
     sendDoc(1);
@@ -314,7 +314,8 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     Replica leader = 
         cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
     String leaderNode = leader.getNodeName();
-    assertNotNull("Could not find leader for shard1 of "+testCollectionName, leader);
+    assertNotNull("Could not find leader for shard1 of "+
+      testCollectionName+"; clusterState: "+printClusterStateInfo(), leader);
     JettySolrRunner leaderJetty = getJettyOnPort(getReplicaPort(leader));
     
     // since maxShardsPerNode is 1, we're safe to kill the leader
@@ -343,16 +344,17 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
       log.warn("No SocketProxy found for old leader node "+leaderNode);      
     }
 
-    Thread.sleep(sleepMsBeforeHealPartition);
+    Thread.sleep(10000); // give chance for new leader to be elected.
     
     Replica newLeader = 
         cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1", 60000);
         
-    assertNotNull("No new leader was elected after 60 seconds", newLeader);
+    assertNotNull("No new leader was elected after 60 seconds; clusterState: "+
+      printClusterStateInfo(),newLeader);
         
     assertTrue("Expected node "+shouldNotBeNewLeaderNode+
         " to NOT be the new leader b/c it was out-of-sync with the old leader! ClusterState: "+
-        cloudClient.getZkStateReader().getClusterState(), 
+        printClusterStateInfo(), 
         !shouldNotBeNewLeaderNode.equals(newLeader.getNodeName()));
     
     proxy0.reopen();
@@ -362,12 +364,19 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     cloudClient.getZkStateReader().updateClusterState(true);
     
     List<Replica> activeReps = getActiveOrRecoveringReplicas(testCollectionName, "shard1");
-    assertTrue("Expected 2 of 3 replicas to be active but only found "+activeReps.size()+"; "+activeReps, activeReps.size() == 2);
+    assertTrue("Expected 2 of 3 replicas to be active but only found "+
+      activeReps.size()+"; "+activeReps+"; clusterState: "+printClusterStateInfo(), 
+      activeReps.size() == 2);
         
     sendDoc(6);
     
     assertDocsExistInAllReplicas(activeReps, testCollectionName, 1, 6);
-  }  
+  }
+  
+  protected String printClusterStateInfo() throws Exception {
+    cloudClient.getZkStateReader().updateClusterState(true);
+    return String.valueOf(cloudClient.getZkStateReader().getClusterState());
+  }
   
   protected List<Replica> getActiveOrRecoveringReplicas(String testCollectionName, String shardId) throws Exception {    
     Map<String,Replica> activeReplicas = new HashMap<String,Replica>();    
@@ -492,10 +501,12 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     } // end while
     
     if (!allReplicasUp) 
-      fail("Didn't see all replicas come up within " + maxWaitMs + " ms! ClusterState: " + cs);
+      fail("Didn't see all replicas come up within " + maxWaitMs + 
+          " ms! ClusterState: " + printClusterStateInfo());
     
     if (notLeaders.isEmpty()) 
-      fail("Didn't isolate any replicas that are not the leader! ClusterState: " + cs);
+      fail("Didn't isolate any replicas that are not the leader! ClusterState: " + 
+         printClusterStateInfo());
     
     long diffMs = (System.currentTimeMillis() - startMs);
     log.info("Took " + diffMs + " ms to see all replicas become active.");
