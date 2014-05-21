@@ -405,6 +405,10 @@ public class HttpShardHandler extends ShardHandler {
     ClientUtils.addSlices(target, collectionName, slices, multiCollection);
   }
 
+  public ShardHandlerFactory getShardHandlerFactory(){
+    return httpShardHandlerFactory;
+  }
+
 
 
 }

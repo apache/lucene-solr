@@ -25,4 +25,5 @@ public abstract class ShardHandler {
   public abstract ShardResponse takeCompletedIncludingErrors();
   public abstract ShardResponse takeCompletedOrError();
   public abstract void cancelAll();
+  public abstract ShardHandlerFactory getShardHandlerFactory();
 }

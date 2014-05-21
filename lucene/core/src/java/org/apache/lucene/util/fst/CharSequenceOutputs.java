@@ -132,6 +132,14 @@ public final class CharSequenceOutputs extends Outputs<CharsRef> {
       return output;
     }
   }
+  
+  @Override
+  public void skipOutput(DataInput in) throws IOException {
+    final int len = in.readVInt();
+    for(int idx=0;idx<len;idx++) {
+      in.readVInt();
+    }
+  }
 
   @Override
   public CharsRef getNoOutput() {

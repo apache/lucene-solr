@@ -1032,8 +1032,9 @@ public class CoreAdminHandler extends RequestHandlerBase {
               
               boolean onlyIfActiveCheckResult = onlyIfLeaderActive != null && onlyIfLeaderActive && (localState == null || !localState.equals(ZkStateReader.ACTIVE));
               log.info("In WaitForState("+waitForState+"): collection="+collection+", shard="+slice.getName()+
+                  ", thisCore="+core.getName()+", leaderDoesNotNeedRecovery="+leaderDoesNotNeedRecovery+
                   ", isLeader? "+core.getCoreDescriptor().getCloudDescriptor().isLeader()+
-                  ", live="+live+", currentState="+state+", localState="+localState+", nodeName="+nodeName+
+                  ", live="+live+", checkLive="+checkLive+", currentState="+state+", localState="+localState+", nodeName="+nodeName+
                   ", coreNodeName="+coreNodeName+", onlyIfActiveCheckResult="+onlyIfActiveCheckResult+", nodeProps: "+nodeProps);
 
               if (!onlyIfActiveCheckResult && nodeProps != null && (state.equals(waitForState) || leaderDoesNotNeedRecovery)) {
@@ -1345,11 +1346,13 @@ public class CoreAdminHandler extends RequestHandlerBase {
    * Helper method to add a task to a tracking map.
    */
   protected void addTask(String map, TaskObject o, boolean limit) {
-    if(limit && getMap(map).size() == MAX_TRACKED_REQUESTS) {
-      String key = getMap(map).entrySet().iterator().next().getKey();
-      getMap(map).remove(key);
+    synchronized (getMap(map)) {
+      if(limit && getMap(map).size() == MAX_TRACKED_REQUESTS) {
+        String key = getMap(map).entrySet().iterator().next().getKey();
+        getMap(map).remove(key);
+      }
+      addTask(map, o);
     }
-    addTask(map, o);
   }
 
 

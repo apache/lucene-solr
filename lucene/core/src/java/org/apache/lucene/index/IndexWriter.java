@@ -76,8 +76,8 @@ import org.apache.lucene.util.Version;
   and otherwise open the existing index.</p>
 
   <p>In either case, documents are added with {@link #addDocument(IndexDocument)
-  addDocument} and removed with {@link #deleteDocuments(Term)} or {@link
-  #deleteDocuments(Query)}. A document can be updated with {@link
+  addDocument} and removed with {@link #deleteDocuments(Term...)} or {@link
+  #deleteDocuments(Query...)}. A document can be updated with {@link
   #updateDocument(Term, IndexDocument) updateDocument} (which just deletes
   and then adds the entire document). When finished adding, deleting 
   and updating documents, {@link #close() close} should be called.</p>
@@ -1216,28 +1216,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
     }
   }
 
-  /**
-   * Deletes the document(s) containing <code>term</code>.
-   *
-   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
-   * you should immediately close the writer.  See <a
-   * href="#OOME">above</a> for details.</p>
-   *
-   * @param term the term to identify the documents to be deleted
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   */
-  public void deleteDocuments(Term term) throws IOException {
-    ensureOpen();
-    try {
-      if (docWriter.deleteTerms(term)) {
-        processEvents(true, false);
-      }
-    } catch (OutOfMemoryError oom) {
-      handleOOM(oom, "deleteDocuments(Term)");
-    }
-  }
-
   /** Expert: attempts to delete by document ID, as long as
    *  the provided reader is a near-real-time reader (from {@link
    *  DirectoryReader#open(IndexWriter,boolean)}).  If the
@@ -1250,8 +1228,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
    *  <b>NOTE</b>: this method can only delete documents
    *  visible to the currently open NRT reader.  If you need
    *  to delete documents indexed after opening the NRT
-   *  reader you must use the other deleteDocument methods
-   *  (e.g., {@link #deleteDocuments(Term)}). */
+   *  reader you must use {@link #deleteDocuments(Term...)}). */
   public synchronized boolean tryDeleteDocument(IndexReader readerIn, int docID) throws IOException {
 
     final AtomicReader reader;
@@ -1336,28 +1313,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
       }
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "deleteDocuments(Term..)");
-    }
-  }
-
-  /**
-   * Deletes the document(s) matching the provided query.
-   *
-   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
-   * you should immediately close the writer.  See <a
-   * href="#OOME">above</a> for details.</p>
-   *
-   * @param query the query to identify the documents to be deleted
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   */
-  public void deleteDocuments(Query query) throws IOException {
-    ensureOpen();
-    try {
-      if (docWriter.deleteQueries(query)) {
-        processEvents(true, false);
-      }
-    } catch (OutOfMemoryError oom) {
-      handleOOM(oom, "deleteDocuments(Query)");
     }
   }
 
@@ -2079,25 +2034,30 @@ public class IndexWriter implements Closeable, TwoPhaseCommit{
 
   /**
    * Delete all documents in the index.
-   *
-   * <p>This method will drop all buffered documents and will
-   *    remove all segments from the index. This change will not be
-   *    visible until a {@link #commit()} has been called. This method
-   *    can be rolled back using {@link #rollback()}.</p>
-   *
-   * <p>NOTE: this method is much faster than using deleteDocuments( new MatchAllDocsQuery() ). 
-   *    Yet, this method also has different semantics compared to {@link #deleteDocuments(Query)} 
-   *    / {@link #deleteDocuments(Query...)} since internal data-structures are cleared as well 
-   *    as all segment information is forcefully dropped anti-viral semantics like omitting norms
-   *    are reset or doc value types are cleared. Essentially a call to {@link #deleteAll()} is equivalent
-   *    to creating a new {@link IndexWriter} with {@link OpenMode#CREATE} which a delete query only marks
-   *    documents as deleted.</p>
-   *
-   * <p>NOTE: this method will forcefully abort all merges
-   *    in progress.  If other threads are running {@link
-   *    #forceMerge}, {@link #addIndexes(IndexReader[])} or
-   *    {@link #forceMergeDeletes} methods, they may receive
-   *    {@link MergePolicy.MergeAbortedException}s.
+   * 
+   * <p>
+   * This method will drop all buffered documents and will remove all segments
+   * from the index. This change will not be visible until a {@link #commit()}
+   * has been called. This method can be rolled back using {@link #rollback()}.
+   * </p>
+   * 
+   * <p>
+   * NOTE: this method is much faster than using deleteDocuments( new
+   * MatchAllDocsQuery() ). Yet, this method also has different semantics
+   * compared to {@link #deleteDocuments(Query...)} since internal
+   * data-structures are cleared as well as all segment information is
+   * forcefully dropped anti-viral semantics like omitting norms are reset or
+   * doc value types are cleared. Essentially a call to {@link #deleteAll()} is
+   * equivalent to creating a new {@link IndexWriter} with
+   * {@link OpenMode#CREATE} which a delete query only marks documents as
+   * deleted.
+   * </p>
+   * 
+   * <p>
+   * NOTE: this method will forcefully abort all merges in progress. If other
+   * threads are running {@link #forceMerge}, {@link #addIndexes(IndexReader[])}
+   * or {@link #forceMergeDeletes} methods, they may receive
+   * {@link MergePolicy.MergeAbortedException}s.
    */
   public void deleteAll() throws IOException {
     ensureOpen();

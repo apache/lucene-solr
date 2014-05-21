@@ -107,6 +107,46 @@ public class TestQueryRescorer extends LuceneTestCase {
     dir.close();
   }
 
+  // Test LUCENE-5682
+  public void testNullScorerTermQuery() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+
+    Document doc = new Document();
+    doc.add(newStringField("id", "0", Field.Store.YES));
+    doc.add(newTextField("field", "wizard the the the the the oz", Field.Store.NO));
+    w.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("id", "1", Field.Store.YES));
+    // 1 extra token, but wizard and oz are close;
+    doc.add(newTextField("field", "wizard oz the the the the the the", Field.Store.NO));
+    w.addDocument(doc);
+    IndexReader r = w.getReader();
+    w.shutdown();
+
+    // Do ordinary BooleanQuery:
+    BooleanQuery bq = new BooleanQuery();
+    bq.add(new TermQuery(new Term("field", "wizard")), Occur.SHOULD);
+    bq.add(new TermQuery(new Term("field", "oz")), Occur.SHOULD);
+    IndexSearcher searcher = getSearcher(r);
+    searcher.setSimilarity(new DefaultSimilarity());
+
+    TopDocs hits = searcher.search(bq, 10);
+    assertEquals(2, hits.totalHits);
+    assertEquals("0", searcher.doc(hits.scoreDocs[0].doc).get("id"));
+    assertEquals("1", searcher.doc(hits.scoreDocs[1].doc).get("id"));
+
+    // Now, resort using TermQuery on term that does not exist.
+    TermQuery tq = new TermQuery(new Term("field", "gold"));
+    TopDocs hits2 = QueryRescorer.rescore(searcher, hits, tq, 2.0, 10);
+
+    // Just testing that null scorer is handled.
+    assertEquals(2, hits2.totalHits);
+
+    r.close();
+    dir.close();
+  }
+
   public void testCustomCombine() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);

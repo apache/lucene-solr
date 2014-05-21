@@ -1,4 +1,5 @@
 package org.apache.lucene.store;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,6 +16,7 @@ package org.apache.lucene.store;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import java.io.IOException;
 
 /**
@@ -22,48 +24,58 @@ import java.io.IOException;
  * 
  * @lucene.internal
  */
-final class RateLimitedIndexOutput extends BufferedIndexOutput {
+final class RateLimitedIndexOutput extends IndexOutput {
   
   private final IndexOutput delegate;
-  private final BufferedIndexOutput bufferedDelegate;
   private final RateLimiter rateLimiter;
 
   /** How many bytes we've written since we last called rateLimiter.pause. */
   private long bytesSinceLastPause;
+  
+  /** Cached here not not always have to call RateLimiter#getMinPauseCheckBytes()
+   * which does volatile read. */
+  private long currentMinPauseCheckBytes;
 
   RateLimitedIndexOutput(final RateLimiter rateLimiter, final IndexOutput delegate) {
-    // TODO should we make buffer size configurable
-    if (delegate instanceof BufferedIndexOutput) {
-      bufferedDelegate = (BufferedIndexOutput) delegate;
-      this.delegate = delegate;
-    } else {
-      this.delegate = delegate;
-      bufferedDelegate = null;
-    }
+    this.delegate = delegate;
     this.rateLimiter = rateLimiter;
+    this.currentMinPauseCheckBytes = rateLimiter.getMinPauseCheckBytes();
   }
   
   @Override
-  protected void flushBuffer(byte[] b, int offset, int len) throws IOException {
-    bytesSinceLastPause += len;
-    if (bytesSinceLastPause > rateLimiter.getMinPauseCheckBytes()) {
-      rateLimiter.pause(bytesSinceLastPause);
-      bytesSinceLastPause = 0;
-    }
-    if (bufferedDelegate != null) {
-      bufferedDelegate.flushBuffer(b, offset, len);
-    } else {
-      delegate.writeBytes(b, offset, len);
-    }
-    
+  public void close() throws IOException {
+    delegate.close();
   }
 
   @Override
-  public void close() throws IOException {
-    try {
-      super.close();
-    } finally {
-      delegate.close();
-    }
+  public long getFilePointer() {
+    return delegate.getFilePointer();
+  }
+
+  @Override
+  public long getChecksum() throws IOException {
+    return delegate.getChecksum();
+  }
+
+  @Override
+  public void writeByte(byte b) throws IOException {
+    bytesSinceLastPause++;
+    checkRate();
+    delegate.writeByte(b);
+  }
+
+  @Override
+  public void writeBytes(byte[] b, int offset, int length) throws IOException {
+    bytesSinceLastPause += length;
+    checkRate();
+    delegate.writeBytes(b, offset, length);
+  }
+  
+  private void checkRate() {
+    if (bytesSinceLastPause > currentMinPauseCheckBytes) {
+      rateLimiter.pause(bytesSinceLastPause);
+      bytesSinceLastPause = 0;
+      currentMinPauseCheckBytes = rateLimiter.getMinPauseCheckBytes();
+    }    
   }
 }

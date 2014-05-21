@@ -283,15 +283,15 @@ public class CollectionsHandler extends RequestHandlerBase {
         success.add("state", "completed");
         success.add("msg", "found " + requestId + " in completed tasks");
         results.add("status", success);
-      } else if (coreContainer.getZkController().getOverseerRunningMap().contains(requestId)) {
-        SimpleOrderedMap success = new SimpleOrderedMap();
-        success.add("state", "running");
-        success.add("msg", "found " + requestId + " in submitted tasks");
-        results.add("status", success);
       } else if (coreContainer.getZkController().getOverseerFailureMap().contains(requestId)) {
         SimpleOrderedMap success = new SimpleOrderedMap();
         success.add("state", "failed");
         success.add("msg", "found " + requestId + " in failed tasks");
+        results.add("status", success);
+      } else if (coreContainer.getZkController().getOverseerRunningMap().contains(requestId)) {
+        SimpleOrderedMap success = new SimpleOrderedMap();
+        success.add("state", "running");
+        success.add("msg", "found " + requestId + " in submitted tasks");
         results.add("status", success);
       } else {
         SimpleOrderedMap failure = new SimpleOrderedMap();

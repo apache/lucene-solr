@@ -148,6 +148,12 @@ public class PairOutputs<A,B> extends Outputs<PairOutputs.Pair<A,B>> {
     B output2 = outputs2.read(in);
     return newPair(output1, output2);
   }
+  
+  @Override
+  public void skipOutput(DataInput in) throws IOException {
+    outputs1.skipOutput(in);
+    outputs2.skipOutput(in);
+  }
 
   @Override
   public Pair<A,B> getNoOutput() {

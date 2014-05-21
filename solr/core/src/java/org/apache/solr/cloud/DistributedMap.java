@@ -27,6 +27,7 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -158,6 +159,12 @@ public class DistributedMap {
 
   public boolean contains(String trackingId) throws KeeperException, InterruptedException {
     return zookeeper.exists(dir + "/" + prefix + trackingId, true);
+  }
+
+  public int size() throws KeeperException, InterruptedException {
+    Stat stat = new Stat();
+    zookeeper.getData(dir, null, stat, true);
+    return stat.getNumChildren();
   }
 
   public void remove(String trackingId) throws KeeperException, InterruptedException {

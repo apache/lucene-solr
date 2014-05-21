@@ -436,19 +436,33 @@ public class CloudSolrServer extends SolrServer {
   public RouteResponse condenseResponse(NamedList response, long timeMillis) {
     RouteResponse condensed = new RouteResponse();
     int status = 0;
+    Integer rf = null;
+    Integer minRf = null;
     for(int i=0; i<response.size(); i++) {
       NamedList shardResponse = (NamedList)response.getVal(i);
-      NamedList header = (NamedList)shardResponse.get("responseHeader");
+      NamedList header = (NamedList)shardResponse.get("responseHeader");      
       Integer shardStatus = (Integer)header.get("status");
       int s = shardStatus.intValue();
       if(s > 0) {
           status = s;
       }
+      Object rfObj = header.get(UpdateRequest.REPFACT);
+      if (rfObj != null && rfObj instanceof Integer) {
+        Integer routeRf = (Integer)rfObj;
+        if (rf == null || routeRf < rf)
+          rf = routeRf;
+      }
+      minRf = (Integer)header.get(UpdateRequest.MIN_REPFACT);
     }
 
     NamedList cheader = new NamedList();
     cheader.add("status", status);
     cheader.add("QTime", timeMillis);
+    if (rf != null)
+      cheader.add(UpdateRequest.REPFACT, rf);
+    if (minRf != null)
+      cheader.add(UpdateRequest.MIN_REPFACT, minRf);
+    
     condensed.add("responseHeader", cheader);
     return condensed;
   }
@@ -692,4 +706,73 @@ public class CloudSolrServer extends SolrServer {
     return updatesToLeaders;
   }
 
+  /**
+   * Useful for determining the minimum achieved replication factor across
+   * all shards involved in processing an update request, typically useful
+   * for gauging the replication factor of a batch. 
+   */
+  @SuppressWarnings("rawtypes")
+  public int getMinAchievedReplicationFactor(String collection, NamedList resp) {
+    // it's probably already on the top-level header set by condense
+    NamedList header = (NamedList)resp.get("responseHeader");
+    Integer achRf = (Integer)header.get(UpdateRequest.REPFACT);
+    if (achRf != null)
+      return achRf.intValue();
+
+    // not on the top-level header, walk the shard route tree
+    Map<String,Integer> shardRf = getShardReplicationFactor(collection, resp);
+    for (Integer rf : shardRf.values()) {
+      if (achRf == null || rf < achRf) {
+        achRf = rf;
+      }
+    }    
+    return (achRf != null) ? achRf.intValue() : -1;
+  }
+  
+  /**
+   * Walks the NamedList response after performing an update request looking for
+   * the replication factor that was achieved in each shard involved in the request.
+   * For single doc updates, there will be only one shard in the return value. 
+   */
+  @SuppressWarnings("rawtypes")
+  public Map<String,Integer> getShardReplicationFactor(String collection, NamedList resp) {
+    connect();
+    
+    Map<String,Integer> results = new HashMap<String,Integer>();
+    if (resp instanceof CloudSolrServer.RouteResponse) {
+      NamedList routes = ((CloudSolrServer.RouteResponse)resp).getRouteResponses();      
+      ClusterState clusterState = zkStateReader.getClusterState();     
+      Map<String,String> leaders = new HashMap<String,String>();
+      for (Slice slice : clusterState.getActiveSlices(collection)) {
+        Replica leader = slice.getLeader();
+        if (leader != null) {
+          ZkCoreNodeProps zkProps = new ZkCoreNodeProps(leader);
+          String leaderUrl = zkProps.getBaseUrl() + "/" + zkProps.getCoreName();
+          leaders.put(leaderUrl, slice.getName());
+          String altLeaderUrl = zkProps.getBaseUrl() + "/" + collection;
+          leaders.put(altLeaderUrl, slice.getName());
+        }
+      }
+      
+      Iterator<Map.Entry<String,Object>> routeIter = routes.iterator();
+      while (routeIter.hasNext()) {
+        Map.Entry<String,Object> next = routeIter.next();
+        String host = next.getKey();
+        NamedList hostResp = (NamedList)next.getValue();
+        Integer rf = (Integer)((NamedList)hostResp.get("responseHeader")).get(UpdateRequest.REPFACT);
+        if (rf != null) {
+          String shard = leaders.get(host);
+          if (shard == null) {
+            if (host.endsWith("/"))
+              shard = leaders.get(host.substring(0,host.length()-1));
+            if (shard == null) {
+              shard = host;
+            }
+          }
+          results.put(shard, rf);
+        }
+      }
+    }    
+    return results;
+  }
 }
