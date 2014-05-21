@@ -42,7 +42,7 @@ abstract class DisjunctionScorer extends Scorer {
    * Organize subScorers into a min heap with scorers generating the earliest document on top.
    */
   protected final void heapify() {
-    for (int i = (numScorers >> 1) - 1; i >= 0; i--) {
+    for (int i = (numScorers >>> 1) - 1; i >= 0; i--) {
       heapAdjust(i);
     }
   }
@@ -55,7 +55,7 @@ abstract class DisjunctionScorer extends Scorer {
     Scorer scorer = subScorers[root];
     int doc = scorer.docID();
     int i = root;
-    while (i <= (numScorers >> 1) - 1) {
+    while (i <= (numScorers >>> 1) - 1) {
       int lchild = (i << 1) + 1;
       Scorer lscorer = subScorers[lchild];
       int ldoc = lscorer.docID();

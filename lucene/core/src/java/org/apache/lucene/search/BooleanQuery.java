@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -341,6 +342,11 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     @Override
     public Scorer scorer(AtomicReaderContext context, Bits acceptDocs)
         throws IOException {
+      // initially the user provided value,
+      // but if minNrShouldMatch == optional.size(),
+      // we will optimize and move these to required, making this 0
+      int minShouldMatch = minNrShouldMatch;
+
       List<Scorer> required = new ArrayList<>();
       List<Scorer> prohibited = new ArrayList<>();
       List<Scorer> optional = new ArrayList<>();
@@ -360,34 +366,69 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
           optional.add(subScorer);
         }
       }
-
-      if (required.size() == 0 && optional.size() == 0) {
+      
+      // scorer simplifications:
+      
+      if (optional.size() == minShouldMatch) {
+        // any optional clauses are in fact required
+        required.addAll(optional);
+        optional.clear();
+        minShouldMatch = 0;
+      }
+      
+      if (required.isEmpty() && optional.isEmpty()) {
         // no required and optional clauses.
         return null;
-      } else if (optional.size() < minNrShouldMatch) {
+      } else if (optional.size() < minShouldMatch) {
         // either >1 req scorer, or there are 0 req scorers and at least 1
         // optional scorer. Therefore if there are not enough optional scorers
         // no documents will be matched by the query
         return null;
       }
       
-      // simple conjunction
-      if (optional.size() == 0 && prohibited.size() == 0) {
-        float coord = disableCoord ? 1.0f : coord(required.size(), maxCoord);
-        return new ConjunctionScorer(this, required.toArray(new Scorer[required.size()]), coord);
+      // three cases: conjunction, disjunction, or mix
+      
+      // pure conjunction
+      if (optional.isEmpty()) {
+        return excl(req(required, disableCoord), prohibited);
       }
       
-      // simple disjunction
-      if (required.size() == 0 && prohibited.size() == 0 && minNrShouldMatch <= 1 && optional.size() > 1) {
-        float coord[] = new float[optional.size()+1];
-        for (int i = 0; i < coord.length; i++) {
-          coord[i] = disableCoord ? 1.0f : coord(i, maxCoord);
+      // pure disjunction
+      if (required.isEmpty()) {
+        return excl(opt(optional, minShouldMatch, disableCoord), prohibited);
+      }
+      
+      // conjunction-disjunction mix:
+      // we create the required and optional pieces with coord disabled, and then
+      // combine the two: if minNrShouldMatch > 0, then its a conjunction: because the
+      // optional side must match. otherwise its required + optional, factoring the
+      // number of optional terms into the coord calculation
+      
+      Scorer req = excl(req(required, true), prohibited);
+      Scorer opt = opt(optional, minShouldMatch, true);
+
+      // TODO: clean this up: its horrible
+      if (disableCoord) {
+        if (minShouldMatch > 0) {
+          return new ConjunctionScorer(this, new Scorer[] { req, opt }, 1F);
+        } else {
+          return new ReqOptSumScorer(req, opt);          
         }
-        return new DisjunctionSumScorer(this, optional.toArray(new Scorer[optional.size()]), coord);
+      } else if (optional.size() == 1) {
+        if (minShouldMatch > 0) {
+          return new ConjunctionScorer(this, new Scorer[] { req, opt }, coord(required.size()+1, maxCoord));
+        } else {
+          float coordReq = coord(required.size(), maxCoord);
+          float coordBoth = coord(required.size() + 1, maxCoord);
+          return new BooleanTopLevelScorers.ReqSingleOptScorer(req, opt, coordReq, coordBoth);
+        }
+      } else {
+        if (minShouldMatch > 0) {
+          return new BooleanTopLevelScorers.CoordinatingConjunctionScorer(this, coords(), req, required.size(), opt);
+        } else {
+          return new BooleanTopLevelScorers.ReqMultiOptScorer(req, opt, required.size(), coords()); 
+        }
       }
-      
-      // Return a BooleanScorer2
-      return new BooleanScorer2(this, disableCoord, minNrShouldMatch, required, prohibited, optional, maxCoord);
     }
     
     @Override
@@ -396,17 +437,89 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
         // BS2 (in-order) will be used by scorer()
         return false;
       }
+      int optionalCount = 0;
       for (BooleanClause c : clauses) {
         if (c.isRequired()) {
           // BS2 (in-order) will be used by scorer()
           return false;
+        } else if (!c.isProhibited()) {
+          optionalCount++;
         }
+      }
+      
+      if (optionalCount == minNrShouldMatch) {
+        return false; // BS2 (in-order) will be used, as this means conjunction
       }
       
       // scorer() will return an out-of-order scorer if requested.
       return true;
     }
     
+    private Scorer req(List<Scorer> required, boolean disableCoord) {
+      if (required.size() == 1) {
+        Scorer req = required.get(0);
+        if (!disableCoord && maxCoord > 1) {
+          return new BooleanTopLevelScorers.BoostedScorer(req, coord(1, maxCoord));
+        } else {
+          return req;
+        }
+      } else {
+        return new ConjunctionScorer(this, 
+                                     required.toArray(new Scorer[required.size()]),
+                                     disableCoord ? 1.0F : coord(required.size(), maxCoord));
+      }
+    }
+    
+    private Scorer excl(Scorer main, List<Scorer> prohibited) throws IOException {
+      if (prohibited.isEmpty()) {
+        return main;
+      } else if (prohibited.size() == 1) {
+        return new ReqExclScorer(main, prohibited.get(0));
+      } else {
+        float coords[] = new float[prohibited.size()+1];
+        Arrays.fill(coords, 1F);
+        // TODO: don't score here.
+        return new ReqExclScorer(main, 
+                                 new DisjunctionSumScorer(this, 
+                                                          prohibited.toArray(new Scorer[prohibited.size()]), 
+                                                          coords));
+      }
+    }
+    
+    private Scorer opt(List<Scorer> optional, int minShouldMatch, boolean disableCoord) throws IOException {
+      if (optional.size() == 1) {
+        Scorer opt = optional.get(0);
+        if (!disableCoord && maxCoord > 1) {
+          return new BooleanTopLevelScorers.BoostedScorer(opt, coord(1, maxCoord));
+        } else {
+          return opt;
+        }
+      } else {
+        float coords[];
+        if (disableCoord) {
+          coords = new float[optional.size()+1];
+          Arrays.fill(coords, 1F);
+        } else {
+          coords = coords();
+        }
+        if (minShouldMatch > 1) {
+          return new MinShouldMatchSumScorer(this, optional, minShouldMatch, coords);
+        } else {
+          return new DisjunctionSumScorer(this, 
+                                          optional.toArray(new Scorer[optional.size()]), 
+                                          coords);
+        }
+      }
+    }
+    
+    private float[] coords() {
+      float[] coords = new float[maxCoord+1];
+      coords[0] = 0F;
+      for (int i = 1; i < coords.length; i++) {
+        coords[i] = coord(i, maxCoord);
+      }
+      return coords;
+    }
   }
 
   @Override

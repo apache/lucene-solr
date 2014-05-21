@@ -92,6 +92,9 @@ Optimizations
 * LUCENE-5670: Add skip/FinalOutput to FST Outputs.  (Christian
   Ziech via Mike McCandless).
 
+* LUCENE-4236: Optimize BooleanQuery's in-order scoring. This speeds up
+  some types of boolean queries.  (Robert Muir)
+
 Bug fixes
 
 * LUCENE-5673: MMapDirectory: Work around a "bug" in the JDK that throws
