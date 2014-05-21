@@ -418,7 +418,7 @@ class DocumentsWriterPerThread {
 
       final SegmentCommitInfo segmentInfoPerCommit = new SegmentCommitInfo(segmentInfo, 0, -1L, -1L);
       if (infoStream.isEnabled("DWPT")) {
-        infoStream.message("DWPT", "new segment has " + (flushState.liveDocs == null ? 0 : (flushState.segmentInfo.getDocCount() - flushState.delCountOnFlush)) + " deleted docs");
+        infoStream.message("DWPT", "new segment has " + (flushState.liveDocs == null ? 0 : flushState.delCountOnFlush) + " deleted docs");
         infoStream.message("DWPT", "new segment has " +
                            (flushState.fieldInfos.hasVectors() ? "vectors" : "no vectors") + "; " +
                            (flushState.fieldInfos.hasNorms() ? "norms" : "no norms") + "; " + 
