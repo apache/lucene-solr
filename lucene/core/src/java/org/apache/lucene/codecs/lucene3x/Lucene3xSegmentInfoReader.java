@@ -244,7 +244,7 @@ public class Lucene3xSegmentInfoReader extends SegmentInfoReader {
                                        null, diagnostics, Collections.unmodifiableMap(attributes));
     info.setFiles(files);
 
-    SegmentCommitInfo infoPerCommit = new SegmentCommitInfo(info, delCount, delGen, -1);
+    SegmentCommitInfo infoPerCommit = new SegmentCommitInfo(info, delCount, delGen, -1, -1);
     return infoPerCommit;
   }
 

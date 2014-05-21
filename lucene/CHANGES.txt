@@ -107,6 +107,10 @@ Bug fixes
   if the underlying TermsEnum supports ord() and the insertion point would
   be at the end. (Robert Muir)
 
+* LUCENE-5618, LUCENE-5636: SegmentReader referenced unneeded files following 
+  doc-values updates. Now doc-values field updates are written in separate file
+  per field. (Shai Erera, Robert Muir)
+
 Test Framework
 
 * LUCENE-5622: Fail tests if they print over the given limit of bytes to 
