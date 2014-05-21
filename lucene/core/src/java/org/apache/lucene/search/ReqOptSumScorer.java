@@ -29,8 +29,8 @@ class ReqOptSumScorer extends Scorer {
   /** The scorers passed from the constructor.
    * These are set to null as soon as their next() or skipTo() returns false.
    */
-  private Scorer reqScorer;
-  private Scorer optScorer;
+  protected Scorer reqScorer;
+  protected Scorer optScorer;
 
   /** Construct a <code>ReqOptScorer</code>.
    * @param reqScorer The required scorer. This must match.
