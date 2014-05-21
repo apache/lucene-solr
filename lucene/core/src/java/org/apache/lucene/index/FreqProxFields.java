@@ -347,35 +347,33 @@ class FreqProxFields extends Fields {
 
     @Override
     public int nextDoc() throws IOException {
-      while (true) {
-        if (reader.eof()) {
-          if (ended) {
-            return NO_MORE_DOCS;
-          } else {
-            ended = true;
-            docID = postingsArray.lastDocIDs[termID];
-            if (readTermFreq) {
-              freq = postingsArray.termFreqs[termID];
-            }
-          }
+      if (reader.eof()) {
+        if (ended) {
+          return NO_MORE_DOCS;
         } else {
-          int code = reader.readVInt();
-          if (!readTermFreq) {
-            docID += code;
-          } else {
-            docID += code >>> 1;
-            if ((code & 1) != 0) {
-              freq = 1;
-            } else {
-              freq = reader.readVInt();
-            }
+          ended = true;
+          docID = postingsArray.lastDocIDs[termID];
+          if (readTermFreq) {
+            freq = postingsArray.termFreqs[termID];
           }
-
-          assert docID != postingsArray.lastDocIDs[termID];
+        }
+      } else {
+        int code = reader.readVInt();
+        if (!readTermFreq) {
+          docID += code;
+        } else {
+          docID += code >>> 1;
+          if ((code & 1) != 0) {
+            freq = 1;
+          } else {
+            freq = reader.readVInt();
+          }
         }
 
-        return docID;
+        assert docID != postingsArray.lastDocIDs[termID];
       }
+
+      return docID;
     }
 
     @Override
@@ -436,37 +434,35 @@ class FreqProxFields extends Fields {
 
     @Override
     public int nextDoc() throws IOException {
-      while (true) {
-        while (posLeft != 0) {
-          nextPosition();
-        }
-
-        if (reader.eof()) {
-          if (ended) {
-            return NO_MORE_DOCS;
-          } else {
-            ended = true;
-            docID = postingsArray.lastDocIDs[termID];
-            freq = postingsArray.termFreqs[termID];
-          }
-        } else {
-          int code = reader.readVInt();
-          docID += code >>> 1;
-          if ((code & 1) != 0) {
-            freq = 1;
-          } else {
-            freq = reader.readVInt();
-          }
-
-          assert docID != postingsArray.lastDocIDs[termID];
-        }
-
-        posLeft = freq;
-        pos = 0;
-        startOffset = 0;
-
-        return docID;
+      while (posLeft != 0) {
+        nextPosition();
       }
+
+      if (reader.eof()) {
+        if (ended) {
+          return NO_MORE_DOCS;
+        } else {
+          ended = true;
+          docID = postingsArray.lastDocIDs[termID];
+          freq = postingsArray.termFreqs[termID];
+        }
+      } else {
+        int code = reader.readVInt();
+        docID += code >>> 1;
+        if ((code & 1) != 0) {
+          freq = 1;
+        } else {
+          freq = reader.readVInt();
+        }
+
+        assert docID != postingsArray.lastDocIDs[termID];
+      }
+
+      posLeft = freq;
+      pos = 0;
+      startOffset = 0;
+
+      return docID;
     }
 
     @Override
