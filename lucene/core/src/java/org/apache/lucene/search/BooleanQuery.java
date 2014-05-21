@@ -420,18 +420,17 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
         } else {
           float coordReq = coord(required.size(), maxCoord);
           float coordBoth = coord(required.size() + 1, maxCoord);
-          return new ReqOptSumScorer.ReqSingleOptScorer(req, opt, coordReq, coordBoth);
+          return new BooleanTopLevelScorers.ReqSingleOptScorer(req, opt, coordReq, coordBoth);
         }
       } else {
         if (minShouldMatch > 0) {
-          return new ConjunctionScorer.CoordinatingConjunctionScorer(this, coords(), req, required.size(), opt);
+          return new BooleanTopLevelScorers.CoordinatingConjunctionScorer(this, coords(), req, required.size(), opt);
         } else {
-          return new ReqOptSumScorer.ReqMultiOptScorer(req, opt, required.size(), coords()); 
+          return new BooleanTopLevelScorers.ReqMultiOptScorer(req, opt, required.size(), coords()); 
         }
       }
     }
     
-    // nocommit: double-check all this
     @Override
     public boolean scoresDocsOutOfOrder() {
       if (minNrShouldMatch > 1) {
@@ -460,7 +459,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       if (required.size() == 1) {
         Scorer req = required.get(0);
         if (!disableCoord && maxCoord > 1) {
-          return new BoostedScorer(req, coord(1, maxCoord));
+          return new BooleanTopLevelScorers.BoostedScorer(req, coord(1, maxCoord));
         } else {
           return req;
         }
@@ -491,7 +490,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       if (optional.size() == 1) {
         Scorer opt = optional.get(0);
         if (!disableCoord && maxCoord > 1) {
-          return new BoostedScorer(opt, coord(1, maxCoord));
+          return new BooleanTopLevelScorers.BoostedScorer(opt, coord(1, maxCoord));
         } else {
           return opt;
         }

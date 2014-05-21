@@ -139,25 +139,4 @@ class ConjunctionScorer extends Scorer {
       this.cost = scorer.cost();
     }
   }
-  
-  // nocommit: WTF?
-  static class CoordinatingConjunctionScorer extends ConjunctionScorer {
-    private final float coords[];
-    private final int reqCount;
-    private final Scorer req;
-    private final Scorer opt;
-    
-    CoordinatingConjunctionScorer(Weight weight, float coords[], Scorer req, int reqCount, Scorer opt) {
-      super(weight, new Scorer[] { req, opt });
-      this.coords = coords;
-      this.req = req;
-      this.reqCount = reqCount;
-      this.opt = opt;
-    }
-    
-    @Override
-    public float score() throws IOException {
-      return (req.score() + opt.score()) * coords[reqCount + opt.freq()];
-    }
-  }
 }
