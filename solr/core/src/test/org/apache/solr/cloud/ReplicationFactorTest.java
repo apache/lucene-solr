@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -195,7 +196,8 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
       NamedList resp = solrServer.request(up);
       NamedList hdr = (NamedList) resp.get("responseHeader");
       Integer batchRf = (Integer)hdr.get(UpdateRequest.REPFACT);
-      assertTrue("Expected rf="+expectedRf+" for batch but got "+batchRf, batchRf == expectedRf);      
+      assertTrue("Expected rf="+expectedRf+" for batch but got "+
+        batchRf+"; clusterState: "+printClusterStateInfo(), batchRf == expectedRf);      
     } finally {
       if (solrServer != null)
         solrServer.shutdown();
@@ -215,20 +217,20 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     
     List<Replica> replicas = 
         ensureAllReplicasAreActive(testCollectionName, shardId, numShards, replicationFactor, 10);
-    assertTrue("Expected active 2 replicas for "+testCollectionName, replicas.size() == 2);
+    assertTrue("Expected 2 active replicas for "+testCollectionName, replicas.size() == 2);
                 
     int rf = sendDoc(1, minRf);
-    assertTrue("Expected rf=3 as all replicas are up, but got "+rf, rf == 3);
+    assertRf(3, "all replicas should be active", rf);
         
     getProxyForReplica(replicas.get(0)).close();
     
     rf = sendDoc(2, minRf);
-    assertTrue("Expected rf=2 as one replica should be down, but got "+rf, rf == 2);
+    assertRf(2, "one replica should be down", rf);
 
     getProxyForReplica(replicas.get(1)).close();    
 
     rf = sendDoc(3, minRf);
-    assertTrue("Expected rf=1 as both replicas should be down, but got "+rf, rf == 1);
+    assertRf(1, "both replicas should be down", rf);
     
     // heal the partitions
     getProxyForReplica(replicas.get(0)).reopen();    
@@ -237,7 +239,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     ensureAllReplicasAreActive(testCollectionName, shardId, numShards, replicationFactor, 30);
     
     rf = sendDoc(4, minRf);
-    assertTrue("Expected rf=3 as partitions to replicas have been healed, but got "+rf, rf == 3);
+    assertRf(3, "partitions to replicas have been healed", rf);
     
     // now send a batch
     List<SolrInputDocument> batch = new ArrayList<SolrInputDocument>(10);
@@ -253,11 +255,11 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     up.add(batch);
     int batchRf = 
         cloudClient.getMinAchievedReplicationFactor(cloudClient.getDefaultCollection(), cloudClient.request(up)); 
-    assertTrue("Expected rf=3 for batch but got "+batchRf, batchRf == 3);
+    assertRf(3, "batch should have succeeded on all replicas", batchRf);
     
     // add some chaos to the batch
     getProxyForReplica(replicas.get(0)).close();
-
+    
     // now send a batch
     batch = new ArrayList<SolrInputDocument>(10);
     for (int i=15; i < 30; i++) {
@@ -272,7 +274,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     up.add(batch);
     batchRf = 
         cloudClient.getMinAchievedReplicationFactor(cloudClient.getDefaultCollection(), cloudClient.request(up)); 
-    assertTrue("Expected rf=2 for batch (one replica is down) but got "+batchRf, batchRf == 2);
+    assertRf(2, "batch should have succeeded on 2 replicas (only one replica should be down)", batchRf);
 
     // close the 2nd replica, and send a 3rd batch with expected achieved rf=1
     getProxyForReplica(replicas.get(1)).close();
@@ -290,11 +292,10 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     up.add(batch);
     batchRf = 
         cloudClient.getMinAchievedReplicationFactor(cloudClient.getDefaultCollection(), cloudClient.request(up)); 
-    assertTrue("Expected rf=1 for batch (two replicas are down) but got "+batchRf, batchRf == 1);
-    
+    assertRf(1, "batch should have succeeded on the leader only (both replicas should be down)", batchRf);
+
     getProxyForReplica(replicas.get(0)).reopen();        
     getProxyForReplica(replicas.get(1)).reopen();
-    Thread.sleep(1000);
   } 
     
   protected SocketProxy getProxyForReplica(Replica replica) throws Exception {
@@ -366,10 +367,10 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     } // end while
     
     if (!allReplicasUp) 
-      fail("Didn't see all replicas come up within " + maxWaitMs + " ms! ClusterState: " + cs);
+      fail("Didn't see all replicas come up within " + maxWaitMs + " ms! ClusterState: " + printClusterStateInfo());
     
     if (notLeaders.isEmpty()) 
-      fail("Didn't isolate any replicas that are not the leader! ClusterState: " + cs);
+      fail("Didn't isolate any replicas that are not the leader! ClusterState: " + printClusterStateInfo());
     
     long diffMs = (System.currentTimeMillis() - startMs);
     log.info("Took " + diffMs + " ms to see all replicas become active.");
@@ -377,5 +378,18 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     List<Replica> replicas = new ArrayList<Replica>();
     replicas.addAll(notLeaders.values());
     return replicas;
+  }  
+  
+  protected void assertRf(int expected, String explain, int actual) throws Exception {
+    if (actual != expected) {
+      String assertionFailedMessage = 
+          String.format(Locale.ENGLISH, "Expected rf=%d because %s but got %d", expected, explain, actual);
+      fail(assertionFailedMessage+"; clusterState: "+printClusterStateInfo());
+    }    
+  }
+  
+  protected String printClusterStateInfo() throws Exception {
+    cloudClient.getZkStateReader().updateClusterState(true);
+    return String.valueOf(cloudClient.getZkStateReader().getClusterState());
   }  
 }
