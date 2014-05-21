@@ -103,10 +103,6 @@ final class FreqProxTermsWriter extends TermsHash {
 
     applyDeletes(state, fields);
 
-    if (state.liveDocs != null) {
-      fields.setLiveDocs(state.liveDocs);
-    }
-
     FieldsConsumer consumer = state.segmentInfo.getCodec().postingsFormat().fieldsConsumer(state);
     boolean success = false;
     try {

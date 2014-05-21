@@ -23,6 +23,7 @@ import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PushPostingsWriterBase;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
@@ -40,9 +41,15 @@ public final class IDVersionPostingsWriter extends PushPostingsWriterBase {
   final static IDVersionTermState emptyState = new IDVersionTermState();
   IDVersionTermState lastState;
 
-  private int lastDocID;
+  int lastDocID;
   private int lastPosition;
   private long lastVersion;
+
+  private final SegmentWriteState state;
+
+  public IDVersionPostingsWriter(SegmentWriteState state) {
+    this.state = state;
+  }
 
   @Override
   public IDVersionTermState newTermState() {
@@ -71,6 +78,9 @@ public final class IDVersionPostingsWriter extends PushPostingsWriterBase {
 
   @Override
   public void startDoc(int docID, int termDocFreq) throws IOException {
+    if (state.liveDocs != null && state.liveDocs.get(docID) == false) {
+      return;
+    }
     if (lastDocID != -1) {
       throw new IllegalArgumentException("term appears in more than one document");
     }
@@ -85,6 +95,10 @@ public final class IDVersionPostingsWriter extends PushPostingsWriterBase {
 
   @Override
   public void addPosition(int position, BytesRef payload, int startOffset, int endOffset) throws IOException {
+    if (lastDocID == -1) {
+      // Doc is deleted; skip it
+      return;
+    }
     if (lastPosition != -1) {
       throw new IllegalArgumentException("term appears more than once in document");
     }
@@ -104,6 +118,10 @@ public final class IDVersionPostingsWriter extends PushPostingsWriterBase {
 
   @Override
   public void finishDoc() throws IOException {
+    if (lastDocID == -1) {
+      // Doc is deleted; skip it
+      return;
+    }
     if (lastPosition == -1) {
       throw new IllegalArgumentException("missing addPosition");
     }
@@ -112,10 +130,12 @@ public final class IDVersionPostingsWriter extends PushPostingsWriterBase {
   /** Called when we are done adding docs to this term */
   @Override
   public void finishTerm(BlockTermState _state) throws IOException {
+    if (lastDocID == -1) {
+      return;
+    }
     IDVersionTermState state = (IDVersionTermState) _state;
     assert state.docFreq > 0;
 
-    assert lastDocID != -1;
     state.docID = lastDocID;
     state.idVersion = lastVersion;
   }

@@ -162,9 +162,10 @@ final class VersionBlockTreeTermsReader extends FieldsProducer {
         final Pair<BytesRef,Long> rootCode = VersionBlockTreeTermsWriter.FST_OUTPUTS.newPair(code, version);
         final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
         assert fieldInfo != null: "field=" + field;
-        final long sumTotalTermFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY ? -1 : in.readVLong();
-        final long sumDocFreq = in.readVLong();
-        final int docCount = in.readVInt();
+        final long sumTotalTermFreq = numTerms;
+        final long sumDocFreq = numTerms;
+        assert numTerms <= Integer.MAX_VALUE;
+        final int docCount = (int) numTerms;
         final int longsSize = in.readVInt();
 
         BytesRef minTerm = readBytesRef(in);

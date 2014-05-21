@@ -985,17 +985,13 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
   @Override
   public int docFreq() throws IOException {
     assert !eof;
-    //if (DEBUG) System.out.println("BTR.docFreq");
-    currentFrame.decodeMetaData();
-    //if (DEBUG) System.out.println("  return " + currentFrame.state.docFreq);
-    return currentFrame.state.docFreq;
+    return 1;
   }
 
   @Override
   public long totalTermFreq() throws IOException {
     assert !eof;
-    currentFrame.decodeMetaData();
-    return currentFrame.state.totalTermFreq;
+    return 1;
   }
 
   @Override

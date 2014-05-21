@@ -51,9 +51,6 @@ final class IDVersionSegmentTermsEnumFrame {
   byte[] suffixBytes = new byte[128];
   final ByteArrayDataInput suffixesReader = new ByteArrayDataInput();
 
-  byte[] statBytes = new byte[64];
-  final ByteArrayDataInput statsReader = new ByteArrayDataInput();
-
   byte[] floorData = new byte[32];
   final ByteArrayDataInput floorDataReader = new ByteArrayDataInput();
 
@@ -184,13 +181,6 @@ final class IDVersionSegmentTermsEnumFrame {
       }
       }*/
 
-    // stats
-    numBytes = ste.in.readVInt();
-    if (statBytes.length < numBytes) {
-      statBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
-    }
-    ste.in.readBytes(statBytes, 0, numBytes);
-    statsReader.reset(statBytes, 0, numBytes);
     metaDataUpto = 0;
 
     state.termBlockOrd = 0;
@@ -209,7 +199,6 @@ final class IDVersionSegmentTermsEnumFrame {
     }
     ste.in.readBytes(bytes, 0, numBytes);
     bytesReader.reset(bytes, 0, numBytes);
-
 
     // Sub-blocks of a single floor block are always
     // written one after another -- tail recurse:
@@ -410,12 +399,9 @@ final class IDVersionSegmentTermsEnumFrame {
       // just skipN here:
 
       // stats
-      state.docFreq = statsReader.readVInt();
+      state.docFreq = 1;
+      state.totalTermFreq = 1;
       //if (DEBUG) System.out.println("    dF=" + state.docFreq);
-      if (ste.fr.fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
-        state.totalTermFreq = state.docFreq + statsReader.readVLong();
-        //if (DEBUG) System.out.println("    totTF=" + state.totalTermFreq);
-      }
       // metadata 
       for (int i = 0; i < ste.fr.longsSize; i++) {
         longs[i] = bytesReader.readVLong();

@@ -59,7 +59,7 @@ public class IDVersionPostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    PostingsWriterBase postingsWriter = new IDVersionPostingsWriter();
+    PostingsWriterBase postingsWriter = new IDVersionPostingsWriter(state);
     boolean success = false;
     try {
       FieldsConsumer ret = new VersionBlockTreeTermsWriter(state, 
