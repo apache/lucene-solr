@@ -105,7 +105,7 @@ class Lucene3xFieldInfosReader extends FieldInfosReader {
           storePayloads = false;
         }
         infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, 
-          omitNorms, storePayloads, indexOptions, null, isIndexed && !omitNorms? DocValuesType.NUMERIC : null, Collections.<String,String>emptyMap());
+          omitNorms, storePayloads, indexOptions, null, isIndexed && !omitNorms? DocValuesType.NUMERIC : null, -1, Collections.<String,String>emptyMap());
       }
 
       if (input.getFilePointer() != input.length()) {

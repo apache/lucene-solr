@@ -343,7 +343,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
 
       fieldInfoArray[fieldUpto] = new FieldInfo(field, true, fieldUpto, false, false, true,
                                                 IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS,
-                                                null, DocValuesType.NUMERIC, null);
+                                                null, DocValuesType.NUMERIC, -1, null);
       fieldUpto++;
 
       Map<BytesRef,Long> postings = new TreeMap<>();
@@ -472,6 +472,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
                                                    indexOptions,
                                                    null,
                                                    DocValuesType.NUMERIC,
+                                                   -1,
                                                    null);
     }
 

@@ -125,8 +125,7 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
         }
 
         infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, 
-          omitNorms, storePayloads, indexOptions, docValuesType, normsType, Collections.unmodifiableMap(atts));
-        infos[i].setDocValuesGen(dvGen);
+          omitNorms, storePayloads, indexOptions, docValuesType, normsType, dvGen, Collections.unmodifiableMap(atts));
       }
 
       SimpleTextUtil.checkFooter(input);
