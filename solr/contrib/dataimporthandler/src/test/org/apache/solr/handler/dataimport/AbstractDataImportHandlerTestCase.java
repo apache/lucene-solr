@@ -16,8 +16,17 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -29,17 +38,7 @@ import org.apache.solr.update.MergeIndexesCommand;
 import org.apache.solr.update.RollbackUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
-import org.apache.solr.common.util.NamedList;
-import org.junit.After;
 import org.junit.Before;
-
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.File;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * <p>
@@ -56,7 +55,7 @@ public abstract class AbstractDataImportHandlerTestCase extends
 
   // note, a little twisted that we shadow this static method
   public static void initCore(String config, String schema) throws Exception {
-    File testHome = createTempDir();
+    File testHome = createTempDir("core-home");
     FileUtils.copyDirectory(getFile("dih/solr"), testHome);
     initCore(config, schema, testHome.getAbsolutePath());
   }
@@ -65,6 +64,8 @@ public abstract class AbstractDataImportHandlerTestCase extends
   @Before
   public void setUp() throws Exception {
     super.setUp();
+    File home = createTempDir("dih-properties");
+    System.setProperty("solr.solr.home", home.getAbsolutePath());    
   }
 
   protected String loadDataConfig(String dataConfigFileName) {
