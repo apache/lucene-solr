@@ -53,6 +53,8 @@ New Features
 * SOLR-5973: Pluggable Ranking Collectors and Merge Strategies
   (Joel Bernstein)
 
+* SOLR-6108: Add support for 'addreplica' Collection API in SolrJ. (shalin)
+
 Bug Fixes
 ----------------------
 
