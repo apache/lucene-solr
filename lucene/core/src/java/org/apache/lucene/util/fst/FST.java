@@ -893,10 +893,10 @@ public final class FST<T> {
           // skip this arc:
           readLabel(in);
           if (arc.flag(BIT_ARC_HAS_OUTPUT)) {
-            outputs.read(in);
+            outputs.skipOutput(in);
           }
           if (arc.flag(BIT_ARC_HAS_FINAL_OUTPUT)) {
-            outputs.readFinalOutput(in);
+            outputs.skipFinalOutput(in);
           }
           if (arc.flag(BIT_STOP_NODE)) {
           } else if (arc.flag(BIT_TARGET_NEXT)) {
@@ -1252,11 +1252,11 @@ public final class FST<T> {
       readLabel(in);
 
       if (flag(flags, BIT_ARC_HAS_OUTPUT)) {
-        outputs.read(in);
+        outputs.skipOutput(in);
       }
 
       if (flag(flags, BIT_ARC_HAS_FINAL_OUTPUT)) {
-        outputs.readFinalOutput(in);
+        outputs.skipFinalOutput(in);
       }
 
       if (!flag(flags, BIT_STOP_NODE) && !flag(flags, BIT_TARGET_NEXT)) {
@@ -1330,9 +1330,6 @@ public final class FST<T> {
     /** Returns true if this reader uses reversed bytes
      *  under-the-hood. */
     public abstract boolean reversed();
-
-    /** Skips bytes. */
-    public abstract void skipBytes(int count);
   }
 
   private static class ArcAndState<T> {

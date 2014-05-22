@@ -46,7 +46,8 @@ import org.apache.solr.common.util.XML;
  * @since solr 1.3
  */
 public class UpdateRequest extends AbstractUpdateRequest {
-  
+  public static final String REPFACT = "rf";
+  public static final String MIN_REPFACT = "min_rf";
   public static final String VER = "ver";
   public static final String OVERWRITE = "ow";
   public static final String COMMIT_WITHIN = "cw";

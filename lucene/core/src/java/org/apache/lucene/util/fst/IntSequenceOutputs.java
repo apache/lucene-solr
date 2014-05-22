@@ -131,6 +131,17 @@ public final class IntSequenceOutputs extends Outputs<IntsRef> {
       return output;
     }
   }
+  
+  @Override
+  public void skipOutput(DataInput in) throws IOException {
+    final int len = in.readVInt();
+    if (len == 0) {
+      return;
+    }
+    for(int idx=0;idx<len;idx++) {
+      in.readVInt();
+    }
+  }
 
   @Override
   public IntsRef getNoOutput() {

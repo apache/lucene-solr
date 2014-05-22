@@ -82,9 +82,9 @@ Other Changes
 * SOLR-5868: HttpClient should be configured to use ALLOW_ALL_HOSTNAME hostname
   verifier to simplify SSL setup. (Steve Davids via Mark Miller)
 
-* SOLR-5495: Recovery strategy for leader partitioned from replica case. Hardening
-  recovery scenarios after the leader receives an error trying to forward an
-  update request to a replica. (Timothy Potter)
+* SOLR-5468: Allow a client application to request the minium achieved 
+  replication factor for an update request (single or batch) by sending
+  an optional parameter "min_rf". (Timothy Potter)
 
 ==================  4.9.0 ==================
 
@@ -119,37 +119,9 @@ New Features
 Bug Fixes
 ----------------------
 
-* SOLR-5904: ElectionContext can cancel an election when it should not if there
-  was an exception while trying to register as the leader. 
-  (Mark Miller, Alan Woodward)
-
-* SOLR-5993: ZkController can warn about shard leader conflict even after the conflict
-  is resolved. (Gregory Chanan via shalin)
-
 * SOLR-6002: Fix a couple of ugly issues around SolrIndexWriter close and 
   rollback as well as how SolrIndexWriter manages it's ref counted directory
   instance. (Mark Miller, Gregory Chanan)
-
-* SOLR-6017: Fix SimpleQParser to use query analyzer instead of index analyzer.
-  (Ryan Ernst)
-
-* SOLR-6029: CollapsingQParserPlugin throws ArrayIndexOutOfBoundsException
-  if elevated doc has been deleted from a segment. (Greg Harris, Joel Bernstein)
-
-* SOLR-6030: Use System.nanoTime() instead of currentTimeInMills() in LRUCache.warm.
-  (Tomás Fernández Löbbe via shalin)
-
-* SOLR-6037: Fixed incorrect max/sum/stddev for Date fields in StatsComponent
-  (Brett Lucey, hossman)
-
-* SOLR-6023: FieldAnalysisRequestHandler throws NPE if no parameters are supplied.
-  (shalin)
-  
-* SOLR-5090: SpellCheckComponent sometimes throws NPE if 
-  "spellcheck.alternativeTermCount" is set to zero (James Dyer).
-
-* SOLR-6039: fixed debug output when no results in response
-  (Tomás Fernández Löbbe, hossman)
 
 Other Changes
 ---------------------
@@ -179,6 +151,15 @@ Other Changes
 
 * SOLR-5340: Add support for named snapshots (Varun Thacker via Noble Paul)
 
+* LUCENE-5650: Tests can no longer write to CWD. Update log dir is now made relative
+  to the instance dir if it is not an absolute path. (Ryan Ernst, Dawid Weiss)
+
+* SOLR-5681: Make the processing of Collection API calls multi-threaded. (Anshum Gupta)
+
+* SOLR-5495: Recovery strategy for leader partitioned from replica case. Hardening
+  recovery scenarios after the leader receives an error trying to forward an
+  update request to a replica. (Timothy Potter)
+
 Build
 ---------------------
 
@@ -188,23 +169,39 @@ Build
 
 ==================  4.8.1 ==================
 
-Versions of Major Components
----------------------
-Apache Tika 1.5
-Carrot2 3.9.0
-Velocity 1.7 and Velocity Tools 2.0
-Apache UIMA 2.3.1
-Apache ZooKeeper 3.4.6
-
 Bug Fixes
 ----------------------
 
-* SOLR-6029: CollapsingQParserPlugin throws ArrayIndexOutOfBoundsException 
+* SOLR-5904: ElectionContext can cancel an election when it should not if there
+  was an exception while trying to register as the leader. 
+  (Mark Miller, Alan Woodward)
+
+* SOLR-5993: ZkController can warn about shard leader conflict even after the conflict
+  is resolved. (Gregory Chanan via shalin)
+
+* SOLR-6017: Fix SimpleQParser to use query analyzer
+  (Ryan Ernst)
+
+* SOLR_6029: CollapsingQParserPlugin throws ArrayIndexOutOfBoundsException
   if elevated doc has been deleted from a segment. (Greg Harris, Joel Bernstein)
+
+* SOLR-6030: Use System.nanoTime() instead of currentTimeInMills() in LRUCache.warm.
+  (Tomás Fernández Löbbe via shalin)
+
+* SOLR-6037: Fixed incorrect max/sum/stddev for Date fields in StatsComponent
+  (Brett Lucey, hossman)
+
+* SOLR-6023: FieldAnalysisRequestHandler throws NPE if no parameters are supplied.
+  (shalin)
+  
+* SOLR-5090: SpellCheckComponent sometimes throws NPE if 
+  "spellcheck.alternativeTermCount" is set to zero (James Dyer).
+
+* SOLR-6039: fixed debug output when no results in response
+  (Tomás Fernández Löbbe, hossman)
 
 * SOLR-6035: CloudSolrServer directUpdate routing should use getCoreUrl.
   (Marvin Justice, Joel Bernstein)
-
 
 ==================  4.8.0 ==================
 

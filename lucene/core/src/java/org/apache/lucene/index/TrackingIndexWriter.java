@@ -83,7 +83,7 @@ public class TrackingIndexWriter {
     return indexingGen.get();
   }
 
-  /** Calls {@link IndexWriter#deleteDocuments(Term)} and
+  /** Calls {@link IndexWriter#deleteDocuments(Term...)} and
    *  returns the generation that reflects this change. */
   public long deleteDocuments(Term t) throws IOException {
     writer.deleteDocuments(t);
@@ -99,7 +99,7 @@ public class TrackingIndexWriter {
     return indexingGen.get();
   }
 
-  /** Calls {@link IndexWriter#deleteDocuments(Query)} and
+  /** Calls {@link IndexWriter#deleteDocuments(Query...)} and
    *  returns the generation that reflects this change. */
   public long deleteDocuments(Query q) throws IOException {
     writer.deleteDocuments(q);

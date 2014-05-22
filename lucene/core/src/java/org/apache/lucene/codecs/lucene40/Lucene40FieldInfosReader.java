@@ -104,7 +104,7 @@ class Lucene40FieldInfosReader extends FieldInfosReader {
           attributes.put(LEGACY_NORM_TYPE_KEY, oldNormsType.name());
         }
         infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, 
-          omitNorms, storePayloads, indexOptions, oldValuesType.mapping, oldNormsType.mapping, Collections.unmodifiableMap(attributes));
+          omitNorms, storePayloads, indexOptions, oldValuesType.mapping, oldNormsType.mapping, -1, Collections.unmodifiableMap(attributes));
       }
 
       CodecUtil.checkEOF(input);

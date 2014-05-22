@@ -57,6 +57,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.Version;
 import org.apache.lucene.util.packed.BlockPackedReader;
 import org.apache.lucene.util.packed.MonotonicBlockPackedReader;
 import org.apache.lucene.util.packed.PackedInts;
@@ -72,13 +73,29 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
   private final IndexInput data;
   private final int maxDoc;
   private final int version;
+  
+  // We need this for pre-4.9 indexes which recorded multiple fields' DocValues
+  // updates under the same generation, and therefore the passed FieldInfos may
+  // not include all the fields that are encoded in this generation. In that
+  // case, we are more lenient about the fields we read and the passed-in
+  // FieldInfos.
+  @Deprecated
+  private final boolean lenientFieldInfoCheck;
 
   // memory-resident structures
   private final Map<Integer,MonotonicBlockPackedReader> addressInstances = new HashMap<>();
   private final Map<Integer,MonotonicBlockPackedReader> ordIndexInstances = new HashMap<>();
   
   /** expert: instantiates a new reader */
+  @SuppressWarnings("deprecation")
   protected Lucene45DocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
+    Version ver;
+    try {
+      ver = Version.parseLeniently(state.segmentInfo.getVersion());
+    } catch (IllegalArgumentException e) {
+      ver = null;
+    }
+    lenientFieldInfoCheck = ver == null || !ver.onOrAfter(Version.LUCENE_4_9);
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
     // read in the entries from the metadata file.
     ChecksumIndexInput in = state.directory.openChecksumInput(metaName, state.context);
@@ -185,9 +202,7 @@ public class Lucene45DocValuesProducer extends DocValuesProducer implements Clos
   private void readFields(IndexInput meta, FieldInfos infos) throws IOException {
     int fieldNumber = meta.readVInt();
     while (fieldNumber != -1) {
-      // check should be: infos.fieldInfo(fieldNumber) != null, which incorporates negative check
-      // but docvalues updates are currently buggy here (loading extra stuff, etc): LUCENE-5616
-      if (fieldNumber < 0) {
+      if ((lenientFieldInfoCheck && fieldNumber < 0) || (!lenientFieldInfoCheck && infos.fieldInfo(fieldNumber) == null)) {
         // trickier to validate more: because we re-use for norms, because we use multiple entries
         // for "composite" types like sortedset, etc.
         throw new CorruptIndexException("Invalid field number: " + fieldNumber + " (resource=" + meta + ")");

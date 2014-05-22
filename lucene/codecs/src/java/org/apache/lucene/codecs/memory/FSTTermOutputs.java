@@ -299,6 +299,33 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
     }
     return new TermData(longs, bytes, docFreq, totalTermFreq);
   }
+  
+
+  @Override
+  public void skipOutput(DataInput in) throws IOException {
+    int bits = in.readByte() & 0xff;
+    int bit0 = bits & 1;
+    int bit1 = bits & 2;
+    int bit2 = bits & 4;
+    int bytesSize = (bits >>> 3);
+    if (bit1 > 0 && bytesSize == 0) {  // determine extra length
+      bytesSize = in.readVInt();
+    }
+    if (bit0 > 0) {  // not all-zero case
+      for (int pos = 0; pos < longsSize; pos++) {
+        in.readVLong();
+      }
+    }
+    if (bit1 > 0) {  // bytes exists
+      in.skipBytes(bytesSize);
+    }
+    if (bit2 > 0) {  // stats exist
+      int code = in.readVInt();
+      if (hasPos && (code & 1) == 0) {
+        in.readVLong();
+      }
+    }
+  }
 
   @Override
   public TermData getNoOutput() {

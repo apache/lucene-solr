@@ -1264,27 +1264,24 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     
     Document doc = new Document();
     doc.add(new StringField("id", "d0", Store.NO));
-    doc.add(new NumericDocValuesField("f", 1L));
+    doc.add(new NumericDocValuesField("f1", 1L));
+    doc.add(new NumericDocValuesField("f2", 1L));
     writer.addDocument(doc);
 
-    // create first gen of update files
-    writer.updateNumericDocValue(new Term("id", "d0"), "f", 2L);
-    writer.commit();
-    int numFiles = dir.listAll().length;
-
-    DirectoryReader r = DirectoryReader.open(dir);
-    assertEquals(2L, r.leaves().get(0).reader().getNumericDocValues("f").get(0));
-    r.close();
+    // update each field twice to make sure all unneeded files are deleted
+    for (String f : new String[] { "f1", "f2" }) {
+      writer.updateNumericDocValue(new Term("id", "d0"), f, 2L);
+      writer.commit();
+      int numFiles = dir.listAll().length;
+      
+      // update again, number of files shouldn't change (old field's gen is
+      // removed) 
+      writer.updateNumericDocValue(new Term("id", "d0"), f, 3L);
+      writer.commit();
+      
+      assertEquals(numFiles, dir.listAll().length);
+    }
     
-    // create second gen of update files, first gen should be deleted
-    writer.updateNumericDocValue(new Term("id", "d0"), "f", 5L);
-    writer.commit();
-    assertEquals(numFiles, dir.listAll().length);
-
-    r = DirectoryReader.open(dir);
-    assertEquals(5L, r.leaves().get(0).reader().getNumericDocValues("f").get(0));
-    r.close();
-
     writer.shutdown();
     dir.close();
   }
@@ -1455,7 +1452,6 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     writer.updateNumericDocValue(new Term("id", "doc-0"), "val", 100L);
     DirectoryReader reader = DirectoryReader.open(writer, true); // flush
     assertEquals(0, cachingDir.listCachedFiles().length);
-    for (String f : cachingDir.listAll()) System.out.println(f + " " + cachingDir.fileLength(f));
     
     IOUtils.close(reader, writer, cachingDir);
   }

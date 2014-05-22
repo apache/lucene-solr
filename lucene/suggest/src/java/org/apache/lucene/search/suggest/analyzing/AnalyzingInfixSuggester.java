@@ -240,7 +240,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       searcherMgr = new SearcherManager(writer, true, null);
       success = true;
     } finally {
-      if (success == false) {
+      if (success == false && writer != null) {
         writer.rollback();
         writer = null;
       }

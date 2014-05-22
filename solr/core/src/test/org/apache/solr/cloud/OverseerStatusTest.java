@@ -123,22 +123,4 @@ public class OverseerStatusTest extends BasicDistributedZkTest {
 
     waitForThingsToLevelOut(15);
   }
-
-  private NamedList<Object> invokeCollectionApi(String... args) throws SolrServerException, IOException {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    SolrRequest request = new QueryRequest(params);
-    for (int i = 0; i < args.length - 1; i+=2) {
-      params.add(args[i], args[i+1]);
-    }
-    request.setPath("/admin/collections");
-
-    String baseUrl = ((HttpSolrServer) shardToJetty.get(SHARD1).get(0).client.solrClient)
-        .getBaseURL();
-    baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
-
-    HttpSolrServer baseServer = new HttpSolrServer(baseUrl);
-    baseServer.setConnectionTimeout(15000);
-    baseServer.setSoTimeout(60000 * 5);
-    return baseServer.request(request);
-  }
 }

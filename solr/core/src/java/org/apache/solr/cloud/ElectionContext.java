@@ -321,7 +321,14 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     try (SolrCore core = cc.getCore(coreName)) {
       CloudDescriptor cloudDesc = core.getCoreDescriptor().getCloudDescriptor();
       String coll = cloudDesc.getCollectionName();
-      String shardId = cloudDesc.getShardId(); 
+      String shardId = cloudDesc.getShardId();
+      
+      if (coll == null || shardId == null) {
+        log.error("Cannot start leader-initiated recovery on new leader (core="+
+           coreName+") because collection and/or shard is null!");
+        return;
+      }
+      
       String znodePath = zkController.getLeaderInitiatedRecoveryZnodePath(coll, shardId);
       List<String> replicas = null;
       try {

@@ -31,12 +31,13 @@ import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.component.ShardHandler;
+import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.zookeeper.CreateMode;
 import org.easymock.Capture;
+import org.easymock.EasyMock;
 import org.easymock.IAnswer;
-import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -44,14 +45,17 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
 
 import static org.easymock.EasyMock.anyBoolean;
 import static org.easymock.EasyMock.anyObject;
@@ -74,36 +78,32 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   private static DistributedMap runningMapMock;
   private static DistributedMap completedMapMock;
   private static DistributedMap failureMapMock;
+  private static ShardHandlerFactory shardHandlerFactoryMock;
   private static ShardHandler shardHandlerMock;
   private static ZkStateReader zkStateReaderMock;
   private static ClusterState clusterStateMock;
   private static SolrZkClient solrZkClientMock;
   private final Map zkMap = new HashMap();
   private final Set collectionsSet = new HashSet();
+  private SolrResponse lastProcessMessageResult;
+
 
   private OverseerCollectionProcessorToBeTested underTest;
   
   private Thread thread;
-  private Queue<QueueEvent> queue = new BlockingArrayQueue<>();
+  private Queue<QueueEvent> queue = new ArrayBlockingQueue<>(10);
 
   private class OverseerCollectionProcessorToBeTested extends
       OverseerCollectionProcessor {
     
-    private SolrResponse lastProcessMessageResult;
-    
+
     public OverseerCollectionProcessorToBeTested(ZkStateReader zkStateReader,
-        String myId, ShardHandler shardHandler, String adminPath,
+        String myId, ShardHandlerFactory shardHandlerFactory,
+        String adminPath,
         DistributedQueue workQueue, DistributedMap runningMap,
         DistributedMap completedMap,
         DistributedMap failureMap) {
-      super(zkStateReader, myId, shardHandler, adminPath, new Overseer.Stats(), workQueue, runningMap, completedMap, failureMap);
-    }
-    
-    @Override
-    protected SolrResponse processMessage(ZkNodeProps message, String operation) {
-      lastProcessMessageResult = super.processMessage(message, operation);
-      log.info("1 : "+System.currentTimeMillis());
-      return lastProcessMessageResult;
+      super(zkStateReader, myId, shardHandlerFactory, adminPath, new Overseer.Stats(), workQueue, runningMap, completedMap, failureMap);
     }
     
     @Override
@@ -119,10 +119,12 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
     runningMapMock = createMock(DistributedMap.class);
     completedMapMock = createMock(DistributedMap.class);
     failureMapMock = createMock(DistributedMap.class);
+    shardHandlerFactoryMock = createMock(ShardHandlerFactory.class);
     shardHandlerMock = createMock(ShardHandler.class);
     zkStateReaderMock = createMock(ZkStateReader.class);
     clusterStateMock = createMock(ClusterState.class);
     solrZkClientMock = createMock(SolrZkClient.class);
+
   }
   
   @AfterClass
@@ -131,6 +133,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
     runningMapMock = null;
     completedMapMock = null;
     failureMapMock = null;
+    shardHandlerFactoryMock = null;
     shardHandlerMock = null;
     zkStateReaderMock = null;
     clusterStateMock = null;
@@ -145,12 +148,13 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
     reset(runningMapMock);
     reset(completedMapMock);
     reset(failureMapMock);
+    reset(shardHandlerFactoryMock);
     reset(shardHandlerMock);
     reset(zkStateReaderMock);
     reset(clusterStateMock);
     reset(solrZkClientMock);
     underTest = new OverseerCollectionProcessorToBeTested(zkStateReaderMock,
-        "1234", shardHandlerMock, ADMIN_PATH, workQueueMock, runningMapMock,
+        "1234", shardHandlerFactoryMock, ADMIN_PATH, workQueueMock, runningMapMock,
         completedMapMock, failureMapMock);
     zkMap.clear();
     collectionsSet.clear();
@@ -163,6 +167,44 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   }
   
   protected Set<String> commonMocks(int liveNodesCount) throws Exception {
+
+    shardHandlerFactoryMock.getShardHandler();
+    expectLastCall().andAnswer(new IAnswer<ShardHandler>() {
+      @Override
+      public ShardHandler answer() throws Throwable {
+        log.info("SHARDHANDLER");
+        return shardHandlerMock;
+      }
+    }).anyTimes();
+    workQueueMock.peekTopN(EasyMock.anyInt(), anyObject(Set.class), EasyMock.anyLong());
+    expectLastCall().andAnswer(new IAnswer<List>() {
+      @Override
+      public List answer() throws Throwable {
+        Object result;
+        int count = 0;
+        while ((result = queue.peek()) == null) {
+          Thread.sleep(1000);
+          count++;
+          if (count > 1) return null;
+        }
+
+        return Arrays.asList(result);
+      }
+    }).anyTimes();
+
+    workQueueMock.getTailId();
+    expectLastCall().andAnswer(new IAnswer<Object>() {
+      @Override
+      public Object answer() throws Throwable {
+        Object result = null;
+        Iterator iter = queue.iterator();
+        while(iter.hasNext()) {
+          result = iter.next();
+        }
+        return result==null ? null : ((QueueEvent)result).getId();
+      }
+    }).anyTimes();
+
     workQueueMock.peek(true);
     expectLastCall().andAnswer(new IAnswer<Object>() {
       @Override
@@ -191,7 +233,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
         return queue.poll();
       }
     }).anyTimes();
-    
+
     zkStateReaderMock.getClusterState();
     expectLastCall().andAnswer(new IAnswer<Object>() {
       @Override
@@ -207,8 +249,8 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
         return solrZkClientMock;
       }
     }).anyTimes();
-    
-    
+
+
     clusterStateMock.getCollections();
     expectLastCall().andAnswer(new IAnswer<Object>() {
       @Override
@@ -239,7 +281,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
         return new HashMap();
       }
     });
-    
+
     solrZkClientMock.getZkClientTimeout();
     expectLastCall().andAnswer(new IAnswer<Object>() {
       @Override
@@ -378,7 +420,12 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
           OverseerCollectionProcessor.MAX_SHARDS_PER_NODE,
           maxShardsPerNode.toString());
     }
-    QueueEvent qe = new QueueEvent("id", ZkStateReader.toJSON(props), null);
+    QueueEvent qe = new QueueEvent("id", ZkStateReader.toJSON(props), null){
+      @Override
+      public void setBytes(byte[] bytes) {
+        lastProcessMessageResult = SolrResponse.deserialize( bytes);
+      }
+    };
     queue.add(qe);
   }
   
@@ -542,20 +589,23 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
     replay(solrZkClientMock);
     replay(zkStateReaderMock);
     replay(clusterStateMock);
+    replay(shardHandlerFactoryMock);
     replay(shardHandlerMock);
 
-    log.info("clusterstate " +clusterStateMock.hashCode());
+
+    log.info("clusterstate " + clusterStateMock.hashCode());
 
     startComponentUnderTest();
     
-    issueCreateJob(numberOfSlices, replicationFactor, maxShardsPerNode, (createNodeListOption != CreateNodeListOptions.SEND_NULL)?createNodeList:null, (createNodeListOption != CreateNodeListOptions.DONT_SEND));
+    issueCreateJob(numberOfSlices, replicationFactor, maxShardsPerNode, (createNodeListOption != CreateNodeListOptions.SEND_NULL) ? createNodeList : null, (createNodeListOption != CreateNodeListOptions.DONT_SEND));
     waitForEmptyQueue(10000);
     
     if (collectionExceptedToBeCreated) {
-      assertNotNull(underTest.lastProcessMessageResult.getResponse().toString(), underTest.lastProcessMessageResult);
+      assertNotNull(lastProcessMessageResult.getResponse().toString(), lastProcessMessageResult);
     }
+    verify(shardHandlerFactoryMock);
     verify(shardHandlerMock);
-    
+
     if (collectionExceptedToBeCreated) {
       verifySubmitCaptures(submitCaptures, numberOfSlices, replicationFactor,
           createNodeList);

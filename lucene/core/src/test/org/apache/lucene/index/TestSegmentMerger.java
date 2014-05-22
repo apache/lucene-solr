@@ -30,7 +30,6 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
 
 public class TestSegmentMerger extends LuceneTestCase {
   //The variables for the new merged segment
@@ -91,7 +90,7 @@ public class TestSegmentMerger extends LuceneTestCase {
     SegmentReader mergedReader = new SegmentReader(new SegmentCommitInfo(
                                                          new SegmentInfo(mergedDir, Constants.LUCENE_MAIN_VERSION, mergedSegment, docsMerged,
                                                                          false, codec, null),
-                                                         0, -1L, -1L),
+                                                         0, -1L, -1L, -1L),
                                                    newIOContext(random()));
     assertTrue(mergedReader != null);
     assertTrue(mergedReader.numDocs() == 2);

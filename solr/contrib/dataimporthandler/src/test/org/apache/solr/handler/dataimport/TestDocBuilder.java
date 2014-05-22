@@ -73,6 +73,8 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
   public void testDeltaImportNoRows_MustNotCommit() {
     DataImporter di = new DataImporter();
     di.loadAndInit(dc_deltaConfig);
+    redirectTempProperties(di);
+
     DIHConfiguration cfg = di.getConfig();
     Entity ent = cfg.getEntities().get(0);
     MockDataSource.setIterator("select * from x", new ArrayList<Map<String, Object>>().iterator());

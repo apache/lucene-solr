@@ -894,10 +894,15 @@ public class DocTermOrds {
     @Override
     public long lookupTerm(BytesRef key) {
       try {
-        if (te.seekCeil(key) == SeekStatus.FOUND) {
-          return te.ord();
-        } else {
-          return -te.ord()-1;
+        switch (te.seekCeil(key)) {
+          case FOUND:           
+            assert te.ord() >= 0;
+            return te.ord();
+          case NOT_FOUND:
+            assert te.ord() >= 0;
+            return -te.ord()-1;
+          default: /* END */
+            return -numTerms()-1;
         }
       } catch (IOException e) {
         throw new RuntimeException(e);

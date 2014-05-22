@@ -1285,27 +1285,23 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     
     Document doc = new Document();
     doc.add(new StringField("id", "d0", Store.NO));
-    doc.add(new BinaryDocValuesField("f", toBytes(1L)));
+    doc.add(new BinaryDocValuesField("f1", toBytes(1L)));
+    doc.add(new BinaryDocValuesField("f2", toBytes(1L)));
     writer.addDocument(doc);
 
-    // create first gen of update files
-    writer.updateBinaryDocValue(new Term("id", "d0"), "f", toBytes(2L));
-    writer.commit();
-    int numFiles = dir.listAll().length;
-
-    DirectoryReader r = DirectoryReader.open(dir);
-    BytesRef scratch = new BytesRef();
-    assertEquals(2L, getValue(r.leaves().get(0).reader().getBinaryDocValues("f"), 0, scratch));
-    r.close();
-    
-    // create second gen of update files, first gen should be deleted
-    writer.updateBinaryDocValue(new Term("id", "d0"), "f", toBytes(5L));
-    writer.commit();
-    assertEquals(numFiles, dir.listAll().length);
-
-    r = DirectoryReader.open(dir);
-    assertEquals(5L, getValue(r.leaves().get(0).reader().getBinaryDocValues("f"), 0, scratch));
-    r.close();
+    // update each field twice to make sure all unneeded files are deleted
+    for (String f : new String[] { "f1", "f2" }) {
+      writer.updateBinaryDocValue(new Term("id", "d0"), f, toBytes(2L));
+      writer.commit();
+      int numFiles = dir.listAll().length;
+      
+      // update again, number of files shouldn't change (old field's gen is
+      // removed) 
+      writer.updateBinaryDocValue(new Term("id", "d0"), f, toBytes(3L));
+      writer.commit();
+      
+      assertEquals(numFiles, dir.listAll().length);
+    }
 
     writer.shutdown();
     dir.close();

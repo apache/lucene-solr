@@ -16,6 +16,7 @@ package org.apache.solr.rest;
  * limitations under the License.
  */
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -66,12 +67,12 @@ public class TestManagedResourceStorage extends AbstractZkTestCase {
    * Runs persisted managed resource creation and update tests on JSON storage.
    */
   @Test
-  public void testFileBasedJsonStorage() throws Exception {    
-    SolrResourceLoader loader = new SolrResourceLoader("./");    
-    // Solr unit tests can only write to their working directory due to
-    // a custom Java Security Manager installed in the test environment
+  public void testFileBasedJsonStorage() throws Exception {
+    File instanceDir = createTempDir("json-storage");
+    SolrResourceLoader loader = new SolrResourceLoader(instanceDir.getAbsolutePath());
     NamedList<String> initArgs = new NamedList<>();
-    initArgs.add(ManagedResourceStorage.STORAGE_DIR_INIT_ARG, "./managed");    
+    String managedDir = instanceDir.getAbsolutePath() + File.separator + "managed";
+    initArgs.add(ManagedResourceStorage.STORAGE_DIR_INIT_ARG, managedDir);
     FileStorageIO fileStorageIO = new FileStorageIO();
     fileStorageIO.configure(loader, initArgs);
     doStorageTests(loader, fileStorageIO);

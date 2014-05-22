@@ -16,7 +16,17 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -28,17 +38,7 @@ import org.apache.solr.update.MergeIndexesCommand;
 import org.apache.solr.update.RollbackUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
-import org.apache.solr.common.util.NamedList;
-import org.junit.After;
 import org.junit.Before;
-
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.File;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * <p>
@@ -55,27 +55,17 @@ public abstract class AbstractDataImportHandlerTestCase extends
 
   // note, a little twisted that we shadow this static method
   public static void initCore(String config, String schema) throws Exception {
-    initCore(config, schema, getFile("dih/solr").getAbsolutePath());
+    File testHome = createTempDir("core-home");
+    FileUtils.copyDirectory(getFile("dih/solr"), testHome);
+    initCore(config, schema, testHome.getAbsolutePath());
   }
   
   @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
-  }
-
-  @Override
-  @After
-  public void tearDown() throws Exception {
-    // remove dataimport.properties
-    File f = new File("solr/collection1/conf/dataimport.properties");
-    log.info("Looking for dataimport.properties at: " + f.getAbsolutePath());
-    if (f.exists()) {
-      log.info("Deleting dataimport.properties");
-      if (!f.delete())
-        log.warn("Could not delete dataimport.properties");
-    }
-    super.tearDown();
+    File home = createTempDir("dih-properties");
+    System.setProperty("solr.solr.home", home.getAbsolutePath());    
   }
 
   protected String loadDataConfig(String dataConfigFileName) {
@@ -101,6 +91,21 @@ public abstract class AbstractDataImportHandlerTestCase extends
             "debug", "on", "clean", "false", "commit", "true", "dataConfig",
             dataConfig);
     h.query("/dataimport", request);
+  }
+
+  /**
+   * Redirect {@link SimplePropertiesWriter#filename} to a temporary location 
+   * and return it.
+   */
+  protected File redirectTempProperties(DataImporter di) {
+    try {
+      File tempFile = createTempFile();
+      di.getConfig().getPropertyWriter().getParameters()
+        .put(SimplePropertiesWriter.FILENAME, tempFile.getAbsolutePath());
+      return tempFile;
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   /**
