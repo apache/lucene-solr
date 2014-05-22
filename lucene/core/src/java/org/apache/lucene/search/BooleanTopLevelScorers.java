@@ -107,13 +107,11 @@ class BooleanTopLevelScorers {
   static class ReqMultiOptScorer extends ReqOptSumScorer {
     private final int requiredCount;
     private final float coords[];
-    private final Scorer disjunction;
     
     public ReqMultiOptScorer(Scorer reqScorer, Scorer optScorer, int requiredCount, float coords[]) {
       super(reqScorer, optScorer);
       this.requiredCount = requiredCount;
       this.coords = coords;
-      this.disjunction = optScorer;
     }
     
     @Override
@@ -130,7 +128,7 @@ class BooleanTopLevelScorers {
         return reqScore * coords[requiredCount];
       }
       
-      return optScorerDoc == curDoc ? (reqScore + optScorer.score()) * coords[requiredCount + disjunction.freq()] : reqScore * coords[requiredCount];
+      return optScorerDoc == curDoc ? (reqScore + optScorer.score()) * coords[requiredCount + optScorer.freq()] : reqScore * coords[requiredCount];
     }
   }
 }

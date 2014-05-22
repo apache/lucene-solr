@@ -23,25 +23,30 @@ import java.util.Collection;
 
 /**
  * Base class for Scorers that score disjunctions.
- * Currently this just provides helper methods to manage the heap.
  */
 abstract class DisjunctionScorer extends Scorer {
-  protected final Scorer subScorers[];
+  private final Scorer subScorers[];
+  private int numScorers;
+
   /** The document number of the current match. */
   protected int doc = -1;
-  protected int numScorers;
+  /** Number of matching scorers for the current match. */
+  protected int freq = -1;
   
   protected DisjunctionScorer(Weight weight, Scorer subScorers[]) {
     super(weight);
     this.subScorers = subScorers;
     this.numScorers = subScorers.length;
+    if (numScorers <= 1) {
+      throw new IllegalArgumentException("There must be at least 2 subScorers");
+    }
     heapify();
   }
   
   /** 
    * Organize subScorers into a min heap with scorers generating the earliest document on top.
    */
-  protected final void heapify() {
+  private void heapify() {
     for (int i = (numScorers >>> 1) - 1; i >= 0; i--) {
       heapAdjust(i);
     }
@@ -51,7 +56,7 @@ abstract class DisjunctionScorer extends Scorer {
    * The subtree of subScorers at root is a min heap except possibly for its root element.
    * Bubble the root down as required to make the subtree a heap.
    */
-  protected final void heapAdjust(int root) {
+  private void heapAdjust(int root) {
     Scorer scorer = subScorers[root];
     int doc = scorer.docID();
     int i = root;
@@ -88,7 +93,7 @@ abstract class DisjunctionScorer extends Scorer {
   /** 
    * Remove the root Scorer from subScorers and re-establish it as a heap
    */
-  protected final void heapRemoveRoot() {
+  private void heapRemoveRoot() {
     if (numScorers == 1) {
       subScorers[0] = null;
       numScorers = 0;
@@ -110,7 +115,7 @@ abstract class DisjunctionScorer extends Scorer {
   }
 
   @Override
-  public long cost() {
+  public final long cost() {
     long sum = 0;
     for (int i = 0; i < numScorers; i++) {
       sum += subScorers[i].cost();
@@ -119,12 +124,12 @@ abstract class DisjunctionScorer extends Scorer {
   } 
   
   @Override
-  public int docID() {
+  public final int docID() {
    return doc;
   }
  
   @Override
-  public int nextDoc() throws IOException {
+  public final int nextDoc() throws IOException {
     assert doc != NO_MORE_DOCS;
     while(true) {
       if (subScorers[0].nextDoc() != NO_MORE_DOCS) {
@@ -135,15 +140,16 @@ abstract class DisjunctionScorer extends Scorer {
           return doc = NO_MORE_DOCS;
         }
       }
-      if (subScorers[0].docID() != doc) {
-        afterNext();
-        return doc;
+      int docID = subScorers[0].docID();
+      if (docID != doc) {
+        freq = -1;
+        return doc = docID;
       }
     }
   }
   
   @Override
-  public int advance(int target) throws IOException {
+  public final int advance(int target) throws IOException {
     assert doc != NO_MORE_DOCS;
     while(true) {
       if (subScorers[0].advance(target) != NO_MORE_DOCS) {
@@ -154,22 +160,53 @@ abstract class DisjunctionScorer extends Scorer {
           return doc = NO_MORE_DOCS;
         }
       }
-      if (subScorers[0].docID() >= target) {
-        afterNext();
-        return doc;
+      int docID = subScorers[0].docID();
+      if (docID >= target) {
+        freq = -1;
+        return doc = docID;
       }
     }
   }
   
-  /** 
-   * Called after next() or advance() land on a new document.
-   * <p>
-   * {@code subScorers[0]} will be positioned to the new docid,
-   * which could be {@code NO_MORE_DOCS} (subclass must handle this).
-   * <p>
-   * implementations should assign {@code doc} appropriately, and do any
-   * other work necessary to implement {@code score()} and {@code freq()}
-   */
-  // TODO: make this less horrible
-  protected abstract void afterNext() throws IOException;
+  // if we haven't already computed freq + score, do so
+  private void visitScorers() throws IOException {
+    reset();
+    freq = 1;
+    accum(subScorers[0]);
+    visit(1);
+    visit(2);
+  }
+  
+  // TODO: remove recursion.
+  private void visit(int root) throws IOException {
+    if (root < numScorers && subScorers[root].docID() == doc) {
+      freq++;
+      accum(subScorers[root]);
+      visit((root<<1)+1);
+      visit((root<<1)+2);
+    }
+  }
+  
+  @Override
+  public final float score() throws IOException {
+    visitScorers();
+    return getFinal();
+  }
+
+  @Override
+  public final int freq() throws IOException {
+    if (freq < 0) {
+      visitScorers();
+    }
+    return freq;
+  }
+  
+  /** Reset score state for a new match */
+  protected abstract void reset();
+  
+  /** Factor in sub-scorer match */
+  protected abstract void accum(Scorer subScorer) throws IOException;
+  
+  /** Return final score */
+  protected abstract float getFinal();
 }

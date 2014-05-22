@@ -160,15 +160,17 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
         Scorer subScorer = w.scorer(context, acceptDocs);
         if (subScorer != null) {
           scorers.add(subScorer);
-
         }
       }
       if (scorers.isEmpty()) {
         // no sub-scorers had any documents
         return null;
+      } else if (scorers.size() == 1) {
+        // only one sub-scorer in this segment
+        return scorers.get(0);
+      } else {
+        return new DisjunctionMaxScorer(this, tieBreakerMultiplier, scorers.toArray(new Scorer[scorers.size()]));
       }
-      DisjunctionMaxScorer result = new DisjunctionMaxScorer(this, tieBreakerMultiplier, scorers.toArray(new Scorer[scorers.size()]));
-      return result;
     }
 
     /** Explain the score we computed for doc */

@@ -1,6 +1,6 @@
 package org.apache.lucene.search;
 
-/**
+/*
  * Copyright 2004 The Apache Software Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,10 +24,9 @@ import java.io.IOException;
  * by the subquery scorers that generate that document, plus tieBreakerMultiplier times the sum of the scores
  * for the other subqueries that generate the document.
  */
-class DisjunctionMaxScorer extends DisjunctionScorer {
+final class DisjunctionMaxScorer extends DisjunctionScorer {
   /* Multiplier applied to non-maximum-scoring subqueries for a document as they are summed into the result. */
   private final float tieBreakerMultiplier;
-  private int freq = -1;
 
   /* Used when scoring currently matching doc. */
   private float scoreSum;
@@ -44,45 +43,27 @@ class DisjunctionMaxScorer extends DisjunctionScorer {
    * @param subScorers
    *          The sub scorers this Scorer should iterate on
    */
-  public DisjunctionMaxScorer(Weight weight, float tieBreakerMultiplier,
-      Scorer[] subScorers) {
+  DisjunctionMaxScorer(Weight weight, float tieBreakerMultiplier, Scorer[] subScorers) {
     super(weight, subScorers);
     this.tieBreakerMultiplier = tieBreakerMultiplier;
   }
-
-  /** Determine the current document score.  Initially invalid, until {@link #nextDoc()} is called the first time.
-   * @return the score of the current generated document
-   */
+  
   @Override
-  public float score() throws IOException {
-    return scoreMax + (scoreSum - scoreMax) * tieBreakerMultiplier;
+  protected void reset() {
+    scoreSum = scoreMax = 0;
   }
   
   @Override
-  protected void afterNext() throws IOException {
-    doc = subScorers[0].docID();
-    if (doc != NO_MORE_DOCS) {
-      scoreSum = scoreMax = subScorers[0].score();
-      freq = 1;
-      scoreAll(1);
-      scoreAll(2);
+  protected void accum(Scorer subScorer) throws IOException {
+    float subScore = subScorer.score();
+    scoreSum += subScore;
+    if (subScore > scoreMax) {
+      scoreMax = subScore;
     }
   }
-
-  // Recursively iterate all subScorers that generated last doc computing sum and max
-  private void scoreAll(int root) throws IOException {
-    if (root < numScorers && subScorers[root].docID() == doc) {
-      float sub = subScorers[root].score();
-      freq++;
-      scoreSum += sub;
-      scoreMax = Math.max(scoreMax, sub);
-      scoreAll((root<<1)+1);
-      scoreAll((root<<1)+2);
-    }
-  }
-
+  
   @Override
-  public int freq() throws IOException {
-    return freq;
+  protected float getFinal() {
+    return scoreMax + (scoreSum - scoreMax) * tieBreakerMultiplier; 
   }
 }
