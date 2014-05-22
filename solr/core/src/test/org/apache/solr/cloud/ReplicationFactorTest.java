@@ -236,6 +236,8 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     getProxyForReplica(replicas.get(0)).reopen();    
     getProxyForReplica(replicas.get(1)).reopen();
     
+    Thread.sleep(2000); // give time for the healed partition to get propagated
+    
     ensureAllReplicasAreActive(testCollectionName, shardId, numShards, replicationFactor, 30);
     
     rf = sendDoc(4, minRf);
@@ -296,6 +298,9 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
 
     getProxyForReplica(replicas.get(0)).reopen();        
     getProxyForReplica(replicas.get(1)).reopen();
+    
+    Thread.sleep(2000);
+    ensureAllReplicasAreActive(testCollectionName, shardId, numShards, replicationFactor, 30);    
   } 
     
   protected SocketProxy getProxyForReplica(Replica replica) throws Exception {
@@ -328,6 +333,8 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     Map<String,Replica> notLeaders = new HashMap<String,Replica>();
     
     ZkStateReader zkr = cloudClient.getZkStateReader();
+    zkr.updateClusterState(true); // force the state to be fresh
+
     ClusterState cs = zkr.getClusterState();
     Collection<Slice> slices = cs.getActiveSlices(testCollectionName);
     assertTrue(slices.size() == shards);
@@ -345,6 +352,8 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
       assertTrue(replicas.size() == rf);
       leader = shard.getLeader();
       assertNotNull(leader);
+      log.info("Found "+replicas.size()+" replicas and leader on "+
+        leader.getNodeName()+" for "+shardId+" in "+testCollectionName);
       
       // ensure all replicas are "active" and identify the non-leader replica
       for (Replica replica : replicas) {
