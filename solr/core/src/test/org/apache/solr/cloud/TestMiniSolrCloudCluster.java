@@ -79,9 +79,8 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
 
   @BeforeClass
   public static void startup() throws Exception {
-    String testHome = SolrTestCaseJ4.TEST_HOME();
-    miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, null, new File(testHome, "solr-no-core.xml"),
-      null, null);
+    File solrXml = new File(SolrTestCaseJ4.TEST_HOME(), "solr-no-core.xml");
+    miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, null, createTempDir(), solrXml, null, null);
   }
 
   @AfterClass

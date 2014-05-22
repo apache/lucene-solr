@@ -114,12 +114,12 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 //    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     // For manual testing only
     // useFactory(null); // force an FS factory.
-    master = new SolrInstance("master", null);
+    master = new SolrInstance(createTempDir("solr-instance"), "master", null);
     master.setUp();
     masterJetty = createJetty(master);
     masterClient = createNewSolrServer(masterJetty.getLocalPort());
 
-    slave = new SolrInstance("slave", masterJetty.getLocalPort());
+    slave = new SolrInstance(createTempDir("solr-instance"), "slave", masterJetty.getLocalPort());
     slave.setUp();
     slaveJetty = createJetty(slave);
     slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
@@ -323,7 +323,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     JettySolrRunner repeaterJetty = null;
     SolrServer repeaterClient = null;
     try {
-      repeater = new SolrInstance("repeater", masterJetty.getLocalPort());
+      repeater = new SolrInstance(createTempDir("solr-instance"), "repeater", masterJetty.getLocalPort());
       repeater.setUp();
       repeaterJetty = createJetty(repeater);
       repeaterClient = createNewSolrServer(repeaterJetty.getLocalPort());
@@ -911,7 +911,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
 
     try {
-      repeater = new SolrInstance("repeater", null);
+      repeater = new SolrInstance(createTempDir("solr-instance"), "repeater", null);
       repeater.setUp();
       repeater.copyConfigFile(CONF_DIR + "solrconfig-repeater.xml",
           "solrconfig.xml");
@@ -1647,13 +1647,15 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     private File dataDir;
 
     /**
-     * @param name used to pick new solr home dir, as well as which 
+     * @param homeDir Base directory to build solr configuration and index in
+     * @param name used to pick which
      *        "solrconfig-${name}.xml" file gets copied
      *        to solrconfig.xml in new conf dir.
      * @param testPort if not null, used as a replacement for
      *        TEST_PORT in the cloned config files.
      */
-    public SolrInstance(String name, Integer testPort) {
+    public SolrInstance(File homeDir, String name, Integer testPort) {
+      this.homeDir = homeDir;
       this.name = name;
       this.testPort = testPort;
     }
@@ -1687,11 +1689,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       System.setProperty("solr.test.sys.prop1", "propone");
       System.setProperty("solr.test.sys.prop2", "proptwo");
 
-      File home = new File(dataDir, 
-                           getClass().getName() + "-" + 
-                           System.currentTimeMillis());
-
-      homeDir = new File(home, name);
       dataDir = new File(homeDir + "/collection1", "data");
       confDir = new File(homeDir + "/collection1", "conf");
 

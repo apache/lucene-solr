@@ -23,9 +23,6 @@
     Data Import Handler
   </description>
 
-  <!-- the tests have some parallel problems: writability to single copy of dataimport.properties -->
-  <property name="tests.jvms.override" value="1"/>
-
   <import file="../contrib-build.xml"/>
 
   <path id="test.classpath">

@@ -17,8 +17,11 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
+import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
+
+import java.io.File;
 
 /**
  * Tests expert options of {@link ICUCollationField}.
@@ -26,7 +29,9 @@ import org.junit.BeforeClass;
 public class TestICUCollationFieldOptions extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-icucollate.xml","schema-icucollateoptions.xml", "analysis-extras/solr");
+    File testHome = createTempDir();
+    FileUtils.copyDirectory(getFile("analysis-extras/solr"), testHome);
+    initCore("solrconfig-icucollate.xml","schema-icucollateoptions.xml", testHome.getAbsolutePath());
     // add some docs
     assertU(adoc("id", "1", "text", "foo-bar"));
     assertU(adoc("id", "2", "text", "foo bar"));

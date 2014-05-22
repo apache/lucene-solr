@@ -56,17 +56,19 @@ public class TestConfigSets extends SolrTestCaseJ4 {
   @Test
   public void testConfigSetServiceFindsConfigSets() {
     CoreContainer container = null;
+    SolrCore core1 = null;
     try {
       container = setupContainer(getFile("solr/configsets").getAbsolutePath());
-      String testDirectory = container.getResourceLoader().getInstanceDir();
+      String testDirectory = new File(container.getResourceLoader().getInstanceDir()).getAbsolutePath();
 
-      SolrCore core1 = container.create("core1", testDirectory + "/core1", "configSet", "configset-2");
+      core1 = container.create("core1", testDirectory + "core1", "configSet", "configset-2");
       assertThat(core1.getCoreDescriptor().getName(), is("core1"));
-      assertThat(core1.getDataDir(), is(testDirectory + "/core1" + File.separator + "data" + File.separator));
-      core1.close();
-
+      assertThat(core1.getDataDir(), is(testDirectory + "core1" + File.separator + "data" + File.separator));
     }
     finally {
+      if (core1 != null) {
+        core1.close();
+      }
       if (container != null)
         container.shutdown();
     }
