@@ -610,7 +610,7 @@ public class CollectionsHandler extends RequestHandlerBase {
     Map<String,Object> props = new HashMap<>();
     props.put(Overseer.QUEUE_OPERATION, CollectionAction.ADDREPLICA.toString());
     copyIfNotNull(req.getParams(), props, COLLECTION_PROP, "node", SHARD_ID_PROP, ShardParams._ROUTE_,
-        CoreAdminParams.NAME, CoreAdminParams.INSTANCE_DIR, CoreAdminParams.DATA_DIR);
+        CoreAdminParams.NAME, CoreAdminParams.INSTANCE_DIR, CoreAdminParams.DATA_DIR, ASYNC);
     ZkNodeProps m = new ZkNodeProps(props);
     handleResponse(CollectionAction.ADDREPLICA.toString(), m, rsp);
   }

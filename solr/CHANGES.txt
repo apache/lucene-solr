@@ -125,6 +125,9 @@ Bug Fixes
   rollback as well as how SolrIndexWriter manages it's ref counted directory
   instance. (Mark Miller, Gregory Chanan)
 
+* SOLR-6104: The 'addreplica' Collection API does not support 'async' parameter.
+  (shalin)
+
 Other Changes
 ---------------------
 

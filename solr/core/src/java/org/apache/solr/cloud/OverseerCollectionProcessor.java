@@ -2234,7 +2234,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     String node = message.getStr("node");
     String shard = message.getStr(SHARD_ID_PROP);
     String coreName = message.getStr(CoreAdminParams.NAME);
-
+    String asyncId = message.getStr("async");
 
     DocCollection coll = clusterState.getCollection(collection);
     if (coll == null) {
@@ -2246,9 +2246,9 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     }
     ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
 
-    if(node== null){
-      node = getNodesForNewShard(clusterState,collection, coll.getSlices().size() , coll.getInt(MAX_SHARDS_PER_NODE, 1),coll.getInt(REPLICATION_FACTOR, 1),null).get(0).nodeName;
-      log.info("node not provided , Identified {} for creating new replica",node);
+    if (node == null) {
+      node = getNodesForNewShard(clusterState, collection, coll.getSlices().size(), coll.getInt(MAX_SHARDS_PER_NODE, 1), coll.getInt(REPLICATION_FACTOR, 1), null).get(0).nodeName;
+      log.info("Node not provided, Identified {} for creating new replica", node);
     }
 
 
@@ -2317,10 +2317,15 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     }
     addPropertyParams(message, params);
 
+    // For tracking async calls.
+    HashMap<String, String> requestMap = new HashMap<>();
+    setupAsyncRequest(asyncId, requestMap, params, node);
     sendShardRequest(node, params, shardHandler);
 
     collectShardResponses(results, true,
         "ADDREPLICA failed to create replica", shardHandler);
+
+    completeAsyncRequest(asyncId, requestMap, results);
   }
 
   private void processResponses(NamedList results, ShardHandler shardHandler) {
