@@ -58,6 +58,42 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
   public static final String IGNORE_CASE_INIT_ARG = "ignoreCase";
   
   /**
+   * Used internally to preserve the case of synonym mappings regardless
+   * of the ignoreCase setting.
+   */
+  private static class CasePreservedSynonymMappings {
+    Map<String,Set<String>> mappings = new TreeMap<>();
+    
+    /**
+     * Provides a view of the mappings for a given term; specifically, if
+     * ignoreCase is true, then the returned "view" contains the mappings
+     * for all known cases of the term, if it is false, then only the
+     * mappings for the specific case is returned. 
+     */
+    Set<String> getMappings(boolean ignoreCase, String key) {
+      Set<String> synMappings = null;
+      if (ignoreCase) {
+        // TODO: should we return the mapped values in all lower-case here?
+        if (mappings.size() == 1) {
+          // if only one in the map (which is common) just return it directly
+          return mappings.values().iterator().next();
+        }
+        
+        synMappings = new TreeSet<>();
+        for (Set<String> next : mappings.values())
+          synMappings.addAll(next);
+      } else {
+        synMappings = mappings.get(key);
+      }
+      return synMappings;
+    }
+    
+    public String toString() {
+      return mappings.toString();
+    }
+  }
+  
+  /**
    * ManagedResource implementation for synonyms, which are so specialized that
    * it makes sense to implement this class as an inner class as it has little 
    * application outside the SynonymFilterFactory use cases.
@@ -65,11 +101,7 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
   public static class SynonymManager extends ManagedResource 
       implements ManagedResource.ChildResourceSupport
   {
-
-    // TODO: Maybe hold this using a SoftReference / WeakReference to
-    // reduce memory in case the set of synonyms is large and the JVM 
-    // is running low on memory?
-    protected Map<String,Set<String>> synonymMappings;
+    protected Map<String,CasePreservedSynonymMappings> synonymMappings;
     
     public SynonymManager(String resourceId, SolrResourceLoader loader, StorageIO storageIO)
         throws SolrException {
@@ -94,11 +126,20 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
       if (initArgs.get(IGNORE_CASE_INIT_ARG) == null) {
         initArgs.add(IGNORE_CASE_INIT_ARG, Boolean.FALSE);
       }
+      
       boolean ignoreCase = getIgnoreCase(managedInitArgs);
       synonymMappings = new TreeMap<>();
       if (managedData != null) {
         Map<String,Object> storedSyns = (Map<String,Object>)managedData;
         for (String key : storedSyns.keySet()) {
+          
+          String caseKey = applyCaseSetting(ignoreCase, key);
+          CasePreservedSynonymMappings cpsm = synonymMappings.get(caseKey);
+          if (cpsm == null) {
+            cpsm = new CasePreservedSynonymMappings();
+            synonymMappings.put(caseKey, cpsm);
+          }
+          
           // give the nature of our JSON parsing solution, we really have
           // no guarantees on what is in the file
           Object mapping = storedSyns.get(key);
@@ -108,21 +149,11 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
                 " but got "+mapping.getClass().getName());
           }
                     
-          // if we're configured to ignoreCase, then we build the mappings with all lower           
-          List<String> vals = (List<String>)storedSyns.get(key);
           Set<String> sortedVals = new TreeSet<>();
-          if (ignoreCase) {
-            for (String next : vals) {
-              sortedVals.add(applyCaseSetting(ignoreCase, next));
-            }
-          } else {
-            sortedVals.addAll(vals);
-          }
-          
-          synonymMappings.put(applyCaseSetting(ignoreCase, key), sortedVals);
+          sortedVals.addAll((List<String>)storedSyns.get(key));          
+          cpsm.mappings.put(key, sortedVals);        
         }
       }
-      
       log.info("Loaded {} synonym mappings for {}", synonymMappings.size(), getResourceId());      
     }    
 
@@ -138,17 +169,24 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
       Map<String,Object> jsonMap = (Map<String,Object>)updates;
       for (String term : jsonMap.keySet()) {
         
+        String origTerm = term;
         term = applyCaseSetting(ignoreCase, term);
         
-        Set<String> output = synonymMappings.get(term); 
+        // find the mappings using the case aware key
+        CasePreservedSynonymMappings cpsm = synonymMappings.get(term);
+        if (cpsm == null) {
+          cpsm = new CasePreservedSynonymMappings();
+        }
         
-        Object val = jsonMap.get(term);
+        Set<String> output = cpsm.mappings.get(origTerm);  
+        
+        Object val = jsonMap.get(origTerm); // IMPORTANT: use the original
         if (val instanceof String) {
-          String strVal = applyCaseSetting(ignoreCase, (String)val);
+          String strVal = (String)val;
           
           if (output == null) {
             output = new TreeSet<>();
-            synonymMappings.put(term, output);
+            cpsm.mappings.put(origTerm, output);
           }
                     
           if (output.add(strVal)) {
@@ -159,11 +197,11 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
           
           if (output == null) {
             output = new TreeSet<>();
-            synonymMappings.put(term, output);
+            cpsm.mappings.put(origTerm, output);
           }
           
           for (String nextVal : vals) {
-            if (output.add(applyCaseSetting(ignoreCase, nextVal))) {
+            if (output.add(nextVal)) {
               madeChanges = true;
             }
           }          
@@ -172,41 +210,30 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
           throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST, "Unsupported value "+val+
               " for "+term+"; expected single value or a JSON array!");
         }
+        
+        // only add the cpsm to the synonymMappings if it has valid data
+        if (!synonymMappings.containsKey(term) && cpsm.mappings.get(origTerm) != null) {
+          synonymMappings.put(term, cpsm);
+        }
       }
-          
-      return madeChanges ? synonymMappings : null;
+      return madeChanges ? getStoredView() : null;
     }
     
     /**
-     * Handles a change in the ignoreCase setting for synonyms, which requires
-     * a full rebuild of the synonymMappings.
+     * Returns a Map of how we store and load data managed by this resource,
+     * which is different than how it is managed at runtime in order to support
+     * the ignoreCase setting. 
      */
-    @Override
-    protected boolean updateInitArgs(NamedList<?> updatedArgs) {
-      if (updatedArgs == null || updatedArgs.size() == 0) {
-        return false;
-      }
-      boolean currentIgnoreCase = getIgnoreCase(managedInitArgs);
-      boolean updatedIgnoreCase = getIgnoreCase(updatedArgs);
-      if (currentIgnoreCase == true && updatedIgnoreCase == false) {
-        throw new SolrException(ErrorCode.BAD_REQUEST,
-            "Changing a managed word set's ignoreCase arg from true to false is not permitted.");
-      } else if (currentIgnoreCase == false && updatedIgnoreCase == true) {
-        // ignore case policy changed ... rebuild the map
-        Map<String,Set<String>> rebuild = new TreeMap<>();
-        for (String curr : synonymMappings.keySet()) {
-          Set<String> newMappings = new TreeSet<>();
-          for (String next : synonymMappings.get(curr)) {
-            newMappings.add(applyCaseSetting(updatedIgnoreCase, next));
-          }
-          rebuild.put(applyCaseSetting(updatedIgnoreCase, curr), newMappings);
+    protected Map<String,Set<String>> getStoredView() {
+      Map<String,Set<String>> storedView = new TreeMap<>();
+      for (CasePreservedSynonymMappings cpsm : synonymMappings.values()) {
+        for (String key : cpsm.mappings.keySet()) {
+          storedView.put(key, cpsm.mappings.get(key));
         }
-        synonymMappings = rebuild;
       }
-      
-      return super.updateInitArgs(updatedArgs);
+      return storedView;
     }
-    
+        
     protected String applyCaseSetting(boolean ignoreCase, String str) {
       return (ignoreCase && str != null) ? str.toLowerCase(Locale.ROOT) : str;
     }
@@ -227,14 +254,19 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
       if (childId != null) {
         boolean ignoreCase = getIgnoreCase();
         String key = applyCaseSetting(ignoreCase, childId);
-        Set<String> output = synonymMappings.get(key);
-        if (output == null) {
+        
+        // if ignoreCase==true, then we get the mappings using the lower-cased key
+        // and then return a union of all case-sensitive keys, if false, then
+        // we only return the mappings for the exact case requested
+        CasePreservedSynonymMappings cpsm = synonymMappings.get(key);
+        Set<String> mappings = (cpsm != null) ? cpsm.getMappings(ignoreCase, childId) : null;
+        if (mappings == null)
           throw new SolrException(ErrorCode.NOT_FOUND,
-              String.format(Locale.ROOT, "%s not found in %s", key, getResourceId()));
-        }
-        response.add(key, output);
+              String.format(Locale.ROOT, "%s not found in %s", childId, getResourceId()));          
+        
+        response.add(childId, mappings);
       } else {
-        response.add(SYNONYM_MAPPINGS, buildMapToStore(synonymMappings));      
+        response.add(SYNONYM_MAPPINGS, buildMapToStore(getStoredView()));      
       }
     }  
 
@@ -242,14 +274,32 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
     public synchronized void doDeleteChild(BaseSolrResource endpoint, String childId) {
       boolean ignoreCase = getIgnoreCase();
       String key = applyCaseSetting(ignoreCase, childId);
-      Set<String> output = synonymMappings.get(key);
-      if (output == null)
-        throw new SolrException(ErrorCode.NOT_FOUND, 
-            String.format(Locale.ROOT, "%s not found in %s", key, getResourceId()));
       
-      synonymMappings.remove(key);
-      storeManagedData(synonymMappings);
-      log.info("Removed synonym mappings for: {}", key);      
+      CasePreservedSynonymMappings cpsm = synonymMappings.get(key);
+      if (cpsm == null)
+        throw new SolrException(ErrorCode.NOT_FOUND, 
+            String.format(Locale.ROOT, "%s not found in %s", childId, getResourceId()));
+
+      if (ignoreCase) {
+        // delete all mappings regardless of case
+        synonymMappings.remove(key);
+      } else {
+        // just delete the mappings for the specific case-sensitive key
+        if (cpsm.mappings.containsKey(childId)) {
+          cpsm.mappings.remove(childId);
+          
+          if (cpsm.mappings.isEmpty())
+            synonymMappings.remove(key);            
+        } else {
+          throw new SolrException(ErrorCode.NOT_FOUND, 
+              String.format(Locale.ROOT, "%s not found in %s", childId, getResourceId()));          
+        }
+      }
+      
+      // store the updated data (using the stored view)
+      storeManagedData(getStoredView());
+      
+      log.info("Removed synonym mappings for: {}", childId);      
     }
   }
   
@@ -272,9 +322,15 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
      */
     @Override
     public void parse(Reader in) throws IOException, ParseException {
-      for (String term : synonymManager.synonymMappings.keySet()) {
-        for (String mapping : synonymManager.synonymMappings.get(term)) {
-          add(new CharsRef(term), new CharsRef(mapping), false);
+      boolean ignoreCase = synonymManager.getIgnoreCase();
+      for (CasePreservedSynonymMappings cpsm : synonymManager.synonymMappings.values()) {
+        for (String term : cpsm.mappings.keySet()) {
+          for (String mapping : cpsm.mappings.get(term)) {
+            // apply the case setting to match the behavior of the SynonymMap builder
+            String casedTerm = synonymManager.applyCaseSetting(ignoreCase, term);
+            String casedMapping = synonymManager.applyCaseSetting(ignoreCase, mapping);
+            add(new CharsRef(casedTerm), new CharsRef(casedMapping), false);
+          }          
         }
       }      
     }    

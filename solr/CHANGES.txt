@@ -86,6 +86,9 @@ Other Changes
   replication factor for an update request (single or batch) by sending
   an optional parameter "min_rf". (Timothy Potter)
 
+* SOLR-6015: Better way to handle managed synonyms when ignoreCase=true
+  (Timothy Potter)
+
 ==================  4.9.0 ==================
 
 Versions of Major Components

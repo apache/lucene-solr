@@ -91,7 +91,7 @@ public class TestManagedSynonymFilterFactory extends RestTestBase {
     // request to a specific mapping
     assertJQ(endpoint+"/happy", 
              "/happy==['cheerful','glad','joyful']");
-    
+
     // does not exist
     assertJQ(endpoint+"/sad", 
              "/error/code==404");
@@ -106,13 +106,19 @@ public class TestManagedSynonymFilterFactory extends RestTestBase {
     
     syns = new HashMap<>();
     syns.put("sad", Arrays.asList("unhappy"));    
-    syns.put("SAD", Arrays.asList("Unhappy"));    
+    syns.put("SAD", Arrays.asList("bummed"));    
     assertJPut(endpoint, 
                JSONUtil.toJSON(syns),
                "/responseHeader/status==0");
     
     assertJQ(endpoint, 
              "/synonymMappings/managedMap/sad==['unhappy']");
+    assertJQ(endpoint, 
+        "/synonymMappings/managedMap/SAD==['bummed']");
+    
+    // expect a union of values when requesting the "sad" child
+    assertJQ(endpoint+"/sad", 
+        "/sad==['bummed','unhappy']");
     
     // verify delete works
     assertJDelete(endpoint+"/sad",
@@ -174,5 +180,20 @@ public class TestManagedSynonymFilterFactory extends RestTestBase {
         "/response/lst[@name='responseHeader']/int[@name='status'] = '0'",
         "/response/result[@name='response'][@numFound='1']",
         "/response/result[@name='response']/doc/str[@name='id'][.='5150']");    
+    
+    // test for SOLR-6015
+    syns = new HashMap<>();
+    syns.put("mb", Arrays.asList("megabyte"));    
+    assertJPut(endpoint, 
+               JSONUtil.toJSON(syns),
+               "/responseHeader/status==0");
+
+    syns.put("MB", Arrays.asList("MiB", "Megabyte"));    
+    assertJPut(endpoint, 
+               JSONUtil.toJSON(syns),
+               "/responseHeader/status==0");
+    
+    assertJQ(endpoint+"/MB", 
+        "/MB==['Megabyte','MiB','megabyte']");    
   }
 }
