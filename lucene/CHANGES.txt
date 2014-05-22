@@ -185,6 +185,9 @@ Optimizations
 * LUCENE-5670: Add skip/FinalOutput to FST Outputs.  (Christian
   Ziech via Mike McCandless).
 
+* LUCENE-4236: Optimize BooleanQuery's in-order scoring. This speeds up
+  some types of boolean queries.  (Robert Muir)
+
 Bug fixes
 
 * LUCENE-5673: MMapDirectory: Work around a "bug" in the JDK that throws
@@ -199,6 +202,10 @@ Bug fixes
 * LUCENE-5691: DocTermOrds lookupTerm(BytesRef) would return incorrect results
   if the underlying TermsEnum supports ord() and the insertion point would
   be at the end. (Robert Muir)
+
+* LUCENE-5618, LUCENE-5636: SegmentReader referenced unneeded files following 
+  doc-values updates. Now doc-values field updates are written in separate file
+  per field. (Shai Erera, Robert Muir)
 
 Test Framework
 

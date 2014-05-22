@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Map;
 import java.util.Set;
 
@@ -41,6 +40,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.Version;
 
 /**
  * IndexReader implementation over a single segment. 
@@ -112,7 +112,7 @@ public final class SegmentReader extends AtomicReader {
         liveDocs = null;
       }
       numDocs = si.info.getDocCount() - si.getDelCount();
-      
+
       if (fieldInfos.hasDocValues()) {
         initDocValuesProducers(codec);
       }
@@ -175,24 +175,88 @@ public final class SegmentReader extends AtomicReader {
   }
 
   // initialize the per-field DocValuesProducer
+  @SuppressWarnings("deprecation")
   private void initDocValuesProducers(Codec codec) throws IOException {
     final Directory dir = core.cfsReader != null ? core.cfsReader : si.info.dir;
     final DocValuesFormat dvFormat = codec.docValuesFormat();
-    final Map<Long,List<FieldInfo>> genInfos = getGenInfos();
-    
-//      System.out.println("[" + Thread.currentThread().getName() + "] SR.initDocValuesProducers: segInfo=" + si + "; gens=" + genInfos.keySet());
-    
-    // TODO: can we avoid iterating over fieldinfos several times and creating maps of all this stuff if dv updates do not exist?
-    
-    for (Entry<Long,List<FieldInfo>> e : genInfos.entrySet()) {
-      Long gen = e.getKey();
-      List<FieldInfo> infos = e.getValue();
-      DocValuesProducer dvp = segDocValues.getDocValuesProducer(gen, si, IOContext.READ, dir, dvFormat, infos);
-      dvGens.add(gen);
-      for (FieldInfo fi : infos) {
+
+    if (!si.hasFieldUpdates()) {
+      // simple case, no DocValues updates
+      final DocValuesProducer dvp = segDocValues.getDocValuesProducer(-1L, si, IOContext.READ, dir, dvFormat, fieldInfos);
+      dvGens.add(-1L);
+      dvProducers.add(dvp);
+      for (FieldInfo fi : fieldInfos) {
+        if (!fi.hasDocValues()) continue;
+        assert fi.getDocValuesGen() == -1;
         dvProducersByField.put(fi.name, dvp);
       }
-      dvProducers.add(dvp);
+      return;
+    }
+
+    Version ver;
+    try {
+      ver = Version.parseLeniently(si.info.getVersion());
+    } catch (IllegalArgumentException e) {
+      // happened in TestBackwardsCompatibility on a 4.0.0.2 index (no matching
+      // Version constant), anyway it's a pre-4.9 index.
+      ver = null;
+    }
+    if (ver != null && ver.onOrAfter(Version.LUCENE_4_9)) {
+      DocValuesProducer baseProducer = null;
+      for (FieldInfo fi : fieldInfos) {
+        if (!fi.hasDocValues()) continue;
+        long docValuesGen = fi.getDocValuesGen();
+        if (docValuesGen == -1) {
+          if (baseProducer == null) {
+//        System.out.println("[" + Thread.currentThread().getName() + "] SR.initDocValuesProducers: segInfo=" + si + "; gen=" + docValuesGen + "; field=" + fi.name);
+            // the base producer gets all the fields, so the Codec can validate properly
+            baseProducer = segDocValues.getDocValuesProducer(docValuesGen, si, IOContext.READ, dir, dvFormat, fieldInfos);
+            dvGens.add(docValuesGen);
+            dvProducers.add(baseProducer);
+          }
+//        System.out.println("[" + Thread.currentThread().getName() + "] SR.initDocValuesProducers: segInfo=" + si + "; gen=" + docValuesGen + "; field=" + fi.name);
+          dvProducersByField.put(fi.name, baseProducer);
+        } else {
+          assert !dvGens.contains(docValuesGen);
+//        System.out.println("[" + Thread.currentThread().getName() + "] SR.initDocValuesProducers: segInfo=" + si + "; gen=" + docValuesGen + "; field=" + fi.name);
+          final DocValuesProducer dvp = segDocValues.getDocValuesProducer(docValuesGen, si, IOContext.READ, dir, dvFormat, new FieldInfos(new FieldInfo[] { fi }));
+          dvGens.add(docValuesGen);
+          dvProducers.add(dvp);
+          dvProducersByField.put(fi.name, dvp);
+        }
+      }
+    } else {
+      // For pre-4.9 indexes, especially with doc-values updates, multiple
+      // FieldInfos could belong to the same dvGen. Therefore need to make sure
+      // we initialize each DocValuesProducer once per gen.
+      Map<Long,List<FieldInfo>> genInfos = new HashMap<>();
+      for (FieldInfo fi : fieldInfos) {
+        if (!fi.hasDocValues()) continue;
+        List<FieldInfo> genFieldInfos = genInfos.get(fi.getDocValuesGen());
+        if (genFieldInfos == null) {
+          genFieldInfos = new ArrayList<>();
+          genInfos.put(fi.getDocValuesGen(), genFieldInfos);
+        }
+        genFieldInfos.add(fi);
+      }
+      
+      for (Map.Entry<Long,List<FieldInfo>> e : genInfos.entrySet()) {
+        long docValuesGen = e.getKey();
+        List<FieldInfo> infos = e.getValue();
+        final DocValuesProducer dvp;
+        if (docValuesGen == -1) {
+          // we need to send all FieldInfos to gen=-1, but later we need to
+          // record the DVP only for the "true" gen=-1 fields (not updated)
+          dvp = segDocValues.getDocValuesProducer(docValuesGen, si, IOContext.READ, dir, dvFormat, fieldInfos);
+        } else {
+          dvp = segDocValues.getDocValuesProducer(docValuesGen, si, IOContext.READ, dir, dvFormat, new FieldInfos(infos.toArray(new FieldInfo[infos.size()])));
+        }
+        dvGens.add(docValuesGen);
+        dvProducers.add(dvp);
+        for (FieldInfo fi : infos) {
+          dvProducersByField.put(fi.name, dvp);
+        }
+      }
     }
   }
   
@@ -229,24 +293,6 @@ public final class SegmentReader extends AtomicReader {
     }
   }
   
-  // returns a gen->List<FieldInfo> mapping. Fields without DV updates have gen=-1
-  private Map<Long,List<FieldInfo>> getGenInfos() {
-    final Map<Long,List<FieldInfo>> genInfos = new HashMap<>();
-    for (FieldInfo fi : fieldInfos) {
-      if (fi.getDocValuesType() == null) {
-        continue;
-      }
-      long gen = fi.getDocValuesGen();
-      List<FieldInfo> infos = genInfos.get(gen);
-      if (infos == null) {
-        infos = new ArrayList<>();
-        genInfos.put(gen, infos);
-      }
-      infos.add(fi);
-    }
-    return genInfos;
-  }
-
   @Override
   public Bits getLiveDocs() {
     ensureOpen();

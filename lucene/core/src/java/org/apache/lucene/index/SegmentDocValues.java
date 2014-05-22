@@ -38,7 +38,7 @@ final class SegmentDocValues {
   private final Map<Long,RefCount<DocValuesProducer>> genDVProducers = new HashMap<>();
 
   private RefCount<DocValuesProducer> newDocValuesProducer(SegmentCommitInfo si, IOContext context, Directory dir,
-      DocValuesFormat dvFormat, final Long gen, List<FieldInfo> infos) throws IOException {
+      DocValuesFormat dvFormat, final Long gen, FieldInfos infos) throws IOException {
     Directory dvDir = dir;
     String segmentSuffix = "";
     if (gen.longValue() != -1) {
@@ -47,7 +47,7 @@ final class SegmentDocValues {
     }
 
     // set SegmentReadState to list only the fields that are relevant to that gen
-    SegmentReadState srs = new SegmentReadState(dvDir, si.info, new FieldInfos(infos.toArray(new FieldInfo[infos.size()])), context, segmentSuffix);
+    SegmentReadState srs = new SegmentReadState(dvDir, si.info, infos, context, segmentSuffix);
     return new RefCount<DocValuesProducer>(dvFormat.fieldsProducer(srs)) {
       @SuppressWarnings("synthetic-access")
       @Override
@@ -62,7 +62,7 @@ final class SegmentDocValues {
 
   /** Returns the {@link DocValuesProducer} for the given generation. */
   synchronized DocValuesProducer getDocValuesProducer(long gen, SegmentCommitInfo si, IOContext context, Directory dir, 
-      DocValuesFormat dvFormat, List<FieldInfo> infos) throws IOException {
+      DocValuesFormat dvFormat, FieldInfos infos) throws IOException {
     RefCount<DocValuesProducer> dvp = genDVProducers.get(gen);
     if (dvp == null) {
       dvp = newDocValuesProducer(si, context, dir, dvFormat, gen, infos);

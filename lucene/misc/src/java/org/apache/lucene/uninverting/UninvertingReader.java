@@ -215,7 +215,7 @@ public class UninvertingReader extends FilterAtomicReader {
         }
       }
       filteredInfos.add(new FieldInfo(fi.name, fi.isIndexed(), fi.number, fi.hasVectors(), fi.omitsNorms(),
-                                      fi.hasPayloads(), fi.getIndexOptions(), type, fi.getNormType(), null));
+                                      fi.hasPayloads(), fi.getIndexOptions(), type, fi.getNormType(), -1, null));
     }
     fieldInfos = new FieldInfos(filteredInfos.toArray(new FieldInfo[filteredInfos.size()]));
   }
