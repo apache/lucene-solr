@@ -514,8 +514,8 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     BytesRef expectedBytes = new BytesRef();
     BytesRef actualBytes = new BytesRef();
     for (long i = 0; i < expected.getValueCount(); i++) {
-      expected.lookupTerm(expectedBytes);
-      actual.lookupTerm(actualBytes);
+      expected.lookupOrd(i, expectedBytes);
+      actual.lookupOrd(i, actualBytes);
       assertEquals(expectedBytes, actualBytes);
     }
     

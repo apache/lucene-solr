@@ -19,14 +19,14 @@ package org.apache.lucene.codecs.pulsing;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.BlockTreeTermsReader;
-import org.apache.lucene.codecs.BlockTreeTermsWriter;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsBaseFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.PostingsWriterBase;
+import org.apache.lucene.codecs.blocktree.BlockTreeTermsReader;
+import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.IOUtils;

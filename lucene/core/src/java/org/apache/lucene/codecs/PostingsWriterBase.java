@@ -20,6 +20,7 @@ package org.apache.lucene.codecs;
 import java.io.Closeable;
 import java.io.IOException;
 
+import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
 import org.apache.lucene.index.DocsAndPositionsEnum; // javadocs
 import org.apache.lucene.index.DocsEnum; // javadocs
 import org.apache.lucene.index.FieldInfo;

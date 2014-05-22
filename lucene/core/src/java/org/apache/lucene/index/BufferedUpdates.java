@@ -127,6 +127,8 @@ class BufferedUpdates {
   final AtomicInteger numTermDeletes = new AtomicInteger();
   final AtomicInteger numNumericUpdates = new AtomicInteger();
   final AtomicInteger numBinaryUpdates = new AtomicInteger();
+
+  // TODO: rename thes three: put "deleted" prefix in front:
   final Map<Term,Integer> terms = new HashMap<>();
   final Map<Query,Integer> queries = new HashMap<>();
   final List<Integer> docIDs = new ArrayList<>();

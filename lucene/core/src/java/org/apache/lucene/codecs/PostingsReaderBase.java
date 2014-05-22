@@ -37,6 +37,8 @@ import org.apache.lucene.util.Bits;
  *  time. 
  *  @lucene.experimental */
 
+// TODO: maybe move under blocktree?  but it's used by other terms dicts (e.g. Block)
+
 // TODO: find a better name; this defines the API that the
 // terms dict impls use to talk to a postings impl.
 // TermsDict + PostingsReader/WriterBase == PostingsConsumer/Producer

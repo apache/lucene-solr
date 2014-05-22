@@ -19,9 +19,9 @@ package org.apache.lucene.codecs.lucene40;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.BlockTreeTermsWriter;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.PostingsWriterBase;
+import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.LuceneTestCase;
 

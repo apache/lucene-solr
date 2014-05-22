@@ -61,6 +61,11 @@ public class PairOutputs<A,B> extends Outputs<PairOutputs.Pair<A,B>> {
     public int hashCode() {
       return output1.hashCode() + output2.hashCode();
     }
+
+    @Override
+    public String toString() {
+      return "Pair(" + output1 + "," + output2 + ")";
+    }
   };
 
   public PairOutputs(Outputs<A> outputs1, Outputs<B> outputs2) {

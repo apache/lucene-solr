@@ -967,73 +967,41 @@ public class TestTermsEnum extends LuceneTestCase {
     d.close();
   }
 
-  /** Utility class to do efficient primary-key (only 1 doc contains the
-   *  given term) lookups by segment, re-using the enums.  This class is
-   *  not thread safe, so it is the caller's job to create and use one
-   *  instance of this per thread.  Do not use this if a term may appear
-   *  in more than one document!  It will only return the first one it
-   *  finds. */
-  static class PerThreadPKLookup {
-
-    private final TermsEnum[] termsEnums;
-    private final DocsEnum[] docsEnums;
-    private final Bits[] liveDocs;
-    private final int[] docBases;
-    private final int numSegs;
-    private final boolean hasDeletions;
-
-    public PerThreadPKLookup(IndexReader r, String idFieldName) throws IOException {
-
-      List<AtomicReaderContext> leaves = new ArrayList<>(r.leaves());
-
-      // Larger segments are more likely to have the id, so we sort largest to smallest by numDocs:
-      Collections.sort(leaves, new Comparator<AtomicReaderContext>() {
-          @Override
-          public int compare(AtomicReaderContext c1, AtomicReaderContext c2) {
-            return c2.reader().numDocs() - c1.reader().numDocs();
-          }
-        });
-
-      termsEnums = new TermsEnum[leaves.size()];
-      docsEnums = new DocsEnum[leaves.size()];
-      liveDocs = new Bits[leaves.size()];
-      docBases = new int[leaves.size()];
-      int numSegs = 0;
-      boolean hasDeletions = false;
-      for(int i=0;i<leaves.size();i++) {
-        Fields fields = leaves.get(i).reader().fields();
-        if (fields != null) {
-          Terms terms = fields.terms(idFieldName);
-          if (terms != null) {
-            termsEnums[numSegs] = terms.iterator(null);
-            assert termsEnums[numSegs] != null;
-            docBases[numSegs] = leaves.get(i).docBase;
-            liveDocs[numSegs] = leaves.get(i).reader().getLiveDocs();
-            hasDeletions |= leaves.get(i).reader().hasDeletions();
-            numSegs++;
-          }
-        }
-      }
-      this.numSegs = numSegs;
-      this.hasDeletions = hasDeletions;
+  // Stresses out many-terms-in-root-block case:
+  @Slow
+  public void testVaryingTermsPerSegment() throws Exception {
+    Directory dir = newDirectory();
+    Set<BytesRef> terms = new HashSet<BytesRef>();
+    int MAX_TERMS = atLeast(1000);
+    while (terms.size() < MAX_TERMS) {
+      terms.add(new BytesRef(TestUtil.randomSimpleString(random(), 1, 40)));
     }
-    
-    /** Returns docID if found, else -1. */
-    public int lookup(BytesRef id) throws IOException {
-      for(int seg=0;seg<numSegs;seg++) {
-        if (termsEnums[seg].seekExact(id)) {
-          docsEnums[seg] = termsEnums[seg].docs(liveDocs[seg], docsEnums[seg], 0);
-          int docID = docsEnums[seg].nextDoc();
-          if (docID != DocsEnum.NO_MORE_DOCS) {
-            return docBases[seg] + docID;
-          }
-          assert hasDeletions;
-        }
+    List<BytesRef> termsList = new ArrayList<>(terms);
+    StringBuilder sb = new StringBuilder();
+    for(int termCount=0;termCount<MAX_TERMS;termCount++) {
+      if (VERBOSE) {
+        System.out.println("\nTEST: termCount=" + termCount + " add term=" + termsList.get(termCount).utf8ToString());
       }
-
-      return -1;
+      sb.append(' ');
+      sb.append(termsList.get(termCount).utf8ToString());
+      IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+      iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
+      RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+      Document doc = new Document();
+      doc.add(newTextField("field", sb.toString(), Field.Store.NO));
+      w.addDocument(doc);
+      IndexReader r = w.getReader();
+      assertEquals(1, r.leaves().size());
+      TermsEnum te = r.leaves().get(0).reader().fields().terms("field").iterator(null);
+      for(int i=0;i<=termCount;i++) {
+        assertTrue("term '" + termsList.get(i).utf8ToString() + "' should exist but doesn't", te.seekExact(termsList.get(i)));
+      }
+      for(int i=termCount+1;i<termsList.size();i++) {
+        assertFalse("term '" + termsList.get(i) + "' shouldn't exist but does", te.seekExact(termsList.get(i)));
+      }
+      r.close();
+      w.shutdown();
     }
-
-    // TODO: add reopen method to carry over re-used enums...?
+    dir.close();
   }
 }
