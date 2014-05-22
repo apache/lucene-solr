@@ -1210,53 +1210,46 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     }
 
   }
-  private void addReplicaTest()throws Exception{
+
+  private void addReplicaTest() throws Exception {
     String collectionName = "addReplicaColl";
     CloudSolrServer client = createCloudClient(null);
     try {
-      createCollection(collectionName, client,2,2);
-      String newReplicaName = Assign.assignNode(collectionName , client.getZkStateReader().getClusterState() );
+      createCollection(collectionName, client, 2, 2);
+      String newReplicaName = Assign.assignNode(collectionName, client.getZkStateReader().getClusterState());
       ArrayList<String> nodeList = new ArrayList<>(client.getZkStateReader().getClusterState().getLiveNodes());
       Collections.shuffle(nodeList);
-      Map m = makeMap(
-          "action", CollectionAction.ADDREPLICA.toString(),
-          ZkStateReader.COLLECTION_PROP, collectionName,
-          ZkStateReader.SHARD_ID_PROP, "shard1",
-          "node", nodeList.get(0));
-
-      SolrRequest request = new QueryRequest(new MapSolrParams(m));
-      request.setPath("/admin/collections");
-      client.request(request);
+      CollectionAdminRequest.AddReplica addReplica = new CollectionAdminRequest.AddReplica();
+      addReplica.setCollectionName(collectionName);
+      addReplica.setShardName("shard1");
+      addReplica.setNode(nodeList.get(0));
+      client.request(addReplica);
 
       long timeout = System.currentTimeMillis() + 3000;
       Replica newReplica = null;
 
-      for(; System.currentTimeMillis()<timeout;){
+      for (; System.currentTimeMillis() < timeout; ) {
         Slice slice = client.getZkStateReader().getClusterState().getSlice(collectionName, "shard1");
         newReplica = slice.getReplica(newReplicaName);
       }
 
       assertNotNull(newReplica);
 
-      log.info("newReplica {},\n{} ", newReplica,client.getZkStateReader().getBaseUrlForNodeName(nodeList.get(0)));
-//
+      log.info("newReplica {},\n{} ", newReplica, client.getZkStateReader().getBaseUrlForNodeName(nodeList.get(0)));
+
       assertEquals("Replica should be created on the right node",
           client.getZkStateReader().getBaseUrlForNodeName(nodeList.get(0)), newReplica.getStr(ZkStateReader.BASE_URL_PROP));
 
-      newReplicaName = Assign.assignNode(collectionName , client.getZkStateReader().getClusterState() );
-      m = makeMap(
-          "action", CollectionAction.ADDREPLICA.toString(),
-          ZkStateReader.COLLECTION_PROP, collectionName,
-          ZkStateReader.SHARD_ID_PROP, "shard2");
-
-      request = new QueryRequest(new MapSolrParams(m));
-      request.setPath("/admin/collections");
-      client.request(request);
+      newReplicaName = Assign.assignNode(collectionName, client.getZkStateReader().getClusterState());
+      addReplica = new CollectionAdminRequest.AddReplica();
+      addReplica.setCollectionName(collectionName);
+      addReplica.setShardName("shard2");
+      client.request(addReplica);
 
       timeout = System.currentTimeMillis() + 3000;
       newReplica = null;
 
-      for(; System.currentTimeMillis()<timeout;){
+      for (; System.currentTimeMillis() < timeout; ) {
         Slice slice = client.getZkStateReader().getClusterState().getSlice(collectionName, "shard2");
         newReplica = slice.getReplica(newReplicaName);
       }

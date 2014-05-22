@@ -21,10 +21,12 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 
@@ -236,6 +238,71 @@ public class CollectionAdminRequest extends SolrRequest
   public static class DeleteAlias extends CollectionAdminRequest {
     public DeleteAlias() {
       action = CollectionAction.DELETEALIAS;
+    }
+  }
+
+  public static class AddReplica extends CollectionShardAdminRequest {
+    private String node;
+    private String routeKey;
+    private String instanceDir;
+    private String dataDir;
+
+    public AddReplica() {
+      action = CollectionAction.ADDREPLICA;
+    }
+
+    public String getNode() {
+      return node;
+    }
+
+    public void setNode(String node) {
+      this.node = node;
+    }
+
+    public String getRouteKey() {
+      return routeKey;
+    }
+
+    public void setRouteKey(String routeKey) {
+      this.routeKey = routeKey;
+    }
+
+    public String getInstanceDir() {
+      return instanceDir;
+    }
+
+    public void setInstanceDir(String instanceDir) {
+      this.instanceDir = instanceDir;
+    }
+
+    public String getDataDir() {
+      return dataDir;
+    }
+
+    public void setDataDir(String dataDir) {
+      this.dataDir = dataDir;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
+      if (shardName == null || shardName.isEmpty()) {
+        params.remove("shard");
+        if (routeKey == null) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Either shard or routeKey must be provided");
+        }
+        params.add(ShardParams._ROUTE_, routeKey);
+      }
+      if (node != null) {
+        params.add("node", node);
+      }
+      if (instanceDir != null)  {
+        params.add("instanceDir", instanceDir);
+      }
+      if (dataDir != null)  {
+        params.add("dataDir", dataDir);
+      }
+      return params;
     }
   }
 
