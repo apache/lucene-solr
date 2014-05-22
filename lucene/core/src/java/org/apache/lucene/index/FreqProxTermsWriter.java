@@ -58,6 +58,7 @@ final class FreqProxTermsWriter extends TermsHash {
         if (termsEnum != null && termsEnum.seekExact(deleteTerm.bytes())) {
           docsEnum = termsEnum.docs(null, docsEnum, 0);
           int delDocLimit = segDeletes.get(deleteTerm);
+          assert delDocLimit < DocsEnum.NO_MORE_DOCS;
           while (true) {
             int doc = docsEnum.nextDoc();
             if (doc < delDocLimit) {
@@ -96,7 +97,7 @@ final class FreqProxTermsWriter extends TermsHash {
     // Sort by field name
     CollectionUtil.introSort(allFields);
 
-    FreqProxFields fields = new FreqProxFields(allFields);
+    Fields fields = new FreqProxFields(allFields);
 
     applyDeletes(state, fields);
 

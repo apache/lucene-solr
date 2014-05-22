@@ -26,6 +26,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
 
 final class IDVersionPostingsWriter extends PushPostingsWriterBase {
@@ -115,8 +116,11 @@ final class IDVersionPostingsWriter extends PushPostingsWriterBase {
     }
 
     lastVersion = IDVersionPostingsFormat.bytesToLong(payload);
-    if (lastVersion < 0) {
-      throw new IllegalArgumentException("version must be >= 0 (got: " + lastVersion + "; payload=" + payload + ")");
+    if (lastVersion < IDVersionPostingsFormat.MIN_VERSION) {
+      throw new IllegalArgumentException("version must be >= MIN_VERSION=" + IDVersionPostingsFormat.MIN_VERSION + " (got: " + lastVersion + "; payload=" + payload + ")");
+    }
+    if (lastVersion > IDVersionPostingsFormat.MAX_VERSION) {
+      throw new IllegalArgumentException("version must be <= MAX_VERSION=" + IDVersionPostingsFormat.MAX_VERSION + " (got: " + lastVersion + "; payload=" + payload + ")");
     }
   }
 
@@ -143,12 +147,20 @@ final class IDVersionPostingsWriter extends PushPostingsWriterBase {
     state.docID = lastDocID;
     state.idVersion = lastVersion;
   }
-  
+
+  private long lastEncodedVersion;
+
   @Override
   public void encodeTerm(long[] longs, DataOutput out, FieldInfo fieldInfo, BlockTermState _state, boolean absolute) throws IOException {
     IDVersionTermState state = (IDVersionTermState) _state;
     out.writeVInt(state.docID);
-    out.writeVLong(state.idVersion);
+    if (absolute) {
+      out.writeVLong(state.idVersion);
+    } else {
+      long delta = state.idVersion - lastEncodedVersion;
+      out.writeVLong(BitUtil.zigZagEncode(delta));
+    }
+    lastEncodedVersion = state.idVersion;
   }
 
   @Override

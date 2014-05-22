@@ -27,6 +27,7 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.Bits;
 
 final class IDVersionPostingsReader extends PostingsReaderBase {
@@ -54,7 +55,11 @@ final class IDVersionPostingsReader extends PostingsReaderBase {
     throws IOException {
     final IDVersionTermState termState = (IDVersionTermState) _termState;
     termState.docID = in.readVInt();
-    termState.idVersion = in.readVLong();
+    if (absolute) {
+      termState.idVersion = in.readVLong();
+    } else {
+      termState.idVersion += BitUtil.zigZagDecode(in.readVLong());
+    }
   }
 
   @Override

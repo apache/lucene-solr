@@ -29,7 +29,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.lucene.analysis.Analyzer.TokenStreamComponents;
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenFilter;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.codecs.idversion.StringAndPayloadField.SingleTokenWithPayloadTokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -155,7 +159,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
           int upto;
           @Override
           public String next() {
-            return Long.toString(random().nextLong() & 0x7ffffffffffffffL, radix);
+            return Long.toString(random().nextLong() & 0x3ffffffffffffffL, radix);
           }
         };
       break;
@@ -170,7 +174,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
           int upto;
           @Override
           public String next() {
-            return Long.toString(random().nextLong() & 0x7ffffffffffffffL, radix);
+            return Long.toString(random().nextLong() & 0x3ffffffffffffffL, radix);
           }
         };
       break;
@@ -225,7 +229,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
       if (useMonotonicVersion) {
         version += TestUtil.nextInt(random(), 1, 10);
       } else {
-        version = random().nextLong() & 0x7fffffffffffffffL;
+        version = random().nextLong() & 0x3fffffffffffffffL;
       }
       idValues.put(idValue, version);
       if (VERBOSE) {
@@ -243,7 +247,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
           if (useMonotonicVersion) {
             version += TestUtil.nextInt(random(), 1, 10);
           } else {
-            version = random().nextLong() & 0x7fffffffffffffffL;
+            version = random().nextLong() & 0x3fffffffffffffffL;
           }
           doc = new Document();
           doc.add(makeIDField(idValue, version));
@@ -362,8 +366,8 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     w.addDocument(doc);
     doc = new Document();
     doc.add(makeIDField("id", 17));
-    w.addDocument(doc);
     try {
+      w.addDocument(doc);
       w.commit();
       fail("didn't hit expected exception");
     } catch (IllegalArgumentException iae) {
@@ -445,7 +449,18 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
 
   public void testMissingPayload() throws Exception {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+
+    // MockAnalyzer minus maybePayload else it sometimes stuffs in an 8-byte payload!
+    Analyzer a = new Analyzer() {
+        @Override
+        public TokenStreamComponents createComponents(String fieldName) {
+          MockTokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true, 100);
+          tokenizer.setEnableChecks(true);
+          MockTokenFilter filt = new MockTokenFilter(tokenizer, MockTokenFilter.EMPTY_STOPSET);
+          return new TokenStreamComponents(tokenizer, filt);
+        }
+      };
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, a);
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
@@ -567,6 +582,36 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     dir.close();
   }
 
+  public void testInvalidVersions() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    Document doc = new Document();
+    // -1
+    doc.add(new StringAndPayloadField("id", "id", new BytesRef(new byte[] {(byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff})));
+    try {
+      w.addDocument(doc);
+      w.commit();
+      fail("didn't hit expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+
+    doc = new Document();
+    // Long.MAX_VALUE:
+    doc.add(new StringAndPayloadField("id", "id", new BytesRef(new byte[] {(byte)0x7f, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff})));
+    try {
+      w.addDocument(doc);
+      w.commit();
+      fail("didn't hit expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    w.close();
+    dir.close();
+  }
+
   // Simulates optimistic concurrency in a distributed indexing app and confirms the latest version always wins:
   public void testGlobalVersions() throws Exception {
     Directory dir = newDirectory();
@@ -576,7 +621,6 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
 
     IDSource idsSource = getRandomIDs();
     int numIDs = atLeast(100);
-    System.out.println("ids=" + numIDs);
     if (VERBOSE) {
       System.out.println("TEST: " + numIDs + " ids");
     }
@@ -649,7 +693,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
               long newVersion;
               if (versionType == 0) {
                 // Random:
-                newVersion = random().nextLong() & 0x7fffffffffffffffL;
+                newVersion = random().nextLong() & 0x3fffffffffffffffL;
               } else if (versionType == 1) {
                 // Monotonic
                 newVersion = nextVersion.getAndIncrement();

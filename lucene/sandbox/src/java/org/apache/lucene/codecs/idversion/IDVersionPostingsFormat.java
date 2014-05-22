@@ -58,6 +58,14 @@ import org.apache.lucene.util.IOUtils;
 
 public class IDVersionPostingsFormat extends PostingsFormat {
 
+  /** version must be >= this. */
+  public static final long MIN_VERSION = 0;
+
+  // TODO: we could delta encode instead, and keep the last bit:
+
+  /** version must be <= this, because we encode with ZigZag. */
+  public static final long MAX_VERSION = 0x3fffffffffffffffL;
+
   private final int minTermsInBlock;
   private final int maxTermsInBlock;
 
@@ -121,6 +129,9 @@ public class IDVersionPostingsFormat extends PostingsFormat {
   }
 
   public static void longToBytes(long v, BytesRef bytes) {
+    if (v > MAX_VERSION || v < MIN_VERSION) {
+      throw new IllegalArgumentException("version must be >= MIN_VERSION=" + MIN_VERSION + " and <= MAX_VERSION=" + MAX_VERSION + " (got: " + v + ")");
+    }
     bytes.offset = 0;
     bytes.length = 8;
     bytes.bytes[0] = (byte) (v >> 56);
