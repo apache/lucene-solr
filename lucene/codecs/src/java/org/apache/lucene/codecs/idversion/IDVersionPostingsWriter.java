@@ -24,10 +24,8 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PushPostingsWriterBase;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.TermState;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 final class IDVersionPostingsWriter extends PushPostingsWriterBase {
@@ -66,6 +64,11 @@ final class IDVersionPostingsWriter extends PushPostingsWriterBase {
     super.setField(fieldInfo);
     if (fieldInfo.getIndexOptions() != FieldInfo.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
       throw new IllegalArgumentException("field must be index using IndexOptions.DOCS_AND_FREQS_AND_POSITIONS");
+    }
+    // LUCENE-5693: because CheckIndex cross-checks term vectors with postings even for deleted docs, and because our PF only indexes the
+    // non-deleted documents on flush, CheckIndex will see this as corruption:
+    if (fieldInfo.hasVectors()) {
+      throw new IllegalArgumentException("field cannot index term vectors: CheckIndex will report this as index corruption");
     }
     lastState = emptyState;
     return 0;

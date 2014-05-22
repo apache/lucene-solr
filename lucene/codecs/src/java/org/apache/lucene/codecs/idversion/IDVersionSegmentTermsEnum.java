@@ -32,14 +32,14 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.FST;
-import org.apache.lucene.util.fst.Outputs;
 import org.apache.lucene.util.fst.PairOutputs.Pair;
-import org.apache.lucene.util.fst.PairOutputs;
 import org.apache.lucene.util.fst.Util;
 
-/** Iterates through terms in this field */
+/** Iterates through terms in this field; this class is public so users
+ *  can cast it to call {@link #seekExact(BytesRef, long)} for
+ *  optimistic-concurreny, and also {@link #getVersion} to get the
+ *  version of the currently seek'd term. */
 public final class IDVersionSegmentTermsEnum extends TermsEnum {
 
   // Lazy init:
@@ -225,12 +225,17 @@ public final class IDVersionSegmentTermsEnum extends TermsEnum {
     }
   }
 
-  /** Only valid if we are positioned. */
+  /** Get the version of the currently seek'd term; only valid if we are
+   *  positioned. */
   public long getVersion() {
     return ((IDVersionTermState) currentFrame.state).idVersion;
   }
 
-  /** Returns false if the term does not exist, or it exists but its version is too old (< minIDVersion). */
+  /** Optimized version of {@link #seekExact(BytesRef)} that can
+   *  sometimes fail-fast if the version indexed with the requested ID
+   *  is less than the specified minIDVersion.  Applications that index
+   *  a monotonically increasing global version with each document can
+   *  use this for fast optimistic concurrency. */
   public boolean seekExact(final BytesRef target, long minIDVersion) throws IOException {
 
     if (fr.index == null) {

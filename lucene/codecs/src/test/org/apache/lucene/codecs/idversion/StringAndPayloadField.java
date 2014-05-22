@@ -62,7 +62,7 @@ class StringAndPayloadField extends Field {
     return ts;
   }
 
-  private static final class SingleTokenWithPayloadTokenStream extends TokenStream {
+  static final class SingleTokenWithPayloadTokenStream extends TokenStream {
 
     private final CharTermAttribute termAttribute = addAttribute(CharTermAttribute.class);
     private final PayloadAttribute payloadAttribute = addAttribute(PayloadAttribute.class);

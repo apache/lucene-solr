@@ -461,7 +461,6 @@ class FreqProxFields extends Fields {
       posLeft = freq;
       pos = 0;
       startOffset = 0;
-
       return docID;
     }
 

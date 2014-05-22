@@ -20,36 +20,34 @@ package org.apache.lucene.codecs.idversion;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.idversion.StringAndPayloadField.SingleTokenWithPayloadTokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.index.BasePostingsFormatTestCase;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
-import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MergeScheduler;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.PerThreadPKLookup;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LiveFieldValues;
+import org.apache.lucene.search.SearcherFactory;
+import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -91,6 +89,98 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     String next();
   }
 
+  private IDSource getRandomIDs() {
+    IDSource ids;
+    switch (random().nextInt(6)) {
+    case 0:
+      // random simple
+      if (VERBOSE) {
+        System.out.println("TEST: use random simple ids");
+      }
+      ids = new IDSource() {
+          @Override
+          public String next() {
+            return TestUtil.randomSimpleString(random());
+          }
+        };
+      break;
+    case 1:
+      // random realistic unicode
+      if (VERBOSE) {
+        System.out.println("TEST: use random realistic unicode ids");
+      }
+      ids = new IDSource() {
+          @Override
+          public String next() {
+            return TestUtil.randomRealisticUnicodeString(random());
+          }
+        };
+      break;
+    case 2:
+      // sequential
+      if (VERBOSE) {
+        System.out.println("TEST: use seuquential ids");
+      }
+      ids = new IDSource() {
+          int upto;
+          @Override
+          public String next() {
+            return Integer.toString(upto++);
+          }
+        };
+      break;
+    case 3:
+      // zero-pad sequential
+      if (VERBOSE) {
+        System.out.println("TEST: use zero-pad seuquential ids");
+      }
+      ids = new IDSource() {
+          final int radix = TestUtil.nextInt(random(), Character.MIN_RADIX, Character.MAX_RADIX);
+          final String zeroPad = String.format(Locale.ROOT, "%0" + TestUtil.nextInt(random(), 4, 20) + "d", 0);
+          int upto;
+          @Override
+          public String next() {
+            String s = Integer.toString(upto++);
+            return zeroPad.substring(zeroPad.length() - s.length()) + s;
+          }
+        };
+      break;
+    case 4:
+      // random long
+      if (VERBOSE) {
+        System.out.println("TEST: use random long ids");
+      }
+      ids = new IDSource() {
+          final int radix = TestUtil.nextInt(random(), Character.MIN_RADIX, Character.MAX_RADIX);
+          int upto;
+          @Override
+          public String next() {
+            return Long.toString(random().nextLong() & 0x7ffffffffffffffL, radix);
+          }
+        };
+      break;
+    case 5:
+      // zero-pad random long
+      if (VERBOSE) {
+        System.out.println("TEST: use zero-pad random long ids");
+      }
+      ids = new IDSource() {
+          final int radix = TestUtil.nextInt(random(), Character.MIN_RADIX, Character.MAX_RADIX);
+          final String zeroPad = String.format(Locale.ROOT, "%015d", 0);
+          int upto;
+          @Override
+          public String next() {
+            return Long.toString(random().nextLong() & 0x7ffffffffffffffL, radix);
+          }
+        };
+      break;
+    default:
+      throw new AssertionError();
+    }
+
+    return ids;
+  }
+
   // TODO make a similar test for BT, w/ varied IDs:
 
   public void testRandom() throws Exception {
@@ -108,94 +198,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
       System.out.println("TEST: numDocs=" + numDocs);
     }
 
-    IDSource ids;
-    switch (random().nextInt(6)) {
-    case 0:
-      // random simple
-      if (VERBOSE) {
-        System.out.println("  use random simple ids");
-      }
-      ids = new IDSource() {
-          @Override
-          public String next() {
-            return TestUtil.randomSimpleString(random());
-          }
-        };
-      break;
-    case 1:
-      // random realistic unicode
-      if (VERBOSE) {
-        System.out.println("  use random realistic unicode ids");
-      }
-      ids = new IDSource() {
-          @Override
-          public String next() {
-            return TestUtil.randomRealisticUnicodeString(random());
-          }
-        };
-      break;
-    case 2:
-      // sequential
-      if (VERBOSE) {
-        System.out.println("  use seuquential ids");
-      }
-      ids = new IDSource() {
-          int upto;
-          @Override
-          public String next() {
-            return Integer.toString(upto++);
-          }
-        };
-      break;
-    case 3:
-      // zero-pad sequential
-      if (VERBOSE) {
-        System.out.println("  use zero-pad seuquential ids");
-      }
-      ids = new IDSource() {
-          final int radix = TestUtil.nextInt(random(), Character.MIN_RADIX, Character.MAX_RADIX);
-          final String zeroPad = String.format(Locale.ROOT, "%0" + TestUtil.nextInt(random(), 4, 20) + "d", 0);
-          int upto;
-          @Override
-          public String next() {
-            String s = Integer.toString(upto++);
-            return zeroPad.substring(zeroPad.length() - s.length()) + s;
-          }
-        };
-      break;
-    case 4:
-      // random long
-      if (VERBOSE) {
-        System.out.println("  use random long ids");
-      }
-      ids = new IDSource() {
-          final int radix = TestUtil.nextInt(random(), Character.MIN_RADIX, Character.MAX_RADIX);
-          int upto;
-          @Override
-          public String next() {
-            return Long.toString(random().nextLong() & 0x7ffffffffffffffL, radix);
-          }
-        };
-      break;
-    case 5:
-      // zero-pad random long
-      if (VERBOSE) {
-        System.out.println("  use zero-pad random long ids");
-      }
-      ids = new IDSource() {
-          final int radix = TestUtil.nextInt(random(), Character.MIN_RADIX, Character.MAX_RADIX);
-          final String zeroPad = String.format(Locale.ROOT, "%015d", 0);
-          int upto;
-          @Override
-          public String next() {
-            return Long.toString(random().nextLong() & 0x7ffffffffffffffL, radix);
-          }
-        };
-      break;
-    default:
-      throw new AssertionError();
-    }
-
+    IDSource ids = getRandomIDs();
     String idPrefix;
     if (random().nextBoolean()) {
       idPrefix = "";
@@ -515,6 +518,36 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     dir.close();
   }
 
+  // LUCENE-5693: because CheckIndex cross-checks term vectors with postings even for deleted docs, and because our PF only indexes the
+  // non-deleted documents on flush, CheckIndex will see this as corruption:
+  public void testCannotIndexTermVectors() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    Document doc = new Document();
+
+    FieldType ft = new FieldType(StringAndPayloadField.TYPE);
+    ft.setStoreTermVectors(true);
+    SingleTokenWithPayloadTokenStream ts = new SingleTokenWithPayloadTokenStream();
+    BytesRef payload = new BytesRef(8);
+    payload.length = 8;
+    IDVersionPostingsFormat.longToBytes(17, payload);
+    ts.setValue("foo", payload);
+    Field field = new Field("id", ts, ft);
+    doc.add(new Field("id", ts, ft));
+    try {
+      w.addDocument(doc);
+      w.commit();
+      fail("didn't hit expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+      // iae.printStackTrace(System.out);
+    }
+    w.close();
+    dir.close();
+  }
+
   public void testMoreThanOnceInSingleDoc() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
@@ -530,6 +563,234 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     } catch (IllegalArgumentException iae) {
       // expected
     }
+    w.close();
+    dir.close();
+  }
+
+  // Simulates optimistic concurrency in a distributed indexing app and confirms the latest version always wins:
+  public void testGlobalVersions() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+
+    IDSource idsSource = getRandomIDs();
+    int numIDs = atLeast(100);
+    System.out.println("ids=" + numIDs);
+    if (VERBOSE) {
+      System.out.println("TEST: " + numIDs + " ids");
+    }
+    Set<String> idsSeen = new HashSet<String>();
+    while (idsSeen.size() < numIDs) {
+      idsSeen.add(idsSource.next());
+    }
+    final String[] ids = idsSeen.toArray(new String[numIDs]);
+
+    final Object[] locks = new Object[ids.length];
+    for(int i=0;i<locks.length;i++) {
+      locks[i] = new Object();
+    }
+
+    final AtomicLong nextVersion = new AtomicLong();
+
+    final SearcherManager mgr = new SearcherManager(w.w, true, new SearcherFactory());
+
+    final Long missingValue = -1L;
+
+    final LiveFieldValues<IndexSearcher,Long> versionValues = new LiveFieldValues<IndexSearcher,Long>(mgr, missingValue) {
+      @Override
+      protected Long lookupFromSearcher(IndexSearcher s, String id) {
+        // TODO: would be cleaner if we could do our PerThreadLookup here instead of "up above":
+        // We always return missing: the caller then does a lookup against the current reader
+        return missingValue;
+      }
+    };
+
+    // Maps to the version the id was lasted indexed with:
+    final Map<String,Long> truth = new ConcurrentHashMap<>();
+
+    final CountDownLatch startingGun = new CountDownLatch(1);
+
+    Thread[] threads = new Thread[TestUtil.nextInt(random(), 2, 7)];
+
+    final int versionType = random().nextInt(3);
+
+    if (VERBOSE) {
+      if (versionType == 0) {
+        System.out.println("TEST: use random versions");
+      } else if (versionType == 1) {
+        System.out.println("TEST: use monotonic versions");
+      } else {
+        System.out.println("TEST: use nanotime versions");
+      }
+    }
+
+    // Run for 3 sec in normal tests, else 60 seconds for nightly:
+    final long stopTime = System.currentTimeMillis() + (TEST_NIGHTLY ? 60000 : 3000);
+
+    for(int i=0;i<threads.length;i++) {
+      threads[i] = new Thread() {
+          @Override
+          public void run() {
+            try {
+              runForReal();
+            } catch (Exception e) {
+              throw new RuntimeException(e);
+            }
+          }
+
+          private void runForReal() throws IOException, InterruptedException {
+            startingGun.await();
+            PerThreadVersionPKLookup lookup = null;
+            IndexReader lookupReader = null;
+            while (System.currentTimeMillis() < stopTime) {
+
+              // Intentionally pull version first, and then sleep/yield, to provoke version conflicts:
+              long newVersion;
+              if (versionType == 0) {
+                // Random:
+                newVersion = random().nextLong() & 0x7fffffffffffffffL;
+              } else if (versionType == 1) {
+                // Monotonic
+                newVersion = nextVersion.getAndIncrement();
+              } else {
+                newVersion = System.nanoTime();
+              }
+
+              if (versionType != 0) {
+                if (random().nextBoolean()) {
+                  Thread.yield();
+                } else {
+                  Thread.sleep(TestUtil.nextInt(random(), 1, 4));
+                }
+              }
+
+              int x = random().nextInt(ids.length);
+
+              // TODO: we could relax this, if e.g. we assign indexer thread based on ID.  This would ensure a given ID cannot be indexed at
+              // the same time in multiple threads:
+
+              // Only one thread can update an ID at once:
+              synchronized (locks[x]) {
+
+                String id = ids[x];
+
+                // We will attempt to index id with newVersion, but only do so if id wasn't yet indexed, or it was indexed with an older
+                // version (< newVersion):
+
+                // Must lookup the RT value before pulling from the index, in case a reopen happens just after we lookup:
+                Long currentVersion = versionValues.get(id);
+
+                IndexSearcher s = mgr.acquire();
+                try {
+                  if (VERBOSE) System.out.println("\n" + Thread.currentThread().getName() + ": update id=" + id + " newVersion=" + newVersion);
+
+                  if (lookup == null || lookupReader != s.getIndexReader()) {
+                    // TODO: sort of messy; we could add reopen to PerThreadVersionPKLookup?
+                    // TODO: this is thin ice .... that we don't incRef/decRef this reader we are implicitly holding onto:
+                    lookupReader = s.getIndexReader();
+                    if (VERBOSE) System.out.println(Thread.currentThread().getName() + ": open new PK lookup reader=" + lookupReader);
+                    lookup = new PerThreadVersionPKLookup(lookupReader, "id");
+                  }
+
+                  Long truthVersion = truth.get(id);
+                  if (VERBOSE) System.out.println(Thread.currentThread().getName() + ":   truthVersion=" + truthVersion);
+
+                  boolean doIndex;
+                  if (currentVersion == missingValue) {
+                    if (VERBOSE) System.out.println(Thread.currentThread().getName() + ":   id not in RT cache");
+                    int otherDocID = lookup.lookup(new BytesRef(id), newVersion+1);
+                    if (otherDocID == -1) {
+                      if (VERBOSE) System.out.println(Thread.currentThread().getName() + ":   id not in index, or version is <= newVersion; will index");
+                      doIndex = true;
+                    } else {
+                      if (VERBOSE) System.out.println(Thread.currentThread().getName() + ":   id is in index with version=" + lookup.getVersion() + "; will not index");
+                      doIndex = false;
+                      if (truthVersion.longValue() !=lookup.getVersion()) {
+                        System.out.println(Thread.currentThread() + ": now fail0!");
+                      }
+                      assertEquals(truthVersion.longValue(), lookup.getVersion());
+                    }
+                  } else {
+                    if (VERBOSE) System.out.println(Thread.currentThread().getName() + ":   id is in RT cache: currentVersion=" + currentVersion);
+                    doIndex = newVersion > currentVersion;
+                  }
+
+                  if (doIndex) {
+                    if (VERBOSE) System.out.println(Thread.currentThread().getName() + ":   now index");
+                    boolean passes = truthVersion == null || truthVersion.longValue() <= newVersion;
+                    if (passes == false) {
+                      System.out.println(Thread.currentThread() + ": now fail!");
+                    }
+                    assertTrue(passes);
+                    Document doc = new Document();
+                    doc.add(makeIDField(id, newVersion));
+                    w.updateDocument(new Term("id", id), doc);
+                    truth.put(id, newVersion);
+                    versionValues.add(id, newVersion);
+                  } else {
+                    if (VERBOSE) System.out.println(Thread.currentThread().getName() + ":   skip index");
+                    assertNotNull(truthVersion);
+                    assertTrue(truthVersion.longValue() >= newVersion);
+                  }
+                } finally {
+                  mgr.release(s);
+                }
+              }
+            }
+          }
+        };
+      threads[i].start();
+    }
+
+    startingGun.countDown();
+
+    // Keep reopening the NRT reader until all indexing threads are done:
+    refreshLoop:
+    while (true) {
+      Thread.sleep(TestUtil.nextInt(random(), 1, 10));
+      mgr.maybeRefresh();
+      for (Thread thread : threads) {
+        if (thread.isAlive()) {
+          continue refreshLoop;
+        }
+      }
+
+      break;
+    }
+
+    // Verify final index against truth:
+    for(int i=0;i<2;i++) {
+      mgr.maybeRefresh();
+      IndexSearcher s = mgr.acquire();
+      try {
+        IndexReader r = s.getIndexReader();
+        // cannot assert this: maybe not all IDs were indexed
+        /*
+        assertEquals(numIDs, r.numDocs());
+        if (i == 1) {
+          // After forceMerge no deleted docs:
+          assertEquals(numIDs, r.maxDoc());
+        }
+        */
+        PerThreadVersionPKLookup lookup = new PerThreadVersionPKLookup(r, "id");
+        for(Map.Entry<String,Long> ent : truth.entrySet()) {
+          assertTrue(lookup.lookup(new BytesRef(ent.getKey()), -1L) != -1);
+          assertEquals(ent.getValue().longValue(), lookup.getVersion());
+        }
+      } finally {
+        mgr.release(s);
+      }
+
+      if (i == 1) {
+        break;
+      }
+
+      // forceMerge and verify again
+      w.forceMerge(1);
+    }
+
+    mgr.close();
     w.close();
     dir.close();
   }

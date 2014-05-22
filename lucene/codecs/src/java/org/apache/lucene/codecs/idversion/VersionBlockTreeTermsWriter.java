@@ -34,7 +34,6 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
@@ -47,7 +46,6 @@ import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.NoOutputs;
-import org.apache.lucene.util.fst.Outputs;
 import org.apache.lucene.util.fst.PairOutputs.Pair;
 import org.apache.lucene.util.fst.PairOutputs;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
@@ -166,7 +164,7 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
   }
 
   private final List<FieldMetaData> fields = new ArrayList<>();
-  private final String segment;
+  // private final String segment;
 
   /** Create a new writer.  The number of items (terms or
    *  sub-blocks) per block will aim to be between
@@ -211,7 +209,7 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
       CodecUtil.writeHeader(indexOut, TERMS_INDEX_CODEC_NAME, VERSION_CURRENT); 
 
       this.postingsWriter = postingsWriter;
-      segment = state.segmentInfo.name;
+      // segment = state.segmentInfo.name;
 
       // System.out.println("BTW.init seg=" + state.segmentName);
 
@@ -781,7 +779,7 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
       boolean absolute = true;
       long maxVersionInBlock = -1;
 
-      int countx = 0;
+      // int countx = 0;
       if (isLeafBlock) {
         subIndices = null;
         for (PendingEntry ent : slice) {
@@ -979,12 +977,12 @@ final class VersionBlockTreeTermsWriter extends FieldsConsumer {
                                      longsSize,
                                      minTerm, maxTerm));
       } else {
-        assert docsSeen.cardinality() == 0;
+        // cannot assert this: we skip deleted docIDs in the postings:
+        // assert docsSeen.cardinality() == 0;
       }
     }
 
     private final RAMOutputStream suffixWriter = new RAMOutputStream();
-    private final RAMOutputStream statsWriter = new RAMOutputStream();
     private final RAMOutputStream metaWriter = new RAMOutputStream();
     private final RAMOutputStream bytesWriter = new RAMOutputStream();
   }
