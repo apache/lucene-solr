@@ -80,9 +80,17 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
 
     assertEquals("Recreating a collection with the same name didn't fail, should have.", "failed", state);
 
-    CollectionAdminRequest.splitShard("testasynccollectioncreation", "shard1", server, "1003");
-
+    CollectionAdminRequest.AddReplica addReplica = new CollectionAdminRequest.AddReplica();
+    addReplica.setCollectionName("testasynccollectioncreation");
+    addReplica.setShardName("shard1");
+    addReplica.setAsyncId("1003");
+    server.request(addReplica);
     state = getRequestStateAfterCompletion("1003", 60, server);
+    assertEquals("Add replica did not complete", "completed", state);
+
+    CollectionAdminRequest.splitShard("testasynccollectioncreation", "shard1", server, "1004");
+
+    state = getRequestStateAfterCompletion("1004", 60, server);
 
     assertEquals("Shard split did not complete. Last recorded state: " + state, "completed", state);
   }
