@@ -22,12 +22,8 @@ import java.io.IOException;
 /** A Scorer for OR like queries, counterpart of <code>ConjunctionScorer</code>.
  * This Scorer implements {@link Scorer#advance(int)} and uses advance() on the given Scorers. 
  */
-class DisjunctionSumScorer extends DisjunctionScorer { 
-
-  /** The number of subscorers that provide the current match. */
-  protected int nrMatchers = -1;
-
-  protected double score = Float.NaN;
+final class DisjunctionSumScorer extends DisjunctionScorer { 
+  private double score;
   private final float[] coord;
   
   /** Construct a <code>DisjunctionScorer</code>.
@@ -35,50 +31,23 @@ class DisjunctionSumScorer extends DisjunctionScorer {
    * @param subScorers Array of at least two subscorers.
    * @param coord Table of coordination factors
    */
-  DisjunctionSumScorer(Weight weight, Scorer[] subScorers, float[] coord) throws IOException {
+  DisjunctionSumScorer(Weight weight, Scorer[] subScorers, float[] coord) {
     super(weight, subScorers);
-
-    if (numScorers <= 1) {
-      throw new IllegalArgumentException("There must be at least 2 subScorers");
-    }
     this.coord = coord;
   }
   
   @Override
-  protected void afterNext() throws IOException {
-    final Scorer sub = subScorers[0];
-    doc = sub.docID();
-    if (doc != NO_MORE_DOCS) {
-      score = sub.score();
-      nrMatchers = 1;
-      countMatches(1);
-      countMatches(2);
-    }
+  protected void reset() {
+    score = 0;
   }
   
-  // TODO: this currently scores, but so did the previous impl
-  // TODO: remove recursion.
-  // TODO: if we separate scoring, out of here, 
-  // then change freq() to just always compute it from scratch
-  private void countMatches(int root) throws IOException {
-    if (root < numScorers && subScorers[root].docID() == doc) {
-      nrMatchers++;
-      score += subScorers[root].score();
-      countMatches((root<<1)+1);
-      countMatches((root<<1)+2);
-    }
+  @Override
+  protected void accum(Scorer subScorer) throws IOException {
+    score += subScorer.score();
   }
   
-  /** Returns the score of the current document matching the query.
-   * Initially invalid, until {@link #nextDoc()} is called the first time.
-   */
   @Override
-  public float score() throws IOException { 
-    return (float)score * coord[nrMatchers]; 
-  }
-
-  @Override
-  public int freq() throws IOException {
-    return nrMatchers;
+  protected float getFinal() {
+    return (float)score * coord[freq]; 
   }
 }

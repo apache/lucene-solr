@@ -478,7 +478,6 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       } else {
         float coords[] = new float[prohibited.size()+1];
         Arrays.fill(coords, 1F);
-        // TODO: don't score here.
         return new ReqExclScorer(main, 
                                  new DisjunctionSumScorer(this, 
                                                           prohibited.toArray(new Scorer[prohibited.size()]), 
