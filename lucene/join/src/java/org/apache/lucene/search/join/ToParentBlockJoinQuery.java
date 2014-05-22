@@ -381,7 +381,7 @@ public class ToParentBlockJoinQuery extends Query {
     @Override
     public int advance(int parentTarget) throws IOException {
 
-      // System.out.println("Q.advance parentTarget=" + parentTarget);
+      //System.out.println("Q.advance parentTarget=" + parentTarget);
       if (parentTarget == NO_MORE_DOCS) {
         return parentDoc = NO_MORE_DOCS;
       }
@@ -398,13 +398,13 @@ public class ToParentBlockJoinQuery extends Query {
 
       prevParentDoc = parentBits.prevSetBit(parentTarget-1);
 
-      // System.out.println("  rolled back to prevParentDoc=" + prevParentDoc + " vs parentDoc=" + parentDoc);
+      //System.out.println("  rolled back to prevParentDoc=" + prevParentDoc + " vs parentDoc=" + parentDoc);
       assert prevParentDoc >= parentDoc;
       if (prevParentDoc > nextChildDoc) {
         nextChildDoc = childScorer.advance(prevParentDoc);
         // System.out.println("  childScorer advanced to child docID=" + nextChildDoc);
-      } else {
-        // System.out.println("  skip childScorer advance");
+      //} else {
+        //System.out.println("  skip childScorer advance");
       }
 
       // Parent & child docs are supposed to be orthogonal:
@@ -413,21 +413,15 @@ public class ToParentBlockJoinQuery extends Query {
       }
 
       final int nd = nextDoc();
-      // System.out.println("  return nextParentDoc=" + nd);
+      //System.out.println("  return nextParentDoc=" + nd);
       return nd;
     }
 
     public Explanation explain(int docBase) throws IOException {
-      int start = prevParentDoc + 1; // +1 b/c prevParentDoc is previous parent doc
-      if (acceptDocs != null) {
-        // Skip deleted docs:
-        while (acceptDocs.get(start) == false) {
-          start++;
-        }
-      }
-      int end = parentDoc - 1; // -1 b/c parentDoc is parent doc
+      int start = docBase + prevParentDoc + 1; // +1 b/c prevParentDoc is previous parent doc
+      int end = docBase + parentDoc - 1; // -1 b/c parentDoc is parent doc
       return new ComplexExplanation(
-          true, score(), String.format(Locale.ROOT, "Score based on child doc range from %d to %d", docBase+start, docBase+end)
+          true, score(), String.format(Locale.ROOT, "Score based on child doc range from %d to %d", start, end)
       );
     }
 
